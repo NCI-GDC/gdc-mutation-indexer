@@ -1,6 +1,6 @@
 # GDC Mutation Index Export
 
-Backend for exporting mutaiton indices for visualization on the GDC
+Backend for exporting mutation indices for visualization on the GDC
 
 ## Dev Config
 
