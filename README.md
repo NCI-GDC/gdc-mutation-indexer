@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer.svg?token=KcVLPFGKP2xmZvLzN1nQ&branch=master)](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer)
 # GDC Mutation Index Export
 
-Backend for exporting mutaiton indices for visualization on the GDC
+Backend for exporting mutation indices for visualization on the GDC
 
 ## Dev Config
 
