@@ -13,7 +13,10 @@ before_install:
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
-  - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
+  - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+  - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
+  - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
+  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 
 script:

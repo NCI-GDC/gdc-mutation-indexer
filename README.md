@@ -35,16 +35,16 @@ be added in the case of a clust with more than one worker.
 
 ### Submitting to Spark
 
-To run the export, copy the `submit-job.sh.template` to `submit-job.sh` and 
-configure the environment variables as needed. Then run `submit-job.sh` to
+To run the export, copy the `bin/submit-job.sh.template` to `bin/submit-job.sh` and 
+configure the environment variables as needed. Then run `bin/submit-job.sh` to
 submit the job to the spark cluster.
 
 ### Running in Jupyter
 
 It may be useful to develop with the help of Jupyter. Jupyter notebook will be
 installed as part of the dev requirements and can be invoked with
-`run-notebook.sh`. Make sure to set the `$SPARK_HOME` variable correctly within
-`run-notebook.sh`. To view the notebook, the port (default 9099) will need to
+`bin/run-notebook.sh`. Make sure to set the `$SPARK_HOME` variable correctly within
+`bin/run-notebook.sh`. To view the notebook, the port (default 9099) will need to
 be forwarded to the local machine:
 
 ```
@@ -55,10 +55,10 @@ ssh -v -L9099:0:9099 -N dev-machine
 ## Tests
 
 Tests depend on `$PYTHONPATH` being configured correctly to find the spark 
-python modules. Make sure the paths are correct in `run-tests.sh`.
+python modules. Make sure the paths are correct in `bin/run-tests.sh`.
 
 ```
-❯  ./run-tests.sh
+❯  bin/run-tests.sh
 ```
 
 ## Contributing
