@@ -54,8 +54,11 @@ ssh -v -L9099:0:9099 -N dev-machine
 
 ## Tests
 
+Tests depend on `$PYTHONPATH` being configured correctly to find the spark 
+python modules. Make sure the paths are correct in `run-tests.sh`.
+
 ```
-❯  py.test tests
+❯  ./run-tests.sh
 ```
 
 ## Contributing

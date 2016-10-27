@@ -1,0 +1,20 @@
+language: python
+
+jdk:
+  - openjdk7
+
+env:
+  - SPARK_VERSION="2.0.1"
+
+before_install:
+  - sudo apt-get update
+  - wget http://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz;
+
+install:
+  - pip install -r requirements.txt
+  - pip install -r dev-requirements.txt
+  - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
+  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
+
+script:
+  - "py.test tests"
