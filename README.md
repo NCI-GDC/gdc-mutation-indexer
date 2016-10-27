@@ -27,17 +27,30 @@ Once a dev spark cluster has been started, it is useful to view spark's web UI.
 This can be done by forwarding the web UI ports as so:
 
 ```
-ssh -v -L8080:0:8080 -L8081:0:8081 -N dev-notebook-0
+ssh -v -L8080:0:8080 -L8081:0:8081 -N dev-machine
 ```
 
 Worker UIs will increment sequentially from `8081`, so further ports may need to
 be added in the case of a clust with more than one worker.
 
-### Running
+### Submitting to Spark
 
 To run the export, copy the `submit-job.sh.template` to `submit-job.sh` and 
 configure the environment variables as needed. Then run `submit-job.sh` to
 submit the job to the spark cluster.
+
+### Running in Jupyter
+
+It may be useful to develop with the help of Jupyter. Jupyter notebook will be
+installed as part of the dev requirements and can be invoked with
+`run-notebook.sh`. Make sure to set the `$SPARK_HOME` variable correctly within
+`run-notebook.sh`. To view the notebook, the port (default 9099) will need to
+be forwarded to the local machine:
+
+```
+ssh -v -L9099:0:9099 -N dev-machine
+```
+
 
 ## Tests
 
