@@ -1,0 +1,26 @@
+#!/bin/bash
+unset http_proxy
+unset https_proxy
+
+export SPARK_HOME=~/spark
+
+export PG_HOST=
+export PG_NAME=
+export PG_USER=
+export PG_PASS=
+
+export S3_HOST=
+export S3_ACC_KEY=
+export S3_SEC_KEY=
+
+export GDC_ES_HOST=
+export GDC_ES_USER=
+export GDC_ES_PASS=
+
+# These can be the same as GDC_ES, or different depending on if different
+# clusters are desired for the graph and mutation indicies for dev purposes
+export ELASTICSEARCH_HOST=localhost
+#export ELASTICSEARCH_USER=
+#export ELASTICSEARCH_PASS=
+
+exec $SPARK_HOME/bin/spark-submit bin/export.py

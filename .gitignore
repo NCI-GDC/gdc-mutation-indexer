@@ -65,3 +65,6 @@ package.json
 
 # vim
 *.swp
+
+# private files
+submit-job.sh
