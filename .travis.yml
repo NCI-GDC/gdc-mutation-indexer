@@ -9,7 +9,6 @@ env:
   - SPARK_VERSION="2.0.1"
 
 before_install:
-  - sudo apt-get update
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz;
 
 install:
