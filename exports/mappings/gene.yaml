@@ -1,0 +1,132 @@
+properties:
+  biotype:
+    type: string
+    index: not_analyzed
+  canonical_transcript_id:
+    type: string
+    index: not_analyzed
+  description:
+    type: string
+    index: not_analyzed
+  external_db_ids:
+    properties:
+      entrez_gene:
+        type: string
+        index: not_analyzed
+      hgnc:
+        type: string
+        index: not_analyzed
+      omim_gene:
+        type: string
+        index: not_analyzed
+      uniprotkb_swissprot:
+        type: string
+        index: not_analyzed
+  gene_chromosome:
+    type: string
+    index: not_analyzed
+  gene_end:
+    type: long
+  gene_id:
+    type: string
+    index: not_analyzed
+  gene_start:
+    type: long
+  gene_strand:
+    type: long
+  name:
+    type: string
+    index: not_analyzed
+  symbol:
+    type: string
+    index: not_analyzed
+  synonyms:
+    type: string
+    index: not_analyzed
+  transcripts:
+    type: nested
+    properties:
+      biotype:
+        type: string
+        index: not_analyzed
+      cdna_coding_end:
+        type: long
+      cdna_coding_start:
+        type: long
+      coding_region_end:
+        type: long
+      coding_region_start:
+        type: long
+      domains:
+        type: nested
+        properties:
+          description:
+            type: string
+            index: not_analyzed
+          end:
+            type: long
+          gff_source:
+            type: string
+            index: not_analyzed
+          hit_name:
+            type: string
+            index: not_analyzed
+          interpro_id:
+            type: string
+            index: not_analyzed
+          start:
+            type: long
+      end:
+        type: long
+      end_exon:
+        type: long
+      exons:
+        type: nested
+        properties:
+          cdna_coding_end:
+            type: long
+          cdna_coding_start:
+            type: long
+          cdna_end:
+            type: long
+          cdna_start:
+            type: long
+          end:
+            type: long
+          end_phase:
+            type: long
+          genomic_coding_end:
+            type: long
+          genomic_coding_start:
+            type: long
+          start:
+            type: long
+          start_phase:
+            type: long
+      id:
+        type: string
+        index: not_analyzed
+      is_canonical:
+        type: boolean
+      length:
+        type: long
+      length_amino_acid:
+        type: long
+      length_cds:
+        type: long
+      name:
+        type: string
+        index: not_analyzed
+      number_of_exons:
+        type: long
+      seq_exon_end:
+        type: long
+      seq_exon_start:
+        type: long
+      start:
+        type: long
+      start_exon:
+        type: long
+      translation_id:
+        type: string
+        index: not_analyzed
