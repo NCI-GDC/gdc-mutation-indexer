@@ -1,0 +1,7 @@
+_all:
+  enabled: false
+_source:
+  excludes: [__comment__]
+  compress: true
+dynamic: strict
+
