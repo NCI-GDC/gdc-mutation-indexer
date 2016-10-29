@@ -2,6 +2,9 @@ language: python
 
 cache: pip
 
+services:
+  - elasticsearch
+
 jdk:
   - openjdk7
 

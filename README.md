@@ -18,9 +18,29 @@ pip install -r dev-requirements.txt
 
 ### Running a Developer Cluster
 
+TODO: Write setup shell script for dev install
+
+Versions:
+`elasticsearch=5.0.0`
+`spark=2.0.1-hadoop=2.7`
+
+#### Spark
+
 A spark cluster must exist to be run against. A standalone cluster on a single
 node with a single master and slave is sufficient for developing against.
 See the official insructions [instructions](http://spark.apache.org/docs/latest/spark-standalone.html).
+
+#### Elasticsearch hadoop adapter
+
+Install the elasticsearch hadoop adapter by downloading the
+[zip](https://www.elastic.co/downloads/hadoop). Extract the contents and 
+put the path to the `dist` folder inside the `$SPARK_HOME/conf/spark-defaults.sh`
+as the `spark.driver.extraClassPath` variable. Make sure to also set the
+`--jars` flag in `bin/run-notebook.sh` to use the adapter in the notebook.
+
+### Elasticsearch
+
+Install and start [elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/_installation.html)
 
 ### Monitoring spark
 
