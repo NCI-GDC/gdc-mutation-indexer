@@ -2,7 +2,7 @@ filechunkio==1.6
 progressbar==2.2
 addict==0.2.7
 networkx==1.10
-elasticsearch==1.4.0
+elasticsearch==5.0.0
 xlrd==0.9.3
 consulate==0.4
 requests==2.6.0
