@@ -12,19 +12,19 @@ ES_HOST = 'localhost'
 ES_PORT = 9200
 ES_INDEX = 'test_graph_index__'
 
-@pytest.yield_fixture(scope='module')
-def test_index():
-    """Generate an index as a fixture for re-use between tests"""
+@pytest.yield_fixture(scope='class')
+def test_index(request):
+    """Generate a graph index as a fixture for re-use between tests"""
+    request.cls.es = Elasticsearch(ES_HOST, port=ES_PORT)
 
-    es_driver = Elasticsearch(ES_HOST, port=ES_PORT)
-
-    r = es_driver.indices.create(index=ES_INDEX, ignore=400)
+    r = request.cls.es.indices.create(index=ES_INDEX, ignore=400)
+    request.cls.graph_index = ES_INDEX
 
     with open(os.path.join(TEST_DIR,'data','cases.json')) as f:
         case_docs = json.load(f)
 
     for doc in case_docs['docs']:
-        es_driver.create(
+        request.cls.es.create(
             index=ES_INDEX,
             id=doc['_id'],
             doc_type=doc['_type'],
@@ -33,10 +33,10 @@ def test_index():
         )
 
     while True:
-        count = es_driver.count(index=ES_INDEX, doc_type='case')['count']
+        count = request.cls.es.count(index=ES_INDEX, doc_type='case')['count']
         if count == len(case_docs):
             break
         time.sleep(0.1)
 
-    yield es_driver, ES_INDEX, 'case', case_docs
-    es_driver.indices.delete(index=ES_INDEX, ignore=399)
+    yield request.cls.es
+    request.cls.es.indices.delete(index=ES_INDEX, ignore=399)
