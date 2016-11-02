@@ -1,0 +1,70 @@
+properties:
+  amino_acids:
+    type: string
+    index: not_analyzed
+  ccds:
+    type: string
+    index: not_analyzed
+  cdna_position:
+    type: string
+    index: not_analyzed
+  cds_end:
+    type: long
+  cds_length:
+    type: long
+  cds_position:
+    type: string
+    index: not_analyzed
+  cds_start:
+    type: long
+  codons:
+    type: string
+    index: not_analyzed
+  dbsnp_rs:
+    type: string
+    index: not_analyzed
+  domains:
+    type: string
+    index: not_analyzed
+  ensp:
+    type: string
+    index: not_analyzed
+  existing_variation:
+    type: string
+    index: not_analyzed
+  hgvsc:
+    type: string
+    index: not_analyzed
+  hgvsp:
+    type: string
+    index: not_analyzed
+  hgvsp_short:
+    type: string
+    index: not_analyzed
+  impact:
+    type: string
+    index: not_analyzed
+  polyphen:
+    type: string
+    index: not_analyzed
+  protein_position:
+    type: string
+    index: not_analyzed
+  pubmed:
+    type: string
+    index: not_analyzed
+  sift:
+    type: string
+    index: not_analyzed
+  swissprot:
+    type: string
+    index: not_analyzed
+  transcript_id:
+    type: string
+    index: not_analyzed
+  trembl:
+    type: string
+    index: not_analyzed
+  uniparc:
+    type: string
+    index: not_analyzed
