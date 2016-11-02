@@ -4,6 +4,7 @@ addict==0.2.7
 networkx==1.10
 elasticsearch==5.0.0
 xlrd==0.9.3
+PyYAML==3.11
 consulate==0.4
 requests==2.6.0
 -e git+ssh://git@github.com/NCI-GDC/esbuild.git@d0f55157bb364fe65723adaa048da27a71c1bad8#egg=esbuild
