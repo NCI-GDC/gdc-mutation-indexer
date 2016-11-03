@@ -1,0 +1,63 @@
+properties:
+  center:
+    type: string
+    index: not_analyzed
+  input_bam_file:
+    properties:
+      normal_bam_uuid:
+        type: string
+        index: not_analyzed
+      tumor_bam_uuid:
+        type: string
+        index: not_analyzed
+  mutation_status:
+    type: string
+    index: not_analyzed
+  normal_genotype:
+    type: object
+  read_depth:
+    properties:
+      n_depth:
+        type: long
+      t_alt_count:
+        type: long
+      t_depth:
+        type: long
+      t_ref_count:
+        type: long
+  sample:
+    properties:
+      matched_norm_sample_barcode:
+        type: string
+        index: not_analyzed
+      matched_norm_sample_uuid:
+        type: string
+        index: not_analyzed
+      tumor_sample_barcode:
+        type: string
+        index: not_analyzed
+      tumor_sample_uuid:
+        type: string
+        index: not_analyzed
+  src_vcf_id:
+    type: string
+    index: not_analyzed
+  tumor_genotype:
+    properties:
+      tumor_seq_allele1:
+        type: string
+        index: not_analyzed
+      tumor_seq_allele2:
+        type: string
+        index: not_analyzed
+  validation:
+    properties:
+      tumor_validation_allele1:
+        type: string
+        index: not_analyzed
+      tumor_validation_allele2:
+        type: string
+        index: not_analyzed
+      validation_method:
+        type: string
+        index: not_analyzed

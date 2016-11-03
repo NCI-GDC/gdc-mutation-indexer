@@ -1,0 +1,22 @@
+properties:
+  aa_change:
+    type: string
+    index: not_analyzed
+  aa_end:
+    type: long
+  aa_start:
+    type: long
+  consequence_type:
+    type: string
+    index: not_analyzed
+  gene_symbol:
+    type: string
+    index: not_analyzed
+  is_canonical:
+    type: boolean
+  ref_seq_accession:
+    type: string
+    index: not_analyzed
+  transcript_id:
+    type: string
+    index: not_analyzed

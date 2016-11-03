@@ -22,6 +22,10 @@ class TestMapper(unittest.TestCase):
         with self.assertRaises(AssertionError):
             mapper.load_properties('exports/mappings/common_settings.yaml')
 
+        props = mapper.load_properties('exports/mappings/gene.yaml', nested=True)
+        self.assertIn('type', props)
+        self.assertEqual(props['type'], 'nested')
+
 
 class TestGeneMapper(unittest.TestCase):
 
