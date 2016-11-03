@@ -19,22 +19,24 @@ class GeneMapper(Mapper):
         # Gene is at the root here
         mapping.update(self.load_properties('exports/mappings/gene.yaml'))
 
-        graph_mapper = ActiveESMapper()
         # Add case mapping from graph
+        graph_mapper = ActiveESMapper()
         case_map = graph_mapper.get_case_es_mapping()
         mapping['properties']['case'] = case_map
+        mapping['properties']['case']['type'] = 'nested'
         # Add ssm mapping
-        ssm_map  = self.load_properties('exports/mappings/ssm.yaml')
+        ssm_map  = self.load_properties('exports/mappings/ssm.yaml', nested=True)
         case_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
-        tran_map = self.load_properties('exports/mappings/transcript.yaml')
+        tran_map = self.load_properties('exports/mappings/transcript.yaml', nested=True)
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
-        annot_map = self.load_properties('exports/mappings/annotation.yaml')
+        annot_map = self.load_properties('exports/mappings/annotation.yaml', nested=True)
         tran_map['properties']['annotation'] = annot_map
         # Add observation
-        obs_map = self.load_properties('exports/mappings/observation.yaml')
+        obs_map = self.load_properties('exports/mappings/observation.yaml', nested=True)
         ssm_map['properties']['observation'] = obs_map
         
         return mapping
