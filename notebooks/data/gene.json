@@ -1,0 +1,11 @@
+{"geneid":1,"name":"AAA","case_submitter_id":1}
+{"geneid":2,"name":"BBB","case_submitter_id":3}
+{"geneid":2,"name":"BBB","case_submitter_id":2}
+{"geneid":3,"name":"CCC","case_submitter_id":4}
+{"geneid":4,"name":"DDD","case_submitter_id":9}
+{"geneid":4,"name":"DDD","case_submitter_id":1}
+{"geneid":2,"name":"BBB","case_submitter_id":5}
+{"geneid":3,"name":"CCC","case_submitter_id":9}
+{"geneid":4,"name":"DDD","case_submitter_id":6}
+{"geneid":4,"name":"DDD","case_submitter_id":7}
+{"geneid":2,"name":"BBB","case_submitter_id":8}
