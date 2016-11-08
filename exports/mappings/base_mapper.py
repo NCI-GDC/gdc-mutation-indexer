@@ -1,3 +1,4 @@
+import os
 import yaml
 
 
@@ -21,6 +22,7 @@ class Mapper(object):
         '''
         Loads an ES properties mapping from a yaml file
         '''
+        path = os.path.join(os.path.dirname(__file__), path)
         with open(path) as f:
             properties = yaml.load(f)
         assert 'properties' in properties, 'File must contain properties'
@@ -30,6 +32,7 @@ class Mapper(object):
 
     @property
     def settings(self):
-        with open('exports/mappings/common_settings.yaml') as f:
+        path = os.path.join(os.path.dirname(__file__), 'common_settings.yaml')
+        with open(path) as f:
             settings = yaml.load(f)
         return settings
