@@ -20,21 +20,21 @@ class CaseMapper(Mapper):
         mapping.update(graph_mapper.get_case_es_mapping())
         
         # Add gene 
-        gene_map = self.load_properties('exports/mappings/gene.yaml', nested=True)
+        gene_map = self.load_properties('gene.yaml', nested=True)
         mapping['properties']['gene'] = gene_map
         # Add ssm
-        ssm_map = self.load_properties('exports/mappings/ssm.yaml', nested=True)
+        ssm_map = self.load_properties('ssm.yaml', nested=True)
         gene_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
-        tran_map = self.load_properties('exports/mappings/transcript.yaml')
+        tran_map = self.load_properties('transcript.yaml')
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
-        annot_map = self.load_properties('exports/mappings/annotation.yaml', nested=True)
+        annot_map = self.load_properties('annotation.yaml', nested=True)
         tran_map['properties']['annotation'] = annot_map
         # Add observation
-        obs_map = self.load_properties('exports/mappings/observation.yaml', nested=True)
+        obs_map = self.load_properties('observation.yaml', nested=True)
         ssm_map['properties']['observation'] = obs_map
 
         return mapping
