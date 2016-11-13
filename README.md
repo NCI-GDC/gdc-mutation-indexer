@@ -124,6 +124,38 @@ be forwarded to the local machine:
 ssh -v -L9099:0:9099 -N dev-machine
 ```
 
+### Starting a standalone cluster
+
+Spark can be deployed in standalone mode which requires all target machines
+to have matching `SPARK_HOME` directories and jars. To tell the master where 
+to start workers, add their ips or hostnames in `spark/conf/slaves.conf`.
+Note that the same machine may have more than one worker started on it by
+listing the host multiple times, such as placing localhost twice to debug two
+workers on a dev box.
+
+The cluster can be started using `spark/sbin/start-all.sh` and managed through
+the other scripts found in that directory. Executors may be configured through
+spark defaults using some of these configuration settings in
+`spark/conf/spark-defaults.conf`:
+
+```
+spark.executor.instances
+spark.executor.cores
+spark.executor.memory
+```
+See other spark configuration settings
+[here](http://spark.apache.org/docs/latest/configuration.html)
+
+
+
+To run the pyspark notebook environment on standalone workers outside of the
+single master cluster set up by default, set `MASTER` in the environment or
+in `bin/run-notebook` to the url and port of the master service. Ex:
+
+```
+export MASTER='spark://dev-master-av2-dev2-dkolbman-notebook-0:7077' 
+```
+
 
 ## Tests
 
