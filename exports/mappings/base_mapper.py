@@ -36,3 +36,35 @@ class Mapper(object):
         with open(path) as f:
             settings = yaml.load(f)
         return settings
+
+    def clean(self, d):
+        '''
+        Patches old elasticsearh mappings to 5.0
+        string type -> text type
+        store: yes -> store: true
+        removes index_analyzer fields
+        index: not_analyzed -> index: true, type: keyword
+        index: analyzed -> index: true
+        remove descriptions, _meta, _source, _id, _all fields
+        '''
+        if not isinstance(d, (dict, list)):
+            return d
+        if isinstance(d, list):
+            return [v for v in (self.clean(v) for v in d) if v]
+
+        if 'type' in d and d['type'] == 'string':
+            d['type'] = 'text'
+        if 'store' in d and d['store'] == 'yes':
+            d['store'] = 'true'
+        if 'index_analyzer' in d:
+            del d['index_analyzer']
+        if 'index' in d and d['index'] == 'not_analyzed':
+            d['index'] = 'true'
+            d['type'] = 'keyword'
+        elif 'index' in d and d['index'] == 'analyzed':
+            d['index'] = 'true'
+
+        for f in ['descriptions', '_meta', '_source', '_id', '_all']:
+            if f in d:
+                del d[f]
+        return {k: v for k, v in ((k, self.clean(v)) for k, v in d.items()) if v is not 'id_search'}

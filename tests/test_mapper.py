@@ -8,10 +8,7 @@ class TestMapper(unittest.TestCase):
     def test_settings(self):
         mapper = Mapper()
 
-        self.assertIn('_all', mapper.mapping)
-        self.assertIn('_source', mapper.mapping)
         self.assertIn('dynamic', mapper.mapping)
-        self.assertFalse(mapper.mapping['_all']['enabled'])
 
     def test_properties(self):
         mapper = Mapper()
@@ -26,24 +23,52 @@ class TestMapper(unittest.TestCase):
         self.assertIn('type', props)
         self.assertEqual(props['type'], 'nested')
 
+    def test_clean(self):
+        mapper = Mapper()
+
+        d = {
+            'index': 'not_analyzed',
+                '_meta':{ 'name': None},
+                '_id': [],
+                '_all': {},
+                '_source': '',
+                'descriptions': [''],
+                'properties': {
+                    'name': {
+                        'type': 'text',
+                        'index': 'not_analyzed'
+                    },
+                    'code': {
+                        'type': 'long',
+                        'index': 'analyzed',
+                        'store': 'yes',
+                        'index_analyzer': 'false'
+                    }
+                }
+            }
+        cleaned = mapper.clean(d)
+        self.assertFalse('_meta' in cleaned)
+        self.assertFalse('descriptions' in cleaned)
+        self.assertFalse('_source' in cleaned)
+        self.assertFalse('_all' in cleaned)
+        self.assertFalse('_id' in cleaned)
+        self.assertEqual(cleaned['properties']['name']['type'], 'keyword')
+        self.assertEqual(cleaned['properties']['name']['index'], 'true')
+        self.assertEqual(cleaned['properties']['name']['type'], 'keyword')
+        self.assertEqual(cleaned['properties']['code']['store'], 'true')
+        self.assertEqual(cleaned['properties']['code']['index'], 'true')
+        self.assertFalse('index_analyzer' in cleaned['properties']['code'])
+
 
 class TestGeneMapper(unittest.TestCase):
 
     def test_gene_map(self):
         mapper = GeneMapper()
 
-        self.assertIn('_all', mapper.mapping)
-        self.assertIn('_source', mapper.mapping)
-        self.assertIn('dynamic', mapper.mapping)
-        self.assertFalse(mapper.mapping['_all']['enabled'])
-
-        self.assertIn('_id', mapper.mapping)
-        self.assertEqual('gene_id', mapper.mapping['_id']['path'])
-
         self.assertIn('properties', mapper.mapping)
         props = mapper.mapping['properties']
 
         self.assertIn('gene_chromosome', props)
         self.assertIn('gene_end', props)
-        self.assertEqual('string', props['gene_id']['type'])
-        self.assertEqual('not_analyzed', props['symbol']['index'])
+        self.assertEqual('keyword', props['gene_id']['type'])
+        self.assertEqual('true', props['symbol']['index'])
