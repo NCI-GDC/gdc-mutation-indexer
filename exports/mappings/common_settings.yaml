@@ -4,4 +4,3 @@ _source:
   excludes: [__comment__]
   compress: true
 dynamic: strict
-

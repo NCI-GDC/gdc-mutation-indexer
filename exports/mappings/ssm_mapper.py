@@ -42,4 +42,5 @@ class SSMMapper(Mapper):
         obs_map = self.load_properties('observation.yaml', nested=True)
         case_map['properties']['observation'] = obs_map
 
+        mapping = self.clean(mapping)
         return mapping

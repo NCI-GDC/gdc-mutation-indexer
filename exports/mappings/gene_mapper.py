@@ -38,5 +38,7 @@ class GeneMapper(Mapper):
         # Add observation
         obs_map = self.load_properties('observation.yaml', nested=True)
         ssm_map['properties']['observation'] = obs_map
-        
+       
+        mapping = self.clean(mapping)
+
         return mapping
