@@ -1,5 +1,4 @@
 from base_mapper import Mapper
-from esbuild.graph.active.mappings import ActiveESMapper
 
 
 class GeneMapper(Mapper):
@@ -20,8 +19,7 @@ class GeneMapper(Mapper):
         mapping.update(self.load_properties('gene.yml'))
 
         # Add case mapping from graph
-        graph_mapper = ActiveESMapper()
-        case_map = graph_mapper.get_case_es_mapping()
+        case_map = self.load_properties('case.yml', nested=True)
         mapping['properties']['case'] = case_map
         mapping['properties']['case']['type'] = 'nested'
         # Add ssm mapping
