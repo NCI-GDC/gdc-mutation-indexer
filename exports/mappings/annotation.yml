@@ -1,0 +1,49 @@
+properties:
+  amino_acids:
+    type: keyword
+  ccds:
+    type: keyword
+  cdna_position:
+    type: keyword
+  cds_end:
+    type: long
+  cds_length:
+    type: long
+  cds_position:
+    type: keyword
+  cds_start:
+    type: long
+  codons:
+    type: keyword
+  dbsnp_rs:
+    type: keyword
+  domains:
+    type: keyword
+  ensp:
+    type: keyword
+  existing_variation:
+    type: keyword
+  hgvsc:
+    type: keyword
+  hgvsp:
+    type: keyword
+  hgvsp_short:
+    type: keyword
+  impact:
+    type: keyword
+  polyphen:
+    type: keyword
+  protein_position:
+    type: keyword
+  pubmed:
+    type: keyword
+  sift:
+    type: keyword
+  swissprot:
+    type: keyword
+  transcript_id:
+    type: keyword
+  trembl:
+    type: keyword
+  uniparc:
+    type: keyword

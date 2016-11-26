@@ -13,13 +13,13 @@ class TestMapper(unittest.TestCase):
     def test_properties(self):
         mapper = Mapper()
 
-        props = mapper.load_properties('gene.yaml')
+        props = mapper.load_properties('gene.yml')
         self.assertIn('properties', props)
 
         with self.assertRaises(AssertionError):
-            mapper.load_properties('common_settings.yaml')
+            mapper.load_properties('common_settings.yml')
 
-        props = mapper.load_properties('gene.yaml', nested=True)
+        props = mapper.load_properties('gene.yml', nested=True)
         self.assertIn('type', props)
         self.assertEqual(props['type'], 'nested')
 
@@ -71,4 +71,3 @@ class TestGeneMapper(unittest.TestCase):
         self.assertIn('gene_chromosome', props)
         self.assertIn('gene_end', props)
         self.assertEqual('keyword', props['gene_id']['type'])
-        self.assertEqual('true', props['symbol']['index'])

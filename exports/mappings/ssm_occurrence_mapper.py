@@ -25,18 +25,18 @@ class SSMOccurrenceMapper(Mapper):
                         }})
 
         # Add ssm
-        ssm_map = self.load_properties('ssm.yaml', nested=True)
+        ssm_map = self.load_properties('ssm.yml', nested=True)
         mapping['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
-        tran_map = self.load_properties('transcript.yaml', nested=True)
+        tran_map = self.load_properties('transcript.yml', nested=True)
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add gene 
-        gene_map = self.load_properties('gene.yaml')
+        gene_map = self.load_properties('gene.yml')
         tran_map['properties']['gene'] = gene_map
         # Add annotation
-        annot_map = self.load_properties('annotation.yaml')
+        annot_map = self.load_properties('annotation.yml')
         tran_map['properties']['annotation'] = annot_map
 
         # Occurance only holds case 
@@ -45,7 +45,7 @@ class SSMOccurrenceMapper(Mapper):
         case_map = graph_mapper.get_case_es_mapping()
         mapping['properties']['case'] = case_map
         # Add observation
-        obs_map = self.load_properties('observation.yaml', nested=True)
+        obs_map = self.load_properties('observation.yml', nested=True)
         case_map['properties']['observation'] = obs_map
 
         mapping = self.clean(mapping)
