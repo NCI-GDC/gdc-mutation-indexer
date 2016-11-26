@@ -1,0 +1,23 @@
+properties:
+  chromosome:
+    type: keyword
+  end_position:
+    type: long
+  genomic_dna_change:
+    type: keyword
+  mutation_subtype:
+    type: keyword
+  mutation_type:
+    type: keyword
+  ncbi_build:
+    type: keyword
+  reference_allele:
+    type: keyword
+  ssm_id:
+    type: keyword
+  start_position:
+    type: long
+  tumor_allele:
+    type: keyword
+  variant_type:
+    type: keyword

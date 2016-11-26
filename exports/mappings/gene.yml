@@ -1,54 +1,41 @@
 properties:
   biotype:
-    type: string
-    index: not_analyzed
+    type: keyword
   canonical_transcript_id:
-    type: string
-    index: not_analyzed
+    type: keyword
   description:
-    type: string
-    index: not_analyzed
+    type: keyword
   external_db_ids:
     properties:
       entrez_gene:
-        type: string
-        index: not_analyzed
+        type: keyword
       hgnc:
-        type: string
-        index: not_analyzed
+        type: keyword
       omim_gene:
-        type: string
-        index: not_analyzed
+        type: keyword
       uniprotkb_swissprot:
-        type: string
-        index: not_analyzed
+        type: keyword
   gene_chromosome:
-    type: string
-    index: not_analyzed
+    type: keyword
   gene_end:
     type: long
   gene_id:
-    type: string
-    index: not_analyzed
+    type: keyword
   gene_start:
     type: long
   gene_strand:
     type: long
   name:
-    type: string
-    index: not_analyzed
+    type: keyword
   symbol:
-    type: string
-    index: not_analyzed
+    type: keyword
   synonyms:
-    type: string
-    index: not_analyzed
+    type: keyword
   transcripts:
     type: nested
     properties:
       biotype:
-        type: string
-        index: not_analyzed
+        type: keyword
       cdna_coding_end:
         type: long
       cdna_coding_start:
@@ -61,19 +48,15 @@ properties:
         type: nested
         properties:
           description:
-            type: string
-            index: not_analyzed
+            type: keyword
           end:
             type: long
           gff_source:
-            type: string
-            index: not_analyzed
+            type: keyword
           hit_name:
-            type: string
-            index: not_analyzed
+            type: keyword
           interpro_id:
-            type: string
-            index: not_analyzed
+            type: keyword
           start:
             type: long
       end:
@@ -104,8 +87,7 @@ properties:
           start_phase:
             type: long
       id:
-        type: string
-        index: not_analyzed
+        type: keyword
       is_canonical:
         type: boolean
       length:
@@ -115,8 +97,7 @@ properties:
       length_cds:
         type: long
       name:
-        type: string
-        index: not_analyzed
+        type: keyword
       number_of_exons:
         type: long
       seq_exon_end:
@@ -128,5 +109,4 @@ properties:
       start_exon:
         type: long
       translation_id:
-        type: string
-        index: not_analyzed
+        type: keyword
