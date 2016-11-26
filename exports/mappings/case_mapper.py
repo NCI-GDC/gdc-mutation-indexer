@@ -1,5 +1,4 @@
 from base_mapper import Mapper
-from esbuild.graph.active.mappings import ActiveESMapper
 
 
 class CaseMapper(Mapper):
@@ -16,8 +15,8 @@ class CaseMapper(Mapper):
     def build_mapping(self):
         mapping = Mapper.build_mapping(self)
         mapping.update({"_id": { "path": "case_id" }})
-        graph_mapper = ActiveESMapper()
-        mapping.update(graph_mapper.get_case_es_mapping())
+        case_map = self.load_properties('case.yml', nested=True)
+        mapping.update(case_map)
         
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=True)

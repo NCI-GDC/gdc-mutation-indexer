@@ -1,5 +1,4 @@
 from base_mapper import Mapper
-from esbuild.graph.active.mappings import ActiveESMapper
 
 
 class SSMMapper(Mapper):
@@ -18,7 +17,6 @@ class SSMMapper(Mapper):
         mapping = Mapper.build_mapping(self)
         mapping.update({"_id": { "path": "ssm_id" }})
         mapping.update(self.load_properties('ssm.yml'))
-
         
         # Consequence only holds transcript
         # Add transcript
@@ -33,9 +31,7 @@ class SSMMapper(Mapper):
         tran_map['properties']['annotation'] = annot_map
 
         # Occurance only holds case 
-        # Add case mapping from graph
-        graph_mapper = ActiveESMapper()
-        case_map = graph_mapper.get_case_es_mapping()
+        case_map = self.load_properties('case.yml', nested=True)
         mapping['properties']['occurrence'] = {'properties':{'case': case_map}}
         mapping['properties']['occurrence']['type'] = 'nested'
         # Add observation
