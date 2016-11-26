@@ -1,7 +1,14 @@
-[![Build Status](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer.svg?token=KcVLPFGKP2xmZvLzN1nQ&branch=master)](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer)
 # GDC Mutation Index Export
+[![Build Status](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer.svg?token=KcVLPFGKP2xmZvLzN1nQ&branch=master)](https://travis-ci.com/NCI-GDC/gdc-mutation-indexer)
 
 Backend for exporting mutaiton indices for visualization on the GDC
+
+## Architecture
+![Indexer Architecture](architecture.png)
+
+The mutation indexer combines mutation data from MAF analysis files and metadata
+from the data model to create Elasticsearch indices that may be used for
+visualization or further analysis.
 
 ## Dev Config
 
