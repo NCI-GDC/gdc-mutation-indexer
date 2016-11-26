@@ -1,5 +1,0 @@
-{"mutid": 1,"type":"ins","pos":123,"conseqeunce":[{"consqid":1},{"consqid":2}],"cases":[1,8,9,5,3]}
-{"mutid": 1,"type":"del","pos":521,"conseqeunce":[{"consqid":3},{"consqid":4}],"cases":[2]}
-{"mutid": 1,"type":"repl","pos":933,"conseqeunce":[{"consqid":2},{"consqid":6}],"cases":[3,8,1]}
-{"mutid": 1,"type":"ins","pos":323,"conseqeunce":[{"consqid":5},{"consqid":7}],"cases":[9,8,3]}
-{"mutid": 1,"type":"ins","pos":423,"conseqeunce":[{"consqid":8},{"consqid":3}],"cases":[3,5]}
