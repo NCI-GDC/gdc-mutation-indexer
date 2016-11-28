@@ -67,6 +67,14 @@ def test_mapping_contains(mappings, doc_type, path):
     results = parse(path).find(mappings[doc_type])
     assert len([r.value for r in results]) == 1
 
+
+@pytest.mark.parametrize('doc_type,path', [
+    ('case', 'nested'),
+])
+def test_mapping_not_in(mappings, doc_type, path):
+    results = parse(path).find(mappings[doc_type])
+    assert len([r.value for r in results]) == 0
+
 @pytest.mark.parametrize('doc_type,path,value', [
     ('gene', 'properties.case.type', 'nested'),
     ('gene', 'properties.case.properties.diagnoses.type', 'nested'),
