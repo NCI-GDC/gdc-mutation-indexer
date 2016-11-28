@@ -19,7 +19,7 @@ properties:
         type: keyword
       updated_datetime:
         type: date
-        format: strict_date_optional_time||epoch_millis
+        format: strict_date_optional_time
       year_of_birth:
         type: long
       year_of_death:
@@ -61,7 +61,7 @@ properties:
         type: keyword
       updated_datetime:
         type: date
-        format: strict_date_optional_time||epoch_millis
+        format: strict_date_optional_time
       vital_status:
         type: keyword
   portion_ids:
@@ -114,4 +114,4 @@ properties:
             type: long
   updated_datetime:
     type: date
-format: strict_date_optional_time||epoch_millis
+    format: strict_date_optional_time 
