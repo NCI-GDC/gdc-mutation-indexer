@@ -1,6 +1,6 @@
 import unittest
 from pyspark import SparkContext
-
+from pyspark.sql import SQLContext
 
 class SparkTestCase(unittest.TestCase):
 
@@ -8,6 +8,7 @@ class SparkTestCase(unittest.TestCase):
         class_name = self.__class__.__name__
         self.sc = SparkContext('local[2]', class_name)
         self.sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
+        self.sqlContext = SQLContext(self.sc)
         log4j = self.sc._jvm.org.apache.log4j
         log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
 

@@ -1,24 +1,30 @@
 import requests
 import json
 import logging
+logging.basicConfig()
+
+from pyspark.sql.functions import lit
 
 
 class Aggregator(object):
 
-    def __init__(self, config):
+    def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.urls = self.get_urls()
+        self.sqlContext = sqlContext
 
-    def combine(self):
+    def combine(self, urls):
         '''
         Combines data frames from a list of urls
         '''
         df = None
-        for url in self.urls:
+        callers = ['mutect','muse','varscan','somaticsniper']
+        for url in urls:
+            caller = [ c for c in callers if c in url ][0]
             try:
-                new_df = read_maf(url)
-                self.logger.info('Read {} rows from {}'.format(df.count(), url))
+                new_df = self.read_maf(url)
+                new_df = new_df.withColumn('variant_caller', lit(caller))
+                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
                 if df is None:
                     df = new_df
                 else:
@@ -28,6 +34,8 @@ class Aggregator(object):
         
         self.logger.info('Combined {} files for a total of {} rows'
                          .format(len(urls), df.count()))
+        self.df = df
+        return df
 
     def get_urls(self):
         '''
@@ -82,7 +90,7 @@ class Aggregator(object):
         '''
         Read and return a single MAF from the given s3 url
         '''
-        return sqlContext.read.format('com.databricks.spark.csv')\
+        return self.sqlContext.read.format('com.databricks.spark.csv')\
                    .options(header='true')\
                    .options(comment="#")\
                    .options(delimiter='\t')\

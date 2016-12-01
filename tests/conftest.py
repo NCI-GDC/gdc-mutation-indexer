@@ -10,8 +10,8 @@ conf = TestConfig
 
 @pytest.yield_fixture(scope='class')
 def test_index(request):
-    """Generate a graph index as a fixture for re-use between tests"""
-    request.cls.es = Elasticsearch(conf.es_host, port=conf.es_port)
+    ''' Generate a graph index as a fixture for re-use between tests '''
+    request.cls.es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
     r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
     request.cls.graph_index = conf.graph_index

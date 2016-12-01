@@ -14,6 +14,7 @@ class BaseConfig(object):
 
 
 class TestConfig(BaseConfig):
+    es_host = 'localhost'
     source_es_host = 'localhost'
     graph_index = 'test_graph_index__'
 
