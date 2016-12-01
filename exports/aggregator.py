@@ -5,7 +5,8 @@ import logging
 
 class Aggregator(object):
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.urls = self.get_urls()
 
@@ -56,13 +57,13 @@ class Aggregator(object):
             "fields":"file_id"
         }
         
-        r = requests.get('http://api.service.consul/files?pretty=true',
+        r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
                             params=filt, verify=False)
         file_ids = [ f['file_id'] for f in r.json()['data']['hits'] ]
 
         urls = []
         for fid in file_ids:
-            r = requests.get('http://signpost.service.consul/v0/did/{}'.format(fid))
+            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host, fid))
             url = r.json()['urls'][0]
             urls.append(url)
 

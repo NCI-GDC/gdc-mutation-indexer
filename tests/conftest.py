@@ -4,28 +4,24 @@ import json
 import pytest
 
 from elasticsearch import Elasticsearch
+from config import TestConfig
 
-
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-
-ES_HOST = 'localhost'
-ES_PORT = 9200
-ES_INDEX = 'test_graph_index__'
+conf = TestConfig
 
 @pytest.yield_fixture(scope='class')
 def test_index(request):
     """Generate a graph index as a fixture for re-use between tests"""
-    request.cls.es = Elasticsearch(ES_HOST, port=ES_PORT)
+    request.cls.es = Elasticsearch(conf.es_host, port=conf.es_port)
 
-    r = request.cls.es.indices.create(index=ES_INDEX, ignore=400)
-    request.cls.graph_index = ES_INDEX
+    r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
+    request.cls.graph_index = conf.graph_index
 
-    with open(os.path.join(TEST_DIR,'data','cases.json')) as f:
+    with open(os.path.join(conf.data_dir, 'cases.json')) as f:
         case_docs = json.load(f)
 
     for doc in case_docs['docs']:
         request.cls.es.create(
-            index=ES_INDEX,
+            index=conf.graph_index,
             id=doc['_id'],
             doc_type=doc['_type'],
             body=doc['_source'],
@@ -33,10 +29,10 @@ def test_index(request):
         )
 
     while True:
-        count = request.cls.es.count(index=ES_INDEX, doc_type='case')['count']
+        count = request.cls.es.count(index=conf.graph_index, doc_type='case')['count']
         if count == len(case_docs):
             break
         time.sleep(0.1)
 
     yield request.cls.es
-    request.cls.es.indices.delete(index=ES_INDEX, ignore=399)
+    request.cls.es.indices.delete(index=conf.graph_index, ignore=399)

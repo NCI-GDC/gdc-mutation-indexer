@@ -1,9 +1,10 @@
 import unittest
 import pytest
-from conftest import ES_INDEX
+from config import TestConfig
 
 from exports.utils import get_array_paths
 
+conf = TestConfig
 
 @pytest.mark.usefixtures('test_index')
 class TestExportUtils(unittest.TestCase):
