@@ -45,12 +45,13 @@ class MAFBuilder(object):
         '''
         Adds ssm_id column to the MAF dataframe
         '''
-        maf_df = df.withColumn('ssm_id', ssm_uuid_udf(col('chromosome'),
-                                                      col('variant_type'),
-                                                      col('start_position'),
-                                                      col('end_position'),
-                                                      col('reference_allele'),
-                                                      col('tumor_allele')))
+        ssm_func = ssm_uuid_udf(self.config.ssm_namespace)
+        maf_df = df.withColumn('ssm_id', ssm_func(col('chromosome'),
+                                                  col('variant_type'),
+                                                  col('start_position'),
+                                                  col('end_position'),
+                                                  col('reference_allele'),
+                                                  col('tumor_allele')))
         return maf_df
 
     def extract_barcode(self, df):

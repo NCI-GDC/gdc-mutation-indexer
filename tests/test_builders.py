@@ -61,6 +61,7 @@ class TestMAFBuilder(SparkTestCase):
                 'file://'+os.path.join(TestConfig.data_dir, 'test.muse.maf')]
 
         df = builder.combine(urls)
+        df = builder.standardize_schema(df)
         df = builder.add_ssm_id(df)
         self.assertIn('ssm_id', df.columns)
 
