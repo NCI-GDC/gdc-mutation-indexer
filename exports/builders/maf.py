@@ -27,9 +27,17 @@ class MAFBuilder(object):
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
         '''
+        if self.config.maf_use_existing:
+            try:
+                df = get_existing()
+                return df
+            except IOError:
+                self.logger.info('Couldn\'t find existing maf file at given path')
+
         df = self.get_urls().combine()
         df = self.standardize_schema(combined_df)
         df = self.add_ssm_id(combined_df)
+        self.write(df)
 
     def standardize_schema(self, df):
         '''
@@ -156,3 +164,22 @@ class MAFBuilder(object):
                    .options(delimiter='\t')\
                    .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                    .load(url)
+
+    def get_existing(self):
+        '''
+        Loads a built combined maf
+        '''
+        df = sqlContext.read.format('com.databricks.spark.csv')\
+                        .options(header='true', inferschema='true')\
+                        .load(self.config.maf_path)\
+                        .drop_duplicates()
+        return df
+
+    def write(self, df):
+        '''
+        Writes the combined maf file
+        '''
+        writer = df.write.format('com.databricks.spark.csv')
+        if self.config.maf_overwrite:
+            writer = writer.mode('overwrite')
+        writer = writer.options(header='true').save(self.config.maf_path)
