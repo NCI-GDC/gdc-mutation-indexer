@@ -1,8 +1,8 @@
 from utils import SparkTestCase
-
 import pytest
-from conftest import ES_INDEX
+from config import TestConfig
 
+conf = TestConfig
 
 @pytest.mark.usefixtures('test_index')
 class TestUtils(SparkTestCase):
@@ -23,4 +23,4 @@ class TestUtils(SparkTestCase):
             inputFormatClass="org.elasticsearch.hadoop.mr.EsInputFormat",
             keyClass="org.apache.hadoop.io.NullWritable", 
             valueClass="org.elasticsearch.hadoop.mr.LinkedMapWritable", 
-            conf={ "es.resource" : ES_INDEX })
+            conf={ "es.resource" : conf.graph_index})
