@@ -10,4 +10,4 @@ class GDCMutationExport(object):
     def run_export(config):
         # Construct master MAF from all individual MAFs
         builder = MAFBuilder()
-        df = builder.get_urls().combine()
+        df = builder.build()

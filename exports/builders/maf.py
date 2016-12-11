@@ -5,6 +5,8 @@ logging.basicConfig()
 
 from pyspark.sql.functions import lit
 
+from exports.builders.utils import ssm_uuid_udf
+
 
 class MAFBuilder(object):
     '''
@@ -17,6 +19,28 @@ class MAFBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
         self.urls = []
+
+    def build(self, df):
+        '''
+        Builds a master MAF dataframe by combining individual MAFs and
+        augmenting them with additional features
+        '''
+        combined_df = self.get_urls().combine()
+
+    def standardize_schema(self, df):
+        '''
+        Renames and select required columns from the maf documents
+        '''
+
+
+    def add_ssm_id(self, df):
+        maf_df = df.withColumn('ssm_id', ssm_uuid_udf(col('chromosome'),
+                                                      col('variant_type'),
+                                                      col('start_position'),
+                                                      col('end_position'),
+                                                      col('reference_allele'),
+                                                      col('tumor_allele')))
+        return maf_df
 
     def combine(self, urls=None):
         '''
