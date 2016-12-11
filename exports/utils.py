@@ -33,7 +33,7 @@ maf_gene_map = {
 }
 
 maf_ssm_map = {
-    'gene_symbol':'Hugo_Symbol',
+    'gene_id':'Gene',
     'ncbi_build':'NCBI_Build',
     'mutation_subtype':'Mutation_Status',
     'start_position':'Start_Position',
@@ -48,9 +48,9 @@ maf_ssm_map = {
 }
 
 maf_transcript_map = {
+    'gene_id':'Gene',
     'is_canonical':'CANONICAL',
     'consequence_type':'Score',
-    'gene_symbol':'Hugo_Symbol',
     'ref_seq_accession':'AA_MAF',
     'aa_start':'AA_MAF',
     'aa_end':'AA_MAF',
@@ -87,7 +87,7 @@ maf_observation_map = {
     'src_vcf_id':'src_vcf_id',
     'mutation_status':'Mutation_Status',
     'center':'Center',
-    'gene_symbol': 'Hugo_Symbol'
+    'gene_id': 'Gene'
 }
 # Nested objects
 normal_genotype_map = {

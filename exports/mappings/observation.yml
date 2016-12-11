@@ -47,3 +47,9 @@ properties:
         type: keyword
       validation_method:
         type: keyword
+  variant_calling:
+    properties:
+      variant_process:
+        type: keyword
+      variant_caller:
+        type: keyword
