@@ -1,4 +1,6 @@
 import os
+import uuid
+
 
 class BaseConfig(object):
     api_host = 'http://api.service.consul'
@@ -13,6 +15,8 @@ class BaseConfig(object):
     source_es_port = 9200
     graph_index = 'gdc_from_graph'
 
+    # Namespace for ssm_ids so that they may be reproduced
+    ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
 class TestConfig(BaseConfig):
     es_host = 'localhost'
