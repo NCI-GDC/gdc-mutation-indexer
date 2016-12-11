@@ -6,17 +6,27 @@ logging.basicConfig()
 from pyspark.sql.functions import lit
 
 
-class Aggregator(object):
+class MAFBuilder(object):
+    '''
+    Class responsible for assembling maf files into a single dataframe with
+    uniform features
+    '''
 
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
+        self.urls = []
 
-    def combine(self, urls):
+    def combine(self, urls=None):
         '''
         Combines data frames from a list of urls
         '''
+        if urls is None and self.urls is not None:
+            urls = self.urls
+        elif urls is None and self.urls is None:
+            self.logger.error('Urls not passed and get_urls() not yet called')
+            raise Exception
         df = None
         callers = ['mutect','muse','varscan','somaticsniper']
         for url in urls:
@@ -75,7 +85,10 @@ class Aggregator(object):
             url = r.json()['urls'][0]
             urls.append(url)
 
-        return urls
+        self.logger.info('Found urls for {} files'.format(len(urls)))
+        self.urls = urls
+
+        return self
 
     def patch_url(self, url):
         '''
