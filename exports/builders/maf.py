@@ -1,9 +1,11 @@
+import os
+import yaml
 import requests
 import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import lit, col, regexp_extract
 
 from exports.builders.utils import ssm_uuid_udf
 
@@ -20,26 +22,46 @@ class MAFBuilder(object):
         self.sqlContext = sqlContext
         self.urls = []
 
-    def build(self, df):
+    def build(self):
         '''
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
         '''
-        combined_df = self.get_urls().combine()
+        df = self.get_urls().combine()
+        df = self.standardize_schema(combined_df)
+        df = self.add_ssm_id(combined_df)
 
     def standardize_schema(self, df):
         '''
-        Renames and select required columns from the maf documents
+        Renames and select required columns from the MAF documents
         '''
-
+        path = os.path.join(os.path.dirname(__file__), '../schemas/maf.yml')
+        with open(path) as f:
+            maf_schema = yaml.load(f)['maf_schema']
+        maf_df = df.select(*( col(v).alias(k) for k, v in maf_schema.items() ))
+        return maf_df
 
     def add_ssm_id(self, df):
+        '''
+        Adds ssm_id column to the MAF dataframe
+        '''
         maf_df = df.withColumn('ssm_id', ssm_uuid_udf(col('chromosome'),
                                                       col('variant_type'),
                                                       col('start_position'),
                                                       col('end_position'),
                                                       col('reference_allele'),
                                                       col('tumor_allele')))
+        return maf_df
+
+    def extract_barcode(self, df):
+        '''
+        Extracts the case barcode from the sample barcode
+        TODO: Remove this as it only works for TCGA. Should look up case uuid
+              from the sample uuid
+        '''
+        maf_df = df.withColumn('_case_submitter_id',
+                                   regexp_extract(col('tumor_sample_barcode'),
+                                         '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',1))
         return maf_df
 
     def combine(self, urls=None):
