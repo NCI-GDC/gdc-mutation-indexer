@@ -28,9 +28,11 @@ def test_index(request):
             ignore=409,
         )
 
+    print 'loaded {} case docs'.format(len(case_docs['docs']))
+
     while True:
         count = request.cls.es.count(index=conf.graph_index, doc_type='case')['count']
-        if count == len(case_docs):
+        if count >= len(case_docs):
             break
         time.sleep(0.1)
 
