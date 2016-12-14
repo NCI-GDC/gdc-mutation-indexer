@@ -19,6 +19,7 @@ class BaseConfig(object):
     # Used for loading case/graph documents from a different es cluster
     source_es_host = 'http://elasticsearch.service.consul'
     source_es_port = 9200
+    graph_document = 'case'
     graph_index = 'gdc_from_graph'
 
     # Namespace for ssm_ids so that they may be reproduced
@@ -32,6 +33,10 @@ class BaseConfig(object):
     maf_use_existing = True
     # Whether to overwrite the combined maf file if it exists
     maf_overwrite = True
+
+    # Case load settings
+    case_fields = 'case_id,submitter_id,state,project.*,program.*'
+    case_arrays = ''
 
 class TestConfig(BaseConfig):
     es_host = 'localhost'
