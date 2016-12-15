@@ -10,7 +10,7 @@ from pyspark.sql.functions import lit, col, regexp_extract
 from exports.builders.utils import ssm_uuid_udf
 
 
-class SSMCentric(object):
+class SSMCentricBuilder(object):
     '''
     Builds ssm-centric dataframe given case and maf dataframes
     '''

@@ -10,7 +10,7 @@ from pyspark.sql.functions import lit, col, regexp_extract
 from exports.builders.utils import ssm_uuid_udf
 
 
-class GeneCentricBuilder(object):
+class OccurrenceBuilder(object):
     '''
     Builds gene dataframe from the maf dataframe
     '''
