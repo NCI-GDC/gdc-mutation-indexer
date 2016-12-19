@@ -15,4 +15,3 @@ class SparkTestCase(unittest.TestCase):
     def tearDown(self):
         self.sc.stop()
         self.sc._jvm.System.clearProperty("spark.driver.port")
-

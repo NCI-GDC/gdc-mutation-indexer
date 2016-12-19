@@ -24,23 +24,23 @@ class TestMAFBuilder(SparkTestCase):
         Test that mafs are combined correctly
         '''
         builder= MAFBuilder(TestConfig, self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'test.mutect.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'test.muse.maf')]
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
         df = builder.combine(urls)
-        self.assertEqual(df.count(), 48)
+        self.assertEqual(df.count(), 463)
         c = Counter([json.loads(item)['variant_caller'] for item
                      in df.select('variant_caller').toJSON().collect()])
-        self.assertEqual(c['mutect'], 30)
-        self.assertEqual(c['muse'], 18)
+        self.assertEqual(c['mutect'], 358)
+        self.assertEqual(c['muse'], 105)
 
     def test_schema(self):
         '''
         Test that maf has columns correctly renamed
         '''
         builder = MAFBuilder(TestConfig, self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'test.mutect.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'test.muse.maf')]
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
         df = builder.combine(urls)
         df = builder.standardize_schema(df)
@@ -57,8 +57,8 @@ class TestMAFBuilder(SparkTestCase):
         Test that ssm_id column is created
         '''
         builder = MAFBuilder(TestConfig, self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'test.mutect.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'test.muse.maf')]
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
         df = builder.combine(urls)
         df = builder.standardize_schema(df)
@@ -70,17 +70,17 @@ class TestMAFBuilder(SparkTestCase):
         Test that ssm_id column is created
         '''
         builder = MAFBuilder(TestConfig, self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'test.mutect.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'test.muse.maf')]
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
         df = builder.combine(urls)
         df = builder.standardize_schema(df)
         df = builder.extract_barcode(df)
 
         self.assertIn('_case_submitter_id', df.columns)
-        self.assertEqual(df.where(df.tumor_sample_barcode=='TCGA-OR-A5J9-01A-11D-A29I-10')\
-                           .select('_case_submitter_id').first()._case_submitter_id,
-                           'TCGA-OR-A5J9')
+        self.assertEqual(df.where(df.tumor_sample_barcode=='TCGA-BQ-7059-01A-11D-1961-08')\
+                           .select('_case_submitter_id').limit(1).collect()[0]._case_submitter_id,
+                           'TCGA-BQ-7059')
 
 class TestBuilderUtils(unittest.TestCase):
     
