@@ -35,9 +35,10 @@ class MAFBuilder(object):
                 self.logger.info('Couldn\'t find existing maf file at given path')
 
         df = self.get_urls().combine()
-        df = self.standardize_schema(combined_df)
-        df = self.add_ssm_id(combined_df)
+        df = self.standardize_schema(df)
+        df = self.add_ssm_id(df)
         self.write(df)
+        return df
 
     def standardize_schema(self, df):
         '''

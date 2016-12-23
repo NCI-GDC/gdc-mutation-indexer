@@ -7,7 +7,7 @@ from exports.builders import CaseBuilder
 conf = TestConfig
 
 
-@pytest.mark.usefixtures('test_index')
+@pytest.mark.usefixtures('test_index_class')
 class TestCase(SparkTestCase):
 
     def test_case_build(self):

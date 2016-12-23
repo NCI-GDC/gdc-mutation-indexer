@@ -3,6 +3,9 @@ import uuid
 
 
 class BaseConfig(object):
+    # The Spark application name
+    app_name = 'GDC_Mutation_Export'
+
     api_host = 'http://api.service.consul'
     signpost_host = 'http://signpost.service.consul'
     s3_host = 'http://cleversafe.service.consul'
@@ -10,11 +13,17 @@ class BaseConfig(object):
     es_host = 'http://elasticsearchvis.service.consul'
     es_port = 9200
 
-    # Index names
-    case_centric = 'case_centric'
-    gene_centric = 'gene_centric'
-    ssm_centric = 'ssm_centric'
-    ssm_ocurrence_centric = 'ssm_occurrence_centric'
+    # Index names, these also double as document type names
+    # If name is None, the index will not be built
+    index_names = {
+        'case_centric':         'case_centric',
+        'gene_centric':         'gene_centric',
+        'ssm_centric':          'ssm_centric',
+        'ssm_ocurrence_centric':'ssm_occurrence_centric'
+    }
+
+    # Index revision number, will be determined automatically if not specified
+    revision = None
 
     # Used for loading case/graph documents from a different es cluster
     source_es_host = 'http://elasticsearch.service.consul'
@@ -43,5 +52,20 @@ class TestConfig(BaseConfig):
     source_es_host = 'localhost'
     graph_index = 'test_graph_index__'
 
+    index_names = {
+        'case_centric':         'test_case_centric__',
+        'gene_centric':         'test_gene_centric__',
+        'ssm_centric':          'test_ssm_centric__',
+        'ssm_ocurrence_centric':'test_ssm_occurrence_centric__'
+    }
+
+    keep_indices = False
+
     test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
     data_dir = os.path.join(test_dir, 'data')
+
+
+configs = {
+    'BaseConfig': BaseConfig,
+    'TestConfig': TestConfig
+}

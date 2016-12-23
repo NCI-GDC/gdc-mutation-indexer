@@ -8,19 +8,19 @@ from config import TestConfig
 
 conf = TestConfig
 
-@pytest.yield_fixture(scope='class')
-def test_index(request):
-    ''' Generate a graph index as a fixture for re-use between tests '''
-    request.cls.es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
-    request.cls.graph_index = conf.graph_index
+def setup_test_index():
+    '''
+    Creates graph index with case docs and returns an elasticsearch client
+    '''
+    es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+    r = es.indices.create(index=conf.graph_index, ignore=400)
 
     with open(os.path.join(conf.data_dir, 'cases.json')) as f:
         case_docs = json.load(f)
 
     for doc in case_docs['docs']:
-        request.cls.es.create(
+        es.create(
             index=conf.graph_index,
             id=doc['_id'],
             doc_type=doc['_type'],
@@ -31,10 +31,30 @@ def test_index(request):
     print 'loaded {} case docs'.format(len(case_docs['docs']))
 
     while True:
-        count = request.cls.es.count(index=conf.graph_index, doc_type='case')['count']
+        count = es.count(index=conf.graph_index, doc_type='case')['count']
         if count >= len(case_docs):
             break
         time.sleep(0.1)
 
+    return es
+
+@pytest.yield_fixture(scope='class')
+def test_index_class(request):
+    ''' Generate a graph index as a fixture for re-use between tests '''
+    request.cls.es = setup_test_index()
+    request.cls.config = conf
+
     yield request.cls.es
-    request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
+
+    if not conf.keep_indices:
+        request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
+
+@pytest.yield_fixture(scope='module')
+def test_index(request):
+    ''' Generate a graph index as a fixture for re-use between tests '''
+    es = setup_test_index()
+
+    yield es
+
+    if not conf.keep_indices:
+        es.indices.delete(index=conf.graph_index, ignore=399)
