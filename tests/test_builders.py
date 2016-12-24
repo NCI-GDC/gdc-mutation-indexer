@@ -7,7 +7,7 @@ from collections import Counter
 
 from utils import SparkTestCase
 from exports.builders import MAFBuilder
-from exports.builders.utils import ssm_uuid, ssm_label
+from exports.builders.utils import ssm_uuid, ssm_label, flat_fields, struct_select
 from config import TestConfig
 
 
@@ -99,3 +99,29 @@ class TestBuilderUtils(unittest.TestCase):
         ''' Test ssm_id generation '''
         ssm_id = ssm_uuid(TestConfig.ssm_namespace,'chr3','SNP',41589825,'','A','T')
         self.assertEqual(ssm_id, '23f64415-9f13-5854-8450-b6ab83a9911b')
+
+    def test_flat_fields(self):
+        ''' Test mapping field flattener '''
+        fields = flat_fields('../mappings/observation.yml')
+
+        for field in ['src_vcf_id', 'center', 'tumor_sample_uuid']:
+            self.assertIn(field, fields)
+
+class TestBuilderSparkUtils(SparkTestCase):
+
+    def test_struct_select(self):
+        ''' Test mapping to select '''
+        stmt = struct_select('../mappings/observation.yml')
+
+        builder = MAFBuilder(TestConfig, self.sqlContext)
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
+
+        df = builder.combine(urls)
+        df = builder.standardize_schema(df)
+        df = builder.add_ssm_id(df)
+        df_json = json.loads(df.select(*stmt).limit(1).toJSON().collect()[0])
+
+        self.assertIn('center', df_json)
+        self.assertIn('input_bam_file', df_json)
+        self.assertIn('normal_bam_uuid', df_json['input_bam_file'])

@@ -35,4 +35,4 @@ install:
 script:
   - java -version
   - curl http://localhost:9200/
-  - "py.test tests"
+  - "py.test tests -vvv"
