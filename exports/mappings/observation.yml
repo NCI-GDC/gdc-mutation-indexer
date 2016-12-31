@@ -10,7 +10,13 @@ properties:
   mutation_status:
     type: keyword
   normal_genotype:
-    type: object
+    properties:
+      match_norm_seq_allele2:
+        type: keyword
+        maf_col: name
+      match_norm_seq_allele1:
+        type: keyword
+        maf_col: name
   read_depth:
     properties:
       n_depth:
@@ -47,9 +53,12 @@ properties:
         type: keyword
       validation_method:
         type: keyword
+        maf_col: biotype
   variant_calling:
     properties:
       variant_process:
         type: keyword
+        maf_col: biotype 
       variant_caller:
         type: keyword
+        maf_col: biotype 

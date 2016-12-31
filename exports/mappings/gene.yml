@@ -5,16 +5,21 @@ properties:
     type: keyword
   description:
     type: keyword
+    maf_col: name
   external_db_ids:
     properties:
       entrez_gene:
         type: keyword
+        maf_col: name
       hgnc:
         type: keyword
+        maf_col: name
       omim_gene:
         type: keyword
+        maf_col: name
       uniprotkb_swissprot:
         type: keyword
+        maf_col: name
   gene_chromosome:
     type: keyword
   gene_end:
@@ -25,12 +30,14 @@ properties:
     type: long
   gene_strand:
     type: long
+    maf_col: cds_start
   name:
     type: keyword
   symbol:
     type: keyword
   synonyms:
     type: keyword
+    maf_col: name
   transcripts:
     type: nested
     properties:
@@ -38,75 +45,106 @@ properties:
         type: keyword
       cdna_coding_end:
         type: long
+        maf_col: cds_start
       cdna_coding_start:
         type: long
+        maf_col: cds_start
       coding_region_end:
         type: long
+        maf_col: cds_start
       coding_region_start:
         type: long
+        maf_col: cds_start
       domains:
         type: nested
         properties:
           description:
             type: keyword
+            maf_col: name
           end:
             type: long
+            maf_col: cds_start
           gff_source:
             type: keyword
+            maf_col: name
           hit_name:
             type: keyword
+            maf_col: name
           interpro_id:
             type: keyword
+            maf_col: name
           start:
             type: long
+            maf_col: cds_start
       end:
         type: long
+        maf_col: cds_start
       end_exon:
         type: long
+        maf_col: cds_start
       exons:
         type: nested
         properties:
           cdna_coding_end:
             type: long
+            maf_col: cds_start
           cdna_coding_start:
             type: long
+            maf_col: cds_start
           cdna_end:
             type: long
+            maf_col: cds_start
           cdna_start:
             type: long
+            maf_col: cds_start
           end:
             type: long
+            maf_col: cds_start
           end_phase:
             type: long
+            maf_col: cds_start
           genomic_coding_end:
             type: long
+            maf_col: cds_start
           genomic_coding_start:
             type: long
+            maf_col: cds_start
           start:
             type: long
+            maf_col: cds_start
           start_phase:
             type: long
-      id:
+            maf_col: cds_start
+      gene_id:
         type: keyword
       is_canonical:
         type: boolean
       length:
         type: long
+        maf_col: cds_start
       length_amino_acid:
         type: long
+        maf_col: cds_start
       length_cds:
         type: long
+        maf_col: cds_start
       name:
         type: keyword
       number_of_exons:
         type: long
+        maf_col: cds_start
       seq_exon_end:
         type: long
+        maf_col: cds_start
       seq_exon_start:
         type: long
+        maf_col: cds_start
       start:
         type: long
+        maf_col: cds_start
       start_exon:
         type: long
+        maf_col: cds_start
       translation_id:
         type: keyword
+        maf_col: name

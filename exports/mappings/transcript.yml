@@ -9,9 +9,11 @@ properties:
     type: keyword
   gene_symbol:
     type: keyword
+    maf_col: symbol
   is_canonical:
     type: boolean
   ref_seq_accession:
     type: keyword
   transcript_id:
     type: keyword
+    maf_col: canonical_transcript_id

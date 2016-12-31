@@ -15,7 +15,7 @@ class TestMAFBuilder(SparkTestCase):
 
     def test_patch_url(self):
         ''' Test that s3 urls are patched correctly '''
-        builder = MAFBuilder(TestConfig, self.sqlContext)
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
         self.assertTrue(builder.patch_url(url1).startswith('s3a://'))
 
@@ -23,7 +23,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that mafs are combined correctly
         '''
-        builder= MAFBuilder(TestConfig, self.sqlContext)
+        builder= MAFBuilder(TestConfig(), self.sqlContext)
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
                 'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
@@ -38,7 +38,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that maf has columns correctly renamed
         '''
-        builder = MAFBuilder(TestConfig, self.sqlContext)
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
                 'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
@@ -56,7 +56,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(TestConfig, self.sqlContext)
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
                 'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
@@ -69,7 +69,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(TestConfig, self.sqlContext)
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
                 'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
@@ -113,9 +113,8 @@ class TestBuilderSparkUtils(SparkTestCase):
         ''' Test mapping to select '''
         stmt = struct_select('../mappings/observation.yml')
 
-        builder = MAFBuilder(TestConfig, self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
+        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf')]
 
         df = builder.combine(urls)
         df = builder.standardize_schema(df)

@@ -29,7 +29,7 @@ class MAFBuilder(object):
         '''
         if self.config.maf_use_existing:
             try:
-                df = get_existing()
+                df = self.get_existing()
                 return df
             except IOError:
                 self.logger.info('Couldn\'t find existing maf file at given path')
@@ -37,7 +37,9 @@ class MAFBuilder(object):
         df = self.get_urls().combine()
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
-        self.write(df)
+        df = self.extract_barcode(df)
+        if self.config.keep_maf:
+            self.write(df)
         return df
 
     def standardize_schema(self, df):
@@ -170,7 +172,7 @@ class MAFBuilder(object):
         '''
         Loads a built combined maf
         '''
-        df = sqlContext.read.format('com.databricks.spark.csv')\
+        df = self.sqlContext.read.format('com.databricks.spark.csv')\
                         .options(header='true', inferschema='true')\
                         .load(self.config.maf_path)\
                         .drop_duplicates()

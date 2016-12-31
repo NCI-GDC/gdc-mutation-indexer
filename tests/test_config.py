@@ -31,7 +31,3 @@ class TestConfigUtils(unittest.TestCase):
         self.assertEqual('gdc_r999_{}'.format(index_name),
                              conf.indices['case_centric'])
         self.es.indices.delete(index='gdc_r998_{}'.format(index_name))
-
-        conf = TestConfig()
-        self.assertEqual('gdc_r0_{}'.format(index_name),
-                            conf.indices['case_centric'])

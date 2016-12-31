@@ -28,6 +28,9 @@ class Mapper(object):
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
+
+        self.rm_maf_cols(properties)
+
         return properties
 
     @property
@@ -36,6 +39,18 @@ class Mapper(object):
         with open(path) as f:
             settings = yaml.load(f)
         return settings
+
+    def rm_maf_cols(self, d):
+        '''
+        '''
+        if type(d) is dict:
+            if 'maf_col' in d:
+                del d['maf_col']
+            for k,v in d.items():
+                self.rm_maf_cols(v)
+        if type(d) is list:
+            for v in d:
+                self.rm_maf_cols(v)
 
     def clean(self, d):
         '''

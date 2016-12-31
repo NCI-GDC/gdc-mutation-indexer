@@ -19,7 +19,6 @@ properties:
         type: keyword
       updated_datetime:
         type: date
-        format: strict_date_optional_time
       year_of_birth:
         type: long
       year_of_death:
@@ -35,7 +34,7 @@ properties:
       cigarettes_per_day:
         type: long
       created_datetime:
-        type: keyword
+        type: date 
       exposure_id:
         type: keyword
       height:
@@ -45,7 +44,7 @@ properties:
       submitter_id:
         type: keyword
       updated_datetime:
-        type: keyword
+        type: date
       weight:
         type: long
       years_smoked:
@@ -87,7 +86,6 @@ properties:
         type: keyword
       updated_datetime:
         type: date
-        format: strict_date_optional_time
       vital_status:
         type: keyword
   portion_ids:
@@ -142,4 +140,3 @@ properties:
             type: long
   updated_datetime:
     type: date
-    format: strict_date_optional_time 

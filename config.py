@@ -45,8 +45,14 @@ class BaseConfig(object):
     maf_overwrite = True
 
     # Case load settings
-    case_fields = 'case_id,submitter_id,state,project.*,program.*'
-    case_arrays = ''
+    case_fields = ','.join(['case_id',
+                            'submitter_id',
+                            '*_datetime',
+                            '*_ids',
+                            'project.*',
+                            'program.*',
+                            'demographic.*'])
+    case_arrays = '*_ids'
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -97,7 +103,8 @@ class TestConfig(BaseConfig):
     }
 
     maf_path = 'file:///test_mafs.csv'
-    keep_indices = False
+    keep_indices = True
+    maf_keep = False
     maf_use_existing = False
 
     test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')

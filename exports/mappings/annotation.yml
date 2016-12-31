@@ -43,6 +43,7 @@ properties:
     type: keyword
   transcript_id:
     type: keyword
+    maf_col: canonical_transcript_id
   trembl:
     type: keyword
   uniparc:

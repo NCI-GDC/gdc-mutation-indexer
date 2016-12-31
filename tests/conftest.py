@@ -3,6 +3,9 @@ import time
 import json
 import pytest
 
+from pyspark import SparkContext
+from pyspark.sql import SQLContext
+
 from elasticsearch import Elasticsearch
 from config import TestConfig
 
@@ -37,6 +40,22 @@ def setup_test_index():
         time.sleep(0.1)
 
     return es
+
+
+@pytest.yield_fixture(scope='module')
+def sqlContext():
+    sc = SparkContext('local[2]', 'sqlContextFixture')
+    sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
+    sqlCont = SQLContext(sc)
+    sqlCont.sql("set spark.sql.shuffle.partitions=200")
+    log4j = sc._jvm.org.apache.log4j
+    log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
+
+    yield sqlCont
+
+    sc.stop()
+    sc._jvm.System.clearProperty("spark.driver.port")
+
 
 @pytest.yield_fixture(scope='class')
 def test_index_class(request):
