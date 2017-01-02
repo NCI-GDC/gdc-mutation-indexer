@@ -11,6 +11,7 @@ from config import TestConfig
 from exports.builders import GeneCentricBuilder, MAFBuilder
 
 conf = TestConfig()
+doc_cache = {}
 
 @pytest.yield_fixture(scope='module')
 def gene_centric_index(sqlContext, test_index):
@@ -26,6 +27,7 @@ def gene_centric_index(sqlContext, test_index):
     df = maf_builder.combine(urls)
     df = maf_builder.standardize_schema(df)
     df = maf_builder.add_ssm_id(df)
+    df = maf_builder.add_null(df)
     df = maf_builder.extract_barcode(df)
 
     GeneCentricBuilder(conf, sqlContext).build(df).load(did='ENSG00000092931')
@@ -55,12 +57,15 @@ def flatten_json(d):
 )
 def test_gene_doc_contains(gene_centric_index, doc, path):
     ''' Test that document contains a field from a path'''
-    d = gene_centric_index.get(conf.indices['gene_centric'],
-                             doc,
-                             doc_type=conf.index_names['gene_centric'])
+    if doc not in doc_cache:
+        d = gene_centric_index.get(conf.indices['gene_centric'],
+                                 doc,
+                                 doc_type=conf.index_names['gene_centric'])
+        doc_cache[doc] = d
+    else:
+        d = doc_cache[doc]
     d = d['_source']
     #print json.dumps(flatten_json(d), indent=2)
-    #print 'gene' in d
     results = parse(path).find(d)
     assert len([r.value for r in results]) > 0
 

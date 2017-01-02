@@ -108,6 +108,7 @@ def get_validation_paths(path):
     Gets the field paths from a json file and sorts them by length for
     nice traceback during testing
     '''
+    did = path.split('.')[-2]
     fields = get_validation_doc(path)
-    return zip(['1bf54408-b5cb-45dc-ad03-ef2866a0ff59']*len(fields.keys()),
+    return zip([did]*len(fields.keys()),
                sorted(fields.keys(), key=lambda x: len(x)))
