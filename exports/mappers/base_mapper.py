@@ -44,8 +44,8 @@ class Mapper(object):
         '''
         '''
         if type(d) is dict:
-            if 'maf_col' in d:
-                del d['maf_col']
+            if 'default' in d:
+                del d['default']
             for k,v in d.items():
                 self.rm_maf_cols(v)
         if type(d) is list:
