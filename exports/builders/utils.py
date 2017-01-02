@@ -109,8 +109,8 @@ def struct_select(path):
             for k,v in doc.items():
                 if 'type' in v and 'properties' not in v:
                     name = k
-                    if 'maf_col' in v:
-                        name = v['maf_col']
+                    if 'default' in v:
+                        name = v['default']
                     cols.append(col(name).alias(k))
                 else:
                     if 'properties' in v:

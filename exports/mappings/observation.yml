@@ -13,10 +13,10 @@ properties:
     properties:
       match_norm_seq_allele2:
         type: keyword
-        maf_col: name
+        default: empty
       match_norm_seq_allele1:
         type: keyword
-        maf_col: name
+        default: empty
   read_depth:
     properties:
       n_depth:
@@ -51,14 +51,20 @@ properties:
         type: keyword
       tumor_validation_allele2:
         type: keyword
+      match_norm_validation_allele1:
+        type: keyword
+        default: normal_allele1
+      match_norm_validation_allele2:
+        type: keyword
+        default: normal_allele2
       validation_method:
         type: keyword
-        maf_col: biotype
+        default: biotype
   variant_calling:
     properties:
       variant_process:
         type: keyword
-        maf_col: biotype 
+        default: biotype 
       variant_caller:
         type: keyword
-        maf_col: biotype 
+        default: biotype 

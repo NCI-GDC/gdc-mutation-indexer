@@ -5,6 +5,7 @@ import json
 import logging
 logging.basicConfig()
 
+from pyspark.sql.types import StringType
 from pyspark.sql.functions import lit, col, regexp_extract
 
 from exports.builders.utils import ssm_uuid_udf
@@ -35,12 +36,21 @@ class MAFBuilder(object):
                 self.logger.info('Couldn\'t find existing maf file at given path')
 
         df = self.get_urls().combine()
+        df = df.fillna('')
+        df = self.add_null(df)
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.extract_barcode(df)
+
         if self.config.keep_maf:
             self.write(df)
         return df
+
+    def add_null(self, df):
+        '''
+        Adds a null column to use as defaults for mappings.
+        '''
+        return df.withColumn('empty', lit('').cast(StringType()))
 
     def standardize_schema(self, df):
         '''

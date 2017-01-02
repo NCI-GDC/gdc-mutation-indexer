@@ -5,21 +5,24 @@ properties:
     type: keyword
   description:
     type: keyword
-    maf_col: name
+    default: empty
+  is_cancer_gene_census:
+    type: keyword
+    default: empty
   external_db_ids:
     properties:
       entrez_gene:
         type: keyword
-        maf_col: name
+        default: empty
       hgnc:
         type: keyword
-        maf_col: name
+        default: empty
       omim_gene:
         type: keyword
-        maf_col: name
+        default: empty
       uniprotkb_swissprot:
         type: keyword
-        maf_col: name
+        default: empty
   gene_chromosome:
     type: keyword
   gene_end:
@@ -30,14 +33,17 @@ properties:
     type: long
   gene_strand:
     type: long
-    maf_col: cds_start
+    default: cds_start
   name:
     type: keyword
   symbol:
     type: keyword
+  cytoband:
+    type: keyword
+    default: empty
   synonyms:
     type: keyword
-    maf_col: name
+    default: empty
   transcripts:
     type: nested
     properties:
@@ -45,106 +51,106 @@ properties:
         type: keyword
       cdna_coding_end:
         type: long
-        maf_col: cds_start
+        default: cds_start
       cdna_coding_start:
         type: long
-        maf_col: cds_start
+        default: cds_start
       coding_region_end:
         type: long
-        maf_col: cds_start
+        default: cds_start
       coding_region_start:
         type: long
-        maf_col: cds_start
+        default: cds_start
       domains:
         type: nested
         properties:
           description:
             type: keyword
-            maf_col: name
+            default: empty
           end:
             type: long
-            maf_col: cds_start
+            default: cds_start
           gff_source:
             type: keyword
-            maf_col: name
+            default: empty
           hit_name:
             type: keyword
-            maf_col: name
+            default: empty
           interpro_id:
             type: keyword
-            maf_col: name
+            default: empty
           start:
             type: long
-            maf_col: cds_start
+            default: cds_start
       end:
         type: long
-        maf_col: cds_start
+        default: cds_start
       end_exon:
         type: long
-        maf_col: cds_start
+        default: cds_start
       exons:
         type: nested
         properties:
           cdna_coding_end:
             type: long
-            maf_col: cds_start
+            default: cds_start
           cdna_coding_start:
             type: long
-            maf_col: cds_start
+            default: cds_start
           cdna_end:
             type: long
-            maf_col: cds_start
+            default: cds_start
           cdna_start:
             type: long
-            maf_col: cds_start
+            default: cds_start
           end:
             type: long
-            maf_col: cds_start
+            default: cds_start
           end_phase:
             type: long
-            maf_col: cds_start
+            default: cds_start
           genomic_coding_end:
             type: long
-            maf_col: cds_start
+            default: cds_start
           genomic_coding_start:
             type: long
-            maf_col: cds_start
+            default: cds_start
           start:
             type: long
-            maf_col: cds_start
+            default: cds_start
           start_phase:
             type: long
-            maf_col: cds_start
+            default: cds_start
       gene_id:
         type: keyword
       is_canonical:
         type: boolean
       length:
         type: long
-        maf_col: cds_start
+        default: cds_start
       length_amino_acid:
         type: long
-        maf_col: cds_start
+        default: cds_start
       length_cds:
         type: long
-        maf_col: cds_start
+        default: cds_start
       name:
         type: keyword
       number_of_exons:
         type: long
-        maf_col: cds_start
+        default: cds_start
       seq_exon_end:
         type: long
-        maf_col: cds_start
+        default: cds_start
       seq_exon_start:
         type: long
-        maf_col: cds_start
+        default: cds_start
       start:
         type: long
-        maf_col: cds_start
+        default: cds_start
       start_exon:
         type: long
-        maf_col: cds_start
+        default: cds_start
       translation_id:
         type: keyword
-        maf_col: name
+        default: empty

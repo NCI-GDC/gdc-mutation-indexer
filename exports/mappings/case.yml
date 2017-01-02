@@ -5,8 +5,14 @@ properties:
     type: keyword
   case_id:
     type: keyword
+  state:
+    type: keyword
+    default: empty
   demographic:
     properties:
+      state:
+        type: keyword
+        default: empty
       demographic_id:
         type: keyword
       ethnicity:
@@ -52,6 +58,9 @@ properties:
   diagnoses:
     type: nested
     properties:
+      state:
+        type: keyword
+        default: empty
       age_at_diagnosis:
         type: double
       classification_of_tumor:
@@ -68,6 +77,7 @@ properties:
         type: keyword
       morphology:
         type: keyword
+        default: empty
       primary_diagnosis:
         type: keyword
       prior_malignancy:
@@ -82,10 +92,13 @@ properties:
         type: keyword
       tumor_grade:
         type: keyword
+        default: empty
       tumor_stage:
         type: keyword
       updated_datetime:
-        type: date
+        type: keyword
+      created_datetime:
+        type: keyword
       vital_status:
         type: keyword
   portion_ids:
@@ -140,3 +153,6 @@ properties:
             type: long
   updated_datetime:
     type: date
+  created_datetime:
+    type: date 
+    default: empty

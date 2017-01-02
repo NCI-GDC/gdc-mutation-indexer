@@ -37,13 +37,14 @@ properties:
     type: keyword
   pubmed:
     type: keyword
+    default: empty
   sift:
     type: keyword
   swissprot:
     type: keyword
   transcript_id:
     type: keyword
-    maf_col: canonical_transcript_id
+    default: canonical_transcript_id
   trembl:
     type: keyword
   uniparc:
