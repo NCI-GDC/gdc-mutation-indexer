@@ -46,13 +46,32 @@ class BaseConfig(object):
 
     # Case load settings
     case_fields = ','.join(['case_id',
+                            'state',
                             'submitter_id',
                             '*_datetime',
                             '*_ids',
                             'project.*',
                             'program.*',
+                            'diagnoses.submitter_id',
+                            'diagnoses.days*',
+                            'diagnoses.pr*',
+                            'diagnoses.mor*',
+                            'diagnoses.last*',
+                            'diagnoses.class*',
+                            'diagnoses.tum*',
+                            'diagnoses.site*',
+                            'diagnoses.age*',
+                            'diagnoses.tiss*',
+                            'diagnoses.vit*',
+                            'diagnoses.diag*',
+                            'diagnoses.state',
+                            'summary.data_categories',
+                            'diagnoses.created_datetime',
+                            'diagnoses.updated_datetime',
                             'demographic.*'])
-    case_arrays = '*_ids'
+    case_arrays = ','.join(['*_ids',
+                            'diagnoses',
+                            'summary.data_categories'])
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
