@@ -27,11 +27,11 @@ class GeneMapper(Mapper):
         case_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
-        tran_map = self.load_properties('transcript.yml', nested=True)
+        tran_map = self.load_properties('transcript.yml', nested=False)
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
-        annot_map = self.load_properties('annotation.yml', nested=True)
+        annot_map = self.load_properties('annotation.yml', nested=False)
         tran_map['properties']['annotation'] = annot_map
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)
