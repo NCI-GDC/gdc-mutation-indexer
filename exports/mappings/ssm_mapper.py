@@ -24,14 +24,15 @@ class SSMMapper(Mapper):
         mapping['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         mapping['properties']['consequence']['type'] = 'nested'
         # Add gene 
-        gene_map = self.load_properties('gene.yml', nested=True)
+        gene_map = self.load_properties('gene.yml', nested=False)
+
         tran_map['properties']['gene'] = gene_map
         # Add annotation
-        annot_map = self.load_properties('annotation.yml', nested=True)
+        annot_map = self.load_properties('annotation.yml', nested=False)
         tran_map['properties']['annotation'] = annot_map
 
         # Occurance only holds case 
-        case_map = self.load_properties('case.yml', nested=True)
+        case_map = self.load_properties('case.yml', nested=False)
         mapping['properties']['occurrence'] = {'properties':{'case': case_map}}
         mapping['properties']['occurrence']['type'] = 'nested'
         # Add observation
