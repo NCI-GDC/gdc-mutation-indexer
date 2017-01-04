@@ -71,12 +71,9 @@ properties:
     type: long
   gene_strand:
     type: long
-<<<<<<< HEAD
     default: cds_start
-=======
   is_cancer_gene_census:
     type: boolean
->>>>>>> da5cb13... match index mapping
   name:
     type: text
     fields:
@@ -105,22 +102,8 @@ properties:
     type: keyword
     default: empty
   synonyms:
-<<<<<<< HEAD
     type: keyword
     default: empty
-=======
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
->>>>>>> da5cb13... match index mapping
   transcripts:
     type: nested
     properties:
