@@ -17,9 +17,18 @@ class CaseMapper(Mapper):
         mapping.update({"_id": { "path": "case_id" }})
         case_map = self.load_properties('case.yml', nested=False)
         mapping.update(case_map)
-        
+
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=True)
+
+        # change gene_id to keyword
+        del gene_map['properties']['gene_id']['fields']
+        gene_map['properties']['gene_id']['type'] = 'keyword'
+
+        # change symbol to keyword
+        del gene_map['properties']['symbol']['fields']
+        gene_map['properties']['symbol']['type'] = 'keyword'
+
         mapping['properties']['gene'] = gene_map
         # Add ssm
         ssm_map = self.load_properties('ssm.yml', nested=True)

@@ -106,11 +106,31 @@ properties:
   project:
     properties:
       disease_type:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       name:
         type: keyword
       primary_site:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       dbgap_accession_number:
         type: keyword
       program:
@@ -122,7 +142,17 @@ properties:
           program_id:
             type: keyword
       project_id:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       released:
         type: boolean
       state:

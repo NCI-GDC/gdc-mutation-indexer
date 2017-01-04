@@ -70,4 +70,4 @@ class TestGeneMapper(unittest.TestCase):
 
         self.assertIn('gene_chromosome', props)
         self.assertIn('gene_end', props)
-        self.assertEqual('keyword', props['gene_id']['type'])
+        self.assertEqual('text', props['gene_id']['type'])
