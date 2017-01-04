@@ -20,7 +20,17 @@ properties:
   gene_end:
     type: long
   gene_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   gene_start:
     type: long
   gene_strand:
@@ -28,7 +38,17 @@ properties:
   name:
     type: keyword
   symbol:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   synonyms:
     type: keyword
   transcripts:

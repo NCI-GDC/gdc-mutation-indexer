@@ -33,6 +33,15 @@ class SSMOccurrenceMapper(Mapper):
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add gene 
         gene_map = self.load_properties('gene.yml')
+
+        # change gene_id to keyword
+        del gene_map['properties']['gene_id']['fields']
+        gene_map['properties']['gene_id']['type'] = 'keyword'
+
+        # change symbol to keyword
+        del gene_map['properties']['symbol']['fields']
+        gene_map['properties']['symbol']['type'] = 'keyword'
+
         tran_map['properties']['gene'] = gene_map
         # Add annotation
         annot_map = self.load_properties('annotation.yml')
@@ -40,6 +49,19 @@ class SSMOccurrenceMapper(Mapper):
 
         # Occurance only holds case 
         case_map = self.load_properties('case.yml', nested=False)
+
+        # change project_id to keyword
+        del case_map['properties']['project']['properties']['project_id']['fields']
+        case_map['properties']['project']['properties']['project_id']['type'] = 'keyword'
+
+        # change primary_site to keyword
+        del case_map['properties']['project']['properties']['primary_site']['fields']
+        case_map['properties']['project']['properties']['primary_site']['type'] = 'keyword'
+
+        # change disease_type to keyword
+        del case_map['properties']['project']['properties']['disease_type']['fields']
+        case_map['properties']['project']['properties']['disease_type']['type'] = 'keyword'
+
         mapping['properties']['case'] = case_map
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)

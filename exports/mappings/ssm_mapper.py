@@ -26,6 +26,14 @@ class SSMMapper(Mapper):
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=False)
 
+        # change gene_id to keyword
+        del gene_map['properties']['gene_id']['fields']
+        gene_map['properties']['gene_id']['type'] = 'keyword'
+
+        # change symbol to keyword
+        del gene_map['properties']['symbol']['fields']
+        gene_map['properties']['symbol']['type'] = 'keyword'
+
         tran_map['properties']['gene'] = gene_map
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)
