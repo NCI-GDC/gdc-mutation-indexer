@@ -37,21 +37,6 @@ def gene_centric_index(sqlContext, test_index):
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices['gene_centric'], ignore=399)
 
-def flatten_json(d):
-    flat = {}
-
-    def flatten(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                flatten(v, name+'.'+k)
-        elif type(doc) is list:
-            for v in doc:
-                flatten(v, name)
-        else:
-            flat[name] = doc
-    flatten(d)
-    return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
-
 @pytest.mark.parametrize('doc,path',
     get_validation_paths('tests/data/gene.validation.ENSG00000092931.json')[:1]
 )

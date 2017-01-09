@@ -102,7 +102,7 @@ class TestConfig(BaseConfig):
         'case_centric':         'test_case_centric__',
         'gene_centric':         'test_gene_centric__',
         'ssm_centric':          'test_ssm_centric__',
-        'ssm_ocurrence_centric':'test_ssm_occurrence_centric__'
+        'ssm_occurrence_centric':'test_ssm_occurrence_centric__'
     }
 
     maf_path = 'file:///test_mafs.csv'

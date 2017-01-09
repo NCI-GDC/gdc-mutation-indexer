@@ -38,33 +38,15 @@ def case_centric_index(sqlContext, test_index):
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices['case_centric'], ignore=399)
 
-def flatten_json(d):
-    flat = {}
-
-    def flatten(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                flatten(v, name+'.'+k)
-        elif type(doc) is list:
-            for v in doc:
-                flatten(v, name)
-        else:
-            flat[name] = doc
-    flatten(d)
-    return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
-
-
 @pytest.mark.parametrize('doc,path',
-    get_validation_paths('tests/data/case.validation.1bf54408-b5cb-45dc-ad03-ef2866a0ff59.json')[:1]
+    get_validation_paths('tests/data/case.validation.1bf54408-b5cb-45dc-ad03-ef2866a0ff59.json')
 )
-def test_doc_contains(case_centric_index, doc, path):
+def test_case_doc_contains(case_centric_index, doc, path):
     ''' Test that document contains a field from a path'''
     d = case_centric_index.get(conf.indices['case_centric'],
                              doc,
                              doc_type=conf.index_names['case_centric'])
     d = d['_source']
-    #print json.dumps(flatten_json(d), indent=2)
-    #print 'gene' in d
     results = parse(path).find(d)
     assert len([r.value for r in results]) > 0
 

@@ -16,9 +16,7 @@ conf = TestConfig()
 def ssm_centric_index(sqlContext, test_index):
     ''' Generates a ssm centric index for testing '''
     es = Elasticsearch(conf.es_host, port=conf.es_port)
-    #print es.indices.get_alias().keys()
 
-    #r = es.indices.delete(index=conf.indices['case_centric'], ignore=399)
     r = es.indices.create(index=conf.indices['ssm_centric'], ignore=400)
 
     maf_builder = MAFBuilder(conf, sqlContext)
@@ -38,22 +36,6 @@ def ssm_centric_index(sqlContext, test_index):
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices['ssm_centric'], ignore=399)
 
-def flatten_json(d):
-    flat = {}
-
-    def flatten(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                flatten(v, name+'.'+k)
-        elif type(doc) is list:
-            for v in doc:
-                flatten(v, name)
-        else:
-            flat[name] = doc
-    flatten(d)
-    return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
-
-
 @pytest.mark.parametrize('doc,path',
     get_validation_paths('tests/data/ssm.validation.3dccd994-67f5-577f-8bca-a95269303af5.json')
 )
@@ -63,8 +45,6 @@ def test_ssm_doc_contains(ssm_centric_index, doc, path):
                              doc,
                              doc_type=conf.index_names['ssm_centric'])
     d = d['_source']
-    #print json.dumps(flatten_json(d), indent=2)
-    #print 'gene' in d
     results = parse(path).find(d)
     assert len([r.value for r in results]) > 0
 
