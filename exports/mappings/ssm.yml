@@ -4,7 +4,17 @@ properties:
   end_position:
     type: long
   genomic_dna_change:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   mutation_subtype:
     type: keyword
   mutation_type:

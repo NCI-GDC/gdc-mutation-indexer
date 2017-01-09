@@ -2,7 +2,29 @@ properties:
   biotype:
     type: keyword
   canonical_transcript_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  cytoband:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   description:
     type: keyword
     default: empty
@@ -43,9 +65,24 @@ properties:
     type: long
   gene_strand:
     type: long
+<<<<<<< HEAD
     default: cds_start
+=======
+  is_cancer_gene_census:
+    type: boolean
+>>>>>>> da5cb13... match index mapping
   name:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   symbol:
     type: keyword
     fields:
@@ -62,8 +99,22 @@ properties:
     type: keyword
     default: empty
   synonyms:
+<<<<<<< HEAD
     type: keyword
     default: empty
+=======
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+>>>>>>> da5cb13... match index mapping
   transcripts:
     type: nested
     properties:
