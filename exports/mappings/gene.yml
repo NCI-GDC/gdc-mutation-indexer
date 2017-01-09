@@ -87,6 +87,18 @@ properties:
         type: text
         analyzer: id_search
   symbol:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  symbol:
     type: keyword
     fields:
       analyzed:

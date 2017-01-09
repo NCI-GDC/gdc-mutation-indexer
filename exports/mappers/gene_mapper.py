@@ -45,6 +45,10 @@ class GeneMapper(Mapper):
         # Add ssm mapping
         ssm_map  = self.load_properties('ssm.yml', nested=True)
 
+        del ssm_map['properties']['mutation_subtype']
+        del ssm_map['properties']['genomic_dna_change']
+        del ssm_map['properties']['mutation_type']
+
         case_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
@@ -52,7 +56,11 @@ class GeneMapper(Mapper):
 
         self.change_props_to_keyword(['gene_symbol', 'aa_change'], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties': {'transcript': tran_map}}
+        del tran_map['properties']['aa_start']
+        del tran_map['properties']['aa_end']
+        del tran_map['properties']['is_canonical']
+
+        ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)

@@ -71,7 +71,6 @@ class SSMOccurrenceMapper(Mapper):
         # Occurance only holds case 
         case_map = self.load_properties('case.yml', nested=False)
 
-<<<<<<< HEAD:exports/mappers/ssm_occurrence_mapper.py
         self.change_props_to_keyword([
             'aliquot_ids',
             'analyte_ids',
@@ -90,7 +89,6 @@ class SSMOccurrenceMapper(Mapper):
             'project.properties.disease_type',
             'project.properties.name'
         ], case_map)
-=======
         # change project_id to keyword
         del case_map['properties']['project']['properties']['project_id']['fields']
         case_map['properties']['project']['properties']['project_id']['type'] = 'keyword'
@@ -102,7 +100,6 @@ class SSMOccurrenceMapper(Mapper):
         # change disease_type to keyword
         del case_map['properties']['project']['properties']['disease_type']['fields']
         case_map['properties']['project']['properties']['disease_type']['type'] = 'keyword'
->>>>>>> 3f40bce... change types when nested:exports/mappings/ssm_occurrence_mapper.py
 
         mapping['properties']['case'] = case_map
         # Add observation
