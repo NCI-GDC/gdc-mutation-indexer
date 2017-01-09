@@ -57,32 +57,6 @@ properties:
         type: long
       year_of_death:
         type: long
-  exposures:
-    properties:
-      alcohol_history:
-        type: keyword
-      alcohol_intensity:
-        type: keyword
-      bmi:
-        type: long
-      cigarettes_per_day:
-        type: long
-      created_datetime:
-        type: date 
-      exposure_id:
-        type: keyword
-      height:
-        type: long
-      state:
-        type: keyword
-      submitter_id:
-        type: keyword
-      updated_datetime:
-        type: date
-      weight:
-        type: long
-      years_smoked:
-        type: long
   diagnoses:
     type: nested
     properties:
@@ -179,8 +153,6 @@ properties:
           search:
             type: text
             analyzer: id_search
-      dbgap_accession_number:
-        type: keyword
       program:
         properties:
           dbgap_accession_number:
