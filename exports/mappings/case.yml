@@ -1,10 +1,40 @@
 properties:
   aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   analyte_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   case_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   demographic:
     properties:
       demographic_id:
@@ -91,7 +121,17 @@ properties:
       vital_status:
         type: keyword
   portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   project:
     properties:
       disease_type:
@@ -107,7 +147,17 @@ properties:
             type: text
             analyzer: id_search
       name:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       primary_site:
         type: text
         fields:
@@ -147,24 +197,105 @@ properties:
       state:
         type: keyword
   sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_analyte_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   summary:
     properties:
       data_categories:
+        type: nested
         properties:
           data_category:
             type: keyword
