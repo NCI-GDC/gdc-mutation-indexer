@@ -30,6 +30,18 @@ class Mapper(object):
             properties['type'] = 'nested'
         return properties
 
+    def change_props_to_keyword(self, paths, data):
+        for path in paths:
+            prop = data['properties']
+
+            for key in path.split('.'):
+                prop = prop[key]
+
+            if 'fields' in prop:
+                del prop['fields']
+
+            prop['type'] = 'keyword'
+
     @property
     def settings(self):
         path = os.path.join(os.path.dirname(__file__), 'common_settings.yml')
