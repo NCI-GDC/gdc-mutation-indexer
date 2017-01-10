@@ -20,18 +20,50 @@ class GeneMapper(Mapper):
 
         # Add case mapping from graph
         case_map = self.load_properties('case.yml', nested=True)
+
+        self.change_props_to_keyword([
+            'aliquot_ids',
+            'analyte_ids',
+            'case_id',
+            'portion_ids',
+            'sample_ids',
+            'slide_ids',
+            'submitter_aliquot_ids',
+            'submitter_analyte_ids',
+            'submitter_id',
+            'submitter_portion_ids',
+            'submitter_sample_ids',
+            'submitter_slide_ids',
+            'project.properties.disease_type',
+            'project.properties.name',
+            'project.properties.primary_site',
+            'project.properties.project_id',
+        ], case_map)
+
         mapping['properties']['case'] = case_map
         mapping['properties']['case']['type'] = 'nested'
         # Add ssm mapping
         ssm_map  = self.load_properties('ssm.yml', nested=True)
+
+        del ssm_map['properties']['mutation_subtype']
+        del ssm_map['properties']['genomic_dna_change']
+        del ssm_map['properties']['mutation_type']
+
         case_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript
         # Add transcript
-        tran_map = self.load_properties('transcript.yml', nested=True)
+        tran_map = self.load_properties('transcript.yml', nested=False)
+
+        self.change_props_to_keyword(['gene_symbol', 'aa_change'], tran_map)
+
+        del tran_map['properties']['aa_start']
+        del tran_map['properties']['aa_end']
+        del tran_map['properties']['is_canonical']
+
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
-        annot_map = self.load_properties('annotation.yml', nested=True)
+        annot_map = self.load_properties('annotation.yml', nested=False)
         tran_map['properties']['annotation'] = annot_map
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)
