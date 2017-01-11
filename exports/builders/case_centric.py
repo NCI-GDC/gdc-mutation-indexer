@@ -38,11 +38,12 @@ class CaseCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('../mappings/gene.yml'))
+                                *struct_select('../mappings/gene.yml'))\
+                                .drop_duplicates()
         # SSM
         ssm_df = maf_df.select('gene_id',
                                *struct_select('../mappings/ssm.yml'))\
-                               .limit(5) # TODO: Remove this
+                                .drop_duplicates()
         # Consequence
         stmt = (struct(
                     struct(
@@ -59,24 +60,23 @@ class CaseCentricBuilder(object):
         # Observation
         obs_df = maf_df.select('ssm_id',
                                struct(*struct_select('../mappings/observation.yml'))
-                               .alias('observation'))
+                               .alias('observation'))\
+                               .groupBy('ssm_id')\
+                               .agg(collect_list('observation').alias('observation'))
 
-        # Join conequence and observation
-        cons_obs = cons_df.join(obs_df, cons_df.ssm_id == obs_df.ssm_id, 'outer')\
-                            .drop(cons_df.ssm_id)\
-                            .select('ssm_id','consequence','observation')
+        df = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id, 'left')\
+                    .drop(cons_df.ssm_id)
 
-        # Build the ssm tree
-        ssm_cons = cons_obs.join(ssm_df, ssm_df.ssm_id == cons_obs.ssm_id, 'left')\
-                        .drop(cons_obs.ssm_id)\
-                        .select('gene_id', struct('consequence','observation',*ssm_df.drop('gene_id').drop('gene_id').drop('_case_submitter_id').columns).alias('ssm'))\
-                        .groupBy('gene_id')\
-                        .agg(collect_list('ssm').alias('ssm'))
+        df = df.join(obs_df, df.ssm_id == obs_df.ssm_id, 'left')\
+                    .drop(obs_df.ssm_id)
 
-        # Combine gene with ssm tree
-        gene_ssm = gene_df.join(ssm_cons, gene_df.gene_id == ssm_cons.gene_id, 'left')\
-                    .drop(ssm_cons.gene_id)\
-                    .select('_case_submitter_id', struct('ssm', *gene_df.drop('_case_submitter_id').columns).alias('gene'))
+        df = df.select('gene_id', struct('consequence', 'observation', *ssm_df.drop('gene_id').columns).alias('ssm'))\
+                    .groupBy('gene_id')\
+                    .agg(collect_list('ssm').alias('ssm'))
+
+        gene_ssm = gene_df.join(df, gene_df.gene_id == df.gene_id)\
+                            .drop(df.gene_id)\
+                            .select('_case_submitter_id', struct('ssm',*gene_df.drop('_case_submitter_id').columns).alias('gene'))
 
         # Get cases from ES
         case_df = CaseBuilder(self.config, self.sqlContext).build()
@@ -84,8 +84,12 @@ class CaseCentricBuilder(object):
         case_centric = case_df.join(gene_ssm,
                                     case_df.submitter_id == gene_ssm._case_submitter_id,
                                     'left')\
+                                .drop(gene_ssm._case_submitter_id)\
                                 .groupBy(*case_df.columns)\
                                 .agg(collect_list('gene').alias('gene'))
+
+        #case_centric.printSchema()
+        #obs_df.printSchema()
 
         self.case_centric = case_centric
 
