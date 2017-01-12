@@ -83,7 +83,7 @@ class CaseCentricBuilder(object):
 
         case_centric = case_df.join(gene_ssm,
                                     case_df.submitter_id == gene_ssm._case_submitter_id,
-                                    'left')\
+                                    'inner')\
                                 .drop(gene_ssm._case_submitter_id)\
                                 .groupBy(*case_df.columns)\
                                 .agg(collect_list('gene').alias('gene'))
@@ -104,10 +104,6 @@ class CaseCentricBuilder(object):
 
         from exports.mappers import CaseMapper
         m = CaseMapper()
-
-        print requests.delete('http://{}:{}/{}'.format(self.config.es_host,
-                                                       self.config.es_port,
-                                                       index)).json()
         
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
@@ -120,12 +116,12 @@ class CaseCentricBuilder(object):
                         doc: m.mapping
                     }})
 
-        print requests.put('http://{}:{}/{}'.format(self.config.es_host,
+        print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index), data=data).json()
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        self.case_centric.write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\

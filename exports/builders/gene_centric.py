@@ -36,13 +36,14 @@ class GeneCentricBuilder(object):
         if maf_df is None:
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
+        #maf_df = maf_df.fillna('')
+
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
                                 *struct_select('../mappings/gene.yml'))
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
-                               *struct_select('../mappings/ssm.yml'))\
-                               .limit(5) # TODO: Remove this
+                               *struct_select('../mappings/ssm.yml'))
         # Consequence
         stmt = (struct(
                     struct(
@@ -101,10 +102,6 @@ class GeneCentricBuilder(object):
         from exports.mappers import GeneMapper
         m = GeneMapper()
 
-        print requests.delete('http://{}:{}/{}'.format(self.config.es_host,
-                                                       self.config.es_port,
-                                                       index)).json()
-        
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
                         "number_of_shards":1,
@@ -116,7 +113,7 @@ class GeneCentricBuilder(object):
                         doc: m.mapping
                     }})
 
-        print requests.put('http://{}:{}/{}'.format(self.config.es_host,
+        print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index), data=data).json()
 

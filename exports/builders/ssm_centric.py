@@ -50,6 +50,7 @@ class SSMCentricBuilder(object):
                             .alias('gene'),
                            *struct_select('../mappings/transcript.yml')
                     ).alias('transcript')
+
                 ).alias('consequence'))
 
         cons_df = maf_df.select('ssm_id', stmt)\
@@ -95,10 +96,6 @@ class SSMCentricBuilder(object):
         from exports.mappers import SSMMapper
         m = SSMMapper()
 
-        print requests.delete('http://{}:{}/{}'.format(self.config.es_host,
-                                                       self.config.es_port,
-                                                       index)).json()
-        
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
                         "number_of_shards":1,
@@ -110,7 +107,7 @@ class SSMCentricBuilder(object):
                         doc: m.mapping
                     }})
 
-        print requests.put('http://{}:{}/{}'.format(self.config.es_host,
+        print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index), data=data).json()
 

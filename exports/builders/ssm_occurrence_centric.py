@@ -103,10 +103,6 @@ class SSMOccurrenceCentricBuilder(object):
 
         from exports.mappers import SSMOccurrenceMapper
         m = SSMOccurrenceMapper()
-
-        print requests.delete('http://{}:{}/{}'.format(self.config.es_host,
-                                                       self.config.es_port,
-                                                       index)).json()
         
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
@@ -119,9 +115,9 @@ class SSMOccurrenceCentricBuilder(object):
                         doc: m.mapping
                     }})
 
-        print requests.put('http://{}:{}/{}'.format(self.config.es_host,
-                                                    self.config.es_port,
-                                                    index), data=data).json()
+        print requests.put('{}:{}/{}'.format(self.config.es_host,
+                                                self.config.es_port,
+                                                index), data=data).json()
 
         to_load = self.ssm_occurrence_centric
         if did:
