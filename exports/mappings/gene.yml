@@ -2,9 +2,31 @@ properties:
   biotype:
     type: keyword
   canonical_transcript_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  cytoband:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   description:
-    type: keyword
+    type: text
     default: empty
   is_cancer_gene_census:
     type: keyword
@@ -23,27 +45,119 @@ properties:
       uniprotkb_swissprot:
         type: keyword
         default: empty
+  external_db_ids:
+    properties:
+      entrez_gene:
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
+      hgnc:
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
+      omim_gene:
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
+      uniprotkb_swissprot:
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
   gene_chromosome:
     type: keyword
   gene_end:
     type: long
   gene_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   gene_start:
     type: long
   gene_strand:
     type: long
     default: cds_start
+  is_cancer_gene_census:
+    type: boolean
   name:
-    type: keyword
-  symbol:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   cytoband:
     type: keyword
     default: empty
+  symbol:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   synonyms:
-    type: keyword
+    type: text
     default: empty
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   transcripts:
     type: nested
     properties:

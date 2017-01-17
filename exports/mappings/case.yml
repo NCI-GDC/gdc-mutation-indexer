@@ -1,13 +1,43 @@
 properties:
   aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   analyte_ids:
-    type: keyword
-  case_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   state:
     type: keyword
     default: empty
+  case_id:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   demographic:
     properties:
       state:
@@ -28,32 +58,6 @@ properties:
       year_of_birth:
         type: long
       year_of_death:
-        type: long
-  exposures:
-    properties:
-      alcohol_history:
-        type: keyword
-      alcohol_intensity:
-        type: keyword
-      bmi:
-        type: long
-      cigarettes_per_day:
-        type: long
-      created_datetime:
-        type: date 
-      exposure_id:
-        type: keyword
-      height:
-        type: long
-      state:
-        type: keyword
-      submitter_id:
-        type: keyword
-      updated_datetime:
-        type: date
-      weight:
-        type: long
-      years_smoked:
         type: long
   diagnoses:
     type: nested
@@ -102,17 +106,55 @@ properties:
       vital_status:
         type: keyword
   portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   project:
     properties:
       disease_type:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       name:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       primary_site:
-        type: keyword
-      dbgap_accession_number:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       program:
         properties:
           dbgap_accession_number:
@@ -122,30 +164,121 @@ properties:
           program_id:
             type: keyword
       project_id:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       released:
         type: boolean
       state:
         type: keyword
   sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_analyte_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   summary:
     properties:
       data_categories:
+        type: nested
         properties:
           data_category:
             type: keyword
