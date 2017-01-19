@@ -49,6 +49,7 @@ properties:
     properties:
       entrez_gene:
         type: text
+        default: empty
         fields:
           analyzed:
             type: text
@@ -61,6 +62,7 @@ properties:
             analyzer: id_search
       hgnc:
         type: text
+        default: empty
         fields:
           analyzed:
             type: text
@@ -72,6 +74,7 @@ properties:
             type: text
             analyzer: id_search
       omim_gene:
+        default: empty
         type: text
         fields:
           analyzed:
@@ -84,6 +87,7 @@ properties:
             type: text
             analyzer: id_search
       uniprotkb_swissprot:
+        default: empty
         type: text
         fields:
           analyzed:
@@ -117,6 +121,7 @@ properties:
     type: long
     default: cds_start
   is_cancer_gene_census:
+    default: empty
     type: boolean
   name:
     type: text

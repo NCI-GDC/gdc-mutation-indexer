@@ -11,18 +11,27 @@ properties:
     type: long
   cds_position:
     type: keyword
+    default: empty
   cds_start:
     type: long
+    default: empty
   codons:
     type: keyword
+  clin_sig:
+    type: keyword
+    default: empty
   dbsnp_rs:
     type: keyword
+  dbsnp_val_status:
+    type: keyword
+    default: empty
   domains:
     type: keyword
   ensp:
     type: keyword
   existing_variation:
     type: keyword
+    default: empty
   hgvsc:
     type: keyword
   hgvsp:

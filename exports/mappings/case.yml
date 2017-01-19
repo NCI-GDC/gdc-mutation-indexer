@@ -53,6 +53,8 @@ properties:
         type: keyword
       submitter_id:
         type: keyword
+      created_datetime:
+        type: date 
       updated_datetime:
         type: date
       year_of_birth:

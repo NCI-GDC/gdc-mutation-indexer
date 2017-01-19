@@ -55,9 +55,11 @@ def test_gene_doc_contains(gene_centric_index, doc, path):
     assert len([r.value for r in results]) > 0
 
 @pytest.mark.parametrize('doc,path,count', [
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', '[*].ssm.[*].ssm_id', 5)
+    ('ENSG00000092931', 'case[*].case_id', 1),
+    ('ENSG00000092931', 'case[*].ssm[*].ssm_id', 119),
+    ('ENSG00000092931', 'case[*].ssm[*].consequence[*].transcript.annotation.impact', 3477)
 ])
-def test_path_count(gene_centric_index, doc, path, count):
+def test_gene_path_count(gene_centric_index, doc, path, count):
     d = gene_centric_index.get(conf.indices['gene_centric'],
                              doc,
                              doc_type=conf.index_names['gene_centric'])

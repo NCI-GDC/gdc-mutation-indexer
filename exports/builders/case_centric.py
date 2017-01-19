@@ -99,20 +99,39 @@ class CaseCentricBuilder(object):
         '''
         '''
         index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric']
+        doc = self.config.index_names['case_centric']#.replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import CaseMapper
         m = CaseMapper()
+
+        #self.case_centric.limit(10).toPandas().to_json('/mnt/Projects/gdc-mutation-indexer/case_centric.json')
+        #self.logger.info('Saving to s3')
+        #self.case_centric.write.mode('overwrite').json('s3a://test-5/case_centric.json')
         
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
-                        "number_of_shards":1,
+                        "number_of_shards":10,
                         "number_of_replicas":0,
                         "mapper.dynamic":False,
                         "mapping.nested_fields.limit":100,
                         "mapping.total_fields.limit":2000
-                    }},"mappings":{
+                    },
+                    "analysis": {
+                        "analyzer": {
+                            "id_index": { 
+                                "filter": ["lowercase", "edge_ngram"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            },
+                            "id_search": {
+                                "filter": ["lowercase"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            }
+                        }
+                    }},
+                    "mappings":{
                         doc: m.mapping
                     }})
 
@@ -121,7 +140,7 @@ class CaseCentricBuilder(object):
                                                     index), data=data).json()
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.write.format('org.elasticsearch.spark.sql')\
+        self.case_centric.coalesce(1).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\

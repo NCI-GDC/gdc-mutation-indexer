@@ -51,9 +51,11 @@ def test_case_doc_contains(case_centric_index, doc, path):
     assert len([r.value for r in results]) > 0
 
 @pytest.mark.parametrize('doc,path,count', [
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', '[*].ssm.[*].ssm_id', 5)
+    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].gene_id', 290),
+    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].ssm[*].ssm_id', 344),
+    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].ssm[*].consequence[*].transcript.annotation.impact', 3477)
 ])
-def test_path_count(case_centric_index, doc, path, count):
+def test_case_path_count(case_centric_index, doc, path, count):
     d = case_centric_index.get(conf.indices['case_centric'],
                              doc,
                              doc_type=conf.index_names['case_centric'])
