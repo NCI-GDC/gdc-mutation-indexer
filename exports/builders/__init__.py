@@ -8,3 +8,4 @@ from case_centric import CaseCentricBuilder
 from gene_centric import GeneCentricBuilder
 from ssm_centric import SSMCentricBuilder
 from ssm_occurrence_centric import SSMOccurrenceCentricBuilder
+from gene_model import GeneModelBuilder
