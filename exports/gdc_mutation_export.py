@@ -21,14 +21,9 @@ class GDCMutationExport(object):
     
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
-        urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
-                #'s3a://test/4dbd29dd-8afb-40bc-afda-02b3a3e74905/TCGA.KICH.muse.c6f7baac-fc69-4b3d-8a01-3604f6ef8d24.somatic.maf.gz']
         builder = MAFBuilder(self.config, self.sqlContext)
-        df = builder.combine(urls)
-        df = builder.standardize_schema(df)
-        df = builder.add_ssm_id(df)
-        df = builder.add_null(df)
-        df = builder.extract_barcode(df)
+
+        df = builder.build()
 
         if ('case_centric' in config.index_names
                 and config.index_names['case_centric'] is not None):
@@ -45,4 +40,3 @@ class GDCMutationExport(object):
         if ('ssm_occurrence_centric' in config.index_names
                 and config.index_names['ssm_occurrence_centric'] is not None):
             SSMOccurrenceCentricBuilder(self.config, self.sqlContext).build(df).load()
-
