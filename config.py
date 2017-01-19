@@ -37,12 +37,14 @@ class BaseConfig(object):
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
+    # MAF urls
+    urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
     # The name of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
     # Whether to save the maf file or discard it when done
     maf_keep = True
     # Use combined maf if it already exists
-    maf_use_existing = True
+    maf_use_existing = False
     # Whether to overwrite the combined maf file if it exists
     maf_overwrite = True
 
