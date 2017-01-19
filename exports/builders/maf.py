@@ -56,7 +56,8 @@ class MAFBuilder(object):
         '''
         Renames and select required columns from the MAF documents
         '''
-        path = os.path.join(os.path.dirname(__file__), '../schemas/maf.yml')
+        #path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../schemas/maf.yml'))
+        path = os.path.abspath('exports/schemas/maf.yml')
         with open(path) as f:
             maf_schema = yaml.load(f)['maf_schema']
         maf_df = df.select(*( col(v).alias(k) for k, v in maf_schema.items() ))

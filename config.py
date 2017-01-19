@@ -6,8 +6,8 @@ from elasticsearch import Elasticsearch
 class BaseConfig(object):
     # The Spark application name
     app_name = 'GDC_Mutation_Export'
-    spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
-    spark_master = 'local[*]'
+    #spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
+    spark_master = 'local[1]'
 
     api_host = 'http://api.service.consul'
     signpost_host = 'http://signpost.service.consul'
@@ -20,9 +20,9 @@ class BaseConfig(object):
     # If name is None, the index will not be built
     index_names = {
         'case_centric':         'case_centric',
-        #'gene_centric':         'gene_centric',
-        #'ssm_centric':          'ssm_centric',
-        #'ssm_ocurrence_centric':'ssm_occurrence_centric'
+        'gene_centric':         'gene_centric',
+        'ssm_centric':          'ssm_centric',
+        'ssm_ocurrence_centric':'ssm_occurrence_centric'
     }
 
     # Index revision number, will be determined automatically if not specified
@@ -40,9 +40,9 @@ class BaseConfig(object):
     # The name of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
     # Whether to save the maf file or discard it when done
-    maf_keep = False
+    maf_keep = True
     # Use combined maf if it already exists
-    maf_use_existing = False
+    maf_use_existing = True
     # Whether to overwrite the combined maf file if it exists
     maf_overwrite = True
 
@@ -102,8 +102,8 @@ class BaseConfig(object):
 
 
 class TestConfig(BaseConfig):
-    es_host = 'localhost'
-    source_es_host = 'localhost'
+    es_host = 'http://localhost'
+    source_es_host = 'http://localhost'
     graph_index = 'test_graph_index__'
 
     index_names = {

@@ -13,10 +13,13 @@ properties:
         analyzer: id_search
   aa_end:
     type: long
+    default: empty
   aa_start:
     type: long
+    default: empty
   consequence_type:
     type: keyword
+    default: empty
   gene_symbol:
     default: symbol
     type: text
@@ -35,6 +38,7 @@ properties:
     default: empty
   ref_seq_accession:
     type: keyword
+    default: empty
   transcript_id:
     type: keyword
     default: canonical_transcript_id

@@ -36,14 +36,12 @@ class GeneCentricBuilder(object):
         if maf_df is None:
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
-        #maf_df = maf_df.fillna('')
-
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('../mappings/gene.yml'))
+                                *struct_select(os.path.abspath('exports/mappings/gene.yml')))
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
-                               *struct_select('../mappings/ssm.yml'))
+                               *struct_select(os.path.abspath('exports/mappings/ssm.yml')))
         # Consequence
         stmt = (struct(
                     struct(
@@ -60,25 +58,24 @@ class GeneCentricBuilder(object):
         # Observation
         obs_df = maf_df.select('ssm_id',
                                struct(*struct_select('../mappings/observation.yml'))
-                               .alias('observation'))
+                               .alias('observation'))\
+                               .groupBy('ssm_id')\
+                               .agg(collect_list('observation').alias('observation'))
+        df = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id, 'left')\
+                    .drop(cons_df.ssm_id)
 
-        # Join conequence and observation
-        cons_obs = cons_df.join(obs_df, cons_df.ssm_id == obs_df.ssm_id, 'outer')\
-                            .drop(cons_df.ssm_id)\
-                            .select('ssm_id','consequence','observation')
+        df = df.join(obs_df, df.ssm_id == obs_df.ssm_id, 'left')\
+                    .drop(obs_df.ssm_id)
 
-        # Build the ssm tree
-        ssm_cons = cons_obs.join(ssm_df, ssm_df.ssm_id == cons_obs.ssm_id, 'left')\
-                        .drop(cons_obs.ssm_id)\
-                        .select('_case_submitter_id', struct('consequence','observation',*ssm_df.drop('gene_id').drop('gene_id').drop('_case_submitter_id').columns).alias('ssm'))\
-                        .groupBy('_case_submitter_id')\
-                        .agg(collect_list('ssm').alias('ssm'))
+        df = df.select('_case_submitter_id', struct('consequence', 'observation', *ssm_df.drop('gene_id').columns).alias('ssm'))\
+                    .groupBy('_case_submitter_id')\
+                    .agg(collect_list('ssm').alias('ssm'))
 
         # Get cases from ES
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         # Combine case with ssm tree
-        case_ssm = case_df.join(ssm_cons, case_df.submitter_id == ssm_cons._case_submitter_id, 'left')\
+        case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id, 'left')\
                     .select('submitter_id', struct('ssm', *case_df.columns).alias('case'))
 
         gene_centric = gene_df.join(case_ssm,
@@ -96,20 +93,36 @@ class GeneCentricBuilder(object):
         '''
         '''
         index = self.config.indices['gene_centric']
-        doc = self.config.index_names['gene_centric']
+        doc = self.config.index_names['gene_centric']#.replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import GeneMapper
         m = GeneMapper()
 
-        data = json.dumps({"settings":{"index":{
+        data = json.dumps({"settings":{
+                    "index":{
                         "refresh_interval":"1m",
-                        "number_of_shards":1,
+                        "number_of_shards":10,
                         "number_of_replicas":0,
                         "mapper.dynamic":False,
                         "mapping.nested_fields.limit":100,
                         "mapping.total_fields.limit":2000
-                    }},"mappings":{
+                    },
+                    "analysis": {
+                        "analyzer": {
+                            "id_index": { 
+                                "filter": ["lowercase", "edge_ngram"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            },
+                            "id_search": {
+                                "filter": ["lowercase"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            }
+                        }
+                    }},
+                    "mappings":{
                         doc: m.mapping
                     }})
 

@@ -20,10 +20,13 @@ def main():
     args = parser.parse_args()
 
     # Get config
-    config = configs[args.config]
+    config = configs[args.config]()
 
     sc, sqlContext = make_spark_context(config)
+
     exporter = GDCMutationExport(sc, sqlContext, config)
+
+    exporter.run_export(config)
         
     # Tear down actions
     sc.stop()
@@ -33,8 +36,8 @@ def make_spark_context(config):
     Makes a spark and sqlContext
     '''
     conf = SparkConf().setAppName(config.app_name)
-    conf = conf.setMaster('local[*]')
-    sc = SparkContext(conf=conf)
+    conf = conf.setMaster(config.spark_master)
+    sc = SparkContext(conf=conf, pyFiles=[])
     sqlContext = SQLContext(sc)
     # Configure logging
     log4j = sc._jvm.org.apache.log4j
