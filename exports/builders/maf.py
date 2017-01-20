@@ -48,18 +48,15 @@ class MAFBuilder(object):
         df = self.add_ssm_id(df)
         df = self.extract_barcode(df)
 
+        # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-        
-        gm_df.printSchema()
-        df.printSchema()
-
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
-        print '\n JOINED!\n'
-        df.printSchema()
 
+        # Write data
         if self.config.keep_maf:
             self.write(df)
         return df
+
 
     def add_null(self, df):
         '''
