@@ -21,9 +21,7 @@ class GDCMutationExport(object):
     
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
-        builder = MAFBuilder(self.config, self.sqlContext)
-
-        df = builder.build()
+        df = MAFBuilder(self.config, self.sqlContext).build()
 
         if ('case_centric' in config.index_names
                 and config.index_names['case_centric'] is not None):
