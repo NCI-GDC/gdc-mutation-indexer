@@ -14,12 +14,8 @@ class GDCMutationExport(object):
 
     
     def run_export(self, config=None):
-        # Construct master MAF from all individual MAFs
-        urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
-        builder = MAFBuilder(self.config, self.sqlContext)
-
-        df = builder.build()
-        print '\nPASSED MAFBuilder\n'
+        # Construct master MAF from all individual MAF
+        df = MAFBuilder(self.config, self.sqlContext).build()
 
         #CaseCentricBuilder(self.config, self.sqlContext).build(df).load()
         GeneCentricBuilder(self.config, self.sqlContext).build(df).load()
