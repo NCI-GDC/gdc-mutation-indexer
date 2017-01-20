@@ -19,7 +19,7 @@ maf_schema:
   mutation_type: Mutation_Status
   chromosome: Chromosome
   is_canonical: CANONICAL
-  consequence_type: Score
+  consequence_type: Consequence
   ref_seq_accession: AA_MAF
   aa_start: AA_MAF
   aa_end: AA_MAF
