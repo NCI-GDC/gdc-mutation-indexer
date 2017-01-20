@@ -38,18 +38,18 @@ class CaseCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('../mappings/gene.yml'))\
+                                *struct_select('gene.yml'))\
                                 .drop_duplicates()
         # SSM
         ssm_df = maf_df.select('gene_id',
-                               *struct_select('../mappings/ssm.yml'))\
+                               *struct_select('ssm.yml'))\
                                 .drop_duplicates()
         # Consequence
         stmt = (struct(
                     struct(
-                        struct(*struct_select('../mappings/annotation.yml'))
+                        struct(*struct_select('annotation.yml'))
                             .alias('annotation'),
-                           *struct_select('../mappings/transcript.yml')
+                           *struct_select('transcript.yml')
                     ).alias('transcript')
                 ).alias('consequence'))
 
@@ -59,7 +59,7 @@ class CaseCentricBuilder(object):
 
         # Observation
         obs_df = maf_df.select('ssm_id',
-                               struct(*struct_select('../mappings/observation.yml'))
+                               struct(*struct_select('observation.yml'))
                                .alias('observation'))\
                                .groupBy('ssm_id')\
                                .agg(collect_list('observation').alias('observation'))

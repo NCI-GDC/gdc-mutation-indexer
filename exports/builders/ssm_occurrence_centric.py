@@ -38,17 +38,17 @@ class SSMOccurrenceCentricBuilder(object):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
-        ssm_df = maf_df.select('_case_submitter_id', *struct_select('../mappings/ssm.yml'))\
+        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))\
                                .limit(5) # TODO: Remove this
 
         # Consequence
         stmt = (struct(
                     struct(
-                        struct(*struct_select('../mappings/annotation.yml'))
+                        struct(*struct_select('annotation.yml'))
                             .alias('annotation'),
-                        struct(*struct_select('../mappings/gene.yml'))
+                        struct(*struct_select('gene.yml'))
                             .alias('gene'),
-                           *struct_select('../mappings/transcript.yml')
+                           *struct_select('transcript.yml')
                     ).alias('transcript')
 
                 ).alias('consequence'))
@@ -59,7 +59,7 @@ class SSMOccurrenceCentricBuilder(object):
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
-                               struct(*struct_select('../mappings/observation.yml'))
+                               struct(*struct_select('observation.yml'))
                                       .alias('observation'))\
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))

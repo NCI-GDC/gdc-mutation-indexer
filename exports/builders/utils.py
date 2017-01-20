@@ -1,6 +1,7 @@
 import os
 import uuid
 import yaml
+import pkg_resources
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
@@ -73,9 +74,9 @@ def flat_fields(path):
     Becomes:
     `['center', 'normal_bam_uuid']`
     '''
-    path = os.path.join(os.path.dirname(__file__), path)
-    with open(path) as f:
-        mapping = yaml.load(f)
+    resource_package = 'exports'
+    resource_path = '/'.join(('mappings', path))
+    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     flat = set()
 
@@ -90,7 +91,7 @@ def flat_fields(path):
     return list(flat)
 
 
-def struct_select(path):
+def struct_select(file_name):
     '''
     Takes the structure from a mapping and produces arguements for a select
     to reorganize a flat dataframe of those fields into the desiced structure.
@@ -108,9 +109,9 @@ def struct_select(path):
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
     '''
-    path = os.path.join(os.path.dirname(__file__), path)
-    with open(path) as f:
-        mapping = yaml.load(f)
+    resource_package = 'exports'
+    resource_path = '/'.join(('mappings', file_name))
+    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     select = ()
     

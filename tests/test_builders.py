@@ -111,7 +111,7 @@ class TestBuilderSparkUtils(SparkTestCase):
 
     def test_struct_select(self):
         ''' Test mapping to select '''
-        stmt = struct_select('../mappings/observation.yml')
+        stmt = struct_select('observation.yml')
 
         builder = MAFBuilder(TestConfig(), self.sqlContext)
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf')]
