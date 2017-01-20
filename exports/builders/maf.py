@@ -52,6 +52,7 @@ class MAFBuilder(object):
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
 
+        # Write data
         if self.config.keep_maf:
             self.write(df)
         return df
