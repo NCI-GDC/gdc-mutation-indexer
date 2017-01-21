@@ -11,7 +11,6 @@ class GDCMutationExport(object):
         self.config = config
         self.sc = sc
         self.sqlContext = sqlContext
-
     
     def run_export(self, config=None):
         # Construct master MAF from all individual MAF
