@@ -11,7 +11,6 @@ properties:
     type: long
   cds_position:
     type: keyword
-    default: empty
   cds_start:
     type: long
     default: empty
@@ -31,7 +30,6 @@ properties:
     type: keyword
   existing_variation:
     type: keyword
-    default: empty
   hgvsc:
     type: keyword
   hgvsp:
@@ -46,7 +44,6 @@ properties:
     type: keyword
   pubmed:
     type: keyword
-    default: empty
   sift:
     type: keyword
   swissprot:
