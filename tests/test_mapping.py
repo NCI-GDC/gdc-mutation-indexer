@@ -2,7 +2,7 @@ import json
 import pytest
 from jsonpath_rw import parse
 
-from exports.mappings import (
+from exports.mappers import (
     Mapper,
     GeneMapper,
     SSMMapper,

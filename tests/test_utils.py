@@ -13,14 +13,13 @@ class TestUtils(SparkTestCase):
         '''
         self.assertEqual(self.sc.appName, 'TestUtils')
 
-
     def test_es_adapter(self):
         '''
         Test that the elasticsearch-hadoop wrapper jar is loaded
         '''
         # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
-        self.sc.newAPIHadoopRDD(
-            inputFormatClass="org.elasticsearch.hadoop.mr.EsInputFormat",
-            keyClass="org.apache.hadoop.io.NullWritable", 
-            valueClass="org.elasticsearch.hadoop.mr.LinkedMapWritable", 
-            conf={ "es.resource" : conf.graph_index})
+        return self.sqlContext.read.format("es")\
+            .option('es.nodes', conf.source_es_host)\
+            .option('es.nodes.resolve.hostname','false')\
+            .option('es.resource.read', conf.graph_index)\
+            .load(conf.graph_index)

@@ -23,6 +23,9 @@ properties:
       search:
         type: text
         analyzer: id_search
+  state:
+    type: keyword
+    default: empty
   case_id:
     type: text
     fields:
@@ -37,6 +40,9 @@ properties:
         analyzer: id_search
   demographic:
     properties:
+      state:
+        type: keyword
+        default: empty
       demographic_id:
         type: keyword
       ethnicity:
@@ -47,9 +53,10 @@ properties:
         type: keyword
       submitter_id:
         type: keyword
+      created_datetime:
+        type: date 
       updated_datetime:
         type: date
-        format: strict_date_optional_time
       year_of_birth:
         type: long
       year_of_death:
@@ -57,6 +64,9 @@ properties:
   diagnoses:
     type: nested
     properties:
+      state:
+        type: keyword
+        default: empty
       age_at_diagnosis:
         type: double
       classification_of_tumor:
@@ -73,6 +83,7 @@ properties:
         type: keyword
       morphology:
         type: keyword
+        default: empty
       primary_diagnosis:
         type: keyword
       prior_malignancy:
@@ -87,11 +98,13 @@ properties:
         type: keyword
       tumor_grade:
         type: keyword
+        default: empty
       tumor_stage:
         type: keyword
       updated_datetime:
-        type: date
-        format: strict_date_optional_time
+        type: keyword
+      created_datetime:
+        type: keyword
       vital_status:
         type: keyword
   portion_ids:
@@ -275,4 +288,6 @@ properties:
             type: long
   updated_datetime:
     type: date
-    format: strict_date_optional_time 
+  created_datetime:
+    type: date 
+    default: empty

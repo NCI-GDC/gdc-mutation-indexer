@@ -10,11 +10,23 @@ properties:
   mutation_status:
     type: keyword
   normal_genotype:
-    type: object
+    properties:
+      match_norm_seq_allele2:
+        type: keyword
+        default: empty
+      match_norm_seq_allele1:
+        type: keyword
+        default: empty
   read_depth:
     properties:
       n_depth:
         type: long
+      n_alt_count:
+        type: long
+        default: empty
+      n_ref_count:
+        type: long
+        default: empty
       t_alt_count:
         type: long
       t_depth:
@@ -43,13 +55,32 @@ properties:
     properties:
       tumor_validation_allele1:
         type: keyword
+        default: empty
       tumor_validation_allele2:
         type: keyword
+        default: empty
+      match_norm_validation_allele1:
+        type: keyword
+        default: normal_allele1
+        default: empty
+      match_norm_validation_allele2:
+        type: keyword
+        default: normal_allele2
+        default: empty
       validation_method:
         type: keyword
+        default: biotype
+      validation_status:
+        type: keyword
+        default: empty
+      verification_status:
+        type: keyword
+        default: empty
   variant_calling:
     properties:
       variant_process:
         type: keyword
+        default: biotype 
       variant_caller:
         type: keyword
+        default: biotype 

@@ -1,30 +1,38 @@
 language: python
 
-cache: pip
-
-services:
-  - elasticsearch
+python:
+  - "2.7"
 
 jdk:
-  - openjdk7
+  - oraclejdk8
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-set-default
+
+cache: pip
 
 env:
   - SPARK_VERSION="2.0.1"
 
 before_install:
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz;
-  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-5.0.0.zip
+  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-5.1.1.zip
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.0.0.deb && sudo dpkg -i elasticsearch-5.0.0.deb && sudo service elasticsearch start
 
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - unzip elasticsearch-hadoop-5.0.0.zip
+  - unzip elasticsearch-hadoop-5.1.1.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
   - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
   - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
-  - cp `pwd`/elasticsearch-hadoop-5.0.0/dist/elasticsearch-spark-20_2.11-5.0.0.jar $SPARK_HOME/jars
+  - cp `pwd`/elasticsearch-hadoop-5.1.1/dist/elasticsearch-spark-20_2.11-5.1.1.jar $SPARK_HOME/jars
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 
 script:
-  - "py.test tests"
+  - java -version
+  - curl http://localhost:9200/
+  - "py.test tests -vvv"

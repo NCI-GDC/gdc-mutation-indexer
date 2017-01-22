@@ -53,9 +53,9 @@ class CaseMapper(Mapper):
             'aa_change',
         ], tran_map)
 
-        del tran_map['properties']['aa_end']
-        del tran_map['properties']['aa_start']
-        del tran_map['properties']['is_canonical']
+        #del tran_map['properties']['aa_end']
+        #del tran_map['properties']['aa_start']
+        #del tran_map['properties']['is_canonical']
 
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'

@@ -22,12 +22,15 @@ class Mapper(object):
         '''
         Loads an ES properties mapping from a yaml file
         '''
-        path = os.path.join(os.path.dirname(__file__), path)
+        path = os.path.join(os.path.dirname(__file__),'../mappings',path)
         with open(path) as f:
             properties = yaml.load(f)
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
+
+        self.rm_maf_cols(properties)
+
         return properties
 
     def change_props_to_keyword(self, paths, data):
@@ -44,10 +47,22 @@ class Mapper(object):
 
     @property
     def settings(self):
-        path = os.path.join(os.path.dirname(__file__), 'common_settings.yml')
+        path = os.path.join(os.path.dirname(__file__),'../mappings','common_settings.yml')
         with open(path) as f:
             settings = yaml.load(f)
         return settings
+
+    def rm_maf_cols(self, d):
+        '''
+        '''
+        if type(d) is dict:
+            if 'default' in d:
+                del d['default']
+            for k,v in d.items():
+                self.rm_maf_cols(v)
+        if type(d) is list:
+            for v in d:
+                self.rm_maf_cols(v)
 
     def clean(self, d):
         '''
