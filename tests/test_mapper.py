@@ -1,6 +1,6 @@
 import unittest
 
-from exports.mappings import Mapper, GeneMapper
+from exports.mappers import Mapper, GeneMapper
 
 
 class TestMapper(unittest.TestCase):
