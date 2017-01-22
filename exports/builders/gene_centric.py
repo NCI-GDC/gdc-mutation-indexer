@@ -67,7 +67,7 @@ class GeneCentricBuilder(object):
         df = df.join(obs_df, df.ssm_id == obs_df.ssm_id, 'left')\
                     .drop(obs_df.ssm_id)
 
-        df = df.select('_case_submitter_id', struct('consequence', 'observation', *ssm_df.drop('gene_id').columns).alias('ssm'))\
+        df = df.select('_case_submitter_id', struct('consequence', 'observation', *ssm_df.drop('gene_id').drop('_case_submitter_id').columns).alias('ssm'))\
                     .groupBy('_case_submitter_id')\
                     .agg(collect_list('ssm').alias('ssm'))
 

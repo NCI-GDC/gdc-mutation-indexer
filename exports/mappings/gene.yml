@@ -252,3 +252,5 @@ properties:
         default: cds_start
       translation_id:
         type: keyword
+      id:
+        type: keyword
