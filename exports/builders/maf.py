@@ -9,6 +9,7 @@ from pyspark.sql.types import StringType
 from pyspark.sql.functions import lit, col, regexp_extract
 
 from exports.builders.utils import ssm_uuid_udf
+from exports.builders.gene_model import GeneModelBuilder
 
 
 class MAFBuilder(object):
@@ -21,7 +22,11 @@ class MAFBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self.urls = []
+
+        if config.maf_urls is not None:
+            self.urls = config.maf_urls
+        else:
+            self.urls = self.get_urls()
 
     def build(self):
         '''
@@ -35,16 +40,29 @@ class MAFBuilder(object):
             except IOError:
                 self.logger.info('Couldn\'t find existing maf file at given path')
 
-        df = self.get_urls().combine()
+        df = self.combine()
         df = df.fillna('')
-        df = self.add_null(df)
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.extract_barcode(df)
 
-        if self.config.keep_maf:
+        # Build gene model and join with MAF dataframe
+        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+    
+        cols_to_drop = [c for c in gm_df.columns]
+        df = df.select(*[c for c in df.columns if c not in cols_to_drop])
+        
+        df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
+
+        df = df.drop('_gene_id')
+
+        df = self.add_null(df)
+
+        # Write data
+        if self.config.maf_keep:
             self.write(df)
         return df
+
 
     def add_null(self, df):
         '''
@@ -155,9 +173,8 @@ class MAFBuilder(object):
             urls.append(url)
 
         self.logger.info('Found urls for {} files'.format(len(urls)))
-        self.urls = urls
 
-        return self
+        return urls
 
     def patch_url(self, url):
         '''
