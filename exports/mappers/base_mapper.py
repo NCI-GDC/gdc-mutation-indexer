@@ -1,5 +1,6 @@
 import os
 import yaml
+import pkg_resources
 
 
 class Mapper(object):
@@ -22,9 +23,11 @@ class Mapper(object):
         '''
         Loads an ES properties mapping from a yaml file
         '''
-        path = os.path.join(os.path.dirname(__file__),'../mappings',path)
-        with open(path) as f:
-            properties = yaml.load(f)
+        resource_package = 'exports'
+        resource_path = '/'.join(('mappings', path))
+
+        properties = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+ 
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
@@ -47,9 +50,10 @@ class Mapper(object):
 
     @property
     def settings(self):
-        path = os.path.join(os.path.dirname(__file__),'../mappings','common_settings.yml')
-        with open(path) as f:
-            settings = yaml.load(f)
+        resource_package = 'exports'
+        resource_path = '/'.join(('mappings', 'common_settings.yml'))
+
+        settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
         return settings
 
     def rm_maf_cols(self, d):
