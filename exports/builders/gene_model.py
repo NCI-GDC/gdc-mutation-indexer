@@ -8,13 +8,13 @@ import logging
 logging.basicConfig()
 
 from pyspark.sql.functions import lit, col, regexp_extract
-
-from exports.builders.utils import ssm_uuid_udf
    
 
 class GeneModelBuilder(object):
     """
+    Constructs a Gene Model dataframe from ICGC's gene model json
     """
+
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -28,9 +28,7 @@ class GeneModelBuilder(object):
 
     def load(self):
         '''
-        Loads case docs from the gdc_from_graph index into a dataframe
+        Loads the gene model json file
         '''
-        # TODO: filename should be in self.config
-        df = self.sqlContext.read.json("/home/ubuntu/Projects/gdc-mutation-indexer/exports/data/gene_model.json")    
+        df = self.sqlContext.read.json(self.config.gene_model_path)
         return df
-
