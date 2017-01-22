@@ -19,16 +19,7 @@ def ssm_centric_index(sqlContext, test_index):
 
     r = es.indices.create(index=conf.indices['ssm_centric'], ignore=400)
 
-    maf_builder = MAFBuilder(conf, sqlContext)
-    urls = ['file://'+os.path.join(conf.data_dir, 'kirp.mutect.test.maf'),
-            'file://'+os.path.join(conf.data_dir, 'kirp.muse.test.maf')]
-
-    df = maf_builder.combine(urls)
-    df = maf_builder.standardize_schema(df)
-    df = maf_builder.add_ssm_id(df)
-    df = maf_builder.add_null(df)
-    df = maf_builder.extract_barcode(df)
-
+    df = MAFBuilder(conf, sqlContext).build()
     SSMCentricBuilder(conf, sqlContext).build(df).load()
 
     yield es

@@ -43,7 +43,7 @@ maf_schema:
   domains: DOMAINS
   protein_position: Protein_position
   cds_start: Entrez_Gene_Id
-  cds_position: PUBMED
+  cds_position: CDS_position
   cds_length: Entrez_Gene_Id
   cds_end: Entrez_Gene_Id
   hgvsp_short: HGVSp_Short
