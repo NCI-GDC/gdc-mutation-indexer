@@ -38,7 +38,7 @@ class CaseCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('../mappings/gene.yml'))\
+                                *struct_select(os.path.abspath('exports/mappings/gene.yml'), ignore=['transcripts']))\
                                 .drop_duplicates()
         # SSM
         ssm_df = maf_df.select('gene_id',

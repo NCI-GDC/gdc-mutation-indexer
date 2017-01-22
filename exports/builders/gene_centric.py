@@ -38,7 +38,7 @@ class GeneCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select(os.path.abspath('exports/mappings/gene.yml')))
+                                *struct_select(os.path.abspath('exports/mappings/gene.yml'), ignore=['transcripts']))
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
                                *struct_select(os.path.abspath('exports/mappings/ssm.yml')))

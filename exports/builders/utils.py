@@ -90,7 +90,7 @@ def flat_fields(path):
     return list(flat)
 
 
-def struct_select(path):
+def struct_select(path, ignore=[]):
     '''
     Takes the structure from a mapping and produces arguements for a select
     to reorganize a flat dataframe of those fields into the desiced structure.
@@ -124,10 +124,12 @@ def struct_select(path):
                         name = v['default']
                     cols.append(col(name).alias(k))
                 else:
-                    if 'properties' in v:
+                    if k not in ignore and 'properties' in v:
                         cols.append(struct(restructure(v['properties'])).alias(k))
-                    else:
+                    elif k not in ignore:
                         cols.append(struct(restructure(v)).alias(k))
+                    else:
+                        cols.append(k)
         return cols
 
     select = restructure(mapping['properties'])

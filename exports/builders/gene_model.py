@@ -31,4 +31,6 @@ class GeneModelBuilder(object):
         Loads the gene model json file
         '''
         df = self.sqlContext.read.json(self.config.gene_model_path)
+        # Flatten, the mapping will re-introduce the structure
+        df = df.select(col('external_db_ids.*'), *df.drop('external_db_ids').columns)
         return df

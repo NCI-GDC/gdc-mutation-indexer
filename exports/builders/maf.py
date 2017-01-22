@@ -42,7 +42,6 @@ class MAFBuilder(object):
 
         df = self.combine()
         df = df.fillna('')
-        df = self.add_null(df)
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.extract_barcode(df)
@@ -56,6 +55,8 @@ class MAFBuilder(object):
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
 
         df = df.drop('_gene_id')
+
+        df = self.add_null(df)
 
         # Write data
         if self.config.maf_keep:
