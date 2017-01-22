@@ -23,8 +23,8 @@ class MAFBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-        if config.urls is not None:
-            self.urls = config.urls
+        if config.maf_urls is not None:
+            self.urls = config.maf_urls
         else:
             self.urls = self.get_urls()
 
@@ -33,7 +33,6 @@ class MAFBuilder(object):
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
         '''
-        print "MAF build started"
         if self.config.maf_use_existing:
             try:
                 df = self.get_existing()

@@ -42,7 +42,7 @@ class BaseConfig(object):
 
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
-    urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
+    maf_urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
     # The location of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
     # Whether to save the maf file or discard it when done
@@ -108,6 +108,9 @@ class BaseConfig(object):
 
 
 class TestConfig(BaseConfig):
+    test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
+    data_dir = os.path.join(test_dir, 'data')
+
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
     graph_index = 'test_graph_index__'
@@ -119,13 +122,13 @@ class TestConfig(BaseConfig):
         'ssm_occurrence_centric':'test_ssm_occurrence_centric__'
     }
 
+    maf_urls = ['file://'+os.path.join(data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(data_dir, 'kirp.muse.test.maf')]
+
     maf_path = 'file:///test_mafs.csv'
     keep_indices = True
     maf_keep = False
     maf_use_existing = False
-
-    test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
-    data_dir = os.path.join(test_dir, 'data')
 
 
 configs = {

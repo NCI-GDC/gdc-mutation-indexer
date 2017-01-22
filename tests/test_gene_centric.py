@@ -20,16 +20,7 @@ def gene_centric_index(sqlContext, test_index):
 
     r = es.indices.create(index=conf.indices['gene_centric'], ignore=400)
 
-    maf_builder = MAFBuilder(conf, sqlContext)
-    urls = ['file://'+os.path.join(conf.data_dir, 'kirp.mutect.test.maf'),
-            'file://'+os.path.join(conf.data_dir, 'kirp.muse.test.maf')]
-
-    df = maf_builder.combine(urls)
-    df = maf_builder.standardize_schema(df)
-    df = maf_builder.add_ssm_id(df)
-    df = maf_builder.add_null(df)
-    df = maf_builder.extract_barcode(df)
-
+    df = MAFBuilder(conf, sqlContext).build()
     GeneCentricBuilder(conf, sqlContext).build(df).load(did='ENSG00000092931')
 
     yield es
@@ -38,7 +29,7 @@ def gene_centric_index(sqlContext, test_index):
         es.indices.delete(index=conf.indices['gene_centric'], ignore=399)
 
 @pytest.mark.parametrize('doc,path',
-    get_validation_paths('tests/data/gene.validation.ENSG00000092931.json')[:1]
+    get_validation_paths('tests/data/gene.validation.ENSG00000092931.json')
 )
 def test_gene_doc_contains(gene_centric_index, doc, path):
     ''' Test that document contains a field from a path'''
