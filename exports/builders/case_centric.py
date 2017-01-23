@@ -8,8 +8,7 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder
-
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 
 class CaseCentricBuilder(object):
     '''
@@ -38,25 +37,26 @@ class CaseCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('gene.yml'))\
-                                *struct_select(os.path.abspath('gene.yml'), ignore=['transcripts']))\
+                                *struct_select('gene.yml', ignore=['transcripts']))\
                                 .drop_duplicates()
         # SSM
         ssm_df = maf_df.select('gene_id',
                                *struct_select('ssm.yml'))\
                                 .drop_duplicates()
         # Consequence
-        stmt = (struct(
-                    struct(
-                        struct(*struct_select('annotation.yml'))
-                            .alias('annotation'),
-                           *struct_select('transcript.yml')
-                    ).alias('transcript')
-                ).alias('consequence'))
+        # stmt = (struct(
+        #             struct(
+        #                 struct(*struct_select('annotation.yml'))
+        #                     .alias('annotation'),
+        #                    *struct_select('transcript.yml')
+        #             ).alias('transcript')
+        #         ).alias('consequence'))
 
-        cons_df = maf_df.select('ssm_id', stmt)\
-                        .groupBy('ssm_id')\
-                        .agg(collect_list('consequence').alias('consequence'))
+        # cons_df = maf_df.select('ssm_id', stmt)\
+        #                 .groupBy('ssm_id')\
+        #                 .agg(collect_list('consequence').alias('consequence'))
+
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -100,7 +100,7 @@ class CaseCentricBuilder(object):
         '''
         '''
         index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric']#.replace('_', '-')
+        doc = self.config.index_names['case_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import CaseMapper
@@ -141,7 +141,7 @@ class CaseCentricBuilder(object):
                                                     index), data=data).json()
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        self.case_centric.coalesce(50).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\

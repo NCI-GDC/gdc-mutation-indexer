@@ -8,7 +8,7 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 
 
 class GeneCentricBuilder(object):
@@ -38,23 +38,25 @@ class GeneCentricBuilder(object):
 
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
-                                *struct_select('gene.yml'))
-                                *struct_select('gene.yml'), ignore=['transcripts']))
+                                *struct_select('gene.yml', ignore=['transcripts']))
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
                                *struct_select('ssm.yml'))
-        # Consequence
-        stmt = (struct(
-                    struct(
-                        struct(*struct_select('annotation.yml'))
-                            .alias('annotation'),
-                           *struct_select('transcript.yml')
-                    ).alias('transcript')
-                ).alias('consequence'))
 
-        cons_df = maf_df.select('ssm_id', stmt)\
-                        .groupBy('ssm_id')\
-                        .agg(collect_list('consequence').alias('consequence'))
+        # Consequence
+        # stmt = (struct(
+        #             struct(
+        #                 struct(*struct_select('annotation.yml'))
+        #                     .alias('annotation'),
+        #                    *struct_select('transcript.yml')
+        #             ).alias('transcript')
+        #         ).alias('consequence'))
+
+        # cons_df = maf_df.select('ssm_id', stmt)\
+        #                 .groupBy('ssm_id')\
+        #                 .agg(collect_list('consequence').alias('consequence'))
+
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -94,7 +96,7 @@ class GeneCentricBuilder(object):
         '''
         '''
         index = self.config.indices['gene_centric']
-        doc = self.config.index_names['gene_centric']#.replace('_', '-')
+        doc = self.config.index_names['gene_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import GeneMapper
@@ -136,7 +138,7 @@ class GeneCentricBuilder(object):
             to_load = to_load.where(to_load.gene_id == did)
 
         self.logger.info('Exporting gene centric index')
-        to_load.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\

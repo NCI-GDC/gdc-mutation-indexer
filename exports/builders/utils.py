@@ -5,7 +5,7 @@ import pkg_resources
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, ArrayType
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
@@ -91,6 +91,25 @@ def flat_fields(path):
     return list(flat)
 
 
+def extract_transcript_id(val):
+    '''
+    Extract the transcript ids from the all_effects column
+
+    Rows are delimited by ;
+    Columns are delimited by , or :
+    '''
+    delimiter = ',' if ',' in val else ';'
+    rows = val.split(';')
+    transcript_ids = []
+    for r in rows:
+        if len(r.split(delimiter)) > 3:
+            transcript_ids.append(r.split(delimiter)[3])
+    return transcript_ids
+
+
+def transcript_id_udf():
+    return udf(extract_transcript_id, ArrayType(StringType()))
+
 
 def struct_select(path, ignore=[]):
     '''
@@ -111,7 +130,7 @@ def struct_select(path, ignore=[]):
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
     '''
     resource_package = 'exports'
-    resource_path = '/'.join(('mappings', file_name))
+    resource_path = '/'.join(('mappings', path))
     mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     select = ()
