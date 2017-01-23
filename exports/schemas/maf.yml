@@ -66,3 +66,5 @@ maf_schema:
   matched_norm_sample_uuid: Matched_Norm_Sample_UUID
   tumor_sample_barcode: Tumor_Sample_Barcode
   tumor_sample_uuid: Tumor_Sample_UUID
+  all_effects: all_effects
+  transcript_id: Transcript_ID
