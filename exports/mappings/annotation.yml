@@ -50,7 +50,6 @@ properties:
     type: keyword
   transcript_id:
     type: keyword
-    default: canonical_transcript_id
   trembl:
     type: keyword
   uniparc:

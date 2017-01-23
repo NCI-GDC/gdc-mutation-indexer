@@ -1,6 +1,7 @@
 properties:
   aa_change:
     type: text
+    default: empty
     fields:
       analyzed:
         type: text
@@ -19,7 +20,6 @@ properties:
     default: empty
   consequence_type:
     type: keyword
-    default: empty
   gene_symbol:
     default: symbol
     type: text
