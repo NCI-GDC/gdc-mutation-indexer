@@ -42,21 +42,10 @@ class CaseCentricBuilder(object):
         # SSM
         ssm_df = maf_df.select('gene_id',
                                *struct_select('ssm.yml'))\
-                                .drop_duplicates()
-        # Consequence
-        # stmt = (struct(
-        #             struct(
-        #                 struct(*struct_select('annotation.yml'))
-        #                     .alias('annotation'),
-        #                    *struct_select('transcript.yml')
-        #             ).alias('transcript')
-        #         ).alias('consequence'))
+                                .drop_duplicates(['ssm_id'])
 
-        # cons_df = maf_df.select('ssm_id', stmt)\
-        #                 .groupBy('ssm_id')\
-        #                 .agg(collect_list('consequence').alias('consequence'))
-
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
+                               .drop_duplicates(['ssm_id'])
 
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -141,7 +130,7 @@ class CaseCentricBuilder(object):
                                                     index), data=data).json()
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.coalesce(50).write.format('org.elasticsearch.spark.sql')\
+        self.case_centric.coalesce(1).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
@@ -149,7 +138,7 @@ class CaseCentricBuilder(object):
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','500mb')\
-                            .option('es.batch.size.entries', '1')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','case_id')\
                             .save(index_doc)
