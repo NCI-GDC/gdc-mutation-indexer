@@ -8,7 +8,7 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 
 
 class SSMCentricBuilder(object):
@@ -38,24 +38,9 @@ class SSMCentricBuilder(object):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
-        ssm_df = maf_df.select(*struct_select('ssm.yml'))\
-                               .limit(5) # TODO: Remove this
+        ssm_df = maf_df.select(*struct_select('ssm.yml'))
 
-        # Consequence
-        stmt = (struct(
-                    struct(
-                        struct(*struct_select('annotation.yml'))
-                            .alias('annotation'),
-                        struct(*struct_select('gene.yml'))
-                            .alias('gene'),
-                           *struct_select('transcript.yml')
-                    ).alias('transcript')
-
-                ).alias('consequence'))
-
-        cons_df = maf_df.select('ssm_id', stmt)\
-                        .groupBy('ssm_id')\
-                        .agg(collect_list('consequence').alias('consequence'))
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
@@ -90,7 +75,7 @@ class SSMCentricBuilder(object):
         '''
         '''
         index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric']
+        doc = self.config.index_names['ssm_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import SSMMapper
@@ -98,12 +83,27 @@ class SSMCentricBuilder(object):
 
         data = json.dumps({"settings":{"index":{
                         "refresh_interval":"1m",
-                        "number_of_shards":1,
+                        "number_of_shards":10,
                         "number_of_replicas":0,
                         "mapper.dynamic":False,
                         "mapping.nested_fields.limit":100,
                         "mapping.total_fields.limit":2000
-                    }},"mappings":{
+                    },
+                    "analysis": {
+                        "analyzer": {
+                            "id_index": { 
+                                "filter": ["lowercase", "edge_ngram"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            },
+                            "id_search": {
+                                "filter": ["lowercase"],
+                                "type": "custom",
+                                "tokenizer": "whitespace"
+                            }
+                        }
+                    }},
+                    "mappings":{
                         doc: m.mapping
                     }})
 
@@ -116,7 +116,7 @@ class SSMCentricBuilder(object):
             to_load = to_load.where(to_load.ssm_id == did)
 
         self.logger.info('Exporting ssm centric index')
-        to_load.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        to_load.coalesce(5).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
@@ -124,7 +124,7 @@ class SSMCentricBuilder(object):
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','500mb')\
-                            .option('es.batch.size.entries', '1')\
+                            .option('es.batch.size.bytes','10mb')\
+                            .option('es.batch.size.entries', '1000')\
                             .option('es.mapping.id','ssm_id')\
                             .save(index_doc)
