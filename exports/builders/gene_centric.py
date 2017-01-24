@@ -41,22 +41,12 @@ class GeneCentricBuilder(object):
                                 *struct_select('gene.yml', ignore=['transcripts']))
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
-                               *struct_select('ssm.yml'))
+                               *struct_select('ssm.yml'))\
+                               .drop_duplicates(['ssm_id'])
 
-        # Consequence
-        # stmt = (struct(
-        #             struct(
-        #                 struct(*struct_select('annotation.yml'))
-        #                     .alias('annotation'),
-        #                    *struct_select('transcript.yml')
-        #             ).alias('transcript')
-        #         ).alias('consequence'))
-
-        # cons_df = maf_df.select('ssm_id', stmt)\
-        #                 .groupBy('ssm_id')\
-        #                 .agg(collect_list('consequence').alias('consequence'))
-
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
+                               .drop_duplicates(['ssm_id'])
+                                
 
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -64,6 +54,7 @@ class GeneCentricBuilder(object):
                                .alias('observation'))\
                                .groupBy('ssm_id')\
                                .agg(collect_list('observation').alias('observation'))
+
         df = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id, 'left')\
                     .drop(cons_df.ssm_id)
 
