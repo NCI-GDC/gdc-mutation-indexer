@@ -8,7 +8,7 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
 from exports.builders.utils import struct_select, ssm_occurrence_uuid_udf
-from exports.builders import MAFBuilder, CaseBuilder
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 
 
 class SSMOccurrenceCentricBuilder(object):
@@ -38,24 +38,10 @@ class SSMOccurrenceCentricBuilder(object):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
-        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))\
-                               .limit(5) # TODO: Remove this
+        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))
 
         # Consequence
-        stmt = (struct(
-                    struct(
-                        struct(*struct_select('annotation.yml'))
-                            .alias('annotation'),
-                        struct(*struct_select('gene.yml'))
-                            .alias('gene'),
-                           *struct_select('transcript.yml')
-                    ).alias('transcript')
-
-                ).alias('consequence'))
-
-        cons_df = maf_df.select('ssm_id', stmt)\
-                        .groupBy('ssm_id')\
-                        .agg(collect_list('consequence').alias('consequence'))
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
