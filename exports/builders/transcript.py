@@ -47,7 +47,6 @@ class TranscriptBuilder(object):
             .select('ssm_id',
                     explode('transcript_ids').alias('transcript_id'),
                     *struct_select('transcript.yml', ignore=['transcript_id'])) \
-            .withColumn('empty', lit('').cast(StringType())) \
             .drop_duplicates(['transcript_id', 'ssm_id'])
 
         if join_gene:
@@ -55,10 +54,11 @@ class TranscriptBuilder(object):
         else:
             to_use = struct('annotation', *struct_select('transcript.yml'))
 
-        trans_df = trans_df.select('transcript_id', to_use.alias('transcript'))
+        # trans_df = trans_df.select('transcript_id', to_use.alias('transcript'))
 
         df = maf_df.join(trans_df, maf_df.transcript_id == trans_df.transcript_id) \
-            .select('ssm_id', struct('transcript').alias('transcript')) \
+            .select('ssm_id', to_use.alias('transcript')) \
+            .withColumn('empty', lit('').cast(StringType())) \
             .groupby('ssm_id') \
             .agg(collect_list('transcript').alias('consequence'))
         return df
