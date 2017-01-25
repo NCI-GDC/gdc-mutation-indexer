@@ -37,7 +37,7 @@ class TranscriptBuilder(object):
                                     struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene')) \
                      .drop_duplicates(['ssm_id'])
 
-            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.canonical_transcript_id) \
+            gene_ann_df = ann_df.join(gene_df, on='transcript_id') \
                 .drop_duplicates(['transcript_id'])
         else:
             gene_ann_df = ann_df
@@ -53,11 +53,11 @@ class TranscriptBuilder(object):
         else:
             to_use = struct('annotation', *struct_select('transcript.yml'))
 
-        tran_df = maf_df.join(gene_ann_df, maf_df.transcript_id == gene_ann_df.transcript_id) \
+        tran_df = maf_df.join(gene_ann_df, on='transcript_id') \
                 .withColumn('empty', lit('').cast(StringType())) \
                 .select('transcript_id', to_use.alias('transcript'))
 
-        df = ssm_transcript.join(tran_df, ssm_transcript.transcript_id == tran_df.transcript_id) \
+        df = ssm_transcript.join(tran_df, on='transcript_id') \
             .select('ssm_id', 'transcript') \
             .groupby('ssm_id') \
             .agg(collect_list('transcript').alias('consequence'))
