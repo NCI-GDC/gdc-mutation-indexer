@@ -8,7 +8,9 @@ class TestMapper(unittest.TestCase):
     def test_settings(self):
         mapper = Mapper()
 
-        self.assertIn('dynamic', mapper.mapping)
+        self.assertIn('settings', mapper.settings)
+        self.assertIn('analysis', mapper.settings)
+        self.assertIn('mappings', mapper.settings)
 
     def test_properties(self):
         mapper = Mapper()
