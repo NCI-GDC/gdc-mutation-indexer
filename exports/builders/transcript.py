@@ -35,18 +35,17 @@ class TranscriptBuilder(object):
         if join_gene:
             gene_df = maf_df.select('ssm_id',
                                     struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene')) \
-                .drop_duplicates(['ssm_id'])
+                     .drop_duplicates(['ssm_id'])
 
-            trans_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.canonical_transcript_id) \
+            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.canonical_transcript_id) \
                 .drop_duplicates(['transcript_id'])
         else:
-            trans_df = ann_df
+            gene_ann_df = ann_df
         # Explode the transcript_id array then join then group by (ssm_id)
-        maf_df = maf_df \
+        ssm_transcript = maf_df.select('ssm_id', 'all_effects') \
             .withColumn('transcript_ids', transcript_id_udf()(col('all_effects'))) \
             .select('ssm_id',
-                    explode('transcript_ids').alias('transcript_id'),
-                    *struct_select('transcript.yml', ignore=['transcript_id'])) \
+                    explode('transcript_ids').alias('transcript_id')) \
             .drop_duplicates(['transcript_id', 'ssm_id'])
 
         if join_gene:
@@ -54,11 +53,12 @@ class TranscriptBuilder(object):
         else:
             to_use = struct('annotation', *struct_select('transcript.yml'))
 
-        # trans_df = trans_df.select('transcript_id', to_use.alias('transcript'))
+        tran_df = maf_df.join(gene_ann_df, maf_df.transcript_id == gene_ann_df.transcript_id) \
+                .withColumn('empty', lit('').cast(StringType())) \
+                .select('transcript_id', to_use.alias('transcript'))
 
-        df = maf_df.join(trans_df, maf_df.transcript_id == trans_df.transcript_id) \
-            .select('ssm_id', to_use.alias('transcript')) \
-            .withColumn('empty', lit('').cast(StringType())) \
+        df = ssm_transcript.join(tran_df, ssm_transcript.transcript_id == tran_df.transcript_id) \
+            .select('ssm_id', 'transcript') \
             .groupby('ssm_id') \
             .agg(collect_list('transcript').alias('consequence'))
         return df
