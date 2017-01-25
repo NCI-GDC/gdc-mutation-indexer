@@ -40,7 +40,7 @@ class SSMCentricBuilder(object):
         # SSM
         ssm_df = maf_df.select(*struct_select('ssm.yml'))
 
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
@@ -116,7 +116,7 @@ class SSMCentricBuilder(object):
             to_load = to_load.where(to_load.ssm_id == did)
 
         self.logger.info('Exporting ssm centric index')
-        to_load.coalesce(5).write.format('org.elasticsearch.spark.sql')\
+        to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
