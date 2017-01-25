@@ -22,16 +22,20 @@ class TranscriptBuilder(object):
         self.sqlContext = sqlContext
         
 
-    def build(self, maf_df):
+    def build(self, maf_df, join_gene=False):
         '''
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
-        ann_df = maf_df.select('transcript_id', 'consequence_type',
+        ann_df = maf_df.select('transcript_id', 'consequence_type', 'ssm_id',
                                     struct(*struct_select('annotation.yml'))
                                         .alias('annotation'))\
                                         .drop_duplicates(['transcript_id'])
+        if join_gene:
+            gene_df = maf_df.select('ssm_id',
+                                struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))\
+                                .drop_duplicates(['ssm_id'])
         # Explode the transcript_id array then join then group by (gene_id, ssm_id)
         maf_df = maf_df\
                    .select('ssm_id', 'all_effects')\
@@ -44,12 +48,18 @@ class TranscriptBuilder(object):
                 .select(col('*'), 'transcript.*')\
                 .withColumn('empty', lit('').cast(StringType()))
 
-        tran_df = tran_df.join(ann_df, tran_df.id == ann_df.transcript_id)\
-                .select('transcript_id', struct('annotation', *struct_select('transcript.yml')).alias('transcript'))
+        tran_df = tran_df.join(ann_df, tran_df.id == ann_df.transcript_id)
+
+        if join_gene:
+            tran_df = tran_df.join(gene_df, tran_df.ssm_id == gene_df.ssm_id)
+            to_use = struct('annotation', 'gene', *struct_select('transcript.yml'))
+        else:
+            to_use = struct('annotation', *struct_select('transcript.yml'))
+
+        tran_df = tran_df.select('transcript_id', to_use.alias('transcript'))
 
         df = maf_df.join(tran_df, maf_df.transcript_id == tran_df.transcript_id)\
                     .select('ssm_id', struct('transcript').alias('transcript'))\
                     .groupby('ssm_id')\
                     .agg(collect_list('transcript').alias('consequence'))
-
         return df

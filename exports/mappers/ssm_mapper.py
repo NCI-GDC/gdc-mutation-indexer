@@ -39,11 +39,11 @@ class SSMMapper(Mapper):
             'name'
         ], gene_map)
 
-        del gene_map['properties']['biotype']
-        del gene_map['properties']['description']
-        del gene_map['properties']['name']
-        del gene_map['properties']['symbol']
-        del gene_map['properties']['transcripts']
+        #del gene_map['properties']['biotype']
+        #del gene_map['properties']['description']
+        #del gene_map['properties']['name']
+        #del gene_map['properties']['symbol']
+        #del gene_map['properties']['transcripts']
 
         tran_map['properties']['gene'] = gene_map
         # Add annotation
