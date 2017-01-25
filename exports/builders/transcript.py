@@ -47,6 +47,7 @@ class TranscriptBuilder(object):
             .select('ssm_id',
                     explode('transcript_ids').alias('transcript_id'),
                     *struct_select('transcript.yml', ignore=['transcript_id'])) \
+            .withColumn('empty', lit('').cast(StringType())) \
             .drop_duplicates(['transcript_id', 'ssm_id'])
 
         if join_gene:
