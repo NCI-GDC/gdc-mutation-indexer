@@ -59,7 +59,7 @@ class SSMCentricBuilder(object):
                             ).alias('case')
                         )\
                         .groupby('ssm_id')\
-                        .agg(collect_list('occurrence').alias('occurrence'))
+                        .agg(collect_list('case').alias('occurrence'))
 
         ssm_centric = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id)\
                         .drop(cons_df.ssm_id)\
