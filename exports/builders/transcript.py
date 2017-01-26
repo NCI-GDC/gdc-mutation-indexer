@@ -33,11 +33,9 @@ class TranscriptBuilder(object):
                                .alias('annotation')) \
                 .drop_duplicates(['transcript_id'])
         if join_gene:
-            gene_df = maf_df.select(struct('ssm_id',
-                                           *struct_select('gene.yml', ignore=['transcripts'])).alias('gene')) \
-                     .drop_duplicates(['ssm_id'])
+            gene_df = maf_df.select(struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))
 
-            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.canonical_transcript_id) \
+            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.gene.canonical_transcript_id) \
                          .drop_duplicates(['transcript_id'])
         else:
             gene_ann_df = ann_df
