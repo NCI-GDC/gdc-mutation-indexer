@@ -54,11 +54,10 @@ class SSMCentricBuilder(object):
 
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
                         .select('ssm_id', struct(
-                            struct(
                                 'observation',
                                 *case_df.columns
                             ).alias('case')
-                        ).alias('occurrence'))\
+                        )\
                         .groupby('ssm_id')\
                         .agg(collect_list('occurrence').alias('occurrence'))
 

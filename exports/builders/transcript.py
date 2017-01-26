@@ -28,17 +28,17 @@ class TranscriptBuilder(object):
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
-        ann_df = maf_df.select('transcript_id', 'consequence_type', 'ssm_id',
+        ann_df = maf_df.select('transcript_id', 'ssm_id',
                                struct(*struct_select('annotation.yml'))
                                .alias('annotation')) \
-            .drop_duplicates(['transcript_id'])
+                .drop_duplicates(['transcript_id'])
         if join_gene:
-            gene_df = maf_df.select('ssm_id',
-                                    struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene')) \
+            gene_df = maf_df.select(struct('ssm_id',
+                                           *struct_select('gene.yml', ignore=['transcripts'])).alias('gene')) \
                      .drop_duplicates(['ssm_id'])
 
-            gene_ann_df = ann_df.join(gene_df, on='transcript_id') \
-                .drop_duplicates(['transcript_id'])
+            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.canonical_transcript_id) \
+                         .drop_duplicates(['transcript_id'])
         else:
             gene_ann_df = ann_df
         # Explode the transcript_id array then join then group by (ssm_id)
@@ -58,7 +58,7 @@ class TranscriptBuilder(object):
                 .select('transcript_id', to_use.alias('transcript'))
 
         df = ssm_transcript.join(tran_df, on='transcript_id') \
-            .select('ssm_id', 'transcript') \
+            .select('ssm_id', struct('transcript').alias('transcript')) \
             .groupby('ssm_id') \
             .agg(collect_list('transcript').alias('consequence'))
         return df
