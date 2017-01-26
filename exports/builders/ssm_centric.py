@@ -74,7 +74,7 @@ class SSMCentricBuilder(object):
         '''
         '''
         index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric'].replace('_', '-')
+        doc = self.config.index_names['ssm_centric']
         index_doc = '{}/{}'.format(index, doc)
 
         from exports.mappers import SSMMapper
