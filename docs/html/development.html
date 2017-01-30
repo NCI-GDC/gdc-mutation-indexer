@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>&lt;no title&gt; &#8212; GDC Mutation Indexer 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p># Developing GDC Mutation Indexer</p>
+<p>### Set up the environment</p>
+<p>Set up a virtual environment by installing dependencies</p>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">virtualenv</span> <span class="pre">venv</span>
+<span class="pre">source</span> <span class="pre">venv/bin/activate</span>
+<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span>
+<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">dev-requirements.txt</span>
+<span class="pre">`</span></code></p>
+<p>### Running a Development Cluster</p>
+<p>It&#8217;s possible to run all tests, and even small builds, on a single development
+machine using a standalone spark cluster as long as the requirements are met:</p>
+<p>#### Requirements</p>
+<ul class="simple">
+<li>[elasticsearch 5.0.0](<a class="reference external" href="https://www.elastic.co/downloads/elasticsearch">https://www.elastic.co/downloads/elasticsearch</a>)</li>
+<li>[spark-2.0.1-hadoop-2.7](<a class="reference external" href="http://spark.apache.org/downloads.html">http://spark.apache.org/downloads.html</a>)</li>
+</ul>
+<p>The following libraries are required by spark. Install by either adding them to
+the maven dependencies or download the jars and place them in the class path.
+The easiest way to add them to the classpath is by placing them in <cite>$SPARK_HOME/jars</cite>.</p>
+<ul class="simple">
+<li>[hadoop-aws-2.7.7](<a class="reference external" href="https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.3">https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.3</a>)</li>
+<li>[elasticsearch-hadoop-5.0.0](<a class="reference external" href="https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop/5.0.0">https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop/5.0.0</a>)</li>
+<li>[aws-java-sdk-1.7.4](<a class="reference external" href="https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk/1.7.4">https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk/1.7.4</a>)</li>
+<li>[spark-csv-1.5](<a class="reference external" href="https://mvnrepository.com/artifact/com.databricks/spark-csv_2.11/1.5.0">https://mvnrepository.com/artifact/com.databricks/spark-csv_2.11/1.5.0</a>)</li>
+</ul>
+<p>### Elasticsearch</p>
+<p>Install and start [elasticsearch](<a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/5.0/_installation.html">https://www.elastic.co/guide/en/elasticsearch/reference/5.0/_installation.html</a>)</p>
+<p>### Running in Jupyter</p>
+<p>It may be useful to develop with the help of Jupyter. Jupyter notebook will be
+installed as part of the dev requirements and can be invoked with
+<cite>bin/run-notebook.sh</cite>. Make sure to set the <cite>$SPARK_HOME</cite> variable correctly within
+<cite>bin/run-notebook.sh</cite>. To view the notebook, the port (default 9099) will need to
+be forwarded to the local machine:</p>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">ssh</span> <span class="pre">-v</span> <span class="pre">-L9099:0:9099</span> <span class="pre">-N</span> <span class="pre">dev-machine</span>
+<span class="pre">`</span></code></p>
+<p>#### Elasticsearch hadoop adapter</p>
+<p>Install the elasticsearch hadoop adapter by downloading the
+[zip](<a class="reference external" href="https://www.elastic.co/downloads/hadoop">https://www.elastic.co/downloads/hadoop</a>). Extract the contents and
+put the path to the <cite>dist</cite> folder inside the <cite>$SPARK_HOME/conf/spark-defaults.sh</cite>
+as the <cite>spark.driver.extraClassPath</cite> variable. Make sure to also set the
+<cite>&#8211;jars</cite> flag in <cite>bin/run-notebook.sh</cite> to use the adapter in the notebook.</p>
+<p>### Starting a standalone cluster</p>
+<p>Spark can be deployed in standalone mode which requires all target machines
+to have matching <cite>SPARK_HOME</cite> directories and jars. To tell the master where
+to start workers, add their ips or hostnames in <cite>spark/conf/slaves.conf</cite>.
+Note that the same machine may have more than one worker started on it by
+listing the host multiple times, such as placing localhost twice to debug two
+workers on a dev box.</p>
+<p>The cluster can be started using <cite>spark/sbin/start-all.sh</cite> and managed through
+the other scripts found in that directory. Executors may be configured through
+spark defaults using some of these configuration settings in
+<cite>spark/conf/spark-defaults.conf</cite>:</p>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">spark.executor.instances</span>
+<span class="pre">spark.executor.cores</span>
+<span class="pre">spark.executor.memory</span>
+<span class="pre">`</span></code>
+See other spark configuration settings
+[here](<a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">http://spark.apache.org/docs/latest/configuration.html</a>)</p>
+<p>To run the pyspark notebook environment on standalone workers outside of the
+single master cluster set up by default, set <cite>MASTER</cite> in the environment or
+in <cite>bin/run-notebook</cite> to the url and port of the master service. Ex:</p>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">export</span> <span class="pre">MASTER='spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'</span>
+<span class="pre">`</span></code></p>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/development.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, GDC.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/development.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
