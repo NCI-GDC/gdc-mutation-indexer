@@ -53,13 +53,13 @@ class SSMCentricBuilder(object):
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
-                        .select('ssm_id', struct(
+                        .select('ssm_id', struct(struct(
                                 'observation',
                                 *case_df.columns
-                            ).alias('case')
+                            ).alias('case')).alias('occurrence')
                         )\
                         .groupby('ssm_id')\
-                        .agg(collect_list('case').alias('occurrence'))
+                        .agg(collect_list('occurrence').alias('occurrence'))
 
         ssm_centric = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id)\
                         .drop(cons_df.ssm_id)\
@@ -67,6 +67,7 @@ class SSMCentricBuilder(object):
                         .drop(cons_df.ssm_id)
 
         self.ssm_centric = ssm_centric
+        ssm_centric.printSchema()
 
         return self
 
