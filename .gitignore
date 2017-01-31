@@ -69,3 +69,4 @@ package.json
 
 # private files
 submit-job.sh
+exports/data/*
