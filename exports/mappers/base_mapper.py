@@ -22,9 +22,11 @@ class Mapper(object):
         '''
         Loads an ES properties mapping from a yaml file
         '''
-        path = os.path.join(os.path.dirname(__file__),'../mappings',path)
-        with open(path) as f:
-            properties = yaml.load(f)
+        resource_package = 'exports'
+        resource_path = '/'.join(('mappings', path))
+
+        properties = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
