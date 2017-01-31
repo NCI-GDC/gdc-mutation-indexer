@@ -39,6 +39,7 @@ class BaseConfig(object):
     gene_model_file = 's3a://test/genes.json'
 
 
+
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
     maf_urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
@@ -74,13 +75,15 @@ class BaseConfig(object):
             gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
                 index_name='case_centric' -> gdc_r7_case_centric
         """
-        es = Elasticsearch(self.es_host, port=self.es_port)
+        es = Elasticsearch(self.es_host,
+                           port=self.es_port,
+                           http_auth=(self.es_user, self.es_pass))
 
-        def get_prefix(index_name):
-            indices = es.indices.get_alias().keys()
-            versions = [int(v.split('_')[1].replace('r',''))
-                        for v in indices
-                        if v.endswith(index_name) and v[:4] == 'gdc_']
+    def get_prefix(index_name):
+        indices = es.indices.get_alias().keys()
+        versions = [int(v.split('_')[1].replace('r',''))
+        for v in indices
+        if v.endswith(index_name) and v[:4] == 'gdc_']
             # If there is no index with this name in it
             if versions == []:
                 version = 0

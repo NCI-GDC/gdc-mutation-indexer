@@ -29,28 +29,13 @@ def gene_centric_index(sqlContext, test_index):
     gc = GeneCentricBuilder(conf, sqlContext).build(df)
 
     print "\nLoading GeneCentric..."
-    gc.load()
+    gc.load(did=GENE_ID)
 
     print "\nSuccess!"
     yield es
 
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices['gene_centric'], ignore=399)
-
-def flatten_json(d):
-    flat = {}
-
-    def flatten(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                flatten(v, name+'.'+k)
-        elif type(doc) is list:
-            for v in doc:
-                flatten(v, name)
-        else:
-            flat[name] = doc
-    flatten(d)
-    return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
 
 @pytest.fixture
 def get_docs_to_compare(gene_centric_index, filename):
