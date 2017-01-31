@@ -88,7 +88,7 @@ class CaseCentricBuilder(object):
         '''
         '''
         index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric'].replace('_', '-')
+        doc = self.config.index_names['case_centric']  # .replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(CaseMapper(doc).settings)

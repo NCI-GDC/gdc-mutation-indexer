@@ -29,10 +29,23 @@ def setup_test_index():
         es.indices.delete(index=conf.graph_index)
     r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
-    with open(os.path.join(conf.data_dir, 'cases.json')) as f:
-        case_docs = json.load(f)
+    try:
+        with open(conf.cases_file) as f:
+            case_docs = json.load(f)
+    except:
+        case_docs = {'docs': []}
+        with open(conf.cases_file) as f:
+            for line in f.readlines():
+                doc = json.loads(line)
+                to_append = {'_id': doc['case_id'],
+                             '_type': 'case',
+                             '_source': {k: v for k, v in doc.items()
+                                         if k != 'case_id'}}
+                case_docs['docs'].append(to_append)
+
 
     for doc in case_docs['docs']:
+        i += 1
         es.create(
             index=conf.graph_index,
             id=doc['_id'],

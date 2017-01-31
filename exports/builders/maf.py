@@ -48,10 +48,10 @@ class MAFBuilder(object):
 
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-    
+
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        
+
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
 
         df = df.drop('_gene_id')
@@ -61,8 +61,8 @@ class MAFBuilder(object):
         # Write data
         if self.config.maf_keep:
             self.write(df)
-        return df
 
+        return df
 
     def add_null(self, df):
         '''
@@ -115,7 +115,7 @@ class MAFBuilder(object):
             self.logger.error('Urls not passed and get_urls() not yet called')
             raise Exception
         df = None
-        callers = ['mutect','muse','varscan','somaticsniper']
+        callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
         for url in urls:
             caller = [ c for c in callers if c in url ][0]
             try:
@@ -128,9 +128,9 @@ class MAFBuilder(object):
                     df = df.unionAll(new_df)
             except BaseException as e:
                 self.logger.error(e)
-        
+
         self.logger.info('Combined {} files for a total of {} rows'
-                         .format(len(urls), df.count()))
+                            .format(len(urls), df.count()))
         self.df = df
         return df
 
@@ -139,18 +139,18 @@ class MAFBuilder(object):
         Retrieve file ids from the api then gets the s3 urls from signpost
         '''
         filt = {
-            "op":"and",
-            "content":[{
-                    "op":"in",
-                    "content":{
-                        "field":"files.data_format",
-                        "value":["MAF"]
+            "op": "and",
+            "content": [{
+                    "op": "in",
+                    "content": {
+                        "field": "files.data_format",
+                        "value": ["MAF"]
                     }
-                },{
-                    "op":"in",
-                    "content":{
-                        "field":"files.access",
-                        "value":["open"]
+                }, {
+                    "op": "in",
+                    "content": {
+                        "field": "files.access",
+                        "value": ["open"]
                     }
                 }
             ]
@@ -161,9 +161,9 @@ class MAFBuilder(object):
             "size":"1000",
             "fields":"file_id"
         }
-        
+
         r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
-                            params=filt, verify=False)
+                         params=filt, verify=False)
         file_ids = [ f['file_id'] for f in r.json()['data']['hits'] ]
 
         urls = []
