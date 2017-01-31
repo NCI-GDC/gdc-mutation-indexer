@@ -17,12 +17,28 @@ def setup_test_index():
     Creates graph index with case docs and returns an elasticsearch client
     '''
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
-    r = es.indices.create(index=conf.graph_index, ignore=400)
+    es.indices.create(index=conf.graph_index, ignore=400)
 
-    with open(os.path.join(conf.data_dir, 'cases.json')) as f:
-        case_docs = json.load(f)
+    try:
+        with open(conf.cases_file) as f:
+            case_docs = json.load(f)
+    except:
+        case_docs = {'docs': []}
+        with open(conf.cases_file) as f:
+            for line in f.readlines():
+                doc = json.loads(line)
+                to_append = {'_id': doc['case_id'],
+                             '_type': 'case',
+                             '_source': {k: v for k, v in doc.items()
+                                         if k != 'case_id'}}
+                case_docs['docs'].append(to_append)
 
+
+    print 'loading case docs to the ES...'
+    i = 1
     for doc in case_docs['docs']:
+        print i
+        i += 1
         es.create(
             index=conf.graph_index,
             id=doc['_id'],
