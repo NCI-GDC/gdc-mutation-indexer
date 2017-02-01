@@ -39,7 +39,6 @@ class BaseConfig(object):
     gene_model_file = 's3a://test/genes.json'
 
 
-
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
     maf_urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
@@ -135,7 +134,7 @@ class TestConfig(BaseConfig):
     cases_file = os.path.join(data_dir, 'cases.10429.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
-    gene_model_file = os.path.join(exp_data_dir, 'genes.18.json')
+    gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')
 
     mappings = {'gene': 'gene.yml',
                 'ssm': 'ssm.yml',
