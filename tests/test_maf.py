@@ -93,7 +93,7 @@ class TestMAFGeneModelJoin(SparkTestCase):
         old_maf = MAFBuilder(conf, self.sqlContext).build()
 
         conf.maf_urls = new_files
-        new_maf = MAFBuilder(conf, self.addCleanup).build()
+        new_maf = MAFBuilder(conf, self.sqlContext).build()
 
         assert new_maf.schema == old_maf.schema
         assert len(set(old_maf.columns) - set(new_maf.columns)) == 0

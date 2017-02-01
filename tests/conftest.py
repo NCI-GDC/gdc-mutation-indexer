@@ -127,7 +127,7 @@ def get_validation_doc(path):
 
 
 def get_validation_paths(path):
-    ''' 
+    '''
     Gets the field paths from a json file and sorts them by length for
     nice traceback during testing
     '''

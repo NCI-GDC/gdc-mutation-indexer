@@ -75,36 +75,6 @@ def test_gene_structure(gene_centric_index):
     print 'Test docs here'
 
 
-@pytest.yield_fixture(scope='module')
-def sql_context(sqlContext):
-    yield sqlContext
-
-
-def test_maf_schema(sql_context):
-    test_dir = conf.test_dir
-
-    data_dir = os.path.join(test_dir, 'data')
-    input_dir = os.path.join(data_dir, 'input')
-
-    maf_dir = os.path.join(input_dir, 'maf')
-
-    old_files = ['file://' + os.path.join(data_dir, 'kirp.mutect.test.maf'),
-                 'file://' + os.path.join(data_dir, 'kirp.muse.test.maf')]
-
-    new_files = ['file://' + os.path.join(maf_dir, f)
-                 for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
-
-    conf.maf_urls = old_files
-    old_maf = MAFBuilder(conf, sql_context).build()
-
-    conf.maf_urls = new_files
-    new_maf = MAFBuilder(conf, sql_context).build()
-
-    assert new_maf.schema == old_maf.schema
-    assert len(set(old_maf.columns) - set(new_maf.columns)) == 0
-    assert len(set(new_maf.columns) - set(old_maf.columns)) == 0
-
-
 def test_mytest():
     index_number = int(conf.indices['gene_centric'].split('_')[1][1:]) - 1
     # index_number = 0
