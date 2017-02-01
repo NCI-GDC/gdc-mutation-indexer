@@ -23,8 +23,8 @@ class BaseConfig(object):
         'ssm_ocurrence_centric': 'ssm_occurrence_centric'
     }
 
-    # Index revision number, will be determined automatically if not specified
     revision = None
+    # Index revision number, will be determined automatically if not specified
 
     # Used for loading case/graph documents from a different es cluster
     source_es_host = 'http://elasticsearch.service.consul'
@@ -36,7 +36,7 @@ class BaseConfig(object):
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_path = 's3a://test/genes.json'
+    gene_model_file = 's3a://test/genes.json'
 
 
     # Locations of MAFs to combine. If none, all public paths listed on the
@@ -135,6 +135,7 @@ class TestConfig(BaseConfig):
     cases_file = os.path.join(data_dir, 'cases.10429.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
+    gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')
 
     mappings = {'gene': 'gene.yml',
                 'ssm': 'ssm.yml',

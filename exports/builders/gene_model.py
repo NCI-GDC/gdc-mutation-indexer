@@ -65,7 +65,7 @@ class GeneModelBuilder(object):
                          .option("header", "true")\
                          .load(self.config.census_file)
 
-        gene_model_df = self.sqlContext.read.json(self.config.gene_model_path)
+        gene_model_df = self.sqlContext.read.json(self.config.gene_model_file)
 
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(col('external_db_ids.*'),
