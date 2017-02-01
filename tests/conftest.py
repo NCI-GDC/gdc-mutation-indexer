@@ -48,4 +48,51 @@ def test_index(request):
         time.sleep(0.1)
 
     yield request.cls.es
-    request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
+
+    if not conf.keep_indices:
+        request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
+
+@pytest.yield_fixture(scope='module')
+def test_index(request):
+    ''' Generate a graph index as a fixture for re-use between tests '''
+    es = setup_test_index()
+
+    yield es
+
+    if not conf.keep_indices:
+        es.indices.delete(index=conf.graph_index, ignore=399)
+
+### Validation helpers
+
+def get_validation_doc(path):
+    '''
+    Loads a json document for validation and flattens it to a dict
+    '''
+    with open(path) as f:
+        validation = json.load(f)['_source']
+
+    paths = {}
+
+    def get_fields(doc, name=''):
+        if type(doc) is dict:
+            for k,v in doc.items():
+                get_fields(v, name + '.' + k)
+        elif type(doc) is list:
+            for v in doc:
+                get_fields(v, name + '[*]')
+        else:
+            paths[name[1:]] = doc
+
+    get_fields(validation)
+    return paths
+
+
+def get_validation_paths(path):
+    '''
+    Gets the field paths from a json file and sorts them by length for
+    nice traceback during testing
+    '''
+    did = path.split('.')[-2]
+    fields = get_validation_doc(path)
+    return zip([did]*len(fields.keys()),
+               sorted(fields.keys(), key=lambda x: len(x)))
