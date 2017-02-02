@@ -56,25 +56,16 @@ class BaseConfig(object):
     maf_overwrite = True
 
     # Case load settings
-    case_fields = ','.join(['case_id',
-                            'state',
-                            'submitter_id',
-                            '*_datetime',
-                            '*_ids',
-                            'project.*',
-                            'program.*',
-                            #diagnoses.state',
-                            #diagnoses.morphology',
-                            #diagnoses.tumor*',
-                            #diagnoses.days_to*',
-                            #diagnoses.primary_diagnosis',
-                            #diagnoses.classification_of_tumor',
-                            'demographic.*'])
-    case_arrays = ','.join(['*_ids',
-                            'diagnoses',
-                            'summary.data_categories'])
+    case_exclude_fields = ','.join(['samples',
+                                    'annotations',
+                                    'exposures',
+                                    'family_histories',
+                                    'files'])
+    case_arrays = ','.join(['*_ids'])#,
 
     def __init__(self):
+        self.es_user = os.getenv('GDC_ES_USER')
+        self.es_pass = os.getenv('GDC_ES_PASS')
         self.indices = self.get_index_prefixes()
 
     def get_index_prefixes(self):
