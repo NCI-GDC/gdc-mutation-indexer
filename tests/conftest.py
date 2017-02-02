@@ -16,7 +16,12 @@ def setup_test_index():
     '''
     Creates graph index with case docs and returns an elasticsearch client
     '''
+
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+
+    if es.indices.exists(index=conf.graph_index):
+        return es
+
     es.indices.create(index=conf.graph_index, ignore=400)
 
     try:
