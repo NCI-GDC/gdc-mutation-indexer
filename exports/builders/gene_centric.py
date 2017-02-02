@@ -1,7 +1,6 @@
 import os
 import yaml
 import requests
-from requests.auth import HTTPBasicAuth
 import json
 import logging
 logging.basicConfig()
@@ -97,7 +96,7 @@ class GeneCentricBuilder(object):
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index),
-                           auth=HTTPBasicAuth(self.config.es_user, self.config.es_pass),
+                           auth=(self.config.es_user, self.config.es_pass),
                            data=data).json()
 
         to_load = self.gene_centric
