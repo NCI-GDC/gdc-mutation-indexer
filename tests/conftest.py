@@ -8,10 +8,19 @@ from config import TestConfig
 
 conf = TestConfig
 
-@pytest.yield_fixture(scope='class')
-def test_index(request):
-    ''' Generate a graph index as a fixture for re-use between tests '''
-    request.cls.es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
+
+def setup_test_index():
+    '''
+    Creates graph index with case docs and returns an elasticsearch client
+    '''
+
+    es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+
+    with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
+        case_mapping = json.load(f)
 
     r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
     request.cls.graph_index = conf.graph_index
