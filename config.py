@@ -22,7 +22,7 @@ class BaseConfig(object):
         'case_centric':         'case_centric',
         'gene_centric':         'gene_centric',
         'ssm_centric':          'ssm_centric',
-        'ssm_ocurrence_centric':'ssm_occurrence_centric'
+        'ssm_occurrence_centric':'ssm_occurrence_centric'
     }
 
     # Index revision number, will be determined automatically if not specified
