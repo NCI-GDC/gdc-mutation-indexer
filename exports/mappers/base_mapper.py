@@ -8,8 +8,9 @@ class Mapper(object):
     A mapper is responsible for generating the mapping for a doc type
     '''
 
-    def __init__(self):
+    def __init__(self, doc_type):
         self.mapping = self.build_mapping()
+        self.doc_type = doc_type
 
     def build_mapping(self):
         '''
@@ -53,10 +54,19 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', 'common_settings.yml'))
 
         settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+        # Mapping settings should be moved inside each mapping
+        if 'mappings' in settings:
+            mapping_settings = settings['mappings']
+            del settings['mappings']
+
+        mapping = self.build_mapping()
+        mapping.update(mapping_settings)
+
         if 'mappings' in settings and type(settings['mappings']) is dict:
-            settings['mappings'].update(self.build_mapping())
+            settings['mappings'].update({self.doc_type: mapping})
         else:
-            settings['mappings'] = self.build_mapping()
+            settings['mappings'] = {self.doc_type: mapping}
+
         return settings
 
     def rm_maf_cols(self, d):

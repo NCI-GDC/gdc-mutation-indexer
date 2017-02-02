@@ -12,7 +12,7 @@ settings:
     number_of_replicas: 1
     mapper.dynamic: False
     mapping.nested_fields.limit: 100
-    mapping.total_fields_limit: 2000
+    mapping.total_fields.limit: 2000
 analysis:
   analyzer:
     id_index:
