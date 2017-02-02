@@ -1,10 +1,3 @@
-mappings:
-  _all:
-    enabled: false
-  _source:
-    excludes: [__comment__]
-    compress: true
-  dynamic: strict
 settings:
   index:
     refresh_interval: 1m
@@ -13,16 +6,22 @@ settings:
     mapper.dynamic: False
     mapping.nested_fields.limit: 100
     mapping.total_fields.limit: 2000
-analysis:
-  analyzer:
-    id_index:
-      filter:
-        - lowercase
-        - edge_ngram
-      type: custom
-      tokenizer: whitespace
-    id_search:
-      filter:
-        - lowercase
-      type: custom
-      tokenizer: whitespace
+  analysis:
+    analyzer:
+      id_index:
+        filter:
+          - lowercase
+          - edge_ngram
+        type: custom
+        tokenizer: whitespace
+      id_search:
+        filter:
+          - lowercase
+        type: custom
+        tokenizer: whitespace
+mappings:
+  _all:
+    enabled: false
+  _source:
+    excludes: [__comment__]
+  dynamic: strict

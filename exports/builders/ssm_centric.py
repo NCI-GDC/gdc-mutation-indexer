@@ -79,7 +79,7 @@ class SSMCentricBuilder(object):
         doc = self.config.index_names['ssm_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        data = json.dumps(SSMMapper().settings)
+        data = json.dumps(SSMMapper(doc).settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
