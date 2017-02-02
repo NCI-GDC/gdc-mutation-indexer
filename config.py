@@ -9,12 +9,12 @@ class BaseConfig(object):
     #spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
     spark_master = 'local[1]'
 
-    api_host = 'http://api.service.consul'
-    signpost_host = 'http://signpost.service.consul'
-    s3_host = 'http://cleversafe.service.consul'
+    api_host = os.getenv('API_HOST', 'http://api.service.consul')
+    signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
+    s3_host = os.getenv('S3_HOST', 'http://cleversafe.service.consul')
     # This is the cluster where document will be loaded into
-    es_host = 'http://elasticsearchvis.service.consul'
-    es_port = 9200
+    es_host = os.getenv('ES_HOST', 'http://elasticsearchvis.service.consul')
+    es_port = os.getenv('ES_PORT', 9200)
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
 
@@ -31,10 +31,11 @@ class BaseConfig(object):
     revision = None
 
     # Used for loading case/graph documents from a different es cluster
-    source_es_host = 'http://elasticsearchvis.service.consul'
-    source_es_port = 9200
-    graph_document = 'case'
-    graph_index = 'gdc_from_graph_5'
+    source_es_host = os.getenv('SOURCE_ES_HOST',
+                               'http://elasticsearchvis.service.consul')
+    source_es_port = os.getenv('SOURCE_ES_PORT', 9200)
+    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph_5')
+    graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
