@@ -15,8 +15,8 @@ class BaseConfig(object):
     # This is the cluster where document will be loaded into
     es_host = 'http://elasticsearchvis.service.consul'
     es_port = 9200
-    es_user = os.getenv('ES_USER')
-    es_pass = os.getenv('ES_PASS')
+    es_user = os.getenv('ES_USER', '')
+    es_pass = os.getenv('ES_PASS', '')
 
     # Index names, these also double as document type names
     # If name is None, the index will not be built
@@ -88,7 +88,9 @@ class BaseConfig(object):
             gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
                 index_name='case_centric' -> gdc_r7_case_centric
         '''
-        es = Elasticsearch(self.es_host, port=self.es_port, http_auth=(self.es_user, self.es_pass))
+        es = Elasticsearch(self.es_host,
+                           port=self.es_port,
+                           http_auth=(self.es_user, self.es_pass))
 
         def get_prefix(index_name):
             indices = es.indices.get_alias().keys()
