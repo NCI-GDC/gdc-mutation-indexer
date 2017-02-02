@@ -26,7 +26,6 @@ def mappings():
 
 
 @pytest.mark.parametrize('doc_type,path', [
-    ('gene', 'dynamic'),
     ('gene', 'properties.case'),
     ('gene', 'properties.case.properties.case_id'),
     ('gene', 'properties.case.properties.demographic'),
@@ -39,7 +38,6 @@ def mappings():
     ('gene', 'properties.case.properties.ssm.properties.consequence.properties.transcript'),
     ('gene', 'properties.case.properties.ssm.properties.consequence.properties.transcript.properties.annotation'),
     ('gene', 'properties.case.properties.ssm.properties.observation'),
-    ('ssm', 'dynamic'),
     ('ssm', 'properties.consequence'),
     ('ssm', 'properties.consequence.properties.transcript'),
     ('ssm', 'properties.consequence.properties.transcript.properties.gene'),
@@ -47,7 +45,6 @@ def mappings():
     ('ssm', 'properties.occurrence'),
     ('ssm', 'properties.occurrence.properties.case'),
     ('ssm', 'properties.occurrence.properties.case.properties.observation'),
-    ('ssm_occurrence', 'dynamic'),
     ('ssm_occurrence', 'properties.ssm'),
     ('ssm_occurrence', 'properties.ssm.properties.consequence'),
     ('ssm_occurrence', 'properties.ssm.properties.consequence.properties.transcript'),
@@ -55,7 +52,6 @@ def mappings():
     ('ssm_occurrence', 'properties.ssm.properties.consequence.properties.transcript.properties.annotation'),
     ('ssm_occurrence', 'properties.case'),
     ('ssm_occurrence', 'properties.case.properties.observation'),
-    ('case', 'dynamic'),
     ('case', 'properties.gene'),
     ('case', 'properties.gene.properties.ssm'),
     ('case', 'properties.gene.properties.ssm.properties.consequence'),
