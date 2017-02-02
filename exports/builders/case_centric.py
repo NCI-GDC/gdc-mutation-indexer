@@ -94,14 +94,19 @@ class CaseCentricBuilder(object):
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
-                                                    index), data=data).json()
+                                                    index),
+                           auth=(self.config.es_user, self.config.es_pass),
+                           data=data).json()
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        self.case_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\

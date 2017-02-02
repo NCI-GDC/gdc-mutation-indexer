@@ -83,7 +83,9 @@ class SSMCentricBuilder(object):
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
-                                                    index), data=data).json()
+                                                    index),
+                           auth=(self.config.es_user, self.config.es_pass),
+                           data=data).json()
 
         to_load = self.ssm_centric
         if did:
@@ -92,13 +94,16 @@ class SSMCentricBuilder(object):
         self.logger.info('Exporting ssm centric index')
         to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','10mb')\
-                            .option('es.batch.size.entries', '1000')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','ssm_id')\
                             .save(index_doc)
