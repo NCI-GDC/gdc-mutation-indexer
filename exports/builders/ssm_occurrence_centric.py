@@ -88,7 +88,7 @@ class SSMOccurrenceCentricBuilder(object):
         doc = self.config.index_names['ssm_occurrence_centric']
         index_doc = '{}/{}'.format(index, doc)
 
-        data = json.dumps(SSMOccurrenceMapper().settings)
+        data = json.dumps(SSMOccurrenceMapper(doc).settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                 self.config.es_port,

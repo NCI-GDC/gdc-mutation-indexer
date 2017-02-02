@@ -91,7 +91,7 @@ class GeneCentricBuilder(object):
         doc = self.config.index_names['gene_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        data = json.dumps(GeneMapper().settings)
+        data = json.dumps(GeneMapper(doc).settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,

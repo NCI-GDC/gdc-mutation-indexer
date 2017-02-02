@@ -90,7 +90,7 @@ class CaseCentricBuilder(object):
         doc = self.config.index_names['case_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        data = json.dumps(CaseMapper().settings)
+        data = json.dumps(CaseMapper(doc).settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
