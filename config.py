@@ -15,8 +15,6 @@ class BaseConfig(object):
     # This is the cluster where document will be loaded into
     es_host = 'http://elasticsearchvis.service.consul'
     es_port = 9200
-    es_user = os.getenv('ES_USER')
-    es_pass = os.getenv('ES_PASS')
 
     # Index names, these also double as document type names
     # If name is None, the index will not be built
@@ -24,7 +22,7 @@ class BaseConfig(object):
         'case_centric':         'case_centric',
         'gene_centric':         'gene_centric',
         'ssm_centric':          'ssm_centric',
-        'ssm_ocurrence_centric':'ssm_occurrence_centric'
+        'ssm_occurrence_centric':'ssm_occurrence_centric'
     }
 
     # Index revision number, will be determined automatically if not specified
@@ -34,7 +32,7 @@ class BaseConfig(object):
     source_es_host = 'http://elasticsearchvis.service.consul'
     source_es_port = 9200
     graph_document = 'case'
-    graph_index = 'gdc_from_graph_5'
+    graph_index = 'gdc_from_graph'
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
@@ -55,25 +53,16 @@ class BaseConfig(object):
     maf_overwrite = True
 
     # Case load settings
-    case_fields = ','.join(['case_id',
-                            'state',
-                            'submitter_id',
-                            '*_datetime',
-                            '*_ids',
-                            'project.*',
-                            'program.*',
-                            #diagnoses.state',
-                            #diagnoses.morphology',
-                            #diagnoses.tumor*',
-                            #diagnoses.days_to*',
-                            #diagnoses.primary_diagnosis',
-                            #diagnoses.classification_of_tumor',
-                            'demographic.*'])
-    case_arrays = ','.join(['*_ids',
-                            'diagnoses',
-                            'summary.data_categories'])
+    case_exclude_fields = ','.join(['samples',
+                                    'annotations',
+                                    'exposures',
+                                    'family_histories',
+                                    'files'])
+    case_arrays = ','.join(['*_ids'])#,
 
     def __init__(self):
+        self.es_user = os.getenv('GDC_ES_USER')
+        self.es_pass = os.getenv('GDC_ES_PASS')
         self.indices = self.get_index_prefixes()
 
     def get_index_prefixes(self):
