@@ -9,6 +9,7 @@ from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
 from exports.builders.utils import struct_select, ssm_occurrence_uuid_udf
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import SSMOccurrenceMapper
 
 
 class SSMOccurrenceCentricBuilder(object):
@@ -87,19 +88,7 @@ class SSMOccurrenceCentricBuilder(object):
         doc = self.config.index_names['ssm_occurrence_centric']
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import SSMOccurrenceMapper
-        m = SSMOccurrenceMapper()
-        
-        data = json.dumps({"settings":{"index":{
-                        "refresh_interval":"1m",
-                        "number_of_shards":1,
-                        "number_of_replicas":0,
-                        "mapper.dynamic":False,
-                        "mapping.nested_fields.limit":100,
-                        "mapping.total_fields.limit":2000
-                    }},"mappings":{
-                        doc: m.mapping
-                    }})
+        data = json.dumps(SSMOccurrenceMapper().settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                 self.config.es_port,

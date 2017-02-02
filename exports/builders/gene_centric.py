@@ -9,6 +9,7 @@ from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import GeneMapper
 
 
 class GeneCentricBuilder(object):
@@ -90,35 +91,7 @@ class GeneCentricBuilder(object):
         doc = self.config.index_names['gene_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import GeneMapper
-        m = GeneMapper()
-
-        data = json.dumps({"settings":{
-                    "index":{
-                        "refresh_interval":"1m",
-                        "number_of_shards":10,
-                        "number_of_replicas":0,
-                        "mapper.dynamic":False,
-                        "mapping.nested_fields.limit":100,
-                        "mapping.total_fields.limit":2000
-                    },
-                    "analysis": {
-                        "analyzer": {
-                            "id_index": { 
-                                "filter": ["lowercase", "edge_ngram"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            },
-                            "id_search": {
-                                "filter": ["lowercase"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            }
-                        }
-                    }},
-                    "mappings":{
-                        doc: m.mapping
-                    }})
+        data = json.dumps(GeneMapper().settings)
 
         print requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,

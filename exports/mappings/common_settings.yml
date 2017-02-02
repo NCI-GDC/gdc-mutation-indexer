@@ -1,6 +1,28 @@
-_all:
-  enabled: false
-_source:
-  excludes: [__comment__]
-  compress: true
-dynamic: strict
+mappings:
+  _all:
+    enabled: false
+  _source:
+    excludes: [__comment__]
+    compress: true
+  dynamic: strict
+settings:
+  index:
+    refresh_interval: 1m
+    number_of_shards: 10
+    number_of_replicas: 1
+    mapper.dynamic: False
+    mapping.nested_fields.limit: 100
+    mapping.total_fields_limit: 2000
+analysis:
+  analyzer:
+    id_index:
+      filter:
+        - lowercase
+        - edge_ngram
+      type: custom
+      tokenizer: whitespace
+    id_search:
+      filter:
+        - lowercase
+      type: custom
+      tokenizer: whitespace

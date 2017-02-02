@@ -16,7 +16,6 @@ class Mapper(object):
         Constructs an elastic search mapping
         '''
         mapping = {}
-        mapping.update(self.settings)
         return mapping
 
     def load_properties(self, path, nested=False):
@@ -54,6 +53,10 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', 'common_settings.yml'))
 
         settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+        if 'mappings' in settings and type(settings['mappings']) is dict:
+            settings['mappings'].update(self.build_mapping())
+        else:
+            settings['mappings'] = self.build_mapping()
         return settings
 
     def rm_maf_cols(self, d):
