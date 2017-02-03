@@ -7,13 +7,13 @@ from elasticsearch import Elasticsearch
 
 from conftest import get_validation_paths
 from config import TestConfig
+from utils import match_dictionaries
 
-from exports.builders import GeneCentricBuilder, MAFBuilder
+from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
 doc_cache = {}
-GENE_ID = None
-# GENE_ID = 'ENSG00000092931'  # <= OLD one
+GENE_ID = None  # 'ENSG00000092931'  # <= OLD one
 
 
 @pytest.yield_fixture(scope='module')
@@ -72,14 +72,31 @@ def test_gene_path_count(gene_centric_index, doc, path, count):
 
 def test_gene_structure(gene_centric_index):
     print "\nGENE STRUCTURE TEST"
-    print 'Test docs here'
+    output_dir = os.path.join(conf.data_dir, 'output')
+    index = conf.indices['gene_centric']
+
+    # Compare each true output document with document in ES:
+    for filename in  os.listdir(output_dir):
+        with open(os.path.join(output_dir, filename), 'r') as f:
+            true_doc = json.loads(f.read())
+
+            query = {'query': {'match': {'gene_id': filename}}}
+            es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+
+            print '\nGene name match:', es_doc['gene_id'] == true_doc['gene_id']
+
+            if not set(true_doc.keys()) == set(es_doc.keys()):
+                print "\nKeys mismatch:"
+                print 'True not in ES', set(true_doc.keys()) - set(es_doc.keys())
+                print 'ES not in True', set(es_doc.keys()) - set(true_doc.keys())
+            else:
+                print "{} first level okay".format(filename)
 
 
 def test_mytest():
     index_number = int(conf.indices['gene_centric'].split('_')[1][1:]) - 1
     # index_number = 0
     index = "gdc_r{}_test_gene_centric__".format(index_number)
-
 
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
@@ -95,11 +112,14 @@ def test_mytest():
 
             print '\nGene name match:', es_doc['gene_id'] == true_doc['gene_id']
 
-            if not true_doc.keys() == es_doc.keys():
+            if set(true_doc.keys()) != set(es_doc.keys()):
                 print "\nKeys mismatch:"
                 print 'True not in ES', set(true_doc.keys()) - set(es_doc.keys())
                 print 'ES not in True', set(es_doc.keys()) - set(true_doc.keys())
+            else:
+                print "{} first level okay".format(filename)
+                match_dictionaries(true_doc, es_doc)
 
-    import pdb
-    pdb.set_trace()
+                import pdb
+                pdb.set_trace()
 

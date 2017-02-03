@@ -83,7 +83,7 @@ class TestMAFBuilder(SparkTestCase):
                            'TCGA-BQ-7059')
 
 class TestBuilderUtils(unittest.TestCase):
-    
+
     def test_ssm_label(self):
         ''' Test ssm label generation '''
         label = ssm_label('chr3','SNP',41589825,'','A','T')

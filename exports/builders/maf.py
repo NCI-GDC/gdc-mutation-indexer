@@ -5,18 +5,18 @@ import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.types import StringType
-from pyspark.sql.functions import lit, col, regexp_extract
+from pyspark.sql.types import StringType, IntegerType
+from pyspark.sql.functions import lit, col, regexp_extract, udf
 
 from exports.builders.utils import ssm_uuid_udf
 from exports.builders.gene_model import GeneModelBuilder
 
 
 class MAFBuilder(object):
-    '''
+    """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
-    '''
+    """
 
     def __init__(self, config, sqlContext):
         self.config = config
@@ -29,10 +29,10 @@ class MAFBuilder(object):
             self.urls = self.get_urls()
 
     def build(self):
-        '''
+        """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
-        '''
+        """
         if self.config.maf_use_existing:
             try:
                 df = self.get_existing()
@@ -58,6 +58,8 @@ class MAFBuilder(object):
 
         df = self.add_null(df)
 
+        df = self.add_canonical_lengths(df)
+
         # Write data
         if self.config.maf_keep:
             self.write(df)
@@ -65,15 +67,15 @@ class MAFBuilder(object):
         return df
 
     def add_null(self, df):
-        '''
+        """
         Adds a null column to use as defaults for mappings.
-        '''
+        """
         return df.withColumn('empty', lit('').cast(StringType()))
 
     def standardize_schema(self, df):
-        '''
+        """
         Renames and select required columns from the MAF documents
-        '''
+        """
         #path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../schemas/maf.yml'))
         path = os.path.abspath('exports/schemas/maf.yml')
         with open(path) as f:
@@ -81,10 +83,51 @@ class MAFBuilder(object):
         maf_df = df.select(*( col(v).alias(k) for k, v in maf_schema.items() ))
         return maf_df
 
+    def add_canonical_lengths(self, df):
+        """
+        Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
+        """
+
+        def integer_udf(function):
+            """ Spark IntegerType udf decorator """
+            return udf(function, IntegerType())
+
+        @integer_udf
+        def len_udf(transcripts):
+            for t in transcripts:
+                if t['is_canonical']:
+                    if 'length' in t:
+                        return t['length']
+                    else:
+                        return None
+
+        @integer_udf
+        def len_cds_udf(transcripts):
+            for t in transcripts:
+                if t['is_canonical']:
+                    if 'length' in t:
+                        return t['length']
+                    else:
+                        return None
+
+        @integer_udf
+        def len_gen_udf(transcripts):
+            for t in transcripts:
+                if t['is_canonical']:
+                    return int(t['end']) - int(t['start']) + 1
+
+        df = df.withColumn('canonical_transcript_length',
+                           len_udf(df.transcripts))
+        df = df.withColumn('canonical_transcript_length_cds',
+                           len_cds_udf(df.transcripts))
+        df = df.withColumn('canonical_transcript_length_genomic',
+                           len_gen_udf(df.transcripts))
+        return df
+
     def add_ssm_id(self, df):
-        '''
+        """
         Adds ssm_id column to the MAF dataframe
-        '''
+        """
         ssm_func = ssm_uuid_udf(self.config.ssm_namespace)
         maf_df = df.withColumn('ssm_id', ssm_func(col('chromosome'),
                                                   col('variant_type'),
@@ -95,20 +138,20 @@ class MAFBuilder(object):
         return maf_df
 
     def extract_barcode(self, df):
-        '''
+        """
         Extracts the case barcode from the sample barcode
         TODO: Remove this as it only works for TCGA. Should look up case uuid
               from the sample uuid
-        '''
+        """
         maf_df = df.withColumn('_case_submitter_id',
                                    regexp_extract(col('tumor_sample_barcode'),
                                          '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',1))
         return maf_df
 
     def combine(self, urls=None):
-        '''
+        """
         Combines data frames from a list of urls
-        '''
+        """
         if urls is None and self.urls is not None:
             urls = self.urls
         elif urls is None and self.urls is None:
@@ -135,9 +178,9 @@ class MAFBuilder(object):
         return df
 
     def get_urls(self):
-        '''
+        """
         Retrieve file ids from the api then gets the s3 urls from signpost
-        '''
+        """
         filt = {
             "op": "and",
             "content": [{
@@ -177,18 +220,18 @@ class MAFBuilder(object):
         return urls
 
     def patch_url(self, url):
-        '''
+        """
         changes domain/bucket to bucket format
         s3:// -> s3a://
-        '''
+        """
         url = url.replace('cleversafe.service.consul/somatic_maf', 'test')
         url = url.replace('s3://', 's3a://')
         return url
 
     def read_maf(self, url):
-        '''
+        """
         Read and return a single MAF from the given s3 url
-        '''
+        """
         return self.sqlContext.read.format('com.databricks.spark.csv')\
                    .options(header='true')\
                    .options(comment="#")\
@@ -197,9 +240,9 @@ class MAFBuilder(object):
                    .load(url)
 
     def get_existing(self):
-        '''
+        """
         Loads a built combined maf
-        '''
+        """
         df = self.sqlContext.read.format('com.databricks.spark.csv')\
                         .options(header='true', inferschema='true')\
                         .load(self.config.maf_path)\
@@ -207,9 +250,9 @@ class MAFBuilder(object):
         return df
 
     def write(self, df):
-        '''
+        """
         Writes the combined maf file
-        '''
+        """
         writer = df.write.format('com.databricks.spark.csv')
         if self.config.maf_overwrite:
             writer = writer.mode('overwrite')
