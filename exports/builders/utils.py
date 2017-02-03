@@ -4,7 +4,7 @@ import yaml
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, ArrayType, IntegerType
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
@@ -114,7 +114,7 @@ def struct_select(path):
         mapping = yaml.load(f)
 
     select = ()
-    
+
     def restructure(doc):
         cols = []
         if type(doc) is dict:
