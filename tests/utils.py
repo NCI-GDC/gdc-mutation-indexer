@@ -46,6 +46,7 @@ def validate_level(a, b):
             return False
         else:
             for key in a:
+<<<<<<< HEAD
                 validate_level(a[key], b[key], '.'.join([path, key]))
 
     elif isinstance(a, list):  # [TODO] fix this case!
@@ -99,8 +100,6 @@ def validate_level(a, b):
             print '{} | NOT EQUALS | {}'.format(a, b)
         return a == b
 
-
-
 def flatten_json(y):
     out = {}
 
@@ -118,4 +117,3 @@ def flatten_json(y):
 
     flatten(y)
     return out
->>>>>>> 285f250... Flat test implemented. Slightly refactored
