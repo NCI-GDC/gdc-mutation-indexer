@@ -1,13 +1,11 @@
-import os
 import requests
 import json
 import logging
 logging.basicConfig()
 
 from pyspark.sql.functions import lit, col, struct, collect_list
-
-from exports.builders.utils import struct_select
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.builders.utils import struct_select
 
 
 class GeneCentricBuilder(object):
@@ -38,32 +36,20 @@ class GeneCentricBuilder(object):
         if maf_df is None:
             print '\nBuilding MAF'
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
-
         print 'maf_df count:', maf_df.count()
+
         print '\nBuilding Gene from MAF'
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
                                 *struct_select(self.config.mappings['gene'],
                                                ignore=['transcripts']))
         print 'gene_df count:', gene_df.count()
+
         print '\nBuilding SSM from MAF'
         # SSM
         ssm_df = maf_df.select('_case_submitter_id',
                                *struct_select(self.config.mappings['ssm']))
-
         print 'ssm_df count:', ssm_df.count()
-        # Consequence
-        # stmt = (struct(
-        #             struct(
-        #                 struct(*struct_select('annotation.yml'))
-        #                     .alias('annotation'),
-        #                    *struct_select('transcript.yml')
-        #             ).alias('transcript')
-        #         ).alias('consequence'))
-
-        # cons_df = maf_df.select('ssm_id', stmt)\
-        #                 .groupBy('ssm_id')\
-        #                 .agg(collect_list('consequence').alias('consequence'))
 
         print '\nBuilding Transcript from MAF'
         transc_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
@@ -113,8 +99,7 @@ class GeneCentricBuilder(object):
         print 'case_ssm count:', case_ssm.count()
 
         print '\nFinal join (gene_df and case_ssm, [inner, "submitter_id"]) ' \
-              'and ' \
-              'aggregation'
+              'and aggregation'
         gene_centric = gene_df.join(case_ssm,
                                     gene_df._case_submitter_id == case_ssm.submitter_id,
                                     'inner')\
@@ -166,7 +151,7 @@ class GeneCentricBuilder(object):
 
         query = '{}:{}/{}'.format(self.config.es_host, self.config.es_port,
                                   index)
-        response = requests.put(query, data=data).json()
+        requests.put(query, data=data).json()
 
         to_load = self.gene_centric
 

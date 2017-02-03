@@ -5,7 +5,7 @@ import pkg_resources
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
-from pyspark.sql.types import StringType, ArrayType
+from pyspark.sql.types import StringType, ArrayType, IntegerType
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
@@ -135,7 +135,7 @@ def struct_select(path, ignore=[]):
     mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     select = ()
-    
+
     def restructure(doc):
         cols = []
         if type(doc) is dict:
