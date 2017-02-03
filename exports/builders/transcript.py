@@ -20,7 +20,6 @@ class TranscriptBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        
 
     def build(self, maf_df):
         '''
@@ -42,7 +41,7 @@ class TranscriptBuilder(object):
                    .drop_duplicates(['transcript_id', 'ssm_id'])
 
         # Load gene model and explode the transcripts
-        tran_df = self.sqlContext.read.json(self.config.gene_model_path)\
+        tran_df = self.sqlContext.read.json(self.config.gene_model_file)\
                 .select(col('*'), explode('transcripts').alias('transcript'))\
                 .select(col('*'), 'transcript.*')\
                 .withColumn('empty', lit('').cast(StringType()))
