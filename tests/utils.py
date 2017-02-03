@@ -35,16 +35,7 @@ def match_dictionaries(dict1, dict2):
             print 'Level-[{}]: [BAD]'.format(k)
 
 
-def validate_level(a, b, path='root'):
-    print "\nValidating [{}]".format(path)
-    print "^^^^^^^^^^^^^^^^"
-    if type(a) != type(b):
-        print "TYPES MISMATCH!"
-        print type(a), type(b)
-        return False
-        import pdb
-        pdb.set_trace()
-
+def validate_level(a, b):
     if isinstance(a, dict):
         K1 = set(a.keys())
         K2 = set(b.keys())
@@ -91,5 +82,22 @@ def validate_level(a, b, path='root'):
         else:
             print "[GOOD]"
             return True
+=======
+                validate_level(a[key], b[key])
+
+    elif isinstance(a, list):  # [TODO] fix this case!
+        for value in a:
+            if value not in b:
+                print "{} BRANCH IS MISSING".format(type(value))
+                import pdb
+                pdb.set_trace()
+                return False
+            else:
+                return True
+    else:
+        if a != b:
+            print 'Value mismatch!'
+            print '{} | NOT EQUALS | {}'.format(a, b)
+>>>>>>> ed3552f... canonical transcript length fields added to MAFBuilder
         return a == b
 
