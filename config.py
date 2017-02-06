@@ -24,8 +24,8 @@ class BaseConfig(object):
         'ssm_occurrence_centric':'ssm_occurrence_centric'
     }
 
-    revision = None
     # Index revision number, will be determined automatically if not specified
+    revision = None
 
     # Used for loading case/graph documents from a different es cluster
     source_es_host = os.getenv('SOURCE_ES_HOST',
@@ -38,8 +38,7 @@ class BaseConfig(object):
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_file = 's3a://test/genes.json'
-
+    gene_model_path = 's3a://test/genes.json'
 
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
@@ -59,13 +58,13 @@ class BaseConfig(object):
                                     'exposures',
                                     'family_histories',
                                     'files'])
-    case_arrays = ','.join(['*_ids'])
+    case_arrays = ','.join(['*_ids'])#,
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
 
     def get_index_prefixes(self):
-        """
+        '''
         Uses the version specified in the config, or will resolve the next
         version number by looking for an existing index and incrementing by one
 
@@ -75,16 +74,15 @@ class BaseConfig(object):
 
             gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
                 index_name='case_centric' -> gdc_r7_case_centric
-        """
+        '''
         es = Elasticsearch(self.es_host,
                            port=self.es_port,
                            http_auth=(self.es_user, self.es_pass))
 
-    def get_prefix(index_name):
-        indices = es.indices.get_alias().keys()
-        versions = [int(v.split('_')[1].replace('r',''))
-        for v in indices
-        if v.endswith(index_name) and v[:4] == 'gdc_']
+        def get_prefix(index_name):
+            indices = es.indices.get_alias().keys()
+            versions = [ int(v.split('_')[1].replace('r',''))
+                            for v in indices if v.endswith(index_name) and v[:4]=='gdc_' ]
             # If there is no index with this name in it
             if versions == []:
                 version = 0
@@ -94,56 +92,31 @@ class BaseConfig(object):
             prefix = 'gdc_r{}_{}'.format(version, index_name)
             return prefix
 
-        indices = {k: get_prefix(v)
-                   for k, v in self.index_names.items() if v is not None}
-
+        indices = { k: get_prefix(v)
+                            for k,v in self.index_names.items()
+                            if v is not None }
         return indices
 
 
 class TestConfig(BaseConfig):
-    root_dir = os.path.dirname(__file__)
-    print root_dir
-    test_dir = os.path.join(root_dir, 'tests')
+    test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
     data_dir = os.path.join(test_dir, 'data')
-
-    exp_data_dir = os.path.join(os.path.dirname(test_dir), 'exports', 'data')
 
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
     graph_index = 'test_graph_index__'
 
     index_names = {
-        'case_centric':           'test_case_centric__',
-        'gene_centric':           'test_gene_centric__',
-        'ssm_centric':            'test_ssm_centric__',
-        'ssm_occurrence_centric': 'test_ssm_occurrence_centric__'
+        'case_centric':         'test_case_centric__',
+        'gene_centric':         'test_gene_centric__',
+        'ssm_centric':          'test_ssm_centric__',
+        'ssm_occurrence_centric':'test_ssm_occurrence_centric__'
     }
 
-    input_dir = os.path.join(data_dir, 'input')
-    output_dir = os.path.join(data_dir, 'output')
-    maf_dir = os.path.join(input_dir, 'maf')
+    maf_urls = ['file://'+os.path.join(data_dir, 'kirp.mutect.test.maf'),
+                'file://'+os.path.join(data_dir, 'kirp.muse.test.maf')]
 
-    # Old ones:
-    # maf_urls = ['file://' + os.path.join(data_dir, 'kirp.mutect.test.maf'),
-    #             'file://' + os.path.join(data_dir, 'kirp.muse.test.maf')]
-
-    # Junjun's:
-    maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
-
-    cases_file = os.path.join(data_dir, 'cases.10429.json')
-    citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
-    census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
-    gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')
-
-    mappings = {'gene': 'gene.yml',
-                'ssm': 'ssm.yml',
-                'transcript': 'transcript.yml',
-                'annotation': 'annotation.yml',
-                'observation': 'observation.yml',
-                }
-
-    # maf_path = 'file:///test_mafs.csv'
+    maf_path = 'file:///test_mafs.csv'
     keep_indices = True
     maf_keep = False
     maf_use_existing = False
@@ -153,4 +126,3 @@ configs = {
     'BaseConfig': BaseConfig,
     'TestConfig': TestConfig
 }
->>>>>>> 5ab5110... Junjun's data running. MAF tests

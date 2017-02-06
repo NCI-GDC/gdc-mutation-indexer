@@ -16,7 +16,6 @@ def setup_test_index():
     '''
     Creates graph index with case docs and returns an elasticsearch client
     '''
-
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
     with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
@@ -25,24 +24,11 @@ def setup_test_index():
     r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
     request.cls.graph_index = conf.graph_index
 
-    try:
-        with open(conf.cases_file) as f:
-            case_docs = json.load(f)
-    except:
-        case_docs = {'docs': []}
-        with open(conf.cases_file) as f:
-            for line in f.readlines():
-                doc = json.loads(line)
-                to_append = {'_id': doc['case_id'],
-                             '_type': 'case',
-                             '_source': {k: v for k, v in doc.items()
-                                         if k != 'case_id'}}
-                case_docs['docs'].append(to_append)
-
+    with open(os.path.join(conf.data_dir, 'cases.json')) as f:
+        case_docs = json.load(f)
 
     for doc in case_docs['docs']:
-        i += 1
-        request.cls.es.create(
+        es.create(
             index=conf.graph_index,
             id=doc['_id'],
             doc_type=doc['_type'],
@@ -60,7 +46,6 @@ def setup_test_index():
 
     if not conf.keep_indices:
         request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
-
 
 @pytest.yield_fixture(scope='module')
 def test_index(request):
@@ -98,7 +83,7 @@ def get_validation_doc(path):
 
 
 def get_validation_paths(path):
-    '''
+    ''' 
     Gets the field paths from a json file and sorts them by length for
     nice traceback during testing
     '''
