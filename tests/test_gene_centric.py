@@ -124,15 +124,7 @@ def test_structure():
                 print 'ES not in True', set(es_doc.keys()) - set(true_doc.keys())
             else:
                 print "{} first level okay".format(filename)
-<<<<<<< HEAD
                 match_json_structure(true_doc, es_doc)
 
                 import pdb
                 pdb.set_trace()
-=======
-                match_dictionaries(true_doc, es_doc)
-
-                import pdb
-                pdb.set_trace()
-
->>>>>>> 464723b... canonical transcript length fields added to MAFBuilder
