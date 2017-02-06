@@ -65,7 +65,7 @@ class TestMapper(unittest.TestCase):
 class TestGeneMapper(unittest.TestCase):
 
     def test_gene_map(self):
-        mapper = GeneMapper()
+        mapper = GeneMapper('gene_centric')
 
         self.assertIn('properties', mapper.mapping)
         props = mapper.mapping['properties']

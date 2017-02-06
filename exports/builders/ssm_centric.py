@@ -50,7 +50,8 @@ class SSMCentricBuilder(object):
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))
 
-        # Get cases from ES
+        # Get ssm from ES
+        self.logger.info("Building ssm_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\

@@ -66,7 +66,8 @@ class GeneCentricBuilder(object):
                     .groupBy('_case_submitter_id')\
                     .agg(collect_list('ssm').alias('ssm'))
 
-        # Get cases from ES
+        # Get genes from ES
+        self.logger.info("Building gene_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         # Combine case with ssm tree
