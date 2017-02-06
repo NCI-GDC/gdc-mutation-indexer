@@ -91,5 +91,3 @@ def validate_level(a, b, path='root'):
         else:
             print "[GOOD]"
             return True
-        return a == b
-
