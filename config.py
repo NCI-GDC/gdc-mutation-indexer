@@ -52,17 +52,12 @@ class BaseConfig(object):
     maf_overwrite = True
 
     # Case load settings
-    case_fields = ','.join(['case_id',
-                            'state',
-                            'submitter_id',
-                            '*_datetime',
-                            '*_ids',
-                            'project.*',
-                            'program.*',
-                            'demographic.*'])
-    case_arrays = ','.join(['*_ids',
-                            'diagnoses',
-                            'summary.data_categories'])
+    case_exclude_fields = ','.join(['samples',
+                                     'annotations',
+                                     'exposures',
+                                     'family_histories',
+                                     'files'])
+    case_arrays = ','.join(['*_ids'])
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -132,6 +127,7 @@ class TestConfig(BaseConfig):
     maf_urls = ['file://' + os.path.join(maf_dir, f)
                 for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
 
+    case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
     cases_file = os.path.join(data_dir, 'cases.10429.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')

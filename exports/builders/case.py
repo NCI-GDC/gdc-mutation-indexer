@@ -33,7 +33,7 @@ class CaseBuilder(object):
         return self.sqlContext.read.format("es")\
             .option('es.nodes', self.config.source_es_host)\
             .option('es.nodes.resolve.hostname','false')\
-            .option('es.read.field.include', self.config.case_fields)\
+            .option('es.read.field.exclude', self.config.case_exclude_fields)\
             .option('es.read.field.as.array.include', self.config.case_arrays)\
             .option('es.resource.read', source)\
             .load(source)

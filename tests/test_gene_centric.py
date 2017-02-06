@@ -86,7 +86,7 @@ def test_path_count(gene_centric_index, doc, path, count):
 
 def test_gene_structure(gene_centric_index):
     print "\nGENE STRUCTURE TEST"
-    output_dir = os.path.join(conf.data_dir, 'output')
+    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
     index = conf.indices['gene_centric']
 
     # Compare each true output document with document in ES:
@@ -114,7 +114,7 @@ def test_mytest():
 
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
-    output_dir = os.path.join(conf.data_dir, 'output')
+    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
 
     # Compare each true output document with document in ES:
     for filename in  os.listdir(output_dir):
@@ -136,4 +136,3 @@ def test_mytest():
 
                 import pdb
                 pdb.set_trace()
-
