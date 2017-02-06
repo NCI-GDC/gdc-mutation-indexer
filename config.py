@@ -64,8 +64,6 @@ class BaseConfig(object):
     case_arrays = ','.join(['*_ids'])#,
 
     def __init__(self):
-        self.es_user = os.getenv('GDC_ES_USER')
-        self.es_pass = os.getenv('GDC_ES_PASS')
         self.indices = self.get_index_prefixes()
 
     def get_index_prefixes(self):
