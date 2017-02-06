@@ -2,6 +2,7 @@ import os
 import time
 import json
 import pytest
+import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -10,6 +11,9 @@ from elasticsearch import Elasticsearch
 from config import TestConfig
 
 conf = TestConfig
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 
 def setup_test_index():
@@ -31,7 +35,7 @@ def setup_test_index():
             ignore=409,
         )
 
-    print 'loaded {} case docs'.format(len(case_docs['docs']))
+    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
 
     while True:
         count = es.count(index=conf.graph_index, doc_type='case')['count']

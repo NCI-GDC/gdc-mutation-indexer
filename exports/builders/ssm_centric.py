@@ -81,11 +81,11 @@ class SSMCentricBuilder(object):
 
         data = json.dumps(SSMMapper(doc).settings)
 
-        print requests.put('{}:{}/{}'.format(self.config.es_host,
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index),
                            auth=(self.config.es_user, self.config.es_pass),
-                           data=data).json()
+                           data=data).json())
 
         to_load = self.ssm_centric
         if did:

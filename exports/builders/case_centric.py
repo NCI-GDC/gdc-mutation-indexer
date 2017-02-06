@@ -92,11 +92,11 @@ class CaseCentricBuilder(object):
 
         data = json.dumps(CaseMapper(doc).settings)
 
-        print requests.put('{}:{}/{}'.format(self.config.es_host,
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
                                                     index),
-                           auth=(self.config.es_user, self.config.es_pass),
-                           data=data).json()
+                               auth=(self.config.es_user, self.config.es_pass),
+                               data=data).json())
 
         self.logger.info('Exporting case centric index')
         self.case_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
