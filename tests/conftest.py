@@ -21,7 +21,6 @@ def setup_test_index():
     Creates graph index with case docs and returns an elasticsearch client
     '''
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
-<<<<<<< HEAD
 
     with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
         case_mapping = json.load(f)
