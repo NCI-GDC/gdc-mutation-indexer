@@ -70,6 +70,7 @@ class CaseCentricBuilder(object):
                             .select('_case_submitter_id', struct('ssm',*gene_df.drop('_case_submitter_id').columns).alias('gene'))
 
         # Get cases from ES
+        self.logger.info("Building case_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         case_centric = case_df.join(gene_ssm,
