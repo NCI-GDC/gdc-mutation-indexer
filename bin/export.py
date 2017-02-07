@@ -1,3 +1,5 @@
+import logging
+import sys
 import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
@@ -5,6 +7,9 @@ from pyspark.sql import SQLContext
 from config import configs 
 from config import BaseConfig
 from exports.gdc_mutation_export import GDCMutationExport
+
+root = logging.getLogger()
+root.setLevel(logging.INFO)
 
 
 def main():
@@ -17,7 +22,14 @@ def main():
                         type=str,
                         choices=configs.keys(),
                         default='BaseConfig')
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity",
+                        action="store_true")
+
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
 
     # Get config
     config = configs[args.config]()

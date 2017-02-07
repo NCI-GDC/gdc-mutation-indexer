@@ -8,7 +8,8 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
 from exports.builders.utils import struct_select, ssm_occurrence_uuid_udf
-from exports.builders import MAFBuilder, CaseBuilder
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import SSMOccurrenceMapper
 
 
 class SSMOccurrenceCentricBuilder(object):
@@ -38,24 +39,10 @@ class SSMOccurrenceCentricBuilder(object):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
-        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))\
-                               .limit(5) # TODO: Remove this
+        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))
 
         # Consequence
-        stmt = (struct(
-                    struct(
-                        struct(*struct_select('annotation.yml'))
-                            .alias('annotation'),
-                        struct(*struct_select('gene.yml'))
-                            .alias('gene'),
-                           *struct_select('transcript.yml')
-                    ).alias('transcript')
-
-                ).alias('consequence'))
-
-        cons_df = maf_df.select('ssm_id', stmt)\
-                        .groupBy('ssm_id')\
-                        .agg(collect_list('consequence').alias('consequence'))
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
@@ -64,7 +51,8 @@ class SSMOccurrenceCentricBuilder(object):
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))
 
-        # Get cases from ES
+        # Get ssm occurrence from ES
+        self.logger.info("Building ssm_occurrence_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         case_obs_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
@@ -101,38 +89,31 @@ class SSMOccurrenceCentricBuilder(object):
         doc = self.config.index_names['ssm_occurrence_centric']
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import SSMOccurrenceMapper
-        m = SSMOccurrenceMapper()
-        
-        data = json.dumps({"settings":{"index":{
-                        "refresh_interval":"1m",
-                        "number_of_shards":1,
-                        "number_of_replicas":0,
-                        "mapper.dynamic":False,
-                        "mapping.nested_fields.limit":100,
-                        "mapping.total_fields.limit":2000
-                    }},"mappings":{
-                        doc: m.mapping
-                    }})
+        data = json.dumps(SSMOccurrenceMapper(doc).settings)
 
-        print requests.put('{}:{}/{}'.format(self.config.es_host,
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
                                                 self.config.es_port,
-                                                index), data=data).json()
+                                                index),
+                               auth=(self.config.es_user, self.config.es_pass),
+                               data=data).json())
 
         to_load = self.ssm_occurrence_centric
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
         self.logger.info('Exporting ssm centric index')
-        to_load.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','500mb')\
-                            .option('es.batch.size.entries', '1')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','ssm_occurrence_id')\
                             .save(index_doc)

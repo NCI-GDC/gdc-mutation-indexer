@@ -9,6 +9,7 @@ from conftest import get_validation_paths
 from config import TestConfig
 from utils import match_json_structure, flatten_json
 
+
 from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
@@ -126,6 +127,5 @@ def test_structure():
             else:
                 print "{} first level okay".format(filename)
                 match_json_structure(true_doc, es_doc)
-
                 import pdb
                 pdb.set_trace()

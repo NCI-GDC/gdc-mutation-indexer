@@ -6,6 +6,8 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 from exports.builders.utils import struct_select
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import GeneMapper
 
 
 class GeneCentricBuilder(object):
@@ -55,6 +57,7 @@ class GeneCentricBuilder(object):
         transc_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
         print 'transc_df count:', transc_df.count()
 
+
         print '\nAggregating obs_df from MAF'
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -86,9 +89,9 @@ class GeneCentricBuilder(object):
 
         print '\nBuilding case_df'
         # Get cases from ES
+
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         print 'case_df count:', case_df.count()
-
 
         print '\nJoining case_df with df [left, "submitter_id"]'
         # Combine case with ssm tree
@@ -116,43 +119,17 @@ class GeneCentricBuilder(object):
         """
         """
         index = self.config.indices['gene_centric']
-        doc = self.config.index_names['gene_centric']  # .replace('_', '-')
+
+        doc = self.config.index_names['gene_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import GeneMapper
-        m = GeneMapper()
+        data = json.dumps(GeneMapper(doc).settings)
 
-        data = json.dumps({"settings": {
-                                 "index": {
-                                     "refresh_interval": "1m",
-                                     "number_of_shards": 10,
-                                     "number_of_replicas": 0,
-                                     "mapper.dynamic": False,
-                                     "mapping.nested_fields.limit": 100,
-                                     "mapping.total_fields.limit": 2000
-                                 },
-                                 "analysis": {
-                                     "analyzer": {
-                                         "id_index": {
-                                             "filter": ["lowercase", "edge_ngram"],
-                                             "type": "custom",
-                                             "tokenizer": "whitespace"
-                                         },
-                                         "id_search": {
-                                             "filter": ["lowercase"],
-                                             "type": "custom",
-                                             "tokenizer": "whitespace"
-                                         }
-                                     }
-                                             }},
-                                 "mappings": {doc: m.mapping}
-                          })
-
-        query = '{}:{}/{}'.format(self.config.es_host, self.config.es_port,
-                                  index)
-
-        r = requests.put(query, data=data)
-        print r
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
+                                                    self.config.es_port,
+                                                    index),
+                           auth=(self.config.es_user, self.config.es_pass),
+                           data=data).json())
 
         to_load = self.gene_centric
 
@@ -161,15 +138,17 @@ class GeneCentricBuilder(object):
 
         self.logger.info('Exporting gene centric index')
         to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
-                            .option('es.nodes', '{}:{}'.format(self.config.es_host,
-                                                               self.config.es_port))\
-                            .option('es.nodes.resolve.hostname', 'false')\
+                            .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
+                            .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count', '-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes', '500mb')\
-                            .option('es.batch.size.entries', '1')\
-                            .option('es.mapping.id', 'gene_id')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
+                            .option('es.mapping.id','gene_id')\
                             .save(index_doc)

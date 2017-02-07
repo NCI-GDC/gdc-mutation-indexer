@@ -9,12 +9,14 @@ class BaseConfig(object):
     #spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
     spark_master = 'local[1]'
 
-    api_host = 'http://api.service.consul'
-    signpost_host = 'http://signpost.service.consul'
-    s3_host = 'http://cleversafe.service.consul'
+    api_host = os.getenv('API_HOST', 'http://api.service.consul')
+    signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
+    s3_host = os.getenv('S3_HOST', 'http://cleversafe.service.consul')
     # This is the cluster where document will be loaded into
-    es_host = 'http://elasticsearchvis.service.consul'
-    es_port = 9200
+    es_host = os.getenv('ES_HOST', 'http://elasticsearchvis.service.consul')
+    es_port = os.getenv('ES_PORT', 9200)
+    es_user = os.getenv('ES_USER', '')
+    es_pass = os.getenv('ES_PASS', '')
 
     # Index names, these also double as document type names
     # If name is None, the index will not be built
@@ -23,23 +25,24 @@ class BaseConfig(object):
         'gene_centric':          'gene_centric',
         'ssm_centric':           'ssm_centric',
         'ssm_ocurrence_centric': 'ssm_occurrence_centric'
+
     }
 
     revision = None
     # Index revision number, will be determined automatically if not specified
 
     # Used for loading case/graph documents from a different es cluster
-    source_es_host = 'http://elasticsearchvis.service.consul'
-    source_es_port = 9200
-    graph_document = 'case'
-    graph_index = 'gdc_from_graph_5'
+    source_es_host = os.getenv('SOURCE_ES_HOST',
+                               'http://elasticsearchvis.service.consul')
+    source_es_port = os.getenv('SOURCE_ES_PORT', 9200)
+    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph_5')
+    graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
     gene_model_file = 's3a://test/genes.json'
-
 
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
@@ -55,29 +58,11 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = ','.join(['samples',
-                                     'annotations',
-                                     'exposures',
-                                     'family_histories',
-                                     'files'])
-    case_arrays = ','.join(['*_ids'])#,v
-
-    # case_fields = ','.join(['case_id',
-    #                         'state',
-    #                         'submitter_id',
-    #                         '*_datetime',
-    #                         '*_ids',
-    #                         'project.*',
-    #                         'program.*',
-    #                         # diagnoses.state',
-    #                         # diagnoses.morphology',
-    #                         # diagnoses.tumor*',
-    #                         # diagnoses.days_to*',
-    #                         # diagnoses.primary_diagnosis',
-    #                         # diagnoses.classification_of_tumor',
-    #                         'demographic.*'])
-    # case_arrays = ','.join(['*_ids',
-    #                         'diagnoses',
-    #                         'summary.data_categories'])
+                                    'annotations',
+                                    'exposures',
+                                    'family_histories',
+                                    'files'])
+    case_arrays = ','.join(['*_ids'])
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -92,9 +77,11 @@ class BaseConfig(object):
                 index_name='case_centric' -> gdc_r0_case_centric
 
             gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
-                index_name='case_centric' -> gdc_r7_case_centric
+                  index_name='case_centric' -> gdc_r7_case_centric
         """
-        es = Elasticsearch(self.es_host, port=self.es_port)
+        es = Elasticsearch(self.es_host,
+                           port=self.es_port,
+                           http_auth=(self.es_user, self.es_pass))
 
         def get_prefix(index_name):
             indices = es.indices.get_alias().keys()
@@ -118,7 +105,6 @@ class BaseConfig(object):
 
 class TestConfig(BaseConfig):
     root_dir = os.path.dirname(__file__)
-    print root_dir
     test_dir = os.path.join(root_dir, 'tests')
     data_dir = os.path.join(test_dir, 'data')
 
@@ -161,7 +147,6 @@ class TestConfig(BaseConfig):
                 'observation': 'observation.yml',
                 }
 
-    # maf_path = 'file:///test_mafs.csv'
     keep_indices = True
     maf_keep = False
     maf_use_existing = False
