@@ -19,15 +19,16 @@ def setup_test_index():
 
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    # if es.indices.exists(index=conf.graph_index):
-    #     return es
-    if es.indices.exists(conf.graph_index):
-        es.indices.delete(index=conf.graph_index)
+    if es.indices.exists(index=conf.graph_index):
+        return es
+
+    # if es.indices.exists(conf.graph_index):
+    #     es.indices.delete(index=conf.graph_index)
 
     with open(conf.case_mapping_json, 'r') as f:
         case_mapping = json.load(f)
 
-    r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
+    es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
     try:
         with open(conf.cases_file) as f:

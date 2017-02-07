@@ -7,13 +7,11 @@ from elasticsearch import Elasticsearch
 
 from conftest import get_validation_paths
 from config import TestConfig
-from utils import match_dictionaries
+from utils import match_json_structure, flatten_json
 
 from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
-doc_cache = {}
-GENE_ID = None  # 'ENSG00000092931'  # <= OLD one
 
 
 @pytest.yield_fixture(scope='module')
@@ -29,7 +27,7 @@ def gene_centric_index(sqlContext, test_index):
     gc = GeneCentricBuilder(conf, sqlContext).build(df)
 
     print "\nLoading GeneCentric..."
-    gc.load(did=GENE_ID)
+    gc.load()
 
     print "\nSuccess!"
     yield es
@@ -52,62 +50,75 @@ def flatten_json(d):
     flatten(d)
     return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
 
-@pytest.mark.parametrize('doc,path',
-                         get_validation_paths(
-                             'tests/data/gene.validation.ENSG00000092931.json'))
-def test_gene_doc_contains(gene_centric_index, doc, path):
-    """ Test that document contains a field from a path """
-    if doc not in doc_cache:
-        d = gene_centric_index.get(conf.indices['gene_centric'],
-                                   doc,
-                                   doc_type=conf.index_names['gene_centric'])
-        doc_cache[doc] = d
-    else:
-        d = doc_cache[doc]
-    d = d['_source']
-    #print json.dumps(flatten_json(d), indent=2)
-    results = parse(path).find(d)
-    assert len([r.value for r in results]) > 0
-
-
-@pytest.mark.parametrize('doc,path,count', [
-    (GENE_ID, 'case[*].case_id', 1),
-    (GENE_ID, 'case[*].ssm[*].ssm_id', 119),
-    (GENE_ID, 'case[*].ssm[*].consequence[*].transcript.annotation.impact', 3477)
-])
-def test_path_count(gene_centric_index, doc, path, count):
-    d = gene_centric_index.get(conf.indices['gene_centric'],
-                               doc,
-                               doc_type=conf.index_names['gene_centric'])
-    d = d['_source']
-    results = parse(path).find(d)
-    assert len(results) == count
-
-
-def test_gene_structure(gene_centric_index):
-    print "\nGENE STRUCTURE TEST"
+@pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
+                                                             'output',
+                                                             'gene_centric')))
+def test_gene_centric_formal(gene_centric_index, filename):
     output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
     index = conf.indices['gene_centric']
 
     # Compare each true output document with document in ES:
-    for filename in  os.listdir(output_dir):
-        with open(os.path.join(output_dir, filename), 'r') as f:
-            true_doc = json.loads(f.read())
+    with open(os.path.join(output_dir, filename), 'r') as f:
+        true_doc = json.loads(f.read())
+        query = {'query': {'match': {'gene_id': filename}}}
+        es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
 
-            query = {'query': {'match': {'gene_id': filename}}}
-            es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
-
-            print '\nGene name match:', es_doc['gene_id'] == true_doc['gene_id']
-
-            if not set(true_doc.keys()) == set(es_doc.keys()):
-                print "\nKeys mismatch:"
-                print 'True not in ES', set(true_doc.keys()) - set(es_doc.keys())
-                print 'ES not in True', set(es_doc.keys()) - set(true_doc.keys())
-            else:
-                print "{} first level okay".format(filename)
+        assert es_doc['gene_id'] == true_doc['gene_id']
+        assert es_doc == true_doc
 
 
-def test_mytest():
+@pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
+                                                             'output',
+                                                             'gene_centric')))
+def test_gene_centric_shallow(gene_centric_index, filename):
+    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
+    index = conf.indices['gene_centric']
+
+    # Compare each true output document with document in ES:
+    with open(os.path.join(output_dir, filename), 'r') as f:
+        true_doc = json.loads(f.read())
+        query = {'query': {'match': {'gene_id': filename}}}
+        es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+
+        assert es_doc['gene_id'] == true_doc['gene_id']
+        assert set(es_doc.keys()) == set(true_doc.keys())
+
+
+@pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
+                                                             'output',
+                                                             'gene_centric')))
+def test_gene_centric_flat(gene_centric_index, filename):
+    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
+    index = conf.indices['gene_centric']
+
+    # Compare each true output document with document in ES:
+    with open(os.path.join(output_dir, filename), 'r') as f:
+        true_doc = json.loads(f.read())
+        query = {'query': {'match': {'gene_id': filename}}}
+
+    es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+
+    # Flatten docs before comparing
+    true_doc = flatten_json(true_doc)
+    es_doc = flatten_json(es_doc)
+
+    cnt = {'correct': 0, 'missing_fields': 0, 'wrong_values': 0, 'total': len(true_doc.keys())}
+    for k, v in true_doc.items():
+        if k not in es_doc:
+            print "[Missing field]: P{}".format(k)
+            cnt['missing_fields'] += 1
+        elif es_doc[k] != v:
+            print "[Value mismatch]: {} |Not Equals| {} [{}]".format(v, es_doc[k], k)
+            cnt['wrong_values'] += 1
+        else:
+            cnt['correct'] += 1
+    import pdb
+    pdb.set_trace()
+    assert es_doc == true_doc
+
+
+@pytest.mark.mytest
+def test_structure():
     index_number = int(conf.indices['gene_centric'].split('_')[1][1:]) - 1
     # index_number = 0
     index = "gdc_r{}_test_gene_centric__".format(index_number)
@@ -132,7 +143,7 @@ def test_mytest():
                 print 'ES not in True', set(es_doc.keys()) - set(true_doc.keys())
             else:
                 print "{} first level okay".format(filename)
-                match_dictionaries(true_doc, es_doc)
+                match_json_structure(true_doc, es_doc)
 
                 import pdb
                 pdb.set_trace()

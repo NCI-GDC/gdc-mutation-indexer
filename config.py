@@ -127,6 +127,7 @@ class TestConfig(BaseConfig):
     maf_urls = ['file://' + os.path.join(maf_dir, f)
                 for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
 
+    gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')
     case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
     cases_file = os.path.join(data_dir, 'cases.10429.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
