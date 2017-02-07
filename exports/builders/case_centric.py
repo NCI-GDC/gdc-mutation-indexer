@@ -9,6 +9,8 @@ from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import CaseMapper
+
 
 class CaseCentricBuilder(object):
     '''
@@ -42,21 +44,10 @@ class CaseCentricBuilder(object):
         # SSM
         ssm_df = maf_df.select('gene_id',
                                *struct_select('ssm.yml'))\
-                                .drop_duplicates()
-        # Consequence
-        # stmt = (struct(
-        #             struct(
-        #                 struct(*struct_select('annotation.yml'))
-        #                     .alias('annotation'),
-        #                    *struct_select('transcript.yml')
-        #             ).alias('transcript')
-        #         ).alias('consequence'))
+                                .drop_duplicates(['ssm_id'])
 
-        # cons_df = maf_df.select('ssm_id', stmt)\
-        #                 .groupBy('ssm_id')\
-        #                 .agg(collect_list('consequence').alias('consequence'))
-
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
+                               .drop_duplicates(['ssm_id'])
 
         # Observation
         obs_df = maf_df.select('ssm_id',
@@ -80,6 +71,7 @@ class CaseCentricBuilder(object):
                             .select('_case_submitter_id', struct('ssm',*gene_df.drop('_case_submitter_id').columns).alias('gene'))
 
         # Get cases from ES
+        self.logger.info("Building case_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         case_centric = case_df.join(gene_ssm,
@@ -88,9 +80,6 @@ class CaseCentricBuilder(object):
                                 .drop(gene_ssm._case_submitter_id)\
                                 .groupBy(*case_df.columns)\
                                 .agg(collect_list('gene').alias('gene'))
-
-        #case_centric.printSchema()
-        #obs_df.printSchema()
 
         self.case_centric = case_centric
 
@@ -103,53 +92,28 @@ class CaseCentricBuilder(object):
         doc = self.config.index_names['case_centric']  # .replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import CaseMapper
-        m = CaseMapper()
+        data = json.dumps(CaseMapper(doc).settings)
 
-        #self.case_centric.limit(10).toPandas().to_json('/mnt/Projects/gdc-mutation-indexer/case_centric.json')
-        #self.logger.info('Saving to s3')
-        #self.case_centric.write.mode('overwrite').json('s3a://test-5/case_centric.json')
-        
-        data = json.dumps({"settings":{"index":{
-                        "refresh_interval":"1m",
-                        "number_of_shards":10,
-                        "number_of_replicas":0,
-                        "mapper.dynamic":False,
-                        "mapping.nested_fields.limit":100,
-                        "mapping.total_fields.limit":2000
-                    },
-                    "analysis": {
-                        "analyzer": {
-                            "id_index": { 
-                                "filter": ["lowercase", "edge_ngram"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            },
-                            "id_search": {
-                                "filter": ["lowercase"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            }
-                        }
-                    }},
-                    "mappings":{
-                        doc: m.mapping
-                    }})
-
-        print requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                    self.config.es_port,
-                                                    index), data=data).json()
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
+                                                        self.config.es_port,
+                                                        index),
+                                      auth=(self.config.es_user, self.config.es_pass),
+                                      data=data).json())
 
         self.logger.info('Exporting case centric index')
-        self.case_centric.coalesce(50).write.format('org.elasticsearch.spark.sql')\
+
+        self.case_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','500mb')\
-                            .option('es.batch.size.entries', '1')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','case_id')\
                             .save(index_doc)

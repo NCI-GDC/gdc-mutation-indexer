@@ -9,6 +9,7 @@ from conftest import get_validation_paths
 from config import TestConfig
 from utils import match_json_structure, flatten_json
 
+
 from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
@@ -40,6 +41,7 @@ def gene_centric_index(sqlContext, test_index):
                                                              'output',
                                                              'gene_centric')))
 def test_gene_centric_formal(gene_centric_index, filename):
+
     output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
     index = conf.indices['gene_centric']
 
@@ -130,6 +132,5 @@ def test_structure():
             else:
                 print "{} first level okay".format(filename)
                 match_json_structure(true_doc, es_doc)
-
                 import pdb
                 pdb.set_trace()
