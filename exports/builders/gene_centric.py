@@ -123,35 +123,36 @@ class GeneCentricBuilder(object):
         m = GeneMapper()
 
         data = json.dumps({"settings": {
-                    "index": {
-                        "refresh_interval": "1m",
-                        "number_of_shards": 10,
-                        "number_of_replicas": 0,
-                        "mapper.dynamic": False,
-                        "mapping.nested_fields.limit": 100,
-                        "mapping.total_fields.limit": 2000
-                    },
-                    "analysis": {
-                        "analyzer": {
-                            "id_index": {
-                                "filter": ["lowercase", "edge_ngram"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            },
-                            "id_search": {
-                                "filter": ["lowercase"],
-                                "type": "custom",
-                                "tokenizer": "whitespace"
-                            }
-                        }
-                    }},
-                    "mappings": {
-                        doc: m.mapping
-                    }})
+                                 "index": {
+                                     "refresh_interval": "1m",
+                                     "number_of_shards": 10,
+                                     "number_of_replicas": 0,
+                                     "mapper.dynamic": False,
+                                     "mapping.nested_fields.limit": 100,
+                                     "mapping.total_fields.limit": 2000
+                                 },
+                                 "analysis": {
+                                     "analyzer": {
+                                         "id_index": {
+                                             "filter": ["lowercase", "edge_ngram"],
+                                             "type": "custom",
+                                             "tokenizer": "whitespace"
+                                         },
+                                         "id_search": {
+                                             "filter": ["lowercase"],
+                                             "type": "custom",
+                                             "tokenizer": "whitespace"
+                                         }
+                                     }
+                                             }},
+                                 "mappings": {doc: m.mapping}
+                          })
 
         query = '{}:{}/{}'.format(self.config.es_host, self.config.es_port,
                                   index)
-        requests.put(query, data=data).json()
+
+        r = requests.put(query, data=data)
+        print r
 
         to_load = self.gene_centric
 

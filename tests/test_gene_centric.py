@@ -12,6 +12,8 @@ from utils import match_json_structure, flatten_json
 from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
+OUTPUT_DIR = os.path.join(conf.data_dir, 'output', 'gene_centric')
+GENE = 'ENSG00000074755'  # only used in field_by_field test
 
 
 @pytest.yield_fixture(scope='module')
@@ -36,71 +38,67 @@ def gene_centric_index(sqlContext, test_index):
         es.indices.delete(index=conf.indices['gene_centric'], ignore=399)
 
 
+@pytest.fixture
+def get_docs_to_compare(gene_centric_index, filename):
+    index = conf.indices['gene_centric']
+
+    # Compare each true output document with document in ES:
+    with open(os.path.join(OUTPUT_DIR, filename), 'r') as f:
+        true_doc = json.loads(f.read())
+        query = {'query': {'match': {'gene_id': filename}}}
+
+    es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+
+    return true_doc, es_doc
+
+
+@pytest.fixture
+def get_one_gene_fields(gene_id):
+    with open(os.path.join(OUTPUT_DIR, GENE), 'r') as f:
+        true_doc = json.loads(f.read())
+
+    true_doc = flatten_json(true_doc)
+    return true_doc.keys()
+
+
 @pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
                                                              'output',
                                                              'gene_centric')))
 def test_gene_centric_formal(gene_centric_index, filename):
-    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
-    index = conf.indices['gene_centric']
-
-    # Compare each true output document with document in ES:
-    with open(os.path.join(output_dir, filename), 'r') as f:
-        true_doc = json.loads(f.read())
-        query = {'query': {'match': {'gene_id': filename}}}
-        es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
-
-        assert es_doc['gene_id'] == true_doc['gene_id']
-        assert es_doc == true_doc
-
-
-@pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
-                                                             'output',
-                                                             'gene_centric')))
-def test_gene_centric_shallow(gene_centric_index, filename):
-    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
-    index = conf.indices['gene_centric']
-
-    # Compare each true output document with document in ES:
-    with open(os.path.join(output_dir, filename), 'r') as f:
-        true_doc = json.loads(f.read())
-        query = {'query': {'match': {'gene_id': filename}}}
-        es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
-
-        assert es_doc['gene_id'] == true_doc['gene_id']
-        assert set(es_doc.keys()) == set(true_doc.keys())
+    true_doc, es_doc = get_docs_to_comptare(gene_centric_index, filename)
+    assert es_doc == true_doc
 
 
 @pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
                                                              'output',
                                                              'gene_centric')))
 def test_gene_centric_flat(gene_centric_index, filename):
-    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
-    index = conf.indices['gene_centric']
-
-    # Compare each true output document with document in ES:
-    with open(os.path.join(output_dir, filename), 'r') as f:
-        true_doc = json.loads(f.read())
-        query = {'query': {'match': {'gene_id': filename}}}
-
-    es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
-
-    # Flatten docs before comparing
-    true_doc = flatten_json(true_doc)
-    es_doc = flatten_json(es_doc)
+    true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, filename))
 
     cnt = {'correct': 0, 'missing_fields': 0, 'wrong_values': 0, 'total': len(true_doc.keys())}
+    err = {'missing_fields': [], 'wrong_values_for': [], 'wrong_values': []}
     for k, v in true_doc.items():
         if k not in es_doc:
             print "[Missing field]: P{}".format(k)
             cnt['missing_fields'] += 1
+            err['missing_fields'].append(k)
         elif es_doc[k] != v:
             print "[Value mismatch]: {} |Not Equals| {} [{}]".format(v, es_doc[k], k)
             cnt['wrong_values'] += 1
+            err['wrong_values'].append([v, es_doc[k]])
+            err['wrong_values_for'].append(k)
         else:
             cnt['correct'] += 1
+    print cnt
     import pdb
     pdb.set_trace()
     assert es_doc == true_doc
+
+
+@pytest.mark.parametrize('field', get_one_gene_fields(GENE))
+def test_gene_centric_field_by_field(gene_centric_index, field):
+    true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, GENE))
+    assert true_doc[field] == es_doc[field]
 
 
 @pytest.mark.mytest
@@ -111,11 +109,9 @@ def test_structure():
 
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
-    output_dir = os.path.join(conf.data_dir, 'output', 'gene_centric')
-
     # Compare each true output document with document in ES:
-    for filename in  os.listdir(output_dir):
-        with open(os.path.join(output_dir, filename), 'r') as f:
+    for filename in  os.listdir(OUTPUT_DIR):
+        with open(os.path.join(OUTPUT_DIR, filename), 'r') as f:
             true_doc = json.loads(f.read())
 
             query = {'query': {'match': {'gene_id': filename}}}
