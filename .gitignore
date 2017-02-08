@@ -65,6 +65,8 @@ package.json
 
 # vim
 *.swp
+.ropeproject/*
 
 # private files
 submit-job.sh
+exports/data/*

@@ -42,6 +42,7 @@ class TranscriptBuilder(object):
                    .withColumn('transcript_ids', transcript_id_udf()(col('all_effects')))\
                    .select('ssm_id', explode('transcript_ids').alias('transcript_id'))\
                    .drop_duplicates(['transcript_id', 'ssm_id'])
+
         # Load gene model and explode the transcripts
         tran_df = self.sqlContext.read.json(self.config.gene_model_path)\
                 .select(col('*'), explode('transcripts').alias('transcript'))\
