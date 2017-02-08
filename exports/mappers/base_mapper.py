@@ -66,7 +66,7 @@ class Mapper(object):
             settings['mappings'].update({self.doc_type: mapping})
         else:
             settings['mappings'] = {self.doc_type: mapping}
-
+            
         return settings
 
     def rm_maf_cols(self, d):

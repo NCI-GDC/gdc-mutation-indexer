@@ -45,9 +45,9 @@ class GeneMapper(Mapper):
         # Add ssm mapping
         ssm_map  = self.load_properties('ssm.yml', nested=True)
 
-        #del ssm_map['properties']['mutation_subtype']
-        #del ssm_map['properties']['genomic_dna_change']
-        #del ssm_map['properties']['mutation_type']
+        # del ssm_map['properties']['mutation_subtype']
+        # del ssm_map['properties']['genomic_dna_change']
+        # del ssm_map['properties']['mutation_type']
 
         case_map['properties']['ssm'] = ssm_map
         # Consequence only holds transcript

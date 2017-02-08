@@ -28,8 +28,7 @@ class CaseBuilder(object):
         '''
         Loads case docs from the gdc_from_graph index into a dataframe
         '''
-        source = '{}/{}'.format( self.config.graph_index, self.config.graph_document)
-
+        source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
         return self.sqlContext.read.format("es")\
             .option('es.nodes', self.config.source_es_host)\

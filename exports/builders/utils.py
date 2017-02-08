@@ -5,7 +5,7 @@ import pkg_resources
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
-from pyspark.sql.types import StringType, ArrayType
+from pyspark.sql.types import StringType, ArrayType, IntegerType
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
@@ -16,7 +16,7 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     DEL: "{chromosome}:g.{start_position}del{reference_allele}"
     INS: "{chromosome}:g.{start_position}_{end_position}ins{tumor_allele}"
     '''
-    chromosome = chromosome.replace('chr','')
+    chromosome = chromosome.replace('chr', '')
     if variant_type is 'SNP':
         label = '{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
     elif variant_type is 'DEL':
@@ -48,6 +48,7 @@ def ssm_uuid_udf(namespace):
 
 def ssm_occurrence_uuid(namespace, ssm, case):
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
+
 
 def ssm_occurrence_uuid_udf(namespace):
     '''
@@ -82,7 +83,7 @@ def flat_fields(path):
 
     def flatten(doc, name=''):
         if type(doc) is dict:
-            for k,v in doc.items():
+            for k, v in doc.items():
                 if 'type' in doc:
                     flat.add(name)
                     return
@@ -134,7 +135,7 @@ def struct_select(path, ignore=[]):
     mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     select = ()
-    
+
     def restructure(doc):
         cols = []
         if type(doc) is dict:

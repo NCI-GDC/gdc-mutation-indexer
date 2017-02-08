@@ -2,14 +2,11 @@ import os
 import yaml
 import requests
 import json
+import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit, col, regexp_extract
-
-from pyspark.sql import Row
 from pyspark.sql.functions import udf, lit, col, regexp_extract
 from pyspark.sql.types import *
-   
 
 class GeneModelBuilder(object):
     """

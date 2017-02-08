@@ -39,6 +39,7 @@ class SSMCentricBuilder(object):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
+
         ssm_df = maf_df.select(*struct_select('ssm.yml'))
 
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
