@@ -11,6 +11,7 @@ from exports.builders.utils import struct_select
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 from exports.mappers import CaseMapper
 
+
 class CaseCentricBuilder(object):
     '''
     Builds case-centric dataframe given case and maf dataframes
@@ -88,18 +89,19 @@ class CaseCentricBuilder(object):
         '''
         '''
         index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric'].replace('_', '-')
+        doc = self.config.index_names['case_centric']  # .replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(CaseMapper(doc).settings)
 
         self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                    self.config.es_port,
-                                                    index),
-                               auth=(self.config.es_user, self.config.es_pass),
-                               data=data).json())
+                                                        self.config.es_port,
+                                                        index),
+                                      auth=(self.config.es_user, self.config.es_pass),
+                                      data=data).json())
 
         self.logger.info('Exporting case centric index')
+
         self.case_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.net.http.auth.user', self.config.es_user)\

@@ -27,7 +27,7 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', path))
 
         properties = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
- 
+
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
@@ -66,7 +66,7 @@ class Mapper(object):
             settings['mappings'].update({self.doc_type: mapping})
         else:
             settings['mappings'] = {self.doc_type: mapping}
-
+            
         return settings
 
     def rm_maf_cols(self, d):
