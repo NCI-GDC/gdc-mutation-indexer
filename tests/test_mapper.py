@@ -6,14 +6,14 @@ from exports.mappers import Mapper, GeneMapper
 class TestMapper(unittest.TestCase):
     
     def test_settings(self):
-        mapper = Mapper()
+        mapper = Mapper('doc')
 
         self.assertIn('settings', mapper.settings)
-        self.assertIn('analysis', mapper.settings)
+        self.assertIn('analysis', mapper.settings['settings'])
         self.assertIn('mappings', mapper.settings)
 
     def test_properties(self):
-        mapper = Mapper()
+        mapper = Mapper('doc')
 
         props = mapper.load_properties('gene.yml')
         self.assertIn('properties', props)
@@ -26,7 +26,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(props['type'], 'nested')
 
     def test_clean(self):
-        mapper = Mapper()
+        mapper = Mapper('doc')
 
         d = {
             'index': 'not_analyzed',
