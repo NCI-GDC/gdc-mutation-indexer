@@ -9,20 +9,20 @@ from conftest import get_validation_paths
 from config import TestConfig
 from utils import match_json_structure, flatten_json
 
-from exports.builders import CaseCentricBuilder, MAFBuilder
+from exports.builders import SSMOccurrenceCentricBuilder, MAFBuilder
 
 conf = TestConfig()
 
-BUILDER = CaseCentricBuilder
-INDEX = 'case_centric'
-ID_FIELD = 'case_id'
+BUILDER = SSMOccurrenceCentricBuilder
+INDEX = 'ssm_occurrence_centric'
+ID_FIELD = 'ssm_occurrence_id'
 OUTPUT_DIR = os.path.join(conf.data_dir, 'output', INDEX)
-DOC = '13afbde8-e5b5-4f3c-8a9d-daef71560005'  # only used in field_by_field test
+DOC = '02251759-7474-542c-aee5-e15c3f468864'  # only used in field_by_field test
 
 
 @pytest.yield_fixture(scope='module')
-def case_centric_index(sqlContext, test_index):
-    ''' Generates a kase centric index for testing '''
+def ssm_occurrence_centric_index(sqlContext, test_index):
+    ''' Generates a ssm centric index for testing '''
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
     r = es.indices.create(index=conf.indices[INDEX], ignore=400)
@@ -35,54 +35,11 @@ def case_centric_index(sqlContext, test_index):
     yield es
 
     if not conf.keep_indices:
-        es.indices.delete(index=conf.indices['case_centric'], ignore=399)
-
-def flatten_json(d):
-    flat = {}
-
-    def flatten(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                flatten(v, name+'.'+k)
-        elif type(doc) is list:
-            for v in doc:
-                flatten(v, name)
-        else:
-            flat[name] = doc
-    flatten(d)
-    return [k for k in sorted(flat.keys(), key=lambda x: len(x)) if 'files' not in k]
-
-
-@pytest.mark.parametrize('doc,path',
-    get_validation_paths('tests/data/case.validation.1bf54408-b5cb-45dc-ad03-ef2866a0ff59.json')[:1]
-)
-def test_doc_contains(case_centric_index, doc, path):
-    ''' Test that document contains a field from a path'''
-    d = case_centric_index.get(conf.indices['case_centric'],
-                             doc,
-                             doc_type=conf.index_names['case_centric'])
-    d = d['_source']
-    #print json.dumps(flatten_json(d), indent=2)
-    #print 'gene' in d
-    results = parse(path).find(d)
-    assert len([r.value for r in results]) > 0
-
-@pytest.mark.parametrize('doc,path,count', [
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', '[*].ssm.[*].ssm_id', 5)
-])
-def test_path_count(case_centric_index, doc, path, count):
-    d = case_centric_index.get(conf.indices['case_centric'],
-                             doc,
-                             doc_type=conf.index_names['case_centric'])
-    d = d['_source']
-    results = parse(path).find(d)
-    assert len(results) == count
-=======
         es.indices.delete(index=conf.indices[INDEX], ignore=399)
 
 
 @pytest.fixture
-def get_docs_to_compare(case_centric_index, filename):
+def get_docs_to_compare(ssm_coccurrence_entric_index, filename):
     index = conf.indices[INDEX]
 
     # Compare each true output document with document in ES:
@@ -90,7 +47,7 @@ def get_docs_to_compare(case_centric_index, filename):
         true_doc = json.loads(f.read())
         query = {'query': {'match': {ID_FIELD: filename}}}
 
-    es_doc = case_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+    es_doc = ssm_occurrence_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
 
     return true_doc, es_doc
 
@@ -105,14 +62,14 @@ def get_one_doc_fields(doc_id):
 
 
 @pytest.mark.parametrize('filename', os.listdir(OUTPUT_DIR))
-def test_case_centric_formal(case_centric_index, filename):
-    true_doc, es_doc = get_docs_to_comptare(case_centric_index, filename)
+def test_ssm_occurrence_centric_formal(ssm_occurrence_centric_index, filename):
+    true_doc, es_doc = get_docs_to_comptare(ssm_occurrence_centric_index, filename)
     assert es_doc == true_doc
 
 
 @pytest.mark.parametrize('filename', os.listdir(OUTPUT_DIR))
-def test_case_centric_flat(case_centric_index, filename):
-    true_doc, es_doc = map(flatten_json, get_docs_to_compare(case_centric_index, filename))
+def test_ssm_occurrence_centric_flat(ssm_occurrence_centric_index, filename):
+    true_doc, es_doc = map(flatten_json, get_docs_to_compare(ssm_occurrence_centric_index, filename))
 
     cnt = {'correct': 0, 'missing_fields': 0, 'wrong_values': 0, 'total': len(true_doc.keys())}
     err = {'missing_fields': [], 'wrong_values_for': [], 'wrong_values': []}
@@ -137,8 +94,8 @@ def test_case_centric_flat(case_centric_index, filename):
 
 
 @pytest.mark.parametrize('field', get_one_doc_fields(DOC))
-def test_case_centric_field_by_field(case_centric_index, field):
-    true_doc, es_doc = map(flatten_json, get_docs_to_compare(case_centric_index, DOC))
+def test_ssm_occurrence_centric_field_by_field(ssm_occurrence_centric_index, field):
+    true_doc, es_doc = map(flatten_json, get_docs_to_compare(ssm_occurrence_centric_index, DOC))
     assert true_doc[field] == es_doc[field]
 
 
@@ -170,4 +127,3 @@ def test_structure():
                 import pdb
                 pdb.set_trace()
 
->>>>>>> cdc4578... Tests for all. Ugly version. Fails for each index except gene-centric

@@ -119,8 +119,8 @@ class TestConfig(BaseConfig):
                 for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
 
     case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
-    # cases_file = os.path.join(data_dir, 'cases.json')
-    cases_file = os.path.join(data_dir, 'cases.10429.json')
+    # cases_file = os.path.join(data_dir, 'cases.10429.json')  # <- Huge file
+    cases_file = os.path.join(data_dir, 'cases.json')  # <- Smaller but some cases missing
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
     gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')

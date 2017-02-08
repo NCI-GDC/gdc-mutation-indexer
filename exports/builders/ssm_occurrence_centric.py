@@ -15,6 +15,8 @@ class SSMOccurrenceCentricBuilder(object):
     Builds case-centric dataframe given case and maf dataframes
     '''
 
+    index_name = 'ssm_occurrence_centric'
+
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
