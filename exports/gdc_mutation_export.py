@@ -17,7 +17,7 @@ class GDCMutationExport(object):
         self.config = config
         self.sc = sc
         self.sqlContext = sqlContext
-    
+
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
         df = MAFBuilder(self.config, self.sqlContext).build()
@@ -37,3 +37,4 @@ class GDCMutationExport(object):
         if ('ssm_occurrence_centric' in config.index_names
                 and config.index_names['ssm_occurrence_centric'] is not None):
             SSMOccurrenceCentricBuilder(self.config, self.sqlContext).build(df).load()
+

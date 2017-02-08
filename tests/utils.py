@@ -94,20 +94,18 @@ def validate_level(a, b, path='root'):
 
 
 def flatten_json(y):
-    out = {}
+    result = {}
 
     def flatten(x, name=''):
-        if type(x) is dict:
+        if isinstance(x, dict):
             for a in x:
                 flatten(x[a], name + a + '_')
-        elif type(x) is list:
-            i = 0
-            for a in x:
+        elif isinstance(x, list):
+            for i, a in enumerate(x):
                 flatten(a, name + str(i) + '_')
-                i += 1
         else:
-            out[name[:-1]] = x
+            result[name[:-1]] = x
 
     flatten(y)
-    return out
-  
+    return result
+

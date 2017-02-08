@@ -20,7 +20,9 @@ GENE = 'ENSG00000074755'  # only used in field_by_field test
 @pytest.yield_fixture(scope='module')
 def gene_centric_index(sqlContext, test_index):
     """ Generates a gene centricindex for testing """
+    print "Connecting to ES: {}:{}".format(conf.es_host, conf.es_port)
     es = Elasticsearch(conf.es_host, port=conf.es_port)
+    print "Success"
 
     print  "\nBuilding MAF..."
     df = MAFBuilder(conf, sqlContext).build()
@@ -54,8 +56,8 @@ def get_docs_to_compare(gene_centric_index, filename):
 
 
 @pytest.fixture
-def get_one_gene_fields(gene_id):
-    with open(os.path.join(OUTPUT_DIR, GENE), 'r') as f:
+def get_one_doc_fields(doc_id):
+    with open(os.path.join(OUTPUT_DIR, doc_id), 'r') as f:
         true_doc = json.loads(f.read())
 
     true_doc = flatten_json(true_doc)
@@ -90,13 +92,15 @@ def test_gene_centric_flat(gene_centric_index, filename):
             err['wrong_values_for'].append(k)
         else:
             cnt['correct'] += 1
-    print cnt
+
+    print "\nStats: {}".format(cnt)
+    print "Correctness: {}%\n".format(float(cnt['correct'])/cnt['total'])
     import pdb
     pdb.set_trace()
     assert es_doc == true_doc
 
 
-@pytest.mark.parametrize('field', get_one_gene_fields(GENE))
+@pytest.mark.parametrize('field', get_one_doc_fields(GENE))
 def test_gene_centric_field_by_field(gene_centric_index, field):
     true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, GENE))
     assert true_doc[field] == es_doc[field]
