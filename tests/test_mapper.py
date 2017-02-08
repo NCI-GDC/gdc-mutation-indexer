@@ -1,6 +1,6 @@
 import unittest
 
-from exports.mappings import Mapper, GeneMapper
+from exports.mappers import Mapper, GeneMapper
 
 
 class TestMapper(unittest.TestCase):
@@ -8,7 +8,9 @@ class TestMapper(unittest.TestCase):
     def test_settings(self):
         mapper = Mapper()
 
-        self.assertIn('dynamic', mapper.mapping)
+        self.assertIn('settings', mapper.settings)
+        self.assertIn('analysis', mapper.settings)
+        self.assertIn('mappings', mapper.settings)
 
     def test_properties(self):
         mapper = Mapper()
@@ -63,11 +65,11 @@ class TestMapper(unittest.TestCase):
 class TestGeneMapper(unittest.TestCase):
 
     def test_gene_map(self):
-        mapper = GeneMapper()
+        mapper = GeneMapper('gene_centric')
 
         self.assertIn('properties', mapper.mapping)
         props = mapper.mapping['properties']
 
         self.assertIn('gene_chromosome', props)
         self.assertIn('gene_end', props)
-        self.assertEqual('keyword', props['gene_id']['type'])
+        self.assertEqual('text', props['gene_id']['type'])

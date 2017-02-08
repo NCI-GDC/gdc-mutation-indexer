@@ -1,17 +1,44 @@
 properties:
   aa_change:
-    type: keyword
+    type: text
+    default: empty
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   aa_end:
     type: long
+    default: empty
   aa_start:
     type: long
+    default: empty
   consequence_type:
     type: keyword
   gene_symbol:
-    type: keyword
+    default: symbol
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   is_canonical:
     type: boolean
+    default: empty
   ref_seq_accession:
     type: keyword
+    default: empty
   transcript_id:
     type: keyword
+    default: canonical_transcript_id

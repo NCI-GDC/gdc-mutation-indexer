@@ -1,5 +1,6 @@
 import os
 import yaml
+import pkg_resources
 
 
 class Mapper(object):
@@ -7,15 +8,15 @@ class Mapper(object):
     A mapper is responsible for generating the mapping for a doc type
     '''
 
-    def __init__(self):
+    def __init__(self, doc_type):
         self.mapping = self.build_mapping()
+        self.doc_type = doc_type
 
     def build_mapping(self):
         '''
         Constructs an elastic search mapping
         '''
         mapping = {}
-        mapping.update(self.settings)
         return mapping
 
     def load_properties(self, path, nested=False):
@@ -30,14 +31,55 @@ class Mapper(object):
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
+
+        self.rm_maf_cols(properties)
+
         return properties
+
+    def change_props_to_keyword(self, paths, data):
+        for path in paths:
+            prop = data['properties']
+
+            for key in path.split('.'):
+                prop = prop[key]
+
+            if 'fields' in prop:
+                del prop['fields']
+
+            prop['type'] = 'keyword'
 
     @property
     def settings(self):
-        path = os.path.join(os.path.dirname(__file__), 'common_settings.yml')
-        with open(path) as f:
-            settings = yaml.load(f)
+        resource_package = 'exports'
+        resource_path = '/'.join(('mappings', 'common_settings.yml'))
+
+        settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+        # Mapping settings should be moved inside each mapping
+        if 'mappings' in settings:
+            mapping_settings = settings['mappings']
+            del settings['mappings']
+
+        mapping = self.build_mapping()
+        mapping.update(mapping_settings)
+
+        if 'mappings' in settings and type(settings['mappings']) is dict:
+            settings['mappings'].update({self.doc_type: mapping})
+        else:
+            settings['mappings'] = {self.doc_type: mapping}
+
         return settings
+
+    def rm_maf_cols(self, d):
+        '''
+        '''
+        if type(d) is dict:
+            if 'default' in d:
+                del d['default']
+            for k,v in d.items():
+                self.rm_maf_cols(v)
+        if type(d) is list:
+            for v in d:
+                self.rm_maf_cols(v)
 
     def clean(self, d):
         '''

@@ -1,12 +1,48 @@
 properties:
   aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   analyte_ids:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  state:
     type: keyword
+    default: empty
   case_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   demographic:
     properties:
+      state:
+        type: keyword
+        default: empty
       demographic_id:
         type: keyword
       ethnicity:
@@ -17,42 +53,20 @@ properties:
         type: keyword
       submitter_id:
         type: keyword
+      created_datetime:
+        type: date 
       updated_datetime:
         type: date
-        format: strict_date_optional_time
       year_of_birth:
         type: long
       year_of_death:
         type: long
-  exposures:
-    properties:
-      alcohol_history:
-        type: keyword
-      alcohol_intensity:
-        type: keyword
-      bmi:
-        type: long
-      cigarettes_per_day:
-        type: long
-      created_datetime:
-        type: keyword
-      exposure_id:
-        type: keyword
-      height:
-        type: long
-      state:
-        type: keyword
-      submitter_id:
-        type: keyword
-      updated_datetime:
-        type: keyword
-      weight:
-        type: long
-      years_smoked:
-        type: long
   diagnoses:
     type: nested
     properties:
+      state:
+        type: keyword
+        default: empty
       age_at_diagnosis:
         type: double
       classification_of_tumor:
@@ -69,6 +83,7 @@ properties:
         type: keyword
       morphology:
         type: keyword
+        default: empty
       primary_diagnosis:
         type: keyword
       prior_malignancy:
@@ -83,25 +98,65 @@ properties:
         type: keyword
       tumor_grade:
         type: keyword
+        default: empty
       tumor_stage:
         type: keyword
       updated_datetime:
-        type: date
-        format: strict_date_optional_time
+        type: keyword
+      created_datetime:
+        type: keyword
       vital_status:
         type: keyword
   portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   project:
     properties:
       disease_type:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       name:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       primary_site:
-        type: keyword
-      dbgap_accession_number:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       program:
         properties:
           dbgap_accession_number:
@@ -111,30 +166,121 @@ properties:
           program_id:
             type: keyword
       project_id:
-        type: keyword
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       released:
         type: boolean
       state:
         type: keyword
   sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_aliquot_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_analyte_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_id:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_portion_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_sample_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   submitter_slide_ids:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   summary:
     properties:
       data_categories:
+        type: nested
         properties:
           data_category:
             type: keyword
@@ -142,4 +288,6 @@ properties:
             type: long
   updated_datetime:
     type: date
-    format: strict_date_optional_time 
+  created_datetime:
+    type: date 
+    default: empty

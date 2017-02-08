@@ -1,4 +1,7 @@
 import os
+import uuid
+from elasticsearch import Elasticsearch
+
 
 class BaseConfig(object):
     # The Spark application name

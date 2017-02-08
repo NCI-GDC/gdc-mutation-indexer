@@ -2,6 +2,10 @@ import os
 import time
 import json
 import pytest
+import logging
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext
 
 from elasticsearch import Elasticsearch
 from config import TestConfig
@@ -21,8 +25,9 @@ def setup_test_index():
     with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
         case_mapping = json.load(f)
 
-    r = request.cls.es.indices.create(index=conf.graph_index, ignore=400)
-    request.cls.graph_index = conf.graph_index
+    if es.indices.exists(conf.graph_index):
+        es.indices.delete(index=conf.graph_index)
+    r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
     with open(os.path.join(conf.data_dir, 'cases.json')) as f:
         case_docs = json.load(f)
@@ -36,11 +41,37 @@ def setup_test_index():
             ignore=409,
         )
 
+    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
+
     while True:
-        count = request.cls.es.count(index=conf.graph_index, doc_type='case')['count']
-        if count == len(case_docs):
+        count = es.count(index=conf.graph_index, doc_type='case')['count']
+        if count >= len(case_docs):
             break
         time.sleep(0.1)
+
+    return es
+
+
+@pytest.yield_fixture(scope='module')
+def sqlContext():
+    sc = SparkContext('local[2]', 'sqlContextFixture')
+    sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
+    sqlCont = SQLContext(sc)
+    sqlCont.sql("set spark.sql.shuffle.partitions=200")
+    log4j = sc._jvm.org.apache.log4j
+    log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
+
+    yield sqlCont
+
+    sc.stop()
+    sc._jvm.System.clearProperty("spark.driver.port")
+
+
+@pytest.yield_fixture(scope='class')
+def test_index_class(request):
+    ''' Generate a graph index as a fixture for re-use between tests '''
+    request.cls.es = setup_test_index()
+    request.cls.config = conf
 
     yield request.cls.es
 
