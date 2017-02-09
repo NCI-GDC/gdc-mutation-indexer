@@ -63,7 +63,7 @@ def get_one_doc_fields(doc_id):
 
 @pytest.mark.parametrize('filename', os.listdir(OUTPUT_DIR))
 def test_ssm_occurrence_centric_formal(ssm_occurrence_centric_index, filename):
-    true_doc, es_doc = get_docs_to_comptare(ssm_occurrence_centric_index, filename)
+    true_doc, es_doc = get_docs_to_compare(ssm_occurrence_centric_index, filename)
     assert es_doc == true_doc
 
 

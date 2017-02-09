@@ -13,42 +13,40 @@ from utils import match_json_structure, flatten_json
 from exports.builders import GeneCentricBuilder, MAFBuilder, GeneModelBuilder
 
 conf = TestConfig()
-OUTPUT_DIR = os.path.join(conf.data_dir, 'output', 'gene_centric')
-GENE = 'ENSG00000074755'  # only used in field_by_field test
+
+BUILDER = GeneCentricBuilder
+INDEX = 'gene_centric'
+ID_FIELD = 'gene_id'
+OUTPUT_DIR = os.path.join(conf.data_dir, 'output', INDEX)
+DOC = 'ENSG00000074755'  # only used in field_by_field test
 
 
 @pytest.yield_fixture(scope='module')
 def gene_centric_index(sqlContext, test_index):
     """ Generates a gene centricindex for testing """
-    print "Connecting to ES: {}:{}".format(conf.es_host, conf.es_port)
     es = Elasticsearch(conf.es_host, port=conf.es_port)
-    print "Success"
 
-    print  "\nBuilding MAF..."
+    r = es.indices.create(index=conf.indices[INDEX], ignore=400)
+
+    print 'Building MAF...'
     df = MAFBuilder(conf, sqlContext).build()
-    print df.count()
+    print 'Building {}...'.format(INDEX)
+    BUILDER(conf, sqlContext).build(df).load()
 
-    print "\nBuilding GeneCentric..."
-    gc = GeneCentricBuilder(conf, sqlContext).build(df)
-
-    print "\nLoading GeneCentric..."
-    gc.load()
-
-    print "\nSuccess!"
     yield es
 
     if not conf.keep_indices:
-        es.indices.delete(index=conf.indices['gene_centric'], ignore=399)
+        es.indices.delete(index=conf.indices[INDEX], ignore=399)
 
 
 @pytest.fixture
 def get_docs_to_compare(gene_centric_index, filename):
-    index = conf.indices['gene_centric']
+    index = conf.indices[INDEX]
 
     # Compare each true output document with document in ES:
     with open(os.path.join(OUTPUT_DIR, filename), 'r') as f:
         true_doc = json.loads(f.read())
-        query = {'query': {'match': {'gene_id': filename}}}
+        query = {'query': {'match': {ID_FIELD: filename}}}
 
     es_doc = gene_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
 
@@ -66,15 +64,15 @@ def get_one_doc_fields(doc_id):
 
 @pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
                                                              'output',
-                                                             'gene_centric')))
+                                                             INDEX)))
 def test_gene_centric_formal(gene_centric_index, filename):
-    true_doc, es_doc = get_docs_to_comptare(gene_centric_index, filename)
+    true_doc, es_doc = get_docs_to_compare(gene_centric_index, filename)
     assert es_doc == true_doc
 
 
 @pytest.mark.parametrize('filename', os.listdir(os.path.join(conf.data_dir,
                                                              'output',
-                                                             'gene_centric')))
+                                                             INDEX)))
 def test_gene_centric_flat(gene_centric_index, filename):
     true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, filename))
 
@@ -100,17 +98,17 @@ def test_gene_centric_flat(gene_centric_index, filename):
     assert es_doc == true_doc
 
 
-@pytest.mark.parametrize('field', get_one_doc_fields(GENE))
+@pytest.mark.parametrize('field', get_one_doc_fields(DOC))
 def test_gene_centric_field_by_field(gene_centric_index, field):
-    true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, GENE))
+    true_doc, es_doc = map(flatten_json, get_docs_to_compare(gene_centric_index, DOC))
     assert true_doc[field] == es_doc[field]
 
 
 @pytest.mark.mytest
 def test_structure():
-    index_number = int(conf.indices['gene_centric'].split('_')[1][1:]) - 1
+    index_number = int(conf.indices[INDEX].split('_')[1][1:]) - 1
     # index_number = 0
-    index = "gdc_r{}_test_gene_centric__".format(index_number)
+    index = "gdc_r{}_test_{}__".format(index_number, INDEX)
 
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
@@ -122,7 +120,7 @@ def test_structure():
             query = {'query': {'match': {'gene_id': filename}}}
             es_doc = es.search(index=index, body=query)['hits']['hits'][0]['_source']
 
-            print '\nGene name match:', es_doc['gene_id'] == true_doc['gene_id']
+            print '\n{} name match:'.format(INDEX, es_doc[ID_FIELD] == true_doc[ID_FIELD])
 
             if set(true_doc.keys()) != set(es_doc.keys()):
                 print "\nKeys mismatch:"
