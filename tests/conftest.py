@@ -69,7 +69,7 @@ def setup_test_index():
 
 @pytest.yield_fixture(scope='module')
 def sqlContext():
-    sc = SparkContext('local[2]', 'sqlContextFixture')
+    sc = SparkContext(conf.spark_master, 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")

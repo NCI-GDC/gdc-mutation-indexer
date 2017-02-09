@@ -102,6 +102,8 @@ class BaseConfig(object):
 
 
 class TestConfig(BaseConfig):
+    spark_master = 'local[1]'
+
     test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
     data_dir = os.path.join(test_dir, 'data')
     exp_data_dir = os.path.join(os.path.dirname(test_dir), 'exports', 'data')
