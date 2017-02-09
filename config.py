@@ -130,13 +130,13 @@ class TestConfig(BaseConfig):
 
     # Junjun's:
     maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.endswith('maf.gz')]
+                for f in os.listdir(maf_dir) if f.endswith('maf')]
 
     case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
     cases_file = os.path.join(data_dir, 'cases.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
-    gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')
+    gene_model_file = os.path.join(exp_data_dir, 'genes.18.json')
 
     mappings = {'gene': 'gene.yml',
                 'ssm': 'ssm.yml',
