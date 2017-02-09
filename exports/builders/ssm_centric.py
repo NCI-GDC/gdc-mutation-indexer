@@ -26,6 +26,8 @@ class SSMCentricBuilder(object):
                            |____ observation[]
     '''
 
+    index_name = 'ssm_centric'
+
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -34,26 +36,39 @@ class SSMCentricBuilder(object):
     def build(self, maf_df=None):
         '''
         '''
-        self.logger.info('Building case dataframe')
+        self.logger.info('Building MAF dataframe')
+        print 'Building MAF...'
         if maf_df is None:
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        print 'Count:', maf_df.count()
 
         # SSM
+        print 'Selecting SSM from MAF'
         ssm_df = maf_df.select(*struct_select('ssm.yml'))
+        print 'Count:', ssm_df.count()
 
+        print 'Building Transcript'
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        print 'Count:', cons_df.count()
 
         # Observation
+        print 'Aggregating Observation from MAF'
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
                                struct(*struct_select('observation.yml'))
                                       .alias('observation'))\
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))
 
+        print 'Count:', obs_df.count()
+
         # Get ssm from ES
         self.logger.info("Building ssm_centric")
-        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        print 'Building Cases'
 
+        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        print 'Count:', case_df.count()
+
+        print 'Joining Cases with Observation, [right, submitter_id]'
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
                         .select('ssm_id', struct(
                             struct(
@@ -63,11 +78,14 @@ class SSMCentricBuilder(object):
                         ).alias('occurrence'))\
                         .groupby('ssm_id')\
                         .agg(collect_list('occurrence').alias('occurrence'))
+        print 'Count:', occurrence_df.count()
 
+        print 'Final join SSM + Transcript + Last one'
         ssm_centric = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id)\
                         .drop(cons_df.ssm_id)\
                         .join(occurrence_df, ssm_df.ssm_id == occurrence_df.ssm_id)\
                         .drop(cons_df.ssm_id)
+        print 'Final count:', ssm_centric.count()
 
         self.ssm_centric = ssm_centric
 
