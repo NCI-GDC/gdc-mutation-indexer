@@ -106,7 +106,7 @@ def get_one_doc_fields(doc_id):
 
 @pytest.mark.parametrize('filename', os.listdir(OUTPUT_DIR))
 def test_case_centric_formal(case_centric_index, filename):
-    true_doc, es_doc = get_docs_to_comptare(case_centric_index, filename)
+    true_doc, es_doc = get_docs_to_compare(case_centric_index, filename)
     assert es_doc == true_doc
 
 
