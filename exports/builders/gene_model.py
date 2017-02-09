@@ -1,11 +1,15 @@
+import os
+import yaml
+import requests
+import json
 import logging
-logging.basicConfig()
 
 import pyspark
-from pyspark.sql import Row
 from pyspark.sql.functions import udf, lit, col, regexp_extract
 from pyspark.sql.types import *
+import json
 
+logging.basicConfig()
 
 class GeneModelBuilder(object):
     """
@@ -68,4 +72,3 @@ class GeneModelBuilder(object):
                                              *gene_model_df.drop('external_db_ids').columns)
 
         return gene_model_df, cytobands_df, census_df
-

@@ -1,5 +1,6 @@
 import os
 import yaml
+import pkg_resources
 
 
 class Mapper(object):
@@ -7,15 +8,15 @@ class Mapper(object):
     A mapper is responsible for generating the mapping for a doc type
     '''
 
-    def __init__(self):
+    def __init__(self, doc_type):
         self.mapping = self.build_mapping()
+        self.doc_type = doc_type
 
     def build_mapping(self):
         '''
         Constructs an elastic search mapping
         '''
         mapping = {}
-        mapping.update(self.settings)
         return mapping
 
     def load_properties(self, path, nested=False):
@@ -26,7 +27,6 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', path))
 
         properties = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
-
         assert 'properties' in properties, 'File must contain properties'
         if nested:
             properties['type'] = 'nested'
@@ -49,9 +49,23 @@ class Mapper(object):
 
     @property
     def settings(self):
-        path = os.path.join(os.path.dirname(__file__),'../mappings','common_settings.yml')
-        with open(path) as f:
-            settings = yaml.load(f)
+        resource_package = 'exports'
+        resource_path = '/'.join(('mappings', 'common_settings.yml'))
+
+        settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+        # Mapping settings should be moved inside each mapping
+        if 'mappings' in settings:
+            mapping_settings = settings['mappings']
+            del settings['mappings']
+
+        mapping = self.build_mapping()
+        mapping.update(mapping_settings)
+
+        if 'mappings' in settings and type(settings['mappings']) is dict:
+            settings['mappings'].update({self.doc_type: mapping})
+        else:
+            settings['mappings'] = {self.doc_type: mapping}
+
         return settings
 
     def rm_maf_cols(self, d):

@@ -8,7 +8,8 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder
+from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.mappers import SSMMapper
 
 
 class SSMCentricBuilder(object):
@@ -42,28 +43,20 @@ class SSMCentricBuilder(object):
         print 'Count:', maf_df.count()
 
         # SSM
-        print 'Selecting SSM from MAF'
         ssm_df = maf_df.select(*struct_select('ssm.yml'))
-        print 'Count:', ssm_df.count()
 
-        print 'Building Transcript'
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
-        print 'Count:', cons_df.count()
 
         # Observation
         print 'Aggregating Observation from MAF'
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
-                               struct(*struct_select('../mappings/observation.yml'))
+                               struct(*struct_select('observation.yml'))
                                       .alias('observation'))\
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))
 
-        print 'Count:', obs_df.count()
-
         # Get ssm from ES
         self.logger.info("Building ssm_centric")
-        print 'Building Cases'
-
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         print 'Count:', case_df.count()
 
@@ -94,45 +87,34 @@ class SSMCentricBuilder(object):
         '''
         '''
         index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric']
+        doc = self.config.index_names['ssm_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
-        from exports.mappers import SSMMapper
-        m = SSMMapper()
+        data = json.dumps(SSMMapper(doc).settings)
 
-        print requests.delete('http://{}:{}/{}'.format(self.config.es_host,
-                                                       self.config.es_port,
-                                                       index)).json()
-        
-        data = json.dumps({"settings":{"index":{
-                        "refresh_interval":"1m",
-                        "number_of_shards":1,
-                        "number_of_replicas":0,
-                        "mapper.dynamic":False,
-                        "mapping.nested_fields.limit":100,
-                        "mapping.total_fields.limit":2000
-                    }},"mappings":{
-                        doc: m.mapping
-                    }})
-
-        print requests.put('http://{}:{}/{}'.format(self.config.es_host,
+        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
                                                     self.config.es_port,
-                                                    index), data=data).json()
+                                                    index),
+                           auth=(self.config.es_user, self.config.es_pass),
+                           data=data).json())
 
         to_load = self.ssm_centric
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
         self.logger.info('Exporting ssm centric index')
-        to_load.coalesce(1).write.format('org.elasticsearch.spark.sql')\
+        to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
+                            .option('es.net.http.auth.user', self.config.es_user)\
+                            .option('es.net.http.auth.pass', self.config.es_pass)\
+                            .option('es.nodes.wan.only','true')\
                             .option('es.nodes.resolve.hostname','false')\
                             .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '10m')\
+                            .option('es.http.timeout', '20m')\
                             .option('es.http.retries', '-1')\
                             .option('es.batch.write.retry.count','-1')\
                             .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','500mb')\
-                            .option('es.batch.size.entries', '1')\
+                            .option('es.batch.size.bytes','5mb')\
+                            .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','ssm_id')\
                             .save(index_doc)

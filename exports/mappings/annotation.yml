@@ -13,10 +13,17 @@ properties:
     type: keyword
   cds_start:
     type: long
+    default: empty
   codons:
     type: keyword
+  clin_sig:
+    type: keyword
+    default: empty
   dbsnp_rs:
     type: keyword
+  dbsnp_val_status:
+    type: keyword
+    default: empty
   domains:
     type: keyword
   ensp:
@@ -37,14 +44,12 @@ properties:
     type: keyword
   pubmed:
     type: keyword
-    default: empty
   sift:
     type: keyword
   swissprot:
     type: keyword
   transcript_id:
     type: keyword
-    default: canonical_transcript_id
   trembl:
     type: keyword
   uniparc:

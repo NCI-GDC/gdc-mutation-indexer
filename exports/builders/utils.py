@@ -1,6 +1,7 @@
 import os
 import uuid
 import yaml
+import pkg_resources
 from functools import partial
 
 from pyspark.sql.functions import udf, struct, col
@@ -48,7 +49,6 @@ def ssm_uuid_udf(namespace):
 def ssm_occurrence_uuid(namespace, ssm, case):
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
 
-
 def ssm_occurrence_uuid_udf(namespace):
     '''
     Wraps the ssm_uuid function in a spark udf and injects a given namespace
@@ -74,9 +74,9 @@ def flat_fields(path):
     Becomes:
     `['center', 'normal_bam_uuid']`
     '''
-    path = os.path.join(os.path.dirname(__file__), path)
-    with open(path) as f:
-        mapping = yaml.load(f)
+    resource_package = 'exports'
+    resource_path = '/'.join(('mappings', path))
+    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     flat = set()
 
@@ -91,7 +91,27 @@ def flat_fields(path):
     return list(flat)
 
 
-def struct_select(path):
+def extract_transcript_id(val):
+    '''
+    Extract the transcript ids from the all_effects column
+
+    Rows are delimited by ;
+    Columns are delimited by , or :
+    '''
+    delimiter = ',' if ',' in val else ';'
+    rows = val.split(';')
+    transcript_ids = []
+    for r in rows:
+        if len(r.split(delimiter)) > 3:
+            transcript_ids.append(r.split(delimiter)[3])
+    return transcript_ids
+
+
+def transcript_id_udf():
+    return udf(extract_transcript_id, ArrayType(StringType()))
+
+
+def struct_select(path, ignore=[]):
     '''
     Takes the structure from a mapping and produces arguements for a select
     to reorganize a flat dataframe of those fields into the desiced structure.
@@ -109,9 +129,9 @@ def struct_select(path):
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
     '''
-    path = os.path.join(os.path.dirname(__file__), path)
-    with open(path) as f:
-        mapping = yaml.load(f)
+    resource_package = 'exports'
+    resource_path = '/'.join(('mappings', path))
+    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
 
     select = ()
 
@@ -125,10 +145,12 @@ def struct_select(path):
                         name = v['default']
                     cols.append(col(name).alias(k))
                 else:
-                    if 'properties' in v:
+                    if k not in ignore and 'properties' in v:
                         cols.append(struct(restructure(v['properties'])).alias(k))
-                    else:
+                    elif k not in ignore:
                         cols.append(struct(restructure(v)).alias(k))
+                    else:
+                        cols.append(k)
         return cols
 
     select = restructure(mapping['properties'])

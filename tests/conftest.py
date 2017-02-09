@@ -2,6 +2,7 @@ import os
 import time
 import json
 import pytest
+import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -11,6 +12,9 @@ from config import TestConfig
 
 conf = TestConfig
 
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
 
 def setup_test_index():
     '''
@@ -18,9 +22,12 @@ def setup_test_index():
     '''
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
+    with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
+        case_mapping = json.load(f)
+
     if es.indices.exists(conf.graph_index):
         es.indices.delete(index=conf.graph_index)
-        # return es
+    r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
     try:
         with open(conf.cases_file) as f:
@@ -36,11 +43,6 @@ def setup_test_index():
                                          if k != 'case_id'}}
                 case_docs['docs'].append(to_append)
 
-    es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
-
-    with open(os.path.join(conf.data_dir, 'cases.json')) as f:
-        case_docs = json.load(f)
-
     print 'loading case docs to the ES...'
     i = 1
     for doc in case_docs['docs']:
@@ -52,7 +54,7 @@ def setup_test_index():
             ignore=409,
         )
 
-    print 'loaded {} case docs'.format(len(case_docs['docs']))
+    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
 
     while True:
         count = es.count(index=conf.graph_index, doc_type='case')['count']

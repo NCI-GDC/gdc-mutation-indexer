@@ -111,14 +111,11 @@ class TestBuilderSparkUtils(SparkTestCase):
 
     def test_struct_select(self):
         ''' Test mapping to select '''
-        stmt = struct_select('../mappings/observation.yml')
+        stmt = struct_select('observation.yml')
 
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
+        df = MAFBuilder(TestConfig(), self.sqlContext).build()
         urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf')]
 
-        df = builder.combine(urls)
-        df = builder.standardize_schema(df)
-        df = builder.add_ssm_id(df)
         df_json = json.loads(df.select(*stmt).limit(1).toJSON().collect()[0])
 
         self.assertIn('center', df_json)

@@ -126,4 +126,3 @@ def test_structure():
                 match_json_structure(true_doc, es_doc)
                 import pdb
                 pdb.set_trace()
-

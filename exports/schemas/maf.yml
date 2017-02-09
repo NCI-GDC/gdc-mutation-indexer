@@ -19,7 +19,7 @@ maf_schema:
   mutation_type: Mutation_Status
   chromosome: Chromosome
   is_canonical: CANONICAL
-  consequence_type: Score
+  consequence_type: Consequence
   ref_seq_accession: AA_MAF
   aa_start: AA_MAF
   aa_end: AA_MAF
@@ -43,7 +43,7 @@ maf_schema:
   domains: DOMAINS
   protein_position: Protein_position
   cds_start: Entrez_Gene_Id
-  cds_position: PUBMED
+  cds_position: CDS_position
   cds_length: Entrez_Gene_Id
   cds_end: Entrez_Gene_Id
   hgvsp_short: HGVSp_Short
@@ -66,3 +66,5 @@ maf_schema:
   matched_norm_sample_uuid: Matched_Norm_Sample_UUID
   tumor_sample_barcode: Tumor_Sample_Barcode
   tumor_sample_uuid: Tumor_Sample_UUID
+  all_effects: all_effects
+  transcript_id: Transcript_ID

@@ -1,3 +1,5 @@
+import logging
+import sys
 import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
@@ -5,6 +7,9 @@ from pyspark.sql import SQLContext
 from config import configs 
 from config import BaseConfig
 from exports.gdc_mutation_export import GDCMutationExport
+
+root = logging.getLogger()
+root.setLevel(logging.INFO)
 
 
 def main():
@@ -17,13 +22,23 @@ def main():
                         type=str,
                         choices=configs.keys(),
                         default='BaseConfig')
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity",
+                        action="store_true")
+
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
     # Get config
-    config = configs[args.config]
+    config = configs[args.config]()
 
     sc, sqlContext = make_spark_context(config)
+
     exporter = GDCMutationExport(sc, sqlContext, config)
+
+    exporter.run_export(config)
         
     # Tear down actions
     sc.stop()
@@ -33,8 +48,8 @@ def make_spark_context(config):
     Makes a spark and sqlContext
     '''
     conf = SparkConf().setAppName(config.app_name)
-    conf = conf.setMaster('local[*]')
-    sc = SparkContext(conf=conf)
+    conf = conf.setMaster(config.spark_master)
+    sc = SparkContext(conf=conf, pyFiles=[])
     sqlContext = SQLContext(sc)
     # Configure logging
     log4j = sc._jvm.org.apache.log4j

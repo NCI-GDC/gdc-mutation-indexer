@@ -24,7 +24,6 @@ DOC = '086f02a5-2702-580b-afa6-2ac0dedaa7f5'  # only used in field_by_field test
 def ssm_centric_index(sqlContext, test_index):
     ''' Generates a ssm centric index for testing '''
     es = Elasticsearch(conf.es_host, port=conf.es_port)
-    #print es.indices.get_alias().keys()
 
     r = es.indices.create(index=conf.indices[INDEX], ignore=400)
 

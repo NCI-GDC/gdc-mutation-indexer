@@ -34,23 +34,71 @@ properties:
   description:
     type: keyword
     default: empty
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  description:
+    type: text
   is_cancer_gene_census:
     type: keyword
     default: empty
   external_db_ids:
     properties:
       entrez_gene:
-        type: keyword
-        default: empty
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       hgnc:
-        type: keyword
-        default: empty
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       omim_gene:
-        type: keyword
-        default: empty
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
       uniprotkb_swissprot:
-        type: keyword
-        default: empty
+        type: text
+        fields:
+          analyzed:
+            type: text
+            analyzer: id_search
+          raw:
+            type: keyword
+            store: true
+          search:
+            type: text
+            analyzer: id_search
   gene_chromosome:
     type: keyword
   gene_end:
@@ -73,6 +121,10 @@ properties:
     type: long
     default: cds_start
   is_cancer_gene_census:
+<<<<<<< HEAD
+=======
+    default: empty
+>>>>>>> master
     type: boolean
   name:
     type: text
@@ -86,6 +138,7 @@ properties:
       search:
         type: text
         analyzer: id_search
+<<<<<<< HEAD
   symbol:
     type: text
     fields:
@@ -110,12 +163,35 @@ properties:
       search:
         type: text
         analyzer: id_search
+=======
+>>>>>>> master
   cytoband:
     type: keyword
     default: empty
+  symbol:
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   synonyms:
-    type: keyword
-    default: empty
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
   transcripts:
     type: nested
     properties:
@@ -138,7 +214,6 @@ properties:
         properties:
           description:
             type: keyword
-            default: empty
           end:
             type: long
             default: cds_start
@@ -225,4 +300,5 @@ properties:
         default: cds_start
       translation_id:
         type: keyword
-        default: empty
+      id:
+        type: keyword

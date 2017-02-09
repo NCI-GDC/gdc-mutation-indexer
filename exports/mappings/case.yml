@@ -23,8 +23,10 @@ properties:
       search:
         type: text
         analyzer: id_search
-  case_id:
+  state:
     type: keyword
+    default: empty
+  case_id:
     type: text
     fields:
       analyzed:
@@ -51,6 +53,8 @@ properties:
         type: keyword
       submitter_id:
         type: keyword
+      created_datetime:
+        type: date 
       updated_datetime:
         type: date
       year_of_birth:
