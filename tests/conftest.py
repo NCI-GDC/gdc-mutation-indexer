@@ -26,7 +26,10 @@ def setup_test_index():
         case_mapping = json.load(f)
 
     if es.indices.exists(conf.graph_index):
+        if not conf.graph_force_build:
+            return es
         es.indices.delete(index=conf.graph_index)
+
     r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
     try:
@@ -43,8 +46,7 @@ def setup_test_index():
                                          if k != 'case_id'}}
                 case_docs['docs'].append(to_append)
 
-    print 'loading case docs to the ES...'
-    i = 1
+    log.info('loading case docs to the ES...')
     for doc in case_docs['docs']:
         es.create(
             index=conf.graph_index,

@@ -24,25 +24,21 @@ class TestMAFBuilder(SparkTestCase):
         Test that mafs are combined correctly
         '''
         builder= MAFBuilder(TestConfig(), self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
-        df = builder.combine(urls)
-        self.assertEqual(df.count(), 463)
+        df = builder.combine(TestConfig().maf_urls)
+        self.assertEqual(df.count(), 86298)
         c = Counter([json.loads(item)['variant_caller'] for item
                      in df.select('variant_caller').toJSON().collect()])
-        self.assertEqual(c['mutect'], 358)
-        self.assertEqual(c['muse'], 105)
+        self.assertEqual(c['mutect'], 52451)
+        self.assertEqual(c['muse'], 33847)
 
     def test_schema(self):
         '''
         Test that maf has columns correctly renamed
         '''
         builder = MAFBuilder(TestConfig(), self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
-        df = builder.combine(urls)
+        df = builder.combine(TestConfig().maf_urls)
         df = builder.standardize_schema(df)
 
         path = os.path.join(os.path.dirname(__file__), '../exports/schemas/maf.yml')
@@ -57,10 +53,8 @@ class TestMAFBuilder(SparkTestCase):
         Test that ssm_id column is created
         '''
         builder = MAFBuilder(TestConfig(), self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
-        df = builder.combine(urls)
+        df = builder.combine(TestConfig().maf_urls)
         df = builder.standardize_schema(df)
         df = builder.add_ssm_id(df)
         self.assertIn('ssm_id', df.columns)
@@ -70,10 +64,8 @@ class TestMAFBuilder(SparkTestCase):
         Test that ssm_id column is created
         '''
         builder = MAFBuilder(TestConfig(), self.sqlContext)
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(TestConfig.data_dir, 'kirp.muse.test.maf')]
 
-        df = builder.combine(urls)
+        df = builder.combine(TestConfig().maf_urls)
         df = builder.standardize_schema(df)
         df = builder.extract_barcode(df)
 
@@ -114,7 +106,6 @@ class TestBuilderSparkUtils(SparkTestCase):
         stmt = struct_select('observation.yml')
 
         df = MAFBuilder(TestConfig(), self.sqlContext).build()
-        urls = ['file://'+os.path.join(TestConfig.data_dir, 'kirp.mutect.test.maf')]
 
         df_json = json.loads(df.select(*stmt).limit(1).toJSON().collect()[0])
 

@@ -104,10 +104,17 @@ class BaseConfig(object):
 class TestConfig(BaseConfig):
     test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
     data_dir = os.path.join(test_dir, 'data')
+    exp_data_dir = os.path.join(os.path.dirname(test_dir), 'exports', 'data')
+    input_dir = os.path.join(data_dir, 'input')
+    output_dir = os.path.join(data_dir, 'output')
+    maf_dir = os.path.join(input_dir, 'maf')
 
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
     graph_index = 'test_graph_index__'
+
+    # Whether or not to rebuild graph index after every test
+    graph_force_build = False
 
     index_names = {
         'case_centric':         'test_case_centric__',
@@ -116,16 +123,15 @@ class TestConfig(BaseConfig):
         'ssm_occurrence_centric':'test_ssm_occurrence_centric__'
     }
 
-    maf_urls = ['file://'+os.path.join(data_dir, 'kirp.mutect.test.maf'),
-                'file://'+os.path.join(data_dir, 'kirp.muse.test.maf')]
+    # maf_urls = ['file://'+os.path.join(data_dir, 'kirp.mutect.test.maf'),
+    #             'file://'+os.path.join(data_dir, 'kirp.muse.test.maf')]
 
     # Junjun's:
     maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.split('.')[-1] == 'maf']
+                for f in os.listdir(maf_dir) if f.endswith('maf.gz')]
 
     case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
-    # cases_file = os.path.join(data_dir, 'cases.10429.json')  # <- Huge file
-    cases_file = os.path.join(data_dir, 'cases.json')  # <- Smaller but some cases missing
+    cases_file = os.path.join(data_dir, 'cases.json')
     citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
     gene_model_file = os.path.join(exp_data_dir, 'genes.hg38.2160.json')

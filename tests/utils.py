@@ -91,43 +91,7 @@ def validate_level(a, b, path='root'):
         else:
             print "[GOOD]"
             return True
-                validate_level(a[key], b[key])
 
-    elif isinstance(a, list):  # [TODO] fix this case!
-        if len(a) != len(b):
-            print "LIST LENGTH MISMATCH!"
-            print "List a ~ {} len={}\n List b ~ {} len={}".format(type(a),
-                                                                   len(a),
-                                                                   type(b),
-                                                                   len(b))
-            return False
-
-        for i, val_a in enumerate(a):
-            for j, val_b in enumerate(b):
-                cur_path = path + ".List[a{},b{}/{},{}]".format(i, j, len(a), len(b))
-                values_match = validate_level(val_a, val_b, cur_path)
-                if values_match:
-                    print '[NICE!] {}'.format(cur_path)
-                    break
-            if not values_match:
-                print "BRANCH IS MISSING FROM LIST"
-                K1 = set(val_a.keys())
-                K2 = set(b[0].keys())
-                print "Keys a - keys b:", K1 - K2
-                print "Keys b - keys a:", K2 - K1
-                return False
-            else:
-                print "[GOOD]"
-                return True
-    else:
-        if a != b:
-            print '{} > [VALUE MISMATCH]'.format(path)
-            print '{} | NOT EQUALS | {}'.format(a, b)
-            return False
-        else:
-            print "[GOOD]"
-            return True
-        return a == b
 
 def flatten_json(y):
     result = {}

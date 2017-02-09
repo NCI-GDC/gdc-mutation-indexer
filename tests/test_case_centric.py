@@ -25,8 +25,6 @@ def case_centric_index(sqlContext, test_index):
     ''' Generates a kase centric index for testing '''
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
-    r = es.indices.create(index=conf.indices[INDEX], ignore=400)
-
     print 'Building MAF...'
     df = MAFBuilder(conf, sqlContext).build()
     print 'Building {}...'.format(INDEX)
@@ -35,33 +33,6 @@ def case_centric_index(sqlContext, test_index):
     yield es
 
     if not conf.keep_indices:
-        es.indices.delete(index=conf.indices['case_centric'], ignore=399)
-
-@pytest.mark.parametrize('doc,path',
-    get_validation_paths('tests/data/case.validation.1bf54408-b5cb-45dc-ad03-ef2866a0ff59.json')
-)
-def test_case_doc_contains(case_centric_index, doc, path):
-    ''' Test that document contains a field from a path'''
-    d = case_centric_index.get(conf.indices['case_centric'],
-                             doc,
-                             doc_type=conf.index_names['case_centric'])
-    d = d['_source']
-    results = parse(path).find(d)
-    assert len([r.value for r in results]) > 0
-
-@pytest.mark.parametrize('doc,path,count', [
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].gene_id', 290),
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].ssm[*].ssm_id', 344),
-    ('1bf54408-b5cb-45dc-ad03-ef2866a0ff59', 'gene[*].ssm[*].consequence[*].transcript.annotation.impact', 3477)
-])
-def test_case_path_count(case_centric_index, doc, path, count):
-    d = case_centric_index.get(conf.indices['case_centric'],
-                             doc,
-                             doc_type=conf.index_names['case_centric'])
-    d = d['_source']
-    results = parse(path).find(d)
-    assert len(results) == count
-=======
         es.indices.delete(index=conf.indices[INDEX], ignore=399)
 
 
@@ -74,7 +45,7 @@ def get_docs_to_compare(case_centric_index, filename):
         true_doc = json.loads(f.read())
         query = {'query': {'match': {ID_FIELD: filename}}}
 
-    es_doc = case_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
+    es_doc = case_centric_index.get(index=index, id=filename)
 
     return true_doc, es_doc
 
@@ -140,7 +111,7 @@ def test_structure():
             true_doc = json.loads(f.read())
 
             query = {'query': {'match': {ID_FIELD: filename}}}
-            es_doc = es.search(index=index, body=query)['hits']['hits'][0]['_source']
+            es_doc = es.get(index=index, id=filename)
 
             print '\n{} match: {}'.format(ID_FIELD, es_doc[ID_FIELD] == true_doc[ID_FIELD])
 
@@ -154,4 +125,3 @@ def test_structure():
                 import pdb
                 pdb.set_trace()
 
->>>>>>> cdc4578... Tests for all. Ugly version. Fails for each index except gene-centric

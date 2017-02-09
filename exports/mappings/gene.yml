@@ -121,10 +121,7 @@ properties:
     type: long
     default: cds_start
   is_cancer_gene_census:
-<<<<<<< HEAD
-=======
     default: empty
->>>>>>> master
     type: boolean
   name:
     type: text
@@ -138,33 +135,6 @@ properties:
       search:
         type: text
         analyzer: id_search
-<<<<<<< HEAD
-  symbol:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  symbol:
-    type: keyword
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-=======
->>>>>>> master
   cytoband:
     type: keyword
     default: empty

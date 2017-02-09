@@ -89,20 +89,6 @@ class SSMOccurrenceMapper(Mapper):
             'project.properties.disease_type',
             'project.properties.name'
         ], case_map)
-<<<<<<< HEAD
-        # change project_id to keyword
-        del case_map['properties']['project']['properties']['project_id']['fields']
-        case_map['properties']['project']['properties']['project_id']['type'] = 'keyword'
-
-        # change primary_site to keyword
-        del case_map['properties']['project']['properties']['primary_site']['fields']
-        case_map['properties']['project']['properties']['primary_site']['type'] = 'keyword'
-
-        # change disease_type to keyword
-        del case_map['properties']['project']['properties']['disease_type']['fields']
-        case_map['properties']['project']['properties']['disease_type']['type'] = 'keyword'
-=======
->>>>>>> master
 
         mapping['properties']['case'] = case_map
         # Add observation

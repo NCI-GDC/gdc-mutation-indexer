@@ -20,6 +20,7 @@ class TranscriptBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
+        
 
     def build(self, maf_df, join_gene=False):
         '''
@@ -27,6 +28,7 @@ class TranscriptBuilder(object):
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
+        ann_df = maf_df.select('transcript_id', 'consequence_type', 'ssm_id',
                                     struct(*struct_select('annotation.yml'))
                                         .alias('annotation'))\
                                         .drop_duplicates(['transcript_id'])
