@@ -50,7 +50,7 @@ def setup_test_index():
             to_append = {'_id': doc['case_id'],
                          '_index': conf.graph_index,
                          '_type': 'case',
-                         '_source': {k: v for k, v in doc.items() }}
+                         '_source': {k: v for k, v in doc.items()}}
             case_docs['docs'].append(to_append)
 
     log.info('Bulk loading case docs to the ES...')
@@ -129,7 +129,7 @@ def get_validation_doc(path):
 
 
 def get_validation_paths(path):
-    ''' 
+    '''
     Gets the field paths from a json file and sorts them by length for
     nice traceback during testing
     '''

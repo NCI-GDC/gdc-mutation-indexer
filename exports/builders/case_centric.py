@@ -35,53 +35,75 @@ class CaseCentricBuilder(object):
         '''
         '''
         self.logger.info('Building case dataframe')
+        print 'Building MAF'
         if maf_df is None:
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        print 'Count:', maf_df.count()
 
+        print 'Building Gene from MAF'
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
                                 *struct_select('gene.yml', ignore=['transcripts']))\
                                 .drop_duplicates()
+        print 'Count:', gene_df.count()
+
+        print 'Building SSM from MAF'
         # SSM
         ssm_df = maf_df.select('gene_id',
                                *struct_select('ssm.yml'))\
                                 .drop_duplicates(['ssm_id'])
+        print 'Count:', ssm_df.count()
 
+        print 'Building Transctipt'
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
                                .drop_duplicates(['ssm_id'])
+        print 'Count:', cons_df.count()
 
+        print 'Aggregating Obs from MAF'
         # Observation
         obs_df = maf_df.select('ssm_id',
                                struct(*struct_select('observation.yml'))
                                .alias('observation'))\
                                .groupBy('ssm_id')\
                                .agg(collect_list('observation').alias('observation'))
+        print 'Count:', obs_df.count()
 
+        print 'Join SSM with Transcripts [left, ssm_id]'
         df = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id, 'left')\
                     .drop(cons_df.ssm_id)
+        print 'Count:', df.count()
 
+        print 'Join Result above with Obs [left, ssm_id]'
         df = df.join(obs_df, df.ssm_id == obs_df.ssm_id, 'left')\
                     .drop(obs_df.ssm_id)
+        print 'Count:', df.count()
 
+        print 'Aggregating Result above'
         df = df.select('gene_id', struct('consequence', 'observation', *ssm_df.drop('gene_id').columns).alias('ssm'))\
                     .groupBy('gene_id')\
                     .agg(collect_list('ssm').alias('ssm'))
+        print 'Count:', df.count()
 
+        print 'Join Result above with Gene [inner, gene_id]'
         gene_ssm = gene_df.join(df, gene_df.gene_id == df.gene_id)\
                             .drop(df.gene_id)\
                             .select('_case_submitter_id', struct('ssm',*gene_df.drop('_case_submitter_id').columns).alias('gene'))
+        print 'Count:', gene_ssm.count()
 
         # Get cases from ES
         self.logger.info("Building case_centric")
+        print 'Building Case'
         case_df = CaseBuilder(self.config, self.sqlContext).build()
+        print 'Count:', case_df.count()
 
+        print 'Final join Case with last join result [inner, submitter_id]'
         case_centric = case_df.join(gene_ssm,
                                     case_df.submitter_id == gene_ssm._case_submitter_id,
                                     'inner')\
                                 .drop(gene_ssm._case_submitter_id)\
                                 .groupBy(*case_df.columns)\
                                 .agg(collect_list('gene').alias('gene'))
-
+        print 'Count:', case_centric.count()
         self.case_centric = case_centric
 
         return self

@@ -52,7 +52,6 @@ class GeneCentricBuilder(object):
 
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
                                .drop_duplicates(['ssm_id'])
-                                
 
         print '\nAggregating obs_df from MAF'
         # Observation
