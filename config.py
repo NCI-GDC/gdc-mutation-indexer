@@ -132,11 +132,11 @@ class TestConfig(BaseConfig):
     maf_urls = ['file://' + os.path.join(maf_dir, f)
                 for f in os.listdir(maf_dir) if f.endswith('maf')]
 
-    case_mapping_json = os.path.join(data_dir, 'case_mapping.json')
     cases_file = os.path.join(data_dir, 'cases.json')
-    citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv')
-    census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv')
-    gene_model_file = os.path.join(exp_data_dir, 'genes.18.json')
+    case_mapping_json = os.path.join(data_dir, 'case_mapping.json.gz')
+    citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv.gz')
+    census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv.gz')
+    gene_model_file = os.path.join(exp_data_dir, 'genes.18.json.gz')
 
     mappings = {'gene': 'gene.yml',
                 'ssm': 'ssm.yml',

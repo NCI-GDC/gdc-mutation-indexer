@@ -69,7 +69,7 @@ package.json
 
 # private files
 submit-job.sh
-exports/data/*
 tests/data/*
+!tests/data/cases.json
 !tests/data/input
 !tests/data/output
