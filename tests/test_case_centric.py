@@ -23,6 +23,11 @@ DOC = '13afbde8-e5b5-4f3c-8a9d-daef71560005'  # only used in field_by_field test
 @pytest.yield_fixture(scope='module')
 def case_centric_index(sqlContext, test_index):
     ''' Generates a kase centric index for testing '''
+    try:
+        os.remove('tests/data/log/{}.log'.format(INDEX))
+    except:
+        pass
+
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
     print 'Building MAF...'
@@ -43,8 +48,15 @@ def get_docs_to_compare(case_centric_index, filename):
     # Compare each true output document with document in ES:
     with open(os.path.join(OUTPUT_DIR, filename), 'r') as f:
         true_doc = json.loads(f.read())
-        query = {'query': {'match': {ID_FIELD: filename}}}
 
+    query = {'query': {'match': {ID_FIELD: filename}}}
+
+    query_all = {'query': {'match_all': {}}}
+
+    all_docs = case_centric_index.search(index=index, body=query_all)['hits']['hits']
+
+    # import pdb
+    # pdb.set_trace()
     es_doc = case_centric_index.get(index=index, id=filename)
 
     return true_doc, es_doc
@@ -86,8 +98,9 @@ def test_case_centric_flat(case_centric_index, filename):
 
     print "\nStats: {}".format(cnt)
     print "Correctness: {}%\n".format(float(cnt['correct'])/cnt['total'])
-    import pdb
-    pdb.set_trace()
+    with open('tests/data/log/{}.log'.format(INDEX), 'a') as f:
+        f.write('{},{},{}\n'.format(filename, float(cnt['correct'])/cnt['total'], cnt))
+
     assert es_doc == true_doc
 
 

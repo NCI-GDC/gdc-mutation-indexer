@@ -23,6 +23,11 @@ DOC = 'ENSG00000074755'  # only used in field_by_field test
 @pytest.yield_fixture(scope='module')
 def gene_centric_index(sqlContext, test_index):
     """ Generates a gene centricindex for testing """
+    try:
+        os.remove('tests/data/log/{}.log'.format(INDEX))
+    except:
+        pass
+
     es = Elasticsearch(conf.es_host, port=conf.es_port)
 
     r = es.indices.create(index=conf.indices[INDEX], ignore=400)
@@ -91,8 +96,9 @@ def test_gene_centric_flat(gene_centric_index, filename):
 
     print "\nStats: {}".format(cnt)
     print "Correctness: {}%\n".format(float(cnt['correct'])/cnt['total'])
-    import pdb
-    pdb.set_trace()
+    with open('tests/data/log/{}.log'.format(INDEX), 'a') as f:
+        f.write('{},{},{}\n'.format(filename, float(cnt['correct'])/cnt['total'], cnt))
+
     assert es_doc == true_doc
 
 
