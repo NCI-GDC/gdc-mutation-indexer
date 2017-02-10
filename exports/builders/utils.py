@@ -18,11 +18,11 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     '''
     chromosome = chromosome.replace('chr', '')
     if variant_type is 'SNP':
-        label = '{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
+        label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
     elif variant_type is 'DEL':
-        label = '{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
+        label = 'chr{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
     elif variant_type is 'INS':
-        label = '{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
+        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
     else:
         label = chromosome
 
@@ -38,13 +38,30 @@ def ssm_uuid(namespace, chromosome, variant_type, start_pos, end_pos, ref_allele
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(label)))
 
 
+def _udf_uuid5_field(*values):
+    """
+    From Junjun's indexer:
+    https://github.com/NCI-GDC/es-indexer/blob/d30cf9ef9a445c5bea441b9333ca4b8c2c2c33cb/es_indexer/dataframe/processor/uuid5_field.py#L6
+
+    Let's use uuid5 hash for distributed 'unique' ID generation.
+    This is sure not safe to. We should later switch to get ID
+    from some kind of central ID Service. One other benefit to
+    use ID service is that we can get short IDs
+    This is a UDF.
+    """
+    # first value is entity type, the rest are fields made up
+    # to a business key uniquely identifying an entity
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS,
+                    '\t'.join([v if type(v) == str else str(v) for v in values])))
+
+def uuid5_col(*values):
+    return udf(_udf_uuid5_field, StringType())(*values)
+
 def ssm_uuid_udf(namespace):
     '''
     Wraps the ssm_uuid function in a spark udf and injects a given namespace
     '''
     ssm_namespaced = partial(ssm_uuid, str(namespace))
-    return udf(ssm_namespaced, StringType())
-
 
 def ssm_occurrence_uuid(namespace, ssm, case):
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
