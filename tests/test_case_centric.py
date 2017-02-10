@@ -51,13 +51,10 @@ def get_docs_to_compare(case_centric_index, filename):
 
     query = {'query': {'match': {ID_FIELD: filename}}}
 
-    query_all = {'query': {'match_all': {}}}
-
-    all_docs = case_centric_index.search(index=index, body=query_all)['hits']['hits']
-
-    # import pdb
-    # pdb.set_trace()
-    es_doc = case_centric_index.get(index=index, id=filename)
+    # es_doc = case_centric_index.get(index=index, id=filename)
+    import pdb
+    pdb.set_trace()
+    es_doc = case_centric_index.search(index=index, body=query)
 
     return true_doc, es_doc
 
