@@ -1,4 +1,5 @@
 import os
+import gzip
 import time
 import json
 import pytest
@@ -8,6 +9,7 @@ from pyspark import SparkContext
 from pyspark.sql import SQLContext
 
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 from config import TestConfig
 
 conf = TestConfig
@@ -32,29 +34,28 @@ def setup_test_index():
 
     r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
-    try:
-        with open(conf.cases_file) as f:
-            case_docs = json.load(f)
-    except:
-        case_docs = {'docs': []}
-        with open(conf.cases_file) as f:
-            for line in f.readlines():
-                doc = json.loads(line)
-                to_append = {'_id': doc['case_id'],
-                             '_type': 'case',
-                             '_source': {k: v for k, v in doc.items()
-                                         if k != 'case_id'}}
-                case_docs['docs'].append(to_append)
+    if conf.cases_file.endswith('.gz'):
+        f = gzip.open(conf.cases_file, 'rb')
+    else:
+        f = open(conf.cases_file, 'rb')
 
-    log.info('loading case docs to the ES...')
-    for doc in case_docs['docs']:
-        es.create(
-            index=conf.graph_index,
-            id=doc['_id'],
-            doc_type=doc['_type'],
-            body=doc['_source'],
-            ignore=409,
-        )
+    try:
+        case_docs = json.load(f)
+    except:
+        f.seek(0)
+        # If instead the file is a case doc per line
+        case_docs = {'docs': []}
+        for line in f.readlines():
+            doc = json.loads(line)
+            to_append = {'_id': doc['case_id'],
+                         '_index': conf.graph_index,
+                         '_type': 'case',
+                         '_source': {k: v for k, v in doc.items()
+                                     if k != 'case_id'}}
+            case_docs['docs'].append(to_append)
+
+    log.info('Bulk loading case docs to the ES...')
+    bulk(es, case_docs['docs'], ignore=409)
 
     log.info('loaded {} case docs'.format(len(case_docs['docs'])))
 
