@@ -47,8 +47,6 @@ def get_docs_to_compare(ssm_centric_index, filename):
         true_doc = json.loads(f.read())
         query = {'query': {'match': {ID_FIELD: filename}}}
 
-    import pdb
-    pdb.set_trace()
     es_doc = ssm_centric_index.search(index=index, body=query)['hits']['hits'][0]['_source']
 
     return true_doc, es_doc
@@ -90,8 +88,9 @@ def test_ssm_centric_flat(ssm_centric_index, filename):
 
     print "\nStats: {}".format(cnt)
     print "Correctness: {}%\n".format(float(cnt['correct'])/cnt['total'])
-    import pdb
-    pdb.set_trace()
+    with open('tests/data/log/{}.log'.format(INDEX), 'a') as f:
+        f.write('{},{},{}\n'.format(filename, float(cnt['correct'])/cnt['total'], cnt))
+
     assert es_doc == true_doc
 
 
