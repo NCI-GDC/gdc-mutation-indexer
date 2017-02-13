@@ -98,7 +98,7 @@ class SSMCentricBuilder(BaseBuilder):
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
-        self.log('Exporting ssm centric index')
+        self.log('Exporting ssm centric index to {}'.format(index))
         to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.net.http.auth.user', self.config.es_user)\
@@ -113,4 +113,5 @@ class SSMCentricBuilder(BaseBuilder):
                             .option('es.batch.size.bytes','5mb')\
                             .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','ssm_id')\
+                            .option('es.spark.dataframe.write.null', 'true')\
                             .save(index_doc)
