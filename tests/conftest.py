@@ -24,7 +24,7 @@ def setup_test_index():
     '''
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    with open(os.path.join(conf.data_dir, 'case_mapping.json')) as f:
+    with open(conf.case_mapping_json, 'r') as f:
         case_mapping = json.load(f)
 
     if es.indices.exists(conf.graph_index):
@@ -32,7 +32,7 @@ def setup_test_index():
             return es
         es.indices.delete(index=conf.graph_index)
 
-    r = es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
+    es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
     if conf.cases_file.endswith('.gz'):
         f = gzip.open(conf.cases_file, 'rb')
@@ -50,7 +50,7 @@ def setup_test_index():
             to_append = {'_id': doc['case_id'],
                          '_index': conf.graph_index,
                          '_type': 'case',
-                         '_source': {k: v for k, v in doc.items() }}
+                         '_source': doc}
             case_docs['docs'].append(to_append)
 
     log.info('Bulk loading case docs to the ES...')
@@ -129,7 +129,7 @@ def get_validation_doc(path):
 
 
 def get_validation_paths(path):
-    ''' 
+    '''
     Gets the field paths from a json file and sorts them by length for
     nice traceback during testing
     '''
