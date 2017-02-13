@@ -91,11 +91,16 @@ class TestBuilderUtils(unittest.TestCase):
         label = ssm_label('chr4','SNP',112382545,'','A','T')
         self.assertEqual(label, 'chr4:g.112382545A>T')
 
-    def test_ssm_uuid(self):
-        ''' Test ssm_id generation '''
+    def test_uuid5(self):
+        ''' Test uuid5 generation '''
 
         ssm_id = _udf_uuid5_field('ssm', 'GRCh38','chr4','112382545','112382545','SNP','A','T')
         self.assertEqual(ssm_id, '3439eab1-0c63-50cd-bad7-1ae8ffa8aa01')
+
+        ssm_occ_id = _udf_uuid5_field('ssm_occurrence',
+                                      '642a6e7d-8b15-5f93-9e29-22c9649e9058',
+                                      '13afbde8-e5b5-4f3c-8a9d-daef71560005')
+        self.assertEqual(ssm_occ_id, 'f4222c55-fea2-5b23-a204-482f33492800')
 
     def test_flat_fields(self):
         ''' Test mapping field flattener '''
