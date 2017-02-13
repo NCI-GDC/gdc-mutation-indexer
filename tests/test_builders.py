@@ -75,6 +75,7 @@ class TestMAFBuilder(SparkTestCase):
                            .select('_case_submitter_id').limit(1).collect()[0]._case_submitter_id,
                            'TCGA-A4-A6HP')
 
+
 class TestBuilderUtils(unittest.TestCase):
 
     def test_ssm_label(self):
@@ -108,6 +109,7 @@ class TestBuilderUtils(unittest.TestCase):
 
         for field in ['src_vcf_id', 'center', 'tumor_sample_uuid']:
             self.assertIn(field, fields)
+
 
 class TestBuilderSparkUtils(SparkTestCase):
 
