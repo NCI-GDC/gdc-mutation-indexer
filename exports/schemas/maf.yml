@@ -13,7 +13,7 @@ maf_schema:
   start_position: Start_Position
   end_position: End_Position
   variant_type: Variant_Type
-  tumor_allele: Tumor_Seq_Allele1
+  tumor_allele: Tumor_Seq_Allele2
   reference_allele: Reference_Allele
   genomic_dna_change: Allele
   mutation_type: Mutation_Status

@@ -60,8 +60,6 @@ class TestMAFBuilder(SparkTestCase):
         df = builder.add_ssm_id(df)
         self.assertIn('ssm_id', df.columns)
 
-        
-
     def test_case_barcode(self):
         '''
         Test that ssm_id column is created
@@ -95,6 +93,7 @@ class TestBuilderUtils(unittest.TestCase):
 
     def test_ssm_uuid(self):
         ''' Test ssm_id generation '''
+
         ssm_id = _udf_uuid5_field('ssm', 'GRCh38','chr4','112382545','112382545','SNP','A','T')
         self.assertEqual(ssm_id, '3439eab1-0c63-50cd-bad7-1ae8ffa8aa01')
 
