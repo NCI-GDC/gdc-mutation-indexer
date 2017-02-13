@@ -1,6 +1,12 @@
 properties:
   biotype:
     type: keyword
+  canonical_transcript_length_genomic:
+    type: long
+  canonical_transcript_length_cds:
+    type: long
+  canonical_transcript_length:
+    type: long
   canonical_transcript_id:
     type: text
     fields:
@@ -15,6 +21,18 @@ properties:
         analyzer: id_search
   cytoband:
     type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  description:
+    type: keyword
     default: empty
     fields:
       analyzed:
