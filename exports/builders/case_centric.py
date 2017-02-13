@@ -114,7 +114,7 @@ class CaseCentricBuilder(BaseBuilder):
                               auth=(self.config.es_user, self.config.es_pass),
                               data=data).json())
 
-        self.log('Exporting case centric index')
+        self.log('Exporting case centric index to {}'.format(index))
         self.case_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.net.http.auth.user', self.config.es_user)\
@@ -129,4 +129,5 @@ class CaseCentricBuilder(BaseBuilder):
                             .option('es.batch.size.bytes','5mb')\
                             .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','case_id')\
+                            .option('es.spark.dataframe.write.null', 'true')\
                             .save(index_doc)

@@ -45,7 +45,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         ssm_df = maf_df.select('_case_submitter_id', *struct_select(self.config.mappings['ssm']))
 
         # Consequence
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
+        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
@@ -85,7 +85,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         '''
         '''
         index = self.config.indices['ssm_occurrence_centric']
-        doc = self.config.index_names['ssm_occurrence_centric']
+        doc = self.config.index_names['ssm_occurrence_centric'].replace('_', '-')
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(SSMOccurrenceMapper(doc).settings)
@@ -100,7 +100,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
-        self.log('Exporting ssm centric index')
+        self.log('Exporting ssm centric index to {}'.format(index))
         to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.net.http.auth.user', self.config.es_user)\
@@ -115,4 +115,5 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                             .option('es.batch.size.bytes','5mb')\
                             .option('es.batch.size.entries', '100')\
                             .option('es.mapping.id','ssm_occurrence_id')\
+                            .option('es.spark.dataframe.write.null', 'true')\
                             .save(index_doc)
