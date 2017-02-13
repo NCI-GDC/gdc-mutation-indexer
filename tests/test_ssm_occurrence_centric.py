@@ -44,7 +44,7 @@ def ssm_occurrence_centric_index(sqlContext, test_index):
 
 
 @pytest.fixture
-def get_docs_to_compare(ssm_coccurrence_entric_index, filename):
+def get_docs_to_compare(ssm_occurrence_centric_index, filename):
     index = conf.indices[INDEX]
 
     # Compare each true output document with document in ES:

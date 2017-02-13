@@ -7,7 +7,7 @@ logging.basicConfig()
 
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
-from exports.builders.utils import struct_select, ssm_occurrence_uuid_udf
+from exports.builders.utils import struct_select, uuid5_col
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 from exports.mappers import SSMOccurrenceMapper
 
@@ -64,22 +64,21 @@ class SSMOccurrenceCentricBuilder(object):
                                 *case_df.columns
                             ).alias('case'))
 
-        uuid_func = ssm_occurrence_uuid_udf(self.config.ssm_namespace)
-
         ssm_occurrence_centric = ssm_df.join(case_obs_df, ssm_df._case_submitter_id == case_obs_df.submitter_id)\
                                     .drop(ssm_df._case_submitter_id)\
                                     .drop(case_obs_df.submitter_id)\
                                     .join(cons_df, ssm_df.ssm_id == cons_df.ssm_id)\
                                     .drop(cons_df.ssm_id)\
-                                    .withColumn('ssm_occurrence_id', uuid_func(
-                                                                        col('ssm_id'),
-                                                                        col('case_id')))\
+                                    .withColumn('ssm_occurrence_id',
+                                                uuid5_col(lit('ssm_occurrence'),
+                                                    col('ssm_id'),
+                                                    col('case_id')))\
                                     .select(
                                         struct('consequence',*ssm_df.drop('_case_submitter_id').columns).alias('ssm'),
                                         'case',
                                         'ssm_occurrence_id',
                                     )
-
+        # Generate ids
         self.ssm_occurrence_centric = ssm_occurrence_centric
 
         return self
