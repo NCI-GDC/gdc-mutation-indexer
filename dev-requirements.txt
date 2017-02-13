@@ -2,3 +2,5 @@ pytest==3.0.3
 addict==0.2.7
 jupyter==1.0.0
 jsonpath-rw==1.4.0
+Sphinx==1.5.2
+ghp-import==0.5.4
