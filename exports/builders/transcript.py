@@ -3,6 +3,7 @@ import yaml
 import requests
 import json
 import logging
+
 logging.basicConfig()
 
 from pyspark.sql.functions import explode, udf, col, collect_list, struct, lit
@@ -20,7 +21,6 @@ class TranscriptBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        
 
     def build(self, maf_df, join_gene=False):
         '''
@@ -28,38 +28,35 @@ class TranscriptBuilder(object):
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
-        ann_df = maf_df.select('transcript_id', 'consequence_type', 'ssm_id',
-                                    struct(*struct_select('annotation.yml'))
-                                        .alias('annotation'))\
-                                        .drop_duplicates(['transcript_id'])
+        ann_df = maf_df.select('transcript_id', 'ssm_id',
+                               struct(*struct_select('annotation.yml'))
+                               .alias('annotation')) \
+                .drop_duplicates(['transcript_id'])
         if join_gene:
-            gene_df = maf_df.select('ssm_id',
-                                struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))\
-                                .drop_duplicates(['ssm_id'])
-        # Explode the transcript_id array then join then group by (gene_id, ssm_id)
-        maf_df = maf_df\
-                   .select('ssm_id', 'all_effects')\
-                   .withColumn('transcript_ids', transcript_id_udf()(col('all_effects')))\
-                   .select('ssm_id', explode('transcript_ids').alias('transcript_id'))\
-                   .drop_duplicates(['transcript_id', 'ssm_id'])
-        # Load gene model and explode the transcripts
-        tran_df = self.sqlContext.read.json(self.config.gene_model_path)\
-                .select(col('*'), explode('transcripts').alias('transcript'))\
-                .select(col('*'), 'transcript.*')\
-                .withColumn('empty', lit('').cast(StringType()))
+            gene_df = maf_df.select(struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))
 
-        tran_df = tran_df.join(ann_df, tran_df.id == ann_df.transcript_id)
+            gene_ann_df = ann_df.join(gene_df, ann_df.transcript_id == gene_df.gene.canonical_transcript_id) \
+                         .drop_duplicates(['transcript_id'])
+        else:
+            gene_ann_df = ann_df
+        # Explode the transcript_id array then join then group by (ssm_id)
+        ssm_transcript = maf_df.select('ssm_id', 'all_effects') \
+            .withColumn('transcript_ids', transcript_id_udf()(col('all_effects'))) \
+            .select('ssm_id',
+                    explode('transcript_ids').alias('transcript_id')) \
+            .drop_duplicates(['transcript_id', 'ssm_id'])
 
         if join_gene:
-            tran_df = tran_df.join(gene_df, tran_df.ssm_id == gene_df.ssm_id)
             to_use = struct('annotation', 'gene', *struct_select('transcript.yml'))
         else:
             to_use = struct('annotation', *struct_select('transcript.yml'))
 
-        tran_df = tran_df.select('transcript_id', to_use.alias('transcript'))
+        tran_df = maf_df.join(gene_ann_df, on='transcript_id') \
+                .withColumn('empty', lit('').cast(StringType())) \
+                .select('transcript_id', to_use.alias('transcript'))
 
-        df = maf_df.join(tran_df, maf_df.transcript_id == tran_df.transcript_id)\
-                    .select('ssm_id', struct('transcript').alias('transcript'))\
-                    .groupby('ssm_id')\
-                    .agg(collect_list('transcript').alias('consequence'))
+        df = ssm_transcript.join(tran_df, on='transcript_id') \
+            .select('ssm_id', struct('transcript').alias('transcript')) \
+            .groupby('ssm_id') \
+            .agg(collect_list('transcript').alias('consequence'))
         return df

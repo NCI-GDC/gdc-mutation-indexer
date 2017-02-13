@@ -62,12 +62,11 @@ class SSMCentricBuilder(object):
 
         print 'Joining Cases with Observation, [right, submitter_id]'
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
-                        .select('ssm_id', struct(
-                            struct(
+                        .select('ssm_id', struct(struct(
                                 'observation',
                                 *case_df.columns
-                            ).alias('case')
-                        ).alias('occurrence'))\
+                            ).alias('case')).alias('occurrence')
+                        )\
                         .groupby('ssm_id')\
                         .agg(collect_list('occurrence').alias('occurrence'))
         print 'Count:', occurrence_df.count()
@@ -80,6 +79,7 @@ class SSMCentricBuilder(object):
         print 'Final count:', ssm_centric.count()
 
         self.ssm_centric = ssm_centric
+        ssm_centric.printSchema()
 
         return self
 
@@ -87,7 +87,7 @@ class SSMCentricBuilder(object):
         '''
         '''
         index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric'].replace('_', '-')
+        doc = self.config.index_names['ssm_centric']
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(SSMMapper(doc).settings)
