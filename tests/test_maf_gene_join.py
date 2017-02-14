@@ -51,14 +51,6 @@ def if_schema_correct(schema_tree, yaml_file):
 
     set_diff = set(yml_fields) - set(maf_fields)
 
-    print "\t"
-    if len(set_diff) != 0:
-       print list(set_diff), len(set_diff)
-       print ''
-       # print sorted(yml_fields)
-       # print sorted(maf_fields)
-       # print ''
-
     return len(set_diff) == 0
 
 
@@ -72,9 +64,3 @@ class TestMAFGeneModelJoin(SparkTestCase):
     
         joined = MAFBuilder(conf, self.sqlContext).build()
         schema = json.loads(joined.schema.json())
-
-        for f in os.listdir(mappings_dir):
-            if f.split(".")[-1] == "yml" and f not in files_blacklist:
-                print f, if_schema_correct(schema, os.path.join(mappings_dir, f))
-                print ""
-
