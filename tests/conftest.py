@@ -72,7 +72,7 @@ def sqlContext():
     sc = SparkContext(conf.spark_master, 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
-    sqlCont.sql("set spark.sql.shuffle.partitions=200")
+    sqlCont.sql("set spark.sql.shuffle.partitions=1")
     log4j = sc._jvm.org.apache.log4j
     log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
 

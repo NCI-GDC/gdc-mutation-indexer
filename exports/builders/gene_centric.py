@@ -34,14 +34,9 @@ class GeneCentricBuilder(object):
         """
         self.logger.info('Building gene_centric dataframe')
 
-        print '\nBuilding GeneCentric'
-
         if maf_df is None:
-            print '\nBuilding MAF'
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        print 'maf_df count:', maf_df.count()
 
-        print '\nBuilding Gene from MAF'
         # Build the gene from the maf
         gene_df = maf_df.select('_case_submitter_id',
                                 *struct_select('gene.yml', ignore=['transcripts']))
@@ -54,7 +49,6 @@ class GeneCentricBuilder(object):
                                .drop_duplicates(['ssm_id'])
                                 
 
-        print '\nAggregating obs_df from MAF'
         # Observation
         obs_df = maf_df.select('ssm_id',
                                struct(*struct_select('observation.yml'))
@@ -75,29 +69,22 @@ class GeneCentricBuilder(object):
         # Get genes from ES
         self.logger.info("Building gene_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
-        print 'case_df count:', case_df.count()
 
         # Combine case with ssm tree
         case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id, 'left')\
                     .select('submitter_id', struct('ssm', *case_df.columns).alias('case'))
 
-        print '\nJoining case_df with df [left, "submitter_id"]'
         # Combine case with ssm tree
         case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id,
                                 'left')\
                           .select('submitter_id', struct('ssm', *case_df.columns)
                           .alias('case'))
-        print 'case_ssm count:', case_ssm.count()
-
-        print '\nFinal join (gene_df and case_ssm, [inner, "submitter_id"]) ' \
-              'and aggregation'
         gene_centric = gene_df.join(case_ssm,
                                     gene_df._case_submitter_id == case_ssm.submitter_id,
                                     'inner')\
                               .groupBy(*gene_df.columns)\
                               .agg(collect_list('case').alias('case'))\
                               .drop('_case_submitter_id')
-        print 'Final count:', gene_centric.count()
 
         self.gene_centric = gene_centric
 
