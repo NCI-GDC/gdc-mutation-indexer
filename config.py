@@ -27,6 +27,13 @@ class BaseConfig(object):
         'ssm_occurrence_centric':'ssm_occurrence_centric'
     }
 
+    mappings = {'gene': 'gene.yml',
+                'ssm': 'ssm.yml',
+                'transcript': 'transcript.yml',
+                'annotation': 'annotation.yml',
+                'observation': 'observation.yml',
+                }
+
     # Index revision number, will be determined automatically if not specified
     revision = None
 
@@ -138,12 +145,6 @@ class TestConfig(BaseConfig):
     census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(exp_data_dir, 'genes.18.json.gz')
 
-    mappings = {'gene': 'gene.yml',
-                'ssm': 'ssm.yml',
-                'transcript': 'transcript.yml',
-                'annotation': 'annotation.yml',
-                'observation': 'observation.yml',
-                }
 
     # maf_path = 'file:///test_mafs.csv'
     keep_indices = True
