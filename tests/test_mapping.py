@@ -13,10 +13,10 @@ from exports.mappers import (
 
 @pytest.fixture(scope="session")
 def mappings():
-    gene_mapper = GeneMapper()
-    ssm_mapper = SSMMapper()
-    ssm_occurrence_mapper = SSMOccurrenceMapper()
-    case_mapper = CaseMapper()
+    gene_mapper = GeneMapper('gene_centric')
+    ssm_mapper = SSMMapper('ssm_centric')
+    ssm_occurrence_mapper = SSMOccurrenceMapper('ssm_occurrence')
+    case_mapper = CaseMapper('case_centric')
     return {
         'gene': gene_mapper.mapping,
         'ssm': ssm_mapper.mapping,

@@ -16,5 +16,5 @@ class TestFixtures(unittest.TestCase):
         self.assertGreater(self.es.count()['count'], 0)
         self.assertEqual(
             self.es.get(index=self.config.graph_index, doc_type='case',
-                        id='1bf54408-b5cb-45dc-ad03-ef2866a0ff59')['_id'],
-                        '1bf54408-b5cb-45dc-ad03-ef2866a0ff59')
+                        id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id'],
+                        'd2748e35-4719-43c1-a533-b6b0cd9688c3')

@@ -13,7 +13,7 @@ class BaseConfig(object):
     signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
     s3_host = os.getenv('S3_HOST', 'http://cleversafe.service.consul')
     # This is the cluster where document will be loaded into
-    es_host = os.getenv('ES_HOST', 'http://elasticsearchvis.service.consul')
+    es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
@@ -42,7 +42,7 @@ class BaseConfig(object):
 
     # Used for loading case/graph documents from a different es cluster
     source_es_host = os.getenv('SOURCE_ES_HOST',
-                               'http://elasticsearchvis.service.consul')
+                               'http://localhost')
     source_es_port = os.getenv('SOURCE_ES_PORT', 9200)
     graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph_5')
     graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
