@@ -9,7 +9,7 @@ class BaseBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self.debug = True
+        self.debug = config.debug
 
     def log(self, string):
         self.logger.info(string)

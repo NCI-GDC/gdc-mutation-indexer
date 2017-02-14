@@ -18,6 +18,9 @@ class BaseConfig(object):
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
 
+    # Debug mode
+    debug = False
+
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
