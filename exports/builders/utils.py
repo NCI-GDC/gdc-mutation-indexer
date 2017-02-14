@@ -172,3 +172,4 @@ def struct_select(path, ignore=[]):
 
     select = restructure(mapping['properties'])
     return select
+

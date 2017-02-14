@@ -10,9 +10,10 @@ from pyspark.sql.functions import lit, col, struct, collect_list, udf
 from exports.builders.utils import struct_select, uuid5_col
 from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
 from exports.mappers import SSMOccurrenceMapper
+from exports.builders.base_builder import BaseBuilder
 
 
-class SSMOccurrenceCentricBuilder(object):
+class SSMOccurrenceCentricBuilder(BaseBuilder):
     '''
     Builds ssm-occurrence-centric dataframe given case and maf dataframes
 
@@ -28,33 +29,28 @@ class SSMOccurrenceCentricBuilder(object):
 
     index_name = 'ssm_occurrence_centric'
 
-    def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
-
     def build(self, maf_df=None):
         '''
         '''
-        self.logger.info('Building case dataframe')
+        self.log('Building case dataframe')
         if maf_df is None:
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # SSM
-        ssm_df = maf_df.select('_case_submitter_id', *struct_select('ssm.yml'))
+        ssm_df = maf_df.select('_case_submitter_id', *struct_select(self.config.mappings['ssm']))
 
         # Consequence
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
         obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
-                               struct(*struct_select('observation.yml'))
+                               struct(*struct_select(self.config.mappings['observation']))
                                       .alias('observation'))\
                         .groupby('_case_submitter_id', 'ssm_id')\
                         .agg(collect_list('observation').alias('observation'))
 
         # Get ssm occurrence from ES
-        self.logger.info("Building ssm_occurrence_centric")
+        self.log("Building ssm_occurrence_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
 
         case_obs_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
@@ -78,9 +74,10 @@ class SSMOccurrenceCentricBuilder(object):
                                         'case',
                                         'ssm_occurrence_id',
                                     )
+        self.log_count(ssm_occurrence_centric)
         # Generate ids
         self.ssm_occurrence_centric = ssm_occurrence_centric
-
+        self.log('Build finished')
         return self
 
     def load(self, did=None):
@@ -92,17 +89,17 @@ class SSMOccurrenceCentricBuilder(object):
 
         data = json.dumps(SSMOccurrenceMapper(doc).settings)
 
-        self.logger.info(requests.put('{}:{}/{}'.format(self.config.es_host,
+        self.log(requests.put('{}:{}/{}'.format(self.config.es_host,
                                                 self.config.es_port,
                                                 index),
-                               auth=(self.config.es_user, self.config.es_pass),
-                               data=data).json())
+                              auth=(self.config.es_user, self.config.es_pass),
+                              data=data).json())
 
         to_load = self.ssm_occurrence_centric
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
-        self.logger.info('Exporting ssm centric index')
+        self.log('Exporting ssm centric index')
         to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
                             .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
                             .option('es.net.http.auth.user', self.config.es_user)\
