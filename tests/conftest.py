@@ -50,7 +50,7 @@ def setup_test_index():
             to_append = {'_id': doc['case_id'],
                          '_index': conf.graph_index,
                          '_type': 'case',
-                         '_source': {k: v for k, v in doc.items()}}
+                         '_source': doc}
             case_docs['docs'].append(to_append)
 
     log.info('Bulk loading case docs to the ES...')

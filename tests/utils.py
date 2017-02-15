@@ -19,6 +19,8 @@ class SparkTestCase(unittest.TestCase):
         self.sc._jvm.System.clearProperty("spark.driver.port")
 
 
+############TODELETE#####################################################
+
 def match_json_structure(dict1, dict2):
     for k in dict1:
         if isinstance(dict1[k], dict):
@@ -46,8 +48,8 @@ def validate_level(a, b, path='root'):
         pdb.set_trace()
 
     if isinstance(a, dict):
-        K1 = set(a.keys())
         K2 = set(b.keys())
+        K1 = set(a.keys())
         if K1 != K2:
             print 'Keys mismatch!'
             print K1 - K2
@@ -93,18 +95,4 @@ def validate_level(a, b, path='root'):
             return True
 
 
-def flatten_json(y):
-    result = {}
 
-    def flatten(x, name=''):
-        if isinstance(x, dict):
-            for a in x:
-                flatten(x[a], name + a + '_')
-        elif isinstance(x, list):
-            for i, a in enumerate(x):
-                flatten(a, name + str(i) + '_')
-        else:
-            result[name[:-1]] = x
-
-    flatten(y)
-    return result
