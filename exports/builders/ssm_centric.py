@@ -8,9 +8,14 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.builders import (
+    MAFBuilder,
+    CaseBuilder,
+    TranscriptBuilder,
+    ObservationBuilder
+)
+from exports.builders import BaseBuilder
 from exports.mappers import SSMMapper
-from exports.builders.base_builder import BaseBuilder
 
 
 class SSMCentricBuilder(BaseBuilder):
@@ -32,8 +37,8 @@ class SSMCentricBuilder(BaseBuilder):
     def build(self, maf_df=None):
         '''
         '''
-        self.log('Building MAF...')
         if maf_df is None:
+            self.log('Building MAF...')
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
         self.log_count(maf_df)
 
@@ -44,11 +49,7 @@ class SSMCentricBuilder(BaseBuilder):
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
-                               struct(*struct_select(self.config.mappings['observation']))
-                                      .alias('observation'))\
-                        .groupby('_case_submitter_id', 'ssm_id')\
-                        .agg(collect_list('observation').alias('observation'))
+        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Get ssm from ES
         self.log("Building ssm_centric")

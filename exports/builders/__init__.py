@@ -1,9 +1,13 @@
+from base_builder import BaseBuilder
+# Utility builders
+from transcript import TranscriptBuilder
+from observation import ObservationBuilder
+# External dependency builders
 from maf import MAFBuilder
 from case import CaseBuilder
-from transcript import TranscriptBuilder
+from gene_model import GeneModelBuilder
+# Centric builders
 from case_centric import CaseCentricBuilder
 from gene_centric import GeneCentricBuilder
 from ssm_centric import SSMCentricBuilder
 from ssm_occurrence_centric import SSMOccurrenceCentricBuilder
-from gene_model import GeneModelBuilder
-from base_builder import BaseBuilder

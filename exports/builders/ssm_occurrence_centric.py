@@ -8,9 +8,14 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
 from exports.builders.utils import struct_select, uuid5_col
-from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.builders import (
+    MAFBuilder,
+    CaseBuilder,
+    TranscriptBuilder,
+    ObservationBuilder
+)
+from exports.builders import BaseBuilder
 from exports.mappers import SSMOccurrenceMapper
-from exports.builders.base_builder import BaseBuilder
 
 
 class SSMOccurrenceCentricBuilder(BaseBuilder):
@@ -43,11 +48,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Observation
-        obs_df = maf_df.select('_case_submitter_id', 'ssm_id',
-                               struct(*struct_select(self.config.mappings['observation']))
-                                      .alias('observation'))\
-                        .groupby('_case_submitter_id', 'ssm_id')\
-                        .agg(collect_list('observation').alias('observation'))
+        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Get ssm occurrence from ES
         self.log("Building ssm_occurrence_centric")

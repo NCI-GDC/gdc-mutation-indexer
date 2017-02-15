@@ -1,14 +1,17 @@
-import os
-import yaml
 import requests
 import json
 
 from pyspark.sql.functions import lit, col, struct, collect_list
 
 from exports.builders.utils import struct_select
-from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
+from exports.builders import (
+    MAFBuilder,
+    CaseBuilder,
+    TranscriptBuilder,
+    ObservationBuilder
+)
+from exports.builders import BaseBuilder
 from exports.mappers import CaseMapper
-from exports.builders.base_builder import BaseBuilder
 
 
 class CaseCentricBuilder(BaseBuilder):
@@ -55,11 +58,7 @@ class CaseCentricBuilder(BaseBuilder):
 
         self.log('Aggregating Obs from MAF')
         # Observation
-        obs_df = maf_df.select('ssm_id',
-                               struct(*struct_select('observation.yml'))
-                               .alias('observation'))\
-                               .groupBy('ssm_id')\
-                               .agg(collect_list('observation').alias('observation'))
+        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(obs_df)
 
         self.log('Join SSM with Transcripts [left, ssm_id]')

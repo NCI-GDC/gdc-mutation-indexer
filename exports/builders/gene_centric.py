@@ -1,13 +1,19 @@
-import requests
 import json
+import requests
 import logging
 logging.basicConfig()
 
 from pyspark.sql.functions import lit, col, struct, collect_list
-from exports.builders import MAFBuilder, CaseBuilder, TranscriptBuilder
-from exports.mappers import GeneMapper
+
 from exports.builders.utils import struct_select
-from exports.builders.base_builder import BaseBuilder
+from exports.builders import (
+    MAFBuilder,
+    CaseBuilder,
+    TranscriptBuilder,
+    ObservationBuilder
+)
+from exports.builders import BaseBuilder
+from exports.mappers import GeneMapper
 
 
 class GeneCentricBuilder(BaseBuilder):
