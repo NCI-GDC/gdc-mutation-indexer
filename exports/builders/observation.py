@@ -5,22 +5,28 @@ import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit, col, regexp_extract
+from pyspark.sql.functions import  struct, collect_list
 
-from exports.builders.utils import ssm_uuid_udf
+from exports.builders import BaseBuilder
+from exports.builders.utils import struct_select
 
 
-class ObservationBuilder(object):
+class ObservationBuilder(BaseBuilder):
     '''
     Builds observation dataframe from the maf dataframe
     '''
 
-    def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+    def build(self, maf_df, by='ssm_id'):
+        '''
+        Builds an observation from a maf.
+        Each line of a maf is roughly an observation, though it could be better
+        said that a unique observation is identified by a unqiue pairing of
+        tumor and normal sample uuids and an ssm uuid.
+        '''
+        obs_df = maf_df.select(by,
+                               struct(*struct_select('observation.yml'))
+                                      .alias('observation'))\
+                        .groupby(by)\
+                        .agg(collect_list('observation').alias('observation'))
 
-    def build(self):
-        '''
-        '''
-        pass
+        return obs_df
