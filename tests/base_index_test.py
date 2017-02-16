@@ -16,7 +16,7 @@ class BaseIndexTest:
         self.conf = test_config
         self.index = builder.index_name
         self.id_field = '{}_id'.format(self.index.replace('_centric', ''))
-        self.output_dir = os.path.join(self.conf.data_dir, 'output', self.index)
+        self.output_dir = os.path.join(self.conf.output_dir, self.index)
         self.debug = self.conf.print_data_errors
 
     def generate_index(self, sqlContext):
@@ -26,15 +26,16 @@ class BaseIndexTest:
         """
         for logtype in ['summary', 'errors', 'treediff']:
             try:
-                os.remove('tests/data/log/{}_{}.log'.format(self.index, logtype))
+                os.remove(os.path.join(self.conf.log_dir,
+                                       '{}_{}.log'.format(self.index, logtype)))
             except:
                 pass
 
         es = Elasticsearch(self.conf.es_host, port=self.conf.es_port)
 
-        df = MAFBuilder(self.conf, sqlContext).build()
+        maf_df = MAFBuilder(self.conf, sqlContext).build()
 
-        self.builder(self.conf, sqlContext).build(df).load()
+        self.builder(self.conf, sqlContext).build(maf_df).load()
 
         return es
 
@@ -56,7 +57,7 @@ class BaseIndexTest:
     def report_deepdiff(self, diff):
         """
         Reposts DeepDiff result.
-        Writes to tests/data/log/{index}_treediff.log
+        Writes to {self.conf.log_dir}/{index}_treediff.log
         """
         def print_level(deepdiff_level):
             lines = []
@@ -83,7 +84,7 @@ class BaseIndexTest:
                 return obj
 
         # Write report to file
-        with open('tests/data/log/{}_treediff.log'.format(self.index), 'a') as f:
+        with open(os.path.join(self.conf.log_dir, '{}_treediff.log'.format(self.index)), 'a') as f:
             f.write('\n' + '[FILE]' + '+'*60+ '\n')
 
             for k, v in diff.items():
@@ -97,6 +98,8 @@ class BaseIndexTest:
 
     def report_correctness(self, es_doc, true_doc, label):
         """
+        Calculate correctness and write {$log_dir}/{$index}_{summary,errors}.log files
+        WARNING: Uses flattened json documents
         """
         cnt = {'correct': 0, 'missing_fields': 0, 'wrong_values': 0,
                'total': len(true_doc.keys())}
@@ -117,10 +120,12 @@ class BaseIndexTest:
         self.say("\n[STATS]: {}".format(cnt))
         self.say("[CORRECTNESS]: {}%\n".format(float(cnt['correct'])/cnt['total']))
 
-        with open('tests/data/log/{}_summary.log'.format(self.index), 'a') as f:
+        with open(os.path.join(self.conf.log_dir,
+                               '{}_summary.log'.format(self.index)), 'a') as f:
             f.write('{},{},{}\n'.format(label, float(cnt['correct'])/cnt['total'], cnt))
 
-        with open('tests/data/log/{}_errors.log'.format(self.index), 'a') as f:
+        with open(os.path.join(self.conf.log_dir,
+                               '{}_errors.log'.format(self.index)), 'a') as f:
             f.write('Missing fields:\n')
             f.write('\n'.join(err['missing_fields']))
             f.write('\nValue mismatch:\n')
