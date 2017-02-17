@@ -45,6 +45,7 @@ class MAFBuilder(object):
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.add_genomic_dna_change(df)
+        df = self.add_mutation_type(df)
         df = self.add_mutation_subtype(df)
         df = self.extract_barcode(df)
 
@@ -128,8 +129,18 @@ class MAFBuilder(object):
                            len_gen_udf(df.transcripts))
         return df
 
-    def replace_somatic(self, df):
-        pass
+    def add_mutation_type(self, df):
+
+        def mutation_type(mut_type):
+            types = { 'Somatic': 'Simple Somatic Mutation' }
+            if mut_type in types:
+                return types[mut_type]
+            else:
+                return None
+
+        mut_type_udf = udf(mutation_type, StringType())
+        df = df.withColumn('mutation_type', mut_type_udf('mutation_type'))
+        return df
 
     def add_mutation_subtype(self, df):
 
