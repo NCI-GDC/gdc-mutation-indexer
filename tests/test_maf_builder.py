@@ -78,6 +78,18 @@ class TestMAFBuilder(SparkTestCase):
         self.assertIn('chr2:g.182729892G>T', labels)
         self.assertIn('chr9:g.2056812T>A', labels)
 
+    def test_mutation_subtype(self):
+        '''
+        Test that mutation_subtype is created properly
+        '''
+        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+
+        self.assertIn('mutation_subtype', df.columns)
+
+        # Should have as many distinct variants as subtypes
+        self.assertEqual(df.select('variant_type').distinct().count(),
+                         df.select('mutation_subtype').distinct().count())
+
     def test_case_barcode(self):
         '''
         Test that ssm_id column is created
