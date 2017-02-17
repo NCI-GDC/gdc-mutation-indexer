@@ -45,6 +45,7 @@ class MAFBuilder(object):
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.add_genomic_dna_change(df)
+        df = self.add_mutation_subtype(df)
         df = self.extract_barcode(df)
 
         # Build gene model and join with MAF dataframe
@@ -60,6 +61,7 @@ class MAFBuilder(object):
         df = self.add_null(df)
 
         df = self.add_canonical_lengths(df)
+
 
         # Write data
         if self.config.maf_keep:
@@ -124,6 +126,27 @@ class MAFBuilder(object):
                            len_cds_udf(df.transcripts))
         df = df.withColumn('canonical_transcript_length_genomic',
                            len_gen_udf(df.transcripts))
+        return df
+
+    def replace_somatic(self, df):
+        pass
+
+    def add_mutation_subtype(self, df):
+
+        def subtype(variant_type):
+            subtypes = {
+                'SNP': 'Single base substitution',
+                'DEL': 'Small deletion',
+                'INS': 'Small insertion'
+            }
+            if variant_type in subtypes:
+                return subtypes[variant_type]
+            else:
+                return None
+
+        sub_type_udf = udf(subtype, StringType())
+        df = df.withColumn('mutation_subtype', sub_type_udf('variant_type'))
+
         return df
 
     def add_ssm_id(self, df):

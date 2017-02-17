@@ -9,7 +9,6 @@ maf_schema:
   symbol: SYMBOL
   gene_id: Gene
   ncbi_build: NCBI_Build
-  mutation_subtype: Mutation_Status
   start_position: Start_Position
   end_position: End_Position
   variant_type: Variant_Type
