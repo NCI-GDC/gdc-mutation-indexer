@@ -44,14 +44,16 @@ class BaseConfig(object):
     source_es_host = os.getenv('SOURCE_ES_HOST',
                                'http://localhost')
     source_es_port = os.getenv('SOURCE_ES_PORT', 9200)
-    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph_5')
+    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph')
     graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_file = 's3a://test/genes.json'
+    gene_model_file = 's3a://test/genes.hg38.v2.json'
+    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
+    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
 
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
