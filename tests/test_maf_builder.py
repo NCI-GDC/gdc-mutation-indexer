@@ -78,6 +78,19 @@ class TestMAFBuilder(SparkTestCase):
         self.assertIn('chr2:g.182729892G>T', labels)
         self.assertIn('chr9:g.2056812T>A', labels)
 
+    def test_mutation_type(self):
+        '''
+        Test that mutation_type is created properly
+        '''
+        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+
+        self.assertIn('mutation_type', df.columns)
+
+        # Should only have 1 type, 'Simple Somatic Mutation'
+        self.assertEqual(df.select('mutation_type').distinct().count(), 1)
+        self.assertEqual(df.select('mutation_type').collect()[0]['mutation_type'],
+                         'Simple Somatic Mutation')
+
     def test_mutation_subtype(self):
         '''
         Test that mutation_subtype is created properly
