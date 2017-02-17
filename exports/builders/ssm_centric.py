@@ -49,7 +49,8 @@ class SSMCentricBuilder(BaseBuilder):
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
+        obs_df = ObservationBuilder(self.config, self.sqlContext)\
+                    .build(maf_df, by='_case_submitter_id')
 
         # Get ssm from ES
         self.log("Building ssm_centric")
