@@ -8,7 +8,7 @@ logging.basicConfig()
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import lit, col, regexp_extract, udf
 
-from exports.builders.utils import ssm_uuid_udf, uuid5_col
+from exports.builders.utils import ssm_uuid_udf, uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder
 
 
@@ -44,6 +44,7 @@ class MAFBuilder(object):
         df = df.fillna('')
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
+        df = self.add_genomic_dna_change(df)
         df = self.extract_barcode(df)
 
         # Build gene model and join with MAF dataframe
@@ -138,6 +139,19 @@ class MAFBuilder(object):
                                                    col('variant_type'),
                                                    col('reference_allele'),
                                                    col('tumor_allele')))
+        return maf_df
+
+    def add_genomic_dna_change(self, df):
+        """
+        Adds the genomic_dna_change column
+        """
+        maf_df = df.withColumn('genomic_dna_change',
+                               ssm_label_col(col('chromosome'),
+                                             col('variant_type'),
+                                             col('start_position'),
+                                             col('end_position'),
+                                             col('reference_allele'),
+                                             col('tumor_allele')))
         return maf_df
 
     def extract_barcode(self, df):

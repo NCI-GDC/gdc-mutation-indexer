@@ -15,7 +15,6 @@ maf_schema:
   variant_type: Variant_Type
   tumor_allele: Tumor_Seq_Allele2
   reference_allele: Reference_Allele
-  genomic_dna_change: Allele
   mutation_type: Mutation_Status
   chromosome: Chromosome
   is_canonical: CANONICAL
