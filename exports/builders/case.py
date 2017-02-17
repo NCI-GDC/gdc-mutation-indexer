@@ -30,8 +30,7 @@ class CaseBuilder(object):
         '''
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
-
-        return self.sqlContext.read.format("es")\
+        df = self.sqlContext.read.format("es")\
             .option('es.nodes', self.config.source_es_host)\
             .option('es.net.http.auth.user', self.config.es_user)\
             .option('es.net.http.auth.pass', self.config.es_pass)\
@@ -41,3 +40,5 @@ class CaseBuilder(object):
             .option('es.read.field.as.array.include', self.config.case_arrays)\
             .option('es.resource.read', source)\
             .load(source)
+
+        return df

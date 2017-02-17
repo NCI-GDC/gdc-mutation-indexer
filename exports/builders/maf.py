@@ -41,7 +41,6 @@ class MAFBuilder(object):
                 self.logger.info('Couldn\'t find existing maf file at given path')
 
         df = self.combine()
-        df = df.fillna('')
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.add_genomic_dna_change(df)
@@ -51,10 +50,8 @@ class MAFBuilder(object):
 
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-    
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
 
         df = df.drop('_gene_id')
@@ -63,6 +60,7 @@ class MAFBuilder(object):
 
         df = self.add_canonical_lengths(df)
 
+        df = self.map_transform(df)
 
         # Write data
         if self.config.maf_keep:
@@ -70,12 +68,29 @@ class MAFBuilder(object):
 
         return df
 
+    def map_transform(self, df):
+        for column in df.columns:
+            if column in self.schema:
+                if 'type' in self.schema[column]:
+                    val_type = self.schema[column]['type']
+                    assert val_type in ['float', 'int', 'str', 'bool']
+                    df = df.withColumn(column, df[column].cast(val_type))
+
+                elif 'pattern' in self.schema[column]:
+                    pattern = self.schema[column]['pattern']
+                    def apply_pattern(value):
+                        return pattern.format(value)
+                    df = df.withColumn(column,
+                                       udf(apply_pattern, StringType())(df[column]))
+                else:
+                    pass
+        return df
 
     def add_null(self, df):
         """
         Adds a null column to use as defaults for mappings.
         """
-        return df.withColumn('empty', lit('').cast(StringType()))
+        return df.withColumn('empty', lit(None).cast(StringType()))
 
     def standardize_schema(self, df):
         """
@@ -85,7 +100,13 @@ class MAFBuilder(object):
         path = os.path.abspath('exports/schemas/maf.yml')
         with open(path) as f:
             maf_schema = yaml.load(f)['maf_schema']
-        maf_df = df.select(*( col(v).alias(k) for k, v in maf_schema.items() ))
+
+        # Save maf_schema for later use
+        self.schema = maf_schema
+
+        # Select and rename maf fields according to schema
+        maf_df = df.select(*( col(v['name']).alias(k) for k, v in maf_schema.items() ))
+
         return maf_df
 
     def add_canonical_lengths(self, df):

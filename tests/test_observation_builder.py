@@ -15,7 +15,7 @@ conf = TestConfig()
 
 class TestObservationBuilder(SparkTestCase):
     ''' Test intermediate result from the observation builder '''
-    
+
     def setUp(self):
         # TODO this should be setUpClass so we only build the maf once
         # Need to modify SparkTestCase to use setUpClass
