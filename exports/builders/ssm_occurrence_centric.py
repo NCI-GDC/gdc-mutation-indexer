@@ -50,11 +50,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         # Observation
         obs_df = ObservationBuilder(self.config, self.sqlContext)\
-                    .build(maf_df, by='_case_submitter_id')
-
-        # Join back on ssm_id because we need to join by ssm_id later
-        obs_df = obs_df.join(ssm_df.select('_case_submitter_id','ssm_id'),
-                             on='_case_submitter_id', how='right')
+                                    .build(maf_df, by='_case_submitter_id')
 
         # Get ssm occurrence from ES
         self.log("Building ssm_occurrence_centric")
@@ -81,6 +77,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                         'case',
                                         'ssm_occurrence_id',
                                     )
+
         self.log_count(ssm_occurrence_centric)
         # Generate ids
         self.ssm_occurrence_centric = ssm_occurrence_centric

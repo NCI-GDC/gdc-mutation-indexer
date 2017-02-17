@@ -1,68 +1,147 @@
 maf_schema: 
-  biotype: BIOTYPE
-  canonical_transcript_id: Transcript_ID
-  gene_chromosome: Chromosome
-  gene_end: End_Position
-  gene_id: Gene
-  gene_start: Start_Position
-  name: Hugo_Symbol
-  symbol: SYMBOL
-  gene_id: Gene
-  ncbi_build: NCBI_Build
-  start_position: Start_Position
-  end_position: End_Position
-  variant_type: Variant_Type
-  tumor_allele: Tumor_Seq_Allele2
-  reference_allele: Reference_Allele
-  mutation_type: Mutation_Status
-  chromosome: Chromosome
-  is_canonical: CANONICAL
-  consequence_type: Consequence
-  ref_seq_accession: AA_MAF
-  aa_start: AA_MAF
-  aa_end: AA_MAF
-  aa_change: AA_MAF
-  impact: IMPACT
-  amino_acids: Amino_acids
-  existing_variation: Existing_variation
-  sift: SIFT
-  pubmed: PUBMED
-  ccds: CCDS
-  cdna_position: cDNA_position
-  hgvsp: HGVSp
-  ensp: ENSP
-  dbsnp_rs: dbSNP_RS
-  trembl: TREMBL
-  uniparc: UNIPARC
-  codons: Codons
-  polyphen: PolyPhen
-  hgvsc: HGVSc
-  swissprot: SWISSPROT
-  domains: DOMAINS
-  protein_position: Protein_position
-  cds_start: Entrez_Gene_Id
-  cds_position: CDS_position
-  cds_length: Entrez_Gene_Id
-  cds_end: Entrez_Gene_Id
-  hgvsp_short: HGVSp_Short
-  src_vcf_id: src_vcf_id
-  mutation_status: Mutation_Status
-  center: Center
-  normal_allele1: Match_Norm_Seq_Allele1
-  normal_allele2: Match_Norm_Seq_Allele2
-  tumor_seq_allele1: Tumor_Seq_Allele1
-  tumor_seq_allele2: Tumor_Seq_Allele2
-  tumor_validation_allele1: Tumor_Validation_Allele1
-  tumor_validation_allele2: Tumor_Validation_Allele2
-  n_depth: n_depth
-  t_alt_count: t_alt_count
-  t_depth: t_depth
-  t_ref_count: t_ref_count
-  normal_bam_uuid: normal_bam_uuid
-  tumor_bam_uuid: tumor_bam_uuid
-  matched_norm_sample_barcode: Matched_Norm_Sample_Barcode
-  matched_norm_sample_uuid: Matched_Norm_Sample_UUID
-  tumor_sample_barcode: Tumor_Sample_Barcode
-  tumor_sample_uuid: Tumor_Sample_UUID
-  all_effects: all_effects
-  transcript_id: Transcript_ID
+  biotype:
+      name:  BIOTYPE
+  canonical_transcript_id:
+      name:  Transcript_ID
+  gene_chromosome:
+      name:  Chromosome
+  gene_end:
+      name:  End_Position
+      type: int
+  gene_id: 
+      name:  Gene
+  gene_start: 
+      name:  Start_Position
+      type: int
+  name:
+      name:  Hugo_Symbol
+  symbol:
+      name:  SYMBOL
+  gene_id:
+      name:  Gene
+  ncbi_build:
+      name:  NCBI_Build
+  start_position:
+      name:  Start_Position
+      type: int
+  end_position:
+      name:  End_Position
+      type: int
+  variant_type:
+      name:  Variant_Type
+  tumor_allele:
+      name:  Tumor_Seq_Allele2
+  reference_allele:
+      name:  Reference_Allele
+  mutation_type:
+      name:  Mutation_Status
+  chromosome:
+      name:  Chromosome
+      pattern: chr{}
+  is_canonical:
+      name:  CANONICAL
+  consequence_type:
+      name:  Consequence
+  ref_seq_accession:
+      name:  AA_MAF
+  aa_start:
+      name:  AA_MAF
+  aa_end:
+      name:  AA_MAF
+  aa_change:
+      name:  AA_MAF
+  impact:
+      name:  IMPACT
+  amino_acids:
+      name:  Amino_acids
+  existing_variation:
+      name:  Existing_variation
+  sift:
+      name:  SIFT
+  pubmed:
+      name:  PUBMED
+  ccds:
+      name:  CCDS
+  cdna_position:
+      name:  cDNA_position
+  hgvsp:
+      name:  HGVSp
+  ensp:
+      name:  ENSP
+  dbsnp_rs:
+      name:  dbSNP_RS
+  trembl:
+      name:  TREMBL
+  uniparc:
+      name:  UNIPARC
+  codons:
+      name:  Codons
+  polyphen:
+      name:  PolyPhen
+  hgvsc:
+      name:  HGVSc
+  swissprot:
+      name:  SWISSPROT
+  domains:
+      name:  DOMAINS
+  protein_position:
+      name:  Protein_position
+  cds_start:
+      name:   Entrez_Gene_Id
+      type: int
+  cds_position:
+      name:  CDS_position
+  cds_length:
+      name:  Entrez_Gene_Id
+      type: int
+  cds_end:
+      name:  Entrez_Gene_Id
+      type: int
+  hgvsp_short:
+      name:  HGVSp_Short
+  src_vcf_id:
+      name:  src_vcf_id
+  mutation_status:
+      name:  Mutation_Status
+  center:
+      name:  Center
+  normal_allele1:
+      name:  Match_Norm_Seq_Allele1
+  normal_allele2:
+      name:  Match_Norm_Seq_Allele2
+  tumor_seq_allele1:
+      name:  Tumor_Seq_Allele1
+  tumor_seq_allele2:
+      name:  Tumor_Seq_Allele2
+  tumor_validation_allele1:
+      name:  Tumor_Validation_Allele1
+  tumor_validation_allele2:
+      name:  Tumor_Validation_Allele2
+  n_depth:
+      name:  n_depth
+      type: int
+  t_alt_count:
+      name:  t_alt_count
+      type: int
+  t_depth:
+      name:  t_depth
+      type: int
+  t_ref_count:
+      name:  t_ref_count
+      type: int
+  normal_bam_uuid:
+      name:  normal_bam_uuid
+  tumor_bam_uuid:
+      name:  tumor_bam_uuid
+  matched_norm_sample_barcode:
+      name:  Matched_Norm_Sample_Barcode
+  matched_norm_sample_uuid:
+      name:  Matched_Norm_Sample_UUID
+  tumor_sample_barcode:
+      name:  Tumor_Sample_Barcode
+  tumor_sample_uuid:
+      name:  Tumor_Sample_UUID
+  all_effects:
+      name:  all_effects
+  transcript_id:
+      name:  Transcript_ID
