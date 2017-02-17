@@ -17,17 +17,20 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     INS: "{chromosome}:g.{start_position}_{end_position}ins{tumor_allele}"
     '''
     chromosome = chromosome.replace('chr', '')
-    if variant_type is 'SNP':
+
+    if variant_type == 'SNP':
         label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
-    elif variant_type is 'DEL':
+    elif variant_type == 'DEL':
         label = 'chr{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
-    elif variant_type is 'INS':
+    elif variant_type == 'INS':
         label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
     else:
         label = chromosome
 
     return label
 
+def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
 
 def ssm_uuid(namespace, chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     '''
