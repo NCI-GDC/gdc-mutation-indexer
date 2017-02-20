@@ -51,7 +51,7 @@ class BaseConfig(object):
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_path = 's3a://test/genes.json'
+    gene_model_file = 's3a://test/genes.json'
 
     # Locations of MAFs to combine. If none, all public paths listed on the
     # the portal will be combined and used
