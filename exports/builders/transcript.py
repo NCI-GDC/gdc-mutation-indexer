@@ -33,9 +33,15 @@ class TranscriptBuilder(object):
                                         .alias('annotation'))\
                                         .drop_duplicates(['transcript_id'])
         if join_gene:
+            # Probably a better way to remove transcripts
             gene_df = maf_df.select('ssm_id',
                                 struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))\
-                                .drop_duplicates(['ssm_id'])
+                                .drop_duplicates(['ssm_id'])\
+                                .select('ssm_id','gene.*')
+
+            gene_df = gene_df.select('ssm_id', struct([c for c in gene_df.columns
+                                     if c not in ['transcripts', 'ssm_id', 'description', 'symbol', 'biotype','name']]).alias('gene'))
+
         # Explode the transcript_id array then join then group by (gene_id, ssm_id)
         maf_df = maf_df\
                    .select('ssm_id', 'all_effects')\

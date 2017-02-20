@@ -23,8 +23,7 @@ class ObservationBuilder(BaseBuilder):
         said that a unique observation is identified by a unqiue pairing of
         tumor and normal sample uuids and an ssm uuid.
         '''
-        obs_df = maf_df.select(by,
-                               struct(*struct_select('observation.yml'))
+        obs_df = maf_df.select(by, struct(*struct_select('observation.yml'))
                                       .alias('observation'))\
                         .groupby(by)\
                         .agg(collect_list('observation').alias('observation'))
