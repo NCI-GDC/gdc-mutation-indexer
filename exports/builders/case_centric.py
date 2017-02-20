@@ -103,7 +103,7 @@ class CaseCentricBuilder(BaseBuilder):
         '''
         '''
         index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric'].replace('_', '-')
+        doc = self.config.index_names['case_centric']
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(CaseMapper(doc).settings)

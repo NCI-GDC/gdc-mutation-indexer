@@ -43,13 +43,19 @@ class SSMCentricBuilder(BaseBuilder):
         self.log_count(maf_df)
 
         # SSM
-        ssm_df = maf_df.select(*struct_select(self.config.mappings['ssm']))
+        ssm_df = maf_df.select('_case_submitter_id',
+                               *struct_select(self.config.mappings['ssm']))
 
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
+        obs_df = ObservationBuilder(self.config, self.sqlContext)\
+                    .build(maf_df, by='_case_submitter_id')
+
+        # Join back on ssm_id because we need to join by ssm_id later
+        obs_df = obs_df.join(ssm_df.select('_case_submitter_id','ssm_id'),
+                             on='_case_submitter_id', how='right')
 
         # Get ssm from ES
         self.log("Building ssm_centric")
@@ -69,10 +75,9 @@ class SSMCentricBuilder(BaseBuilder):
         self.log_count(occurrence_df)
 
         self.log('Final join SSM + Transcript + Last one')
-        ssm_centric = ssm_df.join(cons_df, ssm_df.ssm_id == cons_df.ssm_id)\
-                        .drop(cons_df.ssm_id)\
-                        .join(occurrence_df, ssm_df.ssm_id == occurrence_df.ssm_id)\
-                        .drop(cons_df.ssm_id)
+        ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
+                        .join(occurrence_df, on='ssm_id')\
+                        .drop('_case_submitter_id')
         self.log_count(ssm_centric)
 
         self.ssm_centric = ssm_centric
