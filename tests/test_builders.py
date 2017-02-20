@@ -1,13 +1,17 @@
 import os
 import uuid
 import json
-import yaml
 import pytest
 import unittest
-from collections import Counter
 
 from utils import SparkTestCase
-from exports.builders import MAFBuilder
+from exports.builders import (
+    MAFBuilder,
+    GeneCentricBuilder,
+    CaseCentricBuilder,
+    SSMCentricBuilder,
+    SSMOccurrenceCentricBuilder
+)
 from exports.builders.utils import (
     ssm_uuid,
     ssm_label,
@@ -16,6 +20,9 @@ from exports.builders.utils import (
     _udf_uuid5_field
 )
 from config import TestConfig
+
+
+conf = TestConfig()
 
 
 class TestBuilderUtils(unittest.TestCase):
