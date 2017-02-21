@@ -69,6 +69,9 @@ class MAFBuilder(object):
         return df
 
     def map_transform(self, df):
+        """
+        Transforms maf_df according to maf.yml :type and :pattern
+        """
         for column in df.columns:
             if column in self.schema:
                 if 'type' in self.schema[column]:

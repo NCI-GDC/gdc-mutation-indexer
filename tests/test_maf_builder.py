@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import yaml
 import pytest
@@ -117,3 +118,37 @@ class TestMAFBuilder(SparkTestCase):
         self.assertEqual(df.where(df.tumor_sample_barcode=='TCGA-A4-A6HP-01A-11D-A31X-10')\
                            .select('_case_submitter_id').limit(1).collect()[0]._case_submitter_id,
                            'TCGA-A4-A6HP')
+
+    def test_maf_field_types(self):
+        """
+        Test that maf_df field types correspond to maf.yml
+        """
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
+        df = builder.build()
+
+        types = {'int': 'integer', 'bool': 'boolean', 'float': 'float'}
+        for col in df.schema:
+            col_info = json.loads(col.json())
+            if col_info['name'] in builder.schema:
+                if 'type' in builder.schema[col_info['name']]:
+                    assert col_info['type'] == types[builder.schema[col_info['name']]['type']]
+
+    def test_maf_field_pattern(self):
+        """
+        Test that maf_df field pattern correspond to maf.yml
+        """
+        builder = MAFBuilder(TestConfig(), self.sqlContext)
+        df = builder.build()
+
+        for col in df.schema:
+            col_info = json.loads(col.json())
+            colname = col_info['name']
+            if colname in builder.schema:
+                if 'pattern' in builder.schema[colname]:
+                    pattern = builder.schema[colname]['pattern']
+                    values = df.select(colname)
+                    for row in values.collect():
+                        val = row[colname]
+                        is_matching = re.search(pattern.replace('{}','.*'), val)
+                        assert is_matching
+
