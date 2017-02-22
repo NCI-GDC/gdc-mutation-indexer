@@ -118,7 +118,7 @@ def extract_transcript_id(val):
     Rows are delimited by ;
     Columns are delimited by , or :
     '''
-    delimiter = ',' if ',' in val else ';'
+    delimiter = ',' if ',' in val else ':'
     rows = val.split(';')
     transcript_ids = []
     for r in rows:
