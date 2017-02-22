@@ -1,4 +1,5 @@
-from utils import SparkTestCase, JSONValidator
+from utils import SparkTestCase
+from utils.json_validation import JSONValidator
 from exports.builders.utils import  percentile
 import pytest
 from random import randint

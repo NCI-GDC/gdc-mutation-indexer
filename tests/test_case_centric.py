@@ -5,8 +5,9 @@ from deepdiff import DeepDiff
 from tests_config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import CaseCentricBuilder
-from utils import JSONValidator
+from utils.json_validation import JSONValidator
 
+from utils.json_metrics import CaseCentricStats
 
 builder = CaseCentricBuilder
 conf = TestConfig()
@@ -22,6 +23,13 @@ def case_centric_index(sqlContext, test_index):
 
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices[T.index], ignore=399)
+
+
+@pytest.yield_fixture(scope='module')
+def case_stats(sqlContext, case_centric_index):
+    docs = case_centric_index.search(index=conf.indices['case_centric'],
+                                  body={"query": {"match_all": {}}}, size=1000)
+    yield CaseCentricStats(docs['hits']['hits'])
 
 
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
@@ -54,3 +62,13 @@ def test_case_centric_cardinality(case_centric_index, filename, test_mode):
     T.report_cardinality(mismatches, '[{}|{}]'.format(filename, test_mode))
     assert mismatches == {}
 
+
+@pytest.mark.parametrize('stat', ['Nprojects',
+                                  'Ncases',
+                                  'Ngenes',
+                                  'NUniqMut',
+                                  'Nconseq'])
+def test_case_centric_summary_stats(case_centric_index, case_stats, maf_stats, stat):
+    case_stat = getattr(case_stats, stat)
+    maf_stat = getattr(maf_stats, stat)
+    assert case_stat == maf_stat
