@@ -25,29 +25,14 @@ class TestObservationBuilder(SparkTestCase):
     def test_join_columns(self):
         ''' Check for columns that are used by other builders to join on '''
         obs_df = ObservationBuilder(conf, self.sqlContext)\
-                                   .build(self.maf_df, by='ssm_id')
-        assert 'ssm_id' in obs_df.columns
+                                   .build(self.maf_df)
+        self.assertIn('_case_submitter_id', obs_df.columns)
 
-        obs_df = ObservationBuilder(conf, self.sqlContext)\
-                                   .build(self.maf_df, by='ssm_id')
-        assert 'ssm_id' in obs_df.columns
-
-        obs_df = ObservationBuilder(conf, self.sqlContext)\
-                                   .build(self.maf_df, by='_case_submitter_id')
-        assert '_case_submitter_id' in obs_df.columns
-
-    def test_ssm_id_size(self):
-        ''' Check for the right number of observations by ssm_id '''
-        obs_df = ObservationBuilder(conf, self.sqlContext)\
-                                   .build(self.maf_df, by='ssm_id')
-        assert obs_df.count() == 18
-
-    def test_submitter_id_size(self):
+    def test_observation_size(self):
         ''' Check for the right number of observations by submitter_id '''
         obs_df = ObservationBuilder(conf, self.sqlContext)\
-                                   .build(self.maf_df, by='_case_submitter_id')
-        # Should have 8 cases with observations
-        assert obs_df.count() == 8
+                                   .build(self.maf_df)
+        self.assertEqual(obs_df.count(), 18)
         # We should still have all 18 observations accross all cases
-        assert obs_df.select(sum(size('observation').alias('size')))\
-                            .rdd.glom().collect()[0][0][0] == 18
+        self.assertEqual(obs_df.select(sum(size('observation').alias('size')))\
+                            .rdd.glom().collect()[0][0][0], 18)
