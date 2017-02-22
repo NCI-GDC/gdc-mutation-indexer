@@ -134,8 +134,8 @@ class MAFBuilder(object):
         def len_cds_udf(transcripts):
             for t in transcripts:
                 if t['is_canonical']:
-                    if 'length' in t:
-                        return t['length']
+                    if 'length_cds' in t:
+                        return t['length_cds']
                     else:
                         return None
 
