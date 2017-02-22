@@ -1,11 +1,14 @@
-import argparse
 try:
     # Dont want to require matplotlib if we don't have to
     import matplotlib.pyplot as plt
 except ImportError:
     pass
 
-class maf():
+
+class MAFStats():
+    """
+    Test count attributes for a MAF file
+    """
 
     def __init__(self, maf_files):   
 
@@ -31,6 +34,7 @@ class maf():
 
         # Read project MAFs
         for fileName in maf_files:
+          fileName = fileName.replace('file://','')
 
           project = '-'.join(fileName.split('/')[-1].split('.')[0:2])
           
@@ -38,7 +42,7 @@ class maf():
               self.projects.append(project)
               self.cases_per_project[project] = 0
 
-          with open(fileName,'rt') as f:
+          with open(fileName,'r') as f:
              for line in f:
 
                  line = line.strip('\n')

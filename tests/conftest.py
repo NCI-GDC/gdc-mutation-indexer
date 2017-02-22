@@ -12,7 +12,9 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
-conf = TestConfig
+from utils.maf_metrics import MAFStats
+
+conf = TestConfig()
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -103,6 +105,11 @@ def test_index(request):
 
     if not conf.keep_indices:
         es.indices.delete(index=conf.graph_index, ignore=399)
+
+
+@pytest.yield_fixture(scope='module')
+def maf_stats():
+    yield MAFStats(conf.maf_urls)
 
 
 ### Validation helpers
