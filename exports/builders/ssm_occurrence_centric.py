@@ -49,8 +49,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
-        obs_df = ObservationBuilder(self.config, self.sqlContext)\
-                                    .build(maf_df, by='_case_submitter_id')
+        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Get ssm occurrence from ES
         self.log("Building ssm_occurrence_centric")
