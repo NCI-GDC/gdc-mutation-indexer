@@ -10,7 +10,7 @@ from pyspark.sql import SQLContext
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
-from config import TestConfig
+from tests_config import TestConfig
 
 conf = TestConfig
 

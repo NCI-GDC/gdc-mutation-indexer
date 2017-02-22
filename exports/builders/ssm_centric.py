@@ -2,7 +2,7 @@ import requests
 import json
 import logging
 
-from pyspark.sql.functions import lit, col, struct, collect_list
+from pyspark.sql.functions import lit, struct, collect_list
 
 from exports.builders import (
     MAFBuilder,
@@ -51,9 +51,11 @@ class SSMCentricBuilder(BaseBuilder):
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
             .join(occurrence_df, on='ssm_id')
 
-        self.log_count(ssm_centric)
+        # Truncate outliers
+        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric, 'occurrence', self.config.percentile_threshold['occurrences_per_ssm'])
 
-        self.ssm_centric = ssm_centric
+        self.log_count(self.ssm_centric)
+
         self.log('Build finished')
         return self
 
@@ -81,7 +83,7 @@ class SSMCentricBuilder(BaseBuilder):
         '''
         '''
         index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric'].replace('_', '-')
+        doc = self.config.index_names['ssm_centric']
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(SSMMapper(doc).settings)

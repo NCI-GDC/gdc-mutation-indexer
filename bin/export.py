@@ -4,8 +4,6 @@ import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
 
-from config import configs 
-from config import BaseConfig
 from exports.gdc_mutation_export import GDCMutationExport
 
 root = logging.getLogger()
@@ -20,8 +18,8 @@ def main():
     parser.add_argument('-c', '--config',
                         help='The configuration set to run with',
                         type=str,
-                        choices=configs.keys(),
-                        default='BaseConfig')
+                        choices=['Base', 'Test'],
+                        default='Base')
     parser.add_argument("-v", "--verbose",
                         help="increase output verbosity",
                         action="store_true")
@@ -32,7 +30,12 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
 
     # Get config
-    config = configs[args.config]()
+    if args.config == 'Test':
+        from tests_config import TestConfig as Config
+    else:
+        from config import BaseConfig as Config
+
+    config = Config()
 
     sc, sqlContext = make_spark_context(config)
 

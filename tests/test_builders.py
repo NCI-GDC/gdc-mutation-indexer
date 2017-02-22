@@ -19,7 +19,7 @@ from exports.builders.utils import (
     struct_select,
     _udf_uuid5_field
 )
-from config import TestConfig
+from tests_config import TestConfig
 
 
 conf = TestConfig()

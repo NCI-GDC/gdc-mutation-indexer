@@ -2,7 +2,7 @@ import os
 import pytest
 from deepdiff import DeepDiff
 
-from config import TestConfig
+from tests_config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import SSMCentricBuilder
 from utils import JSONValidator

@@ -1,7 +1,7 @@
 import pytest
 import unittest
 
-from config import BaseConfig, TestConfig
+from tests_config import TestConfig
 
 
 @pytest.mark.usefixtures('test_index_class')

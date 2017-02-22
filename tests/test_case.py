@@ -2,7 +2,7 @@ import time
 from utils import SparkTestCase
 import pytest
 
-from config import TestConfig
+from tests_config import TestConfig
 from exports.builders import CaseBuilder
 
 conf = TestConfig

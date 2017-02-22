@@ -10,7 +10,7 @@ from utils import SparkTestCase
 from exports.builders import MAFBuilder
 from exports.builders.utils import load_mapping
 from pyspark.sql.types import BooleanType
-from config import TestConfig
+from tests_config import TestConfig
 conf = TestConfig()
 
 

@@ -205,6 +205,21 @@ def struct_select(path, ignore=[]):
     return select
 
 
+def percentile(vector, p):
+    '''
+    Calculates the p percentile of vector
+    '''
+    sorted_vector = sorted(vector)
+    vector_len = len(vector)
+    position = (vector_len-1)*float(p)/100
+    floored_pos = int(position)
+    rest = position - floored_pos
+    if floored_pos >= vector_len - 1:
+        return sorted_vector[vector_len - 1]
+
+    return sorted_vector[floored_pos] + (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+
+
 def build_aa_matching_pattern(aa_dict):
     mp = ''
     for k in aa_dict.keys():
