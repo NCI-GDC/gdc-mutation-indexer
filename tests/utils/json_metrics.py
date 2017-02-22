@@ -1,0 +1,373 @@
+import json
+
+class ssm_centric():
+
+    def __init__(self, json_file):   
+
+        # Class attributes
+        self.Nprojects  = 0
+        self.Ncases     = 0
+        self.Ngenes     = 0
+        self.Nmutations = 0
+        self.NUniqMut   = 0
+        self.Nconseq    = 0
+        
+        self.projects = []
+        self.cases = []
+        
+        self.cases_per_project  = {}
+        self.genes_per_case     = {}
+        self.mutations_per_case = {}        
+        self.mutations_per_gene = {}
+        self.uniqMutations = {}  
+        self.consequences = {} 
+
+        self.data = []
+
+        if type(json_file) is list:
+            self.data = json_file
+        else:
+            with open(json_file,'r') as f:
+                self.data = json.load(f)      
+
+        if 'hits' in self.data:
+            self.data = self.data['hits']['hits']
+
+
+    def get_mutation(self, ssm):
+        chromosome = ssm['chromosome']
+        startpos   = ssm['start_position']
+        mutType    = ssm['variant_type']
+        refallele  = ssm['reference_allele']
+        tumorall2  = ssm['tumor_allele']
+
+        mutation = '_'.join(str(c) for c in [chromosome, 
+                              startpos,  
+                              refallele, 
+                              tumorall2, 
+                              mutType])  
+        return mutation
+
+
+class SSMCentricStats(BaseStats):
+
+    def __init__(self, json_file):
+        super(SSMCentricStats, self).__init__(json_file)
+
+        for h in self.data:
+
+            if '_source' in h:
+               h = h['_source']
+
+            mutation = self.get_mutation(h)
+            cases_in_ssm = []
+
+            for ocurrence in h['occurrence']:
+                project = ocurrence['case']['project']['project_id']
+                case    = ocurrence['case']['submitter_id']
+
+                if not project in self.projects:
+                    self.projects.append(project)
+                    self.cases_per_project[project] = 0
+
+                if not case in self.cases:
+                    self.cases.append(case)
+                    self.genes_per_case[case]     = 0
+                    self.mutations_per_case[case] = 0                    
+                    self.cases_per_project[project] += 1
+                
+                cases_in_ssm.append(case)    
+                self.mutations_per_case[case] += 1
+
+            for conseq in h['consequence']:
+               
+                for case in cases_in_ssm:
+
+                    # Get consequences mutations
+                    mutation_case = case + '_' + mutation
+                    if not mutation_case in self.consequences:
+                      self.consequences[mutation_case] = 1   
+                    else:
+                      self.consequences[mutation_case] += 1   
+                    
+                if conseq['transcript']['is_canonical']:              
+                    gene = conseq['transcript']['gene']['gene_id']               
+                    gene_case = project + '_' + case + '_' + gene
+                    
+            if not gene_case in self.mutations_per_gene:
+                self.mutations_per_gene[gene_case] = 0  
+                self.genes_per_case[case]         += 1  
+            self.mutations_per_gene[gene_case] += 1  
+
+
+            if not mutation in self.uniqMutations:
+                self.uniqMutations[mutation] = 1
+            else:
+                self.uniqMutations[mutation] += 1 
+
+        self.Nprojects  = len(self.projects)
+        self.Ncases     = len(self.cases)
+        self.Ngenes     = len(self.mutations_per_gene)
+        self.NUniqMut   = len(self.uniqMutations)   
+        self.Nconseq    = len(self.consequences)
+
+
+class SSMOcurrenceCentricStats(BaseStats):
+
+    def __init__(self, json_file):
+        super(SSMOcurrenceCentricStats, self).__init__(json_file)
+
+        for h in self.data:
+
+            if '_source' in h:
+               h = h['_source']
+
+            project = h['case']['project']['project_id']
+            case    = h['case']['submitter_id']
+
+            if not project in self.projects:
+                self.projects.append(project)
+                self.cases_per_project[project] = 0
+
+            if not case in self.cases:
+                self.cases.append(case)
+                self.genes_per_case[case]     = 0
+                self.mutations_per_case[case] = 0                    
+                self.cases_per_project[project] += 1
+                  
+            self.mutations_per_case[case] += 1
+
+            ssm = h['ssm']
+            mutation = self.get_mutation(ssm)
+
+            for conseq in ssm['consequence']:
+
+                # Get consequences mutations
+                mutation_case = case + '_' + mutation
+                if not mutation_case in self.consequences:
+                    self.consequences[mutation_case] = 1   
+                else:
+                    self.consequences[mutation_case] += 1   
+                    
+                if conseq['transcript']['is_canonical']:              
+                    gene = conseq['transcript']['gene']['gene_id']               
+                    gene_case = project + '_' + case + '_' + gene
+                    
+            if not gene_case in self.mutations_per_gene:
+                self.mutations_per_gene[gene_case] = 0  
+                self.genes_per_case[case]         += 1  
+            self.mutations_per_gene[gene_case] += 1  
+
+
+            if not mutation in self.uniqMutations:
+                self.uniqMutations[mutation] = 1
+            else:
+                self.uniqMutations[mutation] += 1 
+
+        self.Nprojects  = len(self.projects)
+        self.Ncases     = len(self.cases)
+        self.Ngenes     = len(self.mutations_per_gene)
+        self.NUniqMut   = len(self.uniqMutations)   
+        self.Nconseq    = len(self.consequences)
+
+class CaseCentricStats(BaseStats):
+
+    def __init__(self, json_file):   
+
+        # Class attributes
+        self.Nprojects  = 0
+        self.Ncases     = 0
+        self.Ngenes     = 0
+        self.Nmutations = 0
+        self.NUniqMut   = 0
+        
+        self.projects = []
+        self.cases = []
+        
+        self.cases_per_project  = {}
+        self.genes_per_case     = {}
+        self.mutations_per_case = {}        
+        self.mutations_per_gene = {}
+        self.uniqMutations = {}  
+    
+        self.data = []
+
+        with open(json_file,'r') as f:
+            self.data = json.load(f)
+
+        for h in self.data:
+
+            if '_source' in h:
+               h = h['_source']
+
+            project =  h['project']['project_id']       
+            case    =  h['submitter_id']
+
+            if not project in self.projects:
+                self.projects.append(project)
+                self.cases_per_project[project] = 0
+
+            if not case in self.cases:
+                self.cases.append(case)
+                self.cases_per_project[project] += 1
+                self.genes_per_case[case]     = 0
+                self.mutations_per_case[case] = 0                    
+
+            for g in h['gene']:
+                 gene = g['gene_id']
+                 gene_case = project + '_' + case + '_' + gene
+                 if not gene_case in self.mutations_per_gene:
+                    self.mutations_per_gene[gene_case] = 0                     
+                    self.genes_per_case[case]         += 1  
+
+                 for ssm in g['ssm']:
+                    self.mutations_per_case[case]      += 1
+                    self.mutations_per_gene[gene_case] += 1                  
+
+                    chromosome = ssm['chromosome']
+                    startpos   = ssm['start_position']
+                    mutType    = ssm['variant_type']
+                    refallele  = ssm['reference_allele']
+                    tumorall2  = ssm['tumor_allele']
+
+                    mutation = '_'.join([chromosome, 
+                                          startpos,  
+                                          refallele, 
+                                          tumorall2, 
+                                          mutType])  
+
+                    if not mutation in self.uniqMutations:
+                        self.uniqMutations[mutation] = 1
+                    else:
+                        self.uniqMutations[mutation] += 1 
+
+                    mutation_case = case + '_' + mutation
+                    for conseq in ssm['consequence']:
+
+                        if not mutation_case in self.consequences:
+                          self.consequences[mutation_case] = 1   
+                        else:
+                          self.consequences[mutation_case] += 1  
+
+
+        self.Nprojects  = len(self.projects)
+        self.Ncases     = len(self.cases)
+        self.Ngenes     = len(self.mutations_per_gene)
+        self.NUniqMut   = len(self.uniqMutations)   
+        self.Nconseq    = len(self.consequences)
+
+class gene_centric():
+
+    def __init__(self, json_file):   
+
+        # Class attributes
+        self.Nprojects  = 0
+        self.Ncases     = 0
+        self.Ngenes     = 0
+        self.Nmutations = 0
+        self.NUniqMut   = 0
+        
+        self.projects = []
+        self.cases = []
+        
+        self.cases_per_project  = {}
+        self.genes_per_case     = {}
+        self.mutations_per_case = {}        
+        self.mutations_per_gene = {}
+        self.uniqMutations = {}  
+    
+        self.data = []
+
+        with open(json_file,'r') as f:
+            self.data = json.load(f)
+
+        for h in self.data:
+
+            if '_source' in h:
+               h = h['_source']
+
+            gene    = h['gene_id']
+
+            for c in h['case']:
+                project = c['project']['project_id']
+                case    = c['submitter_id']
+
+                if not project in self.projects:
+                    self.projects.append(project)
+                    self.cases_per_project[project] = 0
+
+                if not case in self.cases:
+                    self.cases.append(case)
+                    self.cases_per_project[project] += 1
+                    self.genes_per_case[case]     = 0
+                    self.mutations_per_case[case] = 0  
+                
+                gene_case = project + '_' + case + '_' + gene
+                if not gene_case in self.mutations_per_gene:
+                    self.mutations_per_gene[gene_case] = 0  
+                    self.genes_per_case[case]         += 1  
+
+                for ssm in c['ssm']:
+                    self.mutations_per_case[case]      += 1
+                    self.mutations_per_gene[gene_case] += 1                  
+
+                    chromosome = ssm['chromosome']
+                    startpos   = ssm['start_position']
+                    mutType    = ssm['variant_type']
+                    refallele  = ssm['reference_allele']
+                    tumorall2  = ssm['tumor_allele']
+
+                    mutation = '_'.join([chromosome, 
+                                          startpos,  
+                                          refallele, 
+                                          tumorall2, 
+                                          mutType])  
+
+                    if not mutation in self.uniqMutations:
+                        self.uniqMutations[mutation] = 1
+                    else:
+                        self.uniqMutations[mutation] += 1 
+
+                    mutation_case = case + '_' + mutation
+                    for conseq in ssm['consequence']:
+                        if not mutation_case in self.consequences:
+                          self.consequences[mutation_case] = 1   
+                        else:
+                          self.consequences[mutation_case] += 1 
+
+        self.Nprojects  = len(self.projects)
+        self.Ncases     = len(self.cases)
+        self.Ngenes     = len(self.mutations_per_gene)
+        self.NUniqMut   = len(self.uniqMutations)   
+        self.Nconseq    = len(self.consequences)
+
+def get_matches(maf_metrics, index_metrics, total):
+  
+  matches = 0
+  for m in maf_metrics:
+     if isinstance(index_metrics, list):
+        if m in index_metrics:
+            matches +=1
+     else:
+        if m in index_metrics \
+           and maf_metrics[m] == index_metrics[m]:
+              matches +=1           
+  matches = float(matches) * 100 / total
+
+  return matches
+
+
+def test(maf_data, output_data):
+
+  percentage_test = dict()
+
+  percentage_test['Projects']           = get_matches(maf_data.projects, output_data.projects, maf_data.Nprojects)
+  percentage_test['Cases']              = get_matches(maf_data.cases, output_data.cases, maf_data.Ncases)
+  percentage_test['Cases per project']  = get_matches(maf_data.cases_per_project, output_data.cases_per_project, maf_data.Nprojects)
+  percentage_test['Mutations per case'] = get_matches(maf_data.mutations_per_case, output_data.mutations_per_case, maf_data.Ncases)
+  percentage_test['Genes per case']     = get_matches(maf_data.genes_per_case, output_data.genes_per_case, maf_data.Ncases)
+  percentage_test['Mutations per gene'] = get_matches(maf_data.mutations_per_gene, output_data.mutations_per_gene, maf_data.Ngenes)
+  percentage_test['Unique mutations']   = get_matches(maf_data.uniqMutations, output_data.uniqMutations, maf_data.NUniqMut) 
+  percentage_test['Consequences per ssm'] = get_matches(maf_data.consequences, output_data.consequences, maf_data.Nconseq) 
+
+  return percentage_test   
