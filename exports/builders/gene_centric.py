@@ -3,7 +3,7 @@ import requests
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit, col, struct, collect_list
+from pyspark.sql.functions import lit, struct, collect_list
 
 from exports.builders.utils import struct_select
 from exports.builders import (
@@ -73,18 +73,18 @@ class GeneCentricBuilder(BaseBuilder):
                     .groupBy('_case_submitter_id')\
                     .agg(collect_list('ssm').alias('ssm'))
 
+        # Truncate outliers
+        truncated_df = self.truncate_df_at_percentile(df, 'ssm.consequence', self.config.percentile_threshold['consequences_per_ssm'])
+        truncated_df = self.truncate_df_at_percentile(truncated_df, 'ssm.observation', self.config.percentile_threshold['observations_per_ssm'], df)
+
         # Get genes from ES
         self.log("Building gene_centric")
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
+        self.log('\nJoining case_df with truncated_df [left, "submitter_id"]')
         # Combine case with ssm tree
-        case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id, 'left')\
-                    .select('submitter_id', struct('ssm', *case_df.columns).alias('case'))
-
-        self.log('\nJoining case_df with df [left, "submitter_id"]')
-        # Combine case with ssm tree
-        case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id,
+        case_ssm = case_df.join(truncated_df, case_df.submitter_id == truncated_df._case_submitter_id,
                                 'left')\
                           .select('submitter_id', struct('ssm', *case_df.columns)
                           .alias('case'))
@@ -98,9 +98,11 @@ class GeneCentricBuilder(BaseBuilder):
                               .groupBy(*gene_df.columns)\
                               .agg(collect_list('case').alias('case'))\
                               .drop('_case_submitter_id')
-        self.log_count(gene_centric)
+
 
         self.gene_centric = gene_centric
+        self.log_count(self.gene_centric)
+
         self.log('Build finished')
         return self
 
@@ -108,7 +110,7 @@ class GeneCentricBuilder(BaseBuilder):
         """
         """
         index = self.config.indices['gene_centric']
-        doc = self.config.index_names['gene_centric'].replace('_', '-')
+        doc = self.config.index_names['gene_centric']
         index_doc = '{}/{}'.format(index, doc)
 
         data = json.dumps(GeneMapper(doc).settings)

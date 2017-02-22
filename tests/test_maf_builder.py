@@ -9,7 +9,7 @@ from collections import Counter
 from utils import SparkTestCase
 from exports.builders import MAFBuilder
 from exports.builders.utils import ssm_label
-from config import TestConfig
+from tests_config import TestConfig
 
 
 class TestMAFBuilder(SparkTestCase):

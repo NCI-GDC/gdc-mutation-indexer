@@ -67,6 +67,13 @@ class BaseConfig(object):
     # Whether to overwrite the combined maf file if it exists
     maf_overwrite = True
 
+    percentile_threshold = {
+        'genes_per_case': 98,
+        'occurrences_per_ssm': 95,
+        'consequences_per_ssm': 95,
+        'observations_per_ssm': 95,
+    }
+
     # Case load settings
     case_exclude_fields = ','.join(['samples',
                                     'annotations',
@@ -74,6 +81,10 @@ class BaseConfig(object):
                                     'family_histories',
                                     'files'])
     case_arrays = ','.join(['*_ids'])#,
+
+    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
+    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
+    gene_model_file = 's3a://test/genes.json'
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -94,16 +105,21 @@ class BaseConfig(object):
                            port=self.es_port,
                            http_auth=(self.es_user, self.es_pass))
 
-        def get_prefix(index_name):
+        def get_indices_max_version():
+            versions = []
             indices = es.indices.get_alias().keys()
-            versions = [ int(v.split('_')[1].replace('r',''))
-                            for v in indices if v.endswith(index_name) and v[:4]=='gdc_' ]
-            # If there is no index with this name in it
+            for index_name in self.index_names.values():
+                if index_name is not None:
+                    versions = versions + [ int(v.split('_')[1].replace('r',''))
+                                for v in indices if v.endswith(index_name) and v[:4]=='gdc_' ]
             if versions == []:
                 version = 0
             else:
                 version = max(versions) + 1
+            return version
 
+        def get_prefix(index_name):
+            version = get_indices_max_version()
             prefix = 'gdc_r{}_{}'.format(version, index_name)
             return prefix
 
@@ -111,59 +127,4 @@ class BaseConfig(object):
                             for k,v in self.index_names.items()
                             if v is not None }
         return indices
-
-
-class TestConfig(BaseConfig):
-    spark_master = 'local[1]'
-
-    test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
-    data_dir = os.path.join(test_dir, 'data')
-    log_dir = os.path.join(data_dir, 'log')
-    input_dir = os.path.join(data_dir, 'input')
-    output_dir = os.path.join(data_dir, 'output')
-    maf_dir = os.path.join(input_dir, 'maf')
-
-    # Initialize test directory tree if incomplete
-    for directory in [log_dir, input_dir, output_dir, maf_dir]:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-    es_host = 'http://localhost'
-    source_es_host = 'http://localhost'
-    graph_index = 'test_graph_index__'
-
-    # Whether or not to rebuild graph index after every test
-    graph_force_build = True
-
-    # Whether or not to print document mismatches to stdout when testing
-    print_data_errors = False
-
-    index_names = {
-        'case_centric':           'test_case_centric__',
-        'gene_centric':           'test_gene_centric__',
-        'ssm_centric':            'test_ssm_centric__',
-        'ssm_occurrence_centric': 'test_ssm_occurrence_centric__'
-    }
-
-    maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.endswith('maf')]
-
-    # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.8.json')
-    case_mapping_json = os.path.join(input_dir, 'case_mapping.json')
-
-    # Additional exports files
-    citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
-    census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
-    gene_model_file = os.path.join(input_dir, 'genes.18.json.gz')
-
-    keep_indices = True
-    maf_keep = False
-    maf_use_existing = False
-
-
-configs = {
-    'BaseConfig': BaseConfig,
-    'TestConfig': TestConfig
-}
 

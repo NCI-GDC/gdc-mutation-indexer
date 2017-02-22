@@ -1,7 +1,7 @@
 import os
 import json
 
-from config import TestConfig
+from tests_config import TestConfig
 from utils import SparkTestCase
 
 from pyspark.sql.functions import size, sum

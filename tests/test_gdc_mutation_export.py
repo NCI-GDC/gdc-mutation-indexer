@@ -1,7 +1,7 @@
 import pytest
 from elasticsearch import Elasticsearch
 from utils import SparkTestCase
-from config import TestConfig
+from tests_config import TestConfig
 from exports import GDCMutationExport
 
 

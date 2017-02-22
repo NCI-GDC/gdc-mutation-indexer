@@ -4,7 +4,7 @@ import yaml
 import json
 
 from conftest import get_validation_paths
-from config import TestConfig
+from tests_config import TestConfig
 from utils import SparkTestCase
 
 from exports.builders import MAFBuilder

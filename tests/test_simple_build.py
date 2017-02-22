@@ -8,7 +8,7 @@ from exports.builders import (
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder
 )
-from config import TestConfig
+from tests_config import TestConfig
 
 
 conf = TestConfig()

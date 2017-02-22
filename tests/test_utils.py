@@ -1,6 +1,8 @@
 from utils import SparkTestCase, JSONValidator
+from exports.builders.utils import  percentile
 import pytest
-from config import TestConfig
+from random import randint
+from tests_config import TestConfig
 
 conf = TestConfig
 
@@ -23,6 +25,19 @@ class TestUtils(SparkTestCase):
             .option('es.nodes.resolve.hostname','false')\
             .option('es.resource.read', conf.graph_index)\
             .load(conf.graph_index)
+
+    def test_percentile(self):
+        '''
+        test the percentile util function
+        '''
+        l = randint(0, 100)
+        if l % 2:
+            l += 1
+        v = [randint(0, 100) for x in range(l + 1)]
+        sorted_v = sorted(v)
+        self.assertEqual(percentile(v, 0), sorted_v[0])
+        self.assertEqual(percentile(v, 50), sorted_v[l/2])
+        self.assertEqual(percentile(v, 100), sorted_v[-1])
 
 def test_json_validator_list_counts():
     test_json = {'a':
@@ -104,4 +119,3 @@ def test_json_validator_find_mismatches(test_json, mismatches, mode):
     true_json = {'a': {'b': [1, {2: 3, 'c': [4, 5, 6]}, 3, 5] },
                  'd': [1, 2, 3, [1, 2, 3, 4, 5]]}
     assert JSONValidator.find_mismatches(test_json, true_json, mode) == mismatches
-

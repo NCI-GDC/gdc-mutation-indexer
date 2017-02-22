@@ -2,3 +2,4 @@ pytest==3.0.3
 addict==0.2.7
 jupyter==1.0.0
 jsonpath-rw==1.4.0
+deepdiff==3.1.0

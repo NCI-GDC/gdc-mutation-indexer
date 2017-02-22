@@ -101,8 +101,11 @@ class CaseCentricBuilder(BaseBuilder):
             .drop(gene_ssm._case_submitter_id)
             .groupBy(*case_df.columns)
             .agg(collect_list('gene').alias('gene')))
-        self.case_centric = case_centric
-        self.log_count(case_centric)
+
+        # Truncate outliers
+        self.case_centric = self.truncate_df_at_percentile(case_centric, 'gene', self.config.percentile_threshold['genes_per_case'])
+
+        self.log_count(self.case_centric)
         self.log('Build finished')
         return self
 

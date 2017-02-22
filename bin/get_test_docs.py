@@ -6,7 +6,7 @@ import requests
 
 from elasticsearch import Elasticsearch
 
-from config import TestConfig
+from tests_config import TestConfig
 
 def case_uuids_from_maf(maf):
     '''

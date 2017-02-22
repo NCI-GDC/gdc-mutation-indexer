@@ -1,4 +1,4 @@
-from config import TestConfig
+from tests_config import TestConfig
 from pyspark.sql.functions import col, size
 from utils import SparkTestCase
 
