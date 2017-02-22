@@ -16,16 +16,17 @@ class ObservationBuilder(BaseBuilder):
     Builds observation dataframe from the maf dataframe
     '''
 
-    def build(self, maf_df, by='ssm_id'):
+    def build(self, maf_df):
         '''
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
         said that a unique observation is identified by a unqiue pairing of
         tumor and normal sample uuids and an ssm uuid.
         '''
-        obs_df = maf_df.select(by, struct(*struct_select('observation.yml'))
+        obs_df = maf_df.select('ssm_id', '_case_submitter_id',
+                                struct(*struct_select('observation.yml'))
                                       .alias('observation'))\
-                        .groupby(by)\
+                        .groupby('ssm_id','_case_submitter_id')\
                         .agg(collect_list('observation').alias('observation'))
 
         return obs_df
