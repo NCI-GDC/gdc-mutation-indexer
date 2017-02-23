@@ -5,10 +5,10 @@ import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import explode, udf, col, collect_list, struct, lit
+from pyspark.sql.functions import explode, udf, col, collect_list, struct, lit, size
 from pyspark.sql.types import ArrayType, StringType
 
-from exports.builders.utils import transcript_id_udf, struct_select
+from exports.builders.utils import struct_select, extract_rows_udf, all_effects_udf
 
 
 class TranscriptBuilder(object):
@@ -28,44 +28,88 @@ class TranscriptBuilder(object):
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
-        ann_df = maf_df.select('transcript_id', 'consequence_type', 'ssm_id',
-                                    struct(*struct_select('annotation.yml'))
-                                        .alias('annotation'))\
-                                        .drop_duplicates(['transcript_id'])
-        if join_gene:
-            # Probably a better way to remove transcripts
-            gene_df = maf_df.select('ssm_id',
-                                struct(*struct_select('gene.yml', ignore=['transcripts'])).alias('gene'))\
-                                .drop_duplicates(['ssm_id'])\
-                                .select('ssm_id','gene.*')
+        ann_df = maf_df.select(*struct_select('annotation.yml'))\
+                                .drop_duplicates(['transcript_id'])
 
-            gene_df = gene_df.select('ssm_id', struct([c for c in gene_df.columns
-                                     if c not in ['transcripts', 'ssm_id', 'description', 'symbol', 'biotype','name']]).alias('gene'))
+        ssm_tran = self._build_ssm_tran(maf_df)
 
-        # Explode the transcript_id array then join then group by (gene_id, ssm_id)
-        maf_df = maf_df\
-                   .select('ssm_id', 'all_effects')\
-                   .withColumn('transcript_ids', transcript_id_udf()(col('all_effects')))\
-                   .select('ssm_id', explode('transcript_ids').alias('transcript_id'))\
-                   .drop_duplicates(['transcript_id', 'ssm_id'])
-        # Load gene model and explode the transcripts
-        tran_df = self.sqlContext.read.json(self.config.gene_model_file)\
-                .select(col('*'), explode('transcripts').alias('transcript'))\
-                .select(col('*'), 'transcript.*')\
-                .withColumn('empty', lit('').cast(StringType()))
+        tran_df = maf_df.select(explode('transcripts.id')
+                                .alias('transcript_id'),
+                                'gene_id', 'symbol', 'empty')\
+                        .join(ssm_tran, on='transcript_id')\
+                        .select('gene_id', 'transcript_id',
+                                struct(*struct_select('transcript.yml'))\
+                                    .alias('transcript'))
 
-        tran_df = tran_df.join(ann_df, tran_df.id == ann_df.transcript_id)
+        tran_ann = tran_df.join(ann_df, on='transcript_id', how='left')\
+                    .select('transcript_id', 'gene_id',
+                            struct(ann_df.columns).alias('annotation'))
 
         if join_gene:
-            tran_df = tran_df.join(gene_df, tran_df.ssm_id == gene_df.ssm_id)
-            to_use = struct('annotation', 'gene', *struct_select('transcript.yml'))
+            # Build and join the gene if required
+            gene_df = maf_df.select(*struct_select('gene.yml',
+                                                    ignore=['transcripts']))\
+                            .drop('transcripts')\
+                            .drop('description')\
+                            .drop('canonical_transcript_length_genomic')\
+                            .drop('canonical_transcript_length_cds')\
+                            .drop('gene_strand')\
+                            .select('gene_id', struct(col('*')).alias('gene'))
+
+            tran_df = tran_ann.join(gene_df, on='gene_id')\
+                                    .drop('gene_id')\
+                                    .join(ssm_tran, on='transcript_id')\
+                                    .select('ssm_id', struct(
+                                                        struct('*')
+                                                        .alias('transcript'))
+                                                      .alias('transcript'))
         else:
-            to_use = struct('annotation', *struct_select('transcript.yml'))
+            # Just skip the gene otherwise
+            tran_df = tran_ann.join(ssm_tran, on='transcript_id')\
+                                .select('ssm_id',
+                                    struct(
+                                        struct('*')
+                                        .alias('transcript'))
+                                    .alias('transcript'))
 
-        tran_df = tran_df.select('transcript_id', to_use.alias('transcript'))
+        df = tran_df.groupby('ssm_id').agg(collect_list('transcript').alias('consequence'))
 
-        df = maf_df.join(tran_df, maf_df.transcript_id == tran_df.transcript_id)\
-                    .select('ssm_id', struct('transcript').alias('transcript'))\
-                    .groupby('ssm_id')\
-                    .agg(collect_list('transcript').alias('consequence'))
         return df
+
+    def _build_ssm_tran(self, maf_df):
+        """
+        Extracts information about transcripts from the all_effects column
+
+        all_effects is formated as such:
+
+        do_not_keep,consequence_type,aa_change,transcript_id,refs_seq_accession;
+        MORN1,synonymous_variant,p.=,ENST00000378531,NM_024848.1;
+        MORN1,synonymous_variant,p.=,ENST00000378529,NM_001301060.1;
+
+        We need to first extract each row within this column and explode it into
+        a new row in the dataframe. We then extract each column from that row
+        using the all_effects_udf
+
+        """
+        # Extract columns from the all_effects column
+        ssm_tran = maf_df.select('ssm_id', 'all_effects', 'canonical_transcript_id')
+        # Turn each row within in the all_effects column into rows in the df
+        ssm_tran = ssm_tran.withColumn('all_effects',
+                                       extract_rows_udf()(col('all_effects'))
+                                            .alias('all_effects'))
+        # Now extract columns within all_effects to columns in the df
+        ssm_tran = ssm_tran.select('ssm_id', 'canonical_transcript_id',
+                                   explode('all_effects').alias('all_effects'))\
+                            .withColumn('do_not_keep',
+                                        all_effects_udf(0)(col('all_effects')))\
+                            .withColumn('consequence_type',
+                                        all_effects_udf(1)(col('all_effects')))\
+                            .withColumn('aa_change',
+                                        all_effects_udf(2)(col('all_effects')))\
+                            .withColumn('transcript_id',
+                                        all_effects_udf(3)(col('all_effects')))\
+                            .withColumn('ref_seq_accession',
+                                        all_effects_udf(4)(col('all_effects')))\
+                            .drop('all_effects')
+
+        return ssm_tran
