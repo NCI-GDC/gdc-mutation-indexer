@@ -5,6 +5,7 @@ from deepdiff import DeepDiff
 from config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import GeneCentricBuilder
+from utils import JSONValidator
 
 builder = GeneCentricBuilder
 conf = TestConfig()
@@ -41,4 +42,13 @@ def test_gene_centric_flat(gene_centric_index, filename):
     for k, v in true_doc.items():
         assert k in es_doc
         assert es_doc[k] == v
+
+
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+@pytest.mark.parametrize('test_mode', ['list', 'dict'])
+def test_gene_centric_cardinality(gene_centric_index, filename, test_mode):
+    es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
+    mismatches = JSONValidator.find_mismatches(es_doc, true_doc, test_mode)
+    T.report_cardinality(mismatches, '[{}|{}]'.format(filename, test_mode))
+    assert mismatches == {}
 

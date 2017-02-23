@@ -24,7 +24,7 @@ class BaseIndexTest:
         Generates index corresponding to self.builder
         Returns Elasticsearch instance
         """
-        for logtype in ['summary', 'errors', 'treediff']:
+        for logtype in ['summary', 'errors', 'treediff', 'cardinality']:
             try:
                 os.remove(os.path.join(self.conf.log_dir,
                                        '{}_{}.log'.format(self.index, logtype)))
@@ -95,6 +95,17 @@ class BaseIndexTest:
 
             f.write('\n' + '[\FILE]' + '+'*60 + '\n')
 
+    def report_cardinality(self, mismatches, label):
+        """
+        Writes cardinality mismatches to {$log_dir}/{$index}_cardinality.log files
+        """
+        if mismatches == {}:
+            return
+        with open(os.path.join(self.conf.log_dir, '{}_cardinality.log'.format(self.index)), 'a') as f:
+            f.write('\n{}:'.format(label))
+            for path, values in mismatches.items():
+                f.write('\n{}:\n\tes -> {}\n\tjj -> {}'.format(path, values[0], values[1]))
+            f.write('\n{}=TOTAL= {}'.format(label, len(mismatches)))
 
     def report_correctness(self, es_doc, true_doc, label):
         """
@@ -164,5 +175,4 @@ class BaseIndexTest:
 
         flatten(json_dict)
         return result
-
 

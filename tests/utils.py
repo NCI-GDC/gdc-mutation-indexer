@@ -1,3 +1,4 @@
+import json
 import unittest
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -21,80 +22,107 @@ class SparkTestCase(unittest.TestCase):
         cls.sc._jvm.System.clearProperty("spark.driver.port")
 
 
-############TODELETE#####################################################
+class JSONValidator:
+    """
+    JSON validation helper
+    """
 
-def match_json_structure(dict1, dict2):
-    for k in dict1:
-        if isinstance(dict1[k], dict):
-            print '\n[{}] => Dict value'.format(k)
-        elif isinstance(dict1[k], list):
-            print '\n[{}] => List value'.format(k)
-        else:
-            print '\n[{}] => Primitive value'.format(k)
+    @classmethod
+    def find_mismatches(cls, test_json, true_json, mode):
+        """
+        Finds mismatches between <:mode> fields of json docs
+        :mode in ['list', 'dict']
+        """
+        assert mode in ['list', 'dict']
+        test_stats = cls.get_stats(test_json, mode=mode)
+        true_stats = cls.get_stats(true_json, mode=mode)
 
-        is_level_valid = validate_level(dict1[k], dict2[k], 'root.{}'.format(k))
-        if is_level_valid:
-            print 'Level-[{}]: [GOOD]'.format(k)
-        else:
-            print 'Level-[{}]: [BAD]'.format(k)
-
-
-def validate_level(a, b, path='root'):
-    print "\nValidating [{}]".format(path)
-    print "^^^^^^^^^^^^^^^^"
-    if type(a) != type(b):
-        print "TYPES MISMATCH!"
-        print type(a), type(b)
-        return False
-        import pdb
-        pdb.set_trace()
-
-    if isinstance(a, dict):
-        K2 = set(b.keys())
-        K1 = set(a.keys())
-        if K1 != K2:
-            print 'Keys mismatch!'
-            print K1 - K2
-            print K2 - K1
-            return False
-        else:
-            for key in a:
-                validate_level(a[key], b[key], '.'.join([path, key]))
-
-    elif isinstance(a, list):  # [TODO] fix this case!
-        if len(a) != len(b):
-            print "LIST LENGTH MISMATCH!"
-            print "List a ~ {} len={}\n List b ~ {} len={}".format(type(a),
-                                                                   len(a),
-                                                                   type(b),
-                                                                   len(b))
-            return False
-
-        for i, val_a in enumerate(a):
-            for j, val_b in enumerate(b):
-                cur_path = path + ".List[a{},b{}/{},{}]".format(i, j, len(a), len(b))
-                values_match = validate_level(val_a, val_b, cur_path)
-                if values_match:
-                    print '[NICE!] {}'.format(cur_path)
-                    break
-            if not values_match:
-                print "BRANCH IS MISSING FROM LIST"
-                K1 = set(val_a.keys())
-                K2 = set(b[0].keys())
-                print "Keys a - keys b:", K1 - K2
-                print "Keys b - keys a:", K2 - K1
-                return False
+        mismatches = {}
+        for path, value in true_stats.items():
+            if path in test_stats:
+                if value != test_stats[path]:
+                    if mode == 'list':
+                        mismatches[path] = [test_stats[path], value]
+                    elif mode == 'dict':
+                        mismatches[path] = [value - test_stats[path],
+                                            test_stats[path] - value]
             else:
-                print "[GOOD]"
-                return True
-    else:
-        if a != b:
-            print '{} > [VALUE MISMATCH]'.format(path)
-            print '{} | NOT EQUALS | {}'.format(a, b)
-            return False
+                mismatches[path] = [None, value]
+
+        return mismatches
+
+    @staticmethod
+    def validate_path(tree, path, value):
+        """
+        Checks if :tree[:path] has :value characteristics
+        (either element count or keys set)
+        """
+        steps = path.split('.')
+        steps.reverse()
+
+        while steps:
+            step = steps.pop()
+            try:
+                if step == 'root':
+                    result = tree
+                elif step.find('[') != -1:
+                    substeps = step.split('[')
+                    result = result[substeps[0]][int(substeps[1][:-1])]
+                else:
+                    result = result[step]
+            except KeyError:
+                return False
+
+        if isinstance(result, dict):
+            return set(value) == set(result.keys())
+
+        elif isinstance(result, list):
+            return value == len(result)
+
+    @staticmethod
+    def get_stats(tree, mode='list'):
+        """
+        Calculates simple statistics for json file
+
+        :mode in ['dict', 'list']
+
+        if :mode == 'list':
+            Returns a dict of items (path, length)
+            for all JSON :tree <list> fields
+
+        elif :mode == 'dict':
+            Returns a dict of items (path, set(subtree_keys))
+            for all JSON :tree <dict> fields
+        """
+        assert mode in ['dict', 'list']
+
+        def get_stack_items(subtree, current_path):
+            if isinstance(subtree, dict):
+                return [[current_path + '.{}'.format(k), v]
+                        for k, v in subtree.items()]
+            elif isinstance(subtree, list):
+                return [[current_path + '[{}]'.format(i), x]
+                        for i, x in enumerate(subtree)]
+            else:
+                return []
+
+        if mode == 'dict':
+            tree_stats = {'root': set(tree.keys())}
         else:
-            print "[GOOD]"
-            return True
+            tree_stats = {}
 
+        stack = tree.items()
+        while stack:
+            path, subtree = stack.pop()
 
+            if mode == 'list':
+                if isinstance(subtree, list):
+                    tree_stats['root.' + path] = len(subtree)
+            elif mode == 'dict':
+                if isinstance(subtree, dict):
+                    tree_stats['root.' + path] = set(subtree.keys())
+
+            stack.extend(get_stack_items(subtree, path))
+
+        return tree_stats
 
