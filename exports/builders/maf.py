@@ -41,6 +41,7 @@ class MAFBuilder(object):
                 self.logger.info('Couldn\'t find existing maf file at given path')
 
         df = self.combine()
+        # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
         df = self.add_ssm_id(df)
         df = self.add_genomic_dna_change(df)
@@ -61,6 +62,7 @@ class MAFBuilder(object):
         df = self.add_canonical_lengths(df)
 
         df = self.map_transform(df)
+        df = df.withColumn('variant_process', lit('masked'))
 
         # Write data
         if self.config.maf_keep:

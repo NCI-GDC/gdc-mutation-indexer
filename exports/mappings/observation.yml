@@ -80,7 +80,5 @@ properties:
     properties:
       variant_process:
         type: keyword
-        default: biotype 
       variant_caller:
         type: keyword
-        default: biotype 

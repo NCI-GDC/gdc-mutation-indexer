@@ -92,6 +92,31 @@ class TestMAFBuilder(SparkTestCase):
         self.assertEqual(df.select('mutation_type').collect()[0]['mutation_type'],
                          'Simple Somatic Mutation')
 
+
+    def test_variant_caller(self):
+        '''
+        Test that variant caller is created properly
+        '''
+        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+
+        self.assertIn('variant_caller', df.columns)
+
+        muse = df.where(df.variant_caller == 'muse')
+        self.assertEqual(muse.count(), 7)
+        mutect = df.where(df.variant_caller == 'mutect')
+        self.assertEqual(mutect.count(), 11)
+
+
+    def test_variant_process(self):
+        '''
+        Test that variant process is created properly
+        '''
+        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+
+        self.assertIn('variant_process', df.columns)
+        self.assertEqual(df.first()['variant_process'], 'masked')
+
+
     def test_mutation_subtype(self):
         '''
         Test that mutation_subtype is created properly
