@@ -1,4 +1,6 @@
 maf_schema: 
+  variant_caller:
+      name: variant_caller 
   biotype:
       name:  BIOTYPE
   canonical_transcript_id:
