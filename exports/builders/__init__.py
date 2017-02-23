@@ -1,6 +1,6 @@
 from base_builder import BaseBuilder
 # Utility builders
-from transcript import TranscriptBuilder
+from consequence import ConsequenceBuilder
 from observation import ObservationBuilder
 # External dependency builders
 from maf import MAFBuilder

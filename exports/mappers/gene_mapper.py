@@ -50,7 +50,7 @@ class GeneMapper(Mapper):
         # Add transcript
         tran_map = self.load_properties('transcript.yml', nested=False)
 
-        self.change_props_to_keyword(['gene_symbol', 'aa_change'], tran_map)
+        self.change_props_to_keyword(['aa_change'], tran_map)
 
         ssm_map['properties']['consequence'] = {'properties': {'transcript': tran_map}}
         ssm_map['properties']['consequence']['type'] = 'nested'
