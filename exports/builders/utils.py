@@ -4,7 +4,7 @@ import yaml
 import pkg_resources
 from functools import partial
 
-from pyspark.sql.functions import udf, struct, col
+from pyspark.sql.functions import udf, struct, col, explode, array
 from pyspark.sql.types import StringType, ArrayType, IntegerType
 
 
@@ -130,6 +130,28 @@ def extract_transcript_id(val):
 def transcript_id_udf():
     return udf(extract_transcript_id, ArrayType(StringType()))
 
+
+def extract_all_effects(val, index=0):
+    '''
+    Extracts an element from all_effects at the given index
+
+    Rows are delimited by ;
+    Columns are delimited by , or :
+    '''
+    delimiter = ',' if ',' in val else ':'
+    if len(val.split(delimiter)) > index:
+        return val.split(delimiter)[index]
+
+
+def all_effects_udf(index):
+    f = partial(extract_all_effects, index=index)
+    return udf(f, StringType())
+
+
+def extract_rows_udf():
+    vals = udf(lambda x: x.split(';')[:-1], ArrayType(StringType()))
+    return vals 
+    
 
 def struct_select(path, ignore=[]):
     '''
