@@ -238,6 +238,8 @@ class MAFBuilder(object):
         callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
         for url in urls:
             caller = [ c for c in callers if c in url ][0]
+            if caller == 'mutect':
+                caller += '2'
             try:
                 new_df = self.read_maf(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
