@@ -9,7 +9,7 @@ from exports.builders.utils import struct_select
 from exports.builders import (
     MAFBuilder,
     CaseBuilder,
-    TranscriptBuilder,
+    ConsequenceBuilder,
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
@@ -52,7 +52,7 @@ class GeneCentricBuilder(BaseBuilder):
                                *struct_select('ssm.yml'))\
                                .drop_duplicates(['ssm_id'])
 
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df)\
+        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df)\
                                .drop_duplicates(['ssm_id'])
 
         self.log('\nAggregating obs_df from MAF')

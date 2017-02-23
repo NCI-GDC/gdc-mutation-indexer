@@ -36,7 +36,6 @@ class SSMOccurrenceMapper(Mapper):
 
         self.change_props_to_keyword([
             'aa_change',
-            'gene_symbol',
         ], tran_map)
 
         ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}

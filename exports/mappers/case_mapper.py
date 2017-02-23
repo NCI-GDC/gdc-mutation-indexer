@@ -49,7 +49,6 @@ class CaseMapper(Mapper):
         tran_map = self.load_properties('transcript.yml')
 
         self.change_props_to_keyword([
-            'gene_symbol',
             'aa_change',
         ], tran_map)
 

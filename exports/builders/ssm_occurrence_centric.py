@@ -11,7 +11,7 @@ from exports.builders.utils import struct_select, uuid5_col
 from exports.builders import (
     MAFBuilder,
     CaseBuilder,
-    TranscriptBuilder,
+    ConsequenceBuilder,
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
@@ -46,7 +46,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                *struct_select(self.config.mappings['ssm']))
 
         # Consequence
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)

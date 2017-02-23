@@ -11,7 +11,7 @@ from exports.builders.utils import struct_select
 from exports.builders import (
     MAFBuilder,
     CaseBuilder,
-    TranscriptBuilder,
+    ConsequenceBuilder,
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
@@ -46,7 +46,7 @@ class SSMCentricBuilder(BaseBuilder):
         ssm_df = maf_df.select('_case_submitter_id',
                                *struct_select(self.config.mappings['ssm']))
 
-        cons_df = TranscriptBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # Observation
         self.log('Aggregating Observation from MAF')
