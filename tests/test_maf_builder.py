@@ -30,7 +30,7 @@ class TestMAFBuilder(SparkTestCase):
         self.assertEqual(df.count(), 18)
         c = Counter([json.loads(item)['variant_caller'] for item
                      in df.select('variant_caller').toJSON().collect()])
-        self.assertEqual(c['mutect'], 11)
+        self.assertEqual(c['mutect2'], 11)
         self.assertEqual(c['muse'], 7)
 
     def test_schema(self):
@@ -103,7 +103,7 @@ class TestMAFBuilder(SparkTestCase):
 
         muse = df.where(df.variant_caller == 'muse')
         self.assertEqual(muse.count(), 7)
-        mutect = df.where(df.variant_caller == 'mutect')
+        mutect = df.where(df.variant_caller == 'mutect2')
         self.assertEqual(mutect.count(), 11)
 
 

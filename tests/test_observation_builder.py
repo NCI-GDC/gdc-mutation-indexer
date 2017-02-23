@@ -44,7 +44,7 @@ class TestObservationBuilder(SparkTestCase):
         self.assertEqual(obs['ssm_id'], '1f18a8c6-d828-5a64-b26a-4e1c7a1734db')
         self.assertEqual(len(obs['observation']), 1)
         obs = obs['observation'][0]
-        self.assertDictEqual(obs[u'tumor_genotype'], { 
+        self.assertDictEqual(obs[u'tumor_genotype'], {
                                    "tumor_seq_allele1": "T",
                                    "tumor_seq_allele2": "G"
                               })
@@ -58,5 +58,5 @@ class TestObservationBuilder(SparkTestCase):
 
         self.assertDictEqual(obs['variant_calling'], {
                                     'variant_process': 'masked',
-                                    'variant_caller': 'mutect'
+                                    'variant_caller': 'mutect2'
                               })
