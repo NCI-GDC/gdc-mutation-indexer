@@ -1,8 +1,7 @@
 import logging
-
 from pyspark.sql.functions import explode, col, collect_list, struct, lit
-
 from exports.builders.utils import struct_select, extract_rows_udf, all_effects_udf
+logging.basicConfig()
 
 
 
@@ -26,14 +25,6 @@ class TranscriptBuilder(object):
                                 .drop_duplicates(['transcript_id'])
 
         ssm_tran = self._build_ssm_tran(maf_df)
-
-        # tran_df = maf_df.select(explode('transcripts.id')
-        #                         .alias('transcript_id'),
-        #                         'gene_id', 'symbol', 'empty')\
-        #     .join(ssm_tran, on='transcript_id')\
-        #     .select('gene_id', 'transcript_id',
-        #             struct(*struct_select('transcript.yml'))\
-        #             .alias('transcript'))
 
         tran_ann = ssm_tran.join(ann_df, on='transcript_id', how='left')\
                     .select('transcript_id', 'gene_id',
