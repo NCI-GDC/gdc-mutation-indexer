@@ -4,7 +4,6 @@ from exports.builders.utils import struct_select, extract_rows_udf, all_effects_
 logging.basicConfig()
 
 
-
 class TranscriptBuilder(object):
     '''
     Build transcripts for each ssm by joining in data from the gene model
@@ -26,20 +25,17 @@ class TranscriptBuilder(object):
 
         ssm_tran = self._build_ssm_tran(maf_df)
 
-        tran_ann = ssm_tran.join(ann_df, on='transcript_id', how='left')\
-                    .select('transcript_id', 'gene_id',
+        # Create transcript df
+        tran_df = ssm_tran.select('gene_id', 'ssm_id', 'transcript_id',
+                                  struct(*struct_select('transcript.yml')).alias('transcript'))
+
+        tran_ann = tran_df.join(ann_df, on='transcript_id', how='left')\
+            .select('transcript_id', 'gene_id',
                             struct(ann_df.columns).alias('annotation'))
 
         if join_gene:
             # Build and join the gene if required
-            gene_df = maf_df.select(*struct_select('gene.yml',
-                                                    ignore=['transcripts']))\
-                            .drop('transcripts')\
-                            .drop('description')\
-                            .drop('canonical_transcript_length_genomic')\
-                            .drop('canonical_transcript_length_cds')\
-                            .drop('gene_strand')\
-                            .select('gene_id', struct(col('*')).alias('gene'))
+            gene_df = self._build_gene_df(maf_df)
 
             tran_df = tran_ann.join(gene_df, on='gene_id')\
                         .drop('gene_id').drop('empty').drop('symbol')
