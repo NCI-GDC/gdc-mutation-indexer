@@ -45,7 +45,7 @@ class TranscriptBuilder(object):
             gene_df = self._build_gene_df(maf_df)
 
             tran_df = tran_ann.join(gene_df, on='gene_id')\
-                        .drop(['gene_id', 'empty', 'symbol'])\
+                        .drop('gene_id').drop('empty').drop('symbol')
 
         # Just skip the gene otherwise
         tran_df = tran_df.join(ssm_tran, on='transcript_id')\
@@ -99,9 +99,10 @@ class TranscriptBuilder(object):
         # Build and join the gene if required
         gene_df = maf_df.select(*struct_select('gene.yml',
                                                 ignore=['transcripts']))\
-                        .drop(['transcripts', 'description',
-                               'canonical_transcript_length_genomic',
-                               'canonical_transcript_length_cds',
-                               'gene_strand'])\
+                        .drop('transcripts')\
+                        .drop('description')\
+                        .drop('canonical_transcript_length_genomic')\
+                        .drop('canonical_transcript_length_cds')\
+                        .drop('gene_strand')\
                         .select('gene_id', struct(col('*')).alias('gene'))
         return gene_df
