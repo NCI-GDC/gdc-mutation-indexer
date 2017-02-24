@@ -32,8 +32,7 @@ properties:
         type: text
         analyzer: id_search
   description:
-    type: keyword
-    default: empty
+    type: text 
     fields:
       analyzed:
         type: text
@@ -44,11 +43,6 @@ properties:
       search:
         type: text
         analyzer: id_search
-  description:
-    type: text
-  is_cancer_gene_census:
-    type: keyword
-    default: empty
   external_db_ids:
     properties:
       entrez_gene:
@@ -119,9 +113,7 @@ properties:
     type: long
   gene_strand:
     type: long
-    default: cds_start
   is_cancer_gene_census:
-    default: empty
     type: boolean
   name:
     type: text
@@ -135,9 +127,6 @@ properties:
       search:
         type: text
         analyzer: id_search
-  cytoband:
-    type: keyword
-    default: empty
   symbol:
     type: text
     fields:
