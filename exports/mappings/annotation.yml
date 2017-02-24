@@ -13,7 +13,6 @@ properties:
     type: keyword
   cds_start:
     type: long
-    default: empty
   codons:
     type: keyword
   clin_sig:
