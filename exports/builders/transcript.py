@@ -51,24 +51,11 @@ class TranscriptBuilder(object):
                             .select('gene_id', struct(col('*')).alias('gene'))
 
             tran_df = tran_ann.join(gene_df, on='gene_id')\
-                        .drop('gene_id')\
-                        .join(ssm_tran, on='transcript_id')\
-                        .drop('empty')\
-                        .drop('symbol')\
-                        .drop('gene_id')\
-                        .select('ssm_id', struct(
-                                            struct('*')
-                                            .alias('transcript'))
-                                          .alias('consequence'))
+                        .drop('gene_id').drop('empty').drop('symbol')
 
-        else:
-            # Just skip the gene otherwise
-            tran_df = tran_ann.join(ssm_tran, on='transcript_id')\
-                                .select('ssm_id',
-                                    struct(
-                                        struct('*')
-                                        .alias('consequence'))
-                                    .alias('transcript'))
+        # Just skip the gene otherwise
+        tran_df = tran_df.join(ssm_tran, on='transcript_id')\
+            .select('ssm_id', struct(struct('*').alias('transcript')).alias('consequence'))
 
         df = tran_df.groupby('ssm_id').agg(collect_list('consequence').alias('consequence'))
 
@@ -113,3 +100,15 @@ class TranscriptBuilder(object):
                             .drop('all_effects')
 
         return ssm_tran
+
+    def _build_gene_df(self, maf_df):
+        # Build and join the gene if required
+        gene_df = maf_df.select(*struct_select('gene.yml',
+                                                ignore=['transcripts']))\
+                        .drop('transcripts')\
+                        .drop('description')\
+                        .drop('canonical_transcript_length_genomic')\
+                        .drop('canonical_transcript_length_cds')\
+                        .drop('gene_strand')\
+                        .select('gene_id', struct(col('*')).alias('gene'))
+        return gene_df
