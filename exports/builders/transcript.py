@@ -15,7 +15,6 @@ class TranscriptBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        
 
     def build(self, maf_df, join_gene=False):
         '''
@@ -28,12 +27,15 @@ class TranscriptBuilder(object):
 
         ssm_tran = self._build_ssm_tran(maf_df)
 
-        # Create transcript df 
-        tran_df = ssm_tran.select('gene_id', 'ssm_id', 'transcript_id',
-                                    struct(*struct_select('transcript.yml'))
-                                    .alias('transcript'))
+        # tran_df = maf_df.select(explode('transcripts.id')
+        #                         .alias('transcript_id'),
+        #                         'gene_id', 'symbol', 'empty')\
+        #     .join(ssm_tran, on='transcript_id')\
+        #     .select('gene_id', 'transcript_id',
+        #             struct(*struct_select('transcript.yml'))\
+        #             .alias('transcript'))
 
-        tran_ann = tran_df.join(ann_df, on='transcript_id', how='left')\
+        tran_ann = ssm_tran.join(ann_df, on='transcript_id', how='left')\
                     .select('transcript_id', 'gene_id',
                             struct(ann_df.columns).alias('annotation'))
 
