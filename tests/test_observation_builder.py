@@ -13,11 +13,10 @@ conf = TestConfig()
 class TestObservationBuilder(SparkTestCase):
     ''' Test intermediate result from the observation builder '''
 
-    def setUp(self):
-        # TODO this should be setUpClass so we only build the maf once
-        # Need to modify SparkTestCase to use setUpClass
-        super(TestObservationBuilder, self).setUp()
-        self.maf_df = MAFBuilder(conf, self.sqlContext).build()
+    @classmethod
+    def setUpClass(cls):
+        super(TestObservationBuilder, cls).setUpClass()
+        cls.maf_df = MAFBuilder(conf, cls.sqlContext).build()
 
     def test_join_columns(self):
         ''' Check for columns that are used by other builders to join on '''
