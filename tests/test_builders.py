@@ -25,6 +25,7 @@ from config import TestConfig
 conf = TestConfig()
 
 
+
 class TestBuilderUtils(unittest.TestCase):
 
     def test_ssm_label(self):

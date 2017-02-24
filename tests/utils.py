@@ -23,6 +23,8 @@ class SparkTestCase(unittest.TestCase):
 
 ############TODELETE#####################################################
 
+############TODELETE#####################################################
+
 def match_json_structure(dict1, dict2):
     for k in dict1:
         if isinstance(dict1[k], dict):
