@@ -1,6 +1,3 @@
-import os
-import json
-
 from config import TestConfig
 from utils import SparkTestCase
 
@@ -13,11 +10,11 @@ conf = TestConfig()
 class TestTranscriptBuilder(SparkTestCase):
     ''' Test intermediate result from the transcript builder '''
 
-    def setUp(self):
-        # TODO this should be setUpClass so we only build the maf once
-        # Need to modify SparkTestCase to use setUpClass
-        super(TestTranscriptBuilder, self).setUp()
-        self.maf_df = MAFBuilder(conf, self.sqlContext).build()
+    @classmethod
+    def setUpClass(cls):
+        super(TestTranscriptBuilder, cls).setUpClass()
+        cls.maf_df = MAFBuilder(conf, cls.sqlContext).build()
+        cls.trans_builder = TranscriptBuilder(conf, cls.sqlContext)
 
     def test_transcript_without_gene(self):
         tran_df = TranscriptBuilder(conf, self.sqlContext)\
@@ -39,3 +36,9 @@ class TestTranscriptBuilder(SparkTestCase):
         cons = tran_df.collect()[0]['consequence']
         self.assertEqual(len(cons), 7)
         trans = [ r['transcript'] for r in cons ]
+
+    def test_exploded_ssm_tran(self):
+        ssm_trans = self.trans_builder._build_ssm_tran(self.maf_df)
+        # this gene has 20 transcripts overall
+        assert ssm_trans.filter(
+            ssm_trans.gene_id == 'ENSG00000079841').count() == 16

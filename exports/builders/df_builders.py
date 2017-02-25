@@ -22,6 +22,13 @@ def get_ssm_df(input_df, add_fields=[], drop_fields=[],
         drop_fields, unique_fields, ignore)
 
 
+def get_transcript_df(input_df, add_fields=[], drop_fields=[],
+                      unique_fields=None, ignore=[]):
+    return get_single_df(
+        input_df, 'transcript.yml', add_fields,
+        drop_fields, unique_fields, ignore)
+
+
 def get_single_df(
         input_df, mapping, add_fields=[], drop_fields=[],
         unique_fields=None, ignore=[]):
