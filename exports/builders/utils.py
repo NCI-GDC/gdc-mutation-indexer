@@ -94,9 +94,7 @@ def flat_fields(path):
     Becomes:
     `['center', 'normal_bam_uuid']`
     '''
-    resource_package = 'exports'
-    resource_path = '/'.join(('mappings', path))
-    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+    mapping = load_mapping(path)
 
     flat = set()
 
@@ -152,6 +150,11 @@ def extract_rows_udf():
     vals = udf(lambda x: x.split(';')[:-1], ArrayType(StringType()))
     return vals 
     
+def load_mapping(path):
+    resource_package = 'exports'
+    resource_path = '/'.join(('mappings', path))
+    return yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+
 
 def struct_select(path, ignore=[]):
     '''
@@ -171,9 +174,7 @@ def struct_select(path, ignore=[]):
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
     '''
-    resource_package = 'exports'
-    resource_path = '/'.join(('mappings', path))
-    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+    mapping = load_mapping(path)
 
     select = ()
 
