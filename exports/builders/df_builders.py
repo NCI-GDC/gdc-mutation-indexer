@@ -1,6 +1,22 @@
 from exports.builders.utils import struct_select
 
 
+def build_ssm_subtree(maf_df, obs_df, cons_df):
+    '''
+    ssm[]
+       |___ consequence[]
+       |             |_____...
+       |___ observation[]
+    '''
+    ssm_df = get_ssm_df(
+        maf_df, add_fields=['gene_id'], unique_fields=['ssm_id'])
+
+    df = ssm_df.join(cons_df, on='ssm_id', how='left')
+
+    df = df.join(obs_df, on='ssm_id', how='left')
+    return df
+
+
 def get_annotation_df(input_df, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
     return get_single_df(
