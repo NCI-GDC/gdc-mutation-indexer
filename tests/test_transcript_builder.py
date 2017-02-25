@@ -1,4 +1,3 @@
-
 from config import TestConfig
 from utils import SparkTestCase
 
@@ -13,8 +12,6 @@ class TestTranscriptBuilder(SparkTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # TODO this should be setUpClass so we only build the maf once
-        # Need to modify SparkTestCase to use setUpClass
         super(TestTranscriptBuilder, cls).setUpClass()
         cls.maf_df = MAFBuilder(conf, cls.sqlContext).build()
         cls.trans_builder = TranscriptBuilder(conf, cls.sqlContext)
