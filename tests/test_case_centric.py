@@ -21,6 +21,7 @@ def case_centric_index(sqlContext, test_index):
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices[T.index], ignore=399)
 
+
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
 def test_case_centric_formal(case_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(case_centric_index, filename)
@@ -41,4 +42,3 @@ def test_case_centric_flat(case_centric_index, filename):
     for k, v in true_doc.items():
         assert k in es_doc
         assert es_doc[k] == v
-

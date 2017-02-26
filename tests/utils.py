@@ -1,6 +1,12 @@
 import unittest
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from deepdiff import DeepDiff
+from config import TestConfig
+from base_index_test import BaseIndexTest
+
+conf = TestConfig()
+T = BaseIndexTest(None, conf)
 
 
 class SparkTestCase(unittest.TestCase):
@@ -19,80 +25,91 @@ class SparkTestCase(unittest.TestCase):
         self.sc._jvm.System.clearProperty("spark.driver.port")
 
 
-############TODELETE#####################################################
+class TestJsonObject(object):
+    @classmethod
+    def validate_transcript_list(cls, list_transcripts, other_list_transcripts):
+        cls.validate_two_list_jsons(list_transcripts, other_list_transcripts, ["transcript_id"],
+                                    cls.validate_two_transcripts, "transcript")
 
-def match_json_structure(dict1, dict2):
-    for k in dict1:
-        if isinstance(dict1[k], dict):
-            print '\n[{}] => Dict value'.format(k)
-        elif isinstance(dict1[k], list):
-            print '\n[{}] => List value'.format(k)
-        else:
-            print '\n[{}] => Primitive value'.format(k)
+    @classmethod
+    def validate_case_list(cls, list_cases, other_list_cases):
+        cls.validate_two_list_jsons(list_cases, other_list_cases, ["submitter_id"],
+                                    cls.validate_two_cases, "case")
 
-        is_level_valid = validate_level(dict1[k], dict2[k], 'root.{}'.format(k))
-        if is_level_valid:
-            print 'Level-[{}]: [GOOD]'.format(k)
-        else:
-            print 'Level-[{}]: [BAD]'.format(k)
+    @classmethod
+    def build_dict_from_list_json(cls, list_json, identity_fields, object_name=None):
+        res_dict = {}
+        for js in list_json:
+            key = cls.identity_from_identity_fields(js, identity_fields, object_name)
+            res_dict[key] = js
+        return res_dict
 
+    @classmethod
+    def identity_from_identity_fields(cls, json, identity_fields, object_name=None):
+        if object_name is not None:
+            json = json[object_name]
+        identity = ''
+        for key in identity_fields:
+            identity += json[key] + '-'
+        identity = identity[:-1]
+        return identity
 
-def validate_level(a, b, path='root'):
-    print "\nValidating [{}]".format(path)
-    print "^^^^^^^^^^^^^^^^"
-    if type(a) != type(b):
-        print "TYPES MISMATCH!"
-        print type(a), type(b)
-        return False
-        import pdb
-        pdb.set_trace()
+    @classmethod
+    def validate_two_flat_lists(self, f_list, other_list):
+        assert len(f_list) == len(other_list)
+        s = set(f_list)
+        for item in other_list:
+            assert item in s
 
-    if isinstance(a, dict):
-        K2 = set(b.keys())
-        K1 = set(a.keys())
-        if K1 != K2:
-            print 'Keys mismatch!'
-            print K1 - K2
-            print K2 - K1
-            return False
-        else:
-            for key in a:
-                validate_level(a[key], b[key], '.'.join([path, key]))
+    @classmethod
+    def validate_two_flat_jsons(self, json_obj, other_json_obj):
+        for field in json_obj.keys():
+            assert field in other_json_obj.keys()
+            assert json_obj[field] == json_obj[field]
 
-    elif isinstance(a, list):  # [TODO] fix this case!
-        if len(a) != len(b):
-            print "LIST LENGTH MISMATCH!"
-            print "List a ~ {} len={}\n List b ~ {} len={}".format(type(a),
-                                                                   len(a),
-                                                                   type(b),
-                                                                   len(b))
-            return False
+    @classmethod
+    def validate_two_list_jsons(cls, list_jsons, other_list_jsons, identity_fields, diff_func=None, object_name=None):
+        dict_jsons = cls.build_dict_from_list_json(list_jsons, identity_fields)
+        other_dict_jsons = cls.build_dict_from_list_json(other_list_jsons, identity_fields)
+        first_size = len(dict_jsons.keys())
+        second_size = len(other_dict_jsons.keys())
+        assert first_size == second_size
 
-        for i, val_a in enumerate(a):
-            for j, val_b in enumerate(b):
-                cur_path = path + ".List[a{},b{}/{},{}]".format(i, j, len(a), len(b))
-                values_match = validate_level(val_a, val_b, cur_path)
-                if values_match:
-                    print '[NICE!] {}'.format(cur_path)
-                    break
-            if not values_match:
-                print "BRANCH IS MISSING FROM LIST"
-                K1 = set(val_a.keys())
-                K2 = set(b[0].keys())
-                print "Keys a - keys b:", K1 - K2
-                print "Keys b - keys a:", K2 - K1
-                return False
-            else:
-                print "[GOOD]"
-                return True
-    else:
-        if a != b:
-            print '{} > [VALUE MISMATCH]'.format(path)
-            print '{} | NOT EQUALS | {}'.format(a, b)
-            return False
-        else:
-            print "[GOOD]"
-            return True
+        for key in dict_jsons.keys():
+            assert key in other_dict_jsons.keys()
+            if diff_func:
+                diff = diff_func(dict_jsons[key], other_dict_jsons[key])
+                T.report_deepdiff(diff)
+                assert diff == {}
 
+    @classmethod
+    def validate_two_nested_jsons(cls, json_obj, other_json_obj, ignore_list=None):
+        if ignore_list is None:
+            ignore_list = []
+        for field in json_obj.keys():
+            assert field in other_json_obj.keys()
+            if field not in ignore_list:
+                if json_obj[field] is list:
+                    cls.validate_two_flat_lists(json_obj[field], other_json_obj[field])
+                elif json_obj[field] is dict:
+                    diff = DeepDiff(json_obj[field], other_json_obj[field], ignore_order=True, view='tree')
+                    T.report_deepdiff(diff)
+                    assert diff == {}
+                else:
+                    assert json_obj[field] == other_json_obj[field]
 
+    @classmethod
+    def validate_two_cases(cls, json_obj, other_json_obj):
+        cls.validate_two_nested_jsons(json_obj, other_json_obj,
+                                      ignore_list=['summary', 'diagnoses', 'observation'])
+        cls.validate_two_list_jsons(json_obj['diagnoses'], other_json_obj['diagnoses'],
+                                    ['diagnosis_id'], cls.validate_two_flat_jsons)
+        cls.validate_two_list_jsons(json_obj['summary']['data_categories'],
+                                    other_json_obj['summary']['data_categories'],
+                                    ['data_category', 'file_count'])
+        cls.validate_two_list_jsons(json_obj['observation'], other_json_obj['observation'],
+                                    ['src_vcf_id'], cls.validate_two_flat_jsons)
 
+    @classmethod
+    def validate_two_transcripts(cls, json_obj, other_json_obj):
+        cls.validate_two_nested_jsons(json_obj, other_json_obj)
