@@ -125,7 +125,7 @@ class JSONValidator:
         return tree_stats
 
 
-class TestJsonObject(SparkTestCase):
+class TestJsonObject(unittest.TestCase):
     def validate_transcript_list(self, list_transcripts, other_list_transcripts):
         self.validate_two_list_jsons(list_transcripts, other_list_transcripts, ["transcript_id"],
                                      self.validate_two_transcripts, "transcript")
@@ -154,8 +154,7 @@ class TestJsonObject(SparkTestCase):
         self.assertEqual(len(f_list), len(other_list), "two list don't have same size")
         s = set(f_list)
         for item in other_list:
-            self.assertIn(item, other_list, "{0} does not exists in {1}".format(item, other_list))
-            assert item in s
+            self.assertIn(item, other_list, "{0} does not exists in {1}".format(item, s))
 
     def validate_two_flat_jsons(self, json_obj, other_json_obj):
         for field in json_obj.keys():
