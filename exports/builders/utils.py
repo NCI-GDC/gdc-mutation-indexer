@@ -1,4 +1,4 @@
-import os
+import re
 import uuid
 import yaml
 import pkg_resources
@@ -29,8 +29,10 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
 
     return label
 
+
 def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
+
 
 def ssm_uuid(namespace, chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     '''
@@ -39,7 +41,6 @@ def ssm_uuid(namespace, chromosome, variant_type, start_pos, end_pos, ref_allele
     '''
     label = ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(label)))
-
 
 def _udf_uuid5_field(*values):
     """
@@ -149,7 +150,8 @@ def all_effects_udf(index):
 def extract_rows_udf():
     vals = udf(lambda x: x.split(';')[:-1], ArrayType(StringType()))
     return vals 
-    
+
+
 def load_mapping(path):
     resource_package = 'exports'
     resource_path = '/'.join(('mappings', path))
@@ -199,3 +201,56 @@ def struct_select(path, ignore=[]):
     select = restructure(mapping['properties'])
     return select
 
+
+def build_aa_matching_pattern(aa_dict):
+    mp = ''
+    for k in aa_dict.keys():
+        mp += '{}|'.format(k)
+    mp = mp[:-1]
+    return mp
+
+
+def match_aa(str, mp):
+    return re.match(r'p.({0})(\d+)({0}*)(\D*)(\d*)'.format(mp), str, re.M | re.I)
+
+
+def parse_aa_change(str, aa_dict=None, mp=None):
+    res = match_aa(str, mp)
+    if not res:
+        return ''
+    aa_change = ''
+    aa_change += aa_dict[res.group(1)]
+    aa_change += res.group(2)
+    aa_change += aa_dict[res.group(3)]
+    s4 = res.group(4)
+    if s4:
+        aa_change += s4.replace('Ter', '*')
+        aa_change += res.group(5)
+    return aa_change
+
+
+def parse_aa_start_end(str, mp=None):
+    res = match_aa(str, mp)
+    if not res:
+        return None
+    return int(res.group(2))
+
+
+def aa_change_udf(aa_dict, mp):
+    f = partial(parse_aa_change, aa_dict=aa_dict, mp=mp)
+    return udf(f, StringType())
+
+
+def aa_start_end_udf(mp):
+    f = partial(parse_aa_start_end, mp=mp)
+    return udf(f, IntegerType())
+
+
+def add_aa_columns(df):
+    aa_dict = load_mapping('aa.yml')['keywords']
+    mp = build_aa_matching_pattern(aa_dict)
+    df = df.withColumn('aa_change', aa_change_udf(aa_dict, mp)(col('aa_all'))) \
+        .withColumn('aa_start', aa_start_end_udf(mp)(col('aa_all'))) \
+        .withColumn('aa_end', aa_start_end_udf(mp)(col('aa_all'))) \
+        .drop('aa_all')
+    return df

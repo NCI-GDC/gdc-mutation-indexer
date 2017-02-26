@@ -53,4 +53,3 @@ def test_case_centric_cardinality(case_centric_index, filename, test_mode):
     mismatches = JSONValidator.find_mismatches(es_doc, true_doc, test_mode)
     T.report_cardinality(mismatches, '[{}|{}]'.format(filename, test_mode))
     assert mismatches == {}
-
