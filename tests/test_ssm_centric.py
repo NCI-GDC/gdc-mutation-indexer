@@ -46,6 +46,7 @@ def ssm_centric_index(sqlContext, test_index):
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
 def test_ssm_centric_builder(ssm_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
-    TestJsonObject.validate_transcript_list(es_doc['consequence'], true_doc['consequence'])
-    TestJsonObject.validate_case_list(es_doc['occurrence'], true_doc['occurrence'])
-    TestJsonObject.validate_two_nested_jsons(es_doc, true_doc, ignore_list=['consequence', 'occurrence'])
+    test_json = TestJsonObject()
+    test_json.validate_transcript_list(es_doc['consequence'], true_doc['consequence'])
+    test_json.validate_case_list(es_doc['occurrence'], true_doc['occurrence'])
+    test_json.validate_two_nested_jsons(es_doc, true_doc, ignore_list=['consequence', 'occurrence'])
