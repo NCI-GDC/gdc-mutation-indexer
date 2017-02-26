@@ -82,6 +82,7 @@ class SSMCentricBuilder(BaseBuilder):
                         .groupby('ssm_id')\
                         .agg(collect_list('occurrence').alias('occurrence'))
         self.log_count(occurrence_df)
+        return occurrence_df
 
 
     def load(self, did=None):
