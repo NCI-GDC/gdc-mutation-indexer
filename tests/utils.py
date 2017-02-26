@@ -81,9 +81,9 @@ class TestJsonObject(object):
         for field in json_obj.keys():
             assert field in other_json_obj.keys()
             if field not in ignore_list:
-                if json_obj[field] is list:
+                if type(json_obj[field]) is list:
                     cls.validate_two_flat_lists(json_obj[field], other_json_obj[field])
-                elif json_obj[field] is dict:
+                elif type(json_obj[field]) is dict:
                     cls.validate_two_nested_jsons(json_obj[field], other_json_obj[field])
                 else:
                     assert json_obj[field] == other_json_obj[field]
