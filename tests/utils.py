@@ -1,12 +1,6 @@
 import unittest
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from deepdiff import DeepDiff
-from config import TestConfig
-from base_index_test import BaseIndexTest
-
-conf = TestConfig()
-T = BaseIndexTest(None, conf)
 
 
 class SparkTestCase(unittest.TestCase):
@@ -78,9 +72,7 @@ class TestJsonObject(object):
         for key in dict_jsons.keys():
             assert key in other_dict_jsons.keys()
             if diff_func:
-                diff = diff_func(dict_jsons[key], other_dict_jsons[key])
-                T.report_deepdiff(diff)
-                assert diff == {}
+                diff_func(dict_jsons[key], other_dict_jsons[key])
 
     @classmethod
     def validate_two_nested_jsons(cls, json_obj, other_json_obj, ignore_list=None):
@@ -92,9 +84,7 @@ class TestJsonObject(object):
                 if json_obj[field] is list:
                     cls.validate_two_flat_lists(json_obj[field], other_json_obj[field])
                 elif json_obj[field] is dict:
-                    diff = DeepDiff(json_obj[field], other_json_obj[field], ignore_order=True, view='tree')
-                    T.report_deepdiff(diff)
-                    assert diff == {}
+                    cls.validate_two_nested_jsons(json_obj[field], other_json_obj[field])
                 else:
                     assert json_obj[field] == other_json_obj[field]
 
