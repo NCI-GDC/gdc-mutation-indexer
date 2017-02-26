@@ -175,4 +175,3 @@ class BaseIndexTest:
 
         flatten(json_dict)
         return result
-

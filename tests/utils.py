@@ -171,8 +171,8 @@ class TestJsonObject(object):
 
     @classmethod
     def validate_two_list_jsons(cls, list_jsons, other_list_jsons, identity_fields, diff_func=None, object_name=None):
-        dict_jsons = cls.build_dict_from_list_json(list_jsons, identity_fields)
-        other_dict_jsons = cls.build_dict_from_list_json(other_list_jsons, identity_fields)
+        dict_jsons = cls.build_dict_from_list_json(list_jsons, identity_fields, object_name)
+        other_dict_jsons = cls.build_dict_from_list_json(other_list_jsons, identity_fields, object_name)
         first_size = len(dict_jsons.keys())
         second_size = len(other_dict_jsons.keys())
         assert first_size == second_size
