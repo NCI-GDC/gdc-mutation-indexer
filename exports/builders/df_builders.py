@@ -4,10 +4,9 @@ from pyspark.sql.functions import struct
 
 def get_annotation_df(input_df, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
-    df = get_single_df(
+    return get_single_df(
         input_df, 'annotation.yml', add_fields,
         drop_fields, unique_fields, ignore)
-    return df.select(struct(df.columns))
 
 
 def get_gene_df(input_df, add_fields=[], drop_fields=[],
