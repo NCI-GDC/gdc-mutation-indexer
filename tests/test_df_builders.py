@@ -2,12 +2,13 @@ from pyspark.sql.functions import UserDefinedFunction, col
 from exports.builders.df_builders import (
     get_annotation_df,
     get_gene_df,
-    get_ssm_df
+    get_ssm_df,
+    get_transcript_df,
 )
-
+from exports.builders import TranscriptBuilder
 from utils import SparkTestCase
 from exports.builders import MAFBuilder
-from exports.builders.utils import struct_select
+from exports.builders.utils import load_mapping
 from pyspark.sql.types import BooleanType
 from config import TestConfig
 conf = TestConfig()
@@ -19,22 +20,29 @@ class TestDFBuilders(SparkTestCase):
         super(TestDFBuilders, cls).setUpClass()
         cls.maf_df = MAFBuilder(conf, cls.sqlContext).build()
 
-    def is_sub(self, subset, superset):
+    def is_sub(self, subset, superset, mapping=None):
+
         result = True
         for item in subset.items():
-            if type(item[1]) is dict:
-                result = result and self.is_sub(item[1], superset)
+            (key, val) = item
+            if type(val) is dict:
+                result = result and self.is_sub(val, superset)
             elif item not in superset:
-                print 'item not in superset:', item
-                if item[1] is not None:
+                if val is not None:
+                    if (mapping[key].get('default'), val) in superset:
+                        continue
+                    print 'item not in superset:', item
                     result = False
+                else:
+                    print 'item not mapped', item
+
         return result
 
-    def assert_from_maf(self, maf_df, row, join_by):
+    def assert_from_maf(self, maf_df, row, join_by, mapping=None):
         item = row.asDict(recursive=True)
         maf = maf_df.filter(
             col(join_by) == item[join_by]).first().asDict(recursive=True)
-        assert self.is_sub(item, maf.items())
+        assert self.is_sub(item, maf.items(), mapping)
 
     def test_gene_df(self):
         # convert is_cancer_gene_census to True as our test self.mafs aren't
@@ -69,3 +77,11 @@ class TestDFBuilders(SparkTestCase):
         ssm_df = get_ssm_df(self.maf_df)
         self.assert_from_maf(
             self.maf_df, ssm_df.first(), 'ssm_id')
+
+    def test_transcript_df(self):
+        trans_builder = TranscriptBuilder(conf, self.sqlContext)
+        exploded = trans_builder._build_ssm_tran(self.maf_df)
+        transcript = get_transcript_df(exploded)
+        self.assert_from_maf(
+            exploded, transcript.first(), 'transcript_id',
+            mapping=load_mapping('transcript.yml')['properties'])
