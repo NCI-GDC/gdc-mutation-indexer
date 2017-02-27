@@ -174,7 +174,7 @@ class TestJsonObject(SparkTestCase):
             self.assertIn(field, other_json_obj.keys(),
                           "{0} does not exists in {1}".format(field, other_json_obj.keys()))
             self.assertEqual(json_obj[field], other_json_obj[field],
-                             "{0} is not equal {1}".format(json_obj[field], other_json_obj[field]))
+                             "field {0}: {1} is not equal {2}".format(field, json_obj[field], other_json_obj[field]))
 
     def validate_two_list_jsons(self, list_jsons, other_list_jsons, identity_fields, diff_func=None, object_name=None):
         dict_jsons = self.build_dict_from_list_json(list_jsons, identity_fields, object_name)
@@ -200,7 +200,7 @@ class TestJsonObject(SparkTestCase):
                     self.validate_two_nested_jsons(json_obj[field], other_json_obj[field])
                 else:
                     self.assertEqual(json_obj[field], other_json_obj[field],
-                                     "{0} is not equal {1}".format(json_obj[field], other_json_obj[field]))
+                                     "field {0}: {1} is not equal {2}".format(field, json_obj[field], other_json_obj[field]))
 
     def validate_two_cases(self, json_obj, other_json_obj):
         self.validate_two_nested_jsons(json_obj, other_json_obj,
