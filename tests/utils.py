@@ -181,10 +181,10 @@ class TestJsonObject(SparkTestCase):
         other_dict_jsons = self.build_dict_from_list_json(other_list_jsons, identity_fields, object_name)
         first_size = len(dict_jsons.keys())
         second_size = len(other_dict_jsons.keys())
-        assert first_size == second_size
+        self.assertEqual(first_size, second_size)
 
         for key in dict_jsons.keys():
-            assert key in other_dict_jsons.keys()
+            self.assertIn(key,other_dict_jsons.keys())
             if diff_func:
                 diff_func(dict_jsons[key], other_dict_jsons[key])
 
@@ -192,7 +192,7 @@ class TestJsonObject(SparkTestCase):
         if ignore_list is None:
             ignore_list = []
         for field in json_obj.keys():
-            assert field in other_json_obj.keys()
+            self.assertIn(field, other_json_obj.keys())
             if field not in ignore_list:
                 if type(json_obj[field]) is list:
                     self.validate_two_flat_lists(json_obj[field], other_json_obj[field])

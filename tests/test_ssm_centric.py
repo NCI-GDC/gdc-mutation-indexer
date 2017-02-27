@@ -5,10 +5,7 @@ from deepdiff import DeepDiff
 from config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import SSMCentricBuilder
-<<<<<<< 6bb5f0ed40b84956f4e9042a606e4f0f4307fe1b
 from utils import JSONValidator
-=======
->>>>>>> fix(ssm): make unittest work
 
 builder = SSMCentricBuilder
 conf = TestConfig()
