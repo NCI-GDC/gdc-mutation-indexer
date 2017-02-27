@@ -33,7 +33,7 @@ class TestSSMCentricBuilder(TestJsonObject):
         ssm_dir = os.path.join(self.T.conf.output_dir, self.T.index)
         for file in os.listdir(ssm_dir):
             es_doc, true_doc = map(self.T.flatten_json,
-                                   self.T.get_docs_to_compare(self.T.index_generator, file))
+                                   self.T.get_docs_to_compare_new(self.T.index_generator(self.sqlContext), file))
             self.validate_transcript_list(es_doc['consequence'], true_doc['consequence'])
             self.validate_case_list(es_doc['occurrence'], true_doc['occurrence'])
             self.validate_two_nested_jsons(es_doc, true_doc, ignore_list=['consequence', 'occurrence'])
