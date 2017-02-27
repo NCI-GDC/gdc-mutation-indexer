@@ -1,6 +1,10 @@
 import unittest
+from config import TestConfig
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from exports.builders import MAFBuilder
+from base_index_test import BaseIndexTest
+conf = TestConfig()
 
 
 class SparkTestCase(unittest.TestCase):
@@ -20,7 +24,17 @@ class SparkTestCase(unittest.TestCase):
         cls.sc._jvm.System.clearProperty("spark.driver.port")
 
 
-class TestJsonObject(unittest.TestCase):
+class TestJsonObject(SparkTestCase):
+    create_builder_callback = None
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestJsonObject, cls).setUpClass()
+        cls.conf = conf
+        cls.builder = cls.create_builder_callback(cls.conf, cls.sqlContext)
+        cls.maf_df = MAFBuilder(cls.conf, cls.sqlContext).build()
+        cls.T = BaseIndexTest(cls.builder, cls.conf)
+
     def validate_transcript_list(self, list_transcripts, other_list_transcripts):
         self.validate_two_list_jsons(list_transcripts, other_list_transcripts, ["transcript_id"],
                                      self.validate_two_transcripts, "transcript")
