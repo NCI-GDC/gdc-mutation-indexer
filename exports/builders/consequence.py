@@ -116,8 +116,9 @@ class ConsequenceBuilder(object):
         gene_df = get_gene_df(
             maf_df,
             drop_fields=['transcripts', 'description',
-                         'canonical_transcript_length_genomic',
+                         'canonical_transcript_length',
                          'canonical_transcript_length_cds',
+                         'canonical_transcript_length_genomic',
                          'gene_strand'])
         gene_struct_df = gene_df.select(
             'gene_id', struct(col('*')).alias('gene'))

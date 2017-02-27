@@ -5,7 +5,7 @@ import pkg_resources
 import logging
 from functools import partial
 from pyspark.sql.functions import udf, struct, col, explode, array
-from pyspark.sql.types import StringType, ArrayType, IntegerType
+from pyspark.sql.types import StringType, ArrayType, LongType
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -236,7 +236,7 @@ def parse_aa_start_end(str, mp=None):
     res = match_aa(str, mp)
     if not res:
         return None
-    return int(res.group(2))
+    return long(res.group(2))
 
 
 def aa_change_udf(aa_dict, mp):
@@ -246,7 +246,7 @@ def aa_change_udf(aa_dict, mp):
 
 def aa_start_end_udf(mp):
     f = partial(parse_aa_start_end, mp=mp)
-    return udf(f, IntegerType())
+    return udf(f, LongType())
 
 
 def add_aa_columns(df):
