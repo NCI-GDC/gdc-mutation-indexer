@@ -19,7 +19,15 @@ class BaseIndexTest:
         self.output_dir = os.path.join(self.conf.output_dir, self.index)
         self.debug = self.conf.print_data_errors
 
-    def generate_index(self, sqlContext):
+    def index_generator(self, sql_context):
+        es = self.generate_index(sql_context)
+
+        yield es
+
+        if not self.conf.keep_indices:
+            es.indices.delete(index=self.conf.indices[self.index], ignore=399)
+
+    def generate_index(self, sql_context):
         """
         Generates index corresponding to self.builder
         Returns Elasticsearch instance
@@ -33,9 +41,9 @@ class BaseIndexTest:
 
         es = Elasticsearch(self.conf.es_host, port=self.conf.es_port)
 
-        maf_df = MAFBuilder(self.conf, sqlContext).build()
+        maf_df = MAFBuilder(self.conf, sql_context).build()
 
-        self.builder(self.conf, sqlContext).build(maf_df).load()
+        self.builder(self.conf, sql_context).build(maf_df).load()
 
         return es
 
