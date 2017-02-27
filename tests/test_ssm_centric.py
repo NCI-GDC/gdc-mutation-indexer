@@ -42,4 +42,3 @@ def test_ssm_centric_flat(ssm_centric_index, filename):
     for k, v in true_doc.items():
         assert k in es_doc
         assert es_doc[k] == v
-
