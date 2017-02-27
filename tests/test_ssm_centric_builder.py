@@ -18,16 +18,16 @@ class TestSSMCentricBuilder(TestJsonObject):
     def create_builder(cls, conf, sql_context):
         return SSMCentricBuilder(conf, sql_context)
 
-    def test_flat(self):
-        ssm = self.builder.build(self.maf_df).ssm_centric
-        assert ssm.count() == 18
-        assert ssm.filter(size(col('observation')) == 1).count() == 18
-        assert (
-            ssm.filter(size(col('consequence')) == 17)
-            .filter(ssm.gene_id == 'ENSG00000029363').count()) == 1
-        assert (
-            ssm.filter(size(col('consequence')) == 16)
-            .filter(ssm.gene_id == 'ENSG00000079841').count()) == 1
+    # def test_flat(self):
+    #     ssm = self.builder.build(self.maf_df).ssm_centric
+    #     assert ssm.count() == 18
+    #     assert ssm.filter(size(col('observation')) == 1).count() == 18
+    #     assert (
+    #         ssm.filter(size(col('consequence')) == 17)
+    #         .filter(ssm.gene_id == 'ENSG00000029363').count()) == 1
+    #     assert (
+    #         ssm.filter(size(col('consequence')) == 16)
+    #         .filter(ssm.gene_id == 'ENSG00000079841').count()) == 1
 
     def test_deep(self):
         ssm_dir = os.path.join(self.T.conf.output_dir, self.T.index)
