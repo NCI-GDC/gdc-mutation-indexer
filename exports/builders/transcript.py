@@ -23,7 +23,8 @@ class TranscriptBuilder(object):
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
         '''
-        ann_df = struct(get_annotation_df(maf_df, unique_fields=['transcript_id'])).alias('annotation')
+        ann_df = get_annotation_df(maf_df, unique_fields=['transcript_id'])
+        ann_df = ann_df.select(struct(ann_df.columns).alias('annotation'))
 
         # => {gene_id, ssm_id, transcript_id,
         # symbol, empty, canonical_tracript_id, is_canonical,
