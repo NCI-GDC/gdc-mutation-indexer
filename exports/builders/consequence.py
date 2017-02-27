@@ -1,7 +1,7 @@
 import logging
 from pyspark.sql.functions import explode, col, collect_list, struct
 from exports.builders.utils import (
-    extract_rows_udf, all_effects_udf)
+    extract_rows_udf, all_effects_udf, add_aa_columns)
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
@@ -22,6 +22,7 @@ class ConsequenceBuilder(object):
         Returns arrays of transcripts keyed on ssm_id
         '''
         ann_df = get_annotation_df(maf_df, unique_fields=['transcript_id'])
+        ann_df = ann_df.select(struct(ann_df.columns).alias('annotation'))
 
         # => {gene_id, ssm_id, transcript_id,
         # empty, canonical_tracript_id, is_canonical,
@@ -88,7 +89,7 @@ class ConsequenceBuilder(object):
         fields = {
             'do_not_use': 0,
             'consequence_type': 1,
-            'aa_change': 2,
+            'aa_all': 2,
             'transcript_id': 3,
             'ref_seq_accession': 4 
         }
@@ -100,6 +101,8 @@ class ConsequenceBuilder(object):
             ssm_tran = ssm_tran.withColumn(field,
                                            all_effects_udf(idx)(col('all_effects')))
         ssm_tran = ssm_tran.drop('all_effects')
+
+        ssm_tran = add_aa_columns(ssm_tran)
 
         # get is_canonical
         ssm_tran = ssm_tran.withColumn(
