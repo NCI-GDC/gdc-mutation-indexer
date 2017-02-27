@@ -11,12 +11,8 @@ class TestSSMCentricBuilder(TestJsonObject):
 
     @classmethod
     def setUpClass(cls):
-        cls.create_builder_callback = cls.create_builder
+        cls.builder = SSMCentricBuilder
         super(TestSSMCentricBuilder, cls).setUpClass()
-
-    @classmethod
-    def create_builder(cls, conf, sql_context):
-        return SSMCentricBuilder(conf, sql_context)
 
     # def test_flat(self):
     #     ssm = self.builder.build(self.maf_df).ssm_centric
