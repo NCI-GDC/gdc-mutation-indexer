@@ -15,7 +15,7 @@ class TestSSMCentricBuilder(TestJsonObject):
         super(TestSSMCentricBuilder, cls).setUpClass()
 
     def test_flat(self):
-        ssm = self.builder.build(self.maf_df).ssm_centric
+        ssm = self.builder(self.conf, self.sqlContext).build(self.maf_df).ssm_centric
         assert ssm.count() == 18
         assert ssm.filter(size(col('observation')) == 1).count() == 18
         assert (
