@@ -50,13 +50,13 @@ class ConsequenceBuilder(object):
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
             tran_with_ann = (
                 tran_with_ann.join(gene_df, on='gene_id')
-                .drop('gene_id').drop('empty'))
+                .drop('empty'))
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
-        tran_df = tran_with_ann.select(
-                'ssm_id',
-                struct(struct('*').alias('transcript')).alias('consequence'))
+        tran_df = tran_with_ann.drop('gene_id').select(
+            'ssm_id',
+            struct(struct(tran_with_ann.drop('ssm_id').columns).alias('transcript')).alias('consequence'))
 
         df = tran_df.groupby('ssm_id').agg(
             collect_list('consequence').alias('consequence'))
