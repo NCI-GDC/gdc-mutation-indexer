@@ -50,7 +50,7 @@ class ConsequenceBuilder(object):
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
             tran_with_ann = (
                 tran_with_ann.join(gene_df, on='gene_id')
-                .drop('empty'))
+                .drop('gene_id').drop('empty'))
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}

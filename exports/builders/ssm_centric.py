@@ -52,7 +52,6 @@ class SSMCentricBuilder(BaseBuilder):
 
         occurrence_df = self.build_occurrence(obs_df)
 
-
         self.log('Final join SSM + Transcript + Last one')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
                         .join(occurrence_df, on='ssm_id')\
