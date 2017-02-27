@@ -8,7 +8,7 @@ from pyspark.sql.functions import udf, struct, col, explode, array
 from pyspark.sql.types import StringType, ArrayType, IntegerType
 
 logging.basicConfig()
-logger = logging.getLogger("builder_util")
+logger = logging.getLogger("BaseBuilder")
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
@@ -234,7 +234,6 @@ def parse_aa_change(str, aa_dict=None, mp=None):
 
 def parse_aa_start_end(str, mp=None):
     res = match_aa(str, mp)
-    logger.info(res)
     if not res:
         return None
     return int(res.group(2))
