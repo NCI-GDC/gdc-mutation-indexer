@@ -24,10 +24,10 @@ class ObservationBuilder(BaseBuilder):
         tumor and normal sample uuids and an ssm uuid.
         '''
         obs_df = maf_df.select('ssm_id', '_case_submitter_id',
-                                struct(*struct_select('observation.yml'))
-                                      .alias('observation'))\
-                              .groupby('ssm_id', '_case_submitter_id')\
-                              .agg(collect_list('observation')\
-                                      .alias('observation'))
+                               struct(*struct_select('observation.yml'))
+                               .alias('observation'))\
+            .groupby('ssm_id', '_case_submitter_id')\
+            .agg(collect_list('observation')\
+                 .alias('observation'))
 
         return obs_df
