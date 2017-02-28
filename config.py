@@ -119,13 +119,12 @@ class TestConfig(BaseConfig):
     test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
-    exp_data_dir = os.path.join(os.path.dirname(test_dir), 'exports', 'data')
     input_dir = os.path.join(data_dir, 'input')
     output_dir = os.path.join(data_dir, 'output')
     maf_dir = os.path.join(input_dir, 'maf')
 
     # Initialize test directory tree if incomplete
-    for directory in [log_dir, exp_data_dir, input_dir, output_dir, maf_dir]:
+    for directory in [log_dir, input_dir, output_dir, maf_dir]:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -154,9 +153,9 @@ class TestConfig(BaseConfig):
     case_mapping_json = os.path.join(input_dir, 'case_mapping.json')
 
     # Additional exports files
-    citobands_file = os.path.join(exp_data_dir, 'genes.cytobands.tsv.gz')
-    census_file = os.path.join(exp_data_dir, 'cancer_gene_census_set.tsv.gz')
-    gene_model_file = os.path.join(exp_data_dir, 'genes.18.json.gz')
+    citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
+    census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
+    gene_model_file = os.path.join(input_dir, 'genes.18.json.gz')
 
     keep_indices = True
     maf_keep = False
