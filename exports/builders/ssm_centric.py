@@ -17,6 +17,8 @@ from exports.builders.df_builders import (
 )
 logging.basicConfig()
 
+logging.basicConfig()
+
 
 class SSMCentricBuilder(BaseBuilder):
     '''
