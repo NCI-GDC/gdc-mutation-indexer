@@ -23,6 +23,7 @@ class ConsequenceBuilder(object):
         Returns arrays of transcripts keyed on ssm_id
         '''
         ann_df = get_annotation_df(maf_df, unique_fields=['transcript_id'])
+        ann_df = ann_df.select(struct(ann_df.columns).alias('annotation'))
 
         # => {gene_id, ssm_id, transcript_id,
         # empty, canonical_tracript_id, is_canonical,
@@ -30,7 +31,7 @@ class ConsequenceBuilder(object):
         # refs_seq_accession}
         ssm_tran = self._build_all_effects_cols(maf_df)
 
-        # => {gene_id, ssm_id, transcrpt_id, 
+        # => {gene_id, ssm_id, transcrpt_id,
         # is_canonical,
         # do_not_us, consequence_type, aa_change,
         # refs_seq_accession}
@@ -39,9 +40,9 @@ class ConsequenceBuilder(object):
 
         # {*fields} => {*fields, annotation: {}}
         tran_with_ann = (
-            tran_df.join(ann_df, on='transcript_id', how='left')
-            .select(struct(ann_df.columns).alias('annotation'),
-                    *tran_df.columns))
+            tran_df.join(ann_df,
+                         tran_df.transcript_id
+                         == ann_df.annotation.transcript_id, how='left'))
 
         if join_gene:
             # Build and join the gene if required
@@ -49,15 +50,14 @@ class ConsequenceBuilder(object):
 
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
             tran_with_ann = (
-                tran_with_ann.join(gene_df, on='gene_id')
-                .drop('gene_id').drop('empty'))
+                tran_with_ann.join(gene_df, on='gene_id'))
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
+        tran_with_ann = tran_with_ann.drop('gene_id').drop('empty')
         tran_df = tran_with_ann.select(
                 'ssm_id',
-                struct(struct('*').alias('transcript')).alias('consequence'))
-
+                struct(struct(*tran_with_ann.drop('ssm_id')).alias('transcript')).alias('consequence'))
         df = tran_df.groupby('ssm_id').agg(
             collect_list('consequence').alias('consequence'))
 
