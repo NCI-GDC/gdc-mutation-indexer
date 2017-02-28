@@ -40,7 +40,7 @@ class ConsequenceBuilder(object):
         # {*fields} => {*fields, annotation: {}}
         tran_with_ann = (
             tran_df.join(ann_df, tran_df.transcript_id == ann_df.annotation.transcript_id, how='left')
-            .select(struct(ann_df.columns).alias('annotation'),
+            .select(struct(ann_df.columns),
                     *tran_df.columns))
 
         if join_gene:
