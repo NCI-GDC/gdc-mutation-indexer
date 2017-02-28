@@ -6,7 +6,7 @@ import logging
 
 import pyspark
 from pyspark.sql.functions import udf, lit, col, regexp_extract
-from pyspark.sql.types import *
+from pyspark.sql.types import StringType, ArrayType
 import json
 
 logging.basicConfig()
@@ -57,6 +57,11 @@ class GeneModelBuilder(object):
                            .option("delimiter", "\t") \
                            .option("header", "true")\
                            .load(self.config.citobands_file)
+
+        # Turn the cytoband column into an array of cytobands
+        cytobands_df = cytobands_df.withColumn('cytoband',
+                                udf(lambda x: x.split(',') if x else [x],
+                                    ArrayType(StringType()))(col('cytoband')))
 
         census_df = self.sqlContext\
                          .read\
