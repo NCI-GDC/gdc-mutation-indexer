@@ -38,7 +38,9 @@ class TestConsequenceBuilder(SparkTestCase):
         self.assertEqual(tran_df.count(), 1)
         cons = tran_df.collect()[0]['consequence']
         self.assertEqual(len(cons), 7)
-        cons = [ r['transcript'] for r in cons ]
+        cytobands = [ r['transcript']['gene']['cytoband'] for r in cons ]
+        assert all([type(c) is list for c in cytobands ])
+        
 
     def test_all_effects_cols(self):
         fields = [ 'do_not_use', 'consequence_type', 'aa_change',
