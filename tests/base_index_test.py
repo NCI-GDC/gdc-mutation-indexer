@@ -1,6 +1,7 @@
 import json
 import os
 from elasticsearch import Elasticsearch
+from contextlib import contextmanager
 
 from exports.builders import MAFBuilder
 
@@ -19,7 +20,16 @@ class BaseIndexTest:
         self.output_dir = os.path.join(self.conf.output_dir, self.index)
         self.debug = self.conf.print_data_errors
 
-    def generate_index(self, sqlContext):
+    @contextmanager
+    def index_generator(self, sql_context):
+        es = self.generate_index(sql_context)
+
+        yield es
+
+        if not self.conf.keep_indices:
+            es.indices.delete(index=self.conf.indices[self.index], ignore=399)
+
+    def generate_index(self, sql_context):
         """
         Generates index corresponding to self.builder
         Returns Elasticsearch instance
@@ -33,9 +43,9 @@ class BaseIndexTest:
 
         es = Elasticsearch(self.conf.es_host, port=self.conf.es_port)
 
-        maf_df = MAFBuilder(self.conf, sqlContext).build()
+        maf_df = MAFBuilder(self.conf, sql_context).build()
 
-        self.builder(self.conf, sqlContext).build(maf_df).load()
+        self.builder(self.conf, sql_context).build(maf_df).load()
 
         return es
 
@@ -53,6 +63,23 @@ class BaseIndexTest:
         assert self.id_field in es_doc.keys()
 
         return es_doc, true_doc
+
+    def get_docs_to_compare_new(self, es_index_generator, filename):
+        """
+        Returns true document loaded from :filename
+        and a corresponding built document from elasticsearch
+        """
+        # Compare each true output document with document in ES:
+        with open(os.path.join(self.output_dir, filename), 'r') as f:
+            true_doc = json.loads(f.read())
+
+        with es_index_generator as es_index:
+            es_doc = es_index.get(index=self.conf.indices[self.index], id=filename)['_source']
+
+        assert self.id_field in es_doc.keys()
+
+        return es_doc, true_doc
+
 
     def report_deepdiff(self, diff):
         """
@@ -175,4 +202,3 @@ class BaseIndexTest:
 
         flatten(json_dict)
         return result
-

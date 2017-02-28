@@ -22,6 +22,7 @@ def ssm_centric_index(sqlContext, test_index):
     if not conf.keep_indices:
         es.indices.delete(index=conf.indices[T.index], ignore=399)
 
+
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
 def test_ssm_centric_formal(ssm_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
@@ -51,4 +52,3 @@ def test_ssm_centric_cardinality(ssm_centric_index, filename, test_mode):
     mismatches = JSONValidator.find_mismatches(es_doc, true_doc, test_mode)
     T.report_cardinality(mismatches, '[{}|{}]'.format(filename, test_mode))
     assert mismatches == {}
-

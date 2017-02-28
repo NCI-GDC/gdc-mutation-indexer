@@ -1,10 +1,9 @@
 import logging
 from pyspark.sql.functions import explode, col, collect_list, struct
 from exports.builders.utils import (
-    extract_rows_udf, all_effects_udf)
+    extract_rows_udf, all_effects_udf, add_aa_columns)
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
-
 
 class ConsequenceBuilder(object):
     '''
@@ -23,6 +22,7 @@ class ConsequenceBuilder(object):
         Returns arrays of transcripts keyed on ssm_id
         '''
         ann_df = get_annotation_df(maf_df, unique_fields=['transcript_id'])
+        ann_df = ann_df.select(struct(ann_df.columns).alias('annotation'))
 
         # => {gene_id, ssm_id, transcript_id,
         # empty, canonical_tracript_id, is_canonical,
@@ -39,8 +39,8 @@ class ConsequenceBuilder(object):
 
         # {*fields} => {*fields, annotation: {}}
         tran_with_ann = (
-            tran_df.join(ann_df, on='transcript_id', how='left')
-            .select(struct(ann_df.columns).alias('annotation'),
+            tran_df.join(ann_df, tran_df.transcript_id == ann_df.annotation.transcript_id, how='left')
+            .select(struct(ann_df.columns),
                     *tran_df.columns))
 
         if join_gene:
@@ -56,7 +56,7 @@ class ConsequenceBuilder(object):
         #       {transcript_id, *transcript_fields}}}
         tran_df = tran_with_ann.select(
                 'ssm_id',
-                struct(struct('*').alias('transcript')).alias('consequence'))
+                struct(struct(tran_with_ann.drop('ssm_id').columns).alias('transcript')).alias('consequence'))
 
         df = tran_df.groupby('ssm_id').agg(
             collect_list('consequence').alias('consequence'))
@@ -89,18 +89,20 @@ class ConsequenceBuilder(object):
         fields = {
             'do_not_use': 0,
             'consequence_type': 1,
-            'aa_change': 2,
+            'aa_all': 2,
             'transcript_id': 3,
             'ref_seq_accession': 4 
         }
         ssm_tran = ssm_tran.select('gene_id', 'empty', 'ssm_id',
-                                    'canonical_transcript_id',
+                                   'canonical_transcript_id',
                                    explode('all_effects').alias('all_effects'))
 
         for field, idx in fields.items():
             ssm_tran = ssm_tran.withColumn(field,
-                                all_effects_udf(idx)(col('all_effects')))
+                                           all_effects_udf(idx)(col('all_effects')))
         ssm_tran = ssm_tran.drop('all_effects')
+
+        ssm_tran = add_aa_columns(ssm_tran)
 
         # get is_canonical
         ssm_tran = ssm_tran.withColumn(
@@ -114,9 +116,10 @@ class ConsequenceBuilder(object):
         gene_df = get_gene_df(
             maf_df,
             drop_fields=['transcripts', 'description',
-                         'canonical_transcript_length_genomic',
+                         'canonical_transcript_length',
                          'canonical_transcript_length_cds',
-                         'gene_strand'])
+                         'canonical_transcript_length_genomic',
+                         'gene_strand', 'name'])
         gene_struct_df = gene_df.select(
             'gene_id', struct(col('*')).alias('gene'))
         return gene_struct_df

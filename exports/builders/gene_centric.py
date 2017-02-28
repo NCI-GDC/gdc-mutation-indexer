@@ -78,6 +78,11 @@ class GeneCentricBuilder(BaseBuilder):
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
+        join_condition = (
+            (case_df.gene_id == df.gene_id) &
+            (case_df.submitter_id == df._case_submitter_id)
+        )
+
         # Combine case with ssm tree
         case_ssm = case_df.join(df, case_df.submitter_id == df._case_submitter_id, 'left')\
                     .select('submitter_id', struct('ssm', *case_df.columns).alias('case'))
