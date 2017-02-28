@@ -41,8 +41,7 @@ class SSMCentricBuilder(BaseBuilder):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
         self.log_count(maf_df)
 
-        ssm_df = get_ssm_df(
-            maf_df, add_fields=['_case_submitter_id'], unique_fields=['ssm_id'])
+        ssm_df = get_ssm_df(maf_df, unique_fields=['ssm_id'])
 
         cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
@@ -54,8 +53,8 @@ class SSMCentricBuilder(BaseBuilder):
 
         self.log('Final join SSM + Transcript + Last one')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
-                        .join(occurrence_df, on='ssm_id')\
-                        .drop('_case_submitter_id')
+            .join(occurrence_df, on='ssm_id')
+
         self.log_count(ssm_centric)
 
         self.ssm_centric = ssm_centric
