@@ -45,11 +45,7 @@ class SSMCentricBuilder(BaseBuilder):
 
         cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
 
-        # Observation
-        self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
-
-        occurrence_df = self.build_occurrence(obs_df)
+        occurrence_df = self.build_occurrence(maf_df)
 
         self.log('Final join SSM + Transcript + Last one')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
@@ -61,9 +57,10 @@ class SSMCentricBuilder(BaseBuilder):
         self.log('Build finished')
         return self
 
-    def build_occurrence(self, obs_df):
-        # Get ssm from ES
-        self.log("Building ssm_centric")
+    def build_occurrence(self, maf_df):
+        # Observation
+        self.log('Aggregating Observation from MAF')
+        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
