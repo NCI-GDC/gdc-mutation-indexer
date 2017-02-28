@@ -1,10 +1,9 @@
 import logging
 from pyspark.sql.functions import explode, col, collect_list, struct
 from exports.builders.utils import (
-    extract_rows_udf, all_effects_udf)
+    extract_rows_udf, all_effects_udf, add_aa_columns)
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
-
 
 class ConsequenceBuilder(object):
     '''
@@ -89,18 +88,20 @@ class ConsequenceBuilder(object):
         fields = {
             'do_not_use': 0,
             'consequence_type': 1,
-            'aa_change': 2,
+            'aa_all': 2,
             'transcript_id': 3,
-            'ref_seq_accession': 4 
+            'ref_seq_accession': 4
         }
         ssm_tran = ssm_tran.select('gene_id', 'empty', 'ssm_id',
-                                    'canonical_transcript_id',
+                                   'canonical_transcript_id',
                                    explode('all_effects').alias('all_effects'))
 
         for field, idx in fields.items():
             ssm_tran = ssm_tran.withColumn(field,
-                                all_effects_udf(idx)(col('all_effects')))
+                                           all_effects_udf(idx)(col('all_effects')))
         ssm_tran = ssm_tran.drop('all_effects')
+
+        ssm_tran = add_aa_columns(ssm_tran)
 
         # get is_canonical
         ssm_tran = ssm_tran.withColumn(
@@ -114,9 +115,10 @@ class ConsequenceBuilder(object):
         gene_df = get_gene_df(
             maf_df,
             drop_fields=['transcripts', 'description',
-                         'canonical_transcript_length_genomic',
+                         'canonical_transcript_length',
                          'canonical_transcript_length_cds',
-                         'gene_strand'])
+                         'canonical_transcript_length_genomic',
+                         'gene_strand', 'name'])
         gene_struct_df = gene_df.select(
             'gene_id', struct(col('*')).alias('gene'))
         return gene_struct_df
