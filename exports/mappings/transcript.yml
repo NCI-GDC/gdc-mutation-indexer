@@ -13,10 +13,8 @@ properties:
         analyzer: id_search
   aa_end:
     type: long
-    default: empty
   aa_start:
     type: long
-    default: empty
   consequence_type:
     type: keyword
   is_canonical:

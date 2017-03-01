@@ -93,6 +93,7 @@ def test_index_class(request):
     if not conf.keep_indices:
         request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
 
+
 @pytest.yield_fixture(scope='module')
 def test_index(request):
     ''' Generate a graph index as a fixture for re-use between tests '''
@@ -103,8 +104,8 @@ def test_index(request):
     if not conf.keep_indices:
         es.indices.delete(index=conf.graph_index, ignore=399)
 
-### Validation helpers
 
+### Validation helpers
 def get_validation_doc(path):
     '''
     Loads a json document for validation and flattens it to a dict
