@@ -61,10 +61,10 @@ def validate_two_occurrence(address, json_obj, other_json_obj):
     res.extend(validate_two_nested_jsons(address, json_obj, other_json_obj,
                                          ignored_list=['summary', 'diagnoses', 'observation']))
     res.extend(validate_two_list_jsons(address, json_obj['diagnoses'], other_json_obj['diagnoses'],
-                                       ['diagnosis_id'], validate_two_flat_jsons))
+                                       ['diagnosis_id'], diff_func=validate_two_flat_jsons))
     res.extend(validate_two_list_jsons(address, json_obj['summary']['data_categories'],
                                        other_json_obj['summary']['data_categories'],
                                        ['data_category', 'file_count']))
     res.extend(validate_two_list_jsons(address, json_obj['observation'], other_json_obj['observation'],
-                                       ['src_vcf_id'], validate_two_flat_jsons))
+                                       ['src_vcf_id'], diff_func=validate_two_flat_jsons))
     return res
