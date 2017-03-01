@@ -93,19 +93,21 @@ class CaseCentricBuilder(BaseBuilder):
 
         gene_ssm = self.build_gene(maf_df)
 
-        self.log('Final join Case with last join result [inner, submitter_id]')
-        case_centric = (
-            case_df.join(gene_ssm,
-                         case_df.submitter_id == gene_ssm._case_submitter_id,
-                         'inner')
-            .drop(gene_ssm._case_submitter_id)
-            .groupBy(*case_df.columns)
+        gene_ssm_grouped = (
+            gene_ssm.groupBy(gene_ssm._case_submitter_id)
             .agg(collect_list('gene').alias('gene')))
 
+        self.log('Final join Case with last join result [inner, submitter_id]')
+        case_centric = (
+            case_df.join(gene_ssm_grouped,
+                         case_df.submitter_id == gene_ssm_grouped._case_submitter_id,
+                         'inner')
+            .drop(gene_ssm_grouped._case_submitter_id))
+        self.case_centric = case_centric
         # Truncate outliers
         self.case_centric = self.truncate_df_at_percentile(case_centric, 'gene', self.config.percentile_threshold['genes_per_case'])
+        self.log_count(case_centric)
 
-        self.log_count(self.case_centric)
         self.log('Build finished')
         return self
 
