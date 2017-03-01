@@ -8,6 +8,7 @@ logging.basicConfig()
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
 from exports.builders.utils import struct_select, uuid5_col
+from exports.builders.df_builders import build_ssm_subtree
 from exports.builders import (
     MAFBuilder,
     CaseBuilder,
@@ -34,28 +35,34 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_occurrence_centric'
 
-    def build(self, maf_df=None):
-        '''
-        '''
-        self.log('Building case dataframe')
-        if maf_df is None:
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
+    def build_ssm(self, maf_df):
+        # Consequence
+        cons_df = ConsequenceBuilder(
+            self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # SSM
-        ssm_df = maf_df.select('_case_submitter_id',
-                               *struct_select(self.config.mappings['ssm']))
+        ssm_df = build_ssm_subtree(maf_df, cons_df)
+        self.log_count(ssm_df)
 
-        # Consequence
-        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        ssm_cons = ssm_df.select('ssm_id',
+                                struct('consequence',
+                                   *ssm_df.drop('_case_submitter_id').columns)\
+                                .alias('ssm'))
+        self.log_count(ssm_cons)
 
+        return ssm_cons
+
+    
+    def build_case(self, maf_df):
+        self.log('Building case dataframe')
         # Observation
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
-        # Get ssm occurrence from ES
-        self.log("Building ssm_occurrence_centric")
+        self.log('Building Case')
         case_df = CaseBuilder(self.config, self.sqlContext).build()
+        self.log_count(case_df)
 
-
+        self.log('Join observation with case')
         case_obs_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
                         .select('case_id', 'ssm_id',
                             struct(
@@ -63,31 +70,24 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                 *case_df.columns
                             ).alias('case'))\
                         .drop('_case_submitter_id')
+        self.log_count(case_obs_df)
+        return case_obs_df
 
-        print 'size of case_obs', case_obs_df.count()
-
-        print 'size of ssm_df', ssm_df.count()
-        ssm_cons = ssm_df.join(cons_df, on='ssm_id')\
-                            .select('ssm_id',
-                                struct('consequence',
-                                   *ssm_df.drop('_case_submitter_id').columns)\
-                                .alias('ssm'))
-        print 'size of ssm_cons', ssm_cons.count()
-
+    def build(self, maf_df=None):
         '''
-        ssm_occurrence_centric = ssm_df.join(case_obs_df, on='_case_submitter_id')\
-                                    .drop(ssm_df._case_submitter_id)\
-                                    .drop(cons_df.ssm_id)\
-                                    .withColumn('ssm_occurrence_id',
-                                                uuid5_col(lit('ssm_occurrence'),
-                                                    col('ssm_id'),
-                                                    col('case_id')))\
-                                    .select(
-                                        struct('consequence',*ssm_df.drop('_case_submitter_id').columns).alias('ssm'),
-                                        'case',
-                                        'ssm_occurrence_id',
-                                    )
         '''
+        self.log('Building MAF')
+        if maf_df is None:
+            maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        self.log_count(maf_df)
+
+
+        case_obs_df = self.build_case(maf_df)
+
+        ssm_cons = self.build_ssm(maf_df)
+
+
+        self.log('Joining ssm with case')
         ssm_occurrence_centric = ssm_cons.join(case_obs_df, on='ssm_id', how='right')\
                                             .withColumn('ssm_occurrence_id',
                                                         uuid5_col(lit('ssm_occurrence'),
@@ -96,10 +96,8 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                             .drop('ssm_id')\
                                             .drop('case_id')\
                                             .drop('_case_submitter_id')
-
-        print 'size of ssm_occurrence', ssm_occurrence_centric.count()
-        ssm_occurrence_centric.printSchema()
         self.log_count(ssm_occurrence_centric)
+
         # Generate ids
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
