@@ -9,11 +9,11 @@ def build_ssm_subtree(maf_df, obs_df, cons_df):
        |___ observation[]
     '''
     ssm_df = get_ssm_df(
-        maf_df, add_fields=['gene_id'], unique_fields=['ssm_id'])
+        maf_df, add_fields=['gene_id', '_case_submitter_id'])
 
     df = ssm_df.join(cons_df, on='ssm_id', how='left')
 
-    df = df.join(obs_df, on='ssm_id', how='left')
+    df = df.join(obs_df, on=['ssm_id', '_case_submitter_id'], how='left')
     return df
 
 
