@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from config import TestConfig
+from tests_config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import SSMCentricBuilder
 from utils import TestJsonObject, KEY_VALUE_SEPARATOR
