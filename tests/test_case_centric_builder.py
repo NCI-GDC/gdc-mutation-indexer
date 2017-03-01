@@ -29,7 +29,7 @@ class TestCaseCentricBuilder(SparkTestCase):
 
     def test_gene(self):
         # one gene per ssm for our test mafs
-        gene_df = self.builder.build_gene(self.maf_df)
+        gene_df = self.builder.build_gene_ssm(self.maf_df)
         assert (
             gene_df.filter(size('gene.ssm') == 1).count()) == 18
 

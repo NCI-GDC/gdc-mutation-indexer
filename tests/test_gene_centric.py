@@ -36,7 +36,6 @@ def gene_stats(sqlContext, gene_centric_index):
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
 def test_gene_centric_formal(gene_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
-
     diff = DeepDiff(es_doc, true_doc,
                     ignore_order=True, view='tree')
     T.report_deepdiff(diff)

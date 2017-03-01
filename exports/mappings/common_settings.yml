@@ -24,4 +24,4 @@ mappings:
     enabled: false
   _source:
     excludes: [__comment__]
-  dynamic: strict
+  dynamic: true
