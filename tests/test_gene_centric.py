@@ -86,8 +86,8 @@ def test_gene_centric_join(gene_centric_index, filename):
     assert diffs == []
 
 
+@pytest.mark.skipif(True, reason="Only test after having correct data")
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
-@pytest.mark.skipif(True)
 def test_gene_centric_in_depth(gene_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
     diffs = validate_two_nested_jsons("gene{0}{1}".format(KEY_VALUE_SEPARATOR, filename),

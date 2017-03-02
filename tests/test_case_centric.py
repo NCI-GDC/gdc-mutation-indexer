@@ -97,8 +97,8 @@ def test_case_centric_join(case_centric_index, filename):
     assert diffs == []
 
 
+@pytest.mark.skipif(True, reason="Only test after having correct data")
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
-@pytest.mark.skipif(True)
 def test_case_centric_in_depth(case_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(case_centric_index, filename)
     diffs = validate_two_nested_jsons("case{0}{1}".format(KEY_VALUE_SEPARATOR, filename),

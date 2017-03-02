@@ -33,8 +33,8 @@ def test_ssm_centric_join(ssm_centric_index, filename):
     assert diffs == []
 
 
+@pytest.mark.skipif(True, reason="Only test after having correct data")
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
-@pytest.mark.skipif(True)
 def test_ssm_centric_in_depth(ssm_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
     diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
