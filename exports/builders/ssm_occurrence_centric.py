@@ -45,9 +45,9 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         self.log_count(ssm_df)
 
         ssm_cons = ssm_df.select('ssm_id',
-                                struct('consequence',
-                                   *ssm_df.drop('_case_submitter_id').columns)\
-                                .alias('ssm'))
+                                 struct('consequence',
+                                        *ssm_df.drop('_case_submitter_id').columns)\
+                                 .alias('ssm'))
         self.log_count(ssm_cons)
 
         return ssm_cons

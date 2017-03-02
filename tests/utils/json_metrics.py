@@ -1,5 +1,6 @@
 import json
 
+
 class BaseStats(object):
     """
     Calculates summary status for a given index
@@ -111,7 +112,7 @@ class SSMCentricStats(BaseStats):
                 self.genes_per_case[case]         += 1  
             self.mutations_per_gene[gene_case] += 1  
 
-            mutation = self.get_mutation(h['_source'])
+            mutation = self.get_mutation(h)
 
             if not mutation in self.uniqMutations:
                 self.uniqMutations[mutation] = 1
@@ -171,7 +172,7 @@ class SSMOcurrenceCentricStats(BaseStats):
                 self.genes_per_case[case]         += 1  
             self.mutations_per_gene[gene_case] += 1  
 
-            mutation = self.get_mutation(h['_source'])
+            mutation = self.get_mutation(ssm)
 
             if not mutation in self.uniqMutations:
                 self.uniqMutations[mutation] = 1
@@ -183,6 +184,7 @@ class SSMOcurrenceCentricStats(BaseStats):
         self.Ngenes     = len(self.mutations_per_gene)
         self.NUniqMut   = len(self.uniqMutations)   
         self.Nconseq    = len(self.consequences)
+
 
 class CaseCentricStats(BaseStats):
 
@@ -294,6 +296,7 @@ class GeneCentricStats(BaseStats):
         self.Ngenes     = len(self.mutations_per_gene)
         self.NUniqMut   = len(self.uniqMutations)   
         self.Nconseq    = len(self.consequences)
+
 
 def get_matches(maf_metrics, index_metrics, total):
   

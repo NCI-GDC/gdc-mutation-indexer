@@ -1,7 +1,5 @@
 import os
-import uuid
 from config import BaseConfig
-from elasticsearch import Elasticsearch
 
 
 class TestConfig(BaseConfig):
@@ -17,6 +15,9 @@ class TestConfig(BaseConfig):
     # Whether or not to print document mismatches to stdout when testing
     print_data_errors = False
 
+    # Whether or not to skip field-by-field data tests
+    skip_in_depth_tests = True
+
     index_names = {
         'case_centric': 'test_case_centric__',
         'gene_centric': 'test_gene_centric__',
@@ -24,7 +25,9 @@ class TestConfig(BaseConfig):
         'ssm_occurrence_centric': 'test_ssm_occurrence_centric__'
     }
 
-    test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tests')
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    test_dir = os.path.join(root_dir, 'tests')
+    schemas_dir = os.path.join(root_dir, 'exports', 'schemas')
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
@@ -47,7 +50,6 @@ class TestConfig(BaseConfig):
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(input_dir, 'genes.18.json.gz')
-
 
     keep_indices = True
     maf_keep = False

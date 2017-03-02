@@ -1,4 +1,3 @@
-import os
 import gzip
 import time
 import json
@@ -12,6 +11,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
+from exports.builders import MAFBuilder
 from utils.maf_metrics import MAFStats
 
 conf = TestConfig()
@@ -69,7 +69,7 @@ def setup_test_index():
     return es
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='session')
 def sqlContext():
     sc = SparkContext(conf.spark_master, 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
@@ -84,7 +84,13 @@ def sqlContext():
     sc._jvm.System.clearProperty("spark.driver.port")
 
 
-@pytest.yield_fixture(scope='class')
+@pytest.fixture(scope="session")
+def maf_df(sqlContext):
+    print "\n\n\tBUILDING MAF\n\n"
+    yield MAFBuilder(conf, sqlContext).build()
+
+
+@pytest.fixture(scope='class')
 def test_index_class(request):
     ''' Generate a graph index as a fixture for re-use between tests '''
     request.cls.es = setup_test_index()
@@ -96,7 +102,7 @@ def test_index_class(request):
         request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def test_index(request):
     ''' Generate a graph index as a fixture for re-use between tests '''
     es = setup_test_index()
@@ -107,41 +113,6 @@ def test_index(request):
         es.indices.delete(index=conf.graph_index, ignore=399)
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def maf_stats():
     yield MAFStats(conf.maf_urls)
-
-
-### Validation helpers
-def get_validation_doc(path):
-    '''
-    Loads a json document for validation and flattens it to a dict
-    '''
-    with open(path) as f:
-        validation = json.load(f)['_source']
-
-    paths = {}
-
-    def get_fields(doc, name=''):
-        if type(doc) is dict:
-            for k,v in doc.items():
-                get_fields(v, name + '.' + k)
-        elif type(doc) is list:
-            for v in doc:
-                get_fields(v, name + '[*]')
-        else:
-            paths[name[1:]] = doc
-
-    get_fields(validation)
-    return paths
-
-
-def get_validation_paths(path):
-    '''
-    Gets the field paths from a json file and sorts them by length for
-    nice traceback during testing
-    '''
-    did = path.split('.')[-2]
-    fields = get_validation_doc(path)
-    return zip([did]*len(fields.keys()),
-               sorted(fields.keys(), key=lambda x: len(x)))
