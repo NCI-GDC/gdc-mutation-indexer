@@ -8,6 +8,10 @@ from exports.builders import CaseCentricBuilder
 from utils.json_validation import JSONValidator
 
 from utils.json_metrics import CaseCentricStats
+from json_test_utils import (validate_two_nested_jsons_joining,
+                             validate_two_nested_jsons,
+                             __gathering_statistic_info,
+                             KEY_VALUE_SEPARATOR)
 
 builder = CaseCentricBuilder
 conf = TestConfig()
@@ -72,3 +76,33 @@ def test_case_centric_summary_stats(case_centric_index, case_stats, maf_stats, s
     case_stat = getattr(case_stats, stat)
     maf_stat = getattr(maf_stats, stat)
     assert case_stat == maf_stat
+
+
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+def test_case_centric_join(case_centric_index, filename):
+    '''
+    Builds case-centric dataframe given case and maf dataframes
+
+    case{}
+         |___ gene[]
+                 |___ ssm[]
+                       |___ consequence[]
+                       |             |_____ transcript{}
+                       |                          |_____ annotation{}
+                       |___ observation[]
+    '''
+    es_doc, true_doc = T.get_docs_to_compare(case_centric_index, filename)
+    diffs = validate_two_nested_jsons_joining("case{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                              es_doc, true_doc)
+    assert diffs == []
+
+
+@pytest.mark.skipif(True, reason="Only test after having correct data")
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+def test_case_centric_in_depth(case_centric_index, filename):
+    es_doc, true_doc = T.get_docs_to_compare(case_centric_index, filename)
+    diffs = validate_two_nested_jsons("case{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                      es_doc, true_doc)
+    if diffs:
+        diffs.append(__gathering_statistic_info(diffs))
+    assert diffs == []
