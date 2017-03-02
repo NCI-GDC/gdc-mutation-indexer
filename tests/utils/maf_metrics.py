@@ -137,6 +137,7 @@ class MAFStats():
         self.NUniqMut   = len(self.uniqMutations)       
         self.Nconseq    = len(self.consequences)
 
+
 def histogram(data, title, xlabel, ylabel, bins=50, tails=None, filename=None):
 
     values = [v for v in data. values()]

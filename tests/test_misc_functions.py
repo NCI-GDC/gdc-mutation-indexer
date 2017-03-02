@@ -1,0 +1,125 @@
+import pytest
+import json
+from random import randint
+
+from exports.builders.utils import percentile, struct_select
+from tests_config import TestConfig
+from exports.builders.utils import (
+    ssm_label,
+    flat_fields,
+    _udf_uuid5_field,
+)
+
+conf = TestConfig()
+
+
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
+class TestMiscFunctions:
+
+    @pytest.fixture(scope='class')
+    def es(self, test_index_class):
+        yield test_index_class
+
+    def test_es_adapter(self, sqlContext):
+        '''
+        Test that the elasticsearch-hadoop wrapper jar is loaded
+        '''
+        # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
+        return (sqlContext.read.format("es")
+                          .option('es.nodes', conf.source_es_host)
+                          .option('es.nodes.resolve.hostname','false')
+                          .option('es.resource.read', conf.graph_index)
+                          .load(conf.graph_index))
+
+    def test_percentile(self):
+        '''
+        test the percentile util function
+        '''
+        l = randint(0, 100)
+        if l % 2:
+            l += 1
+        v = [randint(0, 100) for i in range(l + 1)]
+        sorted_v = sorted(v)
+        assert percentile(v, 0) == sorted_v[0]
+        assert percentile(v, 50) == sorted_v[l/2]
+        assert percentile(v, 100) == sorted_v[-1]
+
+    def test_struct_select(self, maf_df):
+        ''' Test mapping to select '''
+        stmt = struct_select('observation.yml')
+
+        df_json = (json.loads(maf_df.select(*stmt)
+                                    .limit(1).toJSON()
+                                    .collect()[0]))
+
+        assert 'center' in df_json
+        assert 'input_bam_file' in df_json
+        assert 'normal_bam_uuid' in df_json['input_bam_file']
+
+    def test_graph_index(self, es):
+        '''
+        Test the test graph index fixture
+        '''
+        assert es is not None
+        assert conf.graph_index is not None
+        assert es.count()['count'] > 0
+        assert (es.get(index=conf.graph_index, doc_type='case',
+                       id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
+                == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
+
+    def test_properties(self):
+        ''' Test that configuration properties are present '''
+        assert 'api_host' in dir(conf)
+        assert 'signpost_host' in dir(conf)
+        assert 's3_host' in dir(conf)
+        assert 'es_host' in dir(conf)
+
+    def test_index_prefix(self, es):
+        '''
+        Test that index prefixes are determined correctly
+        '''
+
+        index_name = 'test_case_centric__'
+
+        if es.indices.exists('gdc_r998_{}'.format(index_name)):
+            es.indices.delete('gdc_r998_{}'.format(index_name))
+
+        # Create a new index
+        es.indices.create(index='gdc_r998_{}'.format(index_name))
+        assert ('gdc_r999_{}'.format(index_name)
+                == TestConfig().indices['case_centric'])
+        es.indices.delete(index='gdc_r998_{}'.format(index_name))
+
+    def test_ssm_label(self):
+        ''' Test ssm label generation '''
+        label = ssm_label('chr3', 'SNP', 41589825, '', 'A', 'T')
+        assert label == 'chr3:g.41589825A>T'
+
+        label = ssm_label('chr3', 'DEL', 41589825, '', 'A', '')
+        assert label == 'chr3:g.41589825delA'
+
+        label = ssm_label('chr3', 'INS', 41589825, 41589825, '', 'T')
+        assert label == 'chr3:g.41589825_41589825insT'
+
+        label = ssm_label('chr4', 'SNP', 112382545, '', 'A', 'T')
+        assert label == 'chr4:g.112382545A>T'
+
+    def test_uuid5(self):
+        ''' Test uuid5 generation '''
+
+        ssm_id = _udf_uuid5_field('ssm', 'GRCh38', 'chr4',
+                                  '112382545', '112382545',
+                                  'SNP', 'A', 'T')
+        assert ssm_id == '3439eab1-0c63-50cd-bad7-1ae8ffa8aa01'
+
+        ssm_occ_id = _udf_uuid5_field('ssm_occurrence',
+                                      '642a6e7d-8b15-5f93-9e29-22c9649e9058',
+                                      '13afbde8-e5b5-4f3c-8a9d-daef71560005')
+        assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
+
+    def test_flat_fields(self):
+        ''' Test mapping field flattener '''
+        fields = flat_fields('../mappings/observation.yml')
+
+        for field in ['src_vcf_id', 'center', 'tumor_sample_uuid']:
+            assert field in fields

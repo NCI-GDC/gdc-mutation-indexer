@@ -125,8 +125,7 @@ class BaseConfig(object):
             prefix = 'gdc_r{}_{}'.format(version, index_name)
             return prefix
 
-        indices = { k: get_prefix(v)
-                            for k,v in self.index_names.items()
-                            if v is not None }
+        indices = {k: get_prefix(v) for k, v in self.index_names.items()
+                   if v is not None}
         return indices
 
