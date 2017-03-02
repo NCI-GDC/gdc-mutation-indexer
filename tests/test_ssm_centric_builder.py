@@ -27,13 +27,13 @@ def ssm_centric_index(sqlContext, test_index):
 def test_ssm_centric_join(ssm_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
     diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
-                                      es_doc['consequence'], true_doc['consequence'])
+                                      es_doc, true_doc)
     assert diffs == []
 
 
-@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
-def test_ssm_centric_in_depth(ssm_centric_index, filename):
-    es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
-    diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
-                                      es_doc['consequence'], true_doc['consequence'], True)
-    assert diffs == []
+# @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+# def test_ssm_centric_in_depth(ssm_centric_index, filename):
+#     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
+#     diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+#                                       es_doc, true_doc, join_only=True)
+#     assert diffs == []

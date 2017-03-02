@@ -101,7 +101,7 @@ def assert_in(address, value, other, message):
     return []
 
 
-def validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fields, object_name, join_only=False):
+def __validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fields, object_name, join_only=False):
     '''
     Call this function when you want to validate two list of nested object
     :param address: json address of the parent json node of the list
@@ -127,7 +127,7 @@ def validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fiel
     return res
 
 
-def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=None, join_only=False):
+def validate_two_nested_jsons(address, json_obj, other_json_obj, join_only=False, ignored_list=None):
     res = []
     if ignored_list is None:
         ignored_list = []
@@ -142,8 +142,8 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=No
             if type(json_obj[field]) is list:
                 if field in mappings.keys():
                     mapping_field = mappings[field]
-                    res.extend(validate_two_list_jsons(new_address, json_obj[field], other_json_obj[field],
-                                                       mapping_field['id'], mapping_field['name'], join_only))
+                    res.extend(__validate_two_list_jsons(new_address, json_obj[field], other_json_obj[field],
+                                                         mapping_field['id'], mapping_field['name'], join_only))
                 else:
                     res.extend(__validate_two_flat_lists(new_address, json_obj[field], other_json_obj[field]))
             elif type(json_obj[field]) is dict:
@@ -153,4 +153,3 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=No
                                         "field {0}: {1} is not equal {2}"
                                         .format(field, json_obj[field], other_json_obj[field])))
     return res
-

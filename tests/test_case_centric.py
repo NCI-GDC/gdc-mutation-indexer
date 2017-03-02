@@ -9,10 +9,7 @@ from utils.json_validation import JSONValidator
 
 from utils.json_metrics import CaseCentricStats
 from json_test_utils import (validate_two_nested_jsons,
-                             validate_two_list_jsons,
-                             validate_two_flat_jsons,
                              KEY_VALUE_SEPARATOR)
-from df_test_utils import validate_consequence_list_in_dept, validate_consequence_join
 
 builder = CaseCentricBuilder
 conf = TestConfig()
@@ -91,15 +88,6 @@ def test_case_centric_join(case_centric_index, filename):
                        |___ observation[]
     '''
     es_doc, true_doc = T.get_docs_to_compare(case_centric_index, filename)
-    diffs = validate_consequence_join("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
-                                      es_doc['consequence'], true_doc['consequence'])
-    diffs.extend(validate_two_list_jsons(address="ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
-                                         list_jsons=es_doc['occurrence'],
-                                         other_list_jsons=true_doc['occurrence'],
-                                         identity_fields=["submitter_id"],
-                                         object_name="case",
-                                         diff_func=validate_two_occurrence, join_only=True))
+    diffs = validate_two_nested_jsons("case{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                      es_doc, true_doc)
     assert diffs == []
-
-def validate_two_gene():
-    pass
