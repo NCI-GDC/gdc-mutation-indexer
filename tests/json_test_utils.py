@@ -1,4 +1,4 @@
-LEVEL_SEPARATOR = "#"
+LEVEL_SEPARATOR = "::"
 KEY_VALUE_SEPARATOR = "="
 
 
@@ -19,15 +19,25 @@ class DiffObject:
         return self.__str__()
 
 
+###
+#  This mapping is used to specify the identifier for an nested json item in a list.
+#  - 'key' of dictionary entry is the name of the list.
+#  - 'name' is the name (json name) of every item. It is empty if item does not have name.
+#  - 'id' is a list of fields help to identify an item in the list.
+#  - For every index, you have to specify all the lists of nested json objects here.
+###
 mappings = {
     "consequence": {'name': 'transcript', 'id': ['transcript_id']},
     "occurrence": {'name': 'case', 'id': ['submitter_id']},
+    "case": {'name': '', 'id': ['case_id']},
     "diagnoses": {'name': '', 'id': ['diagnosis_id']},
     "data_categories": {'name': '', 'id': ['data_category', 'file_count']},
     "observation": {'name': '', 'id': ['src_vcf_id']},
     "gene": {'name': '', 'id': ['gene_id']},
     "ssm": {'name': '', 'id': ['ssm_id']},
-    "transcripts": {'name': '', 'id': ['id']}
+    "transcripts": {'name': '', 'id': ['id']},
+    "exons": {'name': '', 'id': ['start', 'end']},
+    "domains": {'name': '', 'id': ['start', 'end']}
 }
 
 
@@ -83,10 +93,15 @@ def __validate_list_keys(address, dict_jsons, other_dict_jsons, identity_fields,
 
 
 def __gathering_statistic_info(diffs):
+    paths_having_problem = set([])
     for diff in diffs:
+        path = ""
         path_items = diff.address.split(LEVEL_SEPARATOR)
         for path_item in path_items:
             parts = path_item.split(KEY_VALUE_SEPARATOR)
+            path += '{0}{1}'.format(parts[0], LEVEL_SEPARATOR)
+        paths_having_problem.add(path[:-1])
+    return {"count": len(paths_having_problem), "detail": list(paths_having_problem)}
 
 
 def assert_equal(address, value, other, message):
@@ -120,6 +135,8 @@ def __validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fi
     res = __validate_list_keys(address, dict_jsons, other_dict_jsons, identity_fields, object_name)
 
     for key in dict_jsons.keys():
+        if key not in other_dict_jsons.keys():
+            continue
         if join_only:
             res.extend(validate_two_nested_jsons_joining(address, dict_jsons[key], other_dict_jsons[key]))
         else:

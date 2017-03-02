@@ -11,6 +11,11 @@ from utils.json_metrics import GeneCentricStats
 
 from utils.json_metrics import GeneCentricStats
 
+from json_test_utils import (validate_two_nested_jsons_joining,
+                             validate_two_nested_jsons,
+                             __gathering_statistic_info,
+                             KEY_VALUE_SEPARATOR)
+
 builder = GeneCentricBuilder
 conf = TestConfig()
 T = BaseIndexTest(builder, conf)
@@ -72,3 +77,21 @@ def test_gene_centric_summary_stats(gene_centric_index, gene_stats, maf_stats, s
     gene_stat = getattr(gene_stats, stat)
     maf_stat = getattr(maf_stats, stat)
     assert gene_stat == maf_stat
+
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+def test_gene_centric_join(gene_centric_index, filename):
+    es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
+    diffs = validate_two_nested_jsons_joining("gene{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                              es_doc, true_doc)
+    assert diffs == []
+
+
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+@pytest.mark.skipif(True)
+def test_gene_centric_in_depth(gene_centric_index, filename):
+    es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
+    diffs = validate_two_nested_jsons("gene{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                      es_doc, true_doc)
+    if diffs:
+        diffs.append(__gathering_statistic_info(diffs))
+    assert diffs == []

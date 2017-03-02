@@ -6,6 +6,7 @@ from base_index_test import BaseIndexTest
 from exports.builders import SSMCentricBuilder
 from json_test_utils import (validate_two_nested_jsons,
                              validate_two_nested_jsons_joining,
+                             __gathering_statistic_info,
                              KEY_VALUE_SEPARATOR)
 
 builder = SSMCentricBuilder
@@ -32,9 +33,12 @@ def test_ssm_centric_join(ssm_centric_index, filename):
     assert diffs == []
 
 
-# @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
-# def test_ssm_centric_in_depth(ssm_centric_index, filename):
-#     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
-#     diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
-#                                       es_doc, true_doc)
-#     assert diffs == []
+@pytest.mark.parametrize('filename', os.listdir(T.output_dir))
+@pytest.mark.skipif(True)
+def test_ssm_centric_in_depth(ssm_centric_index, filename):
+    es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
+    diffs = validate_two_nested_jsons("ssm{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
+                                      es_doc, true_doc)
+    if diffs:
+        diffs.append(__gathering_statistic_info(diffs))
+    assert diffs == []
