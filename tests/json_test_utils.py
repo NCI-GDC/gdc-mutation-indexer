@@ -108,7 +108,6 @@ def __validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fi
     :param list_jsons: list of json objects in testing json
     :param other_list_jsons: list of json object in golden set
     :param identity_fields: list of fields help to identify every single node in list of json
-    :param diff_func: function to compare two json object
     :param object_name: field to get the content of json object if there is a named json object in the list
     :param join_only: set it to True if you only want to test the cardinality (resulted by join).
             Set it to True if you want to test the full content of the json file
@@ -119,21 +118,56 @@ def __validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fi
     other_dict_jsons = __build_dict_from_list_json(other_list_jsons, identity_fields, object_name)
 
     res = __validate_list_keys(address, dict_jsons, other_dict_jsons, identity_fields, object_name)
-    if join_only:
-        return res
 
-    res.extend(validate_two_nested_jsons(address, dict_jsons, other_dict_jsons))
+    for key in dict_jsons.keys():
+        if join_only:
+            res.extend(validate_two_nested_jsons_joining(address, dict_jsons[key], other_dict_jsons[key]))
+        else:
+            res.extend(validate_two_nested_jsons(address, dict_jsons[key], other_dict_jsons[key]))
 
     return res
 
 
-def validate_two_nested_jsons(address, json_obj, other_json_obj, join_only=False, ignored_list=None):
+def validate_two_nested_jsons_joining(address, json_obj, other_json_obj, ignored_list=None):
+    '''
+    Call this function when you only want to validate the correctness of joins
+    :param address: json address of the parent json node of the list
+    :param json_obj: json objects in testing json
+    :param other_json_obj: json object in golden set
+    :param ignored_list: list of fields that are ignored in the validation
+    :return:
+    '''
     res = []
     if ignored_list is None:
         ignored_list = []
     for field in json_obj.keys():
         new_address = address + "{}{}".format(LEVEL_SEPARATOR, field)
-        diff = assert_in(new_address, field, other_json_obj,
+        if field not in other_json_obj.keys():
+            continue
+        elif field not in ignored_list:
+            if type(json_obj[field]) is list:
+                if field in mappings.keys():
+                    mapping_field = mappings[field]
+                    res.extend(__validate_two_list_jsons(new_address, json_obj[field], other_json_obj[field],
+                                                         mapping_field['id'], mapping_field['name'], join_only=True))
+    return res
+
+
+def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=None):
+    '''
+    Call this function when you want to validate content of two json objects in dept
+    :param address: json address of the parent json node of the list
+    :param json_obj: json objects in testing json
+    :param other_json_obj: json object in golden set
+    :param ignored_list: list of fields that are ignored in the validation
+    :return: list of differences
+    '''
+    res = []
+    if ignored_list is None:
+        ignored_list = []
+    for field in json_obj.keys():
+        new_address = address + "{}{}".format(LEVEL_SEPARATOR, field)
+        diff = assert_in(new_address, field, other_json_obj.keys(),
                          "{0} is not in {1}".format(field, other_json_obj.keys()))
         if diff:
             res.extend(diff)
@@ -143,7 +177,7 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, join_only=False
                 if field in mappings.keys():
                     mapping_field = mappings[field]
                     res.extend(__validate_two_list_jsons(new_address, json_obj[field], other_json_obj[field],
-                                                         mapping_field['id'], mapping_field['name'], join_only))
+                                                         mapping_field['id'], mapping_field['name'], join_only=False))
                 else:
                     res.extend(__validate_two_flat_lists(new_address, json_obj[field], other_json_obj[field]))
             elif type(json_obj[field]) is dict:
