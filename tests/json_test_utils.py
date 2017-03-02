@@ -19,19 +19,31 @@ class DiffObject:
         return self.__str__()
 
 
-def __build_dict_from_list_json(list_json, identity_fields, object_name=None):
+mappings = {
+    "consequence": {'name': 'transcript', 'id': ['transcript_id']},
+    "occurrence": {'name': 'case', 'id': ['submitter_id']},
+    "diagnoses": {'name': '', 'id': ['diagnosis_id']},
+    "data_categories": {'name': '', 'id': ['data_category', 'file_count']},
+    "observation": {'name': '', 'id': ['src_vcf_id']},
+    "gene": {'name': '', 'id': ['gene_id']},
+    "ssm": {'name': '', 'id': ['ssm_id']},
+    "transcripts": {'name': '', 'id': ['id']}
+}
+
+
+def __build_dict_from_list_json(list_json, identity_fields, object_name=""):
     res_dict = {}
     for js in list_json:
         key = __identity_from_identity_fields(js, identity_fields, object_name)
         js_content = js
-        if object_name:
+        if object_name != "":
             js_content = js[object_name]
         res_dict[key] = js_content
     return res_dict
 
 
-def __identity_from_identity_fields(json, identity_fields, object_name=None):
-    if object_name is not None:
+def __identity_from_identity_fields(json, identity_fields, object_name=""):
+    if object_name is not "":
         json = json[object_name]
     identity = ''
     for key in identity_fields:
@@ -70,6 +82,13 @@ def __validate_list_keys(address, dict_jsons, other_dict_jsons, identity_fields,
     return res
 
 
+def __gathering_statistic_info(diffs):
+    for diff in diffs:
+        path_items = diff.address.split(LEVEL_SEPARATOR)
+        for path_item in path_items:
+            parts = path_item.split(KEY_VALUE_SEPARATOR)
+
+
 def assert_equal(address, value, other, message):
     if value != other:
         return [DiffObject(address, [value, other], message)]
@@ -82,24 +101,7 @@ def assert_in(address, value, other, message):
     return []
 
 
-def validate_two_flat_jsons(address, json_obj, other_json_obj):
-    res = []
-    for field in json_obj.keys():
-        new_address = address + "{}{}".format(LEVEL_SEPARATOR, field)
-        diff = assert_in(new_address, field, other_json_obj.keys(),
-                         "{0} does not exists in {1}".format(field, other_json_obj.keys()))
-        if diff:
-            res.extend(diff)
-            continue
-        else:
-            res.extend(assert_equal(new_address, json_obj[field], other_json_obj[field],
-                                    "field {0}: {1} is not equal {2}"
-                                    .format(field, json_obj[field], other_json_obj[field])))
-    return res
-
-
-def validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fields,
-                            object_name=None, diff_func=None, join_only=False):
+def validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fields, object_name, join_only=False):
     '''
     Call this function when you want to validate two list of nested object
     :param address: json address of the parent json node of the list
@@ -120,12 +122,12 @@ def validate_two_list_jsons(address, list_jsons, other_list_jsons, identity_fiel
     if join_only:
         return res
 
-    res.extend(validate_content(address, dict_jsons, other_dict_jsons, identity_fields, diff_func))
+    res.extend(validate_two_nested_jsons(address, dict_jsons, other_dict_jsons))
 
     return res
 
 
-def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=None):
+def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=None, join_only=False):
     res = []
     if ignored_list is None:
         ignored_list = []
@@ -138,7 +140,12 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=No
             continue
         elif field not in ignored_list:
             if type(json_obj[field]) is list:
-                res.extend(__validate_two_flat_lists(new_address, json_obj[field], other_json_obj[field]))
+                if field in mappings.keys():
+                    mapping_field = mappings[field]
+                    res.extend(validate_two_list_jsons(new_address, json_obj[field], other_json_obj[field],
+                                                       mapping_field['id'], mapping_field['name'], join_only))
+                else:
+                    res.extend(__validate_two_flat_lists(new_address, json_obj[field], other_json_obj[field]))
             elif type(json_obj[field]) is dict:
                 res.extend(validate_two_nested_jsons(new_address, json_obj[field], other_json_obj[field]))
             else:
@@ -147,11 +154,3 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=No
                                         .format(field, json_obj[field], other_json_obj[field])))
     return res
 
-
-def validate_content(address, dict_jsons, other_dict_jsons, identity_fields, diff_func):
-    res = []
-    for key in dict_jsons.keys():
-        new_address = address + "{}{}".format(KEY_VALUE_SEPARATOR, key)
-        if key in other_dict_jsons:
-            res.extend(diff_func(new_address, dict_jsons[key], other_dict_jsons[key]))
-    return res
