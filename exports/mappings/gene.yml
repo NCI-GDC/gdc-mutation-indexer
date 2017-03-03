@@ -158,16 +158,12 @@ properties:
         type: keyword
       cdna_coding_end:
         type: long
-        default: cds_start
       cdna_coding_start:
         type: long
-        default: cds_start
       coding_region_end:
         type: long
-        default: cds_start
       coding_region_start:
         type: long
-        default: cds_start
       domains:
         type: nested
         properties:
@@ -175,7 +171,6 @@ properties:
             type: keyword
           end:
             type: long
-            default: cds_start
           gff_source:
             type: keyword
             default: empty
@@ -187,76 +182,55 @@ properties:
             default: empty
           start:
             type: long
-            default: cds_start
       end:
         type: long
-        default: cds_start
       end_exon:
         type: long
-        default: cds_start
       exons:
         type: nested
         properties:
           cdna_coding_end:
             type: long
-            default: cds_start
           cdna_coding_start:
             type: long
-            default: cds_start
           cdna_end:
             type: long
-            default: cds_start
           cdna_start:
             type: long
-            default: cds_start
           end:
             type: long
-            default: cds_start
           end_phase:
             type: long
-            default: cds_start
           genomic_coding_end:
             type: long
-            default: cds_start
           genomic_coding_start:
             type: long
-            default: cds_start
           start:
             type: long
-            default: cds_start
           start_phase:
             type: long
-            default: cds_start
       gene_id:
         type: keyword
       is_canonical:
         type: boolean
       length:
         type: long
-        default: cds_start
       length_amino_acid:
         type: long
-        default: cds_start
       length_cds:
         type: long
-        default: cds_start
       name:
         type: keyword
       number_of_exons:
         type: long
-        default: cds_start
       seq_exon_end:
         type: long
-        default: cds_start
       seq_exon_start:
         type: long
-        default: cds_start
       start:
         type: long
-        default: cds_start
       start_exon:
         type: long
-        default: cds_start
       translation_id:
         type: keyword
       id:

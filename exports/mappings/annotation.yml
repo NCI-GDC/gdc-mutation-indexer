@@ -7,6 +7,7 @@ properties:
     type: keyword
   cds_end:
     type: long
+    default: empty
   cds_length:
     type: long
   cds_position:

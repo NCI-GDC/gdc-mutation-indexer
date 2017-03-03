@@ -88,17 +88,8 @@ maf_schema:
       name:  DOMAINS
   protein_position:
       name:  Protein_position
-  cds_start:
-      name:   Entrez_Gene_Id
-      type: int
   cds_position:
       name:  CDS_position
-  cds_length:
-      name:  Entrez_Gene_Id
-      type: int
-  cds_end:
-      name:  Entrez_Gene_Id
-      type: int
   hgvsp_short:
       name:  HGVSp_Short
   src_vcf_id:
