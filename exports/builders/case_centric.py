@@ -46,7 +46,11 @@ class CaseCentricBuilder(BaseBuilder):
 
     def build_gene_ssm(self, maf_df):
         self.log('Building Gene from MAF')
-        gene_df = get_gene_df(maf_df, add_fields=['_case_submitter_id'])
+        gene_df = get_gene_df(maf_df,
+                              add_fields=['_case_submitter_id'],
+                              drop_fields= ['canonical_transcript_length',
+                                        'canonical_transcript_length_cds',
+                                        'canonical_transcript_length_genomic'])
         self.log_count(gene_df)
 
         ssm_df = self.build_ssm(maf_df)

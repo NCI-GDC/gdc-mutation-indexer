@@ -77,6 +77,8 @@ class BaseConfig(object):
     # Case load settings
     case_exclude_fields = ','.join(['samples',
                                     'annotations',
+                                    'days_to_index',
+                                    'tissue_source_site',
                                     'exposures',
                                     'family_histories',
                                     'files'])

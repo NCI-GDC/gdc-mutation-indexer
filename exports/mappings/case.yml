@@ -26,10 +26,6 @@ properties:
   state:
     type: keyword
     default: empty
-  days_to_index:
-    type: long 
-  tissue_source_site:
-    type: keyword
   case_id:
     type: text
     fields:
