@@ -108,9 +108,9 @@ class TestMAFBuilder(SparkTestCase):
 
 
     def test_variant_process(self):
-        '''
+        """
         Test that variant process is created properly
-        '''
+        """
         df = MAFBuilder(TestConfig(), self.sqlContext).build()
 
         self.assertIn('variant_process', df.columns)
@@ -118,9 +118,9 @@ class TestMAFBuilder(SparkTestCase):
 
 
     def test_mutation_subtype(self):
-        '''
+        """
         Test that mutation_subtype is created properly
-        '''
+        """
         df = MAFBuilder(TestConfig(), self.sqlContext).build()
 
         self.assertIn('mutation_subtype', df.columns)
@@ -130,9 +130,9 @@ class TestMAFBuilder(SparkTestCase):
                          df.select('mutation_subtype').distinct().count())
 
     def test_case_barcode(self):
-        '''
+        """
         Test that ssm_id column is created
-        '''
+        """
         builder = MAFBuilder(TestConfig(), self.sqlContext)
 
         df = builder.combine(TestConfig().maf_urls)
@@ -143,6 +143,19 @@ class TestMAFBuilder(SparkTestCase):
         self.assertEqual(df.where(df.tumor_sample_barcode=='TCGA-A4-A6HP-01A-11D-A31X-10')\
                            .select('_case_submitter_id').limit(1).collect()[0]._case_submitter_id,
                            'TCGA-A4-A6HP')
+
+    def test_cds_position(self):
+        df =  MAFBuilder(TestConfig(), self.sqlContext).build()
+        self.assertIn('cds_start', df.columns)
+        self.assertIn('cds_length', df.columns)
+        pos = [ p['cds_position'] for p in df.select('cds_position').collect() ]
+        starts = [ int(v.split('/')[0].split('-')[0]) for v in pos ]
+        lengths = [ int(v.split('/')[1]) for v in pos ]
+
+        self.assertEqual([p['cds_start'] for p in
+                                df.select('cds_start').collect()], starts)
+        self.assertEqual([p['cds_length'] for p in
+                                df.select('cds_length').collect()], lengths)
 
     def test_maf_field_types(self):
         """

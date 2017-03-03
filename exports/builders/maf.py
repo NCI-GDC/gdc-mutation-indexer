@@ -43,24 +43,26 @@ class MAFBuilder(object):
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
+        # ssm_id from hashing unique columns in the maf
         df = self.add_ssm_id(df)
+        # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
+        # Add mutation_type
         df = self.add_mutation_type(df)
+        # Add mutation_subtype
         df = self.add_mutation_subtype(df)
+        # Get the case submitter id from TCGA barcodes
         df = self.extract_barcode(df)
-
+        # Get cds columns from cds_position
+        df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
-
         df = df.drop('_gene_id')
-
         df = self.add_null(df)
-
         df = self.add_canonical_lengths(df)
-
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
 
@@ -213,6 +215,19 @@ class MAFBuilder(object):
                                              col('reference_allele'),
                                              col('tumor_allele')))
         return maf_df
+
+    def extract_cds_position(self, df):
+        """
+        Extracts cds_start and cds_length from the cds_position column
+        cds_position: 1273/2112 -> cds_start: 1273, cds_length: 2112
+        cds_position: 1273-1274/2112 -> cds_start: 1273, cds_length: 2112
+        """
+        df = df.withColumn('cds_start', udf(lambda x: int(x.split('/')[0]
+                                                           .split('-')[0]),
+                                        IntegerType())(col('cds_position')))
+        df = df.withColumn('cds_length', udf(lambda x: int(x.split('/')[1]),
+                                        IntegerType())(col('cds_position')))
+        return df
 
     def extract_barcode(self, df):
         """
