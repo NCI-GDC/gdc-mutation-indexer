@@ -268,7 +268,5 @@ def add_aa_columns(df):
     aa_dict = load_mapping('aa.yml')['keywords']
     mp = build_aa_matching_pattern(aa_dict)
     df = df.withColumn('aa_change', aa_change_udf(aa_dict, mp)(col('aa_all')))
-    df = df.withColumn('aa_start', aa_start_end_udf(mp)(col('aa_all')))
-    df = df.withColumn('aa_end', aa_start_end_udf(mp)(col('aa_all'))).drop('aa_all')
 
     return df
