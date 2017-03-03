@@ -11,10 +11,6 @@ properties:
       search:
         type: text
         analyzer: id_search
-  aa_end:
-    type: long
-  aa_start:
-    type: long
   consequence_type:
     type: keyword
   is_canonical:
