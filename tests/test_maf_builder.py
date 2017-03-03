@@ -10,23 +10,27 @@ from utils import SparkTestCase
 from exports.builders import MAFBuilder
 from exports.builders.utils import ssm_label
 from tests_config import TestConfig
+conf = TestConfig()
 
 
 class TestMAFBuilder(SparkTestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        super(TestMAFBuilder, cls).setUpClass()
+        cls.builder = MAFBuilder(conf, cls.sqlContext)
+        cls.maf_df = cls.builder.build()
+
     def test_patch_url(self):
         ''' Test that s3 urls are patched correctly '''
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
-        self.assertTrue(builder.patch_url(url1).startswith('s3a://'))
+        self.assertTrue(self.builder.patch_url(url1).startswith('s3a://'))
 
     def test_combine(self):
         '''
         Test that mafs are combined correctly
         '''
-        builder= MAFBuilder(TestConfig(), self.sqlContext)
-
-        df = builder.combine(TestConfig().maf_urls)
+        df = self.builder.combine(TestConfig().maf_urls)
         self.assertEqual(df.count(), 18)
         c = Counter([json.loads(item)['variant_caller'] for item
                      in df.select('variant_caller').toJSON().collect()])
@@ -37,10 +41,8 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that maf has columns correctly renamed
         '''
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
-
-        df = builder.combine(TestConfig().maf_urls)
-        df = builder.standardize_schema(df)
+        df = self.builder.combine(TestConfig().maf_urls)
+        df = self.builder.standardize_schema(df)
 
         path = os.path.join(os.path.dirname(__file__), '../exports/schemas/maf.yml')
         with open(path) as f:
@@ -53,18 +55,16 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
-
-        df = builder.combine(TestConfig().maf_urls)
-        df = builder.standardize_schema(df)
-        df = builder.add_ssm_id(df)
+        df = self.builder.combine(TestConfig().maf_urls)
+        df = self.builder.standardize_schema(df)
+        df = self.builder.add_ssm_id(df)
         self.assertIn('ssm_id', df.columns)
 
     def test_genomic_dna_change(self):
         '''
         Test that the genomic_dna_change is created correctly
         '''
-        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+        df = self.maf_df
 
         self.assertIn('genomic_dna_change', df.columns)
 
@@ -83,7 +83,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that mutation_type is created properly
         '''
-        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+        df = self.maf_df
 
         self.assertIn('mutation_type', df.columns)
 
@@ -97,7 +97,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that variant caller is created properly
         '''
-        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+        df = self.maf_df
 
         self.assertIn('variant_caller', df.columns)
 
@@ -111,7 +111,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that variant process is created properly
         '''
-        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+        df = self.maf_df
 
         self.assertIn('variant_process', df.columns)
         self.assertEqual(df.first()['variant_process'], 'masked')
@@ -121,7 +121,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that mutation_subtype is created properly
         '''
-        df = MAFBuilder(TestConfig(), self.sqlContext).build()
+        df = self.maf_df
 
         self.assertIn('mutation_subtype', df.columns)
 
@@ -133,11 +133,7 @@ class TestMAFBuilder(SparkTestCase):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
-
-        df = builder.combine(TestConfig().maf_urls)
-        df = builder.standardize_schema(df)
-        df = builder.extract_barcode(df)
+        df = self.maf_df
 
         self.assertIn('_case_submitter_id', df.columns)
         self.assertEqual(df.where(df.tumor_sample_barcode=='TCGA-A4-A6HP-01A-11D-A31X-10')\
@@ -148,29 +144,27 @@ class TestMAFBuilder(SparkTestCase):
         """
         Test that maf_df field types correspond to maf.yml
         """
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
-        df = builder.build()
+        df = self.maf_df
 
         types = {'int': 'integer', 'bool': 'boolean', 'float': 'float'}
         for col in df.schema:
             col_info = json.loads(col.json())
-            if col_info['name'] in builder.schema:
-                if 'type' in builder.schema[col_info['name']]:
-                    assert col_info['type'] == types[builder.schema[col_info['name']]['type']]
+            if col_info['name'] in self.builder.schema:
+                if 'type' in self.builder.schema[col_info['name']]:
+                    assert col_info['type'] == types[self.builder.schema[col_info['name']]['type']]
 
     def test_maf_field_pattern(self):
         """
         Test that maf_df field pattern correspond to maf.yml
         """
-        builder = MAFBuilder(TestConfig(), self.sqlContext)
-        df = builder.build()
+        df = self.maf_df
 
         for col in df.schema:
             col_info = json.loads(col.json())
             colname = col_info['name']
-            if colname in builder.schema:
-                if 'pattern' in builder.schema[colname]:
-                    pattern = builder.schema[colname]['pattern']
+            if colname in self.builder.schema:
+                if 'pattern' in self.builder.schema[colname]:
+                    pattern = self.builder.schema[colname]['pattern']
                     values = df.select(colname)
                     for row in values.collect():
                         val = row[colname]
