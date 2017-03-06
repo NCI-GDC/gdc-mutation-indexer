@@ -94,8 +94,9 @@ class GeneCentricBuilder(BaseBuilder):
                     case_gene_id.join(ssm_df, join_condition, 'inner')
                                 .drop(ssm_df.gene_id)
                                 .select('_case_submitter_id',
+                                        'gene_id',
                                         struct('ssm',
-                                               *case_gene_id.columns)
+                                               *case_gene_id.drop('gene_id').columns)
                                         .alias('case'))
                     )
         self.log_count(case_ssm)
@@ -105,23 +106,23 @@ class GeneCentricBuilder(BaseBuilder):
     def build(self, maf_df=None):
         """
         """
-        self.log('\nBuilding GeneCentric')
+        self.log('Building GeneCentric')
         if maf_df is None:
-            self.log('\nBuilding MAF')
+            self.log('Building MAF')
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
         self.log_count(maf_df)
 
-        self.log('\nSelecting Gene from MAF')
+        self.log('Selecting Gene from MAF')
         gene_df = get_gene_df(maf_df, unique_fields=['gene_id'])
 
         case_ssm = self.build_case_ssm(maf_df)
 
         case_ssm_grouped = (
-            case_ssm.groupBy(case_ssm.case.gene_id.alias('gene_id'))
+            case_ssm.groupBy(case_ssm.gene_id.alias('gene_id'))
             .agg(collect_list('case').alias('case'))
         )
 
-        self.log('\nJoining Gene with Case [inner, "gene_id"]')
+        self.log('Joining Gene with Case [inner, "gene_id"]')
         gene_centric = (
             gene_df.join(case_ssm_grouped,
                          gene_df.gene_id == case_ssm_grouped.gene_id,
