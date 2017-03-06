@@ -41,7 +41,7 @@ class CaseCentricBuilder(BaseBuilder):
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
         # SSM
-        ssm_df = build_ssm_subtree(maf_df, obs_df, cons_df)
+        ssm_df = build_ssm_subtree(maf_df, cons_df, obs_df)
         return ssm_df
 
     def build_gene_ssm(self, maf_df):

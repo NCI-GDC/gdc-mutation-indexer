@@ -1,7 +1,7 @@
 from exports.builders.utils import struct_select
 
 
-def build_ssm_subtree(maf_df, obs_df, cons_df):
+def build_ssm_subtree(maf_df, cons_df, obs_df=None):
     '''
     ssm[]
        |___ consequence[]
@@ -13,7 +13,9 @@ def build_ssm_subtree(maf_df, obs_df, cons_df):
 
     df = ssm_df.join(cons_df, on='ssm_id', how='left')
 
-    df = df.join(obs_df, on=['ssm_id', '_case_submitter_id'], how='left')
+    if obs_df:
+        df = df.join(obs_df, on=['ssm_id', '_case_submitter_id'], how='left')
+
     return df
 
 

@@ -43,7 +43,7 @@ class GeneCentricBuilder(BaseBuilder):
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
 
         # SSM
-        ssm_df = build_ssm_subtree(maf_df, obs_df, cons_df)
+        ssm_df = build_ssm_subtree(maf_df, cons_df, obs_df)
         return ssm_df
 
     def build_case_with_gene_id(self, maf_df):
