@@ -222,11 +222,20 @@ class MAFBuilder(object):
         cds_position: 1273/2112 -> cds_start: 1273, cds_length: 2112
         cds_position: 1273-1274/2112 -> cds_start: 1273, cds_length: 2112
         """
-        df = df.withColumn('cds_start', udf(lambda x: int(x.split('/')[0]
-                                                           .split('-')[0]),
-                                        IntegerType())(col('cds_position')))
-        df = df.withColumn('cds_length', udf(lambda x: int(x.split('/')[1]),
-                                        IntegerType())(col('cds_position')))
+        def start(s):
+            if not (s and s.split('/')[0].split('-')[0].strip()):
+                return -1
+            return int(s.split('/')[0].split('-')[0])
+
+        def length(s):
+            if not (s and s.split('/')[1].strip()):
+                return -1
+            return int(s.split('/')[1])
+
+        df = df.withColumn('cds_start', udf(start,
+                                            IntegerType())(col('cds_position')))
+        df = df.withColumn('cds_length', udf(length,
+                                            IntegerType())(col('cds_position')))
         return df
 
     def extract_barcode(self, df):
