@@ -20,6 +20,7 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 
+@pytest.fixture(scope='session')
 def setup_test_index():
     '''
     Creates graph index with case docs and returns an elasticsearch client

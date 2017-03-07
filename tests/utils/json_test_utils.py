@@ -1,8 +1,13 @@
+import os
+
+from tests_config import TestConfig
+conf = TestConfig()
+
 LEVEL_SEPARATOR = "::"
 KEY_VALUE_SEPARATOR = "="
 
 
-class DiffObject:
+class DiffObject(object):
     def __init__(self, address, diff_values, message):
         self.address = address
         self.diff_values = diff_values
@@ -18,6 +23,36 @@ class DiffObject:
     def __repr__(self):
         return self.__str__()
 
+
+class DiffsReporter(object):
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def report_diffs(diffs, filename):
+        stat_info = diffs[-1]
+        diffs = diffs[:-1]
+
+        filepath = os.path.join(conf.log_dir, filename + '.log')
+        try:
+            os.remove(filepath)
+        except:
+            pass
+
+        with open(filepath, 'w') as f:
+            f.write('{}/{} <- paths/total diffs\n{}'.format(stat_info['count'],
+                                                            len(diffs),
+                                                            stat_info['detail']))
+            for diff in diffs:
+                f.write('\n-> {}\n\t{}'.format(diff.address, diff.message))
+
+    @staticmethod
+    def report_summary():
+        for filename in os.listdir(conf.log_dir):
+            with open(os.path.join(conf.log_dir, filename), 'r') as f:
+                n_paths, n_diffs = map(int, f.readlines()[0].split()[0].split('/'))
+            print '{}: wrong paths {}, n_diffs {}'.format(filename, n_paths, n_diffs)
 
 ###
 #  This mapping is used to specify the identifier for an nested json item in a list.
