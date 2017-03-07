@@ -114,10 +114,13 @@ class BaseConfig(object):
         def get_indices_max_version():
             versions = []
             indices = es.indices.get_alias().keys()
+
             for index_name in self.index_names.values():
                 if index_name is not None:
-                    versions = versions + [ int(v.split('_')[1].replace('r',''))
-                                for v in indices if v.endswith(index_name) and v[:4]=='gdc_' ]
+                    versions = (versions + [int(v.split('_')[1].replace('r',''))
+                                for v in indices if v.endswith(index_name)
+                                            and v[:4] == 'gdc_'])
+
             if versions == []:
                 version = 0
             else:

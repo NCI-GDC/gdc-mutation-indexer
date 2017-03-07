@@ -5,10 +5,13 @@ from tests_config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import GeneCentricBuilder
 from utils.json_metrics import GeneCentricStats
-from utils.json_test_utils import (validate_two_nested_jsons_joining,
+from utils.json_test_utils import (
+                                   validate_two_nested_jsons_joining,
                                    validate_two_nested_jsons,
                                    __gathering_statistic_info,
-                                   KEY_VALUE_SEPARATOR)
+                                   KEY_VALUE_SEPARATOR,
+                                   DiffsReporter,
+                                   )
 
 builder = GeneCentricBuilder
 conf = TestConfig()
@@ -60,6 +63,10 @@ def test_gene_centric_in_depth(gene_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
     diffs = validate_two_nested_jsons("gene{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
                                       es_doc, true_doc)
+
     if diffs:
         diffs.append(__gathering_statistic_info(diffs))
+
+    DiffsReporter.report_diffs(diffs, builder.index_name)
+
     assert diffs == []

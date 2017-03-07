@@ -5,10 +5,13 @@ from tests_config import TestConfig
 from base_index_test import BaseIndexTest
 from exports.builders import SSMOccurrenceCentricBuilder
 from utils.json_metrics import SSMOcurrenceCentricStats
-from utils.json_test_utils import (validate_two_nested_jsons,
+from utils.json_test_utils import (
+                                   validate_two_nested_jsons,
                                    validate_two_nested_jsons_joining,
                                    __gathering_statistic_info,
-                                   KEY_VALUE_SEPARATOR)
+                                   KEY_VALUE_SEPARATOR,
+                                   DiffsReporter,
+                                   )
 
 builder = SSMOccurrenceCentricBuilder
 conf = TestConfig()
@@ -61,6 +64,13 @@ def test_ssm_occurrence_centric_in_depth(ssm_occurrence_centric_index, filename)
     es_doc, true_doc = T.get_docs_to_compare(ssm_occurrence_centric_index, filename)
     diffs = validate_two_nested_jsons("ssm_occurrence{0}{1}".format(KEY_VALUE_SEPARATOR, filename),
                                       es_doc, true_doc)
+
+    print '\n\n {} {}'.format(len(diffs), builder.index_name)
+
     if diffs:
         diffs.append(__gathering_statistic_info(diffs))
+
+    DiffsReporter.report_diffs(diffs, builder.index_name)
+
     assert diffs == []
+
