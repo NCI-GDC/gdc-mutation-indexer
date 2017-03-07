@@ -65,6 +65,7 @@ class MAFBuilder(object):
         df = self.add_canonical_lengths(df)
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
+        df = self.format_chr(df)
 
         # Write data
         if self.config.maf_keep:
@@ -169,6 +170,15 @@ class MAFBuilder(object):
         mut_type_udf = udf(mutation_type, StringType())
         df = df.withColumn('mutation_type', mut_type_udf('mutation_type'))
         return df
+
+    def format_chr(self, df):
+        """
+        Removes 'chr' from chromosome columns
+        chr1 -> 1
+        """
+        return df.withColumn('gene_chromosome',
+                    udf(lambda x: x.replace('chr',''),
+                        StringType())(col('gene_chromosome')))
 
     def add_mutation_subtype(self, df):
 
