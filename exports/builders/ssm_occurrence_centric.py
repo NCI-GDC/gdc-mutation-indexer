@@ -41,7 +41,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
             self.config, self.sqlContext).build(maf_df, join_gene=True)
 
         # SSM
-        ssm_df = build_ssm_subtree(maf_df, cons_df)
+        ssm_df = build_ssm_subtree(maf_df, cons_df).drop('gene_id')
         self.log_count(ssm_df)
 
         ssm_cons = ssm_df.select('ssm_id',
