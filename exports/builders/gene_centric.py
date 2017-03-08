@@ -21,15 +21,15 @@ from exports.mappers import GeneMapper
 
 class GeneCentricBuilder(BaseBuilder):
     """
-    Builds gene-centric dataframe given case and maf dataframes
+    Builds gene-centric dataframe given case and maf dataframes::
 
-    gene{}
-         |___ case[]
-                 |___ ssm[]
-                       |___ consequence[]
-                       |             |_____ transcript{}
-                       |                          |_____ annotation{}
-                       |___ observation[]
+        gene{}
+             |___ case[]
+                     |___ ssm[]
+                           |___ consequence[]
+                           |             |_____ transcript{}
+                           |                          |_____ annotation{}
+                           |___ observation[]
     """
 
     index_name = 'gene_centric'

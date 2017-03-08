@@ -6,6 +6,10 @@ logging.basicConfig()
 
 
 class BaseBuilder(object):
+    """
+    BaseBuilder contains the structure necessary for a Builder object.
+    Currently, that is only the :func:`build` and :func:`load` methods
+    """
 
     def __init__(self, config, sqlContext):
         self.config = config
@@ -14,6 +18,9 @@ class BaseBuilder(object):
         self.debug = config.debug
 
     def log(self, string):
+        """
+        Handles Builder logging.
+        """
         self.logger.info(string)
 
     def log_count(self, dataframe):
@@ -41,3 +48,18 @@ class BaseBuilder(object):
             df_to_truncate = df_to_truncate.filter('{} <= {}'.format(count_col_name, threshold)).drop(count_col_name)
 
         return df_to_truncate
+
+    def build(self):
+        """
+        Contains the ETL logic to construct a spark dataframe of
+        the same structure as the required output index.
+        """
+        raise NotImplementedError
+
+
+    def load(self):
+        """
+        Responsible for loading the dataframe resulting from :func:`build`
+        into a destination, usually Elasticsearch.
+        """
+        raise NotImplementedError
