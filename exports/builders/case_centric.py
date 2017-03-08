@@ -18,17 +18,17 @@ from exports.mappers import CaseMapper
 
 
 class CaseCentricBuilder(BaseBuilder):
-    '''
-    Builds case-centric dataframe given case and maf dataframes
+    """
+    Builds case-centric dataframe given case and maf dataframes::
 
-    case{}
-         |___ gene[]
-                 |___ ssm[]
-                       |___ consequence[]
-                       |             |_____ transcript{}
-                       |                          |_____ annotation{}
-                       |___ observation[]
-    '''
+        case{}
+             |___ gene[]
+                     |___ ssm[]
+                           |___ consequence[]
+                           |             |_____ transcript{}
+                           |                          |_____ annotation{}
+                           |___ observation[]
+    """
 
     index_name = 'case_centric'
 

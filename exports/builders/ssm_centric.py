@@ -21,23 +21,24 @@ logging.basicConfig()
 
 
 class SSMCentricBuilder(BaseBuilder):
-    '''
-    Builds ssm-centric dataframe given case and maf dataframes
+    """
+    Builds ssm-centric dataframe given case and maf dataframes::
 
-    ssm{}
-      |____ consequence[]
-      |           |_____ transcript{}
-      |                        |_____ gene{}
-      |                        |_____ annotation{}
-      |____ occurrence[]
-                  |_____ case{}
-                           |____ observation[]
-    '''
+        ssm{}
+          |____ consequence[]
+          |           |_____ transcript{}
+          |                        |_____ gene{}
+          |                        |_____ annotation{}
+          |____ occurrence[]
+                      |_____ case{}
+                               |____ observation[]
+    """
 
     index_name = 'ssm_centric'
 
     def build(self, maf_df=None):
-        # SSM
+        """
+        """
         if maf_df is None:
             self.log('Building MAF...')
             maf_df = MAFBuilder(self.config, self.sqlContext).build()

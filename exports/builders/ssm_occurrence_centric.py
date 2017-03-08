@@ -20,18 +20,18 @@ from exports.mappers import SSMOccurrenceMapper
 
 
 class SSMOccurrenceCentricBuilder(BaseBuilder):
-    '''
-    Builds ssm-occurrence-centric dataframe given case and maf dataframes
+    """
+    Builds ssm-occurrence-centric dataframe given case and maf dataframes::
 
-    ssm_occurrence{}
-          |____ ssm{}
-          |        |____ consequence[]
-          |                     |_____ transcript{}
-          |                                   |_____ gene{}
-          |                                   |_____ annotation{}
-          |____ case{}
-                   |____ observation[]
-    '''
+        ssm_occurrence{}
+              |____ ssm{}
+              |        |____ consequence[]
+              |                     |_____ transcript{}
+              |                                   |_____ gene{}
+              |                                   |_____ annotation{}
+              |____ case{}
+                       |____ observation[]
+    """
 
     index_name = 'ssm_occurrence_centric'
 
