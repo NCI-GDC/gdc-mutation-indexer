@@ -1,162 +1,141 @@
-try:
-    # Dont want to require matplotlib if we don't have to
-    import matplotlib.pyplot as plt
-except ImportError:
-    pass
-
-
-class MAFStats():
+class MAFStats(object):
     """
     Test count attributes for a MAF file
     """
 
     def __init__(self, maf_files):   
 
-        # Class attributes
-        self.Nprojects  = 0
-        self.Ncases     = 0
-        self.Ngenes     = 0
-        self.Nmutations = 0
-        self.NUniqMut   = 0
-        self.Nconseq    = 0
+        count_attributes = ['Nprojects', 'Ncases', 'Ngenes', 'Nmutations',
+                            'NUniqMut', 'Nconseq']
+        list_attributes = ['projects', 'cases', 'genes']
+        dict_attributes = ['cases_per_project', 'genes_per_case',
+                           'mutations_per_case', 'mutations_per_gene',
+                           'uniqMutations', 'consequences']
 
-        self.projects = []
-        self.cases = []
-        self.genes = []
-        
-        self.cases_per_project  = {}
-        self.genes_per_case     = {}
-        self.mutations_per_case = {}        
-        self.mutations_per_gene = {}
-        self.uniqMutations = {}  
-        
-        self.consequences = {}
+        for attr in count_attributes:
+            setattr(self, attr, 0)
+
+        for attr in list_attributes:
+            setattr(self, attr, [])
+
+        for attr in dict_attributes:
+            setattr(self, attr, {})
 
         # Read project MAFs
-        for fileName in maf_files:
-          fileName = fileName.replace('file://','')
+        for maf in maf_files:
+            self.process_maf_file(maf)
 
-          project = '-'.join(fileName.split('/')[-1].split('.')[0:2])
-          
-          if not project in self.projects:
-              self.projects.append(project)
-              self.cases_per_project[project] = 0
+        self.Nprojects = len(self.projects)
+        self.Ncases = len(self.cases)
+        self.Ngenes = len(self.genes)
+        self.NUniqMut = len(self.uniqMutations)
+        self.Nconseq = len(self.consequences)
 
-          with open(fileName,'r') as f:
-             for line in f:
+    def process_maf_file(self, filename):
+        """
+        Extracts counts from a MAF file and stores them as :self attributes
+        :param filename:
+        :return:
+        """
+        filename = filename.replace('file://', '')
+        project = '-'.join(filename.split('/')[-1].split('.')[0:2])
 
-                 line = line.strip('\n')
+        if project not in self.projects:
+            self.projects.append(project)
+            self.cases_per_project[project] = 0
 
-                 # Not consider comment lines
-                 if line[0] == '#':
+        with open(filename, 'r') as f:
+            for line in f:
+                line = line.strip('\n')
+
+                # Skip comment lines
+                if line[0] == '#':
                     continue
 
-                 columns = line.split('\t')
+                columns = line.split('\t')
 
-                 # Get columns positions from headers
-                 if columns[0] == 'Hugo_Symbol':
-                      self.headers  = columns
-                      geneidx       = self.headers.index('Gene')
-                      chridx        = self.headers.index('Chromosome')
-                      startidx      = self.headers.index('Start_Position')
-                      endidx        = self.headers.index('End_Position')
-                      refidx        = self.headers.index('Reference_Allele')  
-                      tumorAll1idx  = self.headers.index('Tumor_Seq_Allele1')
-                      tumorAll2idx  = self.headers.index('Tumor_Seq_Allele2') 
-                      normalAll1idx = self.headers.index('Match_Norm_Seq_Allele1')      
-                      normalAll2idx = self.headers.index('Match_Norm_Seq_Allele2')
-                      typeidx       = self.headers.index('Variant_Type')
-                      tumoridx      = self.headers.index('Tumor_Sample_Barcode')
-                      normalidx     = self.headers.index('Matched_Norm_Sample_Barcode')
-                      
-                      # Transcript columns
-                      conseqidx     = self.headers.index('Consequence')   
-                      aaidx         = self.headers.index('Amino_acids')      
-                      prposidx      = self.headers.index('Protein_position')
-                      effectidx     = self.headers.index('all_effects')
-                      continue
-                 
-                 # Read relevant columns
-                 chromosome  = columns[chridx] #.replace('chr','')
-                 startpos    = columns[startidx]
-                 refallele   = columns[refidx]
-                 tumorall2   = columns[tumorAll2idx]
-                 gene        = columns[geneidx]
-                 tumorUUID   = columns[tumoridx]
-                 normalUUID  = columns[normalidx]   
-                 mutType     = columns[typeidx]                           
-                 consequence = columns[conseqidx] 
-                 effects     = columns[effectidx] 
+                # Get columns positions from headers
+                if columns[0] == 'Hugo_Symbol':
+                    self.columns = {c: columns.index(c) for c in columns}
+                    continue
 
-                 # Get counts based on cases
-                 case = '-'.join(tumorUUID.split('-')[0:3])
-                 if not case in self.cases:
+                # Read relevant columns
+                chromosome = columns[self.columns['Chromosome']]
+                startpos = columns[self.columns['Start_Position']]
+                refallele = columns[self.columns['Reference_Allele']]
+                tumorall2 = columns[self.columns['Tumor_Seq_Allele2']]
+                gene = columns[self.columns['Gene']]
+                tumorUUID = columns[self.columns['Tumor_Sample_Barcode']]
+                normalUUID = columns[self.columns['Matched_Norm_Sample_Barcode']]
+                mutType = columns[self.columns['Variant_Type']]
+                consequence = columns[self.columns['Consequence']]
+                effects = columns[self.columns['all_effects']]
+
+                # Get counts based on cases
+                case = '-'.join(tumorUUID.split('-')[0:3])
+                if case not in self.cases:
                     self.cases.append(case)
                     self.cases_per_project[project] += 1
+                    self.genes_per_case[case] = 0
+                    self.mutations_per_case[case] = 0
 
-                    self.genes_per_case[case]     = 0
-                    self.mutations_per_case[case] = 0                  
-                 self.mutations_per_case[case] += 1
+                self.mutations_per_case[case] += 1
 
-                 # Get counts based on gene (case/gene)
-                 if gene not in self.genes:
+                # Get counts based on gene (case/gene)
+                if gene not in self.genes:
                     self.genes.append(gene)
-                 gene_case = project + '_' + case + '_' + gene
-                 if not gene_case in self.mutations_per_gene:
-                    self.genes_per_case[case] += 1  
-                    self.mutations_per_gene[gene_case] = 0                    
-                                                  
-                 self.mutations_per_gene[gene_case] += 1   
 
-                 # Define key for mutation
-                 mutation = '_'.join([chromosome, 
-                                      startpos,  
-                                      refallele, 
-                                      tumorall2, 
-                                      mutType])   
-                 if not mutation in self.uniqMutations:
+                gene_case = project + '_' + case + '_' + gene
+                if gene_case not in self.mutations_per_gene:
+                    self.genes_per_case[case] += 1
+                    self.mutations_per_gene[gene_case] = 0
+
+                self.mutations_per_gene[gene_case] += 1
+
+                # Define key for mutation
+                mutation = '_'.join([chromosome,
+                                     startpos,
+                                     refallele,
+                                     tumorall2,
+                                     mutType])
+
+                if mutation not in self.uniqMutations:
                     self.uniqMutations[mutation] = 1
-                 else:
-                    self.uniqMutations[mutation] += 1                   
+                else:
+                    self.uniqMutations[mutation] += 1
 
-                 # Get consequences mutations
-                 mutation_case = case + '_' + mutation
-                 all_effects = effects.split(';')[0:-1]                
-                 for effect in all_effects:
-                    if not mutation_case in self.consequences:
-                      self.consequences[mutation_case] = 1   
+                # Get consequences mutations
+                mutation_case = case + '_' + mutation
+                all_effects = effects.split(';')[0:-1]
+                for effect in all_effects:
+                    if mutation_case not in self.consequences:
+                        self.consequences[mutation_case] = 1
                     else:
-                      self.consequences[mutation_case] += 1                    
+                        self.consequences[mutation_case] += 1
 
-                 # Count each variant
-                 self.Nmutations += 1
+                # Count each variant
+                self.Nmutations += 1
 
-        self.Nprojects  = len(self.projects)
-        self.Ncases     = len(self.cases)
-        self.Ngenes     = len(self.genes)
-        self.NUniqMut   = len(self.uniqMutations)       
-        self.Nconseq    = len(self.consequences)
+    @staticmethod
+    def histogram(data, title, xlabel, ylabel, bins=50, tails=None, filename=None):
+        import matplotlib.pyplot as plt
 
+        values = [v for v in data. values()]
+        values = sorted(values)
+        try:
+            plt.hist(values, bins)
+            plt.title(title)
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
 
-def histogram(data, title, xlabel, ylabel, bins=50, tails=None, filename=None):
+            if tails is not None:
+                percentage = len(values)*tails/100
+                endtail = values[percentage]
+                plt.xlim([0, endtail])
 
-    values = [v for v in data. values()]
-    values = sorted(values)
-    try:
-        plt.hist(values, bins)
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        
-        if tails != None:
-           percentage = len(values)*tails/100
-           endtail    = values[percentage]
-           plt.xlim([0, endtail])
-
-        plt.show()
-
-        if filename != None:
-          plt.savefig(filename)
-    except:
-        pass
+            plt.show()
+            if filename is not None:
+                plt.savefig(filename)
+        except:
+            pass
 
