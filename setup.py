@@ -7,5 +7,5 @@ setup(
     license="Apache",
     packages=find_packages(),
     py_modules=["config"],
-    package_data={'': ['*.yml','exports/schemas/maf.yml']}
+    include_package_data=True
 )

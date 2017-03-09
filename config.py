@@ -7,8 +7,6 @@ from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 class BaseConfig(object):
     # The Spark application name
     app_name = 'GDC_Mutation_Export'
-    #spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
-    spark_master = 'local[1]'
 
     api_host = os.getenv('API_HOST', 'http://api.service.consul')
     signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
@@ -75,9 +73,6 @@ class BaseConfig(object):
     gene_model_file = 's3a://test/genes.hg38.v2.json'
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
-
-
-
 
     # The location of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
