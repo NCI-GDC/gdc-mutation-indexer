@@ -77,6 +77,9 @@ class MAFBuilder(object):
         """
         Transforms maf_df according to maf.yml :type and :pattern
         """
+        def apply_pattern(value):
+            return pattern.format(value)
+
         for column in df.columns:
             if column in self.schema:
                 if 'type' in self.schema[column]:
@@ -86,8 +89,6 @@ class MAFBuilder(object):
 
                 elif 'pattern' in self.schema[column]:
                     pattern = self.schema[column]['pattern']
-                    def apply_pattern(value):
-                        return pattern.format(value)
                     df = df.withColumn(column,
                                        udf(apply_pattern, StringType())(df[column]))
                 else:
@@ -161,7 +162,7 @@ class MAFBuilder(object):
     def add_mutation_type(self, df):
 
         def mutation_type(mut_type):
-            types = { 'Somatic': 'Simple Somatic Mutation' }
+            types = {'Somatic': 'Simple Somatic Mutation'}
             if mut_type in types:
                 return types[mut_type]
             else:
@@ -177,8 +178,8 @@ class MAFBuilder(object):
         chr1 -> 1
         """
         return df.withColumn('gene_chromosome',
-                    udf(lambda x: x.replace('chr',''),
-                        StringType())(col('gene_chromosome')))
+                             udf(lambda x: x.replace('chr', ''),
+                                 StringType())(col('gene_chromosome')))
 
     def add_mutation_subtype(self, df):
 
@@ -233,19 +234,21 @@ class MAFBuilder(object):
         cds_position: 1273-1274/2112 -> cds_start: 1273, cds_length: 2112
         """
         def start(s):
-            if not (s and s.split('/')[0].split('-')[0].strip()):
-                return -1
-            return int(s.split('/')[0].split('-')[0])
+            if s is not None:
+                if '?' not in s and (s and s.split('/')[0].split('-')[0].strip()):
+                    return int(s.split('/')[0].split('-')[0])
+            return -1
 
         def length(s):
-            if not (s and s.split('/')[1].strip()):
-                return -1
-            return int(s.split('/')[1])
+            if s is not None:
+                if '?' not in s and (s and s.split('/')[1].strip()):
+                    return int(s.split('/')[1])
+            return -1
 
         df = df.withColumn('cds_start', udf(start,
                                             IntegerType())(col('cds_position')))
         df = df.withColumn('cds_length', udf(length,
-                                            IntegerType())(col('cds_position')))
+                                             IntegerType())(col('cds_position')))
         return df
 
     def extract_barcode(self, df):
@@ -271,7 +274,7 @@ class MAFBuilder(object):
         df = None
         callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
         for url in urls:
-            caller = [ c for c in callers if c in url ][0]
+            caller = [c for c in callers if c in url][0]
             if caller == 'mutect':
                 caller += '2'
             try:
@@ -286,7 +289,7 @@ class MAFBuilder(object):
                 self.logger.error(e)
 
         self.logger.info('Combined {} files for a total of {} rows'
-                            .format(len(urls), df.count()))
+                         .format(len(urls), df.count()))
         self.df = df
         return df
 
@@ -313,18 +316,19 @@ class MAFBuilder(object):
         }
 
         filt = {
-            "filters":json.dumps(filt),
-            "size":"1000",
-            "fields":"file_id"
+            "filters": json.dumps(filt),
+            "size": "1000",
+            "fields": "file_id"
         }
 
         r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
                          params=filt, verify=False)
-        file_ids = [ f['file_id'] for f in r.json()['data']['hits'] ]
+        file_ids = [f['file_id'] for f in r.json()['data']['hits']]
 
         urls = []
         for fid in file_ids:
-            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host, fid))
+            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host,
+                                                   fid))
             url = r.json()['urls'][0]
             urls.append(url)
 
@@ -369,4 +373,4 @@ class MAFBuilder(object):
         writer = df.write.format('com.databricks.spark.csv')
         if self.config.maf_overwrite:
             writer = writer.mode('overwrite')
-        writer = writer.options(header='true').save(self.config.maf_path)
+        writer.options(header='true').save(self.config.maf_path)

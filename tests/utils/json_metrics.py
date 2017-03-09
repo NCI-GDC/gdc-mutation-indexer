@@ -185,7 +185,6 @@ class CaseCentricStats(BaseStats):
         super(CaseCentricStats, self).__init__(json_file)
 
         for h in self.data:
-
             if '_source' in h:
                 h = h['_source']
 

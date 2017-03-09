@@ -32,7 +32,8 @@ def case_centric_index(sqlContext, maf_df):
 @pytest.yield_fixture(scope='module')
 def case_stats(case_centric_index):
     docs = case_centric_index.search(index=conf.indices['case_centric'],
-                                  body={"query": {"match_all": {}}}, size=1000)
+                                     body={"query": {"match_all": {}}},
+                                     size=1000)
     yield CaseCentricStats(docs['hits']['hits'])
 
 
