@@ -1,4 +1,3 @@
-import requests
 import json
 import logging
 
@@ -87,34 +86,11 @@ class SSMCentricBuilder(BaseBuilder):
         '''
         index = self.config.indices['ssm_centric']
         doc = self.config.index_names['ssm_centric']
-        index_doc = '{}/{}'.format(index, doc)
-
-        data = json.dumps(SSMMapper(doc).settings)
-
-        self.log(requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                self.config.es_port,
-                                                index),
-                              auth=(self.config.es_user, self.config.es_pass),
-                              data=data).json())
+        settings = json.dumps(SSMMapper(doc).settings)
 
         to_load = self.ssm_centric
         if did:
             to_load = to_load.where(to_load.ssm_id == did)
 
-        self.log('Exporting ssm centric index to {}'.format(index))
-        to_load.coalesce(20).write.format('org.elasticsearch.spark.sql')\
-                            .option('es.nodes', '{}:{}'.format(self.config.es_host, self.config.es_port))\
-                            .option('es.net.http.auth.user', self.config.es_user)\
-                            .option('es.net.http.auth.pass', self.config.es_pass)\
-                            .option('es.nodes.wan.only','true')\
-                            .option('es.nodes.resolve.hostname','false')\
-                            .option('es.resource.write', index_doc)\
-                            .option('es.http.timeout', '20m')\
-                            .option('es.http.retries', '-1')\
-                            .option('es.batch.write.retry.count','-1')\
-                            .option('es.batch.write.retry.wait', '10m')\
-                            .option('es.batch.size.bytes','5mb')\
-                            .option('es.batch.size.entries', '100')\
-                            .option('es.mapping.id','ssm_id')\
-                            .option('es.spark.dataframe.write.null', 'true')\
-                            .save(index_doc)
+        self.load_to_elasticsearch(index, doc, settings, to_load, 'ssm_id')
+

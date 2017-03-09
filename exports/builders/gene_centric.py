@@ -1,5 +1,4 @@
 import json
-import requests
 import logging
 logging.basicConfig()
 
@@ -142,32 +141,6 @@ class GeneCentricBuilder(BaseBuilder):
         """
         index = self.config.indices['gene_centric']
         doc = self.config.index_names['gene_centric']
-        index_doc = '{}/{}'.format(index, doc)
+        settings = json.dumps(GeneMapper(doc).settings)
 
-        data = json.dumps(GeneMapper(doc).settings)
-
-        self.log(requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                self.config.es_port,
-                                                index),
-                              auth=(self.config.es_user, self.config.es_pass),
-                              data=data).json())
-
-        self.log('Exporting gene centric index to {}'.format(index))
-        self.gene_centric.coalesce(20).write.format('org.elasticsearch.spark.sql')\
-                         .option('es.nodes', '{}:{}'
-                                 .format(self.config.es_host,
-                                         self.config.es_port))\
-                         .option('es.net.http.auth.user', self.config.es_user)\
-                         .option('es.net.http.auth.pass', self.config.es_pass)\
-                         .option('es.nodes.wan.only','true')\
-                         .option('es.nodes.resolve.hostname','false')\
-                         .option('es.resource.write', index_doc)\
-                         .option('es.http.timeout', '20m')\
-                         .option('es.http.retries', '-1')\
-                         .option('es.batch.write.retry.count', '-1')\
-                         .option('es.batch.write.retry.wait', '10m')\
-                         .option('es.batch.size.bytes','5mb')\
-                         .option('es.batch.size.entries', '100')\
-                         .option('es.mapping.id', 'gene_id')\
-                         .option('es.spark.dataframe.write.null', 'true')\
-                         .save(index_doc)
+        self.load_to_elasticsearch(index, doc, settings, self.gene_centric, 'gene_id')

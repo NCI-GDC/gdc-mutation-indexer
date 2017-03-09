@@ -53,6 +53,7 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', 'common_settings.yml'))
 
         settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+        mapping_settings = {}
         # Mapping settings should be moved inside each mapping
         if 'mappings' in settings:
             mapping_settings = settings['mappings']
