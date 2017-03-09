@@ -51,7 +51,6 @@ def make_spark_context(config):
     Makes a spark and sqlContext
     '''
     conf = SparkConf().setAppName(config.app_name)
-    conf = conf.setMaster(config.spark_master)
     sc = SparkContext(conf=conf, pyFiles=[])
     sqlContext = SQLContext(sc)
     # Configure logging

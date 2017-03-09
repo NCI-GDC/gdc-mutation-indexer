@@ -11,6 +11,8 @@ from pyspark.sql.functions import lit, col, regexp_extract, udf
 from exports.builders.utils import uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder
 
+from pkg_resources import resource_filename
+
 
 class MAFBuilder(object):
     """
@@ -116,8 +118,7 @@ class MAFBuilder(object):
         """
         Renames and select required columns from the MAF documents
         """
-        #path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../schemas/maf.yml'))
-        path = os.path.abspath('exports/schemas/maf.yml')
+        path = resource_filename('exports.schemas', 'maf.yml')
         with open(path) as f:
             maf_schema = yaml.load(f)['maf_schema']
 
