@@ -48,9 +48,9 @@ class CaseCentricBuilder(BaseBuilder):
         self.log('Building Gene from MAF')
         gene_df = get_gene_df(maf_df,
                               add_fields=['_case_submitter_id'],
-                              drop_fields= ['canonical_transcript_length',
-                                        'canonical_transcript_length_cds',
-                                        'canonical_transcript_length_genomic'])
+                              drop_fields=['canonical_transcript_length',
+                                           'canonical_transcript_length_cds',
+                                           'canonical_transcript_length_genomic'])
         self.log_count(gene_df)
 
         ssm_df = self.build_ssm(maf_df)
@@ -108,9 +108,13 @@ class CaseCentricBuilder(BaseBuilder):
             .drop(gene_ssm_grouped._case_submitter_id))
         self.case_centric = case_centric
         # Truncate outliers
-        self.case_centric = self.truncate_df_at_percentile(case_centric, 'gene', self.config.percentile_threshold['genes_per_case'])
-        self.log_count(case_centric)
+        self.case_centric = self.truncate_df_at_percentile(case_centric, 'gene',
+                                                           self.config.percentile_threshold['genes_per_case'])
 
+        import pdb
+        pdb.set_trace()
+
+        self.log_count(case_centric)
         self.log('Build finished')
         return self
 

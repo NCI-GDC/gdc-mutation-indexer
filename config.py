@@ -24,10 +24,10 @@ class BaseConfig(object):
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
-        'case_centric':         'case_centric',
-        'gene_centric':         'gene_centric',
-        'ssm_centric':          'ssm_centric',
-        'ssm_occurrence_centric':'ssm_occurrence_centric'
+        'case_centric': 'case_centric',
+        'gene_centric': 'gene_centric',
+        'ssm_centric': 'ssm_centric',
+        'ssm_occurrence_centric': 'ssm_occurrence_centric'
     }
 
     mappings = {'gene': 'gene.yml',
@@ -86,7 +86,7 @@ class BaseConfig(object):
                                     'exposures',
                                     'family_histories',
                                     'files'])
-    case_arrays = ','.join(['*_ids'])#,
+    case_arrays = ','.join(['*_ids'])
 
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'

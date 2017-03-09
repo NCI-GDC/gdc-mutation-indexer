@@ -1,4 +1,4 @@
-maf_schema: 
+maf_schema:
   variant_caller:
       name: variant_caller 
   biotype:
@@ -39,7 +39,6 @@ maf_schema:
       name:  Mutation_Status
   chromosome:
       name:  Chromosome
-      pattern: chr{}
   is_canonical:
       name:  CANONICAL
   consequence_type:
