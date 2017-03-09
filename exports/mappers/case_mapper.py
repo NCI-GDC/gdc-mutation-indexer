@@ -14,7 +14,7 @@ class CaseMapper(Mapper):
 
     def build_mapping(self):
         mapping = Mapper.build_mapping(self)
-        mapping.update({"_id": { "path": "case_id" }})
+        mapping.update({"_id": {"path": "case_id"}})
         case_map = self.load_properties('case.yml', nested=False)
         mapping.update(case_map)
 

@@ -24,14 +24,15 @@ class BaseConfig(object):
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
-        'case_centric':         'case_centric',
-        'gene_centric':         'gene_centric',
-        'ssm_centric':          'ssm_centric',
-        'ssm_occurrence_centric':'ssm_occurrence_centric'
+        'ssm_centric': 'ssm_centric',
+        'case_centric': 'case_centric',
+        'gene_centric': 'gene_centric',
+        'ssm_occurrence_centric': 'ssm_occurrence_centric'
     }
 
-    mappings = {'gene': 'gene.yml',
+    mappings = {
                 'ssm': 'ssm.yml',
+                'gene': 'gene.yml',
                 'transcript': 'transcript.yml',
                 'annotation': 'annotation.yml',
                 'observation': 'observation.yml',

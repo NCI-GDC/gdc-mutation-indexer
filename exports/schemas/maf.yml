@@ -37,6 +37,8 @@ maf_schema:
       name:  Reference_Allele
   mutation_type:
       name:  Mutation_Status
+  case_id:
+      name: case_id
   chromosome:
       name:  Chromosome
       pattern: chr{}

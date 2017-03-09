@@ -4,6 +4,7 @@ from exports.builders.utils import extract_rows_udf, all_effects_udf
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
+
 class ConsequenceBuilder(object):
     '''
     Build transcripts for each ssm by joining in data from the gene model

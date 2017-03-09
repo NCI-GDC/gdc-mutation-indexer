@@ -51,8 +51,6 @@ class MAFBuilder(object):
         df = self.add_mutation_type(df)
         # Add mutation_subtype
         df = self.add_mutation_subtype(df)
-        # Get the case submitter id from TCGA barcodes
-        df = self.extract_barcode(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe

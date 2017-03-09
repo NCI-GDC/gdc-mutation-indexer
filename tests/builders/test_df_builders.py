@@ -61,8 +61,8 @@ class TestDFBuilders:
         assert ann_df.count() < maf_df.count()
 
     def test_df_add_fields(self, maf_df):
-        gene_df = get_gene_df(maf_df, add_fields=['_case_submitter_id'])
-        assert '_case_submitter_id' in gene_df.columns
+        gene_df = get_gene_df(maf_df, add_fields=['case_id'])
+        assert 'case_id' in gene_df.columns
 
     def test_annotation_df(self, maf_df):
         ann_df = get_annotation_df(maf_df)

@@ -28,11 +28,12 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         df = builder.combine(conf.maf_urls)
-        assert df.count() == 18
+        assert df.count() == 23
         c = Counter([json.loads(item)['variant_caller'] for item
                      in df.select('variant_caller').toJSON().collect()])
         assert c['mutect2'] == 11
         assert c['muse'] == 7
+        assert c['somaticsniper'] == 5
 
     def test_schema(self, sqlContext):
         '''
@@ -131,7 +132,8 @@ class TestMAFBuilder:
         df = builder.extract_barcode(df)
 
         assert '_case_submitter_id' in df.columns
-        assert (df.where(df.tumor_sample_barcode=='TCGA-A4-A6HP-01A-11D-A31X-10')
+        assert (df.where(df.tumor_sample_barcode
+                         =='TCGA-A4-A6HP-01A-11D-A31X-10')
                   .select('_case_submitter_id')
                   .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
 

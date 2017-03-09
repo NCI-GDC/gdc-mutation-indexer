@@ -43,6 +43,7 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
 def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
 
+
 def _udf_uuid5_field(*values):
     """
     From Junjun's indexer:
@@ -59,11 +60,14 @@ def _udf_uuid5_field(*values):
     return str(uuid.uuid5(uuid.NAMESPACE_DNS,
                     '\t'.join([v if type(v) == str else str(v) for v in values])))
 
+
 def uuid5_col(*values):
     return udf(_udf_uuid5_field, StringType())(*values)
 
+
 def ssm_occurrence_uuid(namespace, ssm, case):
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
+
 
 def ssm_occurrence_uuid_udf(namespace):
     """
@@ -86,6 +90,8 @@ def extract_transcript_id(val):
     for r in rows:
         if len(r.split(delimiter)) > 3:
             transcript_ids.append(r.split(delimiter)[3])
+        else:
+            raise Exception('Unexpected number of transcripts')
     return transcript_ids
 
 
@@ -111,7 +117,7 @@ def all_effects_udf(index):
 
 
 def extract_rows_udf():
-    vals = udf(lambda x: x.split(';')[:-1], ArrayType(StringType()))
+    vals = udf(lambda x: x.split(';'), ArrayType(StringType()))
     return vals 
 
 
