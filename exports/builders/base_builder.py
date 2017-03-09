@@ -12,7 +12,6 @@ class BaseBuilder(object):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
-
     index_name = None
     id_field = None
     mapper = None

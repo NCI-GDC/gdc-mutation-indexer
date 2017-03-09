@@ -42,9 +42,10 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         ssm_df = build_ssm_subtree(maf_df, cons_df).drop('gene_id')
         self.log_count(ssm_df)
 
-        ssm_cons = ssm_df.select('ssm_id',
+        ssm_cons = ssm_df.select('ssm_id', 'case_id',
                                  struct('consequence',
-                                        *ssm_df.drop('_case_submitter_id').columns)\
+                                        *ssm_df.drop('consequence')
+                                               .drop('case_id').columns)
                                  .alias('ssm'))
         self.log_count(ssm_cons)
 
@@ -60,13 +61,12 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         self.log_count(case_df)
 
         self.log('Join observation with case')
-        case_obs_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
-                        .select('case_id', 'ssm_id',
-                            struct(
-                                'observation',
-                                *case_df.columns
-                            ).alias('case'))\
-                        .drop('_case_submitter_id')
+        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
+                              .select('case_id', 'ssm_id',
+                                  struct(
+                                      'observation',
+                                      *case_df.columns
+                                  ).alias('case')))
         self.log_count(case_obs_df)
         return case_obs_df
 
@@ -83,17 +83,16 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         ssm_cons = self.build_ssm(maf_df)
 
         self.log('Joining ssm with case')
-        ssm_occurrence_centric = ssm_cons.join(case_obs_df, on='ssm_id', how='right')\
-                                            .withColumn('ssm_occurrence_id',
-                                                        uuid5_col(lit('ssm_occurrence'),
-                                                            col('ssm_id'),
-                                                            col('case_id')))\
-                                            .drop('ssm_id')\
-                                            .drop('case_id')\
-                                            .drop('_case_submitter_id')
+        ssm_occurrence_centric = (ssm_cons.join(case_obs_df,
+                                                on=['case_id', 'ssm_id'],
+                                                how='inner')
+                                          .withColumn('ssm_occurrence_id',
+                                                      uuid5_col(lit('ssm_occurrence'),
+                                                                col('ssm_id'),
+                                                                col('case_id')))
+                                          .drop('case_id').drop('ssm_id'))
         self.log_count(ssm_occurrence_centric)
 
-        # Generate ids
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
         return self

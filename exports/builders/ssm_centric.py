@@ -1,4 +1,3 @@
-import json
 import logging
 
 from pyspark.sql.functions import lit, struct, collect_list, col
@@ -48,17 +47,20 @@ class SSMCentricBuilder(BaseBuilder):
 
         ssm_df = get_ssm_df(maf_df, unique_fields=['ssm_id'])
 
-        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
+                   .build(maf_df, join_gene=True))
 
         occurrence_df = self.build_occurrence(maf_df)
 
-        self.log('Final join SSM + Transcript + Last one')
+        self.log('Final join SSM + Consequence + Occurrence')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
-            .join(occurrence_df, on='ssm_id')
+                            .join(occurrence_df, on='ssm_id')
 
         # Truncate outliers
-        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric, 'occurrence', self.config.percentile_threshold['occurrences_per_ssm'])
-
+        treshold = self.config.percentile_threshold['occurrences_per_ssm']
+        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric,
+                                                          'occurrence',
+                                                          treshold)
         self.log_count(self.ssm_centric)
 
         self.log('Build finished')
@@ -71,20 +73,18 @@ class SSMCentricBuilder(BaseBuilder):
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
-        self.log('Joining Cases with Observation, [right, submitter_id]')
-        occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
-                        .withColumn('ssm_occurrence_id',
-                                    uuid5_col(lit('ssm_occurrence'),
-                                        col('ssm_id'),
-                                        col('case_id')))\
-                        .select('ssm_id', struct(
-                            'ssm_occurrence_id',
-                            struct(
-                                'observation',
-                                *case_df.columns
-                            ).alias('case')
-                        ).alias('occurrence'))\
-                        .groupby('ssm_id')\
-                        .agg(collect_list('occurrence').alias('occurrence'))
+        self.log('Joining Cases with Observation, [right, case_id]')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+                         .withColumn('ssm_occurrence_id',
+                                     uuid5_col(lit('ssm_occurrence'),
+                                               col('ssm_id'),
+                                               col('case_id')))
+                         .select('ssm_id',
+                                 struct('ssm_occurrence_id',
+                                        struct('observation',
+                                               *case_df.columns).alias('case'))
+                                 .alias('occurrence'))
+                         .groupby('ssm_id')
+                         .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
         return occurrence_df
