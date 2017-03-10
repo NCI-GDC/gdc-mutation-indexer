@@ -54,4 +54,4 @@ common_mapping_settings:
     enabled: false
   _source:
     excludes: [__comment__]
-  dynamic: true
+  dynamic: strict

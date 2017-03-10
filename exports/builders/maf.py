@@ -361,6 +361,8 @@ class MAFBuilder(object):
                         .options(header='true', inferschema='true')\
                         .load(self.config.maf_path)\
                         .drop_duplicates()
+
+        self.config.nb_mutations = df.count()
         return df
 
     def write(self, df):

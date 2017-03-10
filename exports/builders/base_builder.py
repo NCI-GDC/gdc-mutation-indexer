@@ -3,7 +3,6 @@ from pyspark.sql.functions import col, size
 from elasticsearch import Elasticsearch
 import subprocess
 import json
-import requests
 import logging
 
 logging.basicConfig()
@@ -17,6 +16,7 @@ class BaseBuilder(object):
     index_name = None
     id_field = None
     mapper = None
+    settings = None
 
     def __init__(self, config, sqlContext):
         self.config = config
@@ -42,20 +42,15 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         doc = self.config.index_names[self.index_name]
         index_doc = '{}/{}'.format(index, doc)
+        settings = json.dumps(self.mapper(doc).settings)
         
+        self.log('Creating {} index'.format(index))
+        response = self.es.indices.create(index=index, ignore=400, body=settings)
+        self.log(response)
+    
         self.save_build_metadata()
         
-        data = json.dumps(self.mapper(doc).settings)
-
-        response = requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                  self.config.es_port,
-                                                  index),
-                                auth=(self.config.es_user, self.config.es_pass),
-                                data=data)
-        try:
-            self.log(response.json())
-        except ValueError as err:
-            self.log(repr(err))
+        
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         getattr(self, self.index_name).coalesce(20).write\
@@ -103,10 +98,13 @@ class BaseBuilder(object):
         '''
         Saves metadata about the build in a 'build_metadata' document in the elasticsearch index
         '''
-        index = self.conf.indices[self.index_name]
+        index = self.config.indices[self.index_name]
+        nb_mutations = -1
+        if hasattr(self.config, 'nb_mutations'):
+            nb_mutations = self.config.nb_mutations 
         metadata_doc = {
                 'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
-                'number_of_mutations': self.config.nb_mutations,
+                'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,
                 'maf_urls': self.config.maf_urls,
@@ -117,8 +115,8 @@ class BaseBuilder(object):
                 }
 
         self.log('Saving build metadata')
-        res = self.es.create(index=index, doc_type='build_metadata', id=0, body=metadata_doc)
-        self.log(res)
+        response = self.es.create(index=index, doc_type='build_metadata', id=0, body=metadata_doc)
+        self.log(response)
 
     def log(self, string):
         """

@@ -74,7 +74,7 @@ class BaseConfig(object):
         'observations_per_ssm': 95,
     }
 
-    coalesce = 1
+    coalesce = 10
     batch_size_bytes = '5mb'
     batch_size_entries = '100'
 
