@@ -1,4 +1,3 @@
-import json
 import logging
 logging.basicConfig()
 
@@ -32,6 +31,8 @@ class GeneCentricBuilder(BaseBuilder):
     """
 
     index_name = 'gene_centric'
+    id_field = 'gene_id'
+    mapper = GeneMapper
 
     def build_ssm(self, maf_df):
         # Consequence
@@ -135,12 +136,3 @@ class GeneCentricBuilder(BaseBuilder):
 
         self.log('Build finished')
         return self
-
-    def load(self):
-        """
-        """
-        index = self.config.indices['gene_centric']
-        doc = self.config.index_names['gene_centric']
-        settings = json.dumps(GeneMapper(doc).settings)
-
-        self.load_to_elasticsearch(index, doc, settings, self.gene_centric, 'gene_id')

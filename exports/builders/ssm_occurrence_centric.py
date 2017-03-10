@@ -1,12 +1,9 @@
-import os
-import yaml
-import json
 import logging
 logging.basicConfig()
 
 from pyspark.sql.functions import lit, col, struct, collect_list, udf
 
-from exports.builders.utils import struct_select, uuid5_col
+from exports.builders.utils import uuid5_col
 from exports.builders.df_builders import build_ssm_subtree
 from exports.builders import (
     MAFBuilder,
@@ -33,6 +30,8 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
     """
 
     index_name = 'ssm_occurrence_centric'
+    id_field = 'ssm_occurrence_id'
+    mapper = SSMOccurrenceMapper
 
     def build_ssm(self, maf_df):
         # Consequence
@@ -51,7 +50,6 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         return ssm_cons
 
-    
     def build_case(self, maf_df):
         self.log('Building case dataframe')
         # Observation
@@ -80,11 +78,9 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
             maf_df = MAFBuilder(self.config, self.sqlContext).build()
         self.log_count(maf_df)
 
-
         case_obs_df = self.build_case(maf_df)
 
         ssm_cons = self.build_ssm(maf_df)
-
 
         self.log('Joining ssm with case')
         ssm_occurrence_centric = ssm_cons.join(case_obs_df, on='ssm_id', how='right')\
@@ -101,17 +97,3 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
         return self
-
-    def load(self, did=None):
-        '''
-        '''
-        index = self.config.indices['ssm_occurrence_centric']
-        doc = self.config.index_names['ssm_occurrence_centric']
-
-        settings = json.dumps(SSMOccurrenceMapper(doc).settings)
-
-        to_load = self.ssm_occurrence_centric
-        if did:
-            to_load = to_load.where(to_load.ssm_id == did)
-
-        self.load_to_elasticsearch(index, doc, settings, to_load, 'ssm_occurrence_id')

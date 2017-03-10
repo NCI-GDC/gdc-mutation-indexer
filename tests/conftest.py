@@ -66,7 +66,8 @@ def setup_test_index():
         if count >= len(case_docs):
             break
         time.sleep(0.1)
-
+    # Wait for index to be refreshed
+    time.sleep(1.0)
     return es
 
 

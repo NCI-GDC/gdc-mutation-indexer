@@ -34,6 +34,8 @@ class SSMCentricBuilder(BaseBuilder):
     """
 
     index_name = 'ssm_centric'
+    id_field = 'ssm_id'
+    mapper = SSMMapper
 
     def build(self, maf_df=None):
         """
@@ -80,17 +82,3 @@ class SSMCentricBuilder(BaseBuilder):
                         .agg(collect_list('occurrence').alias('occurrence'))
         self.log_count(occurrence_df)
         return occurrence_df
-
-    def load(self, did=None):
-        '''
-        '''
-        index = self.config.indices['ssm_centric']
-        doc = self.config.index_names['ssm_centric']
-        settings = json.dumps(SSMMapper(doc).settings)
-
-        to_load = self.ssm_centric
-        if did:
-            to_load = to_load.where(to_load.ssm_id == did)
-
-        self.load_to_elasticsearch(index, doc, settings, to_load, 'ssm_id')
-

@@ -1,5 +1,3 @@
-import json
-
 from pyspark.sql.functions import struct, collect_list
 
 from exports.builders.df_builders import (
@@ -30,6 +28,8 @@ class CaseCentricBuilder(BaseBuilder):
     """
 
     index_name = 'case_centric'
+    id_field = 'case_id'
+    mapper = CaseMapper
 
     def build_ssm(self, maf_df):
         # Consequence
@@ -59,6 +59,7 @@ class CaseCentricBuilder(BaseBuilder):
             ssm_df.select(
              'gene_id', '_case_submitter_id',
              struct(*ssm_df.drop('gene_id')
+
                     .drop('_case_submitter_id')
                     .columns).alias('ssm'))
             .groupBy(['gene_id', '_case_submitter_id'])
@@ -112,12 +113,4 @@ class CaseCentricBuilder(BaseBuilder):
 
         self.log('Build finished')
         return self
-
-    def load(self):
-        '''
-        '''
-        index = self.config.indices['case_centric']
-        doc = self.config.index_names['case_centric']
-        settings = json.dumps(CaseMapper(doc).settings)
-
-        self.load_to_elasticsearch(index, doc, settings, self.case_centric, 'case_id')
+      
