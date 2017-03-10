@@ -77,10 +77,12 @@ class BaseBuilder(object):
         '''
 
         metadata_doc = {
-                'commit_hash': subprocess.check_output(["git", "describe"]),
-                'number_of_projects': len[self.config.maf_urls],
+                'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
+                'number_of_mutations': self.config.nb_mutations,
+                'number_of_projects': len(self.config.maf_urls),
+                'debug': self.config.debug,
                 'maf_urls': self.config.maf_urls,
-                'percentile': [ {'name': k, 'value': v} for k,v in self.config.percentile.iteritems() ],
+                'percentile_threshold': [ {'name': k, 'value': v} for k,v in self.config.percentile_threshold.iteritems() ],
                 'coalesce': self.config.coalesce,
                 'batch_size_bytes': self.config.batch_size_bytes,
                 'batch_size_entries': int(self.config.batch_size_entries)
@@ -88,7 +90,7 @@ class BaseBuilder(object):
 
         self.log('Saving build metadata')
         res = self.es.create(index=index, doc_type='build_metadata', id=0, body=metadata_doc)
-        self.log(res['created'])
+        self.log(res)
 
 
     def load_to_elasticsearch(self, index, doc, settings, data, id_mapping):
@@ -96,7 +98,7 @@ class BaseBuilder(object):
         '''
         self.log('Creating {} index'.format(index))
         res = self.es.indices.create(index=index, ignore=400, body=settings)
-        self.log(res['created'])
+        self.log(res)
 
         self.save_build_metadata(index)
 
