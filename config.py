@@ -74,6 +74,10 @@ class BaseConfig(object):
         'observations_per_ssm': 95,
     }
 
+    coalesce = 10
+    batch_size_bytes = '5mb'
+    batch_size_entries = '100'
+
     # Case load settings
     case_exclude_fields = ','.join(['samples',
                                     'annotations',

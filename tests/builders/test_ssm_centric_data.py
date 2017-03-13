@@ -32,6 +32,7 @@ def ssm_centric_index(sqlContext, maf_df):
 @pytest.yield_fixture(scope='module')
 def ssm_stats(ssm_centric_index):
     docs = ssm_centric_index.search(index=conf.indices['ssm_centric'],
+                                    doc_type='test_ssm_centric__',
                                     body={"query": {"match_all": {}}},
                                     size=1000)
     yield SSMCentricStats(docs['hits']['hits'])

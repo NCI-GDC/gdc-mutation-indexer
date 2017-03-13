@@ -1,7 +1,8 @@
 from exports.builders.utils import percentile
 from pyspark.sql.functions import col, size
+from elasticsearch import Elasticsearch
+import subprocess
 import json
-import requests
 import logging
 
 logging.basicConfig()
@@ -15,12 +16,16 @@ class BaseBuilder(object):
     index_name = None
     id_field = None
     mapper = None
+    settings = None
 
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
         self.debug = config.debug
+        self.es = Elasticsearch(self.config.es_host,
+                             port=self.config.es_port,
+                             http_auth=(self.config.es_user, self.config.es_pass))
 
     def build(self):
         """
@@ -37,18 +42,15 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         doc = self.config.index_names[self.index_name]
         index_doc = '{}/{}'.format(index, doc)
-
-        data = json.dumps(self.mapper(doc).settings)
-
-        response = requests.put('{}:{}/{}'.format(self.config.es_host,
-                                                  self.config.es_port,
-                                                  index),
-                                auth=(self.config.es_user, self.config.es_pass),
-                                data=data)
-        try:
-            self.log(response.json())
-        except ValueError as err:
-            self.log(repr(err))
+        settings = json.dumps(self.mapper(doc).settings)
+        
+        self.log('Creating {} index'.format(index))
+        response = self.es.indices.create(index=index, ignore=400, body=settings)
+        self.log(response)
+    
+        self.save_build_metadata()
+        
+        
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         getattr(self, self.index_name).coalesce(20).write\
@@ -91,6 +93,30 @@ class BaseBuilder(object):
             df_to_truncate = df_to_truncate.filter('{} <= {}'.format(count_col_name, threshold)).drop(count_col_name)
 
         return df_to_truncate
+        
+    def save_build_metadata(self):
+        '''
+        Saves metadata about the build in a 'build_metadata' document in the elasticsearch index
+        '''
+        index = self.config.indices[self.index_name]
+        nb_mutations = -1
+        if hasattr(self.config, 'nb_mutations'):
+            nb_mutations = self.config.nb_mutations 
+        metadata_doc = {
+                'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
+                'number_of_mutations': nb_mutations,
+                'number_of_projects': len(self.config.maf_urls),
+                'debug': self.config.debug,
+                'maf_urls': self.config.maf_urls,
+                'percentile_threshold': [ {'name': k, 'value': v} for k,v in self.config.percentile_threshold.iteritems() ],
+                'coalesce': self.config.coalesce,
+                'batch_size_bytes': self.config.batch_size_bytes,
+                'batch_size_entries': int(self.config.batch_size_entries)
+                }
+
+        self.log('Saving build metadata')
+        response = self.es.create(index=index, doc_type='build_metadata', id=0, body=metadata_doc)
+        self.log(response)
 
     def log(self, string):
         """
@@ -104,3 +130,4 @@ class BaseBuilder(object):
         """
         if self.debug:
             self.log('Count: {}'.format(dataframe.count()))
+        

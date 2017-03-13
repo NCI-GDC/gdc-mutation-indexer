@@ -59,6 +59,7 @@ class CaseCentricBuilder(BaseBuilder):
             ssm_df.select(
              'gene_id', '_case_submitter_id',
              struct(*ssm_df.drop('gene_id')
+
                     .drop('_case_submitter_id')
                     .columns).alias('ssm'))
             .groupBy(['gene_id', '_case_submitter_id'])
@@ -112,3 +113,4 @@ class CaseCentricBuilder(BaseBuilder):
 
         self.log('Build finished')
         return self
+      

@@ -53,13 +53,13 @@ class Mapper(object):
         resource_path = '/'.join(('mappings', 'common_settings.yml'))
 
         settings = yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
-        # Mapping settings should be moved inside each mapping
-        if 'mappings' in settings:
-            mapping_settings = settings['mappings']
-            del settings['mappings']
+        common_mapping_settings = {}
+        if 'common_mapping_settings' in settings:
+            common_mapping_settings = settings['common_mapping_settings']
+            del settings['common_mapping_settings']
 
         mapping = self.build_mapping()
-        mapping.update(mapping_settings)
+        mapping.update(common_mapping_settings)
 
         if 'mappings' in settings and type(settings['mappings']) is dict:
             settings['mappings'].update({self.doc_type: mapping})
