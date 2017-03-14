@@ -70,13 +70,12 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         self.log_count(case_obs_df)
         return case_obs_df
 
-    def build(self, maf_df=None):
-        '''
-        '''
-        self.log('Building MAF')
-        if maf_df is None:
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        self.log_count(maf_df)
+    def build(self, maf_df):
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.ssm_occurrence_centric = self.get_existing()
+            if self.ssm_occurrence_centric is not None:
+                return self
 
         case_obs_df = self.build_case(maf_df)
 
@@ -95,4 +94,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
         return self

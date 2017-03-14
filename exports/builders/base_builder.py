@@ -92,6 +92,42 @@ class BaseBuilder(object):
             df_to_truncate = df_to_truncate.filter('{} <= {}'.format(count_col_name, threshold)).drop(count_col_name)
 
         return df_to_truncate
+
+    def get_existing(self, path=None):
+        """
+        Loads the computed index's dataframe, if it exists, and return it,
+        returns None it does not
+        """
+        if path == None:
+            path = self.config.index_paths[self.index_name]
+        try:
+            self.logger.info('Using existing index from {}'.format(path))
+            df = self.sqlContext.read.load(path)
+            return df
+        except Exception:
+            self.logger.info('Couldn\'t find file at {}'.format(path))
+            return None
+
+    def write(self, path=None):
+        """
+        Writes the built dataframe to a json file at path
+        """
+        if path == None:
+            path = self.config.index_paths[self.index_name]
+
+        df = getattr(self, self.index_name, None)
+        assert df != None, 'Builder does not have index_name attribute'
+        
+        # Repartition by the id into number of partitions specified in config
+        id_field = getattr(self, self.id_field, None)
+        if id_field:
+            df = df.repartition(self.config.index_partitions, id_field).write
+        else:
+            df = df.repartition(self.config.index_partitions).write
+        if self.config.index_overwrite:
+            df = df.mode('overwrite')
+        self.logger.info('Saving {} to {}'.format(self.index_name, path))
+        df.json(path)
         
     def save_build_metadata(self):
         '''

@@ -37,13 +37,12 @@ class SSMCentricBuilder(BaseBuilder):
     id_field = 'ssm_id'
     mapper = SSMMapper
 
-    def build(self, maf_df=None):
-        """
-        """
-        if maf_df is None:
-            self.log('Building MAF...')
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        self.log_count(maf_df)
+    def build(self, maf_df):
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.ssm_centric = self.get_existing()
+            if self.ssm_centric is not None:
+                return self
 
         ssm_df = get_ssm_df(maf_df, unique_fields=['ssm_id'])
 
@@ -64,6 +63,9 @@ class SSMCentricBuilder(BaseBuilder):
         self.log_count(self.ssm_centric)
 
         self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
         return self
 
     def build_occurrence(self, maf_df):
