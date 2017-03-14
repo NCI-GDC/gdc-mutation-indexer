@@ -12,6 +12,7 @@ class BaseConfig(object):
     api_host = os.getenv('API_HOST', 'http://api.service.consul')
     signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
     s3_host = os.getenv('S3_HOST', 'http://cleversafe.service.consul')
+    s3_bucket = 's3a://gdc-mutation-indexer/'
     # This is the cluster where document will be loaded into
     es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
@@ -24,11 +25,27 @@ class BaseConfig(object):
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
-        'ssm_centric': 'ssm_centric',
-        'case_centric': 'case_centric',
-        'gene_centric': 'gene_centric',
+        'case_centric':           'case_centric',
+        'gene_centric':           'gene_centric',
+        'ssm_centric':            'ssm_centric',
         'ssm_occurrence_centric': 'ssm_occurrence_centric'
     }
+    # Where to save each index's final json
+    index_paths = {
+        'case_centric':           s3_bucket+'case-centric.json',
+        'gene_centric':           s3_bucket+'gene-centric.json',
+        'ssm_centric':            s3_bucket+'ssm-centric.json',
+        'ssm_occurrence_centric': s3_bucket+'ssm-occurrence-centric.json'
+    }
+    # Whether to save the indices once they've been built
+    index_keep = True
+    # Load a prebuilt index and load it into elasticsearch
+    index_use_existing = True
+    # Whether to overwrite a built index file, if it exists
+    index_overwrite = False
+    # How many partitions to distribute the index file accross
+    # The index will be split up into this many json files
+    index_partitions = 1024
 
     mappings = {
                 'ssm': 'ssm.yml',

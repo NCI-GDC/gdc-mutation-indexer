@@ -77,16 +77,14 @@ class CaseCentricBuilder(BaseBuilder):
 
         return gene_ssm
 
-    def build(self, maf_df=None):
-        '''
-        '''
-        self.log('\nBuilding CaseCentric')
-        if maf_df is None:
-            self.logger.info('Building MAF')
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        self.log_count(maf_df)
-
+    def build(self, maf_df):
         self.log('Building Case')
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.case_centric = self.get_existing()
+            if self.case_centric is not None:
+                return self
+
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
@@ -109,4 +107,8 @@ class CaseCentricBuilder(BaseBuilder):
 
         self.log_count(self.case_centric)
         self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
+
         return self

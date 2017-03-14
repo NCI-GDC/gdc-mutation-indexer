@@ -94,14 +94,15 @@ class GeneCentricBuilder(BaseBuilder):
 
         return case_ssm
 
-    def build(self, maf_df=None):
+    def build(self, maf_df):
         """
         """
         self.log('Building GeneCentric')
-        if maf_df is None:
-            self.log('Building MAF')
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        self.log_count(maf_df)
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.gene_centric = self.get_existing()
+            if self.gene_centric is not None:
+                return self
 
         self.log('Selecting Gene from MAF')
         gene_df = get_gene_df(maf_df, unique_fields=['gene_id'])
@@ -126,5 +127,9 @@ class GeneCentricBuilder(BaseBuilder):
         self.gene_centric = gene_centric
         self.log_count(self.gene_centric)
 
+        path = self.config.index_paths[self.index_name]
         self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
         return self
