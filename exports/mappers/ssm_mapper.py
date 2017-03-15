@@ -72,7 +72,14 @@ class SSMMapper(Mapper):
             'project.properties.project_id',
         ], case_map)
 
-        mapping['properties']['occurrence'] = {'properties':{'case': case_map}}
+        mapping['properties']['occurrence'] = {
+                                                'properties': {
+                                                    'case': case_map,
+                                                    'ssm_occurrence_id': {
+                                                        'type': 'keyword' 
+                                                    }
+                                                }
+                                              }
         mapping['properties']['occurrence']['type'] = 'nested'
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)

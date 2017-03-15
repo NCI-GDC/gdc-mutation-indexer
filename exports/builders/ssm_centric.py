@@ -1,7 +1,7 @@
 import json
 import logging
 
-from pyspark.sql.functions import lit, struct, collect_list
+from pyspark.sql.functions import lit, struct, collect_list, col
 
 from exports.builders import (
     MAFBuilder,
@@ -11,6 +11,7 @@ from exports.builders import (
 )
 from exports.builders import BaseBuilder
 from exports.mappers import SSMMapper
+from exports.builders.utils import uuid5_col
 from exports.builders.df_builders import (
     get_ssm_df
 )
@@ -72,7 +73,12 @@ class SSMCentricBuilder(BaseBuilder):
 
         self.log('Joining Cases with Observation, [right, submitter_id]')
         occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
+                        .withColumn('ssm_occurrence_id',
+                                    uuid5_col(lit('ssm_occurrence'),
+                                        col('ssm_id'),
+                                        col('case_id')))\
                         .select('ssm_id', struct(
+                            'ssm_occurrence_id',
                             struct(
                                 'observation',
                                 *case_df.columns
