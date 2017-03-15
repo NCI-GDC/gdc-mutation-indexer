@@ -6,7 +6,6 @@ from exports.builders.utils import percentile, struct_select
 from tests_config import TestConfig
 from exports.builders.utils import (
     ssm_label,
-    flat_fields,
     _udf_uuid5_field,
 )
 
@@ -116,10 +115,3 @@ class TestMiscFunctions:
                                       '642a6e7d-8b15-5f93-9e29-22c9649e9058',
                                       '13afbde8-e5b5-4f3c-8a9d-daef71560005')
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
-
-    def test_flat_fields(self):
-        ''' Test mapping field flattener '''
-        fields = flat_fields('../mappings/observation.yml')
-
-        for field in ['src_vcf_id', 'center', 'tumor_sample_uuid']:
-            assert field in fields

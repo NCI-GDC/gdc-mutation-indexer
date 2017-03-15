@@ -8,7 +8,7 @@ logging.basicConfig()
 from pyspark.sql.types import StringType, IntegerType
 from pyspark.sql.functions import lit, col, regexp_extract, udf
 
-from exports.builders.utils import ssm_uuid_udf, uuid5_col, ssm_label_col
+from exports.builders.utils import uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder
 
 
@@ -202,7 +202,6 @@ class MAFBuilder(object):
         """
         Adds ssm_id column to the MAF dataframe
         """
-        #ssm_func = ssm_uuid_udf(self.config.ssm_namespace)
         maf_df = df.withColumn('ssm_id', uuid5_col(lit('ssm'),
                                                    col('ncbi_build'),
                                                    col('chromosome'),
