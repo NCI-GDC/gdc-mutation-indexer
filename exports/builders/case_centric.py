@@ -104,7 +104,7 @@ class CaseCentricBuilder(BaseBuilder):
         case_centric = (
             case_df.join(gene_ssm_grouped,
                          case_df.submitter_id == gene_ssm_grouped._case_submitter_id,
-                         'inner')
+                         'left')
             .drop(gene_ssm_grouped._case_submitter_id))
         self.case_centric = case_centric
         # Truncate outliers
