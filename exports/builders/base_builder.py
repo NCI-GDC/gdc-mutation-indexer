@@ -102,8 +102,13 @@ class BaseBuilder(object):
         nb_mutations = -1
         if hasattr(self.config, 'nb_mutations'):
             nb_mutations = self.config.nb_mutations 
+        if '_rev_' in __file__:
+            # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
+            commit_hash = __file__.split('_rev_')[1].split('-')[0]
+        else:
+            commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
         metadata_doc = {
-                'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
+                'commit_hash': commit_hash,
                 'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,
