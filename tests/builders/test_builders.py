@@ -318,10 +318,22 @@ class TestConsequenceBuilder:
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
 class TestCaseBuilder:
+    """ Test the CaseBuilder functionality for extracting the graph index """
 
-    def test_case_build(self, sqlContext, test_index_class):
+    @pytest.fixture(scope='class')
+    def case_df(self, sqlContext):
+        yield CaseBuilder(conf, sqlContext).build()
+
+    def test_case_build(self, sqlContext, test_index_class, case_df):
         es = test_index_class
-        df = CaseBuilder(conf, sqlContext).build()
+        df = case_df
         assert (df.count() == es.search(conf.graph_index,
                                         conf.graph_document,
                                         size=0)['hits']['total'])
+
+    def test_case_columns(self, sqlContext, case_df):
+        """ Test that the right properties were loaded from case docs """
+        assert 'case_id' in case_df.columns
+        assert 'files' not in case_df.columns
+        # Make sure the sample_ids, slide_ids are not present
+        assert '_ids' not in ','.join(case_df.columns)
