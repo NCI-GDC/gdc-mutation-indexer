@@ -52,7 +52,12 @@ class GeneMapper(Mapper):
 
         self.change_props_to_keyword(['aa_change'], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties': {'transcript': tran_map}}
+        ssm_map['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)

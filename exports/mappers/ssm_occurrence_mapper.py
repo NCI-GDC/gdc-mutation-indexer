@@ -38,7 +38,12 @@ class SSMOccurrenceMapper(Mapper):
             'aa_change',
         ], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        ssm_map['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add gene 
         gene_map = self.load_properties('gene.yml')
