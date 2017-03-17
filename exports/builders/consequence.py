@@ -1,6 +1,6 @@
 import logging
-from pyspark.sql.functions import explode, col, collect_list, struct
-from exports.builders.utils import extract_rows_udf, all_effects_udf
+from pyspark.sql.functions import explode, col, collect_list, struct, lit
+from exports.builders.utils import extract_rows_udf, all_effects_udf, uuid5_col
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
@@ -54,9 +54,19 @@ class ConsequenceBuilder(object):
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
         tran_with_ann = tran_with_ann.drop('gene_id').drop('empty')
-        tran_df = tran_with_ann.select(
+        # Add consequence_id, a uuid from ssm_id and transcript_id
+        tran_df = tran_with_ann.withColumn('consequence_id',
+                                                uuid5_col(
+                                                    lit('ssm_consequence'),
+                                                    col('ssm_id'),
+                                                    col('transcript_id')))
+        tran_df = tran_df.select(
                 'ssm_id',
-                struct(struct(*tran_with_ann.drop('ssm_id')).alias('transcript')).alias('consequence'))
+                struct(
+                    'consequence_id',
+                    struct(*tran_df.drop('ssm_id').drop('consequence_id')).alias('transcript')
+                ).alias('consequence'))
+
         df = tran_df.groupby('ssm_id').agg(
             collect_list('consequence').alias('consequence'))
 

@@ -21,7 +21,12 @@ class SSMMapper(Mapper):
         # Consequence only holds transcript
         # Add transcript
         tran_map = self.load_properties('transcript.yml')
-        mapping['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        mapping['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         mapping['properties']['consequence']['type'] = 'nested'
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=False)

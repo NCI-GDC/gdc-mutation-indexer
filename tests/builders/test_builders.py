@@ -300,6 +300,13 @@ class TestConsequenceBuilder:
             assert f in ssm_trans.columns
 
 
+    def test_consequence_id(self, maf_df, builder):
+        """ Test that consequence_id is created correctly """
+        cons_df = builder.build(maf_df, join_gene=False)
+
+        assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
+
+
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
 class TestCaseBuilder:
 
