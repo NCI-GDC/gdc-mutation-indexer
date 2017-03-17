@@ -107,8 +107,8 @@ class BaseConfig(object):
                                     'tissue_source_site',
                                     'exposures',
                                     'family_histories',
-                                    'files'])
-    case_arrays = ','.join(['*_ids'])#,
+                                    'files',
+                                    '*_ids'])
 
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'

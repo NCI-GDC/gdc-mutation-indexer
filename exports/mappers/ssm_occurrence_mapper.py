@@ -76,18 +76,8 @@ class SSMOccurrenceMapper(Mapper):
         case_map = self.load_properties('case.yml', nested=False)
 
         self.change_props_to_keyword([
-            'aliquot_ids',
-            'analyte_ids',
             'case_id',
-            'portion_ids',
-            'sample_ids',
-            'slide_ids',
-            'submitter_aliquot_ids',
-            'submitter_analyte_ids',
             'submitter_id',
-            'submitter_portion_ids',
-            'submitter_sample_ids',
-            'submitter_slide_ids',
             'project.properties.project_id',
             'project.properties.primary_site',
             'project.properties.disease_type',

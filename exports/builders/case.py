@@ -3,9 +3,9 @@ logging.basicConfig()
 
 
 class CaseBuilder(object):
-    '''
+    """
     Builds a case dataframe by loading case documents from gdc_from_graph
-    '''
+    """
 
     def __init__(self, config, sqlContext):
         self.config = config
@@ -31,7 +31,6 @@ class CaseBuilder(object):
             .option('es.nodes.wan.only','true')\
             .option('es.nodes.resolve.hostname','false')\
             .option('es.read.field.exclude', self.config.case_exclude_fields)\
-            .option('es.read.field.as.array.include', self.config.case_arrays)\
             .option('es.resource.read', source)\
             .load(source)
 
