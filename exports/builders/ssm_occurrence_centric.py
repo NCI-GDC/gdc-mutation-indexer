@@ -62,7 +62,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         self.log('Join observation with case')
         case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                              .select('case_id', 'ssm_id',
+                              .select('case_id', 'ssm_id', 'occurrence_id',
                                   struct(
                                       'observation',
                                       *case_df.columns
@@ -86,13 +86,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                                 on=['case_id', 'ssm_id'],
                                                 how='inner')
                                           .withColumn('ssm_occurrence_id',
-                                                      uuid5_col(lit('ssm_occurrence'),
-                                                                col('ssm_id'),
-                                                                col('case_id')))
-                                          .withColumn('occurrence_id',
-                                                      uuid5_col(lit('ssm_occurrence'),
-                                                                col('ssm_id'),
-                                                                col('case_id')))
+                                                        col('occurrence_id'))
                                           .drop('case_id').drop('ssm_id'))
         self.log_count(ssm_occurrence_centric)
 

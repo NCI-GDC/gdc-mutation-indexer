@@ -41,6 +41,7 @@ class GeneCentricBuilder(BaseBuilder):
 
         # Observation
         obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
+        obs_df = obs_df.drop('occurrence_id')
 
         # SSM
         ssm_df = build_ssm_subtree(maf_df, cons_df, obs_df)

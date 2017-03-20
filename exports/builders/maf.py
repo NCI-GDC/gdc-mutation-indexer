@@ -45,6 +45,10 @@ class MAFBuilder(object):
         df = self.standardize_schema(df)
         # ssm_id from hashing unique columns in the maf
         df = self.add_ssm_id(df)
+        # Create occurrence_id
+        df = self.add_occurrence_id(df)
+        # Create observation_id
+        df = self.add_observation_id(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
         # Add mutation_type
@@ -220,6 +224,31 @@ class MAFBuilder(object):
                                                    col('reference_allele'),
                                                    col('tumor_allele')))
         return maf_df
+
+    def add_occurrence_id(self, df):
+        """
+        Adds the observation_id, a uuid hash of:
+        'ssm_occurrence' + ssm_id + case_id
+        """
+        df = df.withColumn('occurrence_id',
+                            uuid5_col(lit('ssm_occurrence'),
+                                col('ssm_id'),
+                                col('case_id')))
+        return df
+
+    def add_observation_id(self, df):
+        """
+        Adds the observation_id, a uuid hash of:
+        occurrence_id+tumor_sample_uuid+matched_norm_sample_uuid+variant_caller+variant_process
+        """
+        df = df.withColumn('observation_id',
+                            uuid5_col(lit('ssm_observation'),
+                                      col('occurrence_id'),
+                                      col('tumor_sample_uuid'),
+                                      col('matched_norm_sample_uuid'),
+                                      col('variant_caller'),
+                                      lit('masked')))
+        return df
 
     def add_genomic_dna_change(self, df):
         """

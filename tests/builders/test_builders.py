@@ -228,6 +228,7 @@ class TestSSMOccurrenceCentricJoins:
 
     def test_ssm_occurrence_columns(self, maf_df, builder):
         ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
+        print ssm_occurrence_df.select('occurrence_id', 'ssm_occurrence_id').show()
         assert 'occurrence_id' in ssm_occurrence_df.columns
 
     def test_case_subtree(self, maf_df, builder, true_stats):
@@ -262,7 +263,15 @@ class TestObservationBuilder:
     def test_join_columns(self, build_df):
         ''' Check for correct columns '''
         obs_df = build_df
-        assert set(obs_df.columns) == {'case_id', 'ssm_id', 'observation'}
+        assert set(obs_df.columns) == {'case_id', 'ssm_id',
+                                       'observation', 'occurrence_id'}
+
+    def test_observation_id(self, build_df):
+        """ Test that the observation_id was created """
+        assert 'observation_id' in (build_df.select(explode('observation')
+                                                   .alias('observation'))
+                                                   .select('observation.*')
+                                                   .columns)
 
     def test_observation_count(self, build_df, maf_df):
         ''' Check for the right number of observations by submitter_id '''

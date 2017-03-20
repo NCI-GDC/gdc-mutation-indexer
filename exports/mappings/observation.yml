@@ -1,4 +1,6 @@
 properties:
+  observation_id:
+    type: keyword
   center:
     type: keyword
   input_bam_file:
