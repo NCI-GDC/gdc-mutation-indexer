@@ -89,6 +89,10 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                                       uuid5_col(lit('ssm_occurrence'),
                                                                 col('ssm_id'),
                                                                 col('case_id')))
+                                          .withColumn('occurrence_id',
+                                                      uuid5_col(lit('ssm_occurrence'),
+                                                                col('ssm_id'),
+                                                                col('case_id')))
                                           .drop('case_id').drop('ssm_id'))
         self.log_count(ssm_occurrence_centric)
 

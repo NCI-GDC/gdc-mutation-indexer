@@ -82,6 +82,9 @@ class SSMMapper(Mapper):
                                                     'case': case_map,
                                                     'ssm_occurrence_id': {
                                                         'type': 'keyword' 
+                                                    },
+                                                    'occurrence_id': {
+                                                        'type': 'keyword' 
                                                     }
                                                 }
                                               }

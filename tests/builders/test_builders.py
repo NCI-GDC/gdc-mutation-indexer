@@ -179,6 +179,11 @@ class TestSSMCentricJoins:
 
         assert es_ops == true_stats['occur_per_ssm']
 
+    def test_ssm_columns(self, maf_df, builder):
+        ssm_df = builder.build(maf_df).ssm_centric
+        assert 'occurrence_id' in (ssm_df.select(explode('occurrence')
+                                            .alias('occurrence'))
+                                         .select('occurrence.*').columns)
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestSSMOccurrenceCentricJoins:
@@ -202,6 +207,10 @@ class TestSSMOccurrenceCentricJoins:
                   for d in map(json.loads, es_cps)}
 
         assert es_cps == true_stats['cons_per_ssm']
+
+    def test_ssm_occurrence_columns(self, maf_df, builder):
+        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
+        assert 'occurrence_id' in ssm_occurrence_df.columns
 
     def test_case_subtree(self, maf_df, builder, true_stats):
         # one gene per ssm for our test mafs
