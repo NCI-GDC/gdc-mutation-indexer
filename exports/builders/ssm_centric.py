@@ -81,8 +81,12 @@ class SSMCentricBuilder(BaseBuilder):
                                      uuid5_col(lit('ssm_occurrence'),
                                                col('ssm_id'),
                                                col('case_id')))
+                         .withColumn('occurrence_id',
+                                    uuid5_col(lit('ssm_occurrence'),
+                                        col('ssm_id'),
+                                        col('case_id')))
                          .select('ssm_id',
-                                 struct('ssm_occurrence_id',
+                                 struct('occurrence_id', 'ssm_occurrence_id',
                                         struct('observation',
                                                *case_df.columns).alias('case'))
                                  .alias('occurrence'))

@@ -95,6 +95,8 @@ class SSMOccurrenceMapper(Mapper):
         ], case_map)
 
         mapping['properties']['case'] = case_map
+        mapping['properties']['ssm_occurrence_id'] = {'type': 'keyword'}
+        mapping['properties']['occurrence_id'] = {'type': 'keyword'}
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)
         case_map['properties']['observation'] = obs_map
