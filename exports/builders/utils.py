@@ -1,4 +1,3 @@
-import re
 import uuid
 import yaml
 import pkg_resources
@@ -11,7 +10,8 @@ logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
 
 
-def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
+              tumor_allele):
     """
     Create a label (genomic change) from an ssm based on its variant type:
 
@@ -29,19 +29,23 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     chromosome = chromosome.replace('chr', '')
 
     if variant_type == 'SNP':
-        label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
+        label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele,
+                                         tumor_allele)
     elif variant_type == 'DEL':
         label = 'chr{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
     elif variant_type == 'INS':
-        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
+        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos,
+                                            tumor_allele)
     else:
         label = chromosome
 
     return label
 
 
-def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
-    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
+def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele,
+                  tumor_allele):
+    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos,
+                                        end_pos, ref_allele, tumor_allele)
 
 
 def _udf_uuid5_field(*values):
