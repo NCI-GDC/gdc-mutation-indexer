@@ -330,7 +330,6 @@ class TestConsequenceBuilder:
         cytobands = [t['cytoband'] for t in cytobands]
         assert all([type(c) is list for c in cytobands])
 
-
     def test_only_related_transcripts(self, maf_df, builder):
         """
         Test that consequence only contains transcripts from one gene
@@ -353,7 +352,6 @@ class TestConsequenceBuilder:
 
         for f in fields:
             assert f in ssm_trans.columns
-
 
     def test_consequence_id(self, maf_df, builder):
         """ Test that consequence_id is created correctly """

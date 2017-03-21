@@ -39,15 +39,12 @@ class ConsequenceBuilder(object):
         # is_canonical,
         # do_not_us, consequence_type, aa_change,
         # refs_seq_accession}
-        tran_df = get_transcript_df(
-            ssm_tran, add_fields=['gene_id', 'ssm_id'])
+        tran_df = get_transcript_df(ssm_tran, add_fields=['gene_id', 'ssm_id'])
 
         # {*fields} => {*fields, annotation: {}}
-        cond = (tran_df.transcript_id == ann_df.annotation.transcript_id)
-        tran_with_ann = (
-            tran_df.join(ann_df,
-                         tran_df.transcript_id
-                         == ann_df.annotation.transcript_id, how='left'))
+        join_condition = (tran_df.transcript_id ==
+                          ann_df.annotation.transcript_id)
+        tran_with_ann = tran_df.join(ann_df, join_condition, how='left')
 
         if join_gene:
             # Build and join the gene if required
@@ -60,17 +57,19 @@ class ConsequenceBuilder(object):
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
         tran_with_ann = tran_with_ann.drop('gene_id').drop('empty')
+
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',
-                                                uuid5_col(
-                                                    lit('ssm_consequence'),
-                                                    col('ssm_id'),
-                                                    col('transcript_id')))
+                                           uuid5_col(
+                                               lit('ssm_consequence'),
+                                               col('ssm_id'),
+                                               col('transcript_id')))
         tran_df = tran_df.select(
                 'ssm_id',
                 struct(
                     'consequence_id',
-                    struct(*tran_df.drop('ssm_id').drop('consequence_id')).alias('transcript')
+                    struct(*tran_df.drop('ssm_id').drop('consequence_id'))
+                    .alias('transcript')
                 ).alias('consequence'))
 
         df = tran_df.groupby('ssm_id').agg(

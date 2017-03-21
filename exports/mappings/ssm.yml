@@ -1,6 +1,8 @@
 properties:
   chromosome:
     type: keyword
+  cosmic_id:
+    type: keyword
   end_position:
     type: long
   genomic_dna_change:
