@@ -12,7 +12,7 @@ from exports.builders import (
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
-from exports.mappers import SSMOccurrenceMapper
+from exports.mappers import ModelMapper
 
 
 class SSMOccurrenceCentricBuilder(BaseBuilder):
@@ -31,7 +31,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_occurrence_centric'
     id_field = 'ssm_occurrence_id'
-    mapper = SSMOccurrenceMapper
+    mapper = ModelMapper('ssm_occurrence_centric')
 
     def build_ssm(self, maf_df):
         # Consequence

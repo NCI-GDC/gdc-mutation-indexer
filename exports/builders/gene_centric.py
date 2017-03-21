@@ -13,7 +13,7 @@ from exports.builders import (
     ObservationBuilder,
 )
 from exports.builders import BaseBuilder
-from exports.mappers import GeneMapper
+from exports.mappers import ModelMapper
 
 
 class GeneCentricBuilder(BaseBuilder):
@@ -31,7 +31,7 @@ class GeneCentricBuilder(BaseBuilder):
 
     index_name = 'gene_centric'
     id_field = 'gene_id'
-    mapper = GeneMapper
+    mapper = ModelMapper('gene_centric')
 
     def build_ssm(self, maf_df):
         # Consequence
