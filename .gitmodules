@@ -1,0 +1,3 @@
+[submodule "exports/gdc-models"]
+	path = exports/gdc-models
+	url = git@github.com:NCI-GDC/gdc-models.git
