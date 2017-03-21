@@ -1,4 +1,5 @@
-from pyspark.sql.functions import struct, collect_list
+from pyspark.sql.functions import struct, collect_list, udf, size, col
+from pyspark.sql.types import BooleanType
 
 from exports.builders.df_builders import (
     get_gene_df,
@@ -77,6 +78,17 @@ class CaseCentricBuilder(BaseBuilder):
 
         return gene_ssm
 
+    def add_ssm_tested(self, df):
+        """
+        Evaluates whether the case was tested for ssm or not
+        For now, it is acceptable to say that any case with > 0 genes
+        was tested
+        """
+        return (df.withColumn('_ngenes', size(col('gene')))
+                    .withColumn('ssm_tested',
+                            udf(lambda x: x > 0, BooleanType())(col('_ngenes')))
+                    .drop('_ngenes'))
+
     def build(self, maf_df):
         self.log('Building Case')
         # Check if we should load a pre-built dataframe
@@ -98,6 +110,7 @@ class CaseCentricBuilder(BaseBuilder):
         case_centric = (
             case_df.join(gene_ssm_grouped, on=['case_id'], how='left')
         )
+        case_centric = self.add_ssm_tested(case_centric)
         self.case_centric = case_centric
 
         # Truncate outliers

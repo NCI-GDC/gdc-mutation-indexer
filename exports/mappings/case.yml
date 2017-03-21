@@ -1,4 +1,6 @@
 properties:
+  ssm_tested:
+    type: boolean 
   state:
     type: keyword
     default: empty
