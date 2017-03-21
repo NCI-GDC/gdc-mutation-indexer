@@ -5,7 +5,7 @@ import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.types import StringType, IntegerType
+from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf
 
 from exports.builders.utils import uuid5_col, ssm_label_col
@@ -70,7 +70,7 @@ class MAFBuilder(object):
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
-
+        df = self.format_cosmic_id(df)
 
         # Write data
         if self.config.maf_keep:
@@ -122,6 +122,23 @@ class MAFBuilder(object):
                              for k, v in maf_schema.items()))
 
         return maf_df
+
+    def format_cosmic_id(self, df):
+        """
+        Turns StringType() cosmic_id field to ArrayType(StringType()) field 
+        """
+
+        def to_array(cosmic_string):
+            if cosmic_string is not None:
+                if ';' in cosmic_string:
+                    cosmic_string = cosmic_string.split(';')
+                else:
+                    cosmic_string = [cosmic_string]
+            return cosmic_string
+
+        to_array = udf(to_array, ArrayType(StringType()))
+        df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
+        return df
 
     def add_canonical_lengths(self, df):
         """

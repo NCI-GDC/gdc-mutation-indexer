@@ -37,7 +37,6 @@ class GeneModelBuilder(object):
         gene_df = gene_df.drop('ens_gene_id')
         gene_df = gene_df.drop('cancer_gene_id')
 
-
         # Rename 'strand' to 'gene_strand'
         gene_df = gene_df.withColumnRenamed('strand', 'gene_strand')
         # Rename 'start' to 'gene_start'
