@@ -27,7 +27,7 @@ class TestBuildersSimple:
         builder(conf, sqlContext).build(maf_df)
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index')
 class TestCaseCentricJoins:
     ''' Test intermediate result from the case centric builder '''
 
@@ -83,6 +83,24 @@ class TestCaseCentricJoins:
         es_gpc = {d['case_id']: d['size(gene)']
                   for d in map(json.loads, es_gpc)}
         assert es_gpc == true_stats['genes_per_case']
+
+    def test_ssm_tested(self, maf_df, test_index, builder, true_stats):
+        """ Test that cases without any ssm are marked ssm_test=False """
+        # Insert a case to graph with no data
+        test_index.index(conf.graph_index, doc_type='case',
+                         id='ABC', body={'case_id':'ABC'})
+        # Force ES to refresh before trying to build index
+        test_index.indices.refresh(index=conf.graph_index)
+
+        case_df = builder.build(maf_df).case_centric
+        assert 'ssm_tested' in case_df.columns
+        # Sum of booleans, True = 1, False = 0, should only have one test case
+        assert sum([r['ssm_tested'] for r in
+                   case_df.select('ssm_tested').collect()]) == case_df.count()-1
+
+        # Get rid of the test document and force an ES refresh
+        test_index.delete(conf.graph_index, doc_type='case', id='ABC')
+        test_index.indices.refresh(index=conf.graph_index)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
