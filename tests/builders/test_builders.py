@@ -291,8 +291,24 @@ class TestConsequenceBuilder:
         cytobands = [t['cytoband'] for t in cytobands]
         assert all([type(c) is list for c in cytobands])
 
+
+    def test_only_related_transcripts(self, maf_df, builder):
+        """
+        Test that consequence only contains transcripts from one gene
+        """
+        cons_df = builder.build(maf_df, join_gene=True)
+        consequences  = cons_df.collect()
+        for consequence in consequences:
+            # Each consequence is a list of transcripts
+            transcripts = consequence.asDict(recursive=True)['consequence']
+            print len(transcripts)
+            genes = set()
+            for transcript in transcripts:
+                genes.add(transcript['transcript']['gene']['gene_id'])
+            assert len(genes) == 1
+
     def test_all_effects_cols(self, maf_df, builder):
-        fields = ['do_not_use', 'consequence_type', 'aa_change',
+        fields = ['consequence_type', 'aa_change',
                   'transcript_id', 'ref_seq_accession']
         ssm_trans = builder._build_all_effects_cols(maf_df)
 
