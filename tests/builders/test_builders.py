@@ -29,7 +29,7 @@ class TestBuildersSimple:
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index')
 class TestCaseCentricJoins:
-    ''' Test intermediate result from the case centric builder '''
+    """ Test intermediate result from the case centric builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
@@ -173,6 +173,8 @@ class TestSSMCentricJoins:
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'ssm_centric')
 
+    @pytest.mark.skip(reason="Can not be implemented before occurrences have "
+                             "'occurrence_id' field")
     def test_occurrence_subtree(self, maf_df, builder, true_stats):
         pass
 
@@ -185,7 +187,7 @@ class TestSSMCentricJoins:
         es_cps = (ssm_df.select(size('consequence'), 'ssm_id')
                   .toJSON(use_unicode=False).collect())
         es_cps = {d['ssm_id']: d['size(consequence)']
-                   for d in map(json.loads, es_cps)}
+                  for d in map(json.loads, es_cps)}
 
         assert es_cps == true_stats['cons_per_ssm']
 
@@ -193,7 +195,7 @@ class TestSSMCentricJoins:
         es_ops = (ssm_df.select(size('occurrence'), 'ssm_id')
                   .toJSON(use_unicode=False).collect())
         es_ops = {d['ssm_id']: d['size(occurrence)']
-                   for d in map(json.loads, es_ops)}
+                  for d in map(json.loads, es_ops)}
 
         assert es_ops == true_stats['occur_per_ssm']
 
@@ -251,7 +253,7 @@ class TestSSMOccurrenceCentricJoins:
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestObservationBuilder:
-    ''' Test intermediate result from the observation builder '''
+    """ Test intermediate result from the observation builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
@@ -262,7 +264,7 @@ class TestObservationBuilder:
         yield builder.build(maf_df)
 
     def test_join_columns(self, build_df):
-        ''' Check for correct columns '''
+        """ Check for correct columns """
         obs_df = build_df
         assert set(obs_df.columns) == {'case_id', 'ssm_id',
                                        'observation', 'occurrence_id'}
@@ -275,7 +277,7 @@ class TestObservationBuilder:
                                                    .columns)
 
     def test_observation_count(self, build_df, maf_df):
-        ''' Check for the right number of observations by submitter_id '''
+        """ Check for the right number of observations by submitter_id """
         n_observations = maf_df.select('case_id', 'ssm_id').distinct().count()
         assert build_df.count() == n_observations
 
@@ -293,7 +295,7 @@ class TestObservationBuilder:
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestConsequenceBuilder:
-    ''' Test intermediate result from the transcript builder '''
+    """ Test intermediate result from the transcript builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
@@ -328,8 +330,24 @@ class TestConsequenceBuilder:
         cytobands = [t['cytoband'] for t in cytobands]
         assert all([type(c) is list for c in cytobands])
 
+
+    def test_only_related_transcripts(self, maf_df, builder):
+        """
+        Test that consequence only contains transcripts from one gene
+        """
+        cons_df = builder.build(maf_df, join_gene=True)
+        consequences  = cons_df.collect()
+        for consequence in consequences:
+            # Each consequence is a list of transcripts
+            transcripts = consequence.asDict(recursive=True)['consequence']
+            print len(transcripts)
+            genes = set()
+            for transcript in transcripts:
+                genes.add(transcript['transcript']['gene']['gene_id'])
+            assert len(genes) == 1
+
     def test_all_effects_cols(self, maf_df, builder):
-        fields = ['do_not_use', 'consequence_type', 'aa_change',
+        fields = ['consequence_type', 'aa_change',
                   'transcript_id', 'ref_seq_accession']
         ssm_trans = builder._build_all_effects_cols(maf_df)
 

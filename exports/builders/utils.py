@@ -1,4 +1,3 @@
-import re
 import uuid
 import yaml
 import pkg_resources
@@ -29,19 +28,24 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     chromosome = chromosome.replace('chr', '')
 
     if variant_type == 'SNP':
-        label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
+        label = 'chr{}:g.{}{}>{}'.format(chromosome,
+                                         start_pos, ref_allele, tumor_allele)
     elif variant_type == 'DEL':
-        label = 'chr{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
+        label = 'chr{}:g.{}del{}'.format(chromosome,
+                                         start_pos, ref_allele)
     elif variant_type == 'INS':
-        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
+        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos,
+                                            end_pos, tumor_allele)
     else:
         label = chromosome
 
     return label
 
 
-def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
-    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
+def ssm_label_col(chromosome,
+                  variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos,
+                                        end_pos, ref_allele, tumor_allele)
 
 
 def _udf_uuid5_field(*values):
@@ -58,7 +62,8 @@ def _udf_uuid5_field(*values):
     # first value is entity type, the rest are fields made up
     # to a business key uniquely identifying an entity
     return str(uuid.uuid5(uuid.NAMESPACE_DNS,
-                    '\t'.join([v if type(v) == str else str(v) for v in values])))
+                          '\t'.join([v if type(v) == str else str(v)
+                                     for v in values])))
 
 
 def uuid5_col(*values):
@@ -124,11 +129,12 @@ def extract_rows_udf():
 def load_mapping(path):
     resource_package = 'exports'
     resource_path = '/'.join(('mappings', path))
-    return yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+    return yaml.safe_load(pkg_resources.resource_string(resource_package,
+                                                        resource_path))
 
 
 def struct_select(path, ignore=[]):
-    '''
+    """
     Takes the structure from a mapping and produces arguements for a select
     to reorganize a flat dataframe of those fields into the desiced structure.
     Eg:
@@ -144,7 +150,7 @@ def struct_select(path, ignore=[]):
     ```
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
-    '''
+    """
     mapping = load_mapping(path)
 
     select = ()
@@ -172,9 +178,9 @@ def struct_select(path, ignore=[]):
 
 
 def percentile(vector, p):
-    '''
+    """
     Calculates the p percentile of vector
-    '''
+    """
     sorted_vector = sorted(vector)
     vector_len = len(vector)
     position = (vector_len-1)*float(p)/100
@@ -183,4 +189,5 @@ def percentile(vector, p):
     if floored_pos >= vector_len - 1:
         return sorted_vector[vector_len - 1]
 
-    return sorted_vector[floored_pos] + (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+    return sorted_vector[floored_pos] +\
+           (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
