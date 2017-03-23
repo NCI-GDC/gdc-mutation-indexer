@@ -61,6 +61,7 @@ class MAFBuilder(object):
         df = df.drop('_gene_id')
         df = self.add_null(df)
         df = self.add_canonical_lengths(df)
+        df = self.add_normal_genotype(df)
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
@@ -111,7 +112,8 @@ class MAFBuilder(object):
         self.schema = maf_schema
 
         # Select and rename maf fields according to schema
-        maf_df = df.select(*( col(v['name']).alias(k) for k, v in maf_schema.items() ))
+        maf_df = df.select(*(col(v['name']).alias(k)
+                             for k, v in maf_schema.items()))
 
         return maf_df
 
@@ -159,7 +161,7 @@ class MAFBuilder(object):
     def add_mutation_type(self, df):
 
         def mutation_type(mut_type):
-            types = { 'Somatic': 'Simple Somatic Mutation' }
+            types = {'Somatic': 'Simple Somatic Mutation'}
             if mut_type in types:
                 return types[mut_type]
             else:
@@ -175,8 +177,8 @@ class MAFBuilder(object):
         chr1 -> 1
         """
         return df.withColumn('gene_chromosome',
-                    udf(lambda x: x.replace('chr',''),
-                        StringType())(col('gene_chromosome')))
+                             udf(lambda x: x.replace('chr', ''),
+                                 StringType())(col('gene_chromosome')))
 
     def add_mutation_subtype(self, df):
 
@@ -195,6 +197,15 @@ class MAFBuilder(object):
         df = df.withColumn('mutation_subtype', sub_type_udf('variant_type'))
 
         return df
+
+    def add_normal_genotype(self, df):
+        """
+        Adds normal_genotype column to the MAF dataframe
+        """
+        maf_df = df.withColumn('normal_genotype',
+                               uuid5_col(col('normal_allele1'),
+                                         col('normal_allele2')))
+        return maf_df
 
     def add_ssm_id(self, df):
         """
@@ -252,8 +263,9 @@ class MAFBuilder(object):
               from the sample uuid
         """
         maf_df = df.withColumn('_case_submitter_id',
-                                   regexp_extract(col('tumor_sample_barcode'),
-                                         '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',1))
+                               regexp_extract(col('tumor_sample_barcode'),
+                                              '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',
+                                              1))
         return maf_df
 
     def combine(self, urls=None):
@@ -311,14 +323,14 @@ class MAFBuilder(object):
         }
 
         filt = {
-            "filters":json.dumps(filt),
-            "size":"1000",
-            "fields":"file_id"
+            "filters": json.dumps(filt),
+            "size": "1000",
+            "fields": "file_id"
         }
 
         r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
                          params=filt, verify=False)
-        file_ids = [ f['file_id'] for f in r.json()['data']['hits'] ]
+        file_ids = [f['file_id'] for f in r.json()['data']['hits']]
 
         urls = []
         for fid in file_ids:
@@ -355,9 +367,9 @@ class MAFBuilder(object):
         Loads a built combined maf
         """
         df = self.sqlContext.read.format('com.databricks.spark.csv')\
-                        .options(header='true', inferschema='true')\
-                        .load(self.config.maf_path)\
-                        .drop_duplicates()
+                            .options(header='true', inferschema='true')\
+                            .load(self.config.maf_path)\
+                            .drop_duplicates()
 
         self.config.nb_mutations = df.count()
         return df
