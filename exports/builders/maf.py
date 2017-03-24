@@ -325,7 +325,7 @@ class MAFBuilder(object):
 
         self.config.nb_mutations = df.count()
         self.logger.info('Combined {} files for a total of {} rows'
-                            .format(len(urls), self.config.nb_mutations))
+                         .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
 

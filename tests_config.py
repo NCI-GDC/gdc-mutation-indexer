@@ -61,7 +61,7 @@ class TestConfig(BaseConfig):
                 for f in os.listdir(maf_dir) if f.endswith('maf')]
 
     # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.11.json')
+    cases_file = os.path.join(input_dir, 'cases.10429.json')
     case_mapping_json = os.path.join(input_dir, 'case_mapping.json')
 
     # Additional exports files
