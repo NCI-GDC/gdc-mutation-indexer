@@ -32,6 +32,8 @@ mappings:
         type: text
       maf_urls:
         type: text
+      indices_built:
+        type: text
       percentile_threshold:
         properties:
           name:
@@ -39,6 +41,8 @@ mappings:
           value:
             type: double
       coalesce:
+        type: double
+      repartition:
         type: double
       batch_size_bytes:
         type: text

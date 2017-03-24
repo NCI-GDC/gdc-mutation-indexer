@@ -49,10 +49,14 @@ class BaseBuilder(object):
     
         self.save_build_metadata()
         
-        
+        self.log('Repartitioning {}'.format(self.index_name))
+        df = getattr(self, self.index_name).repartition(self.config.repartition, self.id_field)
+
+        self.log('Caching repartitioned {} dataframe'.format(self.index_name))
+        df.cache().count()
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        getattr(self, self.index_name).coalesce(20).write\
+        df.coalesce(self.config.coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', '{}:{}'.format(self.config.es_host,
                                                self.config.es_port))\
@@ -65,11 +69,13 @@ class BaseBuilder(object):
             .option('es.http.retries', '-1')\
             .option('es.batch.write.retry.count', '-1')\
             .option('es.batch.write.retry.wait', '10m')\
-            .option('es.batch.size.bytes','5mb')\
-            .option('es.batch.size.entries', '100')\
+            .option('es.batch.size.bytes', self.config.batch_size_bytes)\
+            .option('es.batch.size.entries', self.config.batch_size_entries)\
             .option('es.mapping.id', self.id_field)\
             .option('es.spark.dataframe.write.null', 'true')\
             .save(index_doc)
+
+        df.unpersist()
 
     def truncate_df_at_percentile(self, df_to_truncate, field, percentile_threshold, df_for_percentile_calculation=None):
         """
@@ -117,7 +123,7 @@ class BaseBuilder(object):
 
         df = getattr(self, self.index_name, None)
         assert df != None, 'Builder does not have index_name attribute'
-        
+
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
         if id_field:
@@ -138,6 +144,7 @@ class BaseBuilder(object):
         if hasattr(self.config, 'nb_mutations'):
             nb_mutations = self.config.nb_mutations 
         metadata_doc = {
+                'indices_built': [k for k,v in self.config.index_names.iteritems() if v],
                 'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
                 'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
@@ -145,6 +152,7 @@ class BaseBuilder(object):
                 'maf_urls': self.config.maf_urls,
                 'percentile_threshold': [ {'name': k, 'value': v} for k,v in self.config.percentile_threshold.iteritems() ],
                 'coalesce': self.config.coalesce,
+                'repartition': self.config.repartition,
                 'batch_size_bytes': self.config.batch_size_bytes,
                 'batch_size_entries': int(self.config.batch_size_entries)
                 }

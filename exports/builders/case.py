@@ -34,4 +34,9 @@ class CaseBuilder(object):
             .option('es.resource.read', source)\
             .load(source)
 
+        self.logger.info('Repartitioning case dataframe')
+        df = df.repartition(self.config.repartition, 'case_id')
+
+        self.logger.info('Caching repartitioned case dataframe')
+        df.cache().count()
         return df
