@@ -20,7 +20,7 @@ MAPPING = {
         "observation": {'name': '', 'id': ['src_vcf_id']},
         "gene": {'name': '', 'id': ['gene_id']},
         "ssm": {'name': '', 'id': ['ssm_id']},
-        "transcripts": {'name': '', 'id': ['id']},
+        "transcripts": {'name': '', 'id': ['transcript_id']},
         "exons": {'name': '', 'id': ['start', 'end']},
         "domains": {'name': '', 'id': ['start', 'end']}
     }
