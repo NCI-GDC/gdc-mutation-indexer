@@ -15,8 +15,8 @@ class BaseStats(object):
         self.Ngenes = 0
         # Number of unique mutaitons seen in the index
         # identified by unique combinations of chromosome, start_pos, 
-        # variant_type, ref_allele and tumor_allele
-        self.NUniqMut = 0
+        # mutation_subtype, ref_allele and tumor_allele
+        self.NUniqMut   = 0
         # Number of consequences
         self.Nconseq = 0
         
@@ -33,7 +33,7 @@ class BaseStats(object):
         self.mutations_per_gene = {}
         # Number of unique mutaitons seen in the index
         # identified by unique combinations of chromosome, start_pos, 
-        # variant_type, ref_allele and tumor_allele
+        # mutation_subtype, ref_allele and tumor_allele
         self.uniqMutations = {}  
         # Consequence count by unique case and mutation pair
         self.consequences = {} 
@@ -49,13 +49,16 @@ class BaseStats(object):
     @staticmethod
     def get_mutation(ssm):
         chromosome = ssm['chromosome']
-        startpos = ssm['start_position']
-        muttype = ssm['variant_type']
-        refallele = ssm['reference_allele']
-        tumorall2 = ssm['tumor_allele']
+        startpos   = ssm['start_position']
+        mutType    = ssm['mutation_subtype']
+        refallele  = ssm['reference_allele']
+        tumorall2  = ssm['tumor_allele']
 
-        mutation = '_'.join(str(c) for c in [chromosome, startpos,
-                                             refallele, tumorall2, muttype])
+        mutation = '_'.join(str(c) for c in [chromosome, 
+                              startpos,  
+                              refallele, 
+                              tumorall2, 
+                              mutType])  
         return mutation
 
 
