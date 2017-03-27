@@ -127,9 +127,9 @@ class BaseBuilder(object):
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
         if id_field:
-            df = df.repartition(self.config.index_partitions, id_field).write
+            df = df.repartition(self.config.repartition, id_field).write
         else:
-            df = df.repartition(self.config.index_partitions).write
+            df = df.repartition(self.config.repartition).write
         if self.config.index_overwrite:
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))

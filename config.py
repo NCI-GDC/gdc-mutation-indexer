@@ -49,9 +49,6 @@ class BaseConfig(object):
     index_use_existing = False
     # Whether to overwrite a built index file, if it exists
     index_overwrite = True
-    # How many partitions to distribute the index file accross
-    # The index will be split up into this many json files
-    index_partitions = 1024
 
     mappings = {
                 'ssm': 'ssm.yml',
@@ -123,8 +120,10 @@ class BaseConfig(object):
         'observations_per_ssm': 100,
     }
 
-    coalesce = 10
+    # How many partitions to distribute the index file accross
+    # The index will be split up into this many json files
     repartition = 2048
+    coalesce = 10
     batch_size_bytes = '5mb'
     batch_size_entries = '100'
 

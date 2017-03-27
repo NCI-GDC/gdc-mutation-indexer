@@ -33,7 +33,7 @@ mappings:
       maf_urls:
         type: text
       indices_built:
-        type: text
+        type: keyword
       percentile_threshold:
         properties:
           name:

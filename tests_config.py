@@ -55,7 +55,7 @@ class TestConfig(BaseConfig):
     # Whether to overwrite a built index file, if it exists
     index_overwrite = True
     # How many partitions to distribute the index file accross
-    index_partitions = 10
+    repartition = 10
 
     maf_urls = ['file://' + os.path.join(maf_dir, f)
                 for f in os.listdir(maf_dir) if f.endswith('maf')]
