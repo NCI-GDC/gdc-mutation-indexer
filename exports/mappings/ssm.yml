@@ -29,5 +29,3 @@ properties:
     type: long
   tumor_allele:
     type: keyword
-  variant_type:
-    type: keyword
