@@ -12,7 +12,7 @@ class BaseConfig(object):
 
     api_host = os.getenv('API_HOST', 'http://api.service.consul')
     signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
-    s3_host = os.getenv('S3_HOST', 'cleversafe.service.consul')
+    s3_host = os.getenv('S3_HOST', 's3://cleversafe.service.consul')
     s3_bucket = 's3a://gdc-mutation-indexer/'
     mafs_prefix = 'mafs-case-id-20170303'
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
@@ -129,7 +129,7 @@ class BaseConfig(object):
         #varscan: 2782495  3.2GB
         #mutect: 3416739  3.9GB
 
-        self.maf_urls = [k for k in self.maf_urls if 'mutect' in k or 'somaticsniper' in k]
+        #self.maf_urls = [k for k in self.maf_urls if 'mutect' in k or 'somaticsniper' in k]
 
     def get_index_prefixes(self):
         '''
@@ -175,7 +175,7 @@ class BaseConfig(object):
     def get_maf_urls(self):
         conn = S3Connection(self.s3_access_key,
                             self.s3_secret_key,
-                            host=self.s3_host,
+                            host=self.s3_host.split('/')[-1],
                             proxy=self.s3_proxy,
                             proxy_port=self.s3_proxy_port,
                             calling_format=OrdinaryCallingFormat(),
