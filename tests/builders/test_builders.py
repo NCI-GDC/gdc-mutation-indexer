@@ -203,6 +203,7 @@ class TestSSMCentricJoins:
                                             .alias('occurrence'))
                                          .select('occurrence.*').columns)
 
+
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestSSMOccurrenceCentricJoins:
 
