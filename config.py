@@ -78,31 +78,6 @@ class BaseConfig(object):
 
 
 
-    conn = S3Connection(s3_access_key,
-                        s3_secret_key,
-                        host=s3_host,
-                        proxy=s3_proxy,
-                        proxy_port=s3_proxy_port,
-                        calling_format=OrdinaryCallingFormat(),
-                        is_secure=False)
-    bucket_name = s3_bucket.split('/')[2]
-    bucket = conn.get_bucket(bucket_name)
-
-    maf_urls = []
-
-    for obj in bucket.get_all_keys():
-        url = s3_bucket + obj.key
-        if mafs_prefix in url:
-            maf_urls.append(url)
-
-
-
-    #somaticsniper: 2227614  2.6GB
-    #muse: 2730127  3.1GB
-    #varscan: 2782495  3.2GB
-    #mutect: 3416739  3.9GB
-
-    maf_urls = [k for k in maf_urls if 'mutect' in k or 'somaticsniper' in k]
 
     # The location of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
@@ -147,6 +122,14 @@ class BaseConfig(object):
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
+        self.maf_urls = self.get_maf_urls()
+
+        #somaticsniper: 2227614  2.6GB
+        #muse: 2730127  3.1GB
+        #varscan: 2782495  3.2GB
+        #mutect: 3416739  3.9GB
+
+        self.maf_urls = [k for k in self.maf_urls if 'mutect' in k or 'somaticsniper' in k]
 
     def get_index_prefixes(self):
         '''
@@ -188,4 +171,24 @@ class BaseConfig(object):
         indices = {k: get_prefix(v) for k, v in self.index_names.items()
                    if v is not None}
         return indices
+
+    def get_maf_urls(self):
+        conn = S3Connection(self.s3_access_key,
+                            self.s3_secret_key,
+                            host=self.s3_host,
+                            proxy=self.s3_proxy,
+                            proxy_port=self.s3_proxy_port,
+                            calling_format=OrdinaryCallingFormat(),
+                            is_secure=False)
+        bucket_name = self.s3_bucket.split('/')[2]
+        bucket = conn.get_bucket(bucket_name)
+
+        maf_urls = []
+
+        for obj in bucket.get_all_keys():
+            url = self.s3_bucket + obj.key
+            if self.mafs_prefix in url:
+                maf_urls.append(url)
+
+        return maf_urls
 

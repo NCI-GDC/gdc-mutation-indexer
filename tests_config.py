@@ -57,9 +57,6 @@ class TestConfig(BaseConfig):
     # How many partitions to distribute the index file accross
     repartition = 10
 
-    maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.endswith('maf')]
-
     # Additional test files
     cases_file = os.path.join(input_dir, 'cases.11.json')
     case_mapping_json = os.path.join(input_dir, 'case_mapping.json')
@@ -79,3 +76,10 @@ class TestConfig(BaseConfig):
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
     }
+
+    def __init__(self):
+        super(TestConfig, self).__init__()
+
+    def get_maf_urls(self):
+        return ['file://' + os.path.join(self.maf_dir, f)
+                for f in os.listdir(self.maf_dir) if f.endswith('maf')]
