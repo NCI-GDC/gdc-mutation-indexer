@@ -51,16 +51,11 @@ class TestMAFBuilder:
         for field in maf_schema.keys():
             assert field in df.columns
 
-    def test_ssm_id(self, sqlContext):
+    def test_ssm_id(self, maf_df):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(conf, sqlContext)
-
-        df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df)
-        df = builder.add_ssm_id(df)
-        assert 'ssm_id' in df.columns
+        assert 'ssm_id' in maf_df.columns
 
     def test_genomic_dna_change(self, maf_df):
         '''

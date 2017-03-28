@@ -43,18 +43,19 @@ class MAFBuilder(object):
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
-        # ssm_id from hashing unique columns in the maf
-        df = self.add_ssm_id(df)
-        # Create occurrence_id
-        df = self.add_occurrence_id(df)
-        # Create observation_id
-        df = self.add_observation_id(df)
+
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
         # Add mutation_type
         df = self.add_mutation_type(df)
         # Add mutation_subtype
         df = self.add_mutation_subtype(df)
+        # ssm_id from hashing unique columns in the maf
+        df = self.add_ssm_id(df)
+        # Create occurrence_id
+        df = self.add_occurrence_id(df)
+        # Create observation_id
+        df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe
@@ -69,6 +70,7 @@ class MAFBuilder(object):
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
+
 
         # Write data
         if self.config.maf_keep:
@@ -220,7 +222,7 @@ class MAFBuilder(object):
                                                    col('chromosome'),
                                                    col('start_position'),
                                                    col('end_position'),
-                                                   col('variant_type'),
+                                                   col('mutation_subtype'),
                                                    col('reference_allele'),
                                                    col('tumor_allele')))
         return maf_df

@@ -175,6 +175,40 @@ class TrueStats:
         return {'count': len(data_list),
                 'obs_per_case': opc, 'cons_per_ssm': cps}
 
+    @staticmethod
+    def print_diff(es_dict, true_dict):
+        """
+         Prints difference in stats nicely
+         Used to debug join unit tests
+        """
+
+        es_keys = sorted(es_dict.keys())
+        true_keys = sorted(true_dict.keys())
+
+        if not es_keys == true_keys:
+            print '1st level keys mismatch:\n{} != {}'.format(es_keys,
+                                                              true_keys)
+            return
+
+        for key in es_dict.keys():
+            es_keys = sorted(es_dict[key].keys())
+            true_keys = sorted(true_dict[key].keys())
+            if not es_keys == true_keys:
+                print '2nd level keys mismatch:\n{} != {}'.format(es_keys,
+                                                                  true_keys)
+                return
+
+            for kkey in es_dict[key].keys():
+                es_keys = sorted(es_dict[key][kkey].keys())
+                true_keys = sorted(true_dict[key][kkey].keys())
+                if not es_keys == true_keys:
+                    print '\n', key
+                    print '\t', kkey
+                    print '\t\t', [x for x in es_keys if
+                                   x not in true_keys], 'in es, not in true'
+                    print '\t\t', [x for x in true_keys if
+                                   x not in es_keys], 'in true, not in es'
+
 
 def get_ssm_subtree_stats(ssm_df, index_name):
     """
