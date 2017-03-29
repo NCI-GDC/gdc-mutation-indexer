@@ -43,7 +43,7 @@ class MAFBuilder(object):
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
-
+        df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
         # Add mutation_type
@@ -139,6 +139,17 @@ class MAFBuilder(object):
         to_array = udf(to_array, ArrayType(StringType()))
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
         return df
+
+    def add_available_variation_data(self, df):
+        """
+        Populates available_variation_data with ['ssm'] for all cases with mutations
+        WARNING: Requires that cases that have been tested in the calling
+        pipelines be present in the MAF. If a case was tested but was not
+        called, it should have an empty row with only the case_id
+        """
+        return df.withColumn('available_variation_data',
+                      udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+                      ArrayType(StringType()))(col('Tumor_Sample_Barcode'), col('case_id')))
 
     def add_canonical_lengths(self, df):
         """

@@ -1,6 +1,6 @@
 properties:
-  ssm_tested:
-    type: boolean 
+  available_variation_data:
+    type: keyword 
   state:
     type: keyword
     default: empty
