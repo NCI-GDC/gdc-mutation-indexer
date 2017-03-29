@@ -1,5 +1,5 @@
 from pyspark.sql.functions import struct, collect_list, udf, size, col
-from pyspark.sql.types import BooleanType
+from pyspark.sql.types import BooleanType, ArrayType, StringType
 
 from exports.builders.df_builders import (
     get_gene_df,
@@ -59,7 +59,7 @@ class CaseCentricBuilder(BaseBuilder):
     def build_gene_ssm(self, maf_df):
         self.log('Building Gene from MAF')
         gene_df = get_gene_df(maf_df,
-                              add_fields=['case_id'],
+                              add_fields=['case_id', 'available_variation_data'],
                               drop_fields=['canonical_transcript_length',
                                            'canonical_transcript_length_cds',
                                            'canonical_transcript_length_genomic'])
@@ -71,24 +71,14 @@ class CaseCentricBuilder(BaseBuilder):
         self.log('Join ssm with Gene [inner, gene_id, case_id]')
         gene_ssm = (
             gene_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
-            .select('case_id',
-                    struct('ssm', *gene_df.drop('case_id').columns)
+            .select('case_id', 'available_variation_data',
+                    struct('ssm', *gene_df.drop('case_id')
+                                    .drop('available_variation_data').columns)
                     .alias('gene')))
 
         self.log_count(gene_ssm)
 
         return gene_ssm
-
-    def add_ssm_tested(self, df):
-        """
-        Evaluates whether the case was tested for ssm or not
-        For now, it is acceptable to say that any case with > 0 genes
-        was tested
-        """
-        return (df.withColumn('_ngenes', size(col('gene')))
-                    .withColumn('ssm_tested',
-                            udf(lambda x: x > 0, BooleanType())(col('_ngenes')))
-                    .drop('_ngenes'))
 
     def build(self, maf_df):
         self.log('Building Case')
@@ -104,14 +94,17 @@ class CaseCentricBuilder(BaseBuilder):
         gene_ssm = self.build_gene_ssm(maf_df)
 
         gene_ssm_grouped = (
-            gene_ssm.groupBy(gene_ssm.case_id)
+            gene_ssm.groupBy(gene_ssm.case_id, gene_ssm.available_variation_data)
             .agg(collect_list('gene').alias('gene')))
 
         self.log('Final join Case with last join result [inner, submitter_id]')
         case_centric = (
             case_df.join(gene_ssm_grouped, on=['case_id'], how='left')
         )
-        case_centric = self.add_ssm_tested(case_centric)
+        # Coerce any cases that didn't have variation data from None to []
+        case_centric = case_centric.withColumn('available_variation_data',
+                              udf(lambda x: [] if (x == None) else x,
+                              ArrayType(StringType()))(col('available_variation_data')))
         self.case_centric = case_centric
 
         # Truncate outliers

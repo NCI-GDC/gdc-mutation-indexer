@@ -84,8 +84,8 @@ class TestCaseCentricJoins:
                   for d in map(json.loads, es_gpc)}
         assert es_gpc == true_stats['genes_per_case']
 
-    def test_ssm_tested(self, maf_df, test_index, builder, true_stats):
-        """ Test that cases without any ssm are marked ssm_test=False """
+    def test_variation_data(self, maf_df, test_index, builder, true_stats):
+        """ Test that cases without any ssm, but were tested are flagged """
         # Insert a case to graph with no data
         test_index.index(conf.graph_index, doc_type='case',
                          id='ABC', body={'case_id':'ABC'})
@@ -93,10 +93,15 @@ class TestCaseCentricJoins:
         test_index.indices.refresh(index=conf.graph_index)
 
         case_df = builder.build(maf_df).case_centric
-        assert 'ssm_tested' in case_df.columns
+        assert 'available_variation_data' in case_df.columns
         # Sum of booleans, True = 1, False = 0, should only have one test case
-        assert sum([r['ssm_tested'] for r in
-                   case_df.select('ssm_tested').collect()]) == case_df.count()-1
+        assert sum([r['available_variation_data'] == ['ssm'] for r in
+                   case_df.select('available_variation_data').collect()]) == case_df.count()-1
+        assert sum([r['available_variation_data'] == [] for r in
+                   case_df.select('available_variation_data').collect()]) == 1
+        assert (case_df.filter(case_df.case_id == 'ABC')
+                       .select('available_variation_data')
+                       .collect()[0]['available_variation_data'] == [])
 
         # Get rid of the test document and force an ES refresh
         test_index.delete(conf.graph_index, doc_type='case', id='ABC')
