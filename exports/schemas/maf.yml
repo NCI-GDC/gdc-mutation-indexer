@@ -5,6 +5,8 @@ maf_schema:
       name:  BIOTYPE
   canonical_transcript_id:
       name:  Transcript_ID
+  cosmic_id:
+      name:  COSMIC
   gene_chromosome:
       name:  Chromosome
   gene_end:

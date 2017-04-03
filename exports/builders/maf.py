@@ -5,7 +5,7 @@ import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.types import StringType, IntegerType
+from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf
 
 from exports.builders.utils import uuid5_col, ssm_label_col
@@ -43,18 +43,19 @@ class MAFBuilder(object):
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
-        # ssm_id from hashing unique columns in the maf
-        df = self.add_ssm_id(df)
-        # Create occurrence_id
-        df = self.add_occurrence_id(df)
-        # Create observation_id
-        df = self.add_observation_id(df)
+        df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
         # Add mutation_type
         df = self.add_mutation_type(df)
         # Add mutation_subtype
         df = self.add_mutation_subtype(df)
+        # ssm_id from hashing unique columns in the maf
+        df = self.add_ssm_id(df)
+        # Create occurrence_id
+        df = self.add_occurrence_id(df)
+        # Create observation_id
+        df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe
@@ -69,6 +70,7 @@ class MAFBuilder(object):
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
+        df = self.format_cosmic_id(df)
 
         # Write data
         if self.config.maf_keep:
@@ -127,6 +129,34 @@ class MAFBuilder(object):
                              for k, v in maf_schema.items()))
 
         return maf_df
+
+    def format_cosmic_id(self, df):
+        """
+        Turns StringType() cosmic_id field to ArrayType(StringType()) field 
+        """
+
+        def to_array(cosmic_string):
+            if cosmic_string is not None:
+                if ';' in cosmic_string:
+                    cosmic_string = cosmic_string.split(';')
+                else:
+                    cosmic_string = [cosmic_string]
+            return cosmic_string
+
+        to_array = udf(to_array, ArrayType(StringType()))
+        df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
+        return df
+
+    def add_available_variation_data(self, df):
+        """
+        Populates available_variation_data with ['ssm'] for all cases with mutations
+        WARNING: Requires that cases that have been tested in the calling
+        pipelines be present in the MAF. If a case was tested but was not
+        called, it should have an empty row with only the case_id
+        """
+        return df.withColumn('available_variation_data',
+                      udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+                      ArrayType(StringType()))(col('Tumor_Sample_Barcode'), col('case_id')))
 
     def add_canonical_lengths(self, df):
         """
@@ -227,7 +257,7 @@ class MAFBuilder(object):
                                                    col('chromosome'),
                                                    col('start_position'),
                                                    col('end_position'),
-                                                   col('variant_type'),
+                                                   col('mutation_subtype'),
                                                    col('reference_allele'),
                                                    col('tumor_allele')))
         return maf_df

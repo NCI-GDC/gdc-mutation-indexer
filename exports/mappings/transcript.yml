@@ -19,5 +19,3 @@ properties:
     type: keyword
   transcript_id:
     type: keyword
-  do_not_use:
-    type: text

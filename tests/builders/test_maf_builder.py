@@ -3,6 +3,7 @@ import re
 import json
 import yaml
 from collections import Counter
+from pyspark.sql.types import ArrayType, StringType
 
 from exports.builders import MAFBuilder
 from tests_config import TestConfig
@@ -51,16 +52,20 @@ class TestMAFBuilder:
         for field in maf_schema.keys():
             assert field in df.columns
 
-    def test_ssm_id(self, sqlContext):
+    def test_ssm_id(self, maf_df):
         '''
         Test that ssm_id column is created
         '''
-        builder = MAFBuilder(conf, sqlContext)
+        assert 'ssm_id' in maf_df.columns
 
-        df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df)
-        df = builder.add_ssm_id(df)
-        assert 'ssm_id' in df.columns
+    def test_cosmic_id(self, maf_df):
+        '''
+        Test that cosmic_id column is created and is ArrayType(StringType())
+        '''
+        assert 'cosmic_id' in maf_df.columns
+        data_type = maf_df.schema['cosmic_id'].dataType
+        assert isinstance(data_type, ArrayType)
+        assert isinstance(data_type.elementType, StringType)
 
     def test_genomic_dna_change(self, maf_df):
         '''
@@ -133,7 +138,7 @@ class TestMAFBuilder:
 
         assert '_case_submitter_id' in df.columns
         assert (df.where(df.tumor_sample_barcode
-                         =='TCGA-A4-A6HP-01A-11D-A31X-10')
+                         == 'TCGA-A4-A6HP-01A-11D-A31X-10')
                   .select('_case_submitter_id')
                   .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
 
@@ -163,6 +168,7 @@ class TestMAFBuilder:
                     values = maf_df.select(colname)
                     for row in values.collect():
                         val = row[colname]
-                        is_matching = re.search(pattern.replace('{}','.*'), val)
+                        is_matching = re.search(pattern.replace('{}', '.*'),
+                                                val)
                         assert is_matching
 

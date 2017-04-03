@@ -33,9 +33,8 @@ def get_gene_df(input_df, add_fields=[], drop_fields=[],
 
 def get_ssm_df(input_df, add_fields=[], drop_fields=[],
                unique_fields=None, ignore=[]):
-    return get_single_df(
-        input_df, 'ssm.yml', add_fields,
-        drop_fields, unique_fields, ignore)
+    return get_single_df(input_df, 'ssm.yml',
+                         add_fields,  drop_fields, unique_fields, ignore)
 
 
 def get_transcript_df(input_df, add_fields=[], drop_fields=[],

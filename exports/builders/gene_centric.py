@@ -8,7 +8,6 @@ from exports.builders.df_builders import (
     build_ssm_subtree,
 )
 from exports.builders import (
-    MAFBuilder,
     CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
@@ -128,7 +127,6 @@ class GeneCentricBuilder(BaseBuilder):
         self.gene_centric = gene_centric
         self.log_count(self.gene_centric)
 
-        path = self.config.index_paths[self.index_name]
         self.log('Build finished')
         # Check if we should save the resulting dataframe
         if self.config.index_keep:
