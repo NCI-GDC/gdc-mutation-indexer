@@ -3,14 +3,11 @@ import logging
 from pyspark.sql.functions import lit, struct, collect_list, col
 
 from exports.builders import (
-    MAFBuilder,
     CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
-from exports.mappers import SSMMapper
-from exports.builders.utils import uuid5_col
 from exports.builders.df_builders import (
     get_ssm_df
 )
@@ -35,19 +32,21 @@ class SSMCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_centric'
     id_field = 'ssm_id'
-    mapper = SSMMapper
 
     def build(self, maf_df):
+        """
+        Builds SSM Centric index 
+        """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
             self.ssm_centric = self.get_existing()
             if self.ssm_centric is not None:
                 return self
 
-        ssm_df = get_ssm_df(maf_df, unique_fields=['ssm_id'])
+        ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
 
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df, join_gene=True))
+                   .build(maf_df, self.index_name, join_gene=True))
 
         occurrence_df = self.build_occurrence(maf_df)
 
@@ -71,7 +70,8 @@ class SSMCentricBuilder(BaseBuilder):
     def build_occurrence(self, maf_df):
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
+        obs_df = (ObservationBuilder(self.config, self.sqlContext)
+                  .build(maf_df, self.index_name))
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 

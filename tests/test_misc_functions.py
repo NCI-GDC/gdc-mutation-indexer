@@ -20,9 +20,9 @@ class TestMiscFunctions:
         yield test_index_class
 
     def test_es_adapter(self, sqlContext):
-        '''
+        """
         Test that the elasticsearch-hadoop wrapper jar is loaded
-        '''
+        """
         # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
         return (sqlContext.read.format("es")
                           .option('es.nodes', conf.source_es_host)
@@ -31,9 +31,9 @@ class TestMiscFunctions:
                           .load(conf.graph_index))
 
     def test_percentile(self):
-        '''
-        test the percentile util function
-        '''
+        """
+        Test the percentile util function
+        """
         l = randint(0, 100)
         if l % 2:
             l += 1
@@ -43,22 +43,26 @@ class TestMiscFunctions:
         assert percentile(v, 50) == sorted_v[l/2]
         assert percentile(v, 100) == sorted_v[-1]
 
-    def test_struct_select(self, maf_df):
-        ''' Test mapping to select '''
-        stmt = struct_select('observation.yml')
+    def test_struct_select(self):
+        """
+        Test mapping to select
+        """
 
-        df_json = (json.loads(maf_df.select(*stmt)
-                                    .limit(1).toJSON()
-                                    .collect()[0]))
+        indices = ['case_centric', 'gene_centric', 'ssm_centric',
+                   'ssm_occurrence_centric']
+        mappings = ['annotation', 'case', 'gene', 'observation', 'ssm',
+                    'transcript']
 
-        assert 'center' in df_json
-        assert 'input_bam_file' in df_json
-        assert 'normal_bam_uuid' in df_json['input_bam_file']
+        for mapping in mappings:
+            for index in indices:
+                print index, mapping
+                stmt = struct_select(index, mapping)
+                assert stmt
 
     def test_graph_index(self, es):
-        '''
+        """
         Test the test graph index fixture
-        '''
+        """
         assert es is not None
         assert conf.graph_index is not None
         assert es.count()['count'] > 0
@@ -67,16 +71,18 @@ class TestMiscFunctions:
                 == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
 
     def test_properties(self):
-        ''' Test that configuration properties are present '''
+        """
+        Test that configuration properties are present
+        """
         assert 'api_host' in dir(conf)
         assert 'signpost_host' in dir(conf)
         assert 's3_host' in dir(conf)
         assert 'es_host' in dir(conf)
 
     def test_index_prefix(self, es):
-        '''
+        """
         Test that index prefixes are determined correctly
-        '''
+        """
 
         index_name = 'test_case_centric__'
 
@@ -90,7 +96,9 @@ class TestMiscFunctions:
         es.indices.delete(index='gdc_r998_{}'.format(index_name))
 
     def test_ssm_label(self):
-        ''' Test ssm label generation '''
+        """
+        Test ssm label generation
+        """
         label = ssm_label('chr3', 'SNP', 41589825, '', 'A', 'T')
         assert label == 'chr3:g.41589825A>T'
 
@@ -104,7 +112,9 @@ class TestMiscFunctions:
         assert label == 'chr4:g.112382545A>T'
 
     def test_uuid5(self):
-        ''' Test uuid5 generation '''
+        """
+        Test uuid5 generation
+        """
 
         ssm_id = _udf_uuid5_field('ssm', 'GRCh38', 'chr4',
                                   '112382545', '112382545',

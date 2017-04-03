@@ -8,21 +8,21 @@ from exports.builders.utils import struct_select
 
 
 class ObservationBuilder(BaseBuilder):
-    '''
+    """
     Builds observation dataframe from the maf dataframe
-    '''
+    """
 
-    def build(self, maf_df):
-        '''
+    def build(self, maf_df, index):
+        """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
         said that a unique observation is identified by a unqiue pairing of
         tumor and normal sample uuids and an ssm uuid.
-        '''
+        """
 
-        obs_df = (maf_df.select('ssm_id', 'case_id',
-                                'occurrence_id', 'observation_id',
-                                struct(*struct_select('observation.yml'))
+        obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
+                                struct(*struct_select(index,
+                                                      'observation'))
                                 .alias('observation'))
                         .groupby('ssm_id', 'case_id', 'occurrence_id')
                         .agg(collect_list('observation')

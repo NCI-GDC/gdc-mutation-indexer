@@ -1,11 +1,11 @@
 import re
 import uuid
-import yaml
-import pkg_resources
 import logging
 from functools import partial
 from pyspark.sql.functions import udf, struct, col, explode, array
 from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
+
+from exports.mappers.models_mapper import ModelMapper
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -35,8 +35,9 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
         label = 'chr{}:g.{}del{}'.format(chromosome,
                                          start_pos, ref_allele)
     elif variant_type == 'INS':
-        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos,
-                                            end_pos, tumor_allele)
+
+        label = 'chr{}:g.{}_{}ins{}'.format(chromosome,
+                                            start_pos, end_pos, tumor_allele)
     else:
         label = chromosome
 
@@ -124,20 +125,154 @@ def all_effects_udf(index):
 
 def extract_rows_udf():
     vals = udf(lambda x: x.split(';'), ArrayType(StringType()))
-    return vals 
+    return vals
 
 
-def load_mapping(path):
-    resource_package = 'exports'
-    resource_path = '/'.join(('mappings', path))
-    return yaml.safe_load(pkg_resources.resource_string(resource_package,
-                                                        resource_path))
-
-
-def struct_select(path, ignore=[]):
+def access_json_path(json_dict, step_list):
     """
-    Takes the structure from a mapping and produces arguements for a select
-    to reorganize a flat dataframe of those fields into the desiced structure.
+    Access json path by list of steps
+    """
+    stack = list(step_list)
+
+    if not stack:
+        return json_dict
+
+    step = stack.pop(0)
+    return access_json_path(json_dict[step], stack)
+
+
+def select_mapping(index_name, mapping_name):
+    mapper = ModelMapper(index_name)
+
+    paths_map = {
+        'observation': {
+            'case_centric':
+                ['case_centric', 'properties', 'gene', 'properties', 'ssm',
+                 'properties', 'observation'],
+            'gene_centric':
+                ['gene_centric', 'properties', 'case', 'properties', 'ssm',
+                 'properties', 'observation'],
+            'ssm_centric':
+                ['ssm_centric', 'properties', 'occurrence', 'properties',
+                 'case', 'properties', 'observation'],
+            'ssm_occurrence_centric':
+                ['ssm_occurrence_centric', 'properties', 'case', 'properties',
+                 'observation'],
+        },
+        'annotation': {
+            'case_centric':
+                ['case_centric', 'properties', 'gene', 'properties', 'ssm',
+                 'properties', 'consequence', 'properties', 'transcript',
+                 'properties', 'annotation'],
+            'gene_centric':
+                ['gene_centric', 'properties', 'case', 'properties', 'ssm',
+                 'properties', 'consequence', 'properties', 'transcript',
+                 'properties', 'annotation'],
+            'ssm_centric':
+                ['ssm_centric', 'properties', 'consequence', 'properties',
+                 'transcript', 'properties', 'annotation'],
+            'ssm_occurrence_centric':
+                ['ssm_occurrence_centric', 'properties', 'ssm', 'properties',
+                 'consequence', 'properties', 'transcript', 'properties',
+                 'annotation'],
+        },
+        'transcript': {
+            'case_centric': ['case_centric', 'properties', 'gene',
+                             'properties', 'ssm', 'properties',
+                             'consequence', 'properties', 'transcript'],
+            'gene_centric': ['gene_centric', 'properties', 'case',
+                             'properties', 'ssm', 'properties',
+                             'consequence', 'properties', 'transcript'],
+            'ssm_centric': ['ssm_centric', 'properties', 'consequence',
+                            'properties', 'transcript'],
+            'ssm_occurrence_centric': ['ssm_occurrence_centric', 'properties',
+                                       'ssm', 'properties', 'consequence',
+                                       'properties', 'transcript'],
+        },
+        'case': {
+            'case_centric': ['case_centric'],  # ??
+            'gene_centric': ['gene_centric', 'properties', 'case'],
+            'ssm_centric': ['ssm_centric', 'properties', 'occurrence',
+                            'properties', 'case'],
+            'ssm_occurrence_centric': ['ssm_occurrence_centric',
+                                       'properties', 'case'],
+        },
+        'gene': {
+            'case_centric': ['case_centric', 'properties', 'gene'],
+            'gene_centric': ['gene_centric'],  # ??
+            'ssm_centric': ['ssm_centric', 'properties', 'consequence',
+                            'properties', 'transcript', 'properties', 'gene'],
+            'ssm_occurrence_centric': ['ssm_occurrence_centric', 'properties',
+                                       'ssm', 'properties', 'consequence',
+                                       'properties', 'transcript', 'properties',
+                                       'gene'],
+        },
+        'ssm': {
+            'case_centric': ['case_centric', 'properties', 'gene',
+                             'properties', 'ssm'],
+            'gene_centric': ['gene_centric', 'properties', 'case',
+                             'properties', 'ssm'],
+            'ssm_centric': ['ssm_centric'],  # ??
+            'ssm_occurrence_centric': ['ssm_occurrence_centric', 'properties',
+                                       'ssm'],
+        },
+
+    }
+
+    exclude_map = {
+        'case': {
+            'case_centric': ['gene', 'transcripts'],
+            'gene_centric': ['ssm'],
+            'ssm_centric': ['observation'],
+            'ssm_occurrence_centric': ['observation'],
+        },
+        'gene': {
+            'gene_centric': ['case', 'transcripts'],
+            'case_centric': ['ssm'],
+            'ssm_centric': [],
+            'ssm_occurrence_centric': [],
+        },
+        'ssm': {
+            'case_centric': ['consequence', 'observation'],
+            'gene_centric': ['consequence', 'observation'],
+            'ssm_centric': ['consequence', 'occurrence'],
+            'ssm_occurrence_centric': ['consequence'],
+        },
+        'transcript': {
+            'case_centric': ['annotation'],
+            'gene_centric': ['annotation'],
+            'ssm_centric': ['annotation', 'gene'],
+            'ssm_occurrence_centric': ['annotation', 'gene'],
+        },
+        'observation': {
+            'case_centric': [],
+            'gene_centric': [],
+            'ssm_centric': [],
+            'ssm_occurrence_centric': [],
+        },
+        'annotation': {
+            'case_centric': [],
+            'gene_centric': [],
+            'ssm_centric': [],
+            'ssm_occurrence_centric': [],
+        }
+    }
+
+    steps = paths_map[mapping_name][index_name]
+    exclude_fields = exclude_map[mapping_name][index_name]
+
+    mapping = access_json_path(dict(mapper.type_mappings), steps)
+
+    mapping['properties'] = {k: v for k, v in mapping['properties'].items()
+                             if k not in exclude_fields}
+
+    return mapping
+
+
+def struct_select(index_name, mapping_name, ignore=[]):
+    """
+    Takes the structure from a mapping and produces arguments for a select
+    to reorganize a flat dataframe of those fields into the desired structure.
     Eg:
     Given the mapping:
     ```
@@ -152,15 +287,16 @@ def struct_select(path, ignore=[]):
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
     """
-    mapping = load_mapping(path)
-
-    select = ()
 
     def restructure(doc):
         cols = []
         if type(doc) is dict:
-            for k,v in doc.items():
-                if 'type' in v and 'properties' not in v:
+            for k, v in doc.items():
+                # Ignore OICR autocomplete features
+                if k == 'copy_to' or k.find('_autocomplete') != -1:
+                    pass
+
+                elif 'type' in v and 'properties' not in v:
                     name = k
                     if 'default' in v:
                         name = v['default']
@@ -174,24 +310,26 @@ def struct_select(path, ignore=[]):
                         cols.append(k)
         return cols
 
-    select = restructure(mapping['properties'])
-    return select
+    mapping = select_mapping(index_name, mapping_name)
+
+    return restructure(mapping['properties'])
 
 
 def percentile(vector, p):
     """
     Calculates the p percentile of vector
     """
-    sorted_vector = sorted(vector)
+    vector = sorted(vector)
     vector_len = len(vector)
-    position = (vector_len-1)*float(p)/100
+    position = (vector_len - 1) * float(p) / 100
     floored_pos = int(position)
     rest = position - floored_pos
     if floored_pos >= vector_len - 1:
-        return sorted_vector[vector_len - 1]
+        return vector[vector_len - 1]
 
-    return sorted_vector[floored_pos] +\
-           (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+    return (vector[floored_pos] + (vector[floored_pos + 1] -
+                                   vector[floored_pos]) * rest)
+
 
 def extract_aas_position(df):
     """
@@ -214,3 +352,4 @@ def extract_aas_position(df):
         IntegerType())(col('aa_change')))
 
     return df
+

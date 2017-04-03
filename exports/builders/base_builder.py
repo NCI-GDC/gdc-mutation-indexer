@@ -5,6 +5,8 @@ import json
 import logging
 import os
 
+from ..mappers.models_mapper import ModelMapper
+
 logging.basicConfig()
 
 
@@ -14,7 +16,6 @@ class BaseBuilder(object):
     """
     index_name = None
     id_field = None
-    mapper = None
     settings = None
 
     def __init__(self, config, sqlContext):
@@ -23,8 +24,9 @@ class BaseBuilder(object):
         self.sqlContext = sqlContext
         self.debug = config.debug
         self.es = Elasticsearch(self.config.es_host,
-                             port=self.config.es_port,
-                             http_auth=(self.config.es_user, self.config.es_pass))
+                                port=self.config.es_port,
+                                http_auth=(self.config.es_user,
+                                           self.config.es_pass))
 
     def build(self):
         """
@@ -41,14 +43,14 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         doc = self.config.index_names[self.index_name]
         index_doc = '{}/{}'.format(index, doc)
-        settings = json.dumps(self.mapper(doc).settings)
-        
+        settings = json.dumps(ModelMapper(self.index_name).create_index_settings())
+
         self.log('Creating {} index'.format(index))
         response = self.es.indices.create(index=index, ignore=400, body=settings)
         self.log(response)
-    
+
         self.save_build_metadata()
-        
+
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self, self.index_name).repartition(self.config.repartition, self.id_field)
 
@@ -63,8 +65,8 @@ class BaseBuilder(object):
                                                self.config.es_port))\
             .option('es.net.http.auth.user', self.config.es_user)\
             .option('es.net.http.auth.pass', self.config.es_pass)\
-            .option('es.nodes.wan.only','true')\
-            .option('es.nodes.resolve.hostname','false')\
+            .option('es.nodes.wan.only', 'true')\
+            .option('es.nodes.resolve.hostname', 'false')\
             .option('es.resource.write', index_doc)\
             .option('es.http.timeout', '20m')\
             .option('es.http.retries', '-1')\
@@ -78,7 +80,8 @@ class BaseBuilder(object):
 
         df.unpersist()
 
-    def truncate_df_at_percentile(self, df_to_truncate, field, percentile_threshold, df_for_percentile_calculation=None):
+    def truncate_df_at_percentile(self, df_to_truncate, field,
+                                  percentile_threshold, df_for_percentile_calculation=None):
         """
         Truncates df_to_truncate to remove rows where field > percentile_threshold
         """
@@ -135,15 +138,16 @@ class BaseBuilder(object):
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)
-        
+
     def save_build_metadata(self):
-        '''
-        Saves metadata about the build in a 'build_metadata' document in the elasticsearch index
-        '''
+        """
+        Saves metadata about the build in a 'build_metadata' document in the
+        elasticsearch index
+        """
         index = self.config.indices[self.index_name]
         nb_mutations = -1
         if hasattr(self.config, 'nb_mutations'):
-            nb_mutations = self.config.nb_mutations 
+            nb_mutations = self.config.nb_mutations
         if '_rev_' in __file__:
             # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
             commit_hash = __file__.split('_rev_')[1].split('-')[0]
@@ -162,7 +166,10 @@ class BaseBuilder(object):
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,
                 'maf_urls': self.config.maf_urls,
-                'percentile_threshold': [ {'name': k, 'value': v} for k,v in self.config.percentile_threshold.iteritems() ],
+                'percentile_threshold': [{'name': k, 'value': v}
+                                         for k, v in (self.config
+                                                          .percentile_threshold
+                                                          .iteritems())],
                 'coalesce': self.config.coalesce,
                 'repartition': self.config.repartition,
                 'batch_size_bytes': self.config.batch_size_bytes,
@@ -170,7 +177,8 @@ class BaseBuilder(object):
                 }
 
         self.log('Saving build metadata')
-        response = self.es.create(index=index, doc_type='build_metadata', id=0, body=metadata_doc)
+        response = self.es.create(index=index, doc_type='build_metadata',
+                                  id=0, body=metadata_doc)
         self.log(response)
 
     def log(self, string):
@@ -185,4 +193,3 @@ class BaseBuilder(object):
         """
         if self.debug:
             self.log('Count: {}'.format(dataframe.count()))
-        

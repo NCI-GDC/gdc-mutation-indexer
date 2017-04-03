@@ -13,15 +13,16 @@ class CaseBuilder(object):
         self.sqlContext = sqlContext
 
     def build(self):
-        '''
-        '''
+        """
+        Builds Case dataframe
+        """
         df = self.load()
         return df
 
     def load(self):
-        '''
+        """
         Loads case docs from the gdc_from_graph index into a dataframe
-        '''
+        """
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
         df = self.sqlContext.read.format("es")\

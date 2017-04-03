@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import udf, lit, col, regexp_extract
+from pyspark.sql.functions import udf, lit, col, struct, regexp_extract
 from pyspark.sql.types import (
     StringType, ArrayType, LongType, StructType, StructField
 )
@@ -20,8 +20,9 @@ class GeneModelBuilder(object):
 
     def build(self):
         """
+        Builds Gene Model dataframe
         """
-        gene_df, cytobands_df, census_df = self.load()
+        gene_df, cytobands_df, census_df = self.read_json()
 
         # Join gene model with cytobands data:
         gene_df = gene_df.join(cytobands_df,
@@ -48,9 +49,10 @@ class GeneModelBuilder(object):
 
         return gene_df
 
-    def load(self):
+    def read_json(self):
         """
-        Loads the gene model json file
+        Reads the gene model, cytobands and census json files into Spark
+        dataframes
         """
         spark_csv_path = "org.apache.spark.sql.execution.datasources.csv.CSVFileFormat"
 
@@ -81,7 +83,8 @@ class GeneModelBuilder(object):
 
         return gene_model_df, cytobands_df, census_df
 
-    def rename_columns(self, gene_df):
+    @staticmethod
+    def rename_columns(gene_df):
         # Rename transcripts.id to transcripts.transcript_id
         tr_schema = gene_df.schema['transcripts'].dataType.elementType
 

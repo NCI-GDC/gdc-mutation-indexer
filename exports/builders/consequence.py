@@ -15,7 +15,7 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, join_gene=False):
+    def build(self, maf_df, index_name, join_gene=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
@@ -26,7 +26,7 @@ class ConsequenceBuilder(object):
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
         """
-        ann_df = get_annotation_df(maf_df, add_fields=['ssm_id'],
+        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
                                struct(ann_df.drop('ssm_id').columns)
@@ -42,7 +42,9 @@ class ConsequenceBuilder(object):
         # is_canonical,
         # do_not_us, consequence_type, aa_change,
         # refs_seq_accession}
-        tran_df = get_transcript_df(ssm_tran, add_fields=['gene_id', 'ssm_id'])
+
+        tran_df = get_transcript_df(ssm_tran, index_name,
+                                    add_fields=['gene_id', 'ssm_id'])
 
         # {*fields} => {*fields, annotation: {}}
         tran_with_ann = tran_df.join(ann_df, on=['ssm_id', 'transcript_id'],
@@ -50,11 +52,10 @@ class ConsequenceBuilder(object):
 
         if join_gene:
             # Build and join the gene if required
-            gene_df = self._build_gene_struct(maf_df)
+            gene_df = self._build_gene_struct(maf_df, index_name)
 
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
-            tran_with_ann = (
-                tran_with_ann.join(gene_df, on='gene_id'))
+            tran_with_ann = (tran_with_ann.join(gene_df, on='gene_id'))
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
@@ -94,16 +95,17 @@ class ConsequenceBuilder(object):
         using the all_effects_udf
 
         There are some mutations that have transcripts not belonging to the
-        gene of that mutation. They can be identified by matching the symbol
-        from the mutation to the do_not_use column. These should be removed.
+        gene of that mutation. They can be identified by matching the
+        symbol from the mutation to the do_not_use column.
+        These should be removed.
         """
-        # Extract columns from the all_effects column
-        ssm_tran = maf_df.select('gene_id', 'ssm_id', 'symbol',
-                                 'all_effects', 'canonical_transcript_id')
+        # # Extract columns from the all_effects column
+        # ssm_tran = maf_df.select('gene_id', 'ssm_id', 'symbol',
+        #                          'all_effects', 'canonical_transcript_id')
         # Turn each row within in the all_effects column into rows in the df
-        ssm_tran = ssm_tran.withColumn('all_effects',
-                                       extract_rows_udf()(col('all_effects'))
-                                       .alias('all_effects'))
+        ssm_tran = maf_df.withColumn('all_effects',
+                                     extract_rows_udf()(col('all_effects'))
+                                     .alias('all_effects'))
         # Now extract columns within all_effects to columns in the df
         fields = {
             'do_not_use': 0,
@@ -112,9 +114,9 @@ class ConsequenceBuilder(object):
             'transcript_id': 3,
             'ref_seq_accession': 4
         }
-        ssm_tran = ssm_tran.select('gene_id', 'ssm_id', 'symbol',
-                                   'canonical_transcript_id',
-                                   explode('all_effects').alias('all_effects'))
+
+        ssm_tran = ssm_tran.select(explode('all_effects').alias('all_effects'),
+                                   *ssm_tran.drop('all_effects').columns)
 
         for field, idx in fields.items():
             ssm_tran = ssm_tran.withColumn(field,
@@ -134,15 +136,18 @@ class ConsequenceBuilder(object):
 
         return ssm_tran
 
-    def _build_gene_struct(self, maf_df):
+    def _build_gene_struct(self, maf_df, index_name):
         # Build and join the gene if required
-        gene_df = get_gene_df(
-            maf_df,
-            drop_fields=['transcripts', 'description',
-                         'canonical_transcript_length',
-                         'canonical_transcript_length_cds',
-                         'canonical_transcript_length_genomic',
-                         'gene_strand', 'name', 'biotype'])
-        gene_struct_df = gene_df.select(
-            'gene_id', struct(col('*')).alias('gene'))
+
+        to_drop = ['transcripts', 'description', 'canonical_transcript_length',
+                   'gene_strand', 'name', 'biotype',
+                   'canonical_transcript_length_cds',
+                   'canonical_transcript_length_genomic']
+
+        # # Explode external_df_ids first
+        # maf_df = maf_df.select('external_db_ids.*',
+        #                        *maf_df.drop('external_db_ids').columns)
+        gene_df = get_gene_df(maf_df, index_name, drop_fields=to_drop)
+        gene_struct_df = gene_df.select('gene_id',
+                                        struct(col('*')).alias('gene'))
         return gene_struct_df
