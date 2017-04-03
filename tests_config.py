@@ -77,6 +77,15 @@ class TestConfig(BaseConfig):
         'observations_per_ssm': 100,
     }
 
+    cache_dataframes = {
+         'mafs': True,
+         'cases': False,
+         'case_centric': True,
+         'gene_centric': True,
+         'ssm_centric': True,
+         'ssm_occurrence_centric': True
+     }
+
     def __init__(self):
         super(TestConfig, self).__init__()
 

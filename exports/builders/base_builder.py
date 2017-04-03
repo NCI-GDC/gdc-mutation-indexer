@@ -52,8 +52,9 @@ class BaseBuilder(object):
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self, self.index_name).repartition(self.config.repartition, self.id_field)
 
-        self.log('Caching repartitioned {} dataframe'.format(self.index_name))
-        df.cache().count()
+        if self.config.cache_dataframes[self.index_name]:
+            self.log('Caching repartitioned {} dataframe'.format(self.index_name))
+            df.cache().count()
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.coalesce).write\

@@ -101,6 +101,15 @@ class BaseConfig(object):
     coalesce = 10
     batch_size_bytes = '5mb'
     batch_size_entries = '100'
+    cache_dataframes = {
+        'mafs': True,
+        'cases': True,
+        'case_centric': False,
+        'gene_centric': False,
+        'ssm_centric': False,
+        'ssm_occurrence_centric': False
+    }
+
 
     # Case load settings
     case_exclude_fields = ','.join(['samples',

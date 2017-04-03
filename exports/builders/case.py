@@ -37,6 +37,7 @@ class CaseBuilder(object):
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.repartition, 'case_id')
 
-        self.logger.info('Caching repartitioned case dataframe')
-        df.cache().count()
+        if self.config.cache_dataframes['cases']:
+            self.logger.info('Caching repartitioned case dataframe')
+            df.cache().count()
         return df
