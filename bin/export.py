@@ -1,6 +1,7 @@
 import logging
 import sys
 import argparse
+import ast
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
 
@@ -20,6 +21,8 @@ def main():
                         type=str,
                         choices=['Base', 'Test'],
                         default='Base')
+    parser.add_argument('-a', '--amendments',
+                        help='File containing amendments to the configuration')
     parser.add_argument("-v", "--verbose",
                         help="increase output verbosity",
                         action="store_true")
@@ -36,6 +39,13 @@ def main():
         from config import BaseConfig as Config
 
     config = Config()
+
+    if args.amendments:
+        with open(args.amendments, 'r') as f:
+            amendments = f.read()
+        amendments = ast.literal_eval(amendments)
+
+        config.amend(amendments)
 
     sc, sqlContext = make_spark_context(config)
 
