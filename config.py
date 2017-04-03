@@ -158,3 +158,6 @@ class BaseConfig(object):
                    if v is not None}
         return indices
 
+    def amend(self, amendments):
+        for key,value in amendments.items():
+            setattr(self, key, value)

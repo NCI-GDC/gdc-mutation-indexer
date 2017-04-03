@@ -23,4 +23,10 @@ export ELASTICSEARCH_HOST=localhost
 #export ELASTICSEARCH_USER=
 #export ELASTICSEARCH_PASS=
 
-exec $SPARK_HOME/bin/spark-submit bin/export.py
+if [ ! -z $1 ]
+then
+    cmd='bin/export.py -a '"$1"
+else
+    cmd='bin/export.py'
+fi
+exec $SPARK_HOME/bin/spark-submit "$cmd"
