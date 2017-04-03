@@ -29,4 +29,4 @@ then
 else
     cmd='bin/export.py'
 fi
-exec $SPARK_HOME/bin/spark-submit "cmd"
+exec $SPARK_HOME/bin/spark-submit "$cmd"
