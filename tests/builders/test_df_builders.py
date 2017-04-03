@@ -1,14 +1,16 @@
 from pyspark.sql.functions import UserDefinedFunction, col
+import pytest
+from pyspark.sql.types import BooleanType
+
+from exports.builders.utils import select_mapping
+from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.df_builders import (
     get_annotation_df,
     get_gene_df,
     get_ssm_df,
     get_transcript_df,
+    get_single_df
 )
-from exports.builders import ConsequenceBuilder
-import pytest
-from exports.builders.utils import load_mapping
-from pyspark.sql.types import BooleanType
 from tests_config import TestConfig
 conf = TestConfig()
 
@@ -42,40 +44,54 @@ class TestDFBuilders:
             col(join_by) == item[join_by]).first().asDict(recursive=True)
         assert cls.is_sub(item, maf.items(), mapping)
 
-    def test_gene_df(self, maf_df):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_gene_df(self, maf_df, index_name):
         # convert is_cancer_gene_census to True as our test self.mafs aren't
         # in the census list
-        udf = UserDefinedFunction(lambda x: True, BooleanType())
-        new_df = maf_df.withColumn('is_cancer_gene_census',
-                                   udf(maf_df.is_cancer_gene_census))
-        gene_df = get_gene_df(new_df)
-        self.assert_from_maf(new_df, gene_df.first(), 'gene_id')
+        if index_name != 'gene_centric':
+            udf = UserDefinedFunction(lambda x: True, BooleanType())
+            new_df = maf_df.withColumn('is_cancer_gene_census',
+                                       udf(maf_df.is_cancer_gene_census))
+            gene_df = get_gene_df(new_df, index_name)
+            self.assert_from_maf(new_df, gene_df.first(), 'gene_id')
 
-    def test_df_drop_fields(self, maf_df):
-        gene_df = get_gene_df(maf_df, drop_fields=['cytoband', 'name'])
-        assert 'cytoband' not in gene_df.columns
-        assert 'name' not in gene_df.columns
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_df_drop_fields(self, maf_df, index_name):
+        df = get_single_df(maf_df, index_name, 'annotation',
+                           drop_fields=['ssm_id', 'mutation_subtype'])
+        assert 'ssm_id' not in df.columns
+        assert 'mutation_subtype' not in df.columns
 
-    def test_unique_fields(self, maf_df):
-        ann_df = get_annotation_df(maf_df, unique_fields=['impact'])
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_unique_fields(self, maf_df, index_name):
+        ann_df = get_annotation_df(maf_df, index_name, unique_fields=['impact'])
         assert ann_df.count() < maf_df.count()
 
-    def test_df_add_fields(self, maf_df):
-        gene_df = get_gene_df(maf_df, add_fields=['case_id'])
-        assert 'case_id' in gene_df.columns
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_df_add_fields(self, maf_df, index_name):
+        df = get_single_df(maf_df, index_name, 'annotation',
+                           add_fields=['case_id'])
+        assert 'case_id' in df.columns
 
-    def test_annotation_df(self, maf_df):
-        ann_df = get_annotation_df(maf_df)
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_annotation_df(self, maf_df, index_name):
+        ann_df = get_annotation_df(maf_df, index_name)
         annotation = ann_df.first()
         self.assert_from_maf(maf_df, annotation, 'transcript_id')
 
-    def test_ssm_df(self, maf_df):
-        ssm_df = get_ssm_df(maf_df)
-        self.assert_from_maf(maf_df, ssm_df.first(), 'ssm_id')
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_ssm_df(self, maf_df, index_name):
+        if index_name != 'ssm_centric':
+            ssm_df = get_ssm_df(maf_df, index_name)
+            self.assert_from_maf(maf_df, ssm_df.first(), 'ssm_id')
 
-    def test_transcript_df(self, sqlContext, maf_df):
-        trans_builder = ConsequenceBuilder(conf, sqlContext)
-        exploded = trans_builder._build_all_effects_cols(maf_df)
-        transcript = get_transcript_df(exploded)
-        self.assert_from_maf(exploded, transcript.first(), 'transcript_id',
-                             mapping=load_mapping('transcript.yml')['properties'])
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_transcript_df(self, sqlContext, maf_df, index_name):
+        builder = ConsequenceBuilder(conf, sqlContext)
+        exploded = builder._build_all_effects_cols(maf_df)
+        transcript = get_transcript_df(exploded, index_name)
+
+        transcript_mapping = select_mapping(index_name, 'transcript')
+        self.assert_from_maf(exploded, transcript.first(),
+                             'transcript_id',
+                             mapping=transcript_mapping['properties'])

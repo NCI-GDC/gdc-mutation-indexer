@@ -1,14 +1,14 @@
 from exports.builders.utils import struct_select
 
 
-def build_ssm_subtree(maf_df, cons_df, obs_df=None):
-    '''
+def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
+    """
     ssm[]
        |___ consequence[]
        |             |_____...
        |___ observation[]
-    '''
-    ssm_df = get_ssm_df(maf_df, add_fields=['gene_id', 'case_id'])
+    """
+    ssm_df = get_ssm_df(maf_df, index_name, add_fields=['gene_id', 'case_id'])
 
     df = ssm_df.join(cons_df, on='ssm_id', how='left')
     if obs_df:
@@ -17,38 +17,34 @@ def build_ssm_subtree(maf_df, cons_df, obs_df=None):
     return df
 
 
-def get_annotation_df(input_df, add_fields=[], drop_fields=[],
+def get_annotation_df(input_df, index_name, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
-    return get_single_df(
-        input_df, 'annotation.yml', add_fields,
-        drop_fields, unique_fields, ignore)
+    return get_single_df(input_df, index_name, 'annotation', add_fields,
+                         drop_fields, unique_fields, ignore)
 
 
-def get_gene_df(input_df, add_fields=[], drop_fields=[],
+def get_gene_df(input_df, index_name, add_fields=[], drop_fields=[],
                 unique_fields=None, ignore=['transcripts']):
-    return get_single_df(
-        input_df, 'gene.yml', add_fields,
-        drop_fields, unique_fields, ignore)
+    return get_single_df(input_df, index_name, 'gene', add_fields,
+                         drop_fields, unique_fields, ignore)
 
 
-def get_ssm_df(input_df, add_fields=[], drop_fields=[],
+def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
                unique_fields=None, ignore=[]):
-    return get_single_df(input_df, 'ssm.yml',
+    return get_single_df(input_df, index_name, 'ssm',
                          add_fields,  drop_fields, unique_fields, ignore)
 
 
-def get_transcript_df(input_df, add_fields=[], drop_fields=[],
+def get_transcript_df(input_df, index_name, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
-    return get_single_df(
-        input_df, 'transcript.yml', add_fields,
-        drop_fields, unique_fields, ignore)
+    return get_single_df(input_df, index_name, 'transcript', add_fields,
+                         drop_fields, unique_fields, ignore)
 
 
-def get_single_df(
-        input_df, mapping, add_fields=[], drop_fields=[],
-        unique_fields=None, ignore=[]):
+def get_single_df(input_df, index_name, mapping_name,
+                  add_fields=[], drop_fields=[], unique_fields=None, ignore=[]):
     df = input_df.select(
-        *(add_fields + struct_select(mapping, ignore=ignore)))
+        *(add_fields + struct_select(index_name, mapping_name, ignore=ignore)))
 
     df = df.drop_duplicates(unique_fields)
     return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)

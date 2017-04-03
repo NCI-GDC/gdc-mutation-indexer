@@ -24,8 +24,14 @@ class TestBuildersSimple:
                                          GeneCentricBuilder,
                                          SSMCentricBuilder,
                                          SSMOccurrenceCentricBuilder])
-    def test_simple_build(self, maf_df, sqlContext, builder):
+    def test_simple_build_indices(self, maf_df, sqlContext, builder):
         builder(conf, sqlContext).build(maf_df)
+
+    @pytest.mark.parametrize("index_name", conf.indices)
+    @pytest.mark.parametrize("builder", [ConsequenceBuilder,
+                                         ObservationBuilder])
+    def test_simple_build_other(self, maf_df, sqlContext, builder, index_name):
+        builder(conf, sqlContext).build(maf_df, index_name)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index')
@@ -35,6 +41,10 @@ class TestCaseCentricJoins:
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield CaseCentricBuilder(conf, sqlContext)
+
+    @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).case_centric
 
     @pytest.fixture(scope='class')
     def true_stats(self):
@@ -73,8 +83,8 @@ class TestCaseCentricJoins:
 
         assert spg_dict == true_stats['ssms_per_gene']
 
-    def test_case_gene(self, maf_df, builder, true_stats):
-        case_df = builder.build(maf_df).case_centric
+    def test_case_gene(self, build_df, true_stats):
+        case_df = build_df
         # Correct number of Case documents
         assert case_df.count() == true_stats['count']
 
@@ -85,33 +95,42 @@ class TestCaseCentricJoins:
                   for d in map(json.loads, es_gpc)}
         assert es_gpc == true_stats['genes_per_case']
 
-    def test_variation_data(self, maf_df, test_index, builder, true_stats):
+    def test_variation_data(self, test_index, build_df):
         """ Test that cases without any ssm, but were tested are flagged """
+        case_df = build_df
+
         # Insert a case to graph with no data
         test_index.index(conf.graph_index, doc_type='case',
-                         id='ABC', body={'case_id':'ABC'})
+                         id='empty_case', body={'case_id': 'empty_case'})
         # Force ES to refresh before trying to build index
         test_index.indices.refresh(index=conf.graph_index)
 
-        case_df = builder.build(maf_df).case_centric
         assert 'available_variation_data' in case_df.columns
         # Sum of booleans, True = 1, False = 0, should only have one test case
-        assert sum([r['available_variation_data'] == ['ssm'] for r in
-                   case_df.select('available_variation_data').collect()]) == case_df.count()-1
+
+        assert sum(
+            [r['available_variation_data'] == ['ssm']
+             for r in case_df.select('available_variation_data').collect()]
+        ) == case_df.count() - 1
+
         assert sum([r['available_variation_data'] == [] for r in
                    case_df.select('available_variation_data').collect()]) == 1
-        assert (case_df.filter(case_df.case_id == 'ABC')
+
+        assert (case_df.cache()
+                       .filter(case_df.case_id == 'empty_case')
                        .select('available_variation_data')
                        .collect()[0]['available_variation_data'] == [])
 
         # Get rid of the test document and force an ES refresh
-        test_index.delete(conf.graph_index, doc_type='case', id='ABC')
+        test_index.delete(conf.graph_index, doc_type='case', id='empty_case')
         test_index.indices.refresh(index=conf.graph_index)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestGeneCentricJoins:
-    ''' Test intermediate result from the case centric builder '''
+    """
+    Test intermediate result from the case centric builder
+    """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
@@ -208,7 +227,7 @@ class TestSSMCentricJoins:
     def test_ssm_columns(self, maf_df, builder):
         ssm_df = builder.build(maf_df).ssm_centric
         assert 'occurrence_id' in (ssm_df.select(explode('occurrence')
-                                            .alias('occurrence'))
+                                                 .alias('occurrence'))
                                          .select('occurrence.*').columns)
 
 
@@ -265,30 +284,31 @@ class TestObservationBuilder:
     def builder(self, sqlContext):
         yield ObservationBuilder(conf, sqlContext)
 
-    @pytest.fixture(scope='class')
-    def build_df(self, maf_df, builder):
-        yield builder.build(maf_df)
-
-    def test_join_columns(self, build_df):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_join_columns(self, builder, maf_df, index_name):
         """ Check for correct columns """
-        obs_df = build_df
+        obs_df = builder.build(maf_df, index_name)
         assert set(obs_df.columns) == {'case_id', 'ssm_id',
                                        'observation', 'occurrence_id'}
 
-    def test_observation_id(self, build_df):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_observation_id(self, builder, maf_df, index_name):
         """ Test that the observation_id was created """
-        assert 'observation_id' in (build_df.select(explode('observation')
-                                                   .alias('observation'))
-                                                   .select('observation.*')
-                                                   .columns)
+        obs_df = builder.build(maf_df, index_name)
+        assert 'observation_id' in (obs_df.select(explode('observation')
+                                                  .alias('observation'))
+                                          .select('observation.*')
+                                          .columns)
 
-    def test_observation_count(self, build_df, maf_df):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_observation_count(self, builder, maf_df, index_name):
         """ Check for the right number of observations by submitter_id """
         n_observations = maf_df.select('case_id', 'ssm_id').distinct().count()
-        assert build_df.count() == n_observations
+        assert builder.build(maf_df, index_name).count() == n_observations
 
-    def test_observation_values(self, build_df, maf_df):
-        obs_df = build_df
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_observation_values(self, builder, maf_df, index_name):
+        obs_df = builder.build(maf_df, index_name)
 
         true_obs = map(json.loads, (maf_df.select('case_id', 'ssm_id')
                                           .distinct().toJSON().collect()))
@@ -307,18 +327,16 @@ class TestConsequenceBuilder:
     def builder(self, sqlContext):
         yield ConsequenceBuilder(conf, sqlContext)
 
-    @pytest.fixture(scope='class')
-    def build_df(self, maf_df, builder):
-        yield builder.build(maf_df, join_gene=False)
-
-    def test_consequence_count(self, maf_df, build_df):
-        cons_df = build_df
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_count(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name)
 
         n_consequences = maf_df.select('ssm_id').distinct().count()
         assert cons_df.count() == n_consequences
 
-    def test_consequence_no_gene(self, build_df):
-        cons_df = build_df
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_no_gene(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name)
         transcripts = (cons_df.select(explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
@@ -326,8 +344,9 @@ class TestConsequenceBuilder:
         # Check that gene not in transctipts
         assert 'gene' not in transcripts.columns
 
-    def test_consequence_with_gene(self, maf_df, builder):
-        cons_df = builder.build(maf_df, join_gene=True)
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_with_gene(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name, join_gene=True)
         transcripts = (cons_df.select(explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
@@ -340,40 +359,23 @@ class TestConsequenceBuilder:
                                             .select('gene.*')
                                             .columns)
 
-    def test_impact(self, maf_df, build_df):
-        """
-        Checks that consequence contains correct impact
-        """
-        df = (build_df.select('ssm_id',
-                              explode('consequence.transcript')
-                              .alias('transcript'))
-                      .select('ssm_id', 'transcript.annotation.impact')
-                      .dropna()).collect()
-
-        maf = maf_df.select('ssm_id', 'impact').collect()
-
-        build_ssm_to_impact = {x['ssm_id']: x['impact'] for x in df}
-        true_ssm_to_impact = {x['ssm_id']: x['impact'] for x in maf}
-
-        for ssm_id, impact in build_ssm_to_impact.items():
-            assert true_ssm_to_impact[ssm_id] == impact
-
-    def test_only_related_transcripts(self, maf_df, builder):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_only_related_transcripts(self, builder, maf_df, index_name):
         """
         Test that consequence only contains transcripts from one gene
         """
-        cons_df = builder.build(maf_df, join_gene=True)
-        consequences  = cons_df.collect()
+        cons_df = builder.build(maf_df, index_name, join_gene=True)
+        consequences = cons_df.collect()
         for consequence in consequences:
             # Each consequence is a list of transcripts
             transcripts = consequence.asDict(recursive=True)['consequence']
-            print len(transcripts)
             genes = set()
             for transcript in transcripts:
                 genes.add(transcript['transcript']['gene']['gene_id'])
             assert len(genes) == 1
 
-    def test_all_effects_cols(self, maf_df, builder):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_all_effects_cols(self, builder, maf_df, index_name):
         fields = ['consequence_type', 'aa_change',
                   'transcript_id', 'ref_seq_accession']
         ssm_trans = builder._build_all_effects_cols(maf_df)
@@ -381,19 +383,10 @@ class TestConsequenceBuilder:
         for f in fields:
             assert f in ssm_trans.columns
 
-    def test_aa_start_end(self, maf_df, builder):
-        new_df = maf_df.withColumn('aa_change', lit('p.L1201R'))
-        new_df = extract_aas_position(new_df)
-
-        assert 'aa_start' in new_df.columns
-        assert 'aa_end' in new_df.columns
-        aa_change = new_df.filter(new_df.aa_change == 'p.L1201R').select('aa_start', 'aa_end').collect()[0]
-        assert aa_change['aa_start'] == 1201
-        assert aa_change['aa_end'] == 1201
-
-    def test_consequence_id(self, maf_df, builder):
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_id(self, builder, maf_df, index_name):
         """ Test that consequence_id is created correctly """
-        cons_df = builder.build(maf_df, join_gene=False)
+        cons_df = builder.build(maf_df, index_name, join_gene=False)
 
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 

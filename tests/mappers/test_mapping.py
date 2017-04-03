@@ -1,25 +1,19 @@
 import pytest
 from jsonpath_rw import parse
 
-from exports.mappers import (
-    GeneMapper,
-    SSMMapper,
-    SSMOccurrenceMapper,
-    CaseMapper,
-    ModelMapper
-)
+from exports.mappers import ModelMapper
 
 
 @pytest.fixture(scope="session")
 def mappings():
-    gene_mapper = ModelMapper('gene_centric')
-    ssm_mapper = SSMMapper('ssm_centric')
-    ssm_occurrence_mapper = SSMOccurrenceMapper('ssm_occurrence')
     case_mapper = ModelMapper('case_centric')
+    gene_mapper = ModelMapper('gene_centric')
+    ssm_mapper = ModelMapper('ssm_centric')
+    ssm_occurrence_mapper = ModelMapper('ssm_occurrence_centric')
     return {
         'gene': gene_mapper.type_mappings['gene_centric'],
-        'ssm': ssm_mapper.mapping,
-        'ssm_occurrence': ssm_occurrence_mapper.mapping,
+        'ssm': ssm_mapper.type_mappings['ssm_centric'],
+        'ssm_occurrence': ssm_occurrence_mapper.type_mappings['ssm_occurrence_centric'],
         'case': case_mapper.type_mappings['case_centric']
     }
 

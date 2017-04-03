@@ -9,14 +9,15 @@ from builders import (
 
 
 class GDCMutationExport(object):
-    '''
+    """
     The main entry point into the index export process for the mutation indices
-    '''
+    """
 
     def __init__(self, sc, sqlContext, config=TestConfig()):
         self.config = config
         self.sc = sc
         self.sqlContext = sqlContext
+
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
         df = MAFBuilder(self.config, self.sqlContext).build()

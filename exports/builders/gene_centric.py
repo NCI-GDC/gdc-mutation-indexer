@@ -13,7 +13,6 @@ from exports.builders import (
     ObservationBuilder,
 )
 from exports.builders import BaseBuilder
-from exports.mappers import GeneMapper
 
 
 class GeneCentricBuilder(BaseBuilder):
@@ -31,19 +30,61 @@ class GeneCentricBuilder(BaseBuilder):
 
     index_name = 'gene_centric'
     id_field = 'gene_id'
-    mapper = GeneMapper
+
+    def build(self, maf_df):
+        """
+        Builds Gene Centric index 
+        """
+        self.log('Building GeneCentric')
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.gene_centric = self.get_existing()
+            if self.gene_centric is not None:
+                return self
+
+        self.log('Selecting Gene from MAF')
+        gene_df = get_gene_df(maf_df, self.index_name,
+                              unique_fields=['gene_id'])
+
+        case_ssm = self.build_case_ssm(maf_df)
+
+        case_ssm_grouped = (
+            case_ssm.groupBy(case_ssm.gene_id.alias('gene_id'))
+            .agg(collect_list('case').alias('case'))
+        )
+
+        self.log('Joining Gene with Case [inner, "gene_id"]')
+        gene_centric = (
+            gene_df.join(case_ssm_grouped,
+                         gene_df.gene_id == case_ssm_grouped.gene_id,
+                         'inner')
+                   .drop(case_ssm.case_id)
+                   .drop(case_ssm_grouped.gene_id)
+        )
+
+        self.log_count(gene_centric)
+        self.gene_centric = gene_centric
+        self.log_count(self.gene_centric)
+
+        self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
+        return self
 
     def build_ssm(self, maf_df):
         # Consequence
         cons_df = ConsequenceBuilder(
-            self.config, self.sqlContext).build(maf_df)
+            self.config, self.sqlContext).build(maf_df, self.index_name)
 
         # Observation
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
+        obs_df = (ObservationBuilder(self.config, self.sqlContext)
+                  .build(maf_df, self.index_name))
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM
-        ssm_df = build_ssm_subtree(maf_df, cons_df, obs_df)
+        ssm_df = build_ssm_subtree(maf_df, cons_df, self.index_name,
+                                   obs_df=obs_df)
 
         # Aggregating SSM
         self.log('Aggregating ssm by case_id and gene_id')
@@ -61,7 +102,7 @@ class GeneCentricBuilder(BaseBuilder):
 
     def build_case_with_gene_id(self, maf_df):
         self.log('\nSelecting Gene from MAF')
-        gene_df = (get_gene_df(maf_df, add_fields=['case_id'])
+        gene_df = (get_gene_df(maf_df, self.index_name, add_fields=['case_id'])
                    .select('case_id', 'gene_id'))
 
         self.log("Building Case")
@@ -93,42 +134,3 @@ class GeneCentricBuilder(BaseBuilder):
         self.log_count(case_ssm)
 
         return case_ssm
-
-    def build(self, maf_df):
-        """
-        """
-        self.log('Building GeneCentric')
-        # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.gene_centric = self.get_existing()
-            if self.gene_centric is not None:
-                return self
-
-        self.log('Selecting Gene from MAF')
-        gene_df = get_gene_df(maf_df, unique_fields=['gene_id'])
-
-        case_ssm = self.build_case_ssm(maf_df)
-
-        case_ssm_grouped = (
-            case_ssm.groupBy(case_ssm.gene_id.alias('gene_id'))
-            .agg(collect_list('case').alias('case'))
-        )
-
-        self.log('Joining Gene with Case [inner, "gene_id"]')
-        gene_centric = (
-            gene_df.join(case_ssm_grouped,
-                         gene_df.gene_id == case_ssm_grouped.gene_id,
-                         'inner')
-                   .drop(case_ssm.case_id)
-                   .drop(case_ssm_grouped.gene_id)
-        )
-
-        self.log_count(gene_centric)
-        self.gene_centric = gene_centric
-        self.log_count(self.gene_centric)
-
-        self.log('Build finished')
-        # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
-        return self

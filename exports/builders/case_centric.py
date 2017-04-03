@@ -6,13 +6,11 @@ from exports.builders.df_builders import (
     build_ssm_subtree,
 )
 from exports.builders import (
-    MAFBuilder,
     CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
 )
 from exports.builders import BaseBuilder
-from exports.mappers import CaseMapper
 
 
 class CaseCentricBuilder(BaseBuilder):
@@ -30,57 +28,11 @@ class CaseCentricBuilder(BaseBuilder):
 
     index_name = 'case_centric'
     id_field = 'case_id'
-    mapper = CaseMapper
-
-    def build_ssm(self, maf_df):
-        # Consequence
-        cons_df = ConsequenceBuilder(
-            self.config, self.sqlContext).build(maf_df)
-
-        # Observation
-        obs_df = ObservationBuilder(self.config, self.sqlContext).build(maf_df)
-        obs_df = obs_df.drop('occurrence_id')
-
-        # SSM
-        ssm_df = build_ssm_subtree(maf_df, cons_df, obs_df)
-
-        # Aggregate SSM
-        self.log('Aggregating ssm by case_id and gene_id')
-        ssm_df = (
-            ssm_df.select(
-             'gene_id', 'case_id',
-             struct(*ssm_df.drop('gene_id')
-                           .drop('case_id').columns).alias('ssm'))
-            .groupBy(['gene_id', 'case_id'])
-            .agg(collect_list('ssm').alias('ssm')))
-
-        return ssm_df
-
-    def build_gene_ssm(self, maf_df):
-        self.log('Building Gene from MAF')
-        gene_df = get_gene_df(maf_df,
-                              add_fields=['case_id', 'available_variation_data'],
-                              drop_fields=['canonical_transcript_length',
-                                           'canonical_transcript_length_cds',
-                                           'canonical_transcript_length_genomic'])
-        self.log_count(gene_df)
-
-        ssm_df = self.build_ssm(maf_df)
-        self.log_count(ssm_df)
-
-        self.log('Join ssm with Gene [inner, gene_id, case_id]')
-        gene_ssm = (
-            gene_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
-            .select('case_id', 'available_variation_data',
-                    struct('ssm', *gene_df.drop('case_id')
-                                    .drop('available_variation_data').columns)
-                    .alias('gene')))
-
-        self.log_count(gene_ssm)
-
-        return gene_ssm
 
     def build(self, maf_df):
+        """
+        Builds Case Centric index 
+        """
         self.log('Building Case')
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
@@ -119,3 +71,57 @@ class CaseCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
+
+    def build_ssm(self, maf_df):
+        # Consequence
+        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
+                   .build(maf_df, self.index_name))
+
+        # Observation
+        obs_df = (ObservationBuilder(self.config, self.sqlContext)
+                  .build(maf_df, self.index_name))
+        obs_df = obs_df.drop('occurrence_id')
+
+        # SSM
+        ssm_df = build_ssm_subtree(maf_df, cons_df, self.index_name,
+                                   obs_df=obs_df)
+
+        # Aggregate SSM
+        self.log('Aggregating ssm by case_id and gene_id')
+        ssm_df = (
+            ssm_df.select(
+             'gene_id', 'case_id',
+             struct(*ssm_df.drop('gene_id')
+                           .drop('case_id').columns).alias('ssm'))
+            .groupBy(['gene_id', 'case_id'])
+            .agg(collect_list('ssm').alias('ssm')))
+
+        return ssm_df
+
+    def build_gene_ssm(self, maf_df):
+        self.log('Building Gene from MAF')
+
+        gene_df = get_gene_df(maf_df, self.index_name,
+                              add_fields=['case_id', 'available_variation_data'],
+                              drop_fields=['canonical_transcript_length',
+                                           'canonical_transcript_length_cds',
+                                           'canonical_transcript_length_genomic'])
+        self.log_count(gene_df)
+
+        ssm_df = self.build_ssm(maf_df)
+        self.log_count(ssm_df)
+
+        self.log('Join ssm with Gene [inner, gene_id, case_id]')
+        gene_ssm = (
+            gene_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
+            .select('case_id', 'available_variation_data',
+                    struct('ssm', *gene_df.drop('case_id')
+                                          .drop('available_variation_data')
+                                          .columns)
+                    .alias('gene'))
+        )
+
+        self.log_count(gene_ssm)
+
+        return gene_ssm
+

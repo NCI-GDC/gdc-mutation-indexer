@@ -133,7 +133,7 @@ class MAFBuilder(object):
 
     def format_cosmic_id(self, df):
         """
-        Turns StringType() cosmic_id field to ArrayType(StringType()) field 
+        Turns StringType() cosmic_id field to ArrayType(StringType()) field
         """
 
         def to_array(cosmic_string):
@@ -155,9 +155,11 @@ class MAFBuilder(object):
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
+        avd_udf = udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+                      ArrayType(StringType()))
         return df.withColumn('available_variation_data',
-                      udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
-                      ArrayType(StringType()))(col('Tumor_Sample_Barcode'), col('case_id')))
+                             avd_udf(col('Tumor_Sample_Barcode'),
+                                     col('case_id')))
 
     def add_canonical_lengths(self, df):
         """
@@ -270,8 +272,8 @@ class MAFBuilder(object):
         """
         df = df.withColumn('occurrence_id',
                             uuid5_col(lit('ssm_occurrence'),
-                                col('ssm_id'),
-                                col('case_id')))
+                                      col('ssm_id'),
+                                      col('case_id')))
         return df
 
     def add_observation_id(self, df):
@@ -280,12 +282,12 @@ class MAFBuilder(object):
         occurrence_id+tumor_sample_uuid+matched_norm_sample_uuid+variant_caller+variant_process
         """
         df = df.withColumn('observation_id',
-                            uuid5_col(lit('ssm_observation'),
-                                      col('occurrence_id'),
-                                      col('tumor_sample_uuid'),
-                                      col('matched_norm_sample_uuid'),
-                                      col('variant_caller'),
-                                      lit('masked')))
+                           uuid5_col(lit('ssm_observation'),
+                                     col('occurrence_id'),
+                                     col('tumor_sample_uuid'),
+                                     col('matched_norm_sample_uuid'),
+                                     col('variant_caller'),
+                                     lit('masked')))
         return df
 
     def add_genomic_dna_change(self, df):
@@ -317,10 +319,17 @@ class MAFBuilder(object):
                 return -1
             return int(s.split('/')[1])
 
+        def end(s):
+            if -1 in [start(s), length(s)]:
+                return -1
+            return start(s) + length(s)
+
         df = df.withColumn('cds_start', udf(start,
                                             IntegerType())(col('cds_position')))
+        df = df.withColumn('cds_end', udf(start,
+                                          IntegerType())(col('cds_position')))
         df = df.withColumn('cds_length', udf(length,
-                                            IntegerType())(col('cds_position')))
+                                             IntegerType())(col('cds_position')))
         return df
 
     def extract_barcode(self, df):
@@ -363,7 +372,7 @@ class MAFBuilder(object):
 
         self.config.nb_mutations = df.count()
         self.logger.info('Combined {} files for a total of {} rows'
-                            .format(len(urls), self.config.nb_mutations))
+                         .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
 

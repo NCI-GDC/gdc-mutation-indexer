@@ -7,6 +7,10 @@ maf_schema:
       name:  Transcript_ID
   cosmic_id:
       name:  COSMIC
+  clin_sig:
+      name:  CLIN_SIG
+  dbsnp_val_status:
+      name:  dbSNP_Val_Status
   gene_chromosome:
       name:  Chromosome
   gene_end:
@@ -114,6 +118,8 @@ maf_schema:
       name:  Tumor_Validation_Allele1
   tumor_validation_allele2:
       name:  Tumor_Validation_Allele2
+  validation_method:
+      name: Validation_Method
   n_depth:
       name:  n_depth
       type: int
