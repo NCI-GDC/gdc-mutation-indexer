@@ -20,6 +20,7 @@ class CaseMapper(Mapper):
 
         self.add_copy_to([
             'case_id',
+            'primary_site',
             'project.properties.disease_type',
             'project.properties.name',
             'project.properties.primary_site',
