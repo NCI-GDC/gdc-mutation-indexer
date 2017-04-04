@@ -31,7 +31,9 @@ class GeneMapper(Mapper):
             'gene_id',
             'name',
             'symbol',
-            'synonyms'
+            'synonyms',
+            'transcripts.properties.transcript_id',
+            'transcripts.properties.translation_id',
         ], mapping, 'gene_autocomplete')
 
         self.change_props_to_keyword([
@@ -70,4 +72,6 @@ class GeneMapper(Mapper):
         ssm_map['properties']['observation'] = obs_map
         mapping = self.clean(mapping)
 
+        import json
+        print json.dumps(mapping, indent=2)
         return mapping
