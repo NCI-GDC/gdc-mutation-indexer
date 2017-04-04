@@ -129,8 +129,14 @@ def extract_rows_udf():
 def load_mapping(path):
     resource_package = 'exports'
     resource_path = '/'.join(('mappings', path))
-    return yaml.safe_load(pkg_resources.resource_string(resource_package,
+    mapping = yaml.safe_load(pkg_resources.resource_string(resource_package,
                                                         resource_path))
+    to_del = ['case_autocomplete', 'gene_autocomplete',
+              'ssm_autocomplete','ssm_occurrence_autocomplete']
+    for field in to_del:
+        if field in mapping['properties']:
+            del mapping['properties'][field]
+    return mapping
 
 
 def struct_select(path, ignore=[]):

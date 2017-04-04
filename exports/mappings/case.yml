@@ -1,21 +1,25 @@
 properties:
   available_variation_data:
     type: keyword 
+  case_autocomplete:
+      type: keyword
+      fields:
+        analyzed:
+          type: text
+          analyzer: autocomplete_analyzed
+          search_analyzer: lowercase_keyword
+        lowercase:
+          type: text
+          analyzer: lowercase_keyword
+        prefix:
+          type: text
+          analyzer: autocomplete_prefix
+          search_analyzer: lowercase_keyword
   state:
     type: keyword
     default: empty
   case_id:
     type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
   demographic:
     properties:
       state:
@@ -88,41 +92,11 @@ properties:
   project:
     properties:
       disease_type:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       name:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       primary_site:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       program:
         properties:
           dbgap_accession_number:
@@ -132,33 +106,13 @@ properties:
           program_id:
             type: keyword
       project_id:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       released:
         type: boolean
       state:
         type: keyword
   submitter_id:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   summary:
     properties:
       data_categories:

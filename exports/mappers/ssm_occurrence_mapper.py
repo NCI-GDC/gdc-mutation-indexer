@@ -16,11 +16,7 @@ class SSMOccurrenceMapper(Mapper):
     def build_mapping(self):
         mapping = Mapper.build_mapping(self)
         mapping.update({"_id": { "path": "ssm_occurance_id" }})
-        mapping.update({'properties': {
-                            'ssm_occurrence_id': {
-                                'type': 'keyword'
-                            }
-                        }})
+        mapping = self.load_properties('ssm_occurrence.yml', nested=False)
 
         # Add ssm
         ssm_map = self.load_properties('ssm.yml', nested=False)
@@ -61,10 +57,8 @@ class SSMOccurrenceMapper(Mapper):
             'name'
         ], gene_map)
 
-        del gene_map['properties']['biotype']
         del gene_map['properties']['description']
         del gene_map['properties']['name']
-        del gene_map['properties']['symbol']
         del gene_map['properties']['transcripts']
 
         tran_map['properties']['gene'] = gene_map

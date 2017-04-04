@@ -1,4 +1,6 @@
 properties:
+  canonical_transcript_id:
+    type: keyword
   biotype:
     type: keyword
   canonical_transcript_length_genomic:
@@ -7,150 +9,52 @@ properties:
     type: long
   canonical_transcript_length:
     type: long
-  canonical_transcript_id:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
   cytoband:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   description:
     type: text 
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
   external_db_ids:
     properties:
       entrez_gene:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       hgnc:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       omim_gene:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
+        type: keyword
       uniprotkb_swissprot:
-        type: text
-        fields:
-          analyzed:
-            type: text
-            analyzer: id_search
-          raw:
-            type: keyword
-            store: true
-          search:
-            type: text
-            analyzer: id_search
-  gene_chromosome:
+        type: keyword
+  gene_autocomplete:
     type: keyword
-  gene_end:
-    type: long
-  gene_id:
-    type: text
     fields:
       analyzed:
         type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
+        analyzer: autocomplete_analyzed
+        search_analyzer: lowercase_keyword
+      lowercase:
         type: text
-        analyzer: id_search
+        analyzer: lowercase_keyword
+      prefix:
+        type: text
+        analyzer: autocomplete_prefix
+        search_analyzer: lowercase_keyword
+  gene_chromosome:
+    type: keyword
+  gene_id:
+    type: keyword
   gene_start:
+    type: long
+  gene_end:
     type: long
   gene_strand:
     type: long
   is_cancer_gene_census:
     type: boolean
   name:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   symbol:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   synonyms:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   transcripts:
     type: nested
     properties:

@@ -21,6 +21,19 @@ class GeneMapper(Mapper):
         # Add case mapping from graph
         case_map = self.load_properties('case.yml', nested=True)
 
+        self.add_copy_to([
+            'canonical_transcript_id',
+            'cytoband',
+            'external_db_ids.properties.entrez_gene',
+            'external_db_ids.properties.hgnc',
+            'external_db_ids.properties.omim_gene',
+            'external_db_ids.properties.uniprotkb_swissprot',
+            'gene_id',
+            'name',
+            'symbol',
+            'synonyms'
+        ], mapping, 'gene_autocomplete')
+
         self.change_props_to_keyword([
             'case_id',
             'submitter_id',

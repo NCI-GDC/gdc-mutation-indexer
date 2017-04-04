@@ -18,6 +18,15 @@ class CaseMapper(Mapper):
         case_map = self.load_properties('case.yml', nested=False)
         mapping.update(case_map)
 
+        self.add_copy_to([
+            'case_id',
+            'project.properties.disease_type',
+            'project.properties.name',
+            'project.properties.primary_site',
+            'project.properties.project_id',
+            'submitter_id',
+        ], case_map, 'case_autocomplete')
+
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=True)
 
@@ -34,6 +43,7 @@ class CaseMapper(Mapper):
             'external_db_ids.properties.uniprotkb_swissprot',
             'name'
         ], gene_map)
+
 
         mapping['properties']['gene'] = gene_map
         # Add ssm
