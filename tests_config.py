@@ -55,10 +55,7 @@ class TestConfig(BaseConfig):
     # Whether to overwrite a built index file, if it exists
     index_overwrite = True
     # How many partitions to distribute the index file accross
-    index_partitions = 10
-
-    maf_urls = ['file://' + os.path.join(maf_dir, f)
-                for f in os.listdir(maf_dir) if f.endswith('maf')]
+    repartition = 10
 
     # Additional test files
     cases_file = os.path.join(input_dir, 'cases.11.json')
@@ -79,3 +76,19 @@ class TestConfig(BaseConfig):
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
     }
+
+    cache_dataframes = {
+         'mafs': True,
+         'cases': False,
+         'case_centric': True,
+         'gene_centric': True,
+         'ssm_centric': True,
+         'ssm_occurrence_centric': True
+     }
+
+    def __init__(self):
+        super(TestConfig, self).__init__()
+
+    def get_maf_urls(self):
+        return ['file://' + os.path.join(self.maf_dir, f)
+                for f in os.listdir(self.maf_dir) if f.endswith('maf')]

@@ -76,6 +76,13 @@ class MAFBuilder(object):
         if self.config.maf_keep:
             self.write(df)
 
+        self.logger.info('Repartitioning MAF dataframe')
+        df = df.repartition(self.config.repartition, 'ssm_id')
+
+        if self.config.cache_dataframes['mafs']:
+            self.logger.info('Caching repartitioned MAF dataframe')
+            df.cache().count()
+
         return df
 
     def map_transform(self, df):
