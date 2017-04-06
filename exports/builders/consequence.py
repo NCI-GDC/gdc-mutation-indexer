@@ -1,6 +1,6 @@
 import logging
 from pyspark.sql.functions import explode, col, collect_list, struct, lit
-from exports.builders.utils import extract_rows_udf, all_effects_udf, uuid5_col
+from exports.builders.utils import extract_rows_udf, all_effects_udf, uuid5_col, extract_aas_position
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
@@ -126,6 +126,9 @@ class ConsequenceBuilder(object):
         ssm_tran = ssm_tran.withColumn(
             'is_canonical',
             ssm_tran.canonical_transcript_id == ssm_tran.transcript_id)
+
+        # Get aas columns from aa_change
+        ssm_tran = extract_aas_position(ssm_tran)
 
         return ssm_tran
 
