@@ -1,10 +1,11 @@
+import re
 import uuid
 import yaml
 import pkg_resources
 import logging
 from functools import partial
 from pyspark.sql.functions import udf, struct, col, explode, array
-from pyspark.sql.types import StringType, ArrayType, LongType
+from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -197,3 +198,25 @@ def percentile(vector, p):
 
     return sorted_vector[floored_pos] +\
            (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+
+def extract_aas_position(df):
+    """
+    create aa_start and aa_end field based on aa_change string
+    there is one problem that synonymous_variant aa_change does not contain
+    aa position information
+    """
+    def extract(aa_change, start=True):
+        match = re.findall(re.compile('(\d+)(?:\D+?)*(\d+)*(?:\D+)'), aa_change)
+        if match:
+            aa_start, aa_end = match[0]
+            if start or not aa_end:
+                return int(aa_start)
+
+            return int(aa_end)
+        return 'null'
+
+    df = df.withColumn('aa_start', udf(extract,IntegerType())(col('aa_change')))
+    df = df.withColumn('aa_end', udf(lambda aa_change: extract(aa_change, False),
+        IntegerType())(col('aa_change')))
+
+    return df

@@ -1,7 +1,7 @@
 import pytest
 import json
 
-from pyspark.sql.functions import size, explode
+from pyspark.sql.functions import size, explode, lit
 from exports.builders import (
     CaseBuilder,
     ObservationBuilder,
@@ -13,6 +13,7 @@ from exports.builders import (
 )
 from tests_config import TestConfig
 from utils.true_stats import TrueStats, get_ssm_subtree_stats
+from exports.builders.utils import extract_aas_position
 
 conf = TestConfig()
 
@@ -357,6 +358,16 @@ class TestConsequenceBuilder:
 
         for f in fields:
             assert f in ssm_trans.columns
+
+    def test_aa_start_end(self, maf_df, builder):
+        new_df = maf_df.withColumn('aa_change', lit('p.L1201R'))
+        new_df = extract_aas_position(new_df)
+
+        assert 'aa_start' in new_df.columns
+        assert 'aa_end' in new_df.columns
+        aa_change = new_df.filter(new_df.aa_change == 'p.L1201R').select('aa_start', 'aa_end').collect()[0]
+        assert aa_change['aa_start'] == 1201
+        assert aa_change['aa_end'] == 1201
 
     def test_consequence_id(self, maf_df, builder):
         """ Test that consequence_id is created correctly """
