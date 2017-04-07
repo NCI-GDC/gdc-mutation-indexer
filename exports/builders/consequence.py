@@ -26,8 +26,11 @@ class ConsequenceBuilder(object):
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
         """
-        ann_df = get_annotation_df(maf_df, unique_fields=['transcript_id'])
-        ann_df = ann_df.select(struct(ann_df.columns).alias('annotation'))
+        ann_df = get_annotation_df(maf_df, add_fields=['ssm_id'],
+                                   unique_fields=['transcript_id'])
+        ann_df = ann_df.select('ssm_id', 'transcript_id',
+                               struct(ann_df.drop('ssm_id').columns)
+                               .alias('annotation'))
 
         # => {gene_id, ssm_id, transcript_id,
         # empty, canonical_tracript_id, is_canonical,
@@ -42,9 +45,8 @@ class ConsequenceBuilder(object):
         tran_df = get_transcript_df(ssm_tran, add_fields=['gene_id', 'ssm_id'])
 
         # {*fields} => {*fields, annotation: {}}
-        join_condition = (tran_df.transcript_id ==
-                          ann_df.annotation.transcript_id)
-        tran_with_ann = tran_df.join(ann_df, join_condition, how='left')
+        tran_with_ann = tran_df.join(ann_df, on=['ssm_id', 'transcript_id'],
+                                     how='left')
 
         if join_gene:
             # Build and join the gene if required

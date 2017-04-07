@@ -336,6 +336,24 @@ class TestConsequenceBuilder:
         cytobands = [t['cytoband'] for t in cytobands]
         assert all([type(c) is list for c in cytobands])
 
+    def test_impact(self, maf_df, build_df):
+        """
+        Checks that consequence contains correct impact
+        """
+        df = (build_df.select('ssm_id',
+                              explode('consequence.transcript')
+                              .alias('transcript'))
+                      .select('ssm_id', 'transcript.annotation.impact')
+                      .dropna()).collect()
+
+        maf = maf_df.select('ssm_id', 'impact').collect()
+
+        build_ssm_to_impact = {x['ssm_id']: x['impact'] for x in df}
+        true_ssm_to_impact = {x['ssm_id']: x['impact'] for x in maf}
+
+        for ssm_id, impact in build_ssm_to_impact.items():
+            assert true_ssm_to_impact[ssm_id] == impact
+
     def test_only_related_transcripts(self, maf_df, builder):
         """
         Test that consequence only contains transcripts from one gene
