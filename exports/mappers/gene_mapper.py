@@ -72,6 +72,4 @@ class GeneMapper(Mapper):
         ssm_map['properties']['observation'] = obs_map
         mapping = self.clean(mapping)
 
-        import json
-        print json.dumps(mapping, indent=2)
         return mapping
