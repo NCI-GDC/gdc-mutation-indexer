@@ -1,6 +1,20 @@
 properties:
   aa_change:
-    type: keyword
+    type: text
+    fields:
+      analyzed:
+        type: text
+        analyzer: id_search
+      raw:
+        type: keyword
+        store: true
+      search:
+        type: text
+        analyzer: id_search
+  aa_start:
+    type: long
+  aa_end:
+    type: long
   consequence_type:
     type: keyword
   is_canonical:
