@@ -120,9 +120,6 @@ class BaseConfig(object):
                                     'files',
                                     '*_ids'])
 
-    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
-    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
-    gene_model_file = 's3a://test/genes.json'
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
