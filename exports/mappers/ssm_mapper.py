@@ -21,7 +21,12 @@ class SSMMapper(Mapper):
         # Consequence only holds transcript
         # Add transcript
         tran_map = self.load_properties('transcript.yml')
-        mapping['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        mapping['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         mapping['properties']['consequence']['type'] = 'nested'
         # Add gene 
         gene_map = self.load_properties('gene.yml', nested=False)
@@ -54,25 +59,25 @@ class SSMMapper(Mapper):
         case_map = self.load_properties('case.yml', nested=False)
 
         self.change_props_to_keyword([
-            'aliquot_ids',
-            'analyte_ids',
             'case_id',
-            'portion_ids',
-            'sample_ids',
-            'slide_ids',
-            'submitter_aliquot_ids',
-            'submitter_analyte_ids',
             'submitter_id',
-            'submitter_portion_ids',
-            'submitter_sample_ids',
-            'submitter_slide_ids',
             'project.properties.disease_type',
             'project.properties.name',
             'project.properties.primary_site',
             'project.properties.project_id',
         ], case_map)
 
-        mapping['properties']['occurrence'] = {'properties':{'case': case_map}}
+        mapping['properties']['occurrence'] = {
+                                                'properties': {
+                                                    'case': case_map,
+                                                    'ssm_occurrence_id': {
+                                                        'type': 'keyword' 
+                                                    },
+                                                    'occurrence_id': {
+                                                        'type': 'keyword' 
+                                                    }
+                                                }
+                                              }
         mapping['properties']['occurrence']['type'] = 'nested'
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)

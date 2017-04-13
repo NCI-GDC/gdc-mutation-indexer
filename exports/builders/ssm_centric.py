@@ -1,7 +1,6 @@
-import json
 import logging
 
-from pyspark.sql.functions import lit, struct, collect_list
+from pyspark.sql.functions import lit, struct, collect_list, col
 
 from exports.builders import (
     MAFBuilder,
@@ -11,6 +10,7 @@ from exports.builders import (
 )
 from exports.builders import BaseBuilder
 from exports.mappers import SSMMapper
+from exports.builders.utils import uuid5_col
 from exports.builders.df_builders import (
     get_ssm_df
 )
@@ -37,30 +37,35 @@ class SSMCentricBuilder(BaseBuilder):
     id_field = 'ssm_id'
     mapper = SSMMapper
 
-    def build(self, maf_df=None):
-        """
-        """
-        if maf_df is None:
-            self.log('Building MAF...')
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        self.log_count(maf_df)
+    def build(self, maf_df):
+        # Check if we should load a pre-built dataframe
+        if self.config.index_use_existing:
+            self.ssm_centric = self.get_existing()
+            if self.ssm_centric is not None:
+                return self
 
         ssm_df = get_ssm_df(maf_df, unique_fields=['ssm_id'])
 
-        cons_df = ConsequenceBuilder(self.config, self.sqlContext).build(maf_df, join_gene=True)
+        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
+                   .build(maf_df, join_gene=True))
 
         occurrence_df = self.build_occurrence(maf_df)
 
-        self.log('Final join SSM + Transcript + Last one')
+        self.log('Final join SSM + Consequence + Occurrence')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
-            .join(occurrence_df, on='ssm_id')
+                            .join(occurrence_df, on='ssm_id')
 
         # Truncate outliers
-        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric, 'occurrence', self.config.percentile_threshold['occurrences_per_ssm'])
-
+        treshold = self.config.percentile_threshold['occurrences_per_ssm']
+        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric,
+                                                          'occurrence',
+                                                          treshold)
         self.log_count(self.ssm_centric)
 
         self.log('Build finished')
+        # Check if we should save the resulting dataframe
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
         return self
 
     def build_occurrence(self, maf_df):
@@ -70,15 +75,15 @@ class SSMCentricBuilder(BaseBuilder):
         case_df = CaseBuilder(self.config, self.sqlContext).build()
         self.log_count(case_df)
 
-        self.log('Joining Cases with Observation, [right, submitter_id]')
-        occurrence_df = case_df.join(obs_df, case_df.submitter_id == obs_df._case_submitter_id, 'right')\
-                        .select('ssm_id', struct(
-                            struct(
-                                'observation',
-                                *case_df.columns
-                            ).alias('case')
-                        ).alias('occurrence'))\
-                        .groupby('ssm_id')\
-                        .agg(collect_list('occurrence').alias('occurrence'))
+        self.log('Joining Cases with Observation, [right, case_id]')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+                         .withColumn('ssm_occurrence_id', col('occurrence_id'))
+                         .select('ssm_id',
+                                 struct('occurrence_id', 'ssm_occurrence_id',
+                                        struct('observation',
+                                               *case_df.columns).alias('case'))
+                                 .alias('occurrence'))
+                         .groupby('ssm_id')
+                         .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
         return occurrence_df

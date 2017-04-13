@@ -12,7 +12,6 @@ class BaseBuilder(object):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
-
     index_name = None
     id_field = None
     mapper = None
@@ -50,10 +49,15 @@ class BaseBuilder(object):
     
         self.save_build_metadata()
         
-        
+        self.log('Repartitioning {}'.format(self.index_name))
+        df = getattr(self, self.index_name).repartition(self.config.repartition, self.id_field)
+
+        if self.config.cache_dataframes[self.index_name]:
+            self.log('Caching repartitioned {} dataframe'.format(self.index_name))
+            df.cache().count()
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        getattr(self, self.index_name).coalesce(20).write\
+        df.coalesce(self.config.coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', '{}:{}'.format(self.config.es_host,
                                                self.config.es_port))\
@@ -66,11 +70,13 @@ class BaseBuilder(object):
             .option('es.http.retries', '-1')\
             .option('es.batch.write.retry.count', '-1')\
             .option('es.batch.write.retry.wait', '10m')\
-            .option('es.batch.size.bytes','5mb')\
-            .option('es.batch.size.entries', '100')\
+            .option('es.batch.size.bytes', self.config.batch_size_bytes)\
+            .option('es.batch.size.entries', self.config.batch_size_entries)\
             .option('es.mapping.id', self.id_field)\
             .option('es.spark.dataframe.write.null', 'true')\
             .save(index_doc)
+
+        df.unpersist()
 
     def truncate_df_at_percentile(self, df_to_truncate, field, percentile_threshold, df_for_percentile_calculation=None):
         """
@@ -93,6 +99,42 @@ class BaseBuilder(object):
             df_to_truncate = df_to_truncate.filter('{} <= {}'.format(count_col_name, threshold)).drop(count_col_name)
 
         return df_to_truncate
+
+    def get_existing(self, path=None):
+        """
+        Loads the computed index's dataframe, if it exists, and return it,
+        returns None it does not
+        """
+        if path == None:
+            path = self.config.index_paths[self.index_name]
+        try:
+            self.logger.info('Using existing index from {}'.format(path))
+            df = self.sqlContext.read.load(path)
+            return df
+        except Exception:
+            self.logger.info('Couldn\'t find file at {}'.format(path))
+            return None
+
+    def write(self, path=None):
+        """
+        Writes the built dataframe to a json file at path
+        """
+        if path == None:
+            path = self.config.index_paths[self.index_name]
+
+        df = getattr(self, self.index_name, None)
+        assert df != None, 'Builder does not have index_name attribute'
+
+        # Repartition by the id into number of partitions specified in config
+        id_field = getattr(self, self.id_field, None)
+        if id_field:
+            df = df.repartition(self.config.repartition, id_field).write
+        else:
+            df = df.repartition(self.config.repartition).write
+        if self.config.index_overwrite:
+            df = df.mode('overwrite')
+        self.logger.info('Saving {} to {}'.format(self.index_name, path))
+        df.json(path)
         
     def save_build_metadata(self):
         '''
@@ -109,12 +151,14 @@ class BaseBuilder(object):
             commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
         metadata_doc = {
                 'commit_hash': commit_hash,
+                'indices_built': [k for k,v in self.config.index_names.iteritems() if v],
                 'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,
                 'maf_urls': self.config.maf_urls,
                 'percentile_threshold': [ {'name': k, 'value': v} for k,v in self.config.percentile_threshold.iteritems() ],
                 'coalesce': self.config.coalesce,
+                'repartition': self.config.repartition,
                 'batch_size_bytes': self.config.batch_size_bytes,
                 'batch_size_entries': int(self.config.batch_size_entries)
                 }

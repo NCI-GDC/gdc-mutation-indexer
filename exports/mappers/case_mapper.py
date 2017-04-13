@@ -14,7 +14,7 @@ class CaseMapper(Mapper):
 
     def build_mapping(self):
         mapping = Mapper.build_mapping(self)
-        mapping.update({"_id": { "path": "case_id" }})
+        mapping.update({"_id": {"path": "case_id"}})
         case_map = self.load_properties('case.yml', nested=False)
         mapping.update(case_map)
 
@@ -52,7 +52,12 @@ class CaseMapper(Mapper):
             'aa_change',
         ], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        ssm_map['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)

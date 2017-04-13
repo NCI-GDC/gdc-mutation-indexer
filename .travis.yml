@@ -25,6 +25,7 @@ before_install:
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
+  - python setup.py install 
   - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
   - unzip elasticsearch-hadoop-5.1.1.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;

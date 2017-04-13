@@ -22,18 +22,8 @@ class GeneMapper(Mapper):
         case_map = self.load_properties('case.yml', nested=True)
 
         self.change_props_to_keyword([
-            'aliquot_ids',
-            'analyte_ids',
             'case_id',
-            'portion_ids',
-            'sample_ids',
-            'slide_ids',
-            'submitter_aliquot_ids',
-            'submitter_analyte_ids',
             'submitter_id',
-            'submitter_portion_ids',
-            'submitter_sample_ids',
-            'submitter_slide_ids',
             'project.properties.disease_type',
             'project.properties.name',
             'project.properties.primary_site',
@@ -52,7 +42,12 @@ class GeneMapper(Mapper):
 
         self.change_props_to_keyword(['aa_change'], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties': {'transcript': tran_map}}
+        ssm_map['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)

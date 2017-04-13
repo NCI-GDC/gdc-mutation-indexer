@@ -1,17 +1,11 @@
-import os
-import yaml
-import requests
-import json
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit, col, regexp_extract
-
 
 class CaseBuilder(object):
-    '''
+    """
     Builds a case dataframe by loading case documents from gdc_from_graph
-    '''
+    """
 
     def __init__(self, config, sqlContext):
         self.config = config
@@ -37,8 +31,13 @@ class CaseBuilder(object):
             .option('es.nodes.wan.only','true')\
             .option('es.nodes.resolve.hostname','false')\
             .option('es.read.field.exclude', self.config.case_exclude_fields)\
-            .option('es.read.field.as.array.include', self.config.case_arrays)\
             .option('es.resource.read', source)\
             .load(source)
 
+        self.logger.info('Repartitioning case dataframe')
+        df = df.repartition(self.config.repartition, 'case_id')
+
+        if self.config.cache_dataframes['cases']:
+            self.logger.info('Caching repartitioned case dataframe')
+            df.cache().count()
         return df

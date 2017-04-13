@@ -1,6 +1,8 @@
 properties:
   chromosome:
     type: keyword
+  cosmic_id:
+    type: keyword
   end_position:
     type: long
   genomic_dna_change:
@@ -28,6 +30,4 @@ properties:
   start_position:
     type: long
   tumor_allele:
-    type: keyword
-  variant_type:
     type: keyword

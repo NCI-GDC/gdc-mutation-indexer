@@ -38,7 +38,12 @@ class SSMOccurrenceMapper(Mapper):
             'aa_change',
         ], tran_map)
 
-        ssm_map['properties']['consequence'] = {'properties':{'transcript': tran_map}}
+        ssm_map['properties']['consequence'] = {'properties':
+                                                    {'transcript': tran_map,
+                                                     'consequence_id': {
+                                                        'type':'keyword'
+                                                    }}
+                                               }
         ssm_map['properties']['consequence']['type'] = 'nested'
         # Add gene 
         gene_map = self.load_properties('gene.yml')
@@ -71,18 +76,8 @@ class SSMOccurrenceMapper(Mapper):
         case_map = self.load_properties('case.yml', nested=False)
 
         self.change_props_to_keyword([
-            'aliquot_ids',
-            'analyte_ids',
             'case_id',
-            'portion_ids',
-            'sample_ids',
-            'slide_ids',
-            'submitter_aliquot_ids',
-            'submitter_analyte_ids',
             'submitter_id',
-            'submitter_portion_ids',
-            'submitter_sample_ids',
-            'submitter_slide_ids',
             'project.properties.project_id',
             'project.properties.primary_site',
             'project.properties.disease_type',
@@ -90,6 +85,8 @@ class SSMOccurrenceMapper(Mapper):
         ], case_map)
 
         mapping['properties']['case'] = case_map
+        mapping['properties']['ssm_occurrence_id'] = {'type': 'keyword'}
+        mapping['properties']['occurrence_id'] = {'type': 'keyword'}
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)
         case_map['properties']['observation'] = obs_map

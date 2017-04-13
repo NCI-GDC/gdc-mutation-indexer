@@ -5,7 +5,7 @@ import pkg_resources
 import logging
 from functools import partial
 from pyspark.sql.functions import udf, struct, col, explode, array
-from pyspark.sql.types import StringType, ArrayType, LongType
+from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -29,19 +29,25 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     chromosome = chromosome.replace('chr', '')
 
     if variant_type == 'SNP':
-        label = 'chr{}:g.{}{}>{}'.format(chromosome, start_pos, ref_allele, tumor_allele)
+        label = 'chr{}:g.{}{}>{}'.format(chromosome,
+                                         start_pos, ref_allele, tumor_allele)
     elif variant_type == 'DEL':
-        label = 'chr{}:g.{}del{}'.format(chromosome, start_pos, ref_allele)
+        label = 'chr{}:g.{}del{}'.format(chromosome,
+                                         start_pos, ref_allele)
     elif variant_type == 'INS':
-        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos, end_pos, tumor_allele)
+        label = 'chr{}:g.{}_{}ins{}'.format(chromosome, start_pos,
+                                            end_pos, tumor_allele)
     else:
         label = chromosome
 
     return label
 
 
-def ssm_label_col(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
-    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele)
+def ssm_label_col(chromosome,
+                  variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+    return udf(ssm_label, StringType())(chromosome, variant_type, start_pos,
+                                        end_pos, ref_allele, tumor_allele)
+
 
 def _udf_uuid5_field(*values):
     """
@@ -57,13 +63,17 @@ def _udf_uuid5_field(*values):
     # first value is entity type, the rest are fields made up
     # to a business key uniquely identifying an entity
     return str(uuid.uuid5(uuid.NAMESPACE_DNS,
-                    '\t'.join([v if type(v) == str else str(v) for v in values])))
+                          '\t'.join([v if type(v) == str else str(v)
+                                     for v in values])))
+
 
 def uuid5_col(*values):
     return udf(_udf_uuid5_field, StringType())(*values)
 
+
 def ssm_occurrence_uuid(namespace, ssm, case):
     return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
+
 
 def ssm_occurrence_uuid_udf(namespace):
     """
@@ -86,6 +96,8 @@ def extract_transcript_id(val):
     for r in rows:
         if len(r.split(delimiter)) > 3:
             transcript_ids.append(r.split(delimiter)[3])
+        else:
+            raise Exception('Unexpected number of transcripts')
     return transcript_ids
 
 
@@ -111,18 +123,19 @@ def all_effects_udf(index):
 
 
 def extract_rows_udf():
-    vals = udf(lambda x: x.split(';')[:-1], ArrayType(StringType()))
+    vals = udf(lambda x: x.split(';'), ArrayType(StringType()))
     return vals 
 
 
 def load_mapping(path):
     resource_package = 'exports'
     resource_path = '/'.join(('mappings', path))
-    return yaml.safe_load(pkg_resources.resource_string(resource_package, resource_path))
+    return yaml.safe_load(pkg_resources.resource_string(resource_package,
+                                                        resource_path))
 
 
 def struct_select(path, ignore=[]):
-    '''
+    """
     Takes the structure from a mapping and produces arguements for a select
     to reorganize a flat dataframe of those fields into the desiced structure.
     Eg:
@@ -138,7 +151,7 @@ def struct_select(path, ignore=[]):
     ```
     Produce the select arguments:
     `struct('center', struct('normal_bam_uuid').alias('input_bam_file'))`
-    '''
+    """
     mapping = load_mapping(path)
 
     select = ()
@@ -166,9 +179,9 @@ def struct_select(path, ignore=[]):
 
 
 def percentile(vector, p):
-    '''
+    """
     Calculates the p percentile of vector
-    '''
+    """
     sorted_vector = sorted(vector)
     vector_len = len(vector)
     position = (vector_len-1)*float(p)/100
@@ -177,4 +190,27 @@ def percentile(vector, p):
     if floored_pos >= vector_len - 1:
         return sorted_vector[vector_len - 1]
 
-    return sorted_vector[floored_pos] + (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+    return sorted_vector[floored_pos] +\
+           (sorted_vector[floored_pos+1] - sorted_vector[floored_pos]) * rest
+
+def extract_aas_position(df):
+    """
+    create aa_start and aa_end field based on aa_change string
+    there is one problem that synonymous_variant aa_change does not contain
+    aa position information
+    """
+    def extract(aa_change, start=True):
+        match = re.findall(re.compile('(\d+)(?:\D+?)*(\d+)*(?:\D+)'), aa_change)
+        if match:
+            aa_start, aa_end = match[0]
+            if start or not aa_end:
+                return int(aa_start)
+
+            return int(aa_end)
+        return 'null'
+
+    df = df.withColumn('aa_start', udf(extract,IntegerType())(col('aa_change')))
+    df = df.withColumn('aa_end', udf(lambda aa_change: extract(aa_change, False),
+        IntegerType())(col('aa_change')))
+
+    return df

@@ -1,7 +1,7 @@
 import pytest
 import json
 
-from pyspark.sql.functions import col, size
+from pyspark.sql.functions import size, explode, lit
 from exports.builders import (
     CaseBuilder,
     ObservationBuilder,
@@ -12,6 +12,8 @@ from exports.builders import (
     SSMOccurrenceCentricBuilder
 )
 from tests_config import TestConfig
+from utils.true_stats import TrueStats, get_ssm_subtree_stats
+from exports.builders.utils import extract_aas_position
 
 conf = TestConfig()
 
@@ -26,36 +28,85 @@ class TestBuildersSimple:
         builder(conf, sqlContext).build(maf_df)
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index')
 class TestCaseCentricJoins:
-    ''' Test intermediate result from the case centric builder '''
+    """ Test intermediate result from the case centric builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield CaseCentricBuilder(conf, sqlContext)
 
-    def test_case_centric_ssm_subtree(self, maf_df, builder):
-        ssm = builder.build_ssm(maf_df)
-        assert ssm.count() == 18
-        assert ssm.filter(size(col('observation')) == 1).count() == 18
-        assert (ssm.filter(size(col('consequence')) == 17)
-                   .filter(ssm.gene_id == 'ENSG00000029363').count() == 1)
-        assert (ssm.filter(size(col('consequence')) == 16)
-                   .filter(ssm.gene_id == 'ENSG00000079841').count() == 1)
+    @pytest.fixture(scope='class')
+    def true_stats(self):
+        yield TrueStats.get_stats(conf.output_dir, 'case_centric')
 
-    def test_gene_ssm(self, maf_df, builder):
-        # one gene per ssm for our test mafs
+    @pytest.mark.ssm_subtree_case
+    def test_ssm_subtree(self, maf_df, builder, true_stats):
+        ssm_df = builder.build_ssm(maf_df)
+
+        # Correct number of ssm's
+        assert ssm_df.count() == maf_df.select('ssm_id').distinct().count()
+
+        es_ops, es_cps = get_ssm_subtree_stats(ssm_df, 'case_centric')
+
+        # Correct number of Observations per SSM
+        assert es_ops == true_stats['obs_per_ssm']
+
+        # Correct number of Consequences per SSM
+        assert es_cps == true_stats['cons_per_ssm']
+
+    def test_gene_ssm(self, maf_df, builder, true_stats):
+        # # one gene per ssm for our test mafs
         gene_df = builder.build_gene_ssm(maf_df)
-        assert (gene_df.filter(size('gene.ssm') == 1).count() == 18)
 
-    def test_case_gene(self, maf_df, builder):
+        # Correct number of SSMs per Gene
+        es_spg = map(json.loads,
+                     gene_df.select('case_id', 'gene.gene_id', size('gene.ssm'))
+                            .toJSON(use_unicode=False).collect())
+        spg_dict = {}
+        for d in es_spg:
+            case_id = d['case_id']
+            gene_id = d['gene_id']
+            if case_id not in spg_dict:
+                spg_dict[case_id] = {}
+            spg_dict[case_id][gene_id] = d['size(gene.ssm)']
+
+        assert spg_dict == true_stats['ssms_per_gene']
+
+    def test_case_gene(self, maf_df, builder, true_stats):
         case_df = builder.build(maf_df).case_centric
-        assert case_df.filter(size('gene') == 1).count() == 6
-        long_gene_submitters = (case_df.filter(size('gene') == 9)
-                                       .select('submitter_id')
-                                       .collect())
-        assert len(long_gene_submitters) == 1
-        assert long_gene_submitters[0].submitter_id == 'TCGA-A4-A6HP'
+        # Correct number of Case documents
+        assert case_df.count() == true_stats['count']
+
+        # Correct number of Genes per Case
+        es_gpc = (case_df.select(size('gene'), 'case_id')
+                  .toJSON(use_unicode=False).collect())
+        es_gpc = {d['case_id']: d['size(gene)']
+                  for d in map(json.loads, es_gpc)}
+        assert es_gpc == true_stats['genes_per_case']
+
+    def test_variation_data(self, maf_df, test_index, builder, true_stats):
+        """ Test that cases without any ssm, but were tested are flagged """
+        # Insert a case to graph with no data
+        test_index.index(conf.graph_index, doc_type='case',
+                         id='ABC', body={'case_id':'ABC'})
+        # Force ES to refresh before trying to build index
+        test_index.indices.refresh(index=conf.graph_index)
+
+        case_df = builder.build(maf_df).case_centric
+        assert 'available_variation_data' in case_df.columns
+        # Sum of booleans, True = 1, False = 0, should only have one test case
+        assert sum([r['available_variation_data'] == ['ssm'] for r in
+                   case_df.select('available_variation_data').collect()]) == case_df.count()-1
+        assert sum([r['available_variation_data'] == [] for r in
+                   case_df.select('available_variation_data').collect()]) == 1
+        assert (case_df.filter(case_df.case_id == 'ABC')
+                       .select('available_variation_data')
+                       .collect()[0]['available_variation_data'] == [])
+
+        # Get rid of the test document and force an ES refresh
+        test_index.delete(conf.graph_index, doc_type='case', id='ABC')
+        test_index.indices.refresh(index=conf.graph_index)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -66,32 +117,99 @@ class TestGeneCentricJoins:
     def builder(self, sqlContext):
         yield GeneCentricBuilder(conf, sqlContext)
 
-    def test_ssm(self, maf_df, builder):
-        ssm = builder.build_ssm(maf_df)
-        assert ssm.count() == 18
-        assert ssm.filter(size(col('observation')) == 1).count() == 18
-        assert (
-            ssm.filter(size(col('consequence')) == 17)
-            .filter(ssm.gene_id == 'ENSG00000029363').count()) == 1
-        assert (
-            ssm.filter(size(col('consequence')) == 16)
-            .filter(ssm.gene_id == 'ENSG00000079841').count()) == 1
+    @pytest.fixture(scope='class')
+    def true_stats(self):
+        yield TrueStats.get_stats(conf.output_dir, 'gene_centric')
 
-    def test_case_with_gene_id(self, maf_df, builder, sqlContext):
-        case_df = CaseBuilder(conf, sqlContext).build()
-        case_gene_id = builder.build_case_with_gene_id(maf_df)
-        assert set(['gene_id'] + case_df.columns) == set(case_gene_id.columns)
-        assert case_gene_id.count() == 18
+    @pytest.mark.ssm_subtree_gene
+    def test_ssm_subtree(self, maf_df, builder, true_stats):
+        ssm_df = builder.build_ssm(maf_df)
 
-    def test_case_ssm(self, maf_df, builder):
-        # one ssm per case
-        case_ssm = builder.build_case_ssm(maf_df)
-        assert case_ssm.filter(size('case.ssm') == 1).count() == 18
+        # Correct number of ssm's
+        assert ssm_df.count() == maf_df.select('ssm_id').distinct().count()
 
-    def test_gene_case(self, maf_df, builder):
-        # one case per gene
-        gene_centric = builder.build(maf_df).gene_centric
-        assert gene_centric.filter(size('case') == 1).count() == 18
+        es_ops, es_cps = get_ssm_subtree_stats(ssm_df, 'gene_centric')
+
+        # Correct number of Observations per SSM
+        assert es_ops == true_stats['obs_per_ssm']
+
+        # Correct number of Consequences per SSM
+        assert es_cps == true_stats['cons_per_ssm']
+
+    def test_case_ssm(self, maf_df, builder, true_stats):
+        case_df = builder.build_case_ssm(maf_df)
+
+        # Correct number of SSMs per Case
+        es_spc = map(json.loads,
+                     case_df.select('gene_id', 'case.case_id', size('case.ssm'))
+                            .toJSON(use_unicode=False).collect())
+        spc_dict = {}
+        for d in es_spc:
+            gene_id = d['gene_id']
+            case_id = d['case_id']
+            if gene_id not in spc_dict:
+                spc_dict[gene_id] = {}
+            spc_dict[gene_id][case_id] = d['size(case.ssm)']
+
+        assert spc_dict == true_stats['ssms_per_case']
+
+    def test_gene_case(self, maf_df, builder, true_stats):
+        gene_df = builder.build(maf_df).gene_centric
+
+        es_cpg = (gene_df.select(size('case'), 'gene_id')
+                  .toJSON(use_unicode=False).collect())
+        es_cpg = {d['gene_id']: d['size(case)']
+                  for d in map(json.loads, es_cpg)}
+
+        # Correct number of Gene documents
+        assert gene_df.count() == true_stats['count']
+
+        # Correct number of Cases per Gene
+        assert es_cpg == true_stats['cases_per_gene']
+
+
+@pytest.mark.usefixtures('sqlContext', 'maf_df')
+class TestSSMCentricJoins:
+
+    @pytest.fixture(scope='class')
+    def builder(self, sqlContext):
+        yield SSMCentricBuilder(conf, sqlContext)
+
+    @pytest.fixture(scope='class')
+    def true_stats(self):
+        yield TrueStats.get_stats(conf.output_dir, 'ssm_centric')
+
+    @pytest.mark.skip(reason="Can not be implemented before occurrences have "
+                             "'occurrence_id' field")
+    def test_occurrence_subtree(self, maf_df, builder, true_stats):
+        pass
+
+    def test_ssm_centric(self, maf_df, builder, true_stats):
+        ssm_df = builder.build(maf_df).ssm_centric
+
+        assert ssm_df.count() == true_stats['count']
+
+        # Consequences per SSM
+        es_cps = (ssm_df.select(size('consequence'), 'ssm_id')
+                  .toJSON(use_unicode=False).collect())
+        es_cps = {d['ssm_id']: d['size(consequence)']
+                  for d in map(json.loads, es_cps)}
+
+        assert es_cps == true_stats['cons_per_ssm']
+
+        # Occurrences per SSM
+        es_ops = (ssm_df.select(size('occurrence'), 'ssm_id')
+                  .toJSON(use_unicode=False).collect())
+        es_ops = {d['ssm_id']: d['size(occurrence)']
+                  for d in map(json.loads, es_ops)}
+
+        assert es_ops == true_stats['occur_per_ssm']
+
+    def test_ssm_columns(self, maf_df, builder):
+        ssm_df = builder.build(maf_df).ssm_centric
+        assert 'occurrence_id' in (ssm_df.select(explode('occurrence')
+                                            .alias('occurrence'))
+                                         .select('occurrence.*').columns)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -101,36 +219,47 @@ class TestSSMOccurrenceCentricJoins:
     def builder(self, sqlContext):
         yield SSMOccurrenceCentricBuilder(conf, sqlContext)
 
-    def test_ssm(self, maf_df, builder):
-        ssm = builder.build_ssm(maf_df)
-        assert ssm.count() == 18
-        assert (ssm.filter(size(col('consequence')) == 17)
-                   .filter(ssm.ssm_id == 'ed0bbbd9-4f0d-5697-bd6c-0cbd72fc6bd0')
-                   .count()) == 1
-        assert (ssm.filter(size(col('consequence')) == 16)
-                   .filter(ssm.ssm_id == '0d33430c-c896-53c6-9b5f-c1ac68dcc132')
-                   .count()) == 1
+    @pytest.fixture(scope='class')
+    def true_stats(self):
+        yield TrueStats.get_stats(conf.output_dir, 'ssm_occurrence_centric')
 
-    def test_case(self, maf_df, builder):
+    @pytest.mark.ssm_subtree_ssm_occurrence
+    def test_ssm_subtree(self, maf_df, builder, true_stats):
+        ssm_df = builder.build_ssm(maf_df)
+
+        # Consequences per SSM:
+        es_cps = (ssm_df.select(size('ssm.consequence'), 'ssm_id')
+                  .toJSON(use_unicode=False).collect())
+        es_cps = {d['ssm_id']: d['size(ssm.consequence)']
+                  for d in map(json.loads, es_cps)}
+
+        assert es_cps == true_stats['cons_per_ssm']
+
+    def test_ssm_occurrence_columns(self, maf_df, builder):
+        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
+        print ssm_occurrence_df.select('occurrence_id', 'ssm_occurrence_id').show()
+        assert 'occurrence_id' in ssm_occurrence_df.columns
+
+    def test_case_subtree(self, maf_df, builder, true_stats):
         # one gene per ssm for our test mafs
         case_df = builder.build_case(maf_df)
-        assert case_df.count() == 18
-        assert (case_df.filter(size('observation') == 1).count()) == 18
 
-    def test_ssm_occurrence(self, maf_df, builder):
+        # Observations per case:
+        es_opc = (case_df.select(size('case.observation'), 'case_id')
+                  .toJSON(use_unicode=False).collect())
+        es_opc = {d['case_id']: d['size(case.observation)']
+                  for d in map(json.loads, es_opc)}
+
+        assert es_opc == true_stats['obs_per_case']
+
+    def test_ssm_occurrence(self, maf_df, builder, true_stats):
         ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        assert ssm_occurrence_df.count() == 18
-        assert (ssm_occurrence_df.filter(size(col('case.observation')) == 1)
-                                 .count()) == 18
-        assert (ssm_occurrence_df.filter(size(col('case.observation')) == 1)
-                                 .filter(col('ssm_occurrence_id') ==
-                                         '4d96cd1a-d679-52ba-bfc3-fe14cceb6d24')
-                                 .count()) == 1
+        assert ssm_occurrence_df.count() == true_stats['count']
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestObservationBuilder:
-    ''' Test intermediate result from the observation builder '''
+    """ Test intermediate result from the observation builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
@@ -141,90 +270,148 @@ class TestObservationBuilder:
         yield builder.build(maf_df)
 
     def test_join_columns(self, build_df):
-        ''' Check for columns that are used by other builders to join on '''
+        """ Check for correct columns """
         obs_df = build_df
-        assert '_case_submitter_id' in obs_df.columns
+        assert set(obs_df.columns) == {'case_id', 'ssm_id',
+                                       'observation', 'occurrence_id'}
 
-    def test_observation_size(self, build_df):
-        ''' Check for the right number of observations by submitter_id '''
+    def test_observation_id(self, build_df):
+        """ Test that the observation_id was created """
+        assert 'observation_id' in (build_df.select(explode('observation')
+                                                   .alias('observation'))
+                                                   .select('observation.*')
+                                                   .columns)
+
+    def test_observation_count(self, build_df, maf_df):
+        """ Check for the right number of observations by submitter_id """
+        n_observations = maf_df.select('case_id', 'ssm_id').distinct().count()
+        assert build_df.count() == n_observations
+
+    def test_observation_values(self, build_df, maf_df):
         obs_df = build_df
-        assert obs_df.count() == 18
 
-    def test_observation_values(self, build_df):
-        obs_df = build_df
-        # There are three observations for TCGA-KL-8328
-        case_row = obs_df.where(obs_df._case_submitter_id == 'TCGA-KL-8328')
-        assert case_row.count() == 3
+        true_obs = map(json.loads, (maf_df.select('case_id', 'ssm_id')
+                                          .distinct().toJSON().collect()))
 
-        case_row = obs_df.where(obs_df._case_submitter_id == 'TCGA-B2-4102')
-        assert case_row.count() == 1
-        obs = json.loads(case_row.toJSON().collect()[0])
-        assert obs['ssm_id'] == '1f18a8c6-d828-5a64-b26a-4e1c7a1734db'
-        assert len(obs['observation']) == 1
-        obs = obs['observation'][0]
-        assert (obs[u'tumor_genotype'] == {
-                                   "tumor_seq_allele1": "T",
-                                   "tumor_seq_allele2": "G"
-                                      })
+        obs = map(json.loads, (obs_df.select('case_id', 'ssm_id')
+                                     .toJSON().collect()))
 
-        assert (obs['read_depth'] == {
-                                   "t_depth": 162,
-                                   "t_alt_count": 41,
-                                   "t_ref_count": 121,
-                                   "n_depth": 162
-                              })
-
-        assert (obs['variant_calling'] == {
-                                    'variant_process': 'masked',
-                                    'variant_caller': 'mutect2'
-                              })
+        assert sorted(obs) == sorted(true_obs)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestConsequenceBuilder:
-    ''' Test intermediate result from the transcript builder '''
+    """ Test intermediate result from the transcript builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield ConsequenceBuilder(conf, sqlContext)
 
-    def test_transcript_without_gene(self, maf_df, builder):
-        tran_df = builder.build(maf_df, join_gene=False)
-        tran_df = tran_df.where(tran_df.ssm_id == '1a191926-2c54-539a-817d-6196d105bb38')
-        assert tran_df.count() == 1
-        cons = tran_df.collect()[0]['consequence']
-        assert len(cons) == 7
-        cons = [r['transcript'] for r in cons]
-        assert all(['gene' not in t for t in cons])
+    @pytest.fixture(scope='class')
+    def build_df(self, maf_df, builder):
+        yield builder.build(maf_df, join_gene=False)
 
-    def test_transcript_values(self, maf_df, builder):
-        tran_df = builder.build(maf_df, join_gene=True)
-        tran_df = tran_df.where(tran_df.ssm_id == '1a191926-2c54-539a-817d-6196d105bb38')
-        assert tran_df.count() == 1
-        cons = tran_df.collect()[0]['consequence']
-        assert len(cons) == 7
-        cytobands = [r['transcript']['gene']['cytoband'] for r in cons]
-        assert all([type(c) is list for c in cytobands ])
+    def test_consequence_count(self, maf_df, build_df):
+        cons_df = build_df
+
+        n_consequences = maf_df.select('ssm_id').distinct().count()
+        assert cons_df.count() == n_consequences
+
+    def test_consequence_no_gene(self, build_df):
+        cons_df = build_df
+        transcripts = (cons_df.select(explode('consequence.transcript')
+                                      .alias('transcript'))
+                              .select('transcript.*'))
+
+        # Check that gene not in transctipts
+        assert 'gene' not in transcripts.columns
+
+    def test_consequence_with_gene(self, maf_df, builder):
+        cons_df = builder.build(maf_df, join_gene=True)
+        transcripts = (cons_df.select(explode('consequence.transcript')
+                                      .alias('transcript'))
+                              .select('transcript.*'))
+
+        cytobands = transcripts.select('gene.cytoband').collect()
+        cytobands = [t['cytoband'] for t in cytobands]
+        assert all([type(c) is list for c in cytobands])
+
+    def test_impact(self, maf_df, build_df):
+        """
+        Checks that consequence contains correct impact
+        """
+        df = (build_df.select('ssm_id',
+                              explode('consequence.transcript')
+                              .alias('transcript'))
+                      .select('ssm_id', 'transcript.annotation.impact')
+                      .dropna()).collect()
+
+        maf = maf_df.select('ssm_id', 'impact').collect()
+
+        build_ssm_to_impact = {x['ssm_id']: x['impact'] for x in df}
+        true_ssm_to_impact = {x['ssm_id']: x['impact'] for x in maf}
+
+        for ssm_id, impact in build_ssm_to_impact.items():
+            assert true_ssm_to_impact[ssm_id] == impact
+
+    def test_only_related_transcripts(self, maf_df, builder):
+        """
+        Test that consequence only contains transcripts from one gene
+        """
+        cons_df = builder.build(maf_df, join_gene=True)
+        consequences  = cons_df.collect()
+        for consequence in consequences:
+            # Each consequence is a list of transcripts
+            transcripts = consequence.asDict(recursive=True)['consequence']
+            print len(transcripts)
+            genes = set()
+            for transcript in transcripts:
+                genes.add(transcript['transcript']['gene']['gene_id'])
+            assert len(genes) == 1
 
     def test_all_effects_cols(self, maf_df, builder):
-        fields = [ 'do_not_use', 'consequence_type', 'aa_change',
-                   'transcript_id', 'ref_seq_accession' ]
+        fields = ['consequence_type', 'aa_change',
+                  'transcript_id', 'ref_seq_accession']
         ssm_trans = builder._build_all_effects_cols(maf_df)
 
         for f in fields:
             assert f in ssm_trans.columns
 
-        # this gene has 20 transcripts overall
-        assert ssm_trans.filter(
-            ssm_trans.gene_id == 'ENSG00000079841').count() == 16
+    def test_aa_start_end(self, maf_df, builder):
+        new_df = maf_df.withColumn('aa_change', lit('p.L1201R'))
+        new_df = extract_aas_position(new_df)
+
+        assert 'aa_start' in new_df.columns
+        assert 'aa_end' in new_df.columns
+        aa_change = new_df.filter(new_df.aa_change == 'p.L1201R').select('aa_start', 'aa_end').collect()[0]
+        assert aa_change['aa_start'] == 1201
+        assert aa_change['aa_end'] == 1201
+
+    def test_consequence_id(self, maf_df, builder):
+        """ Test that consequence_id is created correctly """
+        cons_df = builder.build(maf_df, join_gene=False)
+
+        assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
 class TestCaseBuilder:
+    """ Test the CaseBuilder functionality for extracting the graph index """
 
-    def test_case_build(self, sqlContext, test_index_class):
+    @pytest.fixture(scope='class')
+    def case_df(self, sqlContext):
+        yield CaseBuilder(conf, sqlContext).build()
+
+    def test_case_build(self, sqlContext, test_index_class, case_df):
         es = test_index_class
-        df = CaseBuilder(conf, sqlContext).build()
+        df = case_df
         assert (df.count() == es.search(conf.graph_index,
                                         conf.graph_document,
                                         size=0)['hits']['total'])
+
+    def test_case_columns(self, sqlContext, case_df):
+        """ Test that the right properties were loaded from case docs """
+        assert 'case_id' in case_df.columns
+        assert 'files' not in case_df.columns
+        # Make sure the sample_ids, slide_ids are not present
+        assert '_ids' not in ','.join(case_df.columns)

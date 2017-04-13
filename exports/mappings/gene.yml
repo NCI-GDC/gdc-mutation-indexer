@@ -233,5 +233,5 @@ properties:
         type: long
       translation_id:
         type: keyword
-      id:
+      transcript_id:
         type: keyword

@@ -1,17 +1,22 @@
 import os
 import uuid
 from elasticsearch import Elasticsearch
+from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
 
 class BaseConfig(object):
     # The Spark application name
     app_name = 'GDC_Mutation_Export'
-    #spark_master = 'spark://dev-master-av2-dev2-dkolbman-notebook-0:7077'
-    spark_master = 'local[1]'
 
     api_host = os.getenv('API_HOST', 'http://api.service.consul')
     signpost_host = os.getenv('SIGNPOST_HOST', 'http://signpost.service.consul')
-    s3_host = os.getenv('S3_HOST', 'http://cleversafe.service.consul')
+    s3_host = os.getenv('S3_HOST', 's3://cleversafe.service.consul')
+    s3_bucket = 's3a://gdc-mutation-indexer/'
+    mafs_prefix = 'mafs-case-id-20170303'
+    s3_access_key = os.getenv('S3_ACCESS_KEY', '')
+    s3_secret_key = os.getenv('S3_SECRET_KEY', '')
+    s3_proxy = '10.64.80.123'
+    s3_proxy_port = 80
     # This is the cluster where document will be loaded into
     es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
@@ -24,14 +29,28 @@ class BaseConfig(object):
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
-        'case_centric':         'case_centric',
-        'gene_centric':         'gene_centric',
-        'ssm_centric':          'ssm_centric',
-        'ssm_occurrence_centric':'ssm_occurrence_centric'
+        'case_centric':           'case_centric',
+        'gene_centric':           'gene_centric',
+        'ssm_centric':            'ssm_centric',
+        'ssm_occurrence_centric': 'ssm_occurrence_centric'
     }
+    # Where to save each index's final json
+    index_paths = {
+        'case_centric':           s3_bucket+'case-centric.json',
+        'gene_centric':           s3_bucket+'gene-centric.json',
+        'ssm_centric':            s3_bucket+'ssm-centric.json',
+        'ssm_occurrence_centric': s3_bucket+'ssm-occurrence-centric.json'
+    }
+    # Whether to save the indices once they've been built
+    index_keep = False
+    # Load a prebuilt index and load it into elasticsearch
+    index_use_existing = False
+    # Whether to overwrite a built index file, if it exists
+    index_overwrite = True
 
-    mappings = {'gene': 'gene.yml',
+    mappings = {
                 'ssm': 'ssm.yml',
+                'gene': 'gene.yml',
                 'transcript': 'transcript.yml',
                 'annotation': 'annotation.yml',
                 'observation': 'observation.yml',
@@ -55,9 +74,6 @@ class BaseConfig(object):
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
 
-    # Locations of MAFs to combine. If none, all public paths listed on the
-    # the portal will be combined and used
-    maf_urls = ['s3a://test/258c6357-4348-4b95-a266-03f50d862d9f/TCGA.KICH.somaticsniper.c652b1a7-2c9a-4d38-b317-c401b396a73e.somatic.maf.gz']
     # The location of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
     # Whether to save the maf file or discard it when done
@@ -68,15 +84,27 @@ class BaseConfig(object):
     maf_overwrite = True
 
     percentile_threshold = {
-        'genes_per_case': 98,
-        'occurrences_per_ssm': 95,
-        'consequences_per_ssm': 95,
-        'observations_per_ssm': 95,
+        'genes_per_case': 100,
+        'occurrences_per_ssm': 100,
+        'consequences_per_ssm': 100,
+        'observations_per_ssm': 100,
     }
 
+    # How many partitions to distribute the index file accross
+    # The index will be split up into this many json files
+    repartition = 2048
     coalesce = 10
     batch_size_bytes = '5mb'
     batch_size_entries = '100'
+    cache_dataframes = {
+        'mafs': True,
+        'cases': True,
+        'case_centric': False,
+        'gene_centric': False,
+        'ssm_centric': False,
+        'ssm_occurrence_centric': False
+    }
+
 
     # Case load settings
     case_exclude_fields = ','.join(['samples',
@@ -89,15 +117,20 @@ class BaseConfig(object):
                                     'tissue_source_site',
                                     'exposures',
                                     'family_histories',
-                                    'files'])
-    case_arrays = ','.join(['*_ids'])#,
+                                    'files',
+                                    '*_ids'])
 
-    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
-    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
-    gene_model_file = 's3a://test/genes.json'
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
+        self.maf_urls = self.get_maf_urls()
+
+        #somaticsniper: 2227614  2.6GB
+        #muse: 2730127  3.1GB
+        #varscan: 2782495  3.2GB
+        #mutect: 3416739  3.9GB
+
+        #self.maf_urls = [k for k in self.maf_urls if 'mutect' in k or 'somaticsniper' in k]
 
     def get_index_prefixes(self):
         '''
@@ -139,4 +172,24 @@ class BaseConfig(object):
         indices = {k: get_prefix(v) for k, v in self.index_names.items()
                    if v is not None}
         return indices
+
+    def get_maf_urls(self):
+        conn = S3Connection(self.s3_access_key,
+                            self.s3_secret_key,
+                            host=self.s3_host.split('/')[-1],
+                            proxy=self.s3_proxy,
+                            proxy_port=self.s3_proxy_port,
+                            calling_format=OrdinaryCallingFormat(),
+                            is_secure=False)
+        bucket_name = self.s3_bucket.split('/')[2]
+        bucket = conn.get_bucket(bucket_name)
+
+        maf_urls = []
+
+        for obj in bucket.get_all_keys():
+            url = self.s3_bucket + obj.key
+            if self.mafs_prefix in url:
+                maf_urls.append(url)
+
+        return maf_urls
 

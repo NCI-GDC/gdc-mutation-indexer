@@ -68,7 +68,6 @@ package.json
 .ropeproject/*
 
 # private files
-submit-job.sh
 tests/data/*
 !tests/data/cases.json
 !tests/data/input

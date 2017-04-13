@@ -1,0 +1,8 @@
+include exports/mappings/common_settings.yml
+include exports/mappings/transcript.yml
+include exports/mappings/observation.yml
+include exports/mappings/annotation.yml
+include exports/mappings/case.yml
+include exports/mappings/ssm.yml
+include exports/mappings/gene.yml
+include exports/schemas/maf.yml

@@ -1,7 +1,29 @@
 import os
 
 from tests_config import TestConfig
+
 conf = TestConfig()
+
+MAPPING = {
+###
+#  This mapping is used to specify the identifier for an nested json item in a list.
+#  - 'key' of dictionary entry is the name of the list.
+#  - 'name' is the name (json name) of every item. It is empty if item does not have name.
+#  - 'id' is a list of fields help to identify an item in the list.
+#  - For every index, you have to specify all the lists of nested json objects here.
+###
+        "consequence": {'name': 'transcript', 'id': ['transcript_id']},
+        "occurrence": {'name': 'case', 'id': ['submitter_id']},
+        "case": {'name': '', 'id': ['case_id']},
+        "diagnoses": {'name': '', 'id': ['diagnosis_id']},
+        "data_categories": {'name': '', 'id': ['data_category', 'file_count']},
+        "observation": {'name': '', 'id': ['src_vcf_id']},
+        "gene": {'name': '', 'id': ['gene_id']},
+        "ssm": {'name': '', 'id': ['ssm_id']},
+        "transcripts": {'name': '', 'id': ['transcript_id']},
+        "exons": {'name': '', 'id': ['start', 'end']},
+        "domains": {'name': '', 'id': ['start', 'end']}
+    }
 
 LEVEL_SEPARATOR = "::"
 KEY_VALUE_SEPARATOR = "="
@@ -53,27 +75,6 @@ class DiffsReporter(object):
             with open(os.path.join(conf.log_dir, filename), 'r') as f:
                 n_paths, n_diffs = map(int, f.readlines()[0].split()[0].split('/'))
             print '{}: wrong paths {}, n_diffs {}'.format(filename, n_paths, n_diffs)
-
-###
-#  This mapping is used to specify the identifier for an nested json item in a list.
-#  - 'key' of dictionary entry is the name of the list.
-#  - 'name' is the name (json name) of every item. It is empty if item does not have name.
-#  - 'id' is a list of fields help to identify an item in the list.
-#  - For every index, you have to specify all the lists of nested json objects here.
-###
-mappings = {
-    "consequence": {'name': 'transcript', 'id': ['transcript_id']},
-    "occurrence": {'name': 'case', 'id': ['submitter_id']},
-    "case": {'name': '', 'id': ['case_id']},
-    "diagnoses": {'name': '', 'id': ['diagnosis_id']},
-    "data_categories": {'name': '', 'id': ['data_category', 'file_count']},
-    "observation": {'name': '', 'id': ['src_vcf_id']},
-    "gene": {'name': '', 'id': ['gene_id']},
-    "ssm": {'name': '', 'id': ['ssm_id']},
-    "transcripts": {'name': '', 'id': ['id']},
-    "exons": {'name': '', 'id': ['start', 'end']},
-    "domains": {'name': '', 'id': ['start', 'end']}
-}
 
 
 def __build_dict_from_list_json(list_json, identity_fields, object_name=""):
@@ -209,8 +210,8 @@ def validate_two_nested_jsons_joining(address, json_obj,
             continue
         elif field not in ignored_list:
             if type(json_obj[field]) is list:
-                if field in mappings.keys():
-                    mapping_field = mappings[field]
+                if field in MAPPING.keys():
+                    mapping_field = MAPPING[field]
                     res.extend(__validate_two_list_jsons(new_address,
                                                          json_obj[field],
                                                          other_json_obj[field],
@@ -241,8 +242,8 @@ def validate_two_nested_jsons(address, json_obj, other_json_obj, ignored_list=No
             continue
         elif field not in ignored_list:
             if type(json_obj[field]) is list:
-                if field in mappings.keys():
-                    mapping_field = mappings[field]
+                if field in MAPPING.keys():
+                    mapping_field = MAPPING[field]
                     res.extend(__validate_two_list_jsons(new_address,
                                                          json_obj[field],
                                                          other_json_obj[field],

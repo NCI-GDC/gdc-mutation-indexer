@@ -8,13 +8,11 @@ def build_ssm_subtree(maf_df, cons_df, obs_df=None):
        |             |_____...
        |___ observation[]
     '''
-    ssm_df = get_ssm_df(
-        maf_df, add_fields=['gene_id', '_case_submitter_id'])
+    ssm_df = get_ssm_df(maf_df, add_fields=['gene_id', 'case_id'])
 
     df = ssm_df.join(cons_df, on='ssm_id', how='left')
-
     if obs_df:
-        df = df.join(obs_df, on=['ssm_id', '_case_submitter_id'], how='left')
+        df = df.join(obs_df, on=['ssm_id', 'case_id'], how='left')
 
     return df
 
@@ -35,9 +33,8 @@ def get_gene_df(input_df, add_fields=[], drop_fields=[],
 
 def get_ssm_df(input_df, add_fields=[], drop_fields=[],
                unique_fields=None, ignore=[]):
-    return get_single_df(
-        input_df, 'ssm.yml', add_fields,
-        drop_fields, unique_fields, ignore)
+    return get_single_df(input_df, 'ssm.yml',
+                         add_fields,  drop_fields, unique_fields, ignore)
 
 
 def get_transcript_df(input_df, add_fields=[], drop_fields=[],

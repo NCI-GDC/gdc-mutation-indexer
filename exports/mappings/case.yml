@@ -1,28 +1,6 @@
 properties:
-  aliquot_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  analyte_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+  available_variation_data:
+    type: keyword 
   state:
     type: keyword
     default: empty
@@ -107,18 +85,6 @@ properties:
         type: keyword
       vital_status:
         type: keyword
-  portion_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
   project:
     properties:
       disease_type:
@@ -181,91 +147,7 @@ properties:
         type: boolean
       state:
         type: keyword
-  sample_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  slide_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  submitter_aliquot_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  submitter_analyte_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
   submitter_id:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  submitter_portion_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  submitter_sample_ids:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
-  submitter_slide_ids:
     type: text
     fields:
       analyzed:
