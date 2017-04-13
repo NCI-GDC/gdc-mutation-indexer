@@ -1,16 +1,6 @@
 properties:
   aa_change:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   aa_start:
     type: long
   aa_end:
