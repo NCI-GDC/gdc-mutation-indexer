@@ -1,7 +1,6 @@
 from exports.builders.utils import percentile
 from pyspark.sql.functions import col, size
 from elasticsearch import Elasticsearch
-import subprocess
 import json
 import logging
 import os
@@ -150,7 +149,7 @@ class BaseBuilder(object):
             commit_hash = __file__.split('_rev_')[1].split('-')[0]
         else:
             if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
-                commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
+                commit_hash = os.system('git rev-parse HEAD')
             else:
                 self.logger.error("Can't get commit hash. Either git is not installed or we are not "
                                   "in a git repo. If running on a spark cluster, make sure "
