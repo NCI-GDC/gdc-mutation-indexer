@@ -1,4 +1,8 @@
 from setuptools import setup, find_packages
+import shlex
+from subprocess import check_output
+
+GIT_HEAD_REV = check_output(shlex.split('git rev-parse HEAD')).strip()
 
 setup(
     name="gdc-mutation-indexer",
@@ -7,5 +11,6 @@ setup(
     license="Apache",
     packages=find_packages(),
     py_modules=["config"],
-    include_package_data=True
+    include_package_data=True,
+    options = dict(egg_info = dict(tag_build = '_rev_'+GIT_HEAD_REV)),
 )
