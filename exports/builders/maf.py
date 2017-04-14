@@ -308,7 +308,8 @@ class MAFBuilder(object):
         cds_position: 1273-1274/2112 -> cds_start: 1273, cds_length: 2112
         """
         def start(s):
-            if not (s and s.split('/')[0].split('-')[0].strip()):
+            s = (s and s.split('/')[0].split('-')[0].strip()) or -1
+            if s in [-1, '?']:
                 return -1
             return int(s.split('/')[0].split('-')[0])
 
