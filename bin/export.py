@@ -51,7 +51,11 @@ def make_spark_context(config):
     Makes a spark and sqlContext
     '''
     conf = SparkConf().setAppName(config.app_name)
-    conf = conf.setMaster(config.spark_master)
+    if isinstance(config, TestConfig):
+        # We should only use the value of `config.spark_master` in
+        # a test context. Production runs need to set the Spark Master
+        # to 'yarn'. This is done in the arguments to `spark-submit`.
+        conf = conf.setMaster(config.spark_master)
     sc = SparkContext(conf=conf, pyFiles=[])
     sqlContext = SQLContext(sc)
     # Configure logging

@@ -1,9 +1,9 @@
 from exports.builders.utils import percentile
 from pyspark.sql.functions import col, size
 from elasticsearch import Elasticsearch
-import subprocess
 import json
 import logging
+import os
 
 logging.basicConfig()
 
@@ -144,9 +144,20 @@ class BaseBuilder(object):
         nb_mutations = -1
         if hasattr(self.config, 'nb_mutations'):
             nb_mutations = self.config.nb_mutations 
+        if '_rev_' in __file__:
+            # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
+            commit_hash = __file__.split('_rev_')[1].split('-')[0]
+        else:
+            if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
+                commit_hash = os.system('git rev-parse HEAD')
+            else:
+                self.logger.error("Can't get commit hash. Either git is not installed or we are not "
+                                  "in a git repo. If running on a spark cluster, make sure "
+                                  "the egg name is gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
+                commit_hash = 'not found'
         metadata_doc = {
+                'commit_hash': commit_hash,
                 'indices_built': [k for k,v in self.config.index_names.iteritems() if v],
-                'commit_hash': subprocess.check_output(["git", "rev-parse", "HEAD"]).strip(),
                 'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,

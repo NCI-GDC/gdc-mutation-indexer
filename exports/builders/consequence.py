@@ -27,7 +27,7 @@ class ConsequenceBuilder(object):
                           consequences, while Case and Gene do not.
         """
         ann_df = get_annotation_df(maf_df, add_fields=['ssm_id'],
-                                   unique_fields=['transcript_id'])
+                                   unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
                                struct(ann_df.drop('ssm_id').columns)
                                .alias('annotation'))
