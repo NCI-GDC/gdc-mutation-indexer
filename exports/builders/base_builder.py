@@ -43,10 +43,12 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         doc = self.config.index_names[self.index_name]
         index_doc = '{}/{}'.format(index, doc)
-        settings = json.dumps(ModelMapper(self.index_name).create_index_settings())
+
+        index_body = ModelMapper(self.index_name).create_index_settings()
+        index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))
-        response = self.es.indices.create(index=index, ignore=400, body=settings)
+        response = self.es.indices.create(index=index, ignore=400, body=index_body)
         self.log(response)
 
         self.save_build_metadata()
@@ -144,10 +146,13 @@ class BaseBuilder(object):
         Saves metadata about the build in a 'build_metadata' document in the
         elasticsearch index
         """
+
         index = self.config.indices[self.index_name]
         nb_mutations = -1
+
         if hasattr(self.config, 'nb_mutations'):
             nb_mutations = self.config.nb_mutations
+
         if '_rev_' in __file__:
             # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
             commit_hash = __file__.split('_rev_')[1].split('-')[0]
@@ -159,6 +164,7 @@ class BaseBuilder(object):
                                   "in a git repo. If running on a spark cluster, make sure "
                                   "the egg name is gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
                 commit_hash = 'not found'
+
         metadata_doc = {
                 'commit_hash': commit_hash,
                 'indices_built': [k for k,v in self.config.index_names.iteritems() if v],
@@ -177,6 +183,7 @@ class BaseBuilder(object):
                 }
 
         self.log('Saving build metadata')
+
         response = self.es.create(index=index, doc_type='build_metadata',
                                   id=0, body=metadata_doc)
         self.log(response)

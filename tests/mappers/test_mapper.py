@@ -18,6 +18,32 @@ def mappings():
     }
 
 
+@pytest.fixture(scope="session")
+def mappings_with_settings():
+    case = ModelMapper('case_centric').create_index_settings()
+    gene = ModelMapper('gene_centric').create_index_settings()
+    ssm = ModelMapper('ssm_centric').create_index_settings()
+    ssm_occ = ModelMapper('ssm_occurrence_centric').create_index_settings()
+    return {
+        'gene': gene, 'ssm': ssm, 'case': case, 'ssm_occurrence': ssm_occ,
+        }
+
+
+@pytest.mark.parametrize('index_name', ['case', 'gene', 'ssm', 'ssm_occurrence'])
+def test_mapping_settings(mappings_with_settings, index_name):
+    mappings = mappings_with_settings[index_name]
+    for key in ['mappings', 'settings']:
+        assert key in mappings
+
+
+    for doctype in mappings['mappings']:
+        for key in ['_all', '_source', 'dynamic']:
+            assert key in mappings['mappings'][doctype]
+
+    assert mappings['settings'] is not None
+    assert 'analysis' in mappings['settings']
+
+
 @pytest.mark.parametrize('doc_type,path', [
     ('gene', 'properties.case'),
     ('gene', 'properties.case.properties.case_id'),
@@ -85,3 +111,4 @@ def test_mapping_path_equals(mappings, doc_type, path, value):
     results = parse(path).find(mappings[doc_type])
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
+
