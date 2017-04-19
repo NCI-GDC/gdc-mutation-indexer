@@ -36,10 +36,10 @@ class TestConfig(BaseConfig):
     skip_in_depth_tests = True
 
     index_names = {
-        'case_centric': 'test_case_centric__',
-        'gene_centric': 'test_gene_centric__',
-        'ssm_centric': 'test_ssm_centric__',
-        'ssm_occurrence_centric': 'test_ssm_occurrence_centric__'
+        'case_centric': 'case_centric',
+        'gene_centric': 'gene_centric',
+        'ssm_centric': 'ssm_centric',
+        'ssm_occurrence_centric': 'ssm_occurrence_centric'
     }
     # Where to save each index
     index_paths = {
