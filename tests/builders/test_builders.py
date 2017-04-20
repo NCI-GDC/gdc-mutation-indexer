@@ -256,8 +256,7 @@ class TestSSMOccurrenceCentricJoins:
 
     def test_ssm_occurrence_columns(self, maf_df, builder):
         ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        print ssm_occurrence_df.select('occurrence_id', 'ssm_occurrence_id').show()
-        assert 'occurrence_id' in ssm_occurrence_df.columns
+        assert 'ssm_occurrence_id' in ssm_occurrence_df.columns
 
     def test_case_subtree(self, maf_df, builder, true_stats):
         # one gene per ssm for our test mafs

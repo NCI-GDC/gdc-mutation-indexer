@@ -66,6 +66,7 @@ class CaseCentricBuilder(BaseBuilder):
 
         self.log_count(self.case_centric)
         self.log('Build finished')
+
         # Check if we should save the resulting dataframe
         if self.config.index_keep:
             self.write(self.config.index_paths[self.index_name])

@@ -31,7 +31,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
     def build(self, maf_df):
         """
-        Builds SSM Occurrence Centric index 
+        Builds SSM Occurrence Centric index
         """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
@@ -48,8 +48,10 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                                 on=['case_id', 'ssm_id'],
                                                 how='inner')
                                           .withColumn('ssm_occurrence_id',
-                                                        col('occurrence_id'))
-                                          .drop('case_id').drop('ssm_id'))
+                                                      col('occurrence_id'))
+                                          .drop('case_id')
+                                          .drop('ssm_id')
+                                          .drop('occurrence_id'))
         self.log_count(ssm_occurrence_centric)
 
         self.ssm_occurrence_centric = ssm_occurrence_centric

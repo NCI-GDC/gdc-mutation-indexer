@@ -6,7 +6,7 @@ import logging
 logging.basicConfig()
 
 from pyspark.sql.types import StringType, IntegerType, ArrayType
-from pyspark.sql.functions import lit, col, regexp_extract, udf
+from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 
 from exports.builders.utils import uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder
@@ -247,8 +247,9 @@ class MAFBuilder(object):
         Adds normal_genotype column to the MAF dataframe
         """
         maf_df = df.withColumn('normal_genotype',
-                               uuid5_col(col('normal_allele1'),
-                                         col('normal_allele2')))
+                               struct(uuid5_col(col('match_norm_seq_allele1'),
+                                                col('match_norm_seq_allele2'))
+                               .alias('allele_id')))
         return maf_df
 
     def add_ssm_id(self, df):

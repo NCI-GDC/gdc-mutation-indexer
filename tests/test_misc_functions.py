@@ -84,13 +84,14 @@ class TestMiscFunctions:
         Test that index prefixes are determined correctly
         """
 
-        index_name = 'test_case_centric__'
+        index_name = 'case_centric'
 
         if es.indices.exists('gdc_r998_{}'.format(index_name)):
             es.indices.delete('gdc_r998_{}'.format(index_name))
 
         # Create a new index
         es.indices.create(index='gdc_r998_{}'.format(index_name))
+
         assert ('gdc_r999_{}'.format(index_name)
                 == TestConfig().indices['case_centric'])
         es.indices.delete(index='gdc_r998_{}'.format(index_name))
