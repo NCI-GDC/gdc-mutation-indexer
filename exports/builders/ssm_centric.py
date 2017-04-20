@@ -35,7 +35,7 @@ class SSMCentricBuilder(BaseBuilder):
 
     def build(self, maf_df):
         """
-        Builds SSM Centric index 
+        Builds SSM Centric index
         """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
@@ -77,9 +77,8 @@ class SSMCentricBuilder(BaseBuilder):
 
         self.log('Joining Cases with Observation, [right, case_id]')
         occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                         .withColumn('ssm_occurrence_id', col('occurrence_id'))
                          .select('ssm_id',
-                                 struct('occurrence_id', 'ssm_occurrence_id',
+                                 struct('occurrence_id',
                                         struct('observation',
                                                *case_df.columns).alias('case'))
                                  .alias('occurrence'))

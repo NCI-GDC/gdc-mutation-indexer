@@ -32,7 +32,7 @@ def ssm_occurrence_centric_index(sqlContext, maf_df):
 @pytest.yield_fixture(scope='module')
 def ssm_occurrence_stats(ssm_occurrence_centric_index):
     docs = ssm_occurrence_centric_index.search(index=conf.indices['ssm_occurrence_centric'],
-                                  doc_type='test_ssm_occurrence_centric__',
+                                  doc_type='ssm_occurrence_centric',
                                   body={"query": {"match_all": {}}}, size=1000)
     yield SSMOcurrenceCentricStats(docs['hits']['hits'])
 

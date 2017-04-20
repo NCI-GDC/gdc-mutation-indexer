@@ -35,7 +35,6 @@ def test_mapping_settings(mappings_with_settings, index_name):
     for key in ['mappings', 'settings']:
         assert key in mappings
 
-
     for doctype in mappings['mappings']:
         for key in ['_all', '_source', 'dynamic']:
             assert key in mappings['mappings'][doctype]

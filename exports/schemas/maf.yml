@@ -106,9 +106,9 @@ maf_schema:
       name:  Mutation_Status
   center:
       name:  Center
-  normal_allele1:
+  match_norm_seq_allele1:
       name:  Match_Norm_Seq_Allele1
-  normal_allele2:
+  match_norm_seq_allele2:
       name:  Match_Norm_Seq_Allele2
   tumor_seq_allele1:
       name:  Tumor_Seq_Allele1

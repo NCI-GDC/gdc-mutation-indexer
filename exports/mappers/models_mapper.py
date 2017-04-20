@@ -27,19 +27,17 @@ class ModelMapper(object):
         """
         self.index = index
         self._settings = None
+
         # Mappings keyed on the type
         self.type_mappings = {}
 
-        for f in os.listdir(os.path.join('exports', 'gdc-models',
-                                         'es-models', self.index)):
-            if f.endswith('.mapping.yaml'):
-                # Resolve type from file name
-                doc_type = f.split('.')[0]
-                # Get path and load the mapping
-                path = self.get_resource_sring(f)
-                self.type_mappings[doc_type] = yaml.safe_load(path)
+        filename = '{}.mapping.yaml'.format(index)
 
-    def get_resource_sring(self, path):
+        # Load the mapping
+        resource = self.get_resource_string(filename)
+        self.type_mappings[index] = yaml.safe_load(resource)
+
+    def get_resource_string(self, path):
         resource_path = os.path.join('gdc-models', 'es-models', self.index,
                                      path)
         return pkg_resources.resource_string('exports', resource_path)

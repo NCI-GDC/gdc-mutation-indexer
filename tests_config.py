@@ -23,7 +23,7 @@ class TestConfig(BaseConfig):
 
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
-    s3_bucket = 'file:///'+os.path.abspath('tests/data/output/test_bucket')+'/'
+    s3_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
     graph_index = 'test_graph_index__'
 
     # Whether or not to rebuild graph index after every test
@@ -35,18 +35,12 @@ class TestConfig(BaseConfig):
     # Whether or not to skip field-by-field data tests
     skip_in_depth_tests = True
 
-    index_names = {
-        'case_centric': 'case_centric',
-        'gene_centric': 'gene_centric',
-        'ssm_centric': 'ssm_centric',
-        'ssm_occurrence_centric': 'ssm_occurrence_centric'
-    }
     # Where to save each index
     index_paths = {
-        'case_centric':           s3_bucket+'test-case-centric.json',
-        'gene_centric':           s3_bucket+'test-gene-centric.json',
-        'ssm_centric':            s3_bucket+'test-ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket+'test-ssm-occurrence-centric.json'
+        'case_centric':           s3_bucket + 'test-case-centric.json',
+        'gene_centric':           s3_bucket + 'test-gene-centric.json',
+        'ssm_centric':            s3_bucket + 'test-ssm-centric.json',
+        'ssm_occurrence_centric': s3_bucket + 'test-ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False

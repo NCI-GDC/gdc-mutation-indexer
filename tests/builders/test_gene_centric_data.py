@@ -32,7 +32,7 @@ def gene_centric_index(sqlContext, maf_df):
 @pytest.yield_fixture(scope='module')
 def gene_stats(gene_centric_index):
     docs = gene_centric_index.search(index=conf.indices['gene_centric'],
-                                     doc_type='test_gene_centric__',
+                                     doc_type='gene_centric',
                                      body={"query": {"match_all": {}}},
                                      size=1000)
     yield GeneCentricStats(docs['hits']['hits'])

@@ -36,10 +36,10 @@ class BaseConfig(object):
     }
     # Where to save each index's final json
     index_paths = {
-        'case_centric':           s3_bucket+'case-centric.json',
-        'gene_centric':           s3_bucket+'gene-centric.json',
-        'ssm_centric':            s3_bucket+'ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket+'ssm-occurrence-centric.json'
+        'case_centric':           s3_bucket + 'case-centric.json',
+        'gene_centric':           s3_bucket + 'gene-centric.json',
+        'ssm_centric':            s3_bucket + 'ssm-centric.json',
+        'ssm_occurrence_centric': s3_bucket + 'ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False
@@ -148,6 +148,7 @@ class BaseConfig(object):
                            port=self.es_port,
                            http_auth=(self.es_user, self.es_pass))
 
+
         def get_indices_max_version():
             versions = []
             indices = es.indices.get_alias().keys()
@@ -171,6 +172,7 @@ class BaseConfig(object):
 
         indices = {k: get_prefix(v) for k, v in self.index_names.items()
                    if v is not None}
+
         return indices
 
     def get_maf_urls(self):
