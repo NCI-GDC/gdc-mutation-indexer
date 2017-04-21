@@ -9,7 +9,7 @@ from exports.builders import (
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
-from exports.mappers import SSMMapper
+from exports.mappers import ModelMapper
 from exports.builders.utils import uuid5_col
 from exports.builders.df_builders import (
     get_ssm_df
@@ -35,7 +35,7 @@ class SSMCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_centric'
     id_field = 'ssm_id'
-    mapper = SSMMapper
+    mapper = ModelMapper('ssm_centric')
 
     def build(self, maf_df):
         # Check if we should load a pre-built dataframe

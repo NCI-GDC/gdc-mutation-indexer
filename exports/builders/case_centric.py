@@ -12,7 +12,7 @@ from exports.builders import (
     ObservationBuilder,
 )
 from exports.builders import BaseBuilder
-from exports.mappers import CaseMapper
+from exports.mappers import ModelMapper
 
 
 class CaseCentricBuilder(BaseBuilder):
@@ -30,7 +30,7 @@ class CaseCentricBuilder(BaseBuilder):
 
     index_name = 'case_centric'
     id_field = 'case_id'
-    mapper = CaseMapper
+    mapper = ModelMapper('case_centric')
 
     def build_ssm(self, maf_df):
         # Consequence
