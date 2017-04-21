@@ -335,6 +335,10 @@ class TestConsequenceBuilder:
         cytobands = transcripts.select('gene.cytoband').collect()
         cytobands = [t['cytoband'] for t in cytobands]
         assert all([type(c) is list for c in cytobands])
+        assert 'symbol' in (cons_df.select(explode('consequence.transcript.gene')
+                                            .alias('gene'))
+                                            .select('gene.*')
+                                            .columns)
 
     def test_impact(self, maf_df, build_df):
         """
