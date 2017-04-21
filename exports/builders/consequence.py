@@ -99,10 +99,7 @@ class ConsequenceBuilder(object):
         symbol from the mutation to the do_not_use column.
         These should be removed.
         """
-        # # Extract columns from the all_effects column
-        # ssm_tran = maf_df.select('gene_id', 'ssm_id', 'symbol',
-        #                          'all_effects', 'canonical_transcript_id')
-        # Turn each row within in the all_effects column into rows in the df
+        # Extract columns from the all_effects column
         ssm_tran = maf_df.withColumn('all_effects',
                                      extract_rows_udf()(col('all_effects'))
                                      .alias('all_effects'))
@@ -144,9 +141,6 @@ class ConsequenceBuilder(object):
                    'canonical_transcript_length_cds',
                    'canonical_transcript_length_genomic']
 
-        # # Explode external_df_ids first
-        # maf_df = maf_df.select('external_db_ids.*',
-        #                        *maf_df.drop('external_db_ids').columns)
         gene_df = get_gene_df(maf_df, index_name, drop_fields=to_drop)
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))

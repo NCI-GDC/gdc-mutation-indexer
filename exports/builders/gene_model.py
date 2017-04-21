@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import udf, lit, col, struct, regexp_extract
+from pyspark.sql.functions import udf, lit, col, regexp_extract
 from pyspark.sql.types import (
     StringType, ArrayType, LongType, StructType, StructField
 )
@@ -22,7 +22,7 @@ class GeneModelBuilder(object):
         """
         Builds Gene Model dataframe
         """
-        gene_df, cytobands_df, census_df = self.read_json()
+        gene_df, cytobands_df, census_df = self.read_gene_model_files()
 
         # Join gene model with cytobands data:
         gene_df = gene_df.join(cytobands_df,
@@ -49,9 +49,9 @@ class GeneModelBuilder(object):
 
         return gene_df
 
-    def read_json(self):
+    def read_gene_model_files(self):
         """
-        Reads the gene model, cytobands and census json files into Spark
+        Reads the gene model, cytobands and census files into Spark
         dataframes
         """
         spark_csv_path = "org.apache.spark.sql.execution.datasources.csv.CSVFileFormat"

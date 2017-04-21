@@ -20,13 +20,8 @@ class ModelMapper(object):
         The :param:index should have a corresponding directory in
         `gdc-models/es-models/` wherein each type should have a
         `my_type.mapping.yml` specifying its mapping.
-        Optionally, a `settings.yml` file may also be present which will be
-        used to configure settings when creating the index
-
-        :param dir_path: The path to the mapping's directory
         """
         self.index = index
-        self._settings = None
 
         # Mappings keyed on the type
         self.type_mappings = {}
