@@ -1,8 +1,8 @@
 import pytest
-import json
 from random import randint
 
-from exports.builders.utils import percentile, struct_select
+from pyspark.sql.functions import lit
+from exports.builders.utils import percentile, struct_select, extract_aas_position
 from tests_config import TestConfig
 from exports.builders.utils import (
     ssm_label,
@@ -95,6 +95,19 @@ class TestMiscFunctions:
         assert ('gdc_r999_{}'.format(index_name)
                 == TestConfig().indices['case_centric'])
         es.indices.delete(index='gdc_r998_{}'.format(index_name))
+
+    def test_aa_start_end(self, maf_df):
+        """
+        Test aa_start and aa_end extraction
+        """
+        new_df = maf_df.withColumn('aa_change', lit('p.L1201R'))
+        new_df = extract_aas_position(new_df)
+
+        assert 'aa_start' in new_df.columns
+        assert 'aa_end' in new_df.columns
+        aa_change = new_df.filter(new_df.aa_change == 'p.L1201R').select('aa_start', 'aa_end').collect()[0]
+        assert aa_change['aa_start'] == 1201
+        assert aa_change['aa_end'] == 1201
 
     def test_ssm_label(self):
         """

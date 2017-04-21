@@ -306,9 +306,13 @@ class MAFBuilder(object):
 
     def extract_cds_position(self, df):
         """
-        Extracts cds_start and cds_length from the cds_position column
-        cds_position: 1273/2112 -> cds_start: 1273, cds_length: 2112
-        cds_position: 1273-1274/2112 -> cds_start: 1273, cds_length: 2112
+        Extracts cds_start, cds_length and cds_length from the cds_position column
+        cds_position: 1273/2112 -> cds_start: 1273,
+                                   cds_length: 2112,
+                                   cds_length: 1273 + 2112
+        cds_position: 1273-1274/2112 -> cds_start: 1273,
+                                        cds_length: 2112,
+                                        cds_length: 1273 + 2112
         """
         def start(s):
             if not (s and s.split('/')[0].split('-')[0].strip()):
@@ -327,7 +331,7 @@ class MAFBuilder(object):
 
         df = df.withColumn('cds_start', udf(start,
                                             IntegerType())(col('cds_position')))
-        df = df.withColumn('cds_end', udf(start,
+        df = df.withColumn('cds_end', udf(end,
                                           IntegerType())(col('cds_position')))
         df = df.withColumn('cds_length', udf(length,
                                              IntegerType())(col('cds_position')))
