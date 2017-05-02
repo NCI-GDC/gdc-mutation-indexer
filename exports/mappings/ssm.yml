@@ -1,4 +1,18 @@
 properties:
+  ssm_autocomplete:
+    type: keyword
+    fields:
+      analyzed:
+        type: text
+        analyzer: autocomplete_analyzed
+        search_analyzer: lowercase_keyword
+      lowercase:
+        type: text
+        analyzer: lowercase_keyword
+      prefix:
+        type: text
+        analyzer: autocomplete_prefix
+        search_analyzer: lowercase_keyword
   chromosome:
     type: keyword
   cosmic_id:
@@ -6,17 +20,7 @@ properties:
   end_position:
     type: long
   genomic_dna_change:
-    type: text
-    fields:
-      analyzed:
-        type: text
-        analyzer: id_search
-      raw:
-        type: keyword
-        store: true
-      search:
-        type: text
-        analyzer: id_search
+    type: keyword
   mutation_subtype:
     type: keyword
   mutation_type:

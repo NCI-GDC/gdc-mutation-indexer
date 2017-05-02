@@ -7,18 +7,27 @@ settings:
     mapping.nested_fields.limit: 100
     mapping.total_fields.limit: 2000
   analysis:
+    filter:
+      edge_ngram:
+        min_gram: '1'
+        side: front
+        type: edge_ngram
+        max_gram: '20'
     analyzer:
-      id_index:
+      autocomplete_analyzed:
         filter:
-          - lowercase
-          - edge_ngram
-        type: custom
-        tokenizer: whitespace
-      id_search:
+        - lowercase
+        - edge_ngram
+        tokenizer: standard
+      autocomplete_prefix:
         filter:
-          - lowercase
-        type: custom
-        tokenizer: whitespace
+        - lowercase
+        - edge_ngram
+        tokenizer: keyword
+      lowercase_keyword:
+        filter:
+        - lowercase
+        tokenizer: keyword
 mappings:
   build_metadata:
     properties:

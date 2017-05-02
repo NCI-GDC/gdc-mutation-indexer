@@ -61,6 +61,24 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(cleaned['properties']['code']['index'], 'true')
         self.assertFalse('index_analyzer' in cleaned['properties']['code'])
 
+    def test_copy_to(self):
+        mapper = Mapper('doc')
+
+        d = {
+            'properties': {
+                'name': { 'type': 'keyword' },
+                'id': { 'type': 'integer' },
+                'address': {'type': 'text'}
+            }
+        }
+        mapper.add_copy_to([
+            'name',
+            'address'
+        ], d, 'autocomplete')
+        self.assertEqual(d['properties']['name']['copy_to'], ['autocomplete'])
+        self.assertEqual(d['properties']['address']['copy_to'], ['autocomplete'])
+
+
 
 class TestGeneMapper(unittest.TestCase):
 
@@ -72,4 +90,4 @@ class TestGeneMapper(unittest.TestCase):
 
         self.assertIn('gene_chromosome', props)
         self.assertIn('gene_end', props)
-        self.assertEqual('text', props['gene_id']['type'])
+        self.assertEqual('keyword', props['gene_id']['type'])

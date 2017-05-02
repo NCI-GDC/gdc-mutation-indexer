@@ -44,12 +44,6 @@ class SSMMapper(Mapper):
             'name'
         ], gene_map)
 
-        #del gene_map['properties']['biotype']
-        #del gene_map['properties']['description']
-        #del gene_map['properties']['name']
-        #del gene_map['properties']['symbol']
-        #del gene_map['properties']['transcripts']
-
         tran_map['properties']['gene'] = gene_map
         # Add annotation
         annot_map = self.load_properties('annotation.yml', nested=False)
@@ -82,6 +76,13 @@ class SSMMapper(Mapper):
         # Add observation
         obs_map = self.load_properties('observation.yml', nested=True)
         case_map['properties']['observation'] = obs_map
+
+        self.add_copy_to([
+            'consequence.properties.transcript.properties.aa_change',
+            'consequence.properties.transcript.properties.gene.properties.symbol',
+            'genomic_dna_change',
+            'ssm_id'
+        ], mapping, 'ssm_autocomplete')
 
         mapping = self.clean(mapping)
         return mapping

@@ -47,6 +47,15 @@ class Mapper(object):
 
             prop['type'] = 'keyword'
 
+    def add_copy_to(self, paths, data, field):
+        for path in paths:
+            prop = data['properties']
+
+            for key in path.split('.'):
+                prop = prop[key]
+
+            prop['copy_to'] = [field]
+
     @property
     def settings(self):
         resource_package = 'exports'
