@@ -36,6 +36,7 @@ def main():
         from config import BaseConfig as Config
 
     config = Config()
+    config.config_type = args.config
 
     sc, sqlContext = make_spark_context(config)
 
@@ -51,7 +52,7 @@ def make_spark_context(config):
     Makes a spark and sqlContext
     '''
     conf = SparkConf().setAppName(config.app_name)
-    if isinstance(config, TestConfig):
+    if config.config_type == 'Test':
         # We should only use the value of `config.spark_master` in
         # a test context. Production runs need to set the Spark Master
         # to 'yarn'. This is done in the arguments to `spark-submit`.
