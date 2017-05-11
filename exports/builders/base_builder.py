@@ -63,8 +63,7 @@ class BaseBuilder(object):
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.coalesce).write\
             .format('org.elasticsearch.spark.sql')\
-            .option('es.nodes', '{}:{}'.format(self.config.es_host,
-                                               self.config.es_port))\
+            .option('es.nodes', self.config.es_nodes)\
             .option('es.net.http.auth.user', self.config.es_user)\
             .option('es.net.http.auth.pass', self.config.es_pass)\
             .option('es.nodes.wan.only', 'true')\
