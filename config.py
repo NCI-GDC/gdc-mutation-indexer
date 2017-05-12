@@ -23,6 +23,11 @@ class BaseConfig(object):
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
 
+    # the spark executors are not able to resolve the consul url so we need to
+    # list all the nodes in the format 'host1:port1,host2:port2,...,hostN:portN'.
+    # This setting is optional. If not defined, it defaults to es_host:es_port
+    es_nodes = os.getenv('ES_NODES', '{}:{}'.format(es_host, es_port))
+
     # Debug mode
     debug = False
 
