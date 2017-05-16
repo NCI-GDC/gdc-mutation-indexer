@@ -47,9 +47,9 @@ class SSMCentricBuilder(BaseBuilder):
 
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build(maf_df,
-                       self.index_name,
-                       join_gene=True,
-                       add_gene_aa_change=True))
+                          self.index_name,
+                          join_gene=True,
+                          add_gene_aa_change=True))
 
         occurrence_df = self.build_occurrence(maf_df)
 

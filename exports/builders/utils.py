@@ -183,8 +183,8 @@ def struct_select(index_name, mapping_name, ignore=[]):
             for k, v in doc.items():
                 # Ignore OICR autocomplete features
                 if (k == 'gene_aa_change'
-                    or k == 'copy_to' or
-                    k.find('_autocomplete') != -1):
+                    or k == 'copy_to'
+                    or '_autocomplete' in k):
                     pass
 
                 elif 'type' in v and 'properties' not in v:

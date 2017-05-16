@@ -74,42 +74,41 @@ class ConsequenceBuilder(object):
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',
-                                           uuid5_col(
-                                               lit('ssm_consequence'),
-                                               col('ssm_id'),
-                                               col('transcript_id')))
+                                           uuid5_col(lit('ssm_consequence'),
+                                                     col('ssm_id'),
+                                                     col('transcript_id')))
         if add_gene_aa_change:
             tran_df = (tran_df.withColumn('gene_aa_change',
-                               when(col("gene.symbol").isNull()
-                                   | col("aa_change").isNull(), None)
-                               .otherwise(concat_ws(' ',
-                                   tran_df.gene.symbol,
-                                   tran_df.aa_change))))
-            tran_df = tran_df.select(
-                    'ssm_id',
-                    struct(
-                        'consequence_id',
-                        struct(*tran_df.drop('ssm_id')
-                                       .drop('consequence_id')
-                                       .drop('gene_aa_change'))
-                        .alias('transcript')
-                    ).alias('consequence'),
-                    'gene_aa_change')
+                                          when(col("gene.symbol").isNull()
+                                               | col("aa_change").isNull(),
+                                               None)
+                                          .otherwise(concat_ws(' ',
+                                                     tran_df.gene.symbol,
+                                                     tran_df.aa_change))))
+            tran_df = tran_df.select('ssm_id',
+                                     struct('consequence_id',
+                                            struct(*tran_df
+                                                   .drop('ssm_id')
+                                                   .drop('consequence_id')
+                                                   .drop('gene_aa_change'))
+                                            .alias('transcript'))
+                                     .alias('consequence'),
+                                     'gene_aa_change')
 
-            df = tran_df.groupby('ssm_id').agg(
-                collect_list('consequence').alias('consequence'),
-                collect_list('gene_aa_change').alias('gene_aa_change'))
+            df = (tran_df.groupby('ssm_id')
+                         .agg(collect_list('consequence').alias('consequence'),
+                              collect_list('gene_aa_change').alias('gene_aa_change')))
         else:
-            tran_df = tran_df.select(
-                    'ssm_id',
-                    struct(
-                        'consequence_id',
-                        struct(*tran_df.drop('ssm_id').drop('consequence_id'))
-                        .alias('transcript')
-                    ).alias('consequence'))
+            tran_df = tran_df.select('ssm_id',
+                                     struct('consequence_id',
+                                            struct(*tran_df
+                                                   .drop('ssm_id')
+                                                   .drop('consequence_id'))
+                                            .alias('transcript'))
+                                     .alias('consequence'))
 
-            df = tran_df.groupby('ssm_id').agg(
-                collect_list('consequence').alias('consequence'))
+            df = (tran_df.groupby('ssm_id')
+                         .agg(collect_list('consequence').alias('consequence')))
 
 
         return df
