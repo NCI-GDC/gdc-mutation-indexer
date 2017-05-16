@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import lit, struct, collect_list, col
+from pyspark.sql.functions import lit, struct, collect_list
 
 from exports.builders import (
     CaseBuilder,
@@ -46,7 +46,10 @@ class SSMCentricBuilder(BaseBuilder):
         ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
 
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df, self.index_name, join_gene=True))
+                   .build(maf_df,
+                       self.index_name,
+                       join_gene=True,
+                       add_gene_aa_change=True))
 
         occurrence_df = self.build_occurrence(maf_df)
 

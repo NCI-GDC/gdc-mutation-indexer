@@ -2,7 +2,7 @@ import re
 import uuid
 import logging
 from functools import partial
-from pyspark.sql.functions import udf, struct, col, explode, array
+from pyspark.sql.functions import udf, struct, col, explode, array, when
 from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
 
 from exports.mappers.models_mapper import ModelMapper
@@ -182,7 +182,9 @@ def struct_select(index_name, mapping_name, ignore=[]):
         if type(doc) is dict:
             for k, v in doc.items():
                 # Ignore OICR autocomplete features
-                if k == 'copy_to' or k.find('_autocomplete') != -1:
+                if (k == 'gene_aa_change'
+                    or k == 'copy_to' or
+                    k.find('_autocomplete') != -1):
                     pass
 
                 elif 'type' in v and 'properties' not in v:
@@ -242,3 +244,22 @@ def extract_aas_position(df):
 
     return df
 
+def sanitize_aa_change(df):
+    """
+    Removes 'p.' from aa_change
+    """
+    def sanitize(aa_change):
+        return aa_change.strip('p.')
+
+    df = df.withColumn('aa_change', udf(sanitize, StringType())(col('aa_change')))
+
+    return df
+
+def convert_empty_str_to_null_in_col(df, col_name):
+    '''
+    Converts empty string to null in df.col_name
+    '''
+
+    return df.withColumn(col_name,
+            when(col(col_name) != "", col(col_name))
+            .otherwise(None))
