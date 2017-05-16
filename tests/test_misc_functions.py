@@ -7,9 +7,19 @@ from tests_config import TestConfig
 from exports.builders.utils import (
     ssm_label,
     _udf_uuid5_field,
+    sanitize_aa_change,
+    convert_empty_str_to_null_in_col,
 )
 
 conf = TestConfig()
+
+
+def create_df(sqlContext, values, column_name='values'):
+    """
+    Creates 1d mock dataframe from values list and column name
+    """
+    values = map(lambda v: (v,), values)
+    return sqlContext.createDataFrame(values, [column_name])
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
@@ -95,6 +105,30 @@ class TestMiscFunctions:
         assert ('gdc_r999_{}'.format(index_name)
                 == TestConfig().indices['case_centric'])
         es.indices.delete(index='gdc_r998_{}'.format(index_name))
+
+    def test_sanitize_aa_change(self, sqlContext):
+        # Fake input and expected output
+        fake_input = ['a', 'p.b','cp.']
+        expected_output = ['a', 'b', 'c']
+
+        # Convert to dataframes:
+        df = create_df(sqlContext, fake_input, 'aa_change')
+        expected_df = create_df(sqlContext, expected_output, 'aa_change')
+
+        # Test:
+        assert sanitize_aa_change(df).collect() == expected_df.collect()
+
+    def test_convert_empty_str_to_null_in_col(self, sqlContext):
+        # Fake input and expected output
+        fake_input = ['a', '', 'c', '']
+        expected_output = ['a', None, 'c', None]
+
+        # Convert to dataframes:
+        df = create_df(sqlContext, fake_input, 'test')
+        expected_df = create_df(sqlContext, expected_output, 'test')
+
+        # Test:
+        assert convert_empty_str_to_null_in_col(df, 'test').collect() == expected_df.collect()
 
     def test_aa_start_end(self, maf_df):
         """
