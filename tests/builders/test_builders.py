@@ -350,13 +350,33 @@ class TestConsequenceBuilder:
                                       .alias('transcript'))
                               .select('transcript.*'))
 
-        cytobands = transcripts.select('gene.cytoband').collect()
-        cytobands = [t['cytoband'] for t in cytobands]
-        assert all([type(c) is list for c in cytobands])
         assert 'symbol' in (cons_df.select(explode('consequence.transcript.gene')
                                             .alias('gene'))
                                             .select('gene.*')
                                             .columns)
+
+        if index_name != 'case_centric':
+            cytobands = transcripts.select('gene.cytoband').collect()
+            cytobands = [t['cytoband'] for t in cytobands]
+            assert all([type(c) is list for c in cytobands])
+
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name, add_gene_aa_change=True)
+
+        assert 'gene_aa_change' in cons_df.columns
+
+        data = cons_df.select('gene_aa_change',
+                              'consequence.transcript.aa_change',
+                              'consequence.transcript.gene.symbol').collect()
+        for row in data:
+            expected_list = [x for x in zip(row.symbol, row.aa_change)
+                             if None not in x]
+            expected_list = map(lambda x: '{} {}'.format(*x), expected_list)
+            expected_list = sorted(list(set(expected_list)))
+
+            assert sorted(row.gene_aa_change) == expected_list
+
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_only_related_transcripts(self, builder, maf_df, index_name):
