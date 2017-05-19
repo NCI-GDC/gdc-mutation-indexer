@@ -164,7 +164,7 @@ class ModelMapper(object):
                 'ssm_occurrence_centric': ['observation'],
             },
             'gene': {
-                'gene_centric': ['case', 'transcripts'],
+                'gene_centric': ['case'],
                 'case_centric': ['ssm'],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],

@@ -52,6 +52,11 @@ def test_ssm_centric_summary_stats(ssm_stats, maf_stats, stat):
 @pytest.mark.parametrize('filename', os.listdir(T.output_dir))
 def test_ssm_centric_join(ssm_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(ssm_centric_index, filename)
+
+    # Top level keys check
+    assert set(es_doc.keys()) == set(true_doc.keys())
+
+    # Join cardinality check
     diffs = validate_two_nested_jsons_joining("ssm{0}{1}"
                                               .format(KEY_VALUE_SEPARATOR,
                                                       filename),
