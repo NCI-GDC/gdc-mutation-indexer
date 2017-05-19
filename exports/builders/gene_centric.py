@@ -33,7 +33,7 @@ class GeneCentricBuilder(BaseBuilder):
 
     def build(self, maf_df):
         """
-        Builds Gene Centric index 
+        Builds Gene Centric index
         """
         self.log('Building GeneCentric')
         # Check if we should load a pre-built dataframe
