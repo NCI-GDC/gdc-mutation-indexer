@@ -359,7 +359,7 @@ class TestConsequenceBuilder:
                                             .columns)
 
     @pytest.mark.parametrize('index_name', conf.indices)
-    def test_consequence_with_aa_change(self, builder, maf_df, index_name):
+    def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
         cons_df = builder.build(maf_df, index_name, add_gene_aa_change=True)
 
         assert 'gene_aa_change' in cons_df.columns
@@ -371,8 +371,9 @@ class TestConsequenceBuilder:
             expected_list = [x for x in zip(row.symbol, row.aa_change)
                              if None not in x]
             expected_list = map(lambda x: '{} {}'.format(*x), expected_list)
+            expected_list = sorted(list(set(expected_list)))
 
-            assert row.gene_aa_change == expected_list
+            assert sorted(row.gene_aa_change) == expected_list
 
 
     @pytest.mark.parametrize('index_name', conf.indices)

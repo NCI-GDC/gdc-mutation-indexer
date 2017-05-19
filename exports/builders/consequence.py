@@ -11,7 +11,9 @@ from exports.builders.utils import (extract_rows_udf,
                                     uuid5_col,
                                     extract_aas_position,
                                     sanitize_aa_change,
-                                    convert_empty_str_to_null_in_col)
+                                    convert_empty_str_to_null_in_col,
+                                    sanitize_gene_aa_change,
+                                    )
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
@@ -103,6 +105,8 @@ class ConsequenceBuilder(object):
             df = (tran_df.groupby('ssm_id')
                          .agg(collect_list('consequence').alias('consequence'),
                               collect_list('gene_aa_change').alias('gene_aa_change')))
+            df = sanitize_gene_aa_change(df)
+
         else:
             tran_df = tran_df.select('ssm_id',
                                      struct('consequence_id',

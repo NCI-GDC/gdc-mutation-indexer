@@ -255,6 +255,22 @@ def sanitize_aa_change(df):
 
     return df
 
+
+def sanitize_gene_aa_change(df):
+    """
+    Removes nulls, empty strings and duplicates from gene_aa_change;
+    Sorts gene_aa_change
+    """
+    def sanitize(gene_aa_change):
+        gene_aa_change = [x for x in gene_aa_change if x not in [None, '']]
+        return sorted(list(set(gene_aa_change)))
+
+    df = df.withColumn('gene_aa_change',
+                       udf(sanitize, ArrayType(StringType()))(col('gene_aa_change')))
+
+    return df
+
+
 def convert_empty_str_to_null_in_col(df, col_name):
     '''
     Converts empty string to null in df.col_name

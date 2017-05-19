@@ -8,6 +8,7 @@ from exports.builders.utils import (
     ssm_label,
     _udf_uuid5_field,
     sanitize_aa_change,
+    sanitize_gene_aa_change,
     convert_empty_str_to_null_in_col,
 )
 
@@ -117,6 +118,18 @@ class TestMiscFunctions:
 
         # Test:
         assert sanitize_aa_change(df).collect() == expected_df.collect()
+
+    def test_sanitize_gene_aa_change(self, sqlContext):
+        # Fake input and expected output
+        fake_input = [['c', 'a', 'a', '', None, 'b', 'c', 'c']]
+        expected_output = [['a', 'b', 'c']]
+
+        # Convert to dataframes:
+        df = create_df(sqlContext, fake_input, 'gene_aa_change')
+        expected_df = create_df(sqlContext, expected_output, 'gene_aa_change')
+
+        # Test:
+        assert sanitize_gene_aa_change(df).collect() == expected_df.collect()
 
     def test_convert_empty_str_to_null_in_col(self, sqlContext):
         # Fake input and expected output
