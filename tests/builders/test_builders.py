@@ -350,13 +350,15 @@ class TestConsequenceBuilder:
                                       .alias('transcript'))
                               .select('transcript.*'))
 
-        cytobands = transcripts.select('gene.cytoband').collect()
-        cytobands = [t['cytoband'] for t in cytobands]
-        assert all([type(c) is list for c in cytobands])
         assert 'symbol' in (cons_df.select(explode('consequence.transcript.gene')
                                             .alias('gene'))
                                             .select('gene.*')
                                             .columns)
+
+        if index_name != 'case_centric':
+            cytobands = transcripts.select('gene.cytoband').collect()
+            cytobands = [t['cytoband'] for t in cytobands]
+            assert all([type(c) is list for c in cytobands])
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
