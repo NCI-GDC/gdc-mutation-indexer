@@ -57,9 +57,11 @@ class ModelMapper(object):
         # Add mappings from common_settings.yml:
         self.type_mappings.update(mappings)
 
-        # Add common doctype settings from common_settings.yml:
+        # Add default common doctype settings from common_settings.yml
+        # (only set if it's not present, don't overwrite if already set)
         for doctype in self.type_mappings:
-            self.type_mappings[doctype].update(doctype_settings)
+            for k, v in doctype_settings.items():
+                self.type_mappings[doctype].setdefault(k, v)
 
         # Populate
         final_mapping = {
