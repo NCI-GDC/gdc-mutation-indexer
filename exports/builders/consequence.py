@@ -1,6 +1,19 @@
 import logging
-from pyspark.sql.functions import explode, col, collect_list, struct, lit
-from exports.builders.utils import extract_rows_udf, all_effects_udf, uuid5_col, extract_aas_position
+from pyspark.sql.functions import (explode,
+                                   col,
+                                   collect_list,
+                                   struct,
+                                   lit,
+                                   when,
+                                   concat_ws)
+from exports.builders.utils import (extract_rows_udf,
+                                    all_effects_udf,
+                                    uuid5_col,
+                                    extract_aas_position,
+                                    sanitize_aa_change,
+                                    convert_empty_str_to_null_in_col,
+                                    sanitize_gene_aa_change,
+                                    )
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 logging.basicConfig()
 
@@ -15,7 +28,7 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, index_name, join_gene=False):
+    def build(self, maf_df, index_name, join_gene=False, add_gene_aa_change=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
@@ -26,6 +39,7 @@ class ConsequenceBuilder(object):
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
         """
+
         ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
@@ -50,6 +64,10 @@ class ConsequenceBuilder(object):
         tran_with_ann = tran_df.join(ann_df, on=['ssm_id', 'transcript_id'],
                                      how='left')
 
+        # gene_aa_change cannot be added if gene is not joined:
+        if add_gene_aa_change:
+            join_gene = True
+
         if join_gene:
             # Build and join the gene if required
             gene_df = self._build_gene_struct(maf_df, index_name)
@@ -63,20 +81,44 @@ class ConsequenceBuilder(object):
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',
-                                           uuid5_col(
-                                               lit('ssm_consequence'),
-                                               col('ssm_id'),
-                                               col('transcript_id')))
-        tran_df = tran_df.select(
-                'ssm_id',
-                struct(
-                    'consequence_id',
-                    struct(*tran_df.drop('ssm_id').drop('consequence_id'))
-                    .alias('transcript')
-                ).alias('consequence'))
+                                           uuid5_col(lit('ssm_consequence'),
+                                                     col('ssm_id'),
+                                                     col('transcript_id')))
+        if add_gene_aa_change:
+            tran_df = (tran_df.withColumn('gene_aa_change',
+                                          when(col("gene.symbol").isNull()
+                                               | col("aa_change").isNull(),
+                                               None)
+                                          .otherwise(concat_ws(' ',
+                                                     tran_df.gene.symbol,
+                                                     tran_df.aa_change))))
+            tran_df = tran_df.select('ssm_id',
+                                     struct('consequence_id',
+                                            struct(*tran_df
+                                                   .drop('ssm_id')
+                                                   .drop('consequence_id')
+                                                   .drop('gene_aa_change'))
+                                            .alias('transcript'))
+                                     .alias('consequence'),
+                                     'gene_aa_change')
 
-        df = tran_df.groupby('ssm_id').agg(
-            collect_list('consequence').alias('consequence'))
+            df = (tran_df.groupby('ssm_id')
+                         .agg(collect_list('consequence').alias('consequence'),
+                              collect_list('gene_aa_change').alias('gene_aa_change')))
+            df = sanitize_gene_aa_change(df)
+
+        else:
+            tran_df = tran_df.select('ssm_id',
+                                     struct('consequence_id',
+                                            struct(*tran_df
+                                                   .drop('ssm_id')
+                                                   .drop('consequence_id'))
+                                            .alias('transcript'))
+                                     .alias('consequence'))
+
+            df = (tran_df.groupby('ssm_id')
+                         .agg(collect_list('consequence').alias('consequence')))
+
 
         return df
 
@@ -128,8 +170,10 @@ class ConsequenceBuilder(object):
             'is_canonical',
             ssm_tran.canonical_transcript_id == ssm_tran.transcript_id)
 
+        ssm_tran = sanitize_aa_change(ssm_tran)
         # Get aas columns from aa_change
         ssm_tran = extract_aas_position(ssm_tran)
+        ssm_tran = convert_empty_str_to_null_in_col(ssm_tran, 'aa_change')
 
         return ssm_tran
 
