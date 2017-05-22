@@ -50,7 +50,7 @@ class ModelMapper(object):
 
         # Unpack common_settings file:
         mappings = common_settings.pop('mappings', {})
-        doctype_settings = common_settings.pop('common_mapping_settings', {})
+        common_mapping_settings = common_settings.pop('common_mapping_settings', {})
         settings = common_settings.pop('settings', {})
         assert common_settings == {}
 
@@ -60,7 +60,7 @@ class ModelMapper(object):
         # Add default common doctype settings from common_settings.yml
         # (only set if it's not present, don't overwrite if already set)
         for doctype in self.type_mappings:
-            for k, v in doctype_settings.items():
+            for k, v in common_mapping_settings.items():
                 self.type_mappings[doctype].setdefault(k, v)
 
         # Populate

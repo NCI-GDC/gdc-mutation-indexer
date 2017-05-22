@@ -1,37 +1,37 @@
 import pytest
+import pkg_resources
+import yaml
+import os
 from jsonpath_rw import parse
 
+from tests_config import TestConfig
 from exports.mappers import ModelMapper
 
-
-@pytest.fixture(scope="session")
-def mappings():
-    case_mapper = ModelMapper('case_centric')
-    gene_mapper = ModelMapper('gene_centric')
-    ssm_mapper = ModelMapper('ssm_centric')
-    ssm_occurrence_mapper = ModelMapper('ssm_occurrence_centric')
-    return {
-        'gene': gene_mapper.type_mappings['gene_centric'],
-        'ssm': ssm_mapper.type_mappings['ssm_centric'],
-        'ssm_occurrence': ssm_occurrence_mapper.type_mappings['ssm_occurrence_centric'],
-        'case': case_mapper.type_mappings['case_centric']
-    }
+conf = TestConfig()
 
 
 @pytest.fixture(scope="session")
-def mappings_with_settings():
-    case = ModelMapper('case_centric').create_index_settings()
-    gene = ModelMapper('gene_centric').create_index_settings()
-    ssm = ModelMapper('ssm_centric').create_index_settings()
-    ssm_occ = ModelMapper('ssm_occurrence_centric').create_index_settings()
-    return {
-        'gene': gene, 'ssm': ssm, 'case': case, 'ssm_occurrence': ssm_occ,
-        }
+def mappers():
+    return {kind: ModelMapper('{}_centric'.format(kind))
+            for kind in ['case', 'gene', 'ssm', 'ssm_occurrence']}
+
+
+@pytest.fixture(scope="session")
+def mappings(mappers):
+    return {kind: mapper.type_mappings['{}_centric'.format(kind)]
+            for kind, mapper in mappers.items()}
+
+
+@pytest.fixture(scope="session")
+def mappings_with_settings(mappers):
+    return {kind: mapper.create_index_settings()
+            for kind, mapper in mappers.items()}
 
 
 @pytest.mark.parametrize('index_name', ['case', 'gene', 'ssm', 'ssm_occurrence'])
-def test_mapping_settings(mappings_with_settings, index_name):
+def test_mapping_settings(mappers, mappings_with_settings, index_name):
     mappings = mappings_with_settings[index_name]
+
     for key in ['mappings', 'settings']:
         assert key in mappings
 
@@ -40,7 +40,25 @@ def test_mapping_settings(mappings_with_settings, index_name):
             assert key in mappings['mappings'][doctype]
 
     assert mappings['settings'] is not None
+
     assert 'analysis' in mappings['settings']
+
+    mapper = mappers[index_name]
+
+    # Load common settings file:
+    cs_file = pkg_resources.resource_string('exports',
+                                            os.path.join('schemas',
+                                                         'common_settings.yml'))
+    common_settings = yaml.safe_load(cs_file)
+
+    mapping_settings = yaml.safe_load(mapper.get_resource_string('settings.yaml'))
+
+    # Check that mapping_settings overwrite common_settings
+    for key, value in mappings['settings'].items():
+        if key in mapping_settings:
+            assert value == mapping_settings[key]
+        else:
+            assert value == common_settings['settings'][key]
 
 
 @pytest.mark.parametrize('doc_type,path', [
