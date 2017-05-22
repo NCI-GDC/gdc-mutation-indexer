@@ -35,6 +35,9 @@ class TestConfig(BaseConfig):
     # Whether or not to skip field-by-field data tests
     skip_in_depth_tests = True
 
+    # Switch tests based on pruned/not_pruned version of indices
+    indices_are_pruned = True
+
     # Where to save each index
     index_paths = {
         'case_centric':           s3_bucket + 'test-case-centric.json',

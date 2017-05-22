@@ -43,6 +43,7 @@ def gene_stats(gene_centric_index):
                                   'Ngenes',
                                   'NUniqMut',
                                   'Nconseq'])
+@pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
 def test_gene_centric_summary_stats(gene_stats, maf_stats, stat):
     gene_stat = getattr(gene_stats, stat)
     maf_stat = getattr(maf_stats, stat)
