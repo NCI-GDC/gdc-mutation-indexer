@@ -46,6 +46,9 @@ def case_stats(case_centric_index):
 def test_case_centric_summary_stats(case_stats, maf_stats, stat):
     case_stat = getattr(case_stats, stat)
     maf_stat = getattr(maf_stats, stat)
+    if conf.indices_are_pruned:
+        if stat in ['Ngenes', 'NUniqMut', 'Nconseq']:
+            return
     assert case_stat == maf_stat
 
 

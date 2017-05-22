@@ -51,6 +51,7 @@ class TestCaseCentricJoins:
         yield TrueStats.get_stats(conf.output_dir, 'case_centric')
 
     @pytest.mark.ssm_subtree_case
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_ssm_subtree(self, maf_df, builder, true_stats):
         ssm_df = builder.build_ssm(maf_df)
 
@@ -65,6 +66,7 @@ class TestCaseCentricJoins:
         # Correct number of Consequences per SSM
         assert es_cps == true_stats['cons_per_ssm']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_gene_ssm(self, maf_df, builder, true_stats):
         # # one gene per ssm for our test mafs
         gene_df = builder.build_gene_ssm(maf_df)
@@ -83,6 +85,7 @@ class TestCaseCentricJoins:
 
         assert spg_dict == true_stats['ssms_per_gene']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_case_gene(self, build_df, true_stats):
         case_df = build_df
         # Correct number of Case documents
@@ -141,6 +144,7 @@ class TestGeneCentricJoins:
         yield TrueStats.get_stats(conf.output_dir, 'gene_centric')
 
     @pytest.mark.ssm_subtree_gene
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_ssm_subtree(self, maf_df, builder, true_stats):
         ssm_df = builder.build_ssm(maf_df)
 
@@ -155,6 +159,7 @@ class TestGeneCentricJoins:
         # Correct number of Consequences per SSM
         assert es_cps == true_stats['cons_per_ssm']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_case_ssm(self, maf_df, builder, true_stats):
         case_df = builder.build_case_ssm(maf_df)
 
@@ -172,6 +177,7 @@ class TestGeneCentricJoins:
 
         assert spc_dict == true_stats['ssms_per_case']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_gene_case(self, maf_df, builder, true_stats):
         gene_df = builder.build(maf_df).gene_centric
 
