@@ -4,7 +4,6 @@ settings:
     number_of_shards: 16
     number_of_replicas: 0
     mapper.dynamic: False
-    mapping.nested_fields.limit: 100
     mapping.total_fields.limit: 2000
 mappings:
   build_metadata:
