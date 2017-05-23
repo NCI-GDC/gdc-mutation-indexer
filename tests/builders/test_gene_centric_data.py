@@ -54,6 +54,10 @@ def test_gene_centric_summary_stats(gene_stats, maf_stats, stat):
 def test_gene_centric_join(gene_centric_index, filename):
     es_doc, true_doc = T.get_docs_to_compare(gene_centric_index, filename)
 
+    # Prune the test data if applicable
+    if conf.indices_are_pruned:
+        true_doc['case'] = []
+
     # Top level keys check
     assert set(es_doc.keys()) == set(true_doc.keys())
 
