@@ -181,7 +181,7 @@ class ConsequenceBuilder(object):
         # Build and join the gene if required
 
         to_drop = ['transcripts', 'description', 'canonical_transcript_length',
-                   'gene_strand', 'name', 'biotype',
+                   'name', 'biotype',
                    'canonical_transcript_length_cds',
                    'canonical_transcript_length_genomic']
 
