@@ -39,9 +39,9 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
             if self.ssm_occurrence_centric is not None:
                 return self
 
-        case_obs_df = self.build_case(maf_df)
+        case_obs_df = self.build_case_subtree(maf_df)
 
-        ssm_cons = self.build_ssm(maf_df)
+        ssm_cons = self.build_ssm_subtree(maf_df)
 
         self.log('Joining ssm with case')
         ssm_occurrence_centric = (ssm_cons.join(case_obs_df,
@@ -61,7 +61,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
         return self
 
-    def build_ssm(self, maf_df):
+    def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build(maf_df, self.index_name, join_gene=True))
@@ -79,15 +79,16 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         return ssm_cons
 
-    def build_case(self, maf_df):
-        self.log('Building case dataframe')
+    def build_case_subtree(self, maf_df):
+        self.log('Building case subtree')
         # Observation
         obs_df = ObservationBuilder(self.config,
                                     self.sqlContext).build(maf_df,
                                                            self.index_name)
 
         self.log('Building Case')
-        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+
         self.log_count(case_df)
 
         self.log('Join observation with case')

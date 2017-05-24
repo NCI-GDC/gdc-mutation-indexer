@@ -12,14 +12,14 @@ class CaseBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self):
+    def build(self, maf_df):
         """
         Builds Case dataframe
         """
-        df = self.load()
+        df = self.load(maf_df)
         return df
 
-    def load(self):
+    def load(self, maf_df):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
@@ -34,6 +34,13 @@ class CaseBuilder(object):
             .option('es.read.field.exclude', self.config.case_exclude_fields)\
             .option('es.resource.read', source)\
             .load(source)
+
+        # Add columns from maf_df
+        maf_columns = ['available_variation_data']
+        maf_data = (maf_df.select('case_id', *maf_columns)
+                          .dropDuplicates(subset=['case_id'] + maf_columns))
+
+        df = df.join(maf_data, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.repartition, 'case_id')

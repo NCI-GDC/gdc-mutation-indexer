@@ -98,7 +98,7 @@ class TestCaseCentricJoins:
                   for d in map(json.loads, es_gpc)}
         assert es_gpc == true_stats['genes_per_case']
 
-    def test_variation_data(self, test_index, build_df):
+    def test_available_variation_data(self, test_index, build_df):
         """ Test that cases without any ssm, but were tested are flagged """
         case_df = build_df
 
@@ -128,6 +128,15 @@ class TestCaseCentricJoins:
         test_index.delete(conf.graph_index, doc_type='case', id='empty_case')
         test_index.indices.refresh(index=conf.graph_index)
 
+    @pytest.mark.parametrize('path', [
+                             'case_id',
+                             'available_variation_data',
+                             'gene',
+                             'gene.ssm',
+                             ])
+    def test_case_centric_path_exists(self, build_df, path):
+        build_df.select(path)
+
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestGeneCentricJoins:
@@ -138,6 +147,10 @@ class TestGeneCentricJoins:
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield GeneCentricBuilder(conf, sqlContext)
+
+    @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).gene_centric
 
     @pytest.fixture(scope='class')
     def true_stats(self):
@@ -178,19 +191,29 @@ class TestGeneCentricJoins:
         assert spc_dict == true_stats['ssms_per_case']
 
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
-    def test_gene_case(self, maf_df, builder, true_stats):
-        gene_df = builder.build(maf_df).gene_centric
-
-        es_cpg = (gene_df.select(size('case'), 'gene_id')
+    def test_gene_case(self, build_df, true_stats):
+        es_cpg = (build_df.select(size('case'), 'gene_id')
                   .toJSON(use_unicode=False).collect())
         es_cpg = {d['gene_id']: d['size(case)']
                   for d in map(json.loads, es_cpg)}
 
         # Correct number of Gene documents
-        assert gene_df.count() == true_stats['count']
+        assert build_df.count() == true_stats['count']
 
         # Correct number of Cases per Gene
         assert es_cpg == true_stats['cases_per_gene']
+
+    @pytest.mark.parametrize('path', [
+                             'gene_id',
+                             'transcripts',
+                             'transcripts.is_canonical',
+                             'transcripts.exons',
+                             'transcripts.domains',
+                             'case',
+                             'case.case_id',
+                             ])
+    def test_gene_centric_path_exists(self, build_df, path):
+        build_df.select(path)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -201,13 +224,12 @@ class TestSSMCentricJoins:
         yield SSMCentricBuilder(conf, sqlContext)
 
     @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).ssm_centric
+
+    @pytest.fixture(scope='class')
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'ssm_centric')
-
-    @pytest.mark.skip(reason="Can not be implemented before occurrences have "
-                             "'occurrence_id' field")
-    def test_occurrence_subtree(self, maf_df, builder, true_stats):
-        pass
 
     def test_ssm_centric(self, maf_df, builder, true_stats):
         ssm_df = builder.build(maf_df).ssm_centric
@@ -230,11 +252,20 @@ class TestSSMCentricJoins:
 
         assert es_ops == true_stats['occur_per_ssm']
 
-    def test_ssm_columns(self, maf_df, builder):
-        ssm_df = builder.build(maf_df).ssm_centric
-        assert 'occurrence_id' in (ssm_df.select(explode('occurrence')
-                                                 .alias('occurrence'))
-                                         .select('occurrence.*').columns)
+    @pytest.mark.parametrize('path', [
+                             'occurrence',
+                             'occurrence.occurrence_id',
+                             'occurrence.case',
+                             'occurrence.case.available_variation_data',
+                             'consequence',
+                             'consequence.consequence_id',
+                             'consequence.transcript',
+                             'consequence.transcript.gene',
+                             'consequence.transcript.annotation',
+
+                             ])
+    def test_ssm_centric_path_exists(self, build_df, path):
+        build_df.select(path)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -245,12 +276,17 @@ class TestSSMOccurrenceCentricJoins:
         yield SSMOccurrenceCentricBuilder(conf, sqlContext)
 
     @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).ssm_occurrence_centric
+
+
+    @pytest.fixture(scope='class')
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'ssm_occurrence_centric')
 
     @pytest.mark.ssm_subtree_ssm_occurrence
     def test_ssm_subtree(self, maf_df, builder, true_stats):
-        ssm_df = builder.build_ssm(maf_df)
+        ssm_df = builder.build_ssm_subtree(maf_df)
 
         # Consequences per SSM:
         es_cps = (ssm_df.select(size('ssm.consequence'), 'ssm_id')
@@ -260,13 +296,12 @@ class TestSSMOccurrenceCentricJoins:
 
         assert es_cps == true_stats['cons_per_ssm']
 
-    def test_ssm_occurrence_columns(self, maf_df, builder):
-        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        assert 'ssm_occurrence_id' in ssm_occurrence_df.columns
+    def test_ssm_occurrence_columns(self, build_df):
+        assert 'ssm_occurrence_id' in build_df.columns
 
     def test_case_subtree(self, maf_df, builder, true_stats):
         # one gene per ssm for our test mafs
-        case_df = builder.build_case(maf_df)
+        case_df = builder.build_case_subtree(maf_df)
 
         # Observations per case:
         es_opc = (case_df.select(size('case.observation'), 'case_id')
@@ -276,9 +311,21 @@ class TestSSMOccurrenceCentricJoins:
 
         assert es_opc == true_stats['obs_per_case']
 
-    def test_ssm_occurrence(self, maf_df, builder, true_stats):
-        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        assert ssm_occurrence_df.count() == true_stats['count']
+    def test_ssm_occurrence(self, build_df, true_stats):
+        assert build_df.count() == true_stats['count']
+
+    @pytest.mark.parametrize('path', [
+                             'case',
+                             'case.available_variation_data',
+                             'case.observation',
+                             'ssm',
+                             'ssm.consequence',
+                             'ssm.consequence.transcript',
+                             'ssm.consequence.transcript.gene',
+                             'ssm.consequence.transcript.annotation',
+                             ])
+    def test_ssm_occurrence_centric_path_exists(self, build_df, path):
+        build_df.select(path)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -421,8 +468,8 @@ class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
     @pytest.fixture(scope='class')
-    def case_df(self, sqlContext):
-        yield CaseBuilder(conf, sqlContext).build()
+    def case_df(self, sqlContext, maf_df):
+        yield CaseBuilder(conf, sqlContext).build(maf_df)
 
     def test_case_build(self, sqlContext, test_index_class, case_df):
         es = test_index_class
