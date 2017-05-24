@@ -261,8 +261,8 @@ class TestSSMCentricJoins:
                              'consequence.consequence_id',
                              'consequence.transcript',
                              'consequence.transcript.gene',
+                             'consequence.transcript.gene.gene_strand',
                              'consequence.transcript.annotation',
-
                              ])
     def test_ssm_centric_path_exists(self, build_df, path):
         build_df.select(path)
