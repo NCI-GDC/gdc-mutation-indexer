@@ -14,6 +14,7 @@ from exports.builders import (
 from tests_config import TestConfig
 from utils.true_stats import TrueStats, get_ssm_subtree_stats
 from exports.builders.utils import extract_aas_position
+from exports.mappers.models_mapper import ModelMapper
 
 conf = TestConfig()
 
@@ -135,6 +136,20 @@ class TestCaseCentricJoins:
                              'gene.ssm',
                              ])
     def test_case_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path', ModelMapper('case_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_case(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
         build_df.select(path)
 
 
@@ -213,8 +228,21 @@ class TestGeneCentricJoins:
                              'case.case_id',
                              ])
     def test_gene_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
         build_df.select(path)
 
+    @pytest.mark.parametrize('path', ModelMapper('gene_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_gene(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
+        build_df.select(path)
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestSSMCentricJoins:
@@ -261,10 +289,26 @@ class TestSSMCentricJoins:
                              'consequence.consequence_id',
                              'consequence.transcript',
                              'consequence.transcript.gene',
+                             'consequence.transcript.gene.symbol',
+                             'consequence.transcript.gene.biotype',
                              'consequence.transcript.gene.gene_strand',
                              'consequence.transcript.annotation',
                              ])
     def test_ssm_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path', ModelMapper('ssm_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_ssm(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
         build_df.select(path)
 
 
@@ -322,9 +366,26 @@ class TestSSMOccurrenceCentricJoins:
                              'ssm.consequence',
                              'ssm.consequence.transcript',
                              'ssm.consequence.transcript.gene',
+                             'ssm.consequence.transcript.gene.symbol',
+                             'ssm.consequence.transcript.gene.biotype',
                              'ssm.consequence.transcript.annotation',
                              ])
     def test_ssm_occurrence_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path',
+                             ModelMapper('ssm_occurrence_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_ssm_occurrence(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
         build_df.select(path)
 
 

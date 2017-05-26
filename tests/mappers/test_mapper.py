@@ -107,6 +107,7 @@ def test_mapping_not_in(mappings, doc_type, path):
     results = parse(path).find(mappings[doc_type])
     assert len([r.value for r in results]) == 0
 
+
 @pytest.mark.parametrize('doc_type,path,value', [
     ('gene', 'properties.case.type', 'nested'),
     ('gene', 'properties.case.properties.diagnoses.type', 'nested'),
@@ -129,3 +130,62 @@ def test_mapping_path_equals(mappings, doc_type, path, value):
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
 
+
+def test_get_dict_paths():
+    test_dict = {
+        'a': {
+              'b': 'c',
+              'j': 'k'
+        },
+        'd': {
+              'f': {'g': 'h'},
+              'l': 'm',
+              'n': ['o', 'p', 'q'],
+        }
+    }
+
+    expected_output = ['root.a.b.c', 'root.a.j.k', 'root.d.f.g.h', 'root.d.l.m',
+                       'root.d.n.o', 'root.d.n.p', 'root.d.n.q']
+    paths, path = ModelMapper.get_dict_paths(test_dict)
+
+    assert len(paths) == len(set(paths))
+    assert set(paths) == set(expected_output)
+
+
+def test_get_paths():
+    test_mapping = {
+        'path': {
+            'to': {
+                'my_skip_field': {'type': 'keyword'},
+                'my_exclude_field': {'type': 'keyword'},
+                'my_good_field': {'type': 'keyword'},
+                'my_copy_to_field': {'copy_to': {'type': 'keyword'}},
+                'my_bad_field': {'type': 'keyword'},
+                'field_autocomplete': {'type': 'keyword'},
+            }
+        },
+
+        'skip': {
+            'this': {'type': 'keyword'},
+            'that': {'type': 'keyword'},
+        },
+
+        'other': {
+            'exclude_this_branch': {'a': {'b': {'type': 'keyword'}},
+                                    'c': {'type': 'keyword'}},
+            'field': {
+                'skipped': {'type': 'text'},
+                'good': {'type': 'text'},
+            }
+        }
+    }
+
+    mapper = ModelMapper('case_centric')
+    mapper.type_mappings['case_centric']['properties'] = test_mapping
+
+    stop_words = ['exclude', 'skip']
+    paths_to_skip = ['path.to.my_bad_field', 'skip.this']
+
+    paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
+
+    assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']
