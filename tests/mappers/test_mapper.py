@@ -129,3 +129,22 @@ def test_mapping_path_equals(mappings, doc_type, path, value):
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
 
+def test_get_dict_paths():
+    test_dict = {
+        'a': {
+              'b': 'c',
+              'j': 'k'
+        },
+        'd': {
+              'f': {'g': 'h'},
+              'l': 'm',
+              'n': ['o', 'p', 'q'],
+        }
+    }
+
+    expected_output = ['root.a.b.c', 'root.a.j.k', 'root.d.f.g.h', 'root.d.l.m',
+                       'root.d.n.o', 'root.d.n.p', 'root.d.n.q']
+    paths, path = ModelMapper.get_dict_paths(test_dict)
+
+    assert len(paths) == len(set(paths))
+    assert set(paths) == set(expected_output)

@@ -77,6 +77,58 @@ class ModelMapper(object):
 
         return final_mapping
 
+    @classmethod
+    def get_dict_paths(cls, d, path_list=None, path='root'):
+        """
+        Returns list of all paths in a dict and a last path found
+        """
+        if path_list is None:
+            path_list = []
+
+        for k, v in d.iteritems():
+            subpath = path + '.' + k
+            if isinstance(v, dict):
+                sublist, subpath = cls.get_dict_paths(v, path_list, subpath)
+            else:
+                if isinstance(v, list):
+                    sublist = [path + '.' + k + '.' + str(e) for e in v]
+                else:
+                    sublist = [path + '.' + k + '.' + str(v)]
+            path_list.extend(sublist)
+        return list(set(path_list)), path
+
+    def get_paths(self, branches_to_skip=[]):
+        """
+        Returns all paths list for mapping to test
+        """
+        # Get index mapping as a dict
+        mapping = self.type_mappings[self.index]['properties']
+
+        # Extract all paths from the mapping
+        paths, path = self.get_dict_paths(mapping)
+
+        # Strip 'root.' and '.properties' from paths
+        paths = map(lambda s: (
+                               s.replace('root.', '')
+                                .replace('.properties', '')
+                              ),
+                    paths)
+
+        # Filter paths that we don't want to test
+        for stop_word in ['.copy_to', '_autocomplete.'] + branches_to_skip:
+            paths = [p for p in paths if p.find(stop_word) == -1]
+
+        # Strip ".type.{value}" from paths
+        cleaned_paths = []
+        for path in paths:
+            steps = path.split('.')
+            if steps[-2] == 'type':
+                steps = steps[:-2]
+            cleaned_paths.append('.'.join(steps))
+
+
+        return sorted(list(set(cleaned_paths)))
+
     @property
     def paths_map(self):
         return {
