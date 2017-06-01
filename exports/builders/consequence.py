@@ -181,8 +181,7 @@ class ConsequenceBuilder(object):
         # Build and join the gene if required
 
         to_drop = ['transcripts', 'description', 'canonical_transcript_length',
-                   'name', 'biotype',
-                   'canonical_transcript_length_cds',
+                   'name', 'canonical_transcript_length_cds',
                    'canonical_transcript_length_genomic']
 
         gene_df = get_gene_df(maf_df, index_name, drop_fields=to_drop)

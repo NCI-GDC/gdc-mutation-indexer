@@ -289,6 +289,8 @@ class TestSSMCentricJoins:
                              'consequence.consequence_id',
                              'consequence.transcript',
                              'consequence.transcript.gene',
+                             'consequence.transcript.gene.symbol',
+                             'consequence.transcript.gene.biotype',
                              'consequence.transcript.gene.gene_strand',
                              'consequence.transcript.annotation',
                              ])
@@ -364,6 +366,8 @@ class TestSSMOccurrenceCentricJoins:
                              'ssm.consequence',
                              'ssm.consequence.transcript',
                              'ssm.consequence.transcript.gene',
+                             'ssm.consequence.transcript.gene.symbol',
+                             'ssm.consequence.transcript.gene.biotype',
                              'ssm.consequence.transcript.annotation',
                              ])
     def test_ssm_occurrence_centric_path_exists(self, build_df, path):
