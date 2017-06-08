@@ -16,25 +16,44 @@ import pytest
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
 class TestMAFBuilder:
 
+    @pytest.fixture
+    def expected_counts(self, sqlContext):
+        builder = MAFBuilder(conf, sqlContext)
+        expected_counts = {}
+        for maf_file in conf.maf_urls:
+            pipeline = maf_file.split('.')[2]
+            if pipeline == 'mutect':
+                pipeline = 'mutect2'
+
+            df = builder.combine([maf_file])
+            expected_counts.setdefault(pipeline, 0)
+            expected_counts[pipeline] += df.count()
+        yield expected_counts
+
     def test_patch_url(self, sqlContext):
         ''' Test that s3 urls are patched correctly '''
         builder = MAFBuilder(conf, sqlContext)
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
         assert builder.patch_url(url1).startswith('s3a://')
 
-    def test_combine(self, sqlContext):
+    def test_combine(self, sqlContext, expected_counts):
         '''
         Test that mafs are combined correctly
         '''
         builder = MAFBuilder(conf, sqlContext)
 
-        df = builder.combine(conf.maf_urls)
-        assert df.count() == 23
-        c = Counter([json.loads(item)['variant_caller'] for item
-                     in df.select('variant_caller').toJSON().collect()])
-        assert c['mutect2'] == 11
-        assert c['muse'] == 7
-        assert c['somaticsniper'] == 5
+        combined_df = builder.combine(conf.maf_urls)
+
+        # Test total number of lines
+        assert combined_df.count() == sum(expected_counts.values())
+
+        c = Counter([json.loads(item)['variant_caller']
+                     for item in (combined_df.select('variant_caller')
+                                             .toJSON().collect())])
+
+        # Test number of lines for each pipeline (i.e. 'variant_caller')
+        for pipeline, count in expected_counts.items():
+            assert c[pipeline] == count
 
     def test_schema(self, sqlContext):
         '''
@@ -97,15 +116,15 @@ class TestMAFBuilder:
         assert (maf_df.select('mutation_type').collect()[0]['mutation_type'] ==
                 'Simple Somatic Mutation')
 
-    def test_variant_caller(self, maf_df):
+    def test_variant_caller(self, maf_df, expected_counts):
         '''
         Test that variant caller is created properly
         '''
         assert 'variant_caller' in maf_df.columns
-        muse = maf_df.where(maf_df.variant_caller == 'muse')
-        assert muse.count() == 7
-        mutect = maf_df.where(maf_df.variant_caller == 'mutect2')
-        assert mutect.count() == 11
+
+        for variant_caller, expected_count in expected_counts.items():
+            count = maf_df.where(maf_df.variant_caller == variant_caller).count()
+            assert count == expected_count
 
     def test_variant_process(self, maf_df):
         '''
