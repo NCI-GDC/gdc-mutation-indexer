@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import lit, struct, collect_list, col
+from pyspark.sql.functions import lit, struct, collect_list
 
 from exports.builders import (
     CaseBuilder,
@@ -45,8 +45,7 @@ class SSMCentricBuilder(BaseBuilder):
 
         ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
 
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df, self.index_name, join_gene=True))
+        cons_df = self.build_consequence(maf_df)
 
         occurrence_df = self.build_occurrence(maf_df)
 
@@ -67,12 +66,20 @@ class SSMCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
         return self
 
+    def build_consequence(self, maf_df):
+        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
+                   .build(maf_df,
+                          self.index_name,
+                          join_gene=True,
+                          add_gene_aa_change=True))
+        return cons_df
+
     def build_occurrence(self, maf_df):
         # Observation
         self.log('Aggregating Observation from MAF')
         obs_df = (ObservationBuilder(self.config, self.sqlContext)
                   .build(maf_df, self.index_name))
-        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(case_df)
 
         self.log('Joining Cases with Observation, [right, case_id]')
@@ -86,3 +93,4 @@ class SSMCentricBuilder(BaseBuilder):
                          .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
         return occurrence_df
+

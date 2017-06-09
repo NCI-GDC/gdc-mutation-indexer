@@ -33,7 +33,7 @@ class GeneCentricBuilder(BaseBuilder):
 
     def build(self, maf_df):
         """
-        Builds Gene Centric index 
+        Builds Gene Centric index
         """
         self.log('Building GeneCentric')
         # Check if we should load a pre-built dataframe
@@ -106,7 +106,7 @@ class GeneCentricBuilder(BaseBuilder):
                    .select('case_id', 'gene_id'))
 
         self.log("Building Case")
-        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(case_df)
 
         self.log('Getting gene_id for each case via joining with gene_df')

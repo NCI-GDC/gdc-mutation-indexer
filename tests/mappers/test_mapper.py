@@ -1,37 +1,37 @@
 import pytest
+import pkg_resources
+import yaml
+import os
 from jsonpath_rw import parse
 
+from tests_config import TestConfig
 from exports.mappers import ModelMapper
 
-
-@pytest.fixture(scope="session")
-def mappings():
-    case_mapper = ModelMapper('case_centric')
-    gene_mapper = ModelMapper('gene_centric')
-    ssm_mapper = ModelMapper('ssm_centric')
-    ssm_occurrence_mapper = ModelMapper('ssm_occurrence_centric')
-    return {
-        'gene': gene_mapper.type_mappings['gene_centric'],
-        'ssm': ssm_mapper.type_mappings['ssm_centric'],
-        'ssm_occurrence': ssm_occurrence_mapper.type_mappings['ssm_occurrence_centric'],
-        'case': case_mapper.type_mappings['case_centric']
-    }
+conf = TestConfig()
 
 
 @pytest.fixture(scope="session")
-def mappings_with_settings():
-    case = ModelMapper('case_centric').create_index_settings()
-    gene = ModelMapper('gene_centric').create_index_settings()
-    ssm = ModelMapper('ssm_centric').create_index_settings()
-    ssm_occ = ModelMapper('ssm_occurrence_centric').create_index_settings()
-    return {
-        'gene': gene, 'ssm': ssm, 'case': case, 'ssm_occurrence': ssm_occ,
-        }
+def mappers():
+    return {kind: ModelMapper('{}_centric'.format(kind))
+            for kind in ['case', 'gene', 'ssm', 'ssm_occurrence']}
+
+
+@pytest.fixture(scope="session")
+def mappings(mappers):
+    return {kind: mapper.type_mappings['{}_centric'.format(kind)]
+            for kind, mapper in mappers.items()}
+
+
+@pytest.fixture(scope="session")
+def mappings_with_settings(mappers):
+    return {kind: mapper.create_index_settings()
+            for kind, mapper in mappers.items()}
 
 
 @pytest.mark.parametrize('index_name', ['case', 'gene', 'ssm', 'ssm_occurrence'])
-def test_mapping_settings(mappings_with_settings, index_name):
+def test_mapping_settings(mappers, mappings_with_settings, index_name):
     mappings = mappings_with_settings[index_name]
+
     for key in ['mappings', 'settings']:
         assert key in mappings
 
@@ -40,7 +40,25 @@ def test_mapping_settings(mappings_with_settings, index_name):
             assert key in mappings['mappings'][doctype]
 
     assert mappings['settings'] is not None
+
     assert 'analysis' in mappings['settings']
+
+    mapper = mappers[index_name]
+
+    # Load common settings file:
+    cs_file = pkg_resources.resource_string('exports',
+                                            os.path.join('schemas',
+                                                         'common_settings.yml'))
+    common_settings = yaml.safe_load(cs_file)
+
+    mapping_settings = yaml.safe_load(mapper.get_resource_string('settings.yaml'))
+
+    # Check that mapping_settings overwrite common_settings
+    for key, value in mappings['settings'].items():
+        if key in mapping_settings:
+            assert value == mapping_settings[key]
+        else:
+            assert value == common_settings['settings'][key]
 
 
 @pytest.mark.parametrize('doc_type,path', [
@@ -89,6 +107,7 @@ def test_mapping_not_in(mappings, doc_type, path):
     results = parse(path).find(mappings[doc_type])
     assert len([r.value for r in results]) == 0
 
+
 @pytest.mark.parametrize('doc_type,path,value', [
     ('gene', 'properties.case.type', 'nested'),
     ('gene', 'properties.case.properties.diagnoses.type', 'nested'),
@@ -111,3 +130,62 @@ def test_mapping_path_equals(mappings, doc_type, path, value):
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
 
+
+def test_get_dict_paths():
+    test_dict = {
+        'a': {
+              'b': 'c',
+              'j': 'k'
+        },
+        'd': {
+              'f': {'g': 'h'},
+              'l': 'm',
+              'n': ['o', 'p', 'q'],
+        }
+    }
+
+    expected_output = ['root.a.b.c', 'root.a.j.k', 'root.d.f.g.h', 'root.d.l.m',
+                       'root.d.n.o', 'root.d.n.p', 'root.d.n.q']
+    paths, path = ModelMapper.get_dict_paths(test_dict)
+
+    assert len(paths) == len(set(paths))
+    assert set(paths) == set(expected_output)
+
+
+def test_get_paths():
+    test_mapping = {
+        'path': {
+            'to': {
+                'my_skip_field': {'type': 'keyword'},
+                'my_exclude_field': {'type': 'keyword'},
+                'my_good_field': {'type': 'keyword'},
+                'my_copy_to_field': {'copy_to': {'type': 'keyword'}},
+                'my_bad_field': {'type': 'keyword'},
+                'field_autocomplete': {'type': 'keyword'},
+            }
+        },
+
+        'skip': {
+            'this': {'type': 'keyword'},
+            'that': {'type': 'keyword'},
+        },
+
+        'other': {
+            'exclude_this_branch': {'a': {'b': {'type': 'keyword'}},
+                                    'c': {'type': 'keyword'}},
+            'field': {
+                'skipped': {'type': 'text'},
+                'good': {'type': 'text'},
+            }
+        }
+    }
+
+    mapper = ModelMapper('case_centric')
+    mapper.type_mappings['case_centric']['properties'] = test_mapping
+
+    stop_words = ['exclude', 'skip']
+    paths_to_skip = ['path.to.my_bad_field', 'skip.this']
+
+    paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
+
+    assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']

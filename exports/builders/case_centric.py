@@ -31,7 +31,7 @@ class CaseCentricBuilder(BaseBuilder):
 
     def build(self, maf_df):
         """
-        Builds Case Centric index 
+        Builds Case Centric index
         """
         self.log('Building Case')
         # Check if we should load a pre-built dataframe
@@ -40,19 +40,23 @@ class CaseCentricBuilder(BaseBuilder):
             if self.case_centric is not None:
                 return self
 
-        case_df = CaseBuilder(self.config, self.sqlContext).build()
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+
         self.log_count(case_df)
 
         gene_ssm = self.build_gene_ssm(maf_df)
 
         gene_ssm_grouped = (
-            gene_ssm.groupBy(gene_ssm.case_id, gene_ssm.available_variation_data)
-            .agg(collect_list('gene').alias('gene')))
-
-        self.log('Final join Case with last join result [inner, submitter_id]')
-        case_centric = (
-            case_df.join(gene_ssm_grouped, on=['case_id'], how='left')
+            gene_ssm.groupBy(gene_ssm.case_id)
+                    .agg(collect_list('gene').alias('gene'))
         )
+
+        self.log('Final join Case with last join result [inner, case_id]')
+        case_centric = (
+            case_df.join(gene_ssm_grouped,
+                         on=['case_id'], how='left')
+        )
+
         # Coerce any cases that didn't have variation data from None to []
         case_centric = case_centric.withColumn('available_variation_data',
                               udf(lambda x: [] if (x == None) else x,
@@ -103,7 +107,7 @@ class CaseCentricBuilder(BaseBuilder):
         self.log('Building Gene from MAF')
 
         gene_df = get_gene_df(maf_df, self.index_name,
-                              add_fields=['case_id', 'available_variation_data'],
+                              add_fields=['case_id'],
                               drop_fields=['canonical_transcript_length',
                                            'canonical_transcript_length_cds',
                                            'canonical_transcript_length_genomic'])
@@ -115,9 +119,8 @@ class CaseCentricBuilder(BaseBuilder):
         self.log('Join ssm with Gene [inner, gene_id, case_id]')
         gene_ssm = (
             gene_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
-            .select('case_id', 'available_variation_data',
+            .select('case_id',
                     struct('ssm', *gene_df.drop('case_id')
-                                          .drop('available_variation_data')
                                           .columns)
                     .alias('gene'))
         )

@@ -50,16 +50,18 @@ class ModelMapper(object):
 
         # Unpack common_settings file:
         mappings = common_settings.pop('mappings', {})
-        doctype_settings = common_settings.pop('common_mapping_settings', {})
+        common_mapping_settings = common_settings.pop('common_mapping_settings', {})
         settings = common_settings.pop('settings', {})
         assert common_settings == {}
 
         # Add mappings from common_settings.yml:
         self.type_mappings.update(mappings)
 
-        # Add common doctype settings from common_settings.yml:
+        # Add default common doctype settings from common_settings.yml
+        # (only set if it's not present, don't overwrite if already set)
         for doctype in self.type_mappings:
-            self.type_mappings[doctype].update(doctype_settings)
+            for k, v in common_mapping_settings.items():
+                self.type_mappings[doctype].setdefault(k, v)
 
         # Populate
         final_mapping = {
@@ -74,6 +76,68 @@ class ModelMapper(object):
             final_mapping['settings'].update(custom_settings)
 
         return final_mapping
+
+    @classmethod
+    def get_dict_paths(cls, d, path_list=None, path='root'):
+        """
+        Returns list of all paths in a dict and a last path found
+        """
+        if path_list is None:
+            path_list = []
+
+        for k, v in d.iteritems():
+            subpath = path + '.' + k
+            if isinstance(v, dict):
+                sublist, subpath = cls.get_dict_paths(v, path_list, subpath)
+            else:
+                if isinstance(v, list):
+                    sublist = [path + '.' + k + '.' + str(e) for e in v]
+                else:
+                    sublist = [path + '.' + k + '.' + str(v)]
+            path_list.extend(sublist)
+        return list(set(path_list)), path
+
+    def get_paths(self, stop_words=None, paths_to_skip=None):
+        """
+        Returns all paths list for mapping to test
+        - If a path contains any of :stop_words, it gets excluded
+        - Each path in :paths_to_skip gets excluded
+        """
+        if stop_words is None:
+            stop_words = []
+
+        if paths_to_skip is None:
+            paths_to_skip = []
+
+        # Get index mapping as a dict
+        mapping = self.type_mappings[self.index]['properties']
+
+        # Extract all paths from the mapping
+        paths, path = self.get_dict_paths(mapping)
+
+        # Strip 'root.' and '.properties' from paths
+        paths = map(lambda s: (
+                               s.replace('root.', '')
+                                .replace('.properties', '')
+                              ),
+                    paths)
+
+        # Filter paths that contain stop words
+        for stop_word in ['.copy_to', '_autocomplete.'] + stop_words:
+            paths = [p for p in paths if p.find(stop_word) == -1]
+
+        # Strip ".type.{value}" from paths
+        stripped_paths = []
+        for path in paths:
+            steps = path.split('.')
+            if steps[-2] == 'type':
+                steps = steps[:-2]
+            stripped_paths.append('.'.join(steps))
+
+        # Filter paths that we don't want to test
+        paths = [p for p in stripped_paths if p not in paths_to_skip]
+
+        return sorted(list(set(paths)))
 
     @property
     def paths_map(self):
@@ -162,7 +226,7 @@ class ModelMapper(object):
                 'ssm_occurrence_centric': ['observation'],
             },
             'gene': {
-                'gene_centric': ['case', 'transcripts'],
+                'gene_centric': ['case'],
                 'case_centric': ['ssm'],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],

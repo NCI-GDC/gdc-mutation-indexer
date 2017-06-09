@@ -3,7 +3,7 @@ class MAFStats(object):
     Test count attributes for a MAF file
     """
 
-    def __init__(self, maf_files):   
+    def __init__(self, maf_files):
 
         count_attributes = ['Nprojects', 'Ncases', 'Ngenes', 'Nmutations',
                             'NUniqMut', 'Nconseq']
@@ -85,13 +85,13 @@ class MAFStats(object):
 
                 gene_case = project + '_' + case + '_' + gene
                 if gene_case not in self.mutations_per_gene:
-                    self.genes_per_case[case] += 1  
-                    self.mutations_per_gene[gene_case] = 0                    
-                    
+                    self.genes_per_case[case] += 1
+                    self.mutations_per_gene[gene_case] = 0
+
                     if gene not in self.cases_per_gene:
                         self.cases_per_gene[gene] = 0
-                    
-                    self.cases_per_gene[gene] += 1  
+
+                    self.cases_per_gene[gene] += 1
 
                 # Define key for mutation
                 mutation = '_'.join([chromosome,
@@ -104,27 +104,27 @@ class MAFStats(object):
                     self.uniqMutations[mutation] = 0
 
                 # Get consequences and observations
-                mutation_case = case + '_' + mutation                 
+                mutation_case = case + '_' + mutation
                 if mutation_case not in self.observations:
                     self.mutations_per_case[case] += 1
-                    self.mutations_per_gene[gene_case] += 1      
+                    self.mutations_per_gene[gene_case] += 1
                     self.uniqMutations[mutation] += 1
-                    self.observations[mutation_case] = 1  
+                    self.observations[mutation_case] = 1
 
                     all_effects = effects.split(';')
                     if all_effects[-1] == '':
-                        all_effects = all_effects[0:-1]               
+                        all_effects = all_effects[0:-1]
                     for effect in all_effects:
                         if mutation_case not in self.consequences:
-                            self.consequences[mutation_case] = 1   
+                            self.consequences[mutation_case] = 1
                         else:
-                            self.consequences[mutation_case] += 1     
+                            self.consequences[mutation_case] += 1
 
                 else:
-                    self.observations[mutation_case] += 1  
+                    self.observations[mutation_case] += 1
 
                 # Count each variant
-                self.Nmutations += 1                
+                self.Nmutations += 1
 
     @staticmethod
     def histogram(data, title, xlabel, ylabel, bins=50, tails=None, filename=None):

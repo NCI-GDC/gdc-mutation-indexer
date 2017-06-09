@@ -14,6 +14,7 @@ from exports.builders import (
 from tests_config import TestConfig
 from utils.true_stats import TrueStats, get_ssm_subtree_stats
 from exports.builders.utils import extract_aas_position
+from exports.mappers.models_mapper import ModelMapper
 
 conf = TestConfig()
 
@@ -51,6 +52,7 @@ class TestCaseCentricJoins:
         yield TrueStats.get_stats(conf.output_dir, 'case_centric')
 
     @pytest.mark.ssm_subtree_case
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_ssm_subtree(self, maf_df, builder, true_stats):
         ssm_df = builder.build_ssm(maf_df)
 
@@ -65,6 +67,7 @@ class TestCaseCentricJoins:
         # Correct number of Consequences per SSM
         assert es_cps == true_stats['cons_per_ssm']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_gene_ssm(self, maf_df, builder, true_stats):
         # # one gene per ssm for our test mafs
         gene_df = builder.build_gene_ssm(maf_df)
@@ -83,6 +86,7 @@ class TestCaseCentricJoins:
 
         assert spg_dict == true_stats['ssms_per_gene']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_case_gene(self, build_df, true_stats):
         case_df = build_df
         # Correct number of Case documents
@@ -95,7 +99,7 @@ class TestCaseCentricJoins:
                   for d in map(json.loads, es_gpc)}
         assert es_gpc == true_stats['genes_per_case']
 
-    def test_variation_data(self, test_index, build_df):
+    def test_available_variation_data(self, test_index, build_df):
         """ Test that cases without any ssm, but were tested are flagged """
         case_df = build_df
 
@@ -125,6 +129,29 @@ class TestCaseCentricJoins:
         test_index.delete(conf.graph_index, doc_type='case', id='empty_case')
         test_index.indices.refresh(index=conf.graph_index)
 
+    @pytest.mark.parametrize('path', [
+                             'case_id',
+                             'available_variation_data',
+                             'gene',
+                             'gene.ssm',
+                             ])
+    def test_case_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path', ModelMapper('case_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_case(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
+        build_df.select(path)
+
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestGeneCentricJoins:
@@ -137,10 +164,15 @@ class TestGeneCentricJoins:
         yield GeneCentricBuilder(conf, sqlContext)
 
     @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).gene_centric
+
+    @pytest.fixture(scope='class')
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'gene_centric')
 
     @pytest.mark.ssm_subtree_gene
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_ssm_subtree(self, maf_df, builder, true_stats):
         ssm_df = builder.build_ssm(maf_df)
 
@@ -155,6 +187,7 @@ class TestGeneCentricJoins:
         # Correct number of Consequences per SSM
         assert es_cps == true_stats['cons_per_ssm']
 
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_case_ssm(self, maf_df, builder, true_stats):
         case_df = builder.build_case_ssm(maf_df)
 
@@ -172,20 +205,44 @@ class TestGeneCentricJoins:
 
         assert spc_dict == true_stats['ssms_per_case']
 
-    def test_gene_case(self, maf_df, builder, true_stats):
-        gene_df = builder.build(maf_df).gene_centric
-
-        es_cpg = (gene_df.select(size('case'), 'gene_id')
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
+    def test_gene_case(self, build_df, true_stats):
+        es_cpg = (build_df.select(size('case'), 'gene_id')
                   .toJSON(use_unicode=False).collect())
         es_cpg = {d['gene_id']: d['size(case)']
                   for d in map(json.loads, es_cpg)}
 
         # Correct number of Gene documents
-        assert gene_df.count() == true_stats['count']
+        assert build_df.count() == true_stats['count']
 
         # Correct number of Cases per Gene
         assert es_cpg == true_stats['cases_per_gene']
 
+    @pytest.mark.parametrize('path', [
+                             'gene_id',
+                             'transcripts',
+                             'transcripts.is_canonical',
+                             'transcripts.exons',
+                             'transcripts.domains',
+                             'case',
+                             'case.case_id',
+                             ])
+    def test_gene_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path', ModelMapper('gene_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_gene(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
+        build_df.select(path)
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestSSMCentricJoins:
@@ -195,13 +252,12 @@ class TestSSMCentricJoins:
         yield SSMCentricBuilder(conf, sqlContext)
 
     @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).ssm_centric
+
+    @pytest.fixture(scope='class')
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'ssm_centric')
-
-    @pytest.mark.skip(reason="Can not be implemented before occurrences have "
-                             "'occurrence_id' field")
-    def test_occurrence_subtree(self, maf_df, builder, true_stats):
-        pass
 
     def test_ssm_centric(self, maf_df, builder, true_stats):
         ssm_df = builder.build(maf_df).ssm_centric
@@ -224,11 +280,36 @@ class TestSSMCentricJoins:
 
         assert es_ops == true_stats['occur_per_ssm']
 
-    def test_ssm_columns(self, maf_df, builder):
-        ssm_df = builder.build(maf_df).ssm_centric
-        assert 'occurrence_id' in (ssm_df.select(explode('occurrence')
-                                                 .alias('occurrence'))
-                                         .select('occurrence.*').columns)
+    @pytest.mark.parametrize('path', [
+                             'occurrence',
+                             'occurrence.occurrence_id',
+                             'occurrence.case',
+                             'occurrence.case.available_variation_data',
+                             'consequence',
+                             'consequence.consequence_id',
+                             'consequence.transcript',
+                             'consequence.transcript.gene',
+                             'consequence.transcript.gene.symbol',
+                             'consequence.transcript.gene.biotype',
+                             'consequence.transcript.gene.gene_strand',
+                             'consequence.transcript.annotation',
+                             ])
+    def test_ssm_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path', ModelMapper('ssm_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_ssm(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
+        build_df.select(path)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -239,12 +320,17 @@ class TestSSMOccurrenceCentricJoins:
         yield SSMOccurrenceCentricBuilder(conf, sqlContext)
 
     @pytest.fixture(scope='class')
+    def build_df(self, builder, maf_df):
+        yield builder.build(maf_df).ssm_occurrence_centric
+
+
+    @pytest.fixture(scope='class')
     def true_stats(self):
         yield TrueStats.get_stats(conf.output_dir, 'ssm_occurrence_centric')
 
     @pytest.mark.ssm_subtree_ssm_occurrence
     def test_ssm_subtree(self, maf_df, builder, true_stats):
-        ssm_df = builder.build_ssm(maf_df)
+        ssm_df = builder.build_ssm_subtree(maf_df)
 
         # Consequences per SSM:
         es_cps = (ssm_df.select(size('ssm.consequence'), 'ssm_id')
@@ -254,13 +340,12 @@ class TestSSMOccurrenceCentricJoins:
 
         assert es_cps == true_stats['cons_per_ssm']
 
-    def test_ssm_occurrence_columns(self, maf_df, builder):
-        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        assert 'ssm_occurrence_id' in ssm_occurrence_df.columns
+    def test_ssm_occurrence_columns(self, build_df):
+        assert 'ssm_occurrence_id' in build_df.columns
 
     def test_case_subtree(self, maf_df, builder, true_stats):
         # one gene per ssm for our test mafs
-        case_df = builder.build_case(maf_df)
+        case_df = builder.build_case_subtree(maf_df)
 
         # Observations per case:
         es_opc = (case_df.select(size('case.observation'), 'case_id')
@@ -270,9 +355,38 @@ class TestSSMOccurrenceCentricJoins:
 
         assert es_opc == true_stats['obs_per_case']
 
-    def test_ssm_occurrence(self, maf_df, builder, true_stats):
-        ssm_occurrence_df = builder.build(maf_df).ssm_occurrence_centric
-        assert ssm_occurrence_df.count() == true_stats['count']
+    def test_ssm_occurrence(self, build_df, true_stats):
+        assert build_df.count() == true_stats['count']
+
+    @pytest.mark.parametrize('path', [
+                             'case',
+                             'case.available_variation_data',
+                             'case.observation',
+                             'ssm',
+                             'ssm.consequence',
+                             'ssm.consequence.transcript',
+                             'ssm.consequence.transcript.gene',
+                             'ssm.consequence.transcript.gene.symbol',
+                             'ssm.consequence.transcript.gene.biotype',
+                             'ssm.consequence.transcript.annotation',
+                             ])
+    def test_ssm_occurrence_centric_path_exists(self, build_df, path):
+        """
+        Chosen paths that have to be present to merge branch
+        """
+        build_df.select(path)
+
+    @pytest.mark.parametrize('path',
+                             ModelMapper('ssm_occurrence_centric').get_paths())
+    @pytest.mark.skipif(conf.skip_in_depth_tests,
+                        reason='we want to merge partial data fixes.'\
+                        'This test is used for missing fields lookup.')
+    def test_all_paths_ssm_occurrence(self, build_df, path):
+        """
+        Check for existence of all paths that are in mapping
+        Can be skipped with skip_id_depth_tests switch
+        """
+        build_df.select(path)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -350,13 +464,33 @@ class TestConsequenceBuilder:
                                       .alias('transcript'))
                               .select('transcript.*'))
 
-        cytobands = transcripts.select('gene.cytoband').collect()
-        cytobands = [t['cytoband'] for t in cytobands]
-        assert all([type(c) is list for c in cytobands])
         assert 'symbol' in (cons_df.select(explode('consequence.transcript.gene')
                                             .alias('gene'))
                                             .select('gene.*')
                                             .columns)
+
+        if index_name != 'case_centric':
+            cytobands = transcripts.select('gene.cytoband').collect()
+            cytobands = [t['cytoband'] for t in cytobands]
+            assert all([type(c) is list for c in cytobands])
+
+    @pytest.mark.parametrize('index_name', conf.indices)
+    def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name, add_gene_aa_change=True)
+
+        assert 'gene_aa_change' in cons_df.columns
+
+        data = cons_df.select('gene_aa_change',
+                              'consequence.transcript.aa_change',
+                              'consequence.transcript.gene.symbol').collect()
+        for row in data:
+            expected_list = [x for x in zip(row.symbol, row.aa_change)
+                             if None not in x]
+            expected_list = map(lambda x: '{} {}'.format(*x), expected_list)
+            expected_list = sorted(list(set(expected_list)))
+
+            assert sorted(row.gene_aa_change) == expected_list
+
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_only_related_transcripts(self, builder, maf_df, index_name):
@@ -395,8 +529,8 @@ class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
     @pytest.fixture(scope='class')
-    def case_df(self, sqlContext):
-        yield CaseBuilder(conf, sqlContext).build()
+    def case_df(self, sqlContext, maf_df):
+        yield CaseBuilder(conf, sqlContext).build(maf_df)
 
     def test_case_build(self, sqlContext, test_index_class, case_df):
         es = test_index_class
