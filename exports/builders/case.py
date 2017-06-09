@@ -26,11 +26,12 @@ class CaseBuilder(object):
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
         df = self.sqlContext.read.format("es")\
-            .option('es.nodes', self.config.source_es_host)\
-            .option('es.net.http.auth.user', self.config.es_user)\
-            .option('es.net.http.auth.pass', self.config.es_pass)\
-            .option('es.nodes.wan.only','true')\
-            .option('es.nodes.resolve.hostname','false')\
+            .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
+                                               self.config.source_es_port))\
+            .option('es.net.http.auth.user', self.config.source_es_user)\
+            .option('es.net.http.auth.pass', self.config.source_es_pass)\
+            .option('es.nodes.wan.only', 'true')\
+            .option('es.nodes.resolve.hostname', 'false')\
             .option('es.read.field.exclude', self.config.case_exclude_fields)\
             .option('es.resource.read', source)\
             .load(source)

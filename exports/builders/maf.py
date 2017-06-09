@@ -315,7 +315,8 @@ class MAFBuilder(object):
                                         cds_length: 1273 + 2112
         """
         def start(s):
-            if not (s and s.split('/')[0].split('-')[0].strip()):
+            s = (s and s.split('/')[0].split('-')[0].strip()) or -1
+            if s in [-1, '?']:
                 return -1
             return int(s.split('/')[0].split('-')[0])
 
