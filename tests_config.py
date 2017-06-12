@@ -40,9 +40,9 @@ class TestConfig(BaseConfig):
 
     # Where to save each index
     index_paths = {
-        'case_centric':           s3_bucket + 'test-case-centric.json',
-        'gene_centric':           s3_bucket + 'test-gene-centric.json',
-        'ssm_centric':            s3_bucket + 'test-ssm-centric.json',
+        'case_centric': s3_bucket + 'test-case-centric.json',
+        'gene_centric': s3_bucket + 'test-gene-centric.json',
+        'ssm_centric': s3_bucket + 'test-ssm-centric.json',
         'ssm_occurrence_centric': s3_bucket + 'test-ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built

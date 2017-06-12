@@ -85,8 +85,6 @@ class TestMiscFunctions:
         """
         Test that configuration properties are present
         """
-        assert 'api_host' in dir(conf)
-        assert 'signpost_host' in dir(conf)
         assert 's3_host' in dir(conf)
         assert 'es_host' in dir(conf)
 

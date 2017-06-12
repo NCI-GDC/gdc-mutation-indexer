@@ -2,26 +2,71 @@
 unset http_proxy
 unset https_proxy
 
-### How to generate the lists of python dependencies
-### 1) Download required Python dependencies using pip: `pip install -r requirements.txt -d artifacts --egg --no-use-wheel`
-### 2) Create comma-separated list of files and append to this script. 
-###    From the project root, run `find artifacts -name *.tar.gz | paste -sd "," >> bin/submit-job.sh`
-EGGS="artifacts/eggs/boto-2.46.1-py2.7.egg,artifacts/eggs/urllib3-1.20-py2.7.egg,artifacts/eggs/elasticsearch-5.0.0-py2.7.egg,artifacts/eggs/addict-0.2.7-py2.7.egg,artifacts/eggs/decorator-4.0.11-py2.7.egg,artifacts/eggs/networkx-1.10-py2.7.egg,artifacts/eggs/consulate-0.4.0-py2.7.egg,artifacts/eggs/yaml.zip,artifacts/eggs/requests-2.6.0-py2.7.egg"
 
-### Java dependencies can be downloaded from the Maven site. 
-JARS="artifacts/jars/aws-java-sdk-1.7.4.jar,artifacts/jars/elasticsearch-spark-20_2.11-5.2.2.jar,artifacts/jars/spark-csv_2.11-1.5.0.jar"
+EGGS=''
+for EGG in artifacts/eggs/*; do
+    EGGS+="$EGG,"
+done
+# strip the last ','
+EGGS=${EGGS%?}
+
+JARS=''
+for JAR in artifacts/jars/*; do
+    JARS+="$JAR,"
+done
+# strip the last ','
+JARS=${JARS%?}
 
 REVISION=$(git rev-parse HEAD)
 
 python setup.py bdist_egg
+
 exec $SPARK_HOME/bin/spark-submit \
-	--name "GDC Mutation Indexer" \
-	--master yarn \
-	--deploy-mode cluster \
-	--executor-memory 40g \
-	--driver-memory 12g \
-	--executor-cores 8 \
-	--num-executors 25 \
-	--py-files dist/gdc_mutation_indexer-0.1.0_rev_$REVISION-py2.7.egg,$EGGS \
-	--jars $JARS \
-	bin/export.py "$@"
+    --name "GDC Mutation Indexer" \
+    --master yarn \
+    --deploy-mode cluster \
+    --executor-memory ${EXEC_MEM:-40g} \
+    --driver-memory ${DRIVER_MEM:-12g} \
+    --executor-cores ${EXEC_CORES:-8} \
+    --num-executors ${NB_EXEC:-25} \
+    --py-files dist/gdc_mutation_indexer-0.1.0_rev_$REVISION-py2.7.egg,$EGGS \
+    --jars $JARS \
+    --conf spark.yarn.appMasterEnv.S3_HOST="$S3_HOST" \
+    --conf spark.yarn.appMasterEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
+    --conf spark.yarn.appMasterEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \
+    --conf spark.yarn.appMasterEnv.S3_BUCKET="$S3_BUCKET" \
+    --conf spark.yarn.appMasterEnv.ES_HOST="$ES_HOST" \
+    --conf spark.yarn.appMasterEnv.ES_PORT="${ES_PORT:-9200}" \
+    --conf spark.yarn.appMasterEnv.ES_USER="$ES_USER" \
+    --conf spark.yarn.appMasterEnv.ES_PASS="$ES_PASS" \
+    --conf spark.yarn.appMasterEnv.ES_NODES="$ES_NODES" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_HOST="${SOURCE_ES_HOST:-$ES_HOST}" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_PORT="${SOURCE_ES_PORT:-$ES_PORT}" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_USER="${SOURCE_ES_USER:-$ES_USER}" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_PASS="${SOURCE_ES_PASS:-$ES_PASS}" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_INDEX="${SOURCE_ES_INDEX:-gdc_from_graph}" \
+    --conf spark.yarn.appMasterEnv.SOURCE_ES_DOCUMENT="${SOURCE_ES_DOCUMENT:-case}" \
+    --conf spark.yarn.appMasterEnv.MAF_KEYWORDS="$MAF_KEYWORDS" \
+    --conf spark.yarn.appMasterEnv.PIPELINES="$PIPELINES" \
+    --conf spark.yarn.appMasterEnv.PROJECTS="$PROJECTS" \
+    --conf spark.yarn.appMasterEnv.NB_PROJECTS="${NB_PROJECTS:-0}" \
+    --conf spark.executorEnv.S3_HOST="$S3_HOST" \
+    --conf spark.executorEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
+    --conf spark.executorEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \
+    --conf spark.executorEnv.S3_BUCKET="$S3_BUCKET" \
+    --conf spark.executorEnv.ES_HOST="$ES_HOST" \
+    --conf spark.executorEnv.ES_PORT="${ES_PORT:-9200}" \
+    --conf spark.executorEnv.ES_USER="$ES_USER" \
+    --conf spark.executorEnv.ES_PASS="$ES_PASS" \
+    --conf spark.executorEnv.ES_NODES="$ES_NODES" \
+    --conf spark.executorEnv.SOURCE_ES_HOST="${SOURCE_ES_HOST:-$ES_HOST}" \
+    --conf spark.executorEnv.SOURCE_ES_PORT="${SOURCE_ES_PORT:-$ES_PORT}" \
+    --conf spark.executorEnv.SOURCE_ES_USER="${SOURCE_ES_USER:-$ES_USER}" \
+    --conf spark.executorEnv.SOURCE_ES_PASS="${SOURCE_ES_PASS:-$ES_PASS}" \
+    --conf spark.executorEnv.SOURCE_ES_INDEX="${SOURCE_ES_INDEX:-gdc_from_graph}" \
+    --conf spark.executorEnv.SOURCE_ES_DOCUMENT="${SOURCE_ES_DOCUMENT:-case}" \
+    --conf spark.executorEnv.MAF_KEYWORDS="$MAF_KEYWORDS" \
+    --conf spark.executorEnv.PIPELINES="$PIPELINES" \
+    --conf spark.executorEnv.PROJECTS="$PROJECTS" \
+    --conf spark.executorEnv.NB_PROJECTS="${NB_PROJECTS:-0}" \
+    bin/export.py "$@"
