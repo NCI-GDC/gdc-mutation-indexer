@@ -32,11 +32,10 @@ exec $SPARK_HOME/bin/spark-submit \
     --num-executors ${NB_EXEC:-25} \
     --py-files dist/gdc_mutation_indexer-0.1.0_rev_$REVISION-py2.7.egg,$EGGS \
     --jars $JARS \
+    --conf spark.yarn.appMasterEnv.S3_HOST="$S3_HOST" \
     --conf spark.yarn.appMasterEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
     --conf spark.yarn.appMasterEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \
     --conf spark.yarn.appMasterEnv.S3_BUCKET="$S3_BUCKET" \
-    --conf spark.yarn.appMasterEnv.S3_PROXY="$S3_PROXY" \
-    --conf spark.yarn.appMasterEnv.S3_PROXY_PORT="${S3_PROXY_PORT:-80}" \
     --conf spark.yarn.appMasterEnv.ES_HOST="$ES_HOST" \
     --conf spark.yarn.appMasterEnv.ES_PORT="${ES_PORT:-9200}" \
     --conf spark.yarn.appMasterEnv.ES_USER="$ES_USER" \
@@ -52,11 +51,10 @@ exec $SPARK_HOME/bin/spark-submit \
     --conf spark.yarn.appMasterEnv.PIPELINES="$PIPELINES" \
     --conf spark.yarn.appMasterEnv.PROJECTS="$PROJECTS" \
     --conf spark.yarn.appMasterEnv.NB_PROJECTS="${NB_PROJECTS:-0}" \
+    --conf spark.executorEnv.S3_HOST="$S3_HOST" \
     --conf spark.executorEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
     --conf spark.executorEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \
     --conf spark.executorEnv.S3_BUCKET="$S3_BUCKET" \
-    --conf spark.executorEnv.S3_PROXY="$S3_PROXY" \
-    --conf spark.executorEnv.S3_PROXY_PORT="${S3_PROXY_PORT:-80}" \
     --conf spark.executorEnv.ES_HOST="$ES_HOST" \
     --conf spark.executorEnv.ES_PORT="${ES_PORT:-9200}" \
     --conf spark.executorEnv.ES_USER="$ES_USER" \

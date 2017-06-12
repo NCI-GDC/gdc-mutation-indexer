@@ -10,12 +10,10 @@ class BaseConfig(object):
     # The Spark application name
     app_name = 'GDC_Mutation_Export'
 
-    s3_host = os.getenv('S3_HOST', 's3://cleversafe.service.consul')
+    s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
     s3_bucket = 's3a://{}/'.format(os.getenv('S3_BUCKET', 'gdc-mafs'))
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
     s3_secret_key = os.getenv('S3_SECRET_KEY', '')
-    s3_proxy = os.getenv('S3_PROXY', 'http://localhost')
-    s3_proxy_port = os.getenv('S3_PROXY_PORT', 80)
 
     es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
@@ -204,8 +202,6 @@ class BaseConfig(object):
         conn = S3Connection(self.s3_access_key,
                             self.s3_secret_key,
                             host=self.s3_host.split('/')[-1],
-                            proxy=self.s3_proxy,
-                            proxy_port=self.s3_proxy_port,
                             calling_format=OrdinaryCallingFormat(),
                             is_secure=False)
         bucket_name = self.s3_bucket.split('/')[2]
