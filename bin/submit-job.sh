@@ -3,7 +3,6 @@ unset http_proxy
 unset https_proxy
 
 
-
 EGGS=''
 for EGG in artifacts/eggs/*; do
     EGGS+="$EGG,"
