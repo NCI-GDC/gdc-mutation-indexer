@@ -23,6 +23,8 @@ class ModelMapper(object):
         """
         self.index = index
 
+        self.is_gdc_from_graph = index in ['case', 'file', 'project', 'annotation']
+
         # Mappings keyed on the type
         self.type_mappings = {}
 
@@ -30,10 +32,15 @@ class ModelMapper(object):
 
         # Load the mapping
         resource = self.get_resource_string(filename)
+
         self.type_mappings[index] = yaml.safe_load(resource)
 
     def get_resource_string(self, path):
-        resource_path = os.path.join('gdc-models', 'es-models', self.index,
+        if self.is_gdc_from_graph:
+            index = 'gdc_from_graph'
+        else:
+            index = self.index
+        resource_path = os.path.join('gdc-models', 'es-models', index,
                                      path)
         return pkg_resources.resource_string('exports', resource_path)
 

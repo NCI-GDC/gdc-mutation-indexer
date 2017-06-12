@@ -11,8 +11,10 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
+from exports.mappers.models_mapper import ModelMapper
 from exports.builders import MAFBuilder
 from utils.maf_metrics import MAFStats
+
 
 conf = TestConfig()
 
@@ -27,8 +29,7 @@ def setup_test_index():
     '''
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    with open(conf.case_mapping_json, 'r') as f:
-        case_mapping = json.load(f)
+    case_mapping = ModelMapper('case').create_index_settings()
 
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:

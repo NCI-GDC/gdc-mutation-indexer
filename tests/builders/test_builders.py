@@ -491,22 +491,6 @@ class TestConsequenceBuilder:
 
             assert sorted(row.gene_aa_change) == expected_list
 
-
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_only_related_transcripts(self, builder, maf_df, index_name):
-        """
-        Test that consequence only contains transcripts from one gene
-        """
-        cons_df = builder.build(maf_df, index_name, join_gene=True)
-        consequences = cons_df.collect()
-        for consequence in consequences:
-            # Each consequence is a list of transcripts
-            transcripts = consequence.asDict(recursive=True)['consequence']
-            genes = set()
-            for transcript in transcripts:
-                genes.add(transcript['transcript']['gene']['gene_id'])
-            assert len(genes) == 1
-
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_all_effects_cols(self, builder, maf_df, index_name):
         fields = ['consequence_type', 'aa_change',

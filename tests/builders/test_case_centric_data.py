@@ -65,7 +65,6 @@ def test_case_centric_join(case_centric_index, filename):
                               'disease_type', 'tissue_source_site']:
             es_doc[missing_field] = 'BLOB'
 
-
     # Top level keys check
     assert set(es_doc.keys()) == set(true_doc.keys())
 

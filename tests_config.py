@@ -56,7 +56,6 @@ class TestConfig(BaseConfig):
 
     # Additional test files
     cases_file = os.path.join(input_dir, 'cases.14.json.gz')
-    case_mapping_json = os.path.join(input_dir, 'case_mapping.json')
 
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')

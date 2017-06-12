@@ -37,7 +37,7 @@ class BaseConfig(object):
     pipelines = [pipeline.strip() for pipeline in pipelines.split(',')] if pipelines else []
     #pipelines = ['somaticsniper', 'mutect']
 
-    
+
     # Projects to use. If an empty list is given, all 33 projects will be used
     projects = os.getenv('PROJECTS')
     projects = [project.strip() for project in projects.split(',')] if projects else []
@@ -139,6 +139,7 @@ class BaseConfig(object):
     # Case load settings
     case_exclude_fields = ','.join(['project.disease_type',
                                     'project.primary_site',
+                                    'case_autocomplete',
                                     'samples',
                                     'annotations',
                                     'days_to_index',
