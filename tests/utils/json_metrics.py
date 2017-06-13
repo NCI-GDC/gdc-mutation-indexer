@@ -14,29 +14,31 @@ class BaseStats(object):
         # Number of genes seen in the index
         self.Ngenes = 0
         # Number of unique mutaitons seen in the index
-        # identified by unique combinations of chromosome, start_pos, 
+        # identified by unique combinations of chromosome, start_pos,
         # mutation_subtype, ref_allele and tumor_allele
         self.NUniqMut   = 0
         # Number of consequences
         self.Nconseq = 0
-        
+
         self.projects = []
         self.cases = []
-        
+
         # Case count by project
         self.cases_per_project = {}
         # Gene count by case
         self.genes_per_case = {}
+        # Gene count
+        self.gene_count = {}
         # Mutation count by case
-        self.mutations_per_case = {}        
+        self.mutations_per_case = {}
         # Mutation count by gene
         self.mutations_per_gene = {}
         # Number of unique mutaitons seen in the index
-        # identified by unique combinations of chromosome, start_pos, 
+        # identified by unique combinations of chromosome, start_pos,
         # mutation_subtype, ref_allele and tumor_allele
-        self.uniqMutations = {}  
+        self.uniqMutations = {}
         # Consequence count by unique case and mutation pair
-        self.consequences = {} 
+        self.consequences = {}
 
         self.data = []
 
@@ -54,11 +56,11 @@ class BaseStats(object):
         refallele  = ssm['reference_allele']
         tumorall2  = ssm['tumor_allele']
 
-        mutation = '_'.join(str(c) for c in [chromosome, 
-                              startpos,  
-                              refallele, 
-                              tumorall2, 
-                              mutType])  
+        mutation = '_'.join(str(c) for c in [chromosome,
+                              startpos,
+                              refallele,
+                              tumorall2,
+                              mutType])
         return mutation
 
 
@@ -86,10 +88,10 @@ class SSMCentricStats(BaseStats):
                 if case not in self.cases:
                     self.cases.append(case)
                     self.genes_per_case[case] = 0
-                    self.mutations_per_case[case] = 0                    
+                    self.mutations_per_case[case] = 0
                     self.cases_per_project[project] += 1
-                
-                cases_in_ssm.append(case)    
+
+                cases_in_ssm.append(case)
                 self.mutations_per_case[case] += 1
 
             for conseq in h['consequence']:
@@ -100,25 +102,27 @@ class SSMCentricStats(BaseStats):
                         self.consequences[mutation_case] = 1
                     else:
                         self.consequences[mutation_case] += 1
-                    
-                    if conseq['transcript']['is_canonical']:              
-                        gene = conseq['transcript']['gene']['gene_id']               
+
+                    if conseq['transcript']['is_canonical']:
+                        gene = conseq['transcript']['gene']['gene_id']
                         gene_case = project + '_' + case + '_' + gene
-                    
+
                         if gene_case not in self.mutations_per_gene:
-                            self.mutations_per_gene[gene_case] = 0  
-                            self.genes_per_case[case]         += 1  
-                        
-                        self.mutations_per_gene[gene_case] += 1  
+                            self.mutations_per_gene[gene_case] = 0
+                            self.genes_per_case[case]         += 1
+
+                        self.gene_count.setdefault(gene, 0)
+                        self.gene_count[gene] += 1
+                        self.mutations_per_gene[gene_case] += 1
 
                         if mutation not in self.uniqMutations:
                             self.uniqMutations[mutation] = 1
                         else:
-                            self.uniqMutations[mutation] += 1 
+                            self.uniqMutations[mutation] += 1
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
-        self.Ngenes = len(self.mutations_per_gene)
+        self.Ngenes = len(self.gene_count)
         self.NUniqMut = len(self.uniqMutations)
         self.Nconseq = len(self.consequences)
 
@@ -142,9 +146,9 @@ class SSMOcurrenceCentricStats(BaseStats):
             if case not in self.cases:
                 self.cases.append(case)
                 self.genes_per_case[case] = 0
-                self.mutations_per_case[case] = 0                    
+                self.mutations_per_case[case] = 0
                 self.cases_per_project[project] += 1
-                  
+
             self.mutations_per_case[case] += 1
 
             ssm = h['ssm']
@@ -154,29 +158,31 @@ class SSMOcurrenceCentricStats(BaseStats):
                 # Get consequences mutations
                 mutation_case = case + '_' + mutation
                 if mutation_case not in self.consequences:
-                    self.consequences[mutation_case] = 1   
+                    self.consequences[mutation_case] = 1
                 else:
-                    self.consequences[mutation_case] += 1   
-                    
-                if conseq['transcript']['is_canonical']:              
-                    gene = conseq['transcript']['gene']['gene_id']               
-                    gene_case = project + '_' + case + '_' + gene
-                    
+                    self.consequences[mutation_case] += 1
+
+                gene = conseq['transcript']['gene']['gene_id']
+                gene_case = project + '_' + case + '_' + gene
+
+                self.gene_count.setdefault(gene, 0)
+                self.gene_count[gene] += 1
+
             if gene_case not in self.mutations_per_gene:
-                self.mutations_per_gene[gene_case] = 0  
+                self.mutations_per_gene[gene_case] = 0
                 self.genes_per_case[case] += 1
-            self.mutations_per_gene[gene_case] += 1  
+            self.mutations_per_gene[gene_case] += 1
 
             mutation = self.get_mutation(ssm)
 
             if mutation not in self.uniqMutations:
                 self.uniqMutations[mutation] = 1
             else:
-                self.uniqMutations[mutation] += 1 
+                self.uniqMutations[mutation] += 1
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
-        self.Ngenes = len(self.mutations_per_gene)
+        self.Ngenes = len(self.gene_count)
         self.NUniqMut = len(self.uniqMutations)
         self.Nconseq = len(self.consequences)
 
@@ -187,7 +193,7 @@ class CaseCentricStats(BaseStats):
         super(CaseCentricStats, self).__init__(json_file)
 
         for h in self.data:
-            
+
             if 'hits' in h:
                h = h['hits']['hits'][0]
 
@@ -205,11 +211,15 @@ class CaseCentricStats(BaseStats):
                 self.cases.append(case)
                 self.cases_per_project[project] += 1
                 self.genes_per_case[case] = 0
-                self.mutations_per_case[case] = 0                    
+                self.mutations_per_case[case] = 0
 
             for g in h['gene']:
                 gene = g['gene_id']
                 gene_case = project + '_' + case + '_' + gene
+
+                self.gene_count.setdefault(gene, 0)
+                self.gene_count[gene] += 1
+
                 if gene_case not in self.mutations_per_gene:
                     self.mutations_per_gene[gene_case] = 0
                     self.genes_per_case[case] += 1
@@ -234,14 +244,14 @@ class CaseCentricStats(BaseStats):
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
-        self.Ngenes = len(self.mutations_per_gene)
+        self.Ngenes = len(self.gene_count)
         self.NUniqMut = len(self.uniqMutations)
         self.Nconseq = len(self.consequences)
 
 
 class GeneCentricStats(BaseStats):
 
-    def __init__(self, json_file):   
+    def __init__(self, json_file):
         super(GeneCentricStats, self).__init__(json_file)
 
         for h in self.data:
@@ -253,6 +263,9 @@ class GeneCentricStats(BaseStats):
                 h = h['_source']
 
             gene = h['gene_id']
+
+            self.gene_count.setdefault(gene, 0)
+            self.gene_count[gene] += 1
 
             for c in h['case']:
                 project = c['project']['project_id']
@@ -266,23 +279,23 @@ class GeneCentricStats(BaseStats):
                     self.cases.append(case)
                     self.cases_per_project[project] += 1
                     self.genes_per_case[case] = 0
-                    self.mutations_per_case[case] = 0  
-                
+                    self.mutations_per_case[case] = 0
+
                 gene_case = project + '_' + case + '_' + gene
                 if gene_case not in self.mutations_per_gene:
-                    self.mutations_per_gene[gene_case] = 0  
+                    self.mutations_per_gene[gene_case] = 0
                     self.genes_per_case[case] += 1
 
                 for ssm in c['ssm']:
                     self.mutations_per_case[case] += 1
-                    self.mutations_per_gene[gene_case] += 1                  
+                    self.mutations_per_gene[gene_case] += 1
 
                     mutation = self.get_mutation(ssm)
 
                     if mutation not in self.uniqMutations:
                         self.uniqMutations[mutation] = 1
                     else:
-                        self.uniqMutations[mutation] += 1 
+                        self.uniqMutations[mutation] += 1
 
                     mutation_case = case + '_' + mutation
                     for conseq in ssm['consequence']:
@@ -293,13 +306,13 @@ class GeneCentricStats(BaseStats):
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
-        self.Ngenes = len(self.mutations_per_gene)
+        self.Ngenes = len(self.gene_count)
         self.NUniqMut = len(self.uniqMutations)
         self.Nconseq = len(self.consequences)
 
 
 def get_matches(maf_metrics, index_metrics, total):
-  
+
     matches = 0
     for m in maf_metrics:
         if isinstance(index_metrics, list):
@@ -324,6 +337,6 @@ def test(maf_data, output_data):
     percentage_test['Genes per case'] = get_matches(maf_data.genes_per_case, output_data.genes_per_case, maf_data.Ncases)
     percentage_test['Mutations per gene'] = get_matches(maf_data.mutations_per_gene, output_data.mutations_per_gene, maf_data.Ngenes)
     percentage_test['Unique mutations'] = get_matches(maf_data.uniqMutations, output_data.uniqMutations, maf_data.NUniqMut)
-    percentage_test['Consequences per ssm'] = get_matches(maf_data.consequences, output_data.consequences, maf_data.Nconseq) 
+    percentage_test['Consequences per ssm'] = get_matches(maf_data.consequences, output_data.consequences, maf_data.Nconseq)
 
-    return percentage_test   
+    return percentage_test

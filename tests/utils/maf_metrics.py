@@ -27,7 +27,7 @@ class MAFStats(object):
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
-        self.Ngenes = len(self.mutations_per_gene)
+        self.Ngenes = len(self.genes)
         self.NUniqMut = len(self.uniqMutations)
         self.Nconseq = len(self.consequences)
 
