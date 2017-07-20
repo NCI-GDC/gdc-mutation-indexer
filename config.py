@@ -145,7 +145,6 @@ class BaseConfig(object):
                                     'days_to_index',
                                     'diagnoses.treatments',
                                     'tissue_source_site',
-                                    'exposures',
                                     'family_histories',
                                     'files',
                                     '*_ids'])
