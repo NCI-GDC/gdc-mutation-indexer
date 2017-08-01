@@ -137,16 +137,30 @@ class BaseConfig(object):
 
 
     # Case load settings
-    case_exclude_fields = ','.join(['project.disease_type',
-                                    'project.primary_site',
+    case_exclude_fields = ','.join(['annotations',
                                     'case_autocomplete',
-                                    'samples',
-                                    'annotations',
                                     'days_to_index',
+                                    'days_to_lost_to_followup',
+                                    'demographic.cause_of_death',
+                                    'demographic.days_to_birth',
+                                    'demographic.days_to_death',
+                                    'demographic.vital_status',
+                                    'diagnoses.best_overall_response',
+                                    'diagnoses.days_to_best_overall_response',
+                                    'diagnoses.days_to_diagnosis',
+                                    'diagnoses.iss_stage',
+                                    'diagnoses.overall_survival',
+                                    'diagnoses.progression_free_survival',
+                                    'diagnoses.progression_free_survival_event',
                                     'diagnoses.treatments',
-                                    'tissue_source_site',
                                     'family_histories',
                                     'files',
+                                    'index_date',
+                                    'lost_to_followup',
+                                    'project.disease_type',
+                                    'project.primary_site',
+                                    'samples',
+                                    'tissue_source_site',
                                     '*_ids'])
 
 
