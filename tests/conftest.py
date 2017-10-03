@@ -14,6 +14,7 @@ from tests_config import TestConfig
 from exports.mappers.models_mapper import ModelMapper
 from exports.builders import MAFBuilder
 from utils.maf_metrics import MAFStats
+from utils.true_stats import TrueStats
 
 
 conf = TestConfig()
@@ -38,24 +39,19 @@ def setup_test_index():
 
     es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
 
-    if conf.cases_file.endswith('.gz'):
-        f = gzip.open(conf.cases_file, 'rb')
-    else:
-        f = open(conf.cases_file, 'rb')
+    case_docs = {'docs': []}
+    for case_doc in TrueStats.load_es_graph_dump(conf.cases_file):
+        to_append = {'_id': case_doc['case_id'],
+                    '_index': conf.graph_index,
+                    '_type': 'case',
+                    '_source': case_doc}
+        case_docs['docs'].append(to_append)
 
-    try:
-        case_docs = json.load(f)
-    except:
-        f.seek(0)
-        # If instead the file is a case doc per line
-        case_docs = {'docs': []}
-        for line in f.readlines():
-            doc = json.loads(line)
-            to_append = {'_id': doc['case_id'],
-                         '_index': conf.graph_index,
-                         '_type': 'case',
-                         '_source': doc}
-            case_docs['docs'].append(to_append)
+
+    # Remove .cases[] from case.files[].cases[]
+    for case in case_docs['docs']:
+        for _file in case['_source']['files']:
+            _file.pop('cases', None)
 
     log.info('Bulk loading case docs to the ES...')
     bulk(es, case_docs['docs'], ignore=409)

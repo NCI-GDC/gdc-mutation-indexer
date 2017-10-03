@@ -4,6 +4,7 @@ from random import randint
 from pyspark.sql.functions import lit
 from exports.builders.utils import percentile, struct_select, extract_aas_position
 from tests_config import TestConfig
+from tests.utils.true_stats import TrueStats
 from exports.builders.utils import (
     ssm_label,
     _udf_uuid5_field,
@@ -184,3 +185,9 @@ class TestMiscFunctions:
                                       '642a6e7d-8b15-5f93-9e29-22c9649e9058',
                                       '13afbde8-e5b5-4f3c-8a9d-daef71560005')
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
+
+    def test_true_stats(self, maf_df):
+        data = TrueStats.load_test_data(conf.input_dir)
+        stats = TrueStats.get_stats(maf_df, data, 'ssm_centric')
+        import pdb; pdb.set_trace()
+

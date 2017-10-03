@@ -1,30 +1,74 @@
-from pyspark.sql.functions import col, size, explode
 import json
+import gzip
 import os
+
+from pyspark.sql.functions import col, size, explode
 
 
 class TrueStats:
 
+    @classmethod
+    def load_test_data(cls, data_dir):
+        """
+        Loads test data
+        """
+        # # load mafs
+        # mafs = []
+        # maf_dir = os.path.join(data_dir, 'maf')
+        # for maf_file in os.listdir(maf_dir):
+        #     if maf_file.endswith('.maf'):
+        #         maf = cls.load_maf(os.path.join(maf_dir, maf_file))
+        #         mafs.append(maf)
+
+        # load cases
+        cases_file = [f for f in os.listdir(data_dir) if f.find('cases') != -1][0]
+        cases = cls.load_es_graph_dump(os.path.join(data_dir, cases_file))
+
+        # load genes
+        genes_file = [f for f in os.listdir(data_dir) if f.find('genes') != -1
+                      and f.find('cytobands') == -1][0]
+        genes = cls.load_es_graph_dump(os.path.join(data_dir, genes_file))
+
+        return {'case': cases, 'gene': genes}
+
+    # @staticmethod
+    # def load_maf(maf_file):
+    #     maf = []
+    #     with open(maf_file, 'r') as f:
+    #         for line in f.readlines():
+    #             if line[0] == '#':
+    #                 pass
+    #             elif line.find('Hugo_Symbol') != -1:
+    #                 columns = line.replace('\n', '').split('\t')
+    #             else:
+    #                 maf.append({columns[i]: value
+    #                             for i, value in enumerate(line.split('\t'))})
+    #     return maf
+
     @staticmethod
-    def load_data(output_dir, index_name):
-        """
-        Loads Junjun Data corresponding to :index_name
-        """
-        data_dir = os.path.join(output_dir, index_name)
-        data = []
-        for filename in os.listdir(data_dir):
-            with open(os.path.join(data_dir, filename), 'r') as f:
-                data.append(json.loads(f.read()))
-        return data
+    def load_es_graph_dump(filename):
+        if filename.endswith('.gz'):
+            f = gzip.open(filename, 'rb')
+        else:
+            f = open(filename, 'rb')
+
+        try:
+            docs = json.load(f)
+        except:
+            f.seek(0)
+            # If instead the file is a case doc per line
+            docs = []
+            for line in f.readlines():
+                docs.append(json.loads(line))
+        return docs
 
     @classmethod
-    def get_stats(cls, output_dir, index_name):
+    def get_stats(cls, maf_df, test_data, index_name):
         """
-        Returns stats for :index_name
+        Returns true stats for :index_name
         """
-        data = cls.load_data(output_dir, index_name)
         function_name = '{}_stats'.format(index_name)
-        return getattr(cls, function_name)(data)
+        return getattr(cls, function_name)(maf_df, test_data)
 
     @classmethod
     def case_centric_stats(cls, data_list):
@@ -123,7 +167,7 @@ class TrueStats:
                 'cons_per_ssm': cps, 'obs_per_ssm': ops}
 
     @staticmethod
-    def ssm_centric_stats(data_list):
+    def ssm_centric_stats(maf_df, data):
         """
         ssm{}
           |____ consequence[]
@@ -134,12 +178,28 @@ class TrueStats:
                       |_____ case{}
                                |____ observation[]
         """
+
+        ssm_count = maf_df.select('ssm_id').distinct().count()
+
         #       test_ssm_occurrence
         # Consequences per SSM
-        cps = {d['ssm_id']: len(d['consequence']) for d in data_list}
+        # consequence_id ~ UUID(ssm_id, transcript_id)
+        cps = {}
+        for row in (maf_df.select('ssm_id', 'transcript_id').distinct()
+                                                            .toJSON()
+                                                            .collect()):
+            row = json.loads(row)
+            cps.setdefault(row['ssm_id'], 0)
+            cps[row['ssm_id']] += 1
 
         # Occurrences per SSM
-        ops = {d['ssm_id']: len(d['occurrence']) for d in data_list}
+        ops = {}
+        for row in (maf_df.select('ssm_id', 'occurrence_id').distinct()
+                                                            .toJSON()
+                                                            .collect()):
+            row = json.loads(row)
+            ops.setdefault(row['ssm_id'], 0)
+            ops[row['ssm_id']] += 1
 
         #       test_occurrence_subtree
         # NOTE occurrence has no occurrence_id so this test cannot be implemeted
@@ -148,7 +208,7 @@ class TrueStats:
         # for d in [{k['occurrence_id']: len(k['ssm']) for k in D['case']}
         #           for D in data_list]:
         #     opo.update(d)
-        return {'count': len(data_list),
+        return {'count': ssm_count,
                 'cons_per_ssm': cps, 'occur_per_ssm': ops}
 
     @staticmethod
