@@ -10,11 +10,10 @@ class TestConfig(BaseConfig):
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
-    output_dir = os.path.join(data_dir, 'output')
     maf_dir = os.path.join(input_dir, 'maf')
 
     # Initialize test directory tree if incomplete
-    for directory in [log_dir, input_dir, output_dir, maf_dir]:
+    for directory in [log_dir, input_dir, maf_dir]:
         if not os.path.exists(directory):
             os.makedirs(directory)
 

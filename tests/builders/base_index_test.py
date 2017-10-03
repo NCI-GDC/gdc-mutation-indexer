@@ -17,7 +17,6 @@ class BaseIndexTest:
         self.conf = test_config
         self.index = builder.index_name
         self.id_field = '{}_id'.format(self.index.replace('_centric', ''))
-        self.output_dir = os.path.join(self.conf.output_dir, self.index)
         self.debug = self.conf.print_data_errors
 
     def generate_index(self, sqlContext, maf_df):
@@ -30,22 +29,6 @@ class BaseIndexTest:
         self.builder(self.conf, sqlContext).build(maf_df).load()
 
         return es
-
-    def get_docs_to_compare(self, es_index, filename):
-        """
-        Returns true document loaded from :filename
-        and a corresponding built document from elasticsearch
-        """
-        # Compare each true output document with document in ES:
-        with open(os.path.join(self.output_dir, filename), 'r') as f:
-            true_doc = json.loads(f.read())
-
-        es_doc = es_index.get(index=self.conf.indices[self.index],
-                              id=filename)['_source']
-
-        assert self.id_field in es_doc.keys()
-
-        return es_doc, true_doc
 
     def say(self, string):
         """
