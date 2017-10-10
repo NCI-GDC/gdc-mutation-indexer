@@ -15,7 +15,9 @@ addons:
 cache: pip
 
 env:
-  - SPARK_VERSION="2.0.1"
+  global:
+    - SPARK_VERSION="2.0.1"
+    - BOTO_CONFIG=/dev/null
 
 before_install:
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz;

@@ -127,7 +127,7 @@ class SSMCentricStats(BaseStats):
         self.Nconseq = len(self.consequences)
 
 
-class SSMOcurrenceCentricStats(BaseStats):
+class SSMOccurrenceCentricStats(BaseStats):
 
     def __init__(self, json_file):
         super(SSMOcurrenceCentricStats, self).__init__(json_file)

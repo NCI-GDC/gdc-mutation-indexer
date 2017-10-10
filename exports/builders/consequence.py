@@ -119,7 +119,6 @@ class ConsequenceBuilder(object):
             df = (tran_df.groupby('ssm_id')
                          .agg(collect_list('consequence').alias('consequence')))
 
-
         return df
 
     def _build_all_effects_cols(self, maf_df):

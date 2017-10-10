@@ -1,7 +1,7 @@
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import lit, col, struct, collect_list, udf
+from pyspark.sql.functions import col, struct, collect_list
 
 from exports.builders.df_builders import build_ssm_subtree
 from exports.builders import (
