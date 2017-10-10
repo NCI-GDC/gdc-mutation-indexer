@@ -17,7 +17,6 @@ class TestConfig(BaseConfig):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-
     spark_master = 'local[1]'
 
     es_host = 'http://localhost'
@@ -61,7 +60,8 @@ class TestConfig(BaseConfig):
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(input_dir, 'genes.22.json.gz')
 
-    keep_indices = True
+    keep_centric_indices = False
+    keep_graph_index = True
     maf_keep = False
     maf_use_existing = False
 
