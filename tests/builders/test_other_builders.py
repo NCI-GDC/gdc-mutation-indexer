@@ -121,12 +121,13 @@ class TestConsequenceBuilder:
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_all_effects_cols(self, builder, maf_df, index_name):
-        fields = ['consequence_type', 'aa_change',
-                  'transcript_id', 'ref_seq_accession']
+        effects = ['consequence_type', 'aa_change',
+                   'transcript_id', 'ref_seq_accession', 'polyphen_impact',
+                   'polyphen_score', 'sift_impact', 'sift_score']
         ssm_trans = builder._build_all_effects_cols(maf_df)
 
-        for f in fields:
-            assert f in ssm_trans.columns
+        for e in effects:
+            assert e in ssm_trans.columns
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_id(self, builder, maf_df, index_name):
@@ -136,7 +137,7 @@ class TestConsequenceBuilder:
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'es_client')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
@@ -144,10 +145,9 @@ class TestCaseBuilder:
     def case_df(self, sqlContext, maf_df):
         yield CaseBuilder(conf, sqlContext).build(maf_df)
 
-    def test_case_build(self, sqlContext, test_index_class, case_df):
-        es = test_index_class
+    def test_case_build(self, sqlContext, es_client, case_df):
         df = case_df
-        assert (df.count() == es.search(conf.graph_index,
+        assert (df.count() == es_client.search(conf.graph_index,
                                         conf.graph_document,
                                         size=0)['hits']['total'])
 

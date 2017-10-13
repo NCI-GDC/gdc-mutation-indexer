@@ -13,7 +13,7 @@ conf = TestConfig()
 import pytest
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
+@pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestMAFBuilder:
 
     @pytest.fixture
@@ -121,7 +121,6 @@ class TestMAFBuilder:
         Test that variant caller is created properly
         '''
         assert 'variant_caller' in maf_df.columns
-
         for variant_caller, expected_count in expected_counts.items():
             count = maf_df.where(maf_df.variant_caller == variant_caller).count()
             assert count == expected_count

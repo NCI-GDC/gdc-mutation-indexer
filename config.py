@@ -94,7 +94,6 @@ class BaseConfig(object):
     graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
 
 
-
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 

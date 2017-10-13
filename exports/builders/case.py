@@ -1,3 +1,4 @@
+from utils import select_mapping
 import logging
 logging.basicConfig()
 
@@ -17,6 +18,12 @@ class CaseBuilder(object):
         Builds Case dataframe
         """
         df = self.load(maf_df)
+
+        # Select only columns that are in case mapping:
+        case_mapping = select_mapping('case_centric', 'case')['properties']
+        columns_to_keep = [c for c in df.columns if c in case_mapping.keys()]
+        df = df.select(*columns_to_keep)
+
         return df
 
     def load(self, maf_df):
