@@ -10,6 +10,7 @@ from exports.builders.utils import (extract_rows_udf,
                                     all_effects_udf,
                                     uuid5_col,
                                     extract_aas_position,
+                                    extract_impact_or_score,
                                     sanitize_aa_change,
                                     convert_empty_str_to_null_in_col,
                                     sanitize_gene_aa_change,
@@ -40,18 +41,17 @@ class ConsequenceBuilder(object):
                           consequences, while Case and Gene do not.
         """
 
-        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
-                                   unique_fields=['ssm_id', 'transcript_id'])
-        ann_df = ann_df.select('ssm_id', 'transcript_id',
-                               struct(ann_df.drop('ssm_id').columns)
-                               .alias('annotation'))
-
         # => {gene_id, ssm_id, transcript_id,
         # empty, canonical_tracript_id, is_canonical,
         # do_not_us, consequence_type, aa_change
         # refs_seq_accession}
         ssm_tran = self._build_all_effects_cols(maf_df)
 
+        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
+                                   unique_fields=['ssm_id', 'transcript_id'])
+        ann_df = ann_df.select('ssm_id', 'transcript_id',
+                               struct(ann_df.drop('ssm_id').columns)
+                               .alias('annotation'))
         # => {gene_id, ssm_id, transcrpt_id,
         # is_canonical,
         # do_not_us, consequence_type, aa_change,
@@ -121,15 +121,20 @@ class ConsequenceBuilder(object):
 
         return df
 
-    def _build_all_effects_cols(self, maf_df):
+    @staticmethod
+    def _build_all_effects_cols(maf_df):
         """
         Extracts information about transcripts from the all_effects column
 
         all_effects is formated as such:
 
+        BEFORE:
         do_not_use,consequence_type,aa_change,transcript_id,refs_seq_accession;
         MORN1,synonymous_variant,p.=,ENST00000378531,NM_024848.1;
-        MORN1,synonymous_variant,p.=,ENST00000378529,NM_001301060.1;
+
+        NEW all_effects fields: (appended after old ones)
+        HGVSc,IMPACT,CANONICAL,SIFT,PolyPhen,Transcript_Strand
+        c.3602T>G,MODERATE,YES,tolerated(0.06),possibly_damaging(0.614),1
 
         We need to first extract each row within this column and explode it into
         a new row in the dataframe. We then extract each column from that row
@@ -144,14 +149,19 @@ class ConsequenceBuilder(object):
         ssm_tran = maf_df.withColumn('all_effects',
                                      extract_rows_udf()(col('all_effects'))
                                      .alias('all_effects'))
+
+        effects_legend = ['do_not_use', 'consequence_type', 'aa_change',
+                          'transcript_id', 'ref_seq_accession', 'HGVSc',
+                          'IMPACT', 'CANONICAL', 'SIFT', 'PolyPhen',
+                          'Transcript_Strand']
+
+        effects_to_keep = ['do_not_use', 'consequence_type', 'aa_change',
+                           'transcript_id', 'ref_seq_accession', 'PolyPhen',
+                           'SIFT']
+
         # Now extract columns within all_effects to columns in the df
-        fields = {
-            'do_not_use': 0,
-            'consequence_type': 1,
-            'aa_change': 2,
-            'transcript_id': 3,
-            'ref_seq_accession': 4
-        }
+        fields = {name: ix for ix, name in enumerate(effects_legend)
+                  if name in effects_to_keep}
 
         ssm_tran = ssm_tran.select(explode('all_effects').alias('all_effects'),
                                    *ssm_tran.drop('all_effects').columns)
@@ -173,6 +183,13 @@ class ConsequenceBuilder(object):
         # Get aas columns from aa_change
         ssm_tran = extract_aas_position(ssm_tran)
         ssm_tran = convert_empty_str_to_null_in_col(ssm_tran, 'aa_change')
+        
+        # Extract '{polyphen|sift}_{impact|score}':
+        ssm_tran = extract_impact_or_score(ssm_tran, 'PolyPhen', 'impact', 'polyphen_impact')
+        ssm_tran = extract_impact_or_score(ssm_tran, 'PolyPhen', 'score', 'polyphen_score')
+        ssm_tran = extract_impact_or_score(ssm_tran, 'SIFT', 'impact', 'sift_impact')
+        ssm_tran = extract_impact_or_score(ssm_tran, 'SIFT', 'score', 'sift_score')
+        ssm_tran = ssm_tran.drop('PolyPhen').drop('SIFT')
 
         return ssm_tran
 

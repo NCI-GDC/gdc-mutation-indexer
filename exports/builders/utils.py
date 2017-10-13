@@ -2,7 +2,9 @@ import re
 import uuid
 import logging
 from functools import partial
-from pyspark.sql.functions import udf, struct, col, explode, array, when
+from pyspark.sql.functions import (
+    udf, struct, col, explode, array, when, regexp_extract
+)
 from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
 
 from exports.mappers.models_mapper import ModelMapper
@@ -100,6 +102,26 @@ def extract_transcript_id(val):
         else:
             raise Exception('Unexpected number of transcripts')
     return transcript_ids
+
+
+def extract_impact_or_score(df, column, to_extract, res_colname):
+    """
+    Extracts impact or score from fields like:
+    'possibly_damaging(0.614)'
+    
+    impact = 'possibly_damaging'
+    score = '0.614'
+    """
+    if to_extract == 'impact':
+        regex_group = 1
+    elif to_extract == 'score':
+        regex_group = 2
+    else:
+        raise Exception('Unknown extract mode: {}'.format(to_extract))
+
+    return df.withColumn(res_colname,
+                         regexp_extract(column, '(\w)\((\d+.?\d+)\)',
+                                        regex_group))
 
 
 def transcript_id_udf():
@@ -240,9 +262,10 @@ def extract_aas_position(df):
 
     df = df.withColumn('aa_start', udf(extract,IntegerType())(col('aa_change')))
     df = df.withColumn('aa_end', udf(lambda aa_change: extract(aa_change, False),
-        IntegerType())(col('aa_change')))
+                                     IntegerType())(col('aa_change')))
 
     return df
+
 
 def sanitize_aa_change(df):
     """

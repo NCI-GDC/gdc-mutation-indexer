@@ -62,6 +62,7 @@ class MAFBuilder(object):
         df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
@@ -73,7 +74,7 @@ class MAFBuilder(object):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
-
+        
         # Write data
         if self.config.maf_keep:
             self.write(df)

@@ -12,13 +12,13 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'case_centric_index')
+@pytest.mark.usefixtures('maf_df', 'test_data', 'case_centric_df', 'es_client')
 class TestCaseCentricData:
 
-    def test_case_centric_count(self, maf_df, test_data, case_centric_index):
+    def test_case_centric_count(self, maf_df, test_data, es_client):
         expected_count = TestDataStats.get_stats(maf_df, test_data,
                                                  'case_centric')['count']
-        built_count = case_centric_index.count(
+        built_count = es_client.count(
             index=conf.indices['case_centric'],
             doc_type='case_centric',
             body={"query": {"match_all": {}}}
@@ -30,8 +30,8 @@ class TestCaseCentricData:
                                       'Ngenes',
                                       'NUniqMut',
                                       'Nconseq'])
-    def test_case_centric_summary_stats(self, case_centric_index, maf_stats, stat):
-        docs = case_centric_index.search(
+    def test_case_centric_summary_stats(self, es_client, maf_stats, stat):
+        docs = es_client.search(
             index=conf.indices['case_centric'],
             doc_type='case_centric',
             body={"query": {"match_all": {}}},
@@ -47,13 +47,13 @@ class TestCaseCentricData:
         assert case_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'gene_centric_index')
+@pytest.mark.usefixtures('maf_df', 'test_data', 'gene_centric_df', 'es_client')
 class TestGeneCentricData:
 
-    def test_gene_centric_count(self, maf_df, test_data, gene_centric_index):
+    def test_gene_centric_count(self, maf_df, test_data, es_client):
         expected_count = TestDataStats.get_stats(maf_df, test_data,
                                                  'gene_centric')['count']
-        built_count = gene_centric_index.count(
+        built_count = es_client.count(
             index=conf.indices['gene_centric'],
             doc_type='gene_centric',
             body={"query": {"match_all": {}}}
@@ -66,8 +66,8 @@ class TestGeneCentricData:
                                       'NUniqMut',
                                       'Nconseq'])
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
-    def test_gene_centric_summary_stats(self, gene_centric_index, maf_stats, stat):
-        docs = gene_centric_index.search(
+    def test_gene_centric_summary_stats(self, es_client, maf_stats, stat):
+        docs = es_client.search(
             index=conf.indices['gene_centric'],
             doc_type='gene_centric',
             body={"query": {"match_all": {}}},
@@ -80,13 +80,13 @@ class TestGeneCentricData:
         assert gene_stat == maf_stat
 
 
-@pytest.mark.usefixtures('ssm_centric_index')
+@pytest.mark.usefixtures('maf_df', 'test_data', 'ssm_centric_df', 'es_client')
 class TestSSMCentricData:
 
-    def test_ssm_centric_count(self, maf_df, test_data, ssm_centric_index):
+    def test_ssm_centric_count(self, maf_df, test_data, es_client):
         expected_count = TestDataStats.get_stats(maf_df, test_data,
                                                  'ssm_centric')['count']
-        built_count = ssm_centric_index.count(
+        built_count = es_client.count(
             index=conf.indices['ssm_centric'],
             doc_type='ssm_centric',
             body={"query": {"match_all": {}}}
@@ -100,8 +100,8 @@ class TestSSMCentricData:
                                       'Nconseq'])
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_ssm_centric_summary_stats(self, maf_stats, stat,
-                                       ssm_centric_index):
-        docs = ssm_centric_index.search(
+                                       es_client):
+        docs = es_client.search(
             index=conf.indices['ssm_centric'],
             doc_type='ssm_centric',
             body={"query": {"match_all": {}}},
@@ -114,14 +114,13 @@ class TestSSMCentricData:
         assert ssm_stat == maf_stat
 
 
-@pytest.mark.usefixtures('ssm_occurrence_centric_index')
+@pytest.mark.usefixtures('maf_df', 'test_data', 'ssm_occurrence_centric_df', 'es_client')
 class TestSSMOccurrenceCentricData:
 
-    def test_ssm_occurrence_centric_count(self, maf_df, test_data,
-                                          ssm_occurrence_centric_index):
+    def test_ssm_occurrence_centric_count(self, maf_df, test_data, es_client):
         expected_count = TestDataStats.get_stats(maf_df, test_data,
                                                  'ssm_occurrence_centric')['count']
-        built_count = ssm_occurrence_centric_index.count(
+        built_count = es_client.count(
             index=conf.indices['ssm_occurrence_centric'],
             doc_type='ssm_occurrence_centric',
             body={"query": {"match_all": {}}}
@@ -134,9 +133,8 @@ class TestSSMOccurrenceCentricData:
                                       'NUniqMut',
                                       'Nconseq'])
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
-    def test_ssm_occurrence_centric_summary_stats(self, maf_stats, stat,
-                                                  ssm_occurrence_centric_index):
-        docs = ssm_occurrence_centric_index.search(
+    def test_ssm_occurrence_centric_summary_stats(self, maf_stats, stat, es_client):
+        docs = es_client.search(
             index=conf.indices['ssm_occurrence_centric'],
             doc_type='ssm_occurrence_centric',
             body={"query": {"match_all": {}}},

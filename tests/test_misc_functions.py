@@ -1,16 +1,17 @@
 import pytest
 from random import randint
 
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import lit, col
 from exports.builders.utils import percentile, struct_select, extract_aas_position
 from tests_config import TestConfig
-from tests.utils.true_stats import TestDataStats
+from utils.true_stats import TestDataStats
 from exports.builders.utils import (
     ssm_label,
     _udf_uuid5_field,
     sanitize_aa_change,
     sanitize_gene_aa_change,
     convert_empty_str_to_null_in_col,
+    extract_impact_or_score,
 )
 
 conf = TestConfig()
@@ -24,12 +25,8 @@ def create_df(sqlContext, values, column_name='values'):
     return sqlContext.createDataFrame(values, [column_name])
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'test_index_class')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'es_client')
 class TestMiscFunctions:
-
-    @pytest.fixture(scope='class')
-    def es(self, test_index_class):
-        yield test_index_class
 
     def test_es_adapter(self, sqlContext):
         """
@@ -71,14 +68,14 @@ class TestMiscFunctions:
                 stmt = struct_select(index, mapping)
                 assert stmt
 
-    def test_graph_index(self, es):
+    def test_graph_index(self, es_client):
         """
         Test the test graph index fixture
         """
-        assert es is not None
+        assert es_client is not None
         assert conf.graph_index is not None
-        assert es.count()['count'] > 0
-        assert (es.get(index=conf.graph_index, doc_type='case',
+        assert es_client.count()['count'] > 0
+        assert (es_client.get(index=conf.graph_index, doc_type='case',
                        id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
                 == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
 
@@ -89,26 +86,26 @@ class TestMiscFunctions:
         assert 's3_host' in dir(conf)
         assert 'es_host' in dir(conf)
 
-    def test_index_prefix(self, es):
+    def test_index_prefix(self, es_client):
         """
         Test that index prefixes are determined correctly
         """
 
         index_name = 'case_centric'
 
-        if es.indices.exists('gdc_r998_{}'.format(index_name)):
-            es.indices.delete('gdc_r998_{}'.format(index_name))
+        if es_client.indices.exists('gdc_r998_{}'.format(index_name)):
+            es_client.indices.delete('gdc_r998_{}'.format(index_name))
 
         # Create a new index
-        es.indices.create(index='gdc_r998_{}'.format(index_name))
+        es_client.indices.create(index='gdc_r998_{}'.format(index_name))
 
         assert ('gdc_r999_{}'.format(index_name)
                 == TestConfig().indices['case_centric'])
-        es.indices.delete(index='gdc_r998_{}'.format(index_name))
+        es_client.indices.delete(index='gdc_r998_{}'.format(index_name))
 
     def test_sanitize_aa_change(self, sqlContext):
         # Fake input and expected output
-        fake_input = ['a', 'p.b','cp.']
+        fake_input = ['a', 'p.b', 'cp.']
         expected_output = ['a', 'b', 'c']
 
         # Convert to dataframes:
@@ -117,6 +114,24 @@ class TestMiscFunctions:
 
         # Test:
         assert sanitize_aa_change(df).collect() == expected_df.collect()
+
+    def test_extract_impact_or_score(self, sqlContext):
+        # Fake input and expected output
+        fake_input = ['a(0.1)', 'b(2.1)', '']
+        expected_impact_output = ['a', 'b', '']
+        expected_score_output = ['0.1', '2.1', '']
+
+        # Convert to dataframes:
+        df = create_df(sqlContext, fake_input, 'field')
+        expected_impact_df = create_df(sqlContext, expected_impact_output, 'field_impact')
+        expected_score_df = create_df(sqlContext, expected_score_output, 'field_score')
+
+        # Test: 
+        df = extract_impact_or_score(df, 'field', 'impact', 'field_impact')
+        df = extract_impact_or_score(df, 'field', 'score', 'field_score')
+
+        assert df.select('field_impact').collect() == expected_impact_df.collect()
+        assert df.select('field_score').collect() == expected_score_df.collect()
 
     def test_sanitize_gene_aa_change(self, sqlContext):
         # Fake input and expected output

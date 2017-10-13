@@ -36,6 +36,7 @@ def setup_test_index():
     """
     Creates graph index with case docs and returns an elasticsearch client
     """
+    print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
     case_mapping = ModelMapper('case').create_index_settings()
@@ -67,16 +68,23 @@ def setup_test_index():
 
     while True:
         count = es.count(index=conf.graph_index, doc_type='case')['count']
-        if count >= len(case_docs):
+        print count, len(case_docs['docs'])
+        if count >= len(case_docs['docs']):
+            assert count == len(case_docs['docs'])
             break
-        time.sleep(0.1)
+        time.sleep(5)
     # Wait for index to be refreshed
-    time.sleep(1.0)
+    time.sleep(1)
     return es
 
 
 @pytest.fixture(scope='session')
-def sqlContext():
+def es_client(setup_test_index):
+    return setup_test_index
+
+
+@pytest.fixture(scope='session')
+def sqlContext(es_client):
     sc = SparkContext(conf.spark_master, 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
@@ -100,6 +108,7 @@ def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
     """
+    log.info('\n\n\tBUILDING MAF_DF\n\n')
     yield MAFBuilder(conf, sqlContext).build()
 
 
@@ -109,134 +118,68 @@ def ssm_transcript_df(sqlContext, maf_df):
     Builds ssm-transcript dataframe once. Reused throughout test suite
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
+    log.info('\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n')
     return ConsequenceBuilder(conf, sqlContext)._build_all_effects_cols(maf_df)
 
 
 @pytest.fixture(scope='session')
 def case_centric_df(sqlContext, maf_df):
     """
-    Builds case centric dataframe once. Reused throughout test suite
+    Builds case centric dataframe once. Loads to elasticsearch index
+    Reused throughout test suite
     """
+    log.info('\n\n\tBUILDING CASE_CENTRIC_DF\n\n')
     builder = CaseCentricBuilder(conf, sqlContext)
-    yield builder.build(maf_df).case_centric
+    builder.build(maf_df)
+
+    log.info('\n\n\tLOADING CASE_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.case_centric
 
 
 @pytest.fixture(scope='session')
 def gene_centric_df(sqlContext, maf_df):
     """
-    Builds gene centric dataframe once. Reused throughout test suite
+    Builds gene centric dataframe once. Loads to elasticsearch index
+    Reused throughout test suite
     """
+    log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
     builder = GeneCentricBuilder(conf, sqlContext)
-    yield builder.build(maf_df).gene_centric
+    builder.build(maf_df)
+
+    log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.gene_centric
 
 
 @pytest.fixture(scope='session')
 def ssm_centric_df(sqlContext, maf_df):
     """
-    Builds ssm centric dataframe once. Reused throughout test suite
+    Builds ssm centric dataframe once. Loads to elasticsearch index
+    Reused throughout test suite
     """
+    log.info('\n\n\tBUILDING SSM_CENTRIC_DF\n\n')
     builder = SSMCentricBuilder(conf, sqlContext)
-    yield builder.build(maf_df).ssm_centric
+    builder.build(maf_df)
+
+    log.info('\n\n\tLOADING SSM_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.ssm_centric
 
 
 @pytest.fixture(scope='session')
 def ssm_occurrence_centric_df(sqlContext, maf_df):
     """
-    Builds ssm occurrence centric dataframe once. Reused throughout test suite
+    Builds ssm occurrence centric dataframe once. Loads to elasticsearch index
+    Reused throughout test suite
     """
+    log.info('\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
-    yield builder.build(maf_df).ssm_occurrence_centric
+    builder.build(maf_df)
 
-
-@pytest.fixture(scope='session')
-def case_centric_index(sqlContext, case_centric_df):
-    """
-    Generates case centric index for testing
-    Does not rebuild the dataframe, uses already built one
-    """
-    es = Elasticsearch(conf.es_host, port=conf.es_port)
-    builder = CaseCentricBuilder(conf, sqlContext)
-    builder.case_centric = case_centric_df
+    log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
-
-    yield es
-
-    if not conf.keep_centric_indices:
-        es.indices.delete(index=conf.indices[builder.index_name], ignore=399)
-
-
-@pytest.fixture(scope='session')
-def gene_centric_index(sqlContext, gene_centric_df):
-    """
-    Generates gene centric index for testing
-    Does not rebuild the dataframe, uses already built one
-    """
-    es = Elasticsearch(conf.es_host, port=conf.es_port)
-    builder = GeneCentricBuilder(conf, sqlContext)
-    builder.gene_centric = gene_centric_df
-    builder.load()
-
-    yield es
-
-    if not conf.keep_centric_indices:
-        es.indices.delete(index=conf.indices[builder.index_name], ignore=399)
-
-
-@pytest.fixture(scope='session')
-def ssm_centric_index(sqlContext, ssm_centric_df):
-    """
-    Generates ssm centric index for testing
-    Does not rebuild the dataframe, uses already built one
-    """
-    es = Elasticsearch(conf.es_host, port=conf.es_port)
-    builder = SSMCentricBuilder(conf, sqlContext)
-    builder.ssm_centric = ssm_centric_df
-    builder.load()
-
-    yield es
-
-    if not conf.keep_centric_indices:
-        es.indices.delete(index=conf.indices[builder.index_name], ignore=399)
-
-
-@pytest.fixture(scope='session')
-def ssm_occurrence_centric_index(sqlContext, ssm_occurrence_centric_df):
-    """
-    Generates ssm occurrence centric index for testing
-    Does not rebuild the dataframe, uses already built one
-    """
-    es = Elasticsearch(conf.es_host, port=conf.es_port)
-    builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
-    builder.ssm_occurrence_centric = ssm_occurrence_centric_df
-    builder.load()
-
-    yield es
-
-    if not conf.keep_centric_indices:
-        es.indices.delete(index=conf.indices[builder.index_name], ignore=399)
-
-
-@pytest.fixture(scope='class')
-def test_index_class(request):
-    ''' Generate a graph index as a fixture for re-use between tests '''
-    request.cls.es = setup_test_index()
-    request.cls.config = conf
-
-    yield request.cls.es
-
-    if not conf.keep_graph_index:
-        request.cls.es.indices.delete(index=conf.graph_index, ignore=399)
-
-
-@pytest.fixture(scope='module')
-def test_index(request):
-    ''' Generate a graph index as a fixture for re-use between tests '''
-    es = setup_test_index()
-
-    yield es
-
-    if not conf.keep_graph_index:
-        es.indices.delete(index=conf.graph_index, ignore=399)
+    return builder.ssm_occurrence_centric
 
 
 @pytest.fixture(scope='module')

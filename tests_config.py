@@ -53,15 +53,13 @@ class TestConfig(BaseConfig):
     repartition = 10
 
     # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.14.json.gz')
+    cases_file = os.path.join(input_dir, 'cases.json.gz')
 
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
-    gene_model_file = os.path.join(input_dir, 'genes.22.json.gz')
+    gene_model_file = os.path.join(input_dir, 'genes.json.gz')
 
-    keep_centric_indices = False
-    keep_graph_index = True
     maf_keep = False
     maf_use_existing = False
 

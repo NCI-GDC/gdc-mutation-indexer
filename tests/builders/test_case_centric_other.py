@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from exports.mappers.models_mapper import ModelMapper
 from tests_config import TestConfig
@@ -6,18 +7,30 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('case_centric_df')
+@pytest.mark.usefixtures('case_centric_df', 'es_client')
 class TestCaseCentricOther:
     """ Test intermediatekresult from the case centric builder """
 
-    def test_available_variation_data(self, test_index, case_centric_df):
+    def test_available_variation_data(self, es_client, case_centric_df):
         """ Test that cases without any ssm, but were tested are flagged """
+        def wait_for_doc(es, index, doc_type, did, mode):
+            assert mode in ['create', 'delete']
+            while True:
+                time.sleep(1)
+                try:
+                    es.get(index=index, doc_type=doc_type, id=did)
+                    if mode == 'create':
+                        return
+                except:
+                    if mode == 'delete':
+                        return
 
         # Insert a case to graph with no data
-        test_index.index(conf.graph_index, doc_type='case',
-                         id='empty_case', body={'case_id': 'empty_case'})
-        # Force ES to refresh before trying to build index
-        test_index.indices.refresh(index=conf.graph_index)
+        es_client.index(conf.graph_index, doc_type='case',
+                        id='empty_case', body={'case_id': 'empty_case'})
+
+        # Wait for document creation
+        wait_for_doc(es_client, conf.graph_index, 'case', 'empty_case', 'create')
 
         assert 'available_variation_data' in case_centric_df.columns
         # Sum of booleans, True = 1, False = 0, should only have one test case
@@ -35,9 +48,11 @@ class TestCaseCentricOther:
                        .select('available_variation_data')
                        .collect()[0]['available_variation_data'] == [])
 
-        # Get rid of the test document and force an ES refresh
-        test_index.delete(conf.graph_index, doc_type='case', id='empty_case')
-        test_index.indices.refresh(index=conf.graph_index)
+        # Get rid of the test document
+        es_client.delete(conf.graph_index, doc_type='case', id='empty_case')
+        
+        # Wait for document deletion
+        wait_for_doc(es_client, conf.graph_index, 'case', 'empty_case', 'delete')
 
     @pytest.mark.parametrize('path', [
                              'case_id',
