@@ -2,12 +2,13 @@ import pytest
 import json
 from pyspark.sql.functions import explode
 
+from exports.builders import ConsequenceBuilder, ObservationBuilder
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'case_centric_df', 'ssm_transcript_df')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'case_centric_df', 'ssm_transcript_df')
 class TestCaseCentricJoins:
     """
     Test case_centric index joins
@@ -66,7 +67,50 @@ class TestCaseCentricJoins:
 
         assert es_spg == spg
 
-    @pytest.mark.skipif(True, reason='Implement ssm subtree test later')
     @pytest.mark.case_centric_ssm_subtree
-    def test_ssm_subtree(self, maf_df, case_centric_df):
-        pass
+    def test_ssm_subtree(self, sqlContext, maf_df, case_centric_df, case_ssm_subtree):
+        def get_stats(dataframe):
+            """
+            Extracts ssm, consequence, transcript relationships from a flat dataframe
+            """
+            res = {}
+            for row in dataframe.toJSON().collect():
+                row = json.loads(row)
+                sid = row['ssm_id']
+                oid = row['observation_id']
+                cid = row['consequence_id']
+
+                res.setdefault(sid, {'consequences': set(), 'observations': set()})
+                res[sid]['consequences'].update([cid])
+                res[sid]['observations'].update([oid])
+
+            return res
+
+        # ssm_subtree stats expected:
+        cons_df = (ConsequenceBuilder(conf, sqlContext)
+                   .build(maf_df, 'case_centric'))
+        obs_df = (ObservationBuilder(conf, sqlContext)
+                  .build(maf_df, 'case_centric'))
+
+        df = cons_df.join(obs_df, on=['ssm_id'], how='left')
+
+        df = (df.select('ssm_id', 'observation',
+                        explode('consequence').alias('c'))
+                .select('ssm_id', 'c.consequence_id',
+                        explode('observation').alias('o'))
+                .select('ssm_id', 'consequence_id', 'o.observation_id'))
+
+        stats = get_stats(df)
+
+        # ssm_subtree stats built:
+        df = (case_ssm_subtree.select(explode('ssm').alias('s'))
+                              .select('s.ssm_id', 's',
+                                      explode('s.consequence').alias('c'))
+                              .select('ssm_id', 'c.consequence_id',
+                                      explode('s.observation').alias('o'))
+                              .select('ssm_id', 'consequence_id', 'o.observation_id'))
+
+        es_stats = get_stats(df)
+
+        assert stats == es_stats
+

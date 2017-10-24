@@ -1,58 +1,48 @@
 import pytest
 import time
 
+from exports.builders.utils import get_case_ids_from_headers
 from exports.mappers.models_mapper import ModelMapper
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('case_centric_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'case_centric_df')
 class TestCaseCentricOther:
-    """ Test intermediatekresult from the case centric builder """
+    """ Other case centric tests """
 
-    def test_available_variation_data(self, es_client, case_centric_df):
-        """ Test that cases without any ssm, but were tested are flagged """
-        def wait_for_doc(es, index, doc_type, did, mode):
-            assert mode in ['create', 'delete']
-            while True:
-                time.sleep(1)
-                try:
-                    es.get(index=index, doc_type=doc_type, id=did)
-                    if mode == 'create':
-                        return
-                except:
-                    if mode == 'delete':
-                        return
+    def test_empty_cases(self, sqlContext, case_centric_df, maf_df):
+        """
+        Test that cases without any ssm but were tested (aka "empty cases") are built and flagged
+        Expected case set is retrieved from maf header's aliquot.sample_id-s
+        """
 
-        # Insert a case to graph with no data
-        es_client.index(conf.graph_index, doc_type='case',
-                        id='empty_case', body={'case_id': 'empty_case'})
+        expected_cases = get_case_ids_from_headers(sqlContext, conf.maf_urls)
+        non_empty_cases =  [r.case_id for r in maf_df.select('case_id').collect()]
 
-        # Wait for document creation
-        wait_for_doc(es_client, conf.graph_index, 'case', 'empty_case', 'create')
+        empty_cases = set(expected_cases) - set(non_empty_cases)
+        n_empty_cases = len(empty_cases)
+
+        # There supposed to be some empty cases in test data
+        assert n_empty_cases > 0
 
         assert 'available_variation_data' in case_centric_df.columns
+
         # Sum of booleans, True = 1, False = 0, should only have one test case
+        df = (case_centric_df.select('case_id', 'available_variation_data')
+                             .collect())
 
-        assert sum(
-            [r['available_variation_data'] == ['ssm']
-             for r in case_centric_df.select('available_variation_data').collect()]
-        ) == case_centric_df.count() - 1
+        # Check that expected cases == built cases
+        assert set(expected_cases) == set([r.case_id for r in df])
 
-        assert sum([r['available_variation_data'] == [] for r in
-                   case_centric_df.select('available_variation_data').collect()]) == 1
+        # Check that for empty cases 'available_variation_data' == [] and == ['ssm'] for cases with mutations
+        for row in df:
+            if row.case_id in empty_cases:
+                assert row.available_variation_data == []
+            else:
+                assert row.available_variation_data == ['ssm']
 
-        assert (case_centric_df.cache()
-                       .filter(case_centric_df.case_id == 'empty_case')
-                       .select('available_variation_data')
-                       .collect()[0]['available_variation_data'] == [])
-
-        # Get rid of the test document
-        es_client.delete(conf.graph_index, doc_type='case', id='empty_case')
-        
-        # Wait for document deletion
-        wait_for_doc(es_client, conf.graph_index, 'case', 'empty_case', 'delete')
 
     @pytest.mark.parametrize('path', [
                              'case_id',

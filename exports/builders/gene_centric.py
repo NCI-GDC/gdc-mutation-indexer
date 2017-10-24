@@ -72,7 +72,7 @@ class GeneCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
         return self
 
-    def build_ssm(self, maf_df):
+    def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = ConsequenceBuilder(
             self.config, self.sqlContext).build(maf_df, self.index_name)
@@ -119,7 +119,7 @@ class GeneCentricBuilder(BaseBuilder):
     def build_case_ssm(self, maf_df):
         case_gene_id = self.build_case_with_gene_id(maf_df)
 
-        ssm_df = self.build_ssm(maf_df)
+        ssm_df = self.build_ssm_subtree(maf_df)
         self.log_count(ssm_df)
 
         self.log("Joining Case+gene_id with SSM [inner, gene_id, case_id]")

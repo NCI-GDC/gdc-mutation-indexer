@@ -41,7 +41,6 @@ def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
 
 def get_transcript_df(input_df, index_name, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
-
     return get_single_df(input_df, index_name, 'transcript', add_fields,
                          drop_fields, unique_fields, ignore)
 

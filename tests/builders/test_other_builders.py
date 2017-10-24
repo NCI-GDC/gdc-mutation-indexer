@@ -2,6 +2,7 @@ import pytest
 import json
 
 from pyspark.sql.functions import size, explode, lit
+from exports.builders.utils import get_case_ids_from_headers
 from exports.builders import (
     CaseBuilder,
     ObservationBuilder,
@@ -157,3 +158,13 @@ class TestCaseBuilder:
         assert 'files' not in case_df.columns
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
+
+    def test_correct_case_set(self, sqlContext, case_df):
+        """
+        Tests that only cases in maf headers were loaded
+        """
+        expected_cases = get_case_ids_from_headers(sqlContext, conf.maf_urls)
+        cases = [r.case_id for r in case_df.select('case_id').collect()]
+
+        assert set(expected_cases) == set(cases)
+

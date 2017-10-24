@@ -1,5 +1,6 @@
 import pytest
 
+from exports.builders.utils import get_case_ids_from_headers
 from utils.true_stats import TestDataStats
 from utils.json_metrics import (
     CaseCentricStats,
@@ -12,12 +13,17 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'case_centric_df', 'es_client')
+@pytest.mark.usefixtures('all_cases', 'maf_df', 'case_centric_df', 'test_data', 'es_client')
 class TestCaseCentricData:
 
-    def test_case_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
+    def test_case_centric_count(self, all_cases, maf_df, test_data, es_client):
+        maf_case_count = TestDataStats.get_stats(maf_df, test_data,
                                                  'case_centric')['count']
+        expected_count = len(all_cases)
+
+        # There supposed to be at least one "empty case" in test data
+        assert expected_count > maf_case_count
+
         built_count = es_client.count(
             index=conf.indices['case_centric'],
             doc_type='case_centric',
@@ -30,7 +36,7 @@ class TestCaseCentricData:
                                       'Ngenes',
                                       'NUniqMut',
                                       'Nconseq'])
-    def test_case_centric_summary_stats(self, es_client, maf_stats, stat):
+    def test_case_centric_summary_stats(self, es_client, maf_stats, stat, all_cases):
         docs = es_client.search(
             index=conf.indices['case_centric'],
             doc_type='case_centric',
@@ -41,6 +47,11 @@ class TestCaseCentricData:
 
         case_stat = getattr(case_stats, stat)
         maf_stat = getattr(maf_stats, stat)
+
+        # Take empty cases into account
+        if stat == 'Ncases':
+            maf_stat = len(all_cases)
+
         if conf.indices_are_pruned:
             if stat in ['Ngenes', 'NUniqMut', 'Nconseq']:
                 return

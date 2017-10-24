@@ -100,3 +100,4 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
                                   ).alias('case')))
         self.log_count(case_obs_df)
         return case_obs_df
+

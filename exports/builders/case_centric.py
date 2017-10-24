@@ -77,7 +77,7 @@ class CaseCentricBuilder(BaseBuilder):
 
         return self
 
-    def build_ssm(self, maf_df):
+    def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build(maf_df, self.index_name))
@@ -113,7 +113,7 @@ class CaseCentricBuilder(BaseBuilder):
                                            'canonical_transcript_length_genomic'])
         self.log_count(gene_df)
 
-        ssm_df = self.build_ssm(maf_df)
+        ssm_df = self.build_ssm_subtree(maf_df)
         self.log_count(ssm_df)
 
         self.log('Join ssm with Gene [inner, gene_id, case_id]')
