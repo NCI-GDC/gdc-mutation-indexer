@@ -4,6 +4,8 @@ import sys
 import os
 import boto
 import boto.s3.connection
+import requests
+from urllib import quote_plus
 from elasticsearch import Elasticsearch
 
 root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..'))
@@ -16,6 +18,8 @@ ES_HOST = os.environ['ES_HOST']
 ES_PORT = os.environ['ES_PORT']
 ES_USER = os.environ['ES_USER']
 ES_PASSWORD = os.environ['ES_PASSWORD']
+
+es = Elasticsearch(host=ES_HOST, http_auth=(ES_USER, ES_PASSWORD), port=ES_PORT)
 
 S3_HOST = os.environ['S3_HOST']
 S3_ACCESS_KEY = os.environ['S3_ACCESS_KEY']
@@ -46,10 +50,10 @@ def update_genes():
     write_to_file(gene_model, filepath) 
 
 
-def update_cases():
+def update_cases(es):
     """
     Updates cases.json.gz file according to cases that are present in test mafs
-    
+   
     - Get a set of cases that appear in test mafs
     - Get corresponding case documents from gdc_from_graph
     - Save results to tests/data/input/cases.json.gz
@@ -59,20 +63,56 @@ def update_cases():
     print '- Extracting set of cases from test mafs'
     cases_to_keep = get_unique_from_mafs('case_id')
 
-    print '- Getting cases data for cases needed'
-    cases = get_cases(cases_to_keep)
+    print '- Extracting aliquots from headers'
+    aliquots_in_headers = get_all_aliquots_from_mafs()
+    aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
 
+    if aliquots_in_data - aliquots_in_headers != set():
+        raise Exception('Aliquots missing from headers: {}'
+                        .format(aliquots_in_data - aliquots_in_headers))
+    if aliquots_in_headers - aliquots_in_data == set():
+        raise Exception('No empty aliquots in test data')
+
+    print '\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data)
+
+    print '- Getting case_ids for aliquots in maf headers'
+    case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
+    print '- Getting cases data for case_ids'
+    cases = get_cases(es, case_ids)
+    
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.json')
     print '- Writing cases to {}'.format(filepath + '.gz') 
     write_to_file(cases, filepath) 
 
 
-def get_cases(case_ids):
+def get_case_ids_from_aliquots(es, aliquot_ids):
+    """
+    Get case_ids corresponding to aliquot ids from gdcapi
+    """
+    n_expected = len(aliquot_ids)
+    
+    query = {
+       "op": "in",
+       "content":{
+          "field": "samples.portions.analytes.aliquots.submitter_id",
+          "value": list(aliquot_ids)
+        }
+    }
+    url = 'https://api.gdc.cancer.gov/cases/?size={}&filters='.format(n_expected + 1) + quote_plus(json.dumps(query))
+    response = requests.get(url).json()['data']
+    
+    if response['pagination']['total'] != n_expected:
+        raise Exception('Wrong number of cases. Expected {}, got {}'
+                        .format(n_expected, response['pagination']['total']))
+
+    return {c['case_id'] for c in response['hits']}
+
+
+def get_cases(es, case_ids):
     """
     Get case documents from gdc_from_graph
     """
-    es = Elasticsearch(host=ES_HOST, http_auth=(ES_USER, ES_PASSWORD), port=ES_PORT)
-
+    
     docs = []
     for case_id in case_ids:
         doc = es.get(index='gdc_from_graph', doc_type='case', id=case_id)['_source']
@@ -121,6 +161,27 @@ def get_unique_from_mafs(column):
     return values
 
 
+def get_all_aliquots_from_mafs():
+    aliquots = set()
+    for filepath in cfg_test.maf_urls:
+        with open(filepath.replace('file://', ''), 'r') as f:
+            for line in f.readlines():
+                line_values = line.split('\t')
+                if line.find('#n.analyzed.samples') != -1:
+                    n_samples = int(line.split()[1])
+                elif line.find('#tumor.aliquots.submitter_id') != -1:
+                    al = line.split()[1].split(',')
+                    if n_samples != len(al):
+                        raise Exception(
+                            'Header is inconsistent: '
+                            'n.analyzed.samples != len(tumor.aliquots.submitter_id) '
+                            '({} != {})'.format(n_samples, len(al))
+                        )
+                    aliquots.update(al)
+                    break
+    return aliquots
+
+
 def write_to_file(data, filepath):
     """
     Writes list of dicts data to .gz file
@@ -132,7 +193,7 @@ def write_to_file(data, filepath):
 
 if __name__ == '__main__':
     print '\n\tUpdating cases.json.gz:'
-    update_cases()
+    update_cases(es)
     print '\n\tUpdating genes.json.gz:'
     update_genes()
 

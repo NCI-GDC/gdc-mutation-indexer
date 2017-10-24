@@ -11,6 +11,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
+from exports.builders.utils import get_case_ids_from_headers
 from exports.mappers.models_mapper import ModelMapper
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
@@ -99,6 +100,15 @@ def sqlContext(es_client):
 
 
 @pytest.fixture(scope='session')
+def all_cases(sqlContext):
+    """
+    Returns all case_ids expected to build, including "empty cases"
+    The info is taken from aliquots in test maf headers
+    """
+    return get_case_ids_from_headers(sqlContext, conf.maf_urls)
+
+
+@pytest.fixture(scope='session')
 def test_data():
     return TestDataStats.load_test_data(conf.input_dir)
 
@@ -180,6 +190,36 @@ def ssm_occurrence_centric_df(sqlContext, maf_df):
     log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
     return builder.ssm_occurrence_centric
+
+
+@pytest.fixture(scope='session')
+def case_ssm_subtree(sqlContext, maf_df):
+    """
+    Builds case centric ssm subtree dataframe
+    """
+    log.info('\n\n\tBUILDING CASE_SSM_SUBTREE\n\n')
+    builder = CaseCentricBuilder(conf, sqlContext)
+    return builder.build_ssm_subtree(maf_df)
+
+
+@pytest.fixture(scope='session')
+def gene_ssm_subtree(sqlContext, maf_df):
+    """
+    Builds gene centric ssm subtree dataframe
+    """
+    log.info('\n\n\tBUILDING GENE_SSM_SUBTREE\n\n')
+    builder = GeneCentricBuilder(conf, sqlContext)
+    return builder.build_ssm_subtree(maf_df)
+
+
+@pytest.fixture(scope='session')
+def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
+    """
+    Builds ssm occurrence centric ssm subtree dataframe
+    """
+    log.info('\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n')
+    builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
+    return builder.build_ssm_subtree(maf_df)
 
 
 @pytest.fixture(scope='module')

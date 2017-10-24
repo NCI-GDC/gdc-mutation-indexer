@@ -1,4 +1,6 @@
 import re
+import requests
+import json
 import uuid
 import logging
 from functools import partial
@@ -6,6 +8,7 @@ from pyspark.sql.functions import (
     udf, struct, col, explode, array, when, regexp_extract
 )
 from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
+from urllib import quote_plus
 
 from exports.mappers.models_mapper import ModelMapper
 
@@ -37,13 +40,59 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
         label = 'chr{}:g.{}del{}'.format(chromosome,
                                          start_pos, ref_allele)
     elif variant_type == 'INS':
-
         label = 'chr{}:g.{}_{}ins{}'.format(chromosome,
                                             start_pos, end_pos, tumor_allele)
     else:
         label = chromosome
 
     return label
+
+
+def get_case_ids_from_headers(sqlContext, maf_urls):
+    """
+    Reads aliquots from headers of mafs and matches a list of corresponding case_ids
+    WARNING: performs a call to https://api.gdc.cancer.gov/cases/
+    """
+    # Read unique aliquots from maf headers
+    unique_aliquots = set()
+    for url in maf_urls:
+        header = read_maf_header(sqlContext, url, n_lines=5).collect()
+        header = map(lambda r: r.asDict().values()[0].split(), header)
+        assert header[-2][0] == '#n.analyzed.samples'
+        assert header[-1][0] == '#tumor.aliquots.submitter_id'
+        aliquots = header[-1][1].split(',')
+        n_aliquots = int(header[-2][1])
+
+        assert len(aliquots) == n_aliquots
+        unique_aliquots.update(aliquots)
+
+    # Get case_id for each aliquot found in maf headers
+    n_aliquots = len(unique_aliquots)
+    query = {
+        "op": "in",
+        "content":{
+           "field": "samples.portions.analytes.aliquots.submitter_id",
+           "value": list(unique_aliquots)
+        }
+    }
+    cases = requests.get(
+        'https://api.gdc.cancer.gov/cases/?size={}&filters='
+        .format(n_aliquots + 1) + quote_plus(json.dumps(query))
+    ).json()
+
+    assert n_aliquots == cases['data']['pagination']['count']
+    case_ids = [c['case_id'] for c in cases['data']['hits']]
+
+    return case_ids
+
+
+def read_maf_header(sqlContext, url, n_lines=5):
+    """
+    Reads only maf header
+    """
+    return sqlContext.read.format('com.databricks.spark.csv')\
+                          .options(delimiter='\t')\
+                          .load(url).limit(n_lines)
 
 
 def ssm_label_col(chromosome,
