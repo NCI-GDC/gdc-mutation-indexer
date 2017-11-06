@@ -2,6 +2,7 @@ import os
 import re
 import json
 import yaml
+import pytest
 from collections import Counter
 from pyspark.sql.types import ArrayType, StringType
 
@@ -9,8 +10,6 @@ from exports.builders import MAFBuilder
 from tests_config import TestConfig
 
 conf = TestConfig()
-
-import pytest
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')

@@ -1,7 +1,7 @@
 import pytest
 from random import randint
 
-from pyspark.sql.functions import lit, col
+from pyspark.sql.functions import lit
 from exports.builders.utils import percentile, struct_select, extract_aas_position
 from tests_config import TestConfig
 from utils.true_stats import TestDataStats

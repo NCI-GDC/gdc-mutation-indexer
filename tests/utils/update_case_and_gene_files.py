@@ -29,7 +29,7 @@ S3_SECRET_KEY = os.environ['S3_SECRET_KEY']
 def update_genes():
     """
     Updates gene model file genes.json.gz according to genes that are present in test mafs
-    
+
     - Get a set of genes that appear in test mafs
     - Get full gene model from cleversafe
     - Drop all genes that not in test mafs from gene model
@@ -53,15 +53,12 @@ def update_genes():
 def update_cases(es):
     """
     Updates cases.json.gz file according to cases that are present in test mafs
-   
+
     - Get a set of cases that appear in test mafs
     - Get corresponding case documents from gdc_from_graph
     - Save results to tests/data/input/cases.json.gz
 
     """
-
-    print '- Extracting set of cases from test mafs'
-    cases_to_keep = get_unique_from_mafs('case_id')
 
     print '- Extracting aliquots from headers'
     aliquots_in_headers = get_all_aliquots_from_mafs()
@@ -77,42 +74,51 @@ def update_cases(es):
 
     print '- Getting case_ids for aliquots in maf headers'
     case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
+
     print '- Getting cases data for case_ids'
     cases = get_cases(es, case_ids)
-    
+
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.json')
-    print '- Writing cases to {}'.format(filepath + '.gz') 
+    print '- Writing cases to {}'.format(filepath + '.gz')
     write_to_file(cases, filepath) 
 
 
 def get_case_ids_from_aliquots(es, aliquot_ids):
     """
-    Get case_ids corresponding to aliquot ids from gdcapi
+    Get case_ids corresponding to aliquot_ids from gdc_from_graph
     """
     n_expected = len(aliquot_ids)
-    
-    query = {
-       "op": "in",
-       "content":{
-          "field": "samples.portions.analytes.aliquots.submitter_id",
-          "value": list(aliquot_ids)
-        }
-    }
-    url = 'https://api.gdc.cancer.gov/cases/?size={}&filters='.format(n_expected + 1) + quote_plus(json.dumps(query))
-    response = requests.get(url).json()['data']
-    
-    if response['pagination']['total'] != n_expected:
-        raise Exception('Wrong number of cases. Expected {}, got {}'
-                        .format(n_expected, response['pagination']['total']))
 
-    return {c['case_id'] for c in response['hits']}
+    print "make it use the data from gdc_from_graph instead"
+    
+    cases = []
+    for aliquot_id in aliquot_ids:
+        query = {
+            "query": {
+                "nested": {
+                    "path": 'samples.portions.analytes.aliquots',
+                    "query": {
+                        "bool": {
+                            "must": [
+                                {"match_phrase": {'samples.portions.analytes.aliquots.submitter_id': aliquot_id}},
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        res = es.search(index='gdc_from_graph', doc_type='case', body=query)
+        assert len(res['hits']['hits']) == 1, 'Unexpected number of cases found'
+
+        cases.append(res['hits']['hits'][0]['_source'])
+    
+    return {c['case_id'] for c in cases}
 
 
 def get_cases(es, case_ids):
     """
     Get case documents from gdc_from_graph
     """
-    
     docs = []
     for case_id in case_ids:
         doc = es.get(index='gdc_from_graph', doc_type='case', id=case_id)['_source']
@@ -162,11 +168,13 @@ def get_unique_from_mafs(column):
 
 
 def get_all_aliquots_from_mafs():
+    """
+    Extracts aliquots set from maf headers
+    """
     aliquots = set()
     for filepath in cfg_test.maf_urls:
         with open(filepath.replace('file://', ''), 'r') as f:
             for line in f.readlines():
-                line_values = line.split('\t')
                 if line.find('#n.analyzed.samples') != -1:
                     n_samples = int(line.split()[1])
                 elif line.find('#tumor.aliquots.submitter_id') != -1:
@@ -196,4 +204,3 @@ if __name__ == '__main__':
     update_cases(es)
     print '\n\tUpdating genes.json.gz:'
     update_genes()
-

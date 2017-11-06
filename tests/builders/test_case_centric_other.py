@@ -1,27 +1,25 @@
 import pytest
 import time
 
-from exports.builders.utils import get_case_ids_from_headers
 from exports.mappers.models_mapper import ModelMapper
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'case_centric_df')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'all_cases', 'case_centric_df')
 class TestCaseCentricOther:
     """ Other case centric tests """
 
-    def test_empty_cases(self, sqlContext, case_centric_df, maf_df):
+    def test_empty_cases(self, sqlContext, case_centric_df, maf_df, all_cases):
         """
         Test that cases without any ssm but were tested (aka "empty cases") are built and flagged
         Expected case set is retrieved from maf header's aliquot.sample_id-s
         """
 
-        expected_cases = get_case_ids_from_headers(sqlContext, conf.maf_urls)
-        non_empty_cases =  [r.case_id for r in maf_df.select('case_id').collect()]
+        non_empty_cases = [r.case_id for r in maf_df.select('case_id').collect()]
 
-        empty_cases = set(expected_cases) - set(non_empty_cases)
+        empty_cases = set(all_cases) - set(non_empty_cases)
         n_empty_cases = len(empty_cases)
 
         # There supposed to be some empty cases in test data
@@ -33,8 +31,8 @@ class TestCaseCentricOther:
         df = (case_centric_df.select('case_id', 'available_variation_data')
                              .collect())
 
-        # Check that expected cases == built cases
-        assert set(expected_cases) == set([r.case_id for r in df])
+        # Check that all cases == built cases
+        assert set(all_cases) == set([r.case_id for r in df])
 
         # Check that for empty cases 'available_variation_data' == [] and == ['ssm'] for cases with mutations
         for row in df:
@@ -42,7 +40,6 @@ class TestCaseCentricOther:
                 assert row.available_variation_data == []
             else:
                 assert row.available_variation_data == ['ssm']
-
 
     @pytest.mark.parametrize('path', [
                              'case_id',
@@ -66,4 +63,3 @@ class TestCaseCentricOther:
         Can be skipped with skip_id_depth_tests switch
         """
         case_centric_df.select(path)
-

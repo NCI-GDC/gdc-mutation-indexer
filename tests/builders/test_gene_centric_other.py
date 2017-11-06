@@ -28,7 +28,7 @@ class TestGeneCentricOther:
 
     @pytest.mark.parametrize('path', ModelMapper('gene_centric').get_paths())
     @pytest.mark.skipif(conf.skip_in_depth_tests,
-                        reason='we want to merge partial data fixes.'\
+                        reason='we want to merge partial data fixes.'
                         'This test is used for missing fields lookup.')
     def test_all_paths_gene(self, gene_centric_df, path):
         """
@@ -36,4 +36,3 @@ class TestGeneCentricOther:
         Can be skipped with skip_id_depth_tests switch
         """
         gene_centric_df.select(path)
-

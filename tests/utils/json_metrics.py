@@ -16,7 +16,7 @@ class BaseStats(object):
         # Number of unique mutaitons seen in the index
         # identified by unique combinations of chromosome, start_pos,
         # mutation_subtype, ref_allele and tumor_allele
-        self.NUniqMut   = 0
+        self.NUniqMut = 0
         # Number of consequences
         self.Nconseq = 0
 
@@ -51,16 +51,16 @@ class BaseStats(object):
     @staticmethod
     def get_mutation(ssm):
         chromosome = ssm['chromosome']
-        startpos   = ssm['start_position']
-        mutType    = ssm['mutation_subtype']
-        refallele  = ssm['reference_allele']
-        tumorall2  = ssm['tumor_allele']
+        startpos = ssm['start_position']
+        mutType = ssm['mutation_subtype']
+        refallele = ssm['reference_allele']
+        tumorall2 = ssm['tumor_allele']
 
         mutation = '_'.join(str(c) for c in [chromosome,
-                              startpos,
-                              refallele,
-                              tumorall2,
-                              mutType])
+                                             startpos,
+                                             refallele,
+                                             tumorall2,
+                                             mutType])
         return mutation
 
 
@@ -196,7 +196,7 @@ class CaseCentricStats(BaseStats):
         for h in self.data:
 
             if 'hits' in h:
-               h = h['hits']['hits'][0]
+                h = h['hits']['hits'][0]
 
             if '_source' in h:
                 h = h['_source']
@@ -214,39 +214,40 @@ class CaseCentricStats(BaseStats):
                 self.genes_per_case[case] = 0
                 self.mutations_per_case[case] = 0
 
-            if h['gene'] is not None:
-                for g in h['gene']:
-                    gene = g['gene_id']
-                    gene_case = project + '_' + case + '_' + gene
-
-                    self.gene_count.setdefault(gene, 0)
-                    self.gene_count[gene] += 1
-
-                    if gene_case not in self.mutations_per_gene:
-                        self.mutations_per_gene[gene_case] = 0
-                        self.genes_per_case[case] += 1
-
-                    for ssm in g['ssm']:
-                        self.mutations_per_case[case] += 1
-                        self.mutations_per_gene[gene_case] += 1
-
-                        mutation = self.get_mutation(ssm)
-
-                        if mutation not in self.uniqMutations:
-                            self.uniqMutations[mutation] = 1
-                        else:
-                            self.uniqMutations[mutation] += 1
-
-                        mutation_case = case + '_' + mutation
-                        for conseq in ssm['consequence']:
-                            if mutation_case not in self.consequences:
-                                self.consequences[mutation_case] = 1
-                            else:
-                                self.consequences[mutation_case] += 1
-            else:
+            if h['gene'] is None:
                 # There are "empty cases" in the data - cases with no mutations
                 # thus they don't have a gene also
                 self.NEmptyCases += 1
+                continue
+
+            for g in h['gene']:
+                gene = g['gene_id']
+                gene_case = project + '_' + case + '_' + gene
+
+                self.gene_count.setdefault(gene, 0)
+                self.gene_count[gene] += 1
+
+                if gene_case not in self.mutations_per_gene:
+                    self.mutations_per_gene[gene_case] = 0
+                    self.genes_per_case[case] += 1
+
+                for ssm in g['ssm']:
+                    self.mutations_per_case[case] += 1
+                    self.mutations_per_gene[gene_case] += 1
+
+                    mutation = self.get_mutation(ssm)
+
+                    if mutation not in self.uniqMutations:
+                        self.uniqMutations[mutation] = 1
+                    else:
+                        self.uniqMutations[mutation] += 1
+
+                    mutation_case = case + '_' + mutation
+                    for conseq in ssm['consequence']:
+                        if mutation_case not in self.consequences:
+                            self.consequences[mutation_case] = 1
+                        else:
+                            self.consequences[mutation_case] += 1
 
         self.Nprojects = len(self.projects)
         self.Ncases = len(self.cases)
@@ -263,7 +264,7 @@ class GeneCentricStats(BaseStats):
         for h in self.data:
 
             if 'hits' in h:
-               h = h['hits']['hits'][0]
+                h = h['hits']['hits'][0]
 
             if '_source' in h:
                 h = h['_source']

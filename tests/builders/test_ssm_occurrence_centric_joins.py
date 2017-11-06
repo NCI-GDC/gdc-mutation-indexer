@@ -127,4 +127,3 @@ class TestSSMOccurrenceCentricJoins:
         es_stats = get_stats(df)
 
         assert stats == es_stats
-

@@ -45,7 +45,7 @@ class ConsequenceBuilder(object):
         # empty, canonical_tracript_id, is_canonical,
         # do_not_us, consequence_type, aa_change
         # refs_seq_accession}
-        ssm_tran = self._build_all_effects_cols(maf_df)
+        ssm_tran = self.build_all_effects_cols(maf_df)
 
         ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
@@ -122,7 +122,7 @@ class ConsequenceBuilder(object):
         return df
 
     @staticmethod
-    def _build_all_effects_cols(maf_df):
+    def build_all_effects_cols(maf_df):
         """
         Extracts information about transcripts from the all_effects column
 
