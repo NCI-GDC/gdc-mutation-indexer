@@ -39,5 +39,3 @@ class TestSSMCentricOther:
         Can be skipped with skip_id_depth_tests switch
         """
         ssm_centric_df.select(path)
-
-

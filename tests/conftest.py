@@ -100,12 +100,14 @@ def sqlContext(es_client):
 
 
 @pytest.fixture(scope='session')
-def all_cases(sqlContext):
+def all_cases(sqlContext, maf_df):
     """
     Returns all case_ids expected to build, including "empty cases"
     The info is taken from aliquots in test maf headers
     """
-    return get_case_ids_from_headers(sqlContext, conf.maf_urls)
+    df = CaseBuilder(conf, sqlContext).load(maf_df)
+    cases = get_case_ids_from_headers(df, sqlContext, conf.maf_urls)
+    return [json.loads(c)['case_id'] for c in cases.toJSON().collect()]
 
 
 @pytest.fixture(scope='session')
@@ -119,7 +121,12 @@ def maf_df(sqlContext):
     Builds combined maf dataframe once. Reused throughout test suite
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    yield MAFBuilder(conf, sqlContext).build()
+    return MAFBuilder(conf, sqlContext).build()
+
+
+@pytest.fixture(scope='session')
+def case_df(sqlContext, maf_df):
+    return CaseBuilder(conf, sqlContext).build(maf_df)
 
 
 @pytest.fixture(scope='session')
@@ -129,7 +136,7 @@ def ssm_transcript_df(sqlContext, maf_df):
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
     log.info('\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n')
-    return ConsequenceBuilder(conf, sqlContext)._build_all_effects_cols(maf_df)
+    return ConsequenceBuilder(conf, sqlContext).build_all_effects_cols(maf_df)
 
 
 @pytest.fixture(scope='session')

@@ -48,12 +48,39 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     return label
 
 
-def get_case_ids_from_headers(sqlContext, maf_urls):
+def get_case_ids_from_headers(case_df, sqlContext, maf_urls):
     """
     Reads aliquots from headers of mafs and matches a list of corresponding case_ids
-    WARNING: performs a call to https://api.gdc.cancer.gov/cases/
+    Takes aliquot_id : case_id map from case_df
     """
     # Read unique aliquots from maf headers
+    unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
+
+    # Create a dataframe from aliquot set
+    aliquot_df = sqlContext.createDataFrame(
+        ((x,) for x in unique_aliquots), ['submitter_id']
+    )
+
+    # Get aliquot_id -> case_id map from case_df:
+    # ( case_df.samples.portions.analytes.aliquots.submitter_id )
+    aliquots_to_cases = (
+        case_df.select('case_id', explode('samples').alias('s'))
+               .select('case_id', explode('s.portions').alias('p'))
+               .select('case_id', explode('p.analytes').alias('a'))
+               .select('case_id', explode('a.aliquots').alias('a'))
+               .select('case_id', 'a.submitter_id')
+    )
+
+    # Match case_id's for aliquots
+    cases_to_keep = aliquot_df.join(aliquots_to_cases, on='submitter_id')
+
+    return cases_to_keep.select('case_id')
+
+
+def get_aliquots_from_headers(sqlContext, maf_urls):
+    """
+    Reads a set of unique aliquots from maf headers
+    """
     unique_aliquots = set()
     for url in maf_urls:
         header = read_maf_header(sqlContext, url, n_lines=5).collect()
@@ -63,27 +90,10 @@ def get_case_ids_from_headers(sqlContext, maf_urls):
         aliquots = header[-1][1].split(',')
         n_aliquots = int(header[-2][1])
 
-        assert len(aliquots) == n_aliquots
+        assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
         unique_aliquots.update(aliquots)
 
-    # Get case_id for each aliquot found in maf headers
-    n_aliquots = len(unique_aliquots)
-    query = {
-        "op": "in",
-        "content":{
-           "field": "samples.portions.analytes.aliquots.submitter_id",
-           "value": list(unique_aliquots)
-        }
-    }
-    cases = requests.get(
-        'https://api.gdc.cancer.gov/cases/?size={}&filters='
-        .format(n_aliquots + 1) + quote_plus(json.dumps(query))
-    ).json()
-
-    assert n_aliquots == cases['data']['pagination']['count']
-    case_ids = [c['case_id'] for c in cases['data']['hits']]
-
-    return case_ids
+    return unique_aliquots
 
 
 def read_maf_header(sqlContext, url, n_lines=5):

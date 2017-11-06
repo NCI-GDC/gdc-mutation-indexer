@@ -1,5 +1,4 @@
 import pytest
-import itertools
 from pyspark.sql.types import BooleanType
 from pyspark.sql.functions import UserDefinedFunction, col
 
@@ -10,7 +9,6 @@ from exports.builders.df_builders import (
     get_gene_df,
     get_ssm_df,
     get_transcript_df,
-    get_single_df
 )
 from tests_config import TestConfig
 conf = TestConfig()
@@ -45,11 +43,8 @@ class TestDFBuilders:
             col(join_by) == item[join_by]).first().asDict(recursive=True)
         assert cls.is_sub(item, maf.items(), mapping)
 
-    @pytest.mark.parametrize('df_type,index_type',
-                             [pair for pair in itertools.product(
-                                  ['transcript', 'ssm', 'gene', 'annotation'],
-                                  conf.indices.keys()
-                              )])
+    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
+    @pytest.mark.parametrize('index_type', conf.indices.keys())
     def test_simple_df_build(self, maf_df, index_type, df_type):
         """
         Attempts to build each dataframe from df_builders for each index
@@ -74,11 +69,8 @@ class TestDFBuilders:
             gene_df = get_gene_df(new_df, index_name)
             self.assert_from_maf(new_df, gene_df.first(), 'gene_id')
 
-
-    @pytest.mark.parametrize('df_type,index_type',
-                             [pair for pair in itertools.product(
-                                  ['transcript', 'ssm', 'gene', 'annotation'],
-                                  conf.indices.keys())])
+    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
+    @pytest.mark.parametrize('index_type', conf.indices.keys())
     def test_df_drop_fields(self, maf_df, df_type, index_type):
         df = globals()['get_{}_df'.format(df_type)](
             maf_df, index_type, drop_fields=['ssm_id', 'mutation_subtype']
@@ -86,10 +78,8 @@ class TestDFBuilders:
         assert 'ssm_id' not in df.columns
         assert 'mutation_subtype' not in df.columns
 
-    @pytest.mark.parametrize('df_type,index_type',
-                             [pair for pair in itertools.product(
-                                  ['transcript', 'ssm', 'gene', 'annotation'],
-                                  conf.indices.keys())])
+    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
+    @pytest.mark.parametrize('index_type', conf.indices.keys())
     def test_unique_fields(self, maf_df, df_type, index_type):
         unique_fields = {
             'transcript': ['consequence_type'],
@@ -106,10 +96,8 @@ class TestDFBuilders:
         assert df_unique.count() == (df.select(unique_fields[df_type])
                                        .distinct().count())
 
-    @pytest.mark.parametrize('df_type,index_type',
-                             [pair for pair in itertools.product(
-                                  ['transcript', 'ssm', 'gene', 'annotation'],
-                                  conf.indices.keys())])
+    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
+    @pytest.mark.parametrize('index_type', conf.indices.keys())
     def test_df_add_fields(self, maf_df, df_type, index_type):
         df = globals()['get_{}_df'.format(df_type)](maf_df, index_type,
                                                     add_fields=['case_id'])
@@ -122,7 +110,7 @@ class TestDFBuilders:
         ann_mapping = select_mapping(index_name, 'annotation')
 
         builder = ConsequenceBuilder(conf, sqlContext)
-        exploded = builder._build_all_effects_cols(maf_df)
+        exploded = builder.build_all_effects_cols(maf_df)
 
         self.assert_from_maf(exploded, ann_df.first(), 'transcript_id',
                              mapping=ann_mapping['properties'])
@@ -136,7 +124,7 @@ class TestDFBuilders:
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_transcript_df(self, sqlContext, maf_df, index_name):
         builder = ConsequenceBuilder(conf, sqlContext)
-        exploded = builder._build_all_effects_cols(maf_df)
+        exploded = builder.build_all_effects_cols(maf_df)
         transcript = get_transcript_df(exploded, index_name)
 
         transcript_mapping = select_mapping(index_name, 'transcript')

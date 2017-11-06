@@ -1,13 +1,10 @@
-import os
 import yaml
 import json
 import logging
 import requests
-from urllib import quote_plus
 
-from pyspark.sql import Row
 from pyspark.sql.types import StringType, IntegerType, ArrayType
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct, when
+from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 
 from exports.builders.utils import uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder

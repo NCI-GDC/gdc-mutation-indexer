@@ -2,7 +2,10 @@ import pytest
 import json
 
 from pyspark.sql.functions import size, explode, lit
-from exports.builders.utils import get_case_ids_from_headers
+from exports.builders.utils import (
+    get_case_ids_from_headers,
+    get_aliquots_from_headers,
+)
 from exports.builders import (
     CaseBuilder,
     ObservationBuilder,
@@ -10,7 +13,7 @@ from exports.builders import (
     GeneCentricBuilder,
     CaseCentricBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder
+    SSMOccurrenceCentricBuilder,
 )
 from tests_config import TestConfig
 
@@ -125,7 +128,7 @@ class TestConsequenceBuilder:
         effects = ['consequence_type', 'aa_change',
                    'transcript_id', 'ref_seq_accession', 'polyphen_impact',
                    'polyphen_score', 'sift_impact', 'sift_score']
-        ssm_trans = builder._build_all_effects_cols(maf_df)
+        ssm_trans = builder.build_all_effects_cols(maf_df)
 
         for e in effects:
             assert e in ssm_trans.columns
@@ -138,19 +141,15 @@ class TestConsequenceBuilder:
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
-
-    @pytest.fixture(scope='class')
-    def case_df(self, sqlContext, maf_df):
-        yield CaseBuilder(conf, sqlContext).build(maf_df)
 
     def test_case_build(self, sqlContext, es_client, case_df):
         df = case_df
         assert (df.count() == es_client.search(conf.graph_index,
-                                        conf.graph_document,
-                                        size=0)['hits']['total'])
+                                               conf.graph_document,
+                                               size=0)['hits']['total'])
 
     def test_case_columns(self, sqlContext, case_df):
         """ Test that the right properties were loaded from case docs """
@@ -159,12 +158,7 @@ class TestCaseBuilder:
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
 
-    def test_correct_case_set(self, sqlContext, case_df):
-        """
-        Tests that only cases in maf headers were loaded
-        """
-        expected_cases = get_case_ids_from_headers(sqlContext, conf.maf_urls)
-        cases = [r.case_id for r in case_df.select('case_id').collect()]
-
-        assert set(expected_cases) == set(cases)
-
+    def test_number_of_cases(self, sqlContext, case_df):
+        """ Checks if case_df has correct number of lines """
+        n_expected = len(get_aliquots_from_headers(sqlContext, conf.maf_urls))
+        assert case_df.count() == n_expected
