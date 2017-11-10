@@ -15,23 +15,26 @@ addons:
 cache: pip
 
 env:
-  - SPARK_VERSION="2.0.1"
+  global:
+    - SPARK_VERSION="2.0.1"
+    - ES_VERSION="5.1.1"
+    - BOTO_CONFIG=/dev/null
 
 before_install:
-  - wget http://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz;
-  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-5.1.1.zip
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.0.0.deb && sudo dpkg -i elasticsearch-5.0.0.deb && sudo service elasticsearch start
+  - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
+  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb && sudo service elasticsearch start
 
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - python setup.py install 
   - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - unzip elasticsearch-hadoop-5.1.1.zip
+  - unzip elasticsearch-hadoop-${ES_VERSION}.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
   - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
   - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
-  - cp `pwd`/elasticsearch-hadoop-5.1.1/dist/elasticsearch-spark-20_2.11-5.1.1.jar $SPARK_HOME/jars
+  - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 
 script:

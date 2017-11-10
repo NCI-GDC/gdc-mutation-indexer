@@ -1,9 +1,14 @@
 import re
+import requests
+import json
 import uuid
 import logging
 from functools import partial
-from pyspark.sql.functions import udf, struct, col, explode, array, when
+from pyspark.sql.functions import (
+    udf, struct, col, explode, array, when, regexp_extract
+)
 from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
+from urllib import quote_plus
 
 from exports.mappers.models_mapper import ModelMapper
 
@@ -35,13 +40,69 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
         label = 'chr{}:g.{}del{}'.format(chromosome,
                                          start_pos, ref_allele)
     elif variant_type == 'INS':
-
         label = 'chr{}:g.{}_{}ins{}'.format(chromosome,
                                             start_pos, end_pos, tumor_allele)
     else:
         label = chromosome
 
     return label
+
+
+def get_case_ids_from_headers(case_df, sqlContext, maf_urls):
+    """
+    Reads aliquots from headers of mafs and matches a list of corresponding case_ids
+    Takes aliquot_id : case_id map from case_df
+    """
+    # Read unique aliquots from maf headers
+    unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
+
+    # Create a dataframe from aliquot set
+    aliquot_df = sqlContext.createDataFrame(
+        ((x,) for x in unique_aliquots), ['submitter_id']
+    )
+
+    # Get aliquot_id -> case_id map from case_df:
+    # ( case_df.samples.portions.analytes.aliquots.submitter_id )
+    aliquots_to_cases = (
+        case_df.select('case_id', explode('samples').alias('s'))
+               .select('case_id', explode('s.portions').alias('p'))
+               .select('case_id', explode('p.analytes').alias('a'))
+               .select('case_id', explode('a.aliquots').alias('a'))
+               .select('case_id', 'a.submitter_id')
+    )
+
+    # Match case_id's for aliquots
+    cases_to_keep = aliquot_df.join(aliquots_to_cases, on='submitter_id')
+
+    return cases_to_keep.select('case_id')
+
+
+def get_aliquots_from_headers(sqlContext, maf_urls):
+    """
+    Reads a set of unique aliquots from maf headers
+    """
+    unique_aliquots = set()
+    for url in maf_urls:
+        header = read_maf_header(sqlContext, url, n_lines=5).collect()
+        header = map(lambda r: r.asDict().values()[0].split(), header)
+        assert header[-2][0] == '#n.analyzed.samples'
+        assert header[-1][0] == '#tumor.aliquots.submitter_id'
+        aliquots = header[-1][1].split(',')
+        n_aliquots = int(header[-2][1])
+
+        assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
+        unique_aliquots.update(aliquots)
+
+    return unique_aliquots
+
+
+def read_maf_header(sqlContext, url, n_lines=5):
+    """
+    Reads only maf header
+    """
+    return sqlContext.read.format('com.databricks.spark.csv')\
+                          .options(delimiter='\t')\
+                          .load(url).limit(n_lines)
 
 
 def ssm_label_col(chromosome,
@@ -100,6 +161,26 @@ def extract_transcript_id(val):
         else:
             raise Exception('Unexpected number of transcripts')
     return transcript_ids
+
+
+def extract_impact_or_score(df, column, to_extract, res_colname):
+    """
+    Extracts impact or score from fields like:
+    'possibly_damaging(0.614)'
+    
+    impact = 'possibly_damaging'
+    score = '0.614'
+    """
+    if to_extract == 'impact':
+        regex_group = 1
+    elif to_extract == 'score':
+        regex_group = 2
+    else:
+        raise Exception('Unknown extract mode: {}'.format(to_extract))
+
+    return df.withColumn(res_colname,
+                         regexp_extract(column, '(\w)\((\d+.?\d+)\)',
+                                        regex_group))
 
 
 def transcript_id_udf():
@@ -240,9 +321,10 @@ def extract_aas_position(df):
 
     df = df.withColumn('aa_start', udf(extract,IntegerType())(col('aa_change')))
     df = df.withColumn('aa_end', udf(lambda aa_change: extract(aa_change, False),
-        IntegerType())(col('aa_change')))
+                                     IntegerType())(col('aa_change')))
 
     return df
+
 
 def sanitize_aa_change(df):
     """

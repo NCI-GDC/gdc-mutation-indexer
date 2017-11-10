@@ -10,14 +10,12 @@ class TestConfig(BaseConfig):
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
-    output_dir = os.path.join(data_dir, 'output')
     maf_dir = os.path.join(input_dir, 'maf')
 
     # Initialize test directory tree if incomplete
-    for directory in [log_dir, input_dir, output_dir, maf_dir]:
+    for directory in [log_dir, input_dir, maf_dir]:
         if not os.path.exists(directory):
             os.makedirs(directory)
-
 
     spark_master = 'local[1]'
 
@@ -27,7 +25,7 @@ class TestConfig(BaseConfig):
     graph_index = 'test_graph_index__'
 
     # Whether or not to rebuild graph index after every test
-    graph_force_build = True
+    graph_force_build = False
 
     # Whether or not to print document mismatches to stdout when testing
     print_data_errors = False
@@ -55,14 +53,13 @@ class TestConfig(BaseConfig):
     repartition = 10
 
     # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.14.json.gz')
+    cases_file = os.path.join(input_dir, 'cases.json.gz')
 
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
-    gene_model_file = os.path.join(input_dir, 'genes.22.json.gz')
+    gene_model_file = os.path.join(input_dir, 'genes.json.gz')
 
-    keep_indices = True
     maf_keep = False
     maf_use_existing = False
 

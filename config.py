@@ -6,7 +6,6 @@ from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
 class BaseConfig(object):
 
-
     # The Spark application name
     app_name = 'GDC_Mutation_Export'
 
@@ -21,12 +20,11 @@ class BaseConfig(object):
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
 
-
     # Keywords that should appear in the S3 key for it to be picked up
     # Note that ALL of these keywords have to be present for the MAF to be used
     maf_keywords = os.getenv('MAF_KEYWORDS')
     maf_keywords = [keyword.strip() for keyword in maf_keywords.split(',')] if maf_keywords else []
-    #maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
+    # maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
 
     # Pipelines to use. If an empty list is given, all 4 pipelies will be used
     # somaticsniper: 2227614  2.6GB
@@ -35,13 +33,12 @@ class BaseConfig(object):
     # mutect: 3416739  3.9GB
     pipelines = os.getenv('PIPELINES')
     pipelines = [pipeline.strip() for pipeline in pipelines.split(',')] if pipelines else []
-    #pipelines = ['somaticsniper', 'mutect']
-
+    # pipelines = ['somaticsniper', 'mutect']
 
     # Projects to use. If an empty list is given, all 33 projects will be used
     projects = os.getenv('PROJECTS')
     projects = [project.strip() for project in projects.split(',')] if projects else []
-    #projects = ['BLCA', 'BRCA']
+    # projects = ['BLCA', 'BRCA']
 
     # Number of projects to use. Set to 0 to use all projects
     # The projects are taken in alphabetic order
@@ -93,8 +90,6 @@ class BaseConfig(object):
     graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph')
     graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
 
-
-
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
@@ -102,7 +97,6 @@ class BaseConfig(object):
     gene_model_file = 's3a://test/genes.hg38.v2.json'
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
-
 
     # The location of the combined maf file
     maf_path = 's3a://test/uat_mafs.csv'
@@ -132,15 +126,13 @@ class BaseConfig(object):
         'case_centric': True,
         'gene_centric': True,
         'ssm_centric': True,
-        'ssm_occurrence_centric':True
+        'ssm_occurrence_centric': True
     }
-
 
     # Case load settings
     case_exclude_fields = ','.join(['project.disease_type',
                                     'project.primary_site',
                                     'case_autocomplete',
-                                    'samples',
                                     'annotations',
                                     'days_to_index',
                                     'diagnoses.treatments',
@@ -149,12 +141,9 @@ class BaseConfig(object):
                                     'files',
                                     '*_ids'])
 
-
     def __init__(self):
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
-
-
 
     def get_index_prefixes(self):
         '''
@@ -179,7 +168,7 @@ class BaseConfig(object):
 
             for index_name in self.index_names.values():
                 if index_name is not None:
-                    versions = (versions + [int(v.split('_')[1].replace('r',''))
+                    versions = (versions + [int(v.split('_')[1].replace('r', ''))
                                 for v in indices if v.endswith(index_name)
                                             and v[:4] == 'gdc_'])
 
@@ -212,7 +201,7 @@ class BaseConfig(object):
         for obj in bucket.list():
             skip = False
             for keyword in self.maf_keywords:
-                if not keyword in obj.key:
+                if keyword not in obj.key:
                     skip = True
                     break
             if not skip:
@@ -223,4 +212,3 @@ class BaseConfig(object):
                             break
 
         return maf_urls
-

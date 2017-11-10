@@ -16,7 +16,7 @@ class BaseStats(object):
         # Number of unique mutaitons seen in the index
         # identified by unique combinations of chromosome, start_pos,
         # mutation_subtype, ref_allele and tumor_allele
-        self.NUniqMut   = 0
+        self.NUniqMut = 0
         # Number of consequences
         self.Nconseq = 0
 
@@ -51,16 +51,16 @@ class BaseStats(object):
     @staticmethod
     def get_mutation(ssm):
         chromosome = ssm['chromosome']
-        startpos   = ssm['start_position']
-        mutType    = ssm['mutation_subtype']
-        refallele  = ssm['reference_allele']
-        tumorall2  = ssm['tumor_allele']
+        startpos = ssm['start_position']
+        mutType = ssm['mutation_subtype']
+        refallele = ssm['reference_allele']
+        tumorall2 = ssm['tumor_allele']
 
         mutation = '_'.join(str(c) for c in [chromosome,
-                              startpos,
-                              refallele,
-                              tumorall2,
-                              mutType])
+                                             startpos,
+                                             refallele,
+                                             tumorall2,
+                                             mutType])
         return mutation
 
 
@@ -127,7 +127,7 @@ class SSMCentricStats(BaseStats):
         self.Nconseq = len(self.consequences)
 
 
-class SSMOcurrenceCentricStats(BaseStats):
+class SSMOccurrenceCentricStats(BaseStats):
 
     def __init__(self, json_file):
         super(SSMOcurrenceCentricStats, self).__init__(json_file)
@@ -191,11 +191,12 @@ class CaseCentricStats(BaseStats):
 
     def __init__(self, json_file):
         super(CaseCentricStats, self).__init__(json_file)
+        self.NEmptyCases = 0
 
         for h in self.data:
 
             if 'hits' in h:
-               h = h['hits']['hits'][0]
+                h = h['hits']['hits'][0]
 
             if '_source' in h:
                 h = h['_source']
@@ -212,6 +213,12 @@ class CaseCentricStats(BaseStats):
                 self.cases_per_project[project] += 1
                 self.genes_per_case[case] = 0
                 self.mutations_per_case[case] = 0
+
+            if h['gene'] is None:
+                # There are "empty cases" in the data - cases with no mutations
+                # thus they don't have a gene also
+                self.NEmptyCases += 1
+                continue
 
             for g in h['gene']:
                 gene = g['gene_id']
@@ -257,7 +264,7 @@ class GeneCentricStats(BaseStats):
         for h in self.data:
 
             if 'hits' in h:
-               h = h['hits']['hits'][0]
+                h = h['hits']['hits'][0]
 
             if '_source' in h:
                 h = h['_source']

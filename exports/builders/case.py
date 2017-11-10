@@ -1,3 +1,6 @@
+from pyspark.sql import Row
+
+from utils import select_mapping, get_case_ids_from_headers
 import logging
 logging.basicConfig()
 
@@ -11,12 +14,24 @@ class CaseBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
+        self.urls = config.maf_urls
 
     def build(self, maf_df):
         """
         Builds Case dataframe
         """
         df = self.load(maf_df)
+
+        # Keep only cases that have been tested (aliquots in maf headers)
+        cases_to_keep = get_case_ids_from_headers(df, self.sqlContext, self.urls)
+
+        df = df.join(cases_to_keep, on='case_id', how='inner')
+
+        # Select only columns that are in case mapping:
+        case_mapping = select_mapping('case_centric', 'case')['properties']
+        columns_to_keep = [c for c in df.columns if c in case_mapping.keys()]
+        df = df.select(*columns_to_keep)
+
         return df
 
     def load(self, maf_df):
@@ -50,3 +65,4 @@ class CaseBuilder(object):
             self.logger.info('Caching repartitioned case dataframe')
             df.cache().count()
         return df
+

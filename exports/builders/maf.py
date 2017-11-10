@@ -1,9 +1,7 @@
-import os
 import yaml
-import requests
 import json
 import logging
-logging.basicConfig()
+import requests
 
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
@@ -12,6 +10,8 @@ from exports.builders.utils import uuid5_col, ssm_label_col
 from exports.builders.gene_model import GeneModelBuilder
 
 from pkg_resources import resource_filename
+
+logging.basicConfig()
 
 
 class MAFBuilder(object):
@@ -62,6 +62,7 @@ class MAFBuilder(object):
         df = self.extract_cds_position(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+        
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
@@ -272,9 +273,9 @@ class MAFBuilder(object):
         'ssm_occurrence' + ssm_id + case_id
         """
         df = df.withColumn('occurrence_id',
-                            uuid5_col(lit('ssm_occurrence'),
-                                      col('ssm_id'),
-                                      col('case_id')))
+                           uuid5_col(lit('ssm_occurrence'),
+                                     col('ssm_id'),
+                                     col('case_id')))
         return df
 
     def add_observation_id(self, df):
