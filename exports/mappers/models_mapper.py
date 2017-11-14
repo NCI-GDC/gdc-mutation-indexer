@@ -28,7 +28,10 @@ class ModelMapper(object):
         # Mappings keyed on the type
         self.type_mappings = {}
 
-        filename = '{}.mapping.yaml'.format(index)
+        if index == 'gdc_from_graph':
+            filename = 'case.mapping.yaml'
+        else:
+            filename = '{}.mapping.yaml'.format(index)
 
         # Load the mapping
         resource = self.get_resource_string(filename)

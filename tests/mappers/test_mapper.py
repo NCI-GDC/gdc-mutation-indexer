@@ -189,3 +189,4 @@ def test_get_paths():
     paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
 
     assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']
+ 
