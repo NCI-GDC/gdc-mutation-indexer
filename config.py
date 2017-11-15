@@ -3,7 +3,7 @@ import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.models_mapper import ModelsMapper
 
 
 class BaseConfig(object):
@@ -147,9 +147,10 @@ class BaseConfig(object):
         ]
 
         # Get all samples fields
-        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['gdc_from_graph']['properties']['samples']
-        samples_fields, _ = ModelMapper.get_dict_paths(samples_mapping, path='samples')
-        
+
+        samples_mapping = ModelsMapper('gdc_from_graph').type_mappings['gdc_from_graph']['case']['properties']['samples']
+        samples_fields, _ = ModelsMapper.get_dict_paths(samples_mapping, path='samples')
+
         # Clean up resulting fields
         samples_fields = [f.replace('.properties', '').split('.type')[0]
                           for f in samples_fields]

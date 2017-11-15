@@ -13,6 +13,10 @@ setup(
     packages=PACKAGES,
     py_modules=["config"],
     include_package_data=True,
-    options = dict(egg_info=dict(tag_build=('_rev_' + GIT_HEAD_REV))),
+    options=dict(egg_info=dict(tag_build=('_rev_' + GIT_HEAD_REV))),
+    install_requires=['gdcmodels'],
+    dependency_links=[
+        "git+ssh://git@github.com/NCI-GDC/gdc-models.git@0.1.3#egg=gdcmodels"
+    ]
 )
 

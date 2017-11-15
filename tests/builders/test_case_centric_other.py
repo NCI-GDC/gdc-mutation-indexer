@@ -1,7 +1,6 @@
 import pytest
-import time
 
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.models_mapper import ModelsMapper
 from tests_config import TestConfig
 
 conf = TestConfig()
@@ -53,7 +52,7 @@ class TestCaseCentricOther:
         """
         case_centric_df.select(path)
 
-    @pytest.mark.parametrize('path', ModelMapper('case_centric').get_paths())
+    @pytest.mark.parametrize('path', ModelsMapper('case_centric').get_paths())
     @pytest.mark.skipif(conf.skip_in_depth_tests,
                         reason='we want to merge partial data fixes.'\
                         'This test is used for missing fields lookup.')

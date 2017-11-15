@@ -1,4 +1,3 @@
-import gzip
 import time
 import json
 import pytest
@@ -12,7 +11,7 @@ from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
 from exports.builders.utils import get_case_ids_from_headers
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.models_mapper import ModelsMapper
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
@@ -40,7 +39,7 @@ def setup_test_index():
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    case_mapping = ModelMapper('case').create_index_settings()
+    case_mapping = ModelsMapper('gdc_from_graph').create_index_settings()
 
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:
