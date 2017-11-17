@@ -61,8 +61,9 @@ def setup_test_index():
         for _file in case['_source']['files']:
             _file.pop('cases', None)
 
-    log.info('Bulk loading case docs to the ES...')
-    bulk(es, case_docs['docs'], ignore=409)
+    log.info('Loading case docs to the ES...')
+    for doc in case_docs['docs']:
+        es.index(index=conf.graph_index, doc_type='case', id=doc['_id'], body=doc['_source'])
 
     log.info('loaded {} case docs'.format(len(case_docs['docs'])))
 

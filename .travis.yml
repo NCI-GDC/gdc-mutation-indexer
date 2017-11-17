@@ -23,7 +23,8 @@ env:
 before_install:
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
   - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb && sudo service elasticsearch start
+
 
 install:
   - pip install -r requirements.txt
@@ -36,8 +37,6 @@ install:
   - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
   - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-  - sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
-  - sudo service elasticsearch start
 
 script:
   - java -version

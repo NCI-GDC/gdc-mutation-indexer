@@ -50,7 +50,7 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
                                                          'common_settings.yml'))
     common_settings = yaml.safe_load(cs_file)
 
-    mapping_settings = gdcmodels.get_es_models()['{}_centric'.format(index_name)]['_settings']
+    mapping_settings = gdcmodels.get_es_models()[index_name]['_settings']
     # Check that mapping_settings overwrite common_settings
     for key, value in mappings['settings'].items():
         if key in mapping_settings:
@@ -122,7 +122,8 @@ def test_gdc_from_graph_mapping():
     ('case', 'properties.gene.properties.ssm.properties.consequence.properties.transcript.properties.annotation'),
 ])
 def test_mapping_contains(mappings, doc_type, path):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 1
 
 
@@ -130,7 +131,8 @@ def test_mapping_contains(mappings, doc_type, path):
     ('case', 'nested'),
 ])
 def test_mapping_not_in(mappings, doc_type, path):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 0
 
 
@@ -152,7 +154,8 @@ def test_mapping_not_in(mappings, doc_type, path):
     ('case', 'properties.gene.properties.ssm.properties.observation.type', 'nested'),
 ])
 def test_mapping_path_equals(mappings, doc_type, path, value):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
 
@@ -207,7 +210,7 @@ def test_get_paths():
     }
 
     mapper = ModelsMapper('case_centric')
-    mapper.type_mappings['case_centric']['properties'] = test_mapping
+    mapper.type_mappings = {'case_centric': test_mapping}
 
     stop_words = ['exclude', 'skip']
     paths_to_skip = ['path.to.my_bad_field', 'skip.this']

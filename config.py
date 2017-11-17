@@ -145,27 +145,28 @@ class BaseConfig(object):
             'files',
             '*_ids'
         ]
+        return exclude_fields
 
+    def get_samples_exclude_fields():
         # Get all samples fields
-
         samples_mapping = ModelsMapper('gdc_from_graph').type_mappings['gdc_from_graph']['case']['properties']['samples']
-        samples_fields, _ = ModelsMapper.get_dict_paths(samples_mapping, path='samples')
+        exclude_fields, _ = ModelsMapper.get_dict_paths(samples_mapping, path='samples')
 
         # Clean up resulting fields
-        samples_fields = [f.replace('.properties', '').split('.type')[0]
-                          for f in samples_fields]
+        exclude_fields = [f.replace('.properties', '').split('.type.')[0]
+                          for f in exclude_fields]
 
         # Do not exclude the field that we need:
-        samples_fields.remove('samples.portions.analytes.aliquots.submitter_id')
-        samples_fields.remove('samples.portions.analytes.aliquots')
-        samples_fields.remove('samples.portions.analytes')
-        samples_fields.remove('samples.portions')
-        samples_fields.remove('samples')
-        exclude_fields.extend(samples_fields)
+        exclude_fields.remove('samples.portions.analytes.aliquots.submitter_id')
+        exclude_fields.remove('samples.portions.analytes.aliquots')
+        exclude_fields.remove('samples.portions.analytes')
+        exclude_fields.remove('samples.portions')
+        exclude_fields.remove('samples')
 
-        return ','.join(exclude_fields)
+        return exclude_fields
 
     case_exclude_fields = get_case_exclude_fields()
+    samples_exclude_fields = get_samples_exclude_fields()
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
