@@ -1,16 +1,13 @@
 import re
-import requests
-import json
 import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    udf, struct, col, explode, array, when, regexp_extract
+    udf, struct, col, explode, when, regexp_extract
 )
-from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
-from urllib import quote_plus
+from pyspark.sql.types import StringType, ArrayType, IntegerType
 
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.models_mapper import ModelsMapper
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -223,7 +220,7 @@ def access_json_path(json_dict, step_list):
 
 
 def select_mapping(index_name, mapping_name):
-    mapper = ModelMapper(index_name)
+    mapper = ModelsMapper(index_name)
 
     paths_map = mapper.paths_map
     exclude_map = mapper.exclude_map
@@ -231,7 +228,7 @@ def select_mapping(index_name, mapping_name):
     steps = paths_map[mapping_name][index_name]
     exclude_fields = exclude_map[mapping_name][index_name]
 
-    mapping = access_json_path(dict(mapper.type_mappings), steps)
+    mapping = access_json_path(dict(mapper.type_mappings[index_name]), steps)
 
     mapping['properties'] = {k: v for k, v in mapping['properties'].items()
                              if k not in exclude_fields}

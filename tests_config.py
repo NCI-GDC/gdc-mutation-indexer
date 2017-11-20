@@ -25,7 +25,7 @@ class TestConfig(BaseConfig):
     graph_index = 'test_graph_index__'
 
     # Whether or not to rebuild graph index after every test
-    graph_force_build = False
+    graph_force_build = True
 
     # Whether or not to print document mismatches to stdout when testing
     print_data_errors = False

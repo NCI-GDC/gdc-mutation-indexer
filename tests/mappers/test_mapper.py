@@ -4,31 +4,32 @@ import yaml
 import os
 from jsonpath_rw import parse
 
+import gdcmodels
 from tests_config import TestConfig
-from exports.mappers import ModelMapper
+from exports.mappers import ModelsMapper
 
 conf = TestConfig()
 
 
 @pytest.fixture(scope="session")
 def mappers():
-    return {kind: ModelMapper('{}_centric'.format(kind))
-            for kind in ['case', 'gene', 'ssm', 'ssm_occurrence']}
+    return {index_name: ModelsMapper(index_name)
+            for index_name in conf.index_names}
 
 
 @pytest.fixture(scope="session")
 def mappings(mappers):
-    return {kind: mapper.type_mappings['{}_centric'.format(kind)]
-            for kind, mapper in mappers.items()}
+    return {index_name: mapper.type_mappings[index_name]
+            for index_name, mapper in mappers.items()}
 
 
 @pytest.fixture(scope="session")
 def mappings_with_settings(mappers):
-    return {kind: mapper.create_index_settings()
-            for kind, mapper in mappers.items()}
+    return {index_name: mapper.create_index_settings()
+            for index_name, mapper in mappers.items()}
 
 
-@pytest.mark.parametrize('index_name', ['case', 'gene', 'ssm', 'ssm_occurrence'])
+@pytest.mark.parametrize('index_name', conf.index_names)
 def test_mapping_settings(mappers, mappings_with_settings, index_name):
     mappings = mappings_with_settings[index_name]
 
@@ -43,22 +44,47 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
 
     assert 'analysis' in mappings['settings']
 
-    mapper = mappers[index_name]
-
     # Load common settings file:
     cs_file = pkg_resources.resource_string('exports',
                                             os.path.join('schemas',
                                                          'common_settings.yml'))
     common_settings = yaml.safe_load(cs_file)
 
-    mapping_settings = yaml.safe_load(mapper.get_resource_string('settings.yaml'))
-
+    mapping_settings = gdcmodels.get_es_models()[index_name]['_settings']
     # Check that mapping_settings overwrite common_settings
     for key, value in mappings['settings'].items():
         if key in mapping_settings:
             assert value == mapping_settings[key]
         else:
             assert value == common_settings['settings'][key]
+
+
+def test_mapping_structure(mappings, mappings_with_settings):
+
+    for index, mapping in mappings.items():
+        for key in ['_all', '_settings', '_source', 'dynamic', index]:
+            assert key in mapping
+
+        for key in ['_all', 'properties']:
+            assert key in mapping[index]
+
+    for index, mapping in mappings_with_settings.items():
+        for key in ['mappings', 'settings']:
+            assert key in mapping
+
+        assert index in mapping['mappings']
+
+        for key in ['_all', '_settings', '_source', 'dynamic', index]:
+            assert key in mapping['mappings'][index] 
+
+        assert 'properties' in mapping['mappings'][index][index]
+
+
+def test_gdc_from_graph_mapping():
+    mapper = ModelsMapper('gdc_from_graph')
+
+    for doc_type in ['case', 'file', 'project', 'annotation']:
+        assert doc_type in mapper.type_mappings['gdc_from_graph']
 
 
 @pytest.mark.parametrize('doc_type,path', [
@@ -96,7 +122,8 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
     ('case', 'properties.gene.properties.ssm.properties.consequence.properties.transcript.properties.annotation'),
 ])
 def test_mapping_contains(mappings, doc_type, path):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 1
 
 
@@ -104,7 +131,8 @@ def test_mapping_contains(mappings, doc_type, path):
     ('case', 'nested'),
 ])
 def test_mapping_not_in(mappings, doc_type, path):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 0
 
 
@@ -126,7 +154,8 @@ def test_mapping_not_in(mappings, doc_type, path):
     ('case', 'properties.gene.properties.ssm.properties.observation.type', 'nested'),
 ])
 def test_mapping_path_equals(mappings, doc_type, path, value):
-    results = parse(path).find(mappings[doc_type])
+    doc_type = '{}_centric'.format(doc_type)
+    results = parse(path).find(mappings[doc_type][doc_type])
     assert len([r.value for r in results]) == 1
     assert results[0].value == value
 
@@ -146,7 +175,7 @@ def test_get_dict_paths():
 
     expected_output = ['root.a.b.c', 'root.a.j.k', 'root.d.f.g.h', 'root.d.l.m',
                        'root.d.n.o', 'root.d.n.p', 'root.d.n.q']
-    paths, path = ModelMapper.get_dict_paths(test_dict)
+    paths, path = ModelsMapper.get_dict_paths(test_dict)
 
     assert len(paths) == len(set(paths))
     assert set(paths) == set(expected_output)
@@ -180,8 +209,8 @@ def test_get_paths():
         }
     }
 
-    mapper = ModelMapper('case_centric')
-    mapper.type_mappings['case_centric']['properties'] = test_mapping
+    mapper = ModelsMapper('case_centric')
+    mapper.type_mappings = {'case_centric': test_mapping}
 
     stop_words = ['exclude', 'skip']
     paths_to_skip = ['path.to.my_bad_field', 'skip.this']
@@ -189,3 +218,4 @@ def test_get_paths():
     paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
 
     assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']
+ 

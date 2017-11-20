@@ -40,17 +40,27 @@ class CaseBuilder(object):
         """
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
-        df = self.sqlContext.read.format("es")\
+        df = (
+            self.sqlContext.read.format("es")
             .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
-                                               self.config.source_es_port))\
-            .option('es.net.http.auth.user', self.config.source_es_user)\
-            .option('es.net.http.auth.pass', self.config.source_es_pass)\
-            .option('es.nodes.wan.only', 'true')\
-            .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.read.field.exclude', self.config.case_exclude_fields)\
-            .option('es.resource.read', source)\
+                                               self.config.source_es_port))
+            .option('es.net.http.auth.user', self.config.source_es_user)
+            .option('es.net.http.auth.pass', self.config.source_es_pass)
+            .option('es.nodes.wan.only', 'true')
+            .option('es.nodes.resolve.hostname', 'false')
+            .option('es.read.field.exclude', ','.join(self.config.case_exclude_fields))
+            .option('es.resource.read', source)
             .load(source)
+        )
 
+        self.logger.info('Case dataframe loaded ({} rows)'.format(df.count()))
+
+        # from pprint import pprint
+        # f = sorted(self.config.samples_exclude_fields)
+        # for field in self.config.samples_exclude_fields:
+        #     df = df.drop(field)
+        # pprint(f)
+        # import pdb;pdb.set_trace()
         # Add columns from maf_df
         maf_columns = ['available_variation_data']
         maf_data = (maf_df.select('case_id', *maf_columns)

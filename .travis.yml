@@ -25,6 +25,7 @@ before_install:
   - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb && sudo service elasticsearch start
 
+
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
@@ -40,4 +41,5 @@ install:
 script:
   - java -version
   - curl http://localhost:9200/
+  - curl http://localhost:9200/_cat/indices
   - "py.test tests -vvv"

@@ -2,8 +2,10 @@ import os
 import yaml
 import pkg_resources
 
+import gdcmodels
 
-class ModelMapper(object):
+
+class ModelsMapper(object):
     """
     The model mapper will create mapping and index settings for a document type
 
@@ -22,27 +24,21 @@ class ModelMapper(object):
         `my_type.mapping.yml` specifying its mapping.
         """
         self.index = index
-
-        self.is_gdc_from_graph = index in ['case', 'file', 'project', 'annotation']
+        if index == 'gdc_from_graph':
+            self.doc_type = 'case'
+        else:
+            self.doc_type = index
 
         # Mappings keyed on the type
-        self.type_mappings = {}
+        mappings = gdcmodels.get_es_models()
+        for index in mappings:
+            doc_type = index
+            if index == 'gdc_from_graph':
+                doc_type = 'case'
+            mappings[index][doc_type].update(dict(mappings[index][doc_type]['_mapping']))
+            del mappings[index][doc_type]['_mapping']
 
-        filename = '{}.mapping.yaml'.format(index)
-
-        # Load the mapping
-        resource = self.get_resource_string(filename)
-
-        self.type_mappings[index] = yaml.safe_load(resource)
-
-    def get_resource_string(self, path):
-        if self.is_gdc_from_graph:
-            index = 'gdc_from_graph'
-        else:
-            index = self.index
-        resource_path = os.path.join('gdc-models', 'es-models', index,
-                                     path)
-        return pkg_resources.resource_string('exports', resource_path)
+        self.type_mappings = mappings
 
     def create_index_settings(self):
         """
@@ -71,16 +67,16 @@ class ModelMapper(object):
                 self.type_mappings[doctype].setdefault(k, v)
 
         # Populate
+        mappings = {self.index: self.type_mappings[self.index]}
         final_mapping = {
-            "mappings": self.type_mappings,
+            "mappings": mappings,
             "settings": settings
         }
 
-        # Add settings from '{index_name}.settings.yaml' file
-        settings_string = self.get_resource_string('settings.yaml')
-        if settings_string is not None:
-            custom_settings = yaml.safe_load(settings_string)
-            final_mapping['settings'].update(custom_settings)
+        # Add settings from '{index_name}.settings.yaml' file]
+        final_mapping['settings'].update(
+            self.type_mappings[self.index]['_settings']
+        )
 
         return final_mapping
 
@@ -117,7 +113,7 @@ class ModelMapper(object):
             paths_to_skip = []
 
         # Get index mapping as a dict
-        mapping = self.type_mappings[self.index]['properties']
+        mapping = self.type_mappings[self.index]
 
         # Extract all paths from the mapping
         paths, path = self.get_dict_paths(mapping)
