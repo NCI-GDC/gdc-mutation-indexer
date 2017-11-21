@@ -147,7 +147,7 @@ class BaseConfig(object):
         ]
 
         # Get all samples fields
-        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['gdc_from_graph']['properties']['samples']
+        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['case']['properties']['samples']
         samples_fields, _ = ModelMapper.get_dict_paths(samples_mapping, path='samples')
         
         # Clean up resulting fields
