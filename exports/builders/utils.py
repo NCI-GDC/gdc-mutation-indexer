@@ -1,6 +1,4 @@
 import re
-import requests
-import json
 import uuid
 import logging
 from functools import partial
@@ -48,55 +46,31 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     return label
 
 
-def get_case_ids_from_headers(case_df, sqlContext, maf_urls):
+def get_case_ids_from_headers(sqlContext, maf_urls):
     """
-    Reads aliquots from headers of mafs and matches a list of corresponding case_ids
-    Takes aliquot_id : case_id map from case_df
+    Reads a set of unique case_ids from maf headers
     """
-    # Read unique aliquots from maf headers
-    unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
-
-    # Create a dataframe from aliquot set
-    aliquot_df = sqlContext.createDataFrame(
-        ((x,) for x in unique_aliquots), ['submitter_id']
-    )
-
-    # Get aliquot_id -> case_id map from case_df:
-    # ( case_df.samples.portions.analytes.aliquots.submitter_id )
-    aliquots_to_cases = (
-        case_df.select('case_id', explode('samples').alias('s'))
-               .select('case_id', explode('s.portions').alias('p'))
-               .select('case_id', explode('p.analytes').alias('a'))
-               .select('case_id', explode('a.aliquots').alias('a'))
-               .select('case_id', 'a.submitter_id')
-    )
-
-    # Match case_id's for aliquots
-    cases_to_keep = aliquot_df.join(aliquots_to_cases, on='submitter_id')
-
-    return cases_to_keep.select('case_id')
-
-
-def get_aliquots_from_headers(sqlContext, maf_urls):
-    """
-    Reads a set of unique aliquots from maf headers
-    """
-    unique_aliquots = set()
+    unique_case_ids = set()
     for url in maf_urls:
-        header = read_maf_header(sqlContext, url, n_lines=5).collect()
+        header = read_maf_header(sqlContext, url, n_lines=6).collect()
         header = map(lambda r: r.asDict().values()[0].split(), header)
-        assert header[-2][0] == '#n.analyzed.samples'
-        assert header[-1][0] == '#tumor.aliquots.submitter_id'
-        aliquots = header[-1][1].split(',')
-        n_aliquots = int(header[-2][1])
+        assert header[-3][0] == '#n.analyzed.samples'
+        assert header[-2][0] == '#tumor.aliquots.submitter_id'
+        assert header[-1][0] == '#case_ids'
+        case_ids = header[-1][1].split(',')
+        n_case_ids = int(header[-3][1])
 
-        assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
-        unique_aliquots.update(aliquots)
+        assert len(case_ids) == n_case_ids, '{} has inconsistent number of cases and aliquots in header'.format(url)
+        unique_case_ids.update(case_ids)
 
-    return unique_aliquots
+    # Create a dataframe from case_ids set
+    cases_df = sqlContext.createDataFrame(
+        ((x,) for x in unique_case_ids), ['case_id']
+    )
+    return cases_df
 
 
-def read_maf_header(sqlContext, url, n_lines=5):
+def read_maf_header(sqlContext, url, n_lines=6):
     """
     Reads only maf header
     """
