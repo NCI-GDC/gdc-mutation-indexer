@@ -3,6 +3,8 @@ import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
+from exports.mappers.models_mapper import ModelMapper
+
 
 class BaseConfig(object):
 
@@ -10,7 +12,7 @@ class BaseConfig(object):
     app_name = 'GDC_Mutation_Export'
 
     s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
-    s3_bucket = 's3a://{}/'.format(os.getenv('S3_BUCKET', 'gdc-mafs'))
+    s3_bucket = 's3a://{}/'.format(os.getenv('S3_BUCKET', 'somatic-maf'))
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
     s3_secret_key = os.getenv('S3_SECRET_KEY', '')
 
@@ -130,16 +132,39 @@ class BaseConfig(object):
     }
 
     # Case load settings
-    case_exclude_fields = ','.join(['project.disease_type',
-                                    'project.primary_site',
-                                    'case_autocomplete',
-                                    'annotations',
-                                    'days_to_index',
-                                    'diagnoses.treatments',
-                                    'tissue_source_site',
-                                    'family_histories',
-                                    'files',
-                                    '*_ids'])
+    def get_case_exclude_fields():
+        exclude_fields = [
+            'project.disease_type',
+            'project.primary_site',
+            'case_autocomplete',
+            'annotations',
+            'days_to_index',
+            'diagnoses.treatments',
+            'tissue_source_site',
+            'family_histories',
+            'files',
+            '*_ids'
+        ]
+
+        # Get all samples fields
+        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['case']['properties']['samples']
+        samples_fields, _ = ModelMapper.get_dict_paths(samples_mapping, path='samples')
+        
+        # Clean up resulting fields
+        samples_fields = [f.replace('.properties', '').split('.type')[0]
+                          for f in samples_fields]
+
+        # Do not exclude the field that we need:
+        samples_fields.remove('samples.portions.analytes.aliquots.submitter_id')
+        samples_fields.remove('samples.portions.analytes.aliquots')
+        samples_fields.remove('samples.portions.analytes')
+        samples_fields.remove('samples.portions')
+        samples_fields.remove('samples')
+        exclude_fields.extend(samples_fields)
+
+        return ','.join(exclude_fields)
+
+    case_exclude_fields = get_case_exclude_fields()
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -212,3 +237,5 @@ class BaseConfig(object):
                             break
 
         return maf_urls
+
+

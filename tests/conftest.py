@@ -1,4 +1,3 @@
-import gzip
 import time
 import json
 import pytest
@@ -40,7 +39,7 @@ def setup_test_index():
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    case_mapping = ModelMapper('case').create_index_settings()
+    case_mapping = ModelMapper('gdc_from_graph').create_index_settings()
 
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:
@@ -62,10 +61,10 @@ def setup_test_index():
         for _file in case['_source']['files']:
             _file.pop('cases', None)
 
-    log.info('Bulk loading case docs to the ES...')
-    bulk(es, case_docs['docs'], ignore=409)
-
-    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
+    log.info('Loading case docs to the ES...')
+    for doc in case_docs['docs']:
+        es.index(index=conf.graph_index, doc_type='case',
+                 body=doc['_source'], id=doc['_id'])
 
     while True:
         count = es.count(index=conf.graph_index, doc_type='case')['count']
@@ -74,6 +73,9 @@ def setup_test_index():
             assert count == len(case_docs['docs'])
             break
         time.sleep(5)
+
+    log.info('Successfully loaded {} case docs.'.format(count))
+
     # Wait for index to be refreshed
     time.sleep(1)
     return es
