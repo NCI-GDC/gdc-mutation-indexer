@@ -132,8 +132,7 @@ class BaseConfig(object):
     }
 
     # Case load settings
-    def get_case_exclude_fields():
-        exclude_fields = [
+    case_exclude_fields = [
             'project.disease_type',
             'project.primary_site',
             'case_autocomplete',
@@ -142,29 +141,10 @@ class BaseConfig(object):
             'diagnoses.treatments',
             'tissue_source_site',
             'family_histories',
+            'samples',
             'files',
             '*_ids'
-        ]
-
-        # Get all samples fields
-        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['case']['properties']['samples']
-        samples_fields, _ = ModelMapper.get_dict_paths(samples_mapping, path='samples')
-        
-        # Clean up resulting fields
-        samples_fields = [f.replace('.properties', '').split('.type')[0]
-                          for f in samples_fields]
-
-        # Do not exclude the field that we need:
-        samples_fields.remove('samples.portions.analytes.aliquots.submitter_id')
-        samples_fields.remove('samples.portions.analytes.aliquots')
-        samples_fields.remove('samples.portions.analytes')
-        samples_fields.remove('samples.portions')
-        samples_fields.remove('samples')
-        exclude_fields.extend(samples_fields)
-
-        return ','.join(exclude_fields)
-
-    case_exclude_fields = get_case_exclude_fields()
+    ]
 
     def __init__(self):
         self.indices = self.get_index_prefixes()

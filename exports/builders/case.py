@@ -22,8 +22,9 @@ class CaseBuilder(object):
         """
         df = self.load(maf_df)
 
+        aliquot_df = self.load_aliquots()
         # Keep only cases that have been tested (aliquots in maf headers)
-        cases_to_keep = get_case_ids_from_headers(df, self.sqlContext, self.urls)
+        cases_to_keep = get_case_ids_from_headers(aliquot_df, self.sqlContext, self.urls)
 
         df = df.join(cases_to_keep, on='case_id', how='inner')
 
@@ -34,10 +35,7 @@ class CaseBuilder(object):
 
         return df
 
-    def load(self, maf_df):
-        """
-        Loads case docs from the gdc_from_graph index into a dataframe
-        """
+    def load_aliquots(self):
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
         df = self.sqlContext.read.format("es")\
@@ -47,9 +45,30 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)\
             .option('es.nodes.wan.only', 'true')\
             .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.read.field.exclude', self.config.case_exclude_fields)\
+            .option('es.read.source.filter', ','.join(['case_id', 'samples.portions.analytes.aliquots.submitter_id']))\
             .option('es.resource.read', source)\
             .load(source)
+
+        return df
+
+    def load(self, maf_df):
+        """
+        Loads case docs from the gdc_from_graph index into a dataframe
+        """
+        source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
+
+        df = (
+            self.sqlContext.read.format("es")
+            .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
+                                               self.config.source_es_port))
+            .option('es.net.http.auth.user', self.config.source_es_user)
+            .option('es.net.http.auth.pass', self.config.source_es_pass)
+            .option('es.nodes.wan.only', 'true')
+            .option('es.nodes.resolve.hostname', 'false')
+            .option('es.read.field.exclude', ','.join(self.config.case_exclude_fields))
+            .option('es.resource.read', source)
+            .load(source)
+        )
 
         # Add columns from maf_df
         maf_columns = ['available_variation_data']

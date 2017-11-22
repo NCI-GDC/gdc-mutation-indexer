@@ -1,6 +1,4 @@
 import re
-import requests
-import json
 import uuid
 import logging
 from functools import partial
