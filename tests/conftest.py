@@ -61,10 +61,10 @@ def setup_test_index():
         for _file in case['_source']['files']:
             _file.pop('cases', None)
 
-    log.info('Bulk loading case docs to the ES...')
-    bulk(es, case_docs['docs'], ignore=409)
-
-    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
+    log.info('Loading case docs to the ES...')
+    for doc in case_docs['docs']:
+        es.index(index=conf.graph_index, doc_type='case',
+                 body=doc['_source'], id=doc['_id'])
 
     while True:
         count = es.count(index=conf.graph_index, doc_type='case')['count']
@@ -73,6 +73,9 @@ def setup_test_index():
             assert count == len(case_docs['docs'])
             break
         time.sleep(5)
+
+    log.info('Successfully loaded {} case docs.'.format(count))
+
     # Wait for index to be refreshed
     time.sleep(1)
     return es
