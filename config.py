@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
@@ -131,40 +132,48 @@ class BaseConfig(object):
         'ssm_occurrence_centric': True
     }
 
-    # Case load settings
-    def get_case_exclude_fields():
-        exclude_fields = [
-            'project.disease_type',
-            'project.primary_site',
+    def get_case_include_fields():
+        # Get all fields
+        mapping = ModelMapper('gdc_from_graph').type_mappings['case']['properties']
+
+        # REMOVE NOT NEEDED FIELDS
+        exclude = [
             'case_autocomplete',
             'annotations',
             'days_to_index',
-            'diagnoses.treatments',
             'tissue_source_site',
             'family_histories',
             'files',
-            '*_ids'
+            'samples',
+        ]
+        exclude2 = [
+            'project.disease_type',
+            'project.primary_site',
+            'diagnoses.treatments',
         ]
 
-        # Get all samples fields
-        samples_mapping = ModelMapper('gdc_from_graph').type_mappings['case']['properties']['samples']
-        samples_fields, _ = ModelMapper.get_dict_paths(samples_mapping, path='samples')
-        
-        # Clean up resulting fields
-        samples_fields = [f.replace('.properties', '').split('.type')[0]
-                          for f in samples_fields]
+        mapping = {k: v for k, v in mapping.items() if k not in exclude}
 
-        # Do not exclude the field that we need:
-        samples_fields.remove('samples.portions.analytes.aliquots.submitter_id')
-        samples_fields.remove('samples.portions.analytes.aliquots')
-        samples_fields.remove('samples.portions.analytes')
-        samples_fields.remove('samples.portions')
-        samples_fields.remove('samples')
-        exclude_fields.extend(samples_fields)
+        for field in exclude2:
+            steps = field.split('.')
+            del mapping[steps[0]]['properties'][steps[1]]
 
-        return ','.join(exclude_fields)
+        # GET ALL PATHS NEEDED
+        fields, _ = ModelMapper.get_dict_paths(mapping)
 
-    case_exclude_fields = get_case_exclude_fields()
+        # Clean up resulting paths
+        fields = [f.replace('.properties', '').replace('root.', '').split('.type')[0]
+                  for f in fields]
+
+        # Skip *_ids fields also
+        fields = [f for f in fields if not re.compile('.*_ids$').match(f)]
+
+        # Include the field that we need
+        fields.append('samples.portions.analytes.aliquots.submitter_id')
+
+        return fields
+
+    case_include_fields = get_case_include_fields()
 
     def __init__(self):
         self.indices = self.get_index_prefixes()
@@ -237,5 +246,4 @@ class BaseConfig(object):
                             break
 
         return maf_urls
-
 
