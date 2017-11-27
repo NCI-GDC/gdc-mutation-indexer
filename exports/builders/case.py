@@ -47,7 +47,7 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)\
             .option('es.nodes.wan.only', 'true')\
             .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.read.field.exclude', self.config.case_exclude_fields)\
+            .option('es.read.source.filter', ','.join(self.config.case_include_fields))\
             .option('es.resource.read', source)\
             .load(source)
 

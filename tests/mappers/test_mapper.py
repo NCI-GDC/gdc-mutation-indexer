@@ -51,7 +51,7 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
                                                          'common_settings.yml'))
     common_settings = yaml.safe_load(cs_file)
 
-    mapping_settings = yaml.safe_load(mapper.get_resource_string('settings.yaml'))
+    mapping_settings = mapper.index_settings
 
     # Check that mapping_settings overwrite common_settings
     for key, value in mappings['settings'].items():
@@ -189,3 +189,4 @@ def test_get_paths():
     paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
 
     assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']
+ 
