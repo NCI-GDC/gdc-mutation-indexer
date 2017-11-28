@@ -9,6 +9,7 @@ from pyspark.sql.types import StringType, ArrayType, LongType, IntegerType
 from urllib import quote_plus
 
 from exports.mappers.models_mapper import ModelMapper
+from elasticsearch import Elasticsearch
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -46,33 +47,47 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     return label
 
 
-def get_case_ids_from_headers(case_df, sqlContext, maf_urls):
+def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     """
-    Reads aliquots from headers of mafs and matches a list of corresponding case_ids
-    Takes aliquot_id : case_id map from case_df
+    Reads aliquots from headers of mafs and queries source es
+    for corresponding case_ids
     """
     # Read unique aliquots from maf headers
     unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
 
-    # Create a dataframe from aliquot set
-    aliquot_df = sqlContext.createDataFrame(
-        ((x,) for x in unique_aliquots), ['submitter_id']
+    es = Elasticsearch(config.source_es_host,
+                       port=config.source_es_port,
+                       http_auth=(config.source_es_user,
+                           config.source_es_pass))
+    body = {
+            "_source": ["_id"],
+            "size": 1000000,
+            "query":{
+                "nested":{
+                    "path":"samples.portions.analytes.aliquots",
+                    "query":{
+                        "constant_score":{
+                            "filter":{
+                                "terms":{
+                                    "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    res = es.search(index=config.graph_index,
+            doc_type=config.graph_document,
+            body=body)
+    assert len(unique_aliquots) == res['hits']['total']
+    case_ids = set([hit["_id"] for hit in res['hits']['hits']])
+    # Create a dataframe from case_ids set
+    cases_df = sqlContext.createDataFrame(
+        ((x,) for x in case_ids), ['case_id']
     )
-
-    # Get aliquot_id -> case_id map from case_df:
-    # ( case_df.samples.portions.analytes.aliquots.submitter_id )
-    aliquots_to_cases = (
-        case_df.select('case_id', explode('samples').alias('s'))
-               .select('case_id', explode('s.portions').alias('p'))
-               .select('case_id', explode('p.analytes').alias('a'))
-               .select('case_id', explode('a.aliquots').alias('a'))
-               .select('case_id', 'a.submitter_id')
-    )
-
-    # Match case_id's for aliquots
-    cases_to_keep = aliquot_df.join(aliquots_to_cases, on='submitter_id')
-
-    return cases_to_keep.select('case_id')
+    return cases_df
 
 
 def get_aliquots_from_headers(sqlContext, maf_urls):

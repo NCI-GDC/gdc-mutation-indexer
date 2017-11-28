@@ -1,6 +1,5 @@
 import pytest
 
-from exports.builders.utils import get_case_ids_from_headers
 from utils.true_stats import TestDataStats
 from utils.json_metrics import (
     CaseCentricStats,

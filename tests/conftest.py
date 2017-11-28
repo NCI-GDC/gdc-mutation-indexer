@@ -10,7 +10,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 
-from exports.builders.utils import get_case_ids_from_headers
+from exports.builders.utils import get_case_ids_from_source_es
 from exports.mappers.models_mapper import ModelMapper
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
@@ -104,8 +104,7 @@ def all_cases(sqlContext, maf_df):
     Returns all case_ids expected to build, including "empty cases"
     The info is taken from aliquots in test maf headers
     """
-    df = CaseBuilder(conf, sqlContext).load(maf_df)
-    cases = get_case_ids_from_headers(df, sqlContext, conf.maf_urls)
+    cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
     return [json.loads(c)['case_id'] for c in cases.toJSON().collect()]
 
 

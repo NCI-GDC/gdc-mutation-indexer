@@ -3,7 +3,6 @@ import json
 
 from pyspark.sql.functions import size, explode, lit
 from exports.builders.utils import (
-    get_case_ids_from_headers,
     get_aliquots_from_headers,
 )
 from exports.builders import (
