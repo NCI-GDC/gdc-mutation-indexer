@@ -1,4 +1,3 @@
-import gzip
 import time
 import json
 import pytest
@@ -40,7 +39,7 @@ def setup_test_index():
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    case_mapping = ModelMapper('case').create_index_settings()
+    case_mapping = ModelMapper('gdc_from_graph').create_index_settings()
 
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:
@@ -100,13 +99,12 @@ def sqlContext(es_client):
 
 
 @pytest.fixture(scope='session')
-def all_cases(sqlContext, maf_df):
+def all_cases(sqlContext):
     """
     Returns all case_ids expected to build, including "empty cases"
-    The info is taken from aliquots in test maf headers
+    The info is taken from case_ids in test maf headers
     """
-    df = CaseBuilder(conf, sqlContext).load(maf_df)
-    cases = get_case_ids_from_headers(df, sqlContext, conf.maf_urls)
+    cases = get_case_ids_from_headers(sqlContext, conf.maf_urls)
     return [json.loads(c)['case_id'] for c in cases.toJSON().collect()]
 
 

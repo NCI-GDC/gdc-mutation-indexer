@@ -22,10 +22,11 @@ class CaseBuilder(object):
         """
         df = self.load(maf_df)
 
-        # Keep only cases that have been tested (aliquots in maf headers)
-        cases_to_keep = get_case_ids_from_headers(df, self.sqlContext, self.urls)
+        # Extract all tested cases from maf headers
+        all_tested_cases = get_case_ids_from_headers(self.sqlContext, self.urls)
 
-        df = df.join(cases_to_keep, on='case_id', how='inner')
+        # Keep only tested cases
+        df = df.join(all_tested_cases, on='case_id', how='inner')
 
         # Select only columns that are in case mapping:
         case_mapping = select_mapping('case_centric', 'case')['properties']
@@ -40,16 +41,18 @@ class CaseBuilder(object):
         """
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
-        df = self.sqlContext.read.format("es")\
+        df = (
+            self.sqlContext.read.format("es")
             .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
-                                               self.config.source_es_port))\
-            .option('es.net.http.auth.user', self.config.source_es_user)\
-            .option('es.net.http.auth.pass', self.config.source_es_pass)\
-            .option('es.nodes.wan.only', 'true')\
-            .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.read.field.exclude', self.config.case_exclude_fields)\
-            .option('es.resource.read', source)\
+                                               self.config.source_es_port))
+            .option('es.net.http.auth.user', self.config.source_es_user)
+            .option('es.net.http.auth.pass', self.config.source_es_pass)
+            .option('es.nodes.wan.only', 'true')
+            .option('es.nodes.resolve.hostname', 'false')
+            .option('es.read.field.exclude', ','.join(self.config.case_exclude_fields))
+            .option('es.resource.read', source)
             .load(source)
+        )
 
         # Add columns from maf_df
         maf_columns = ['available_variation_data']

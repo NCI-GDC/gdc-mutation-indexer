@@ -2,6 +2,8 @@ import os
 import yaml
 import pkg_resources
 
+from gdcmodels import get_es_models
+
 
 class ModelMapper(object):
     """
@@ -23,26 +25,21 @@ class ModelMapper(object):
         """
         self.index = index
 
-        self.is_gdc_from_graph = index in ['case', 'file', 'project', 'annotation']
-
         # Mappings keyed on the type
         self.type_mappings = {}
 
-        filename = '{}.mapping.yaml'.format(index)
-
-        # Load the mapping
-        resource = self.get_resource_string(filename)
-
-        self.type_mappings[index] = yaml.safe_load(resource)
-
-    def get_resource_string(self, path):
-        if self.is_gdc_from_graph:
-            index = 'gdc_from_graph'
+        if index == 'gdc_from_graph':
+            doc_type = 'case'
         else:
-            index = self.index
-        resource_path = os.path.join('gdc-models', 'es-models', index,
-                                     path)
-        return pkg_resources.resource_string('exports', resource_path)
+            doc_type = index
+        self.doc_type = doc_type
+
+        self._models = get_es_models()
+        # Load the mapping
+        self.type_mappings[doc_type] = self._models[index][doc_type]['_mapping']
+
+        # Load custom settings
+        self.index_settings = self._models[index]['_settings']
 
     def create_index_settings(self):
         """
@@ -76,11 +73,8 @@ class ModelMapper(object):
             "settings": settings
         }
 
-        # Add settings from '{index_name}.settings.yaml' file
-        settings_string = self.get_resource_string('settings.yaml')
-        if settings_string is not None:
-            custom_settings = yaml.safe_load(settings_string)
-            final_mapping['settings'].update(custom_settings)
+        # Add custom index settings
+        final_mapping['settings'].update(self.index_settings)
 
         return final_mapping
 

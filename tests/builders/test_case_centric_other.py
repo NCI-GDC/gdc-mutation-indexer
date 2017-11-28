@@ -1,5 +1,4 @@
 import pytest
-import time
 
 from exports.mappers.models_mapper import ModelMapper
 from tests_config import TestConfig

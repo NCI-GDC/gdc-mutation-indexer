@@ -1,10 +1,9 @@
 import pytest
 import json
 
-from pyspark.sql.functions import size, explode, lit
+from pyspark.sql.functions import explode
 from exports.builders.utils import (
     get_case_ids_from_headers,
-    get_aliquots_from_headers,
 )
 from exports.builders import (
     CaseBuilder,
@@ -160,5 +159,5 @@ class TestCaseBuilder:
 
     def test_number_of_cases(self, sqlContext, case_df):
         """ Checks if case_df has correct number of lines """
-        n_expected = len(get_aliquots_from_headers(sqlContext, conf.maf_urls))
+        n_expected = get_case_ids_from_headers(sqlContext, conf.maf_urls).select('case_id').distinct().count()
         assert case_df.count() == n_expected
