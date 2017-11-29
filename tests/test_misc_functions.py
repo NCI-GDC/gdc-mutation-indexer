@@ -11,7 +11,8 @@ from exports.builders.utils import (
     sanitize_aa_change,
     sanitize_gene_aa_change,
     convert_empty_str_to_null_in_col,
-    extract_impact_or_score,
+    extract_impact,
+    extract_score,
 )
 
 conf = TestConfig()
@@ -117,18 +118,18 @@ class TestMiscFunctions:
 
     def test_extract_impact_or_score(self, sqlContext):
         # Fake input and expected output
-        fake_input = ['a(0.1)', 'b(2.1)', '']
-        expected_impact_output = ['a', 'b', '']
-        expected_score_output = ['0.1', '2.1', '']
+        fake_input = ['probably_damaging(0.1)', 'tolerated_low_confidence(2.1)', '']
+        expected_impact_output = ['probably_damaging', 'tolerated_low_confidence', '']
+        expected_score_output = [0.1, 2.1, None]
 
         # Convert to dataframes:
         df = create_df(sqlContext, fake_input, 'field')
         expected_impact_df = create_df(sqlContext, expected_impact_output, 'field_impact')
         expected_score_df = create_df(sqlContext, expected_score_output, 'field_score')
 
-        # Test: 
-        df = extract_impact_or_score(df, 'field', 'impact', 'field_impact')
-        df = extract_impact_or_score(df, 'field', 'score', 'field_score')
+        # Test:
+        df = extract_impact(df, 'field', 'field_impact')
+        df = extract_score(df, 'field', 'field_score')
 
         assert df.select('field_impact').collect() == expected_impact_df.collect()
         assert df.select('field_score').collect() == expected_score_df.collect()
