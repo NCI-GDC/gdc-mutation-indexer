@@ -132,6 +132,10 @@ class TestConsequenceBuilder:
         for e in effects:
             assert e in ssm_trans.columns
 
+        # Check that scores are DoubleType
+        for col in ['sift_score', 'polyphen_score']:
+            assert ssm_trans.select(col).dtypes[0][1] == 'double'
+
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_id(self, builder, maf_df, index_name):
         """ Test that consequence_id is created correctly """
