@@ -197,7 +197,7 @@ def extract_score(df, column, res_colname):
     """
 
     return df.withColumn(res_colname,
-                         regexp_extract(column, '(\w)\((\d+.?\d+)\)$', 2).cast(DoubleType()))
+                         regexp_extract(column, '(\w)\((\d*.?(\d?)*)\)$', 2).cast(DoubleType()))
 
 
 def transcript_id_udf():
@@ -336,7 +336,7 @@ def extract_aas_position(df):
             return int(aa_end)
         return 'null'
 
-    df = df.withColumn('aa_start', udf(extract,IntegerType())(col('aa_change')))
+    df = df.withColumn('aa_start', udf(extract, IntegerType())(col('aa_change')))
     df = df.withColumn('aa_end', udf(lambda aa_change: extract(aa_change, False),
                                      IntegerType())(col('aa_change')))
 

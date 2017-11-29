@@ -118,9 +118,11 @@ class TestMiscFunctions:
 
     def test_extract_impact_or_score(self, sqlContext):
         # Fake input and expected output
-        fake_input = ['probably_damaging(0.1)', 'tolerated_low_confidence(2.1)', '']
-        expected_impact_output = ['probably_damaging', 'tolerated_low_confidence', '']
-        expected_score_output = [0.1, 2.1, None]
+        fake_input = ['possibly_damaging(0.475)',
+                      'deleterious_low_confidence(0)', 'zero_decimal(0.)', '']
+        expected_impact_output = ['possibly_damaging',
+                                  'deleterious_low_confidence', 'zero_decimal', '']
+        expected_score_output = [0.475, 0., 0., None]
 
         # Convert to dataframes:
         df = create_df(sqlContext, fake_input, 'field')
