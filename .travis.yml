@@ -17,13 +17,19 @@ cache: pip
 env:
   global:
     - SPARK_VERSION="2.0.1"
-    - ES_VERSION="5.1.1"
+    - ES_VERSION="5.4.3"
     - BOTO_CONFIG=/dev/null
 
 before_install:
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
   - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb && sudo service elasticsearch start
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
+  - sudo fallocate -l 5G /mnt/swap.file
+  - sudo mkswap /mnt/swap.file
+  - sudo swapon /mnt/swap.file
+  - sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
+  - sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
+  - sudo service elasticsearch restart
 
 install:
   - pip install -r requirements.txt
@@ -40,4 +46,5 @@ install:
 script:
   - java -version
   - curl http://localhost:9200/
+  - sudo cat /etc/elasticsearch/jvm.options
   - "py.test tests -vvv"
