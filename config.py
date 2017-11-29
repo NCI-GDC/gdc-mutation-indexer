@@ -218,4 +218,3 @@ class BaseConfig(object):
 
         return maf_urls
 
-

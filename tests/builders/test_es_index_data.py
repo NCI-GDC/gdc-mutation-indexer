@@ -35,6 +35,7 @@ class TestCaseCentricData:
                                       'Ngenes',
                                       'NUniqMut',
                                       'Nconseq'])
+    @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_case_centric_summary_stats(self, es_client, maf_stats, stat, all_cases):
         docs = es_client.search(
             index=conf.indices['case_centric'],
