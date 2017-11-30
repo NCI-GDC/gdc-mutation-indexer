@@ -80,7 +80,8 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
 
     res = es.search(index=config.graph_index,
             doc_type=config.graph_document,
-            body=body)
+            body=body,
+            request_timeout=300)
     assert len(unique_aliquots) == res['hits']['total']
     case_ids = set([hit["_id"] for hit in res['hits']['hits']])
     # Create a dataframe from case_ids set
