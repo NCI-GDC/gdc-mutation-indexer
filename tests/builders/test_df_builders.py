@@ -85,7 +85,7 @@ class TestDFBuilders:
             'transcript': ['consequence_type'],
             'ssm': ['chromosome'],
             'gene': ['biotype'],
-            'annotation': ['impact']
+            'annotation': ['vep_impact']
         }
         
         get_df = globals()['get_{}_df'.format(df_type)]
