@@ -60,7 +60,7 @@ maf_schema:
       name:  AA_MAF
   aa_change:
       name:  AA_MAF
-  impact:
+  vep_impact:
       name:  IMPACT
   amino_acids:
       name:  Amino_acids
