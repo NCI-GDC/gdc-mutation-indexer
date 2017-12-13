@@ -6,7 +6,12 @@ import requests
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 
-from exports.builders.utils import uuid5_col, ssm_label_col
+from exports.builders.utils import (
+    uuid5_col,
+    ssm_label_col,
+    extract_sift_polyphen,
+)
+
 from exports.builders.gene_model import GeneModelBuilder
 
 from pkg_resources import resource_filename
@@ -60,9 +65,11 @@ class MAFBuilder(object):
         df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
+        # Extract sift and polyphen columns
+        df = extract_sift_polyphen(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-        
+
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')

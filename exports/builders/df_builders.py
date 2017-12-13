@@ -19,11 +19,7 @@ def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
 
 def get_annotation_df(input_df, index_name, add_fields=[], drop_fields=[],
                       unique_fields=None, ignore=[]):
-    # WHY CANT I MOVE IT TO THE TOP OF THE FILE??
-    from exports.builders.consequence import ConsequenceBuilder
-    # First explode input_df, extract all_effects columns and drop do_not_use lines:
-    exploded = ConsequenceBuilder.build_all_effects_cols(input_df)
-    return get_single_df(exploded, index_name, 'annotation', add_fields,
+    return get_single_df(input_df, index_name, 'annotation', add_fields,
                          drop_fields, unique_fields, ignore)
 
 
