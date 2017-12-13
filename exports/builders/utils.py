@@ -201,6 +201,17 @@ def extract_score(df, column, res_colname):
                          regexp_extract(column, '(\w)\((\d*.?(\d?)*)\)$', 2).cast(DoubleType()))
 
 
+def extract_sift_polyphen(df):
+    """
+    Extracts '{polyphen|sift}_{impact|score}' from 'PolyPhen' and 'SIFT' columns
+    """
+    for c in ['PolyPhen', 'SIFT']:
+        df = extract_impact(df, c, '{}_impact'.format(c.lower()))
+        df = extract_score(df, c, '{}_score'.format(c.lower()))
+    df = df.drop('PolyPhen').drop('SIFT')
+    return df
+
+
 def transcript_id_udf():
     return udf(extract_transcript_id, ArrayType(StringType()))
 

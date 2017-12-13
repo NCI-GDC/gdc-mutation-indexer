@@ -79,6 +79,65 @@ class TestConsequenceBuilder:
         assert cons_df.count() == n_consequences
 
     @pytest.mark.parametrize('index_name', conf.indices)
+    def test_transcript_annotation_link(self, builder, maf_df, index_name):
+        cons_df = builder.build(maf_df, index_name)
+
+        # Explode consequences
+        tran_df = (
+            cons_df.select(explode('consequence').alias('c'))
+                   .select('c.consequence_id', 'c.transcript.transcript_id',
+                           'c.transcript.annotation',
+                           'c.transcript.consequence_type')
+        )
+
+        # Get data as json and choose only annotated transcripts
+        data = tran_df.toJSON().collect()
+        data = [json.loads(d) for d in data]
+        data = [d for d in data if 'annotation' in d]
+
+        # According to Kyle Hernandez, consequence_type has to match impact:
+        impacts = {
+            "intergenic_variant": "MODIFIER",
+            "upstream_gene_variant": "MODIFIER",
+            "downstream_gene_variant": "MODIFIER",
+            "splice_donor_variant": "HIGH",
+            "splice_acceptor_variant": "HIGH",
+            "splice_region_variant": "LOW",
+            "intron_variant": "MODIFIER",
+            "5_prime_UTR_variant": "MODIFIER",
+            "3_prime_UTR_variant": "MODIFIER",
+            "synonymous_variant": "LOW",
+            "missense_variant": "MODERATE",
+            "inframe_insertion": "MODERATE",
+            "inframe_deletion": "MODERATE",
+            "stop_gained": "HIGH",
+            "stop_lost": "HIGH",
+            "stop_retained_variant": "LOW",
+            "start_lost": "HIGH",
+            "frameshift_variant": "HIGH",
+            "incomplete_terminal_codon_variant": "LOW",
+            "NMD_transcript_variant": "MODIFIER",
+            "non_coding_transcript_variant": "MODIFIER",
+            "non_coding_transcript_exon_variant": "MODIFIER",
+            "mature_miRNA_variant": "MODIFIER",
+            "coding_sequence_variant": "MODIFIER",
+            "regulatory_region_variant": "MODIFIER",
+            "TF_binding_site_variant": "MODIFIER",
+            "transcript_ablation": "HIGH",
+            "transcript_amplification": "HIGH",
+            "TFBS_ablation": "MODERATE",
+            "TFBS_amplification": "MODIFIER",
+            "regulatory_region_ablation": "MODERATE",
+            "regulatory_region_amplification": "MODIFIER",
+            "feature_elongation": "MODIFIER",
+            "feature_truncation": "MODIFIER",
+            "protein_altering_variant": "MODERATE",
+        }
+
+        for row in data:
+            assert row['annotation']['vep_impact'] == impacts[row['consequence_type']]
+
+    @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_no_gene(self, builder, maf_df, index_name):
         cons_df = builder.build(maf_df, index_name)
         transcripts = (cons_df.select(explode('consequence.transcript')
