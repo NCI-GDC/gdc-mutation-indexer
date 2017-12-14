@@ -66,7 +66,7 @@ class MAFBuilder(object):
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
-        df = extract_sift_polyphen(df)
+        #df = extract_sift_polyphen(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 

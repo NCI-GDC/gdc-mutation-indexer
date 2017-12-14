@@ -47,7 +47,7 @@ class ConsequenceBuilder(object):
         # refs_seq_accession}
         ssm_tran = self.build_all_effects_cols(maf_df)
 
-        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
+        ann_df = get_annotation_df(ssm_tran, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
                                struct(ann_df.drop('ssm_id').columns)
