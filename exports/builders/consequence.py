@@ -10,8 +10,7 @@ from exports.builders.utils import (extract_rows_udf,
                                     all_effects_udf,
                                     uuid5_col,
                                     extract_aas_position,
-                                    extract_impact,
-                                    extract_score,
+                                    extract_sift_polyphen,
                                     sanitize_aa_change,
                                     convert_empty_str_to_null_in_col,
                                     sanitize_gene_aa_change,
@@ -48,7 +47,7 @@ class ConsequenceBuilder(object):
         # refs_seq_accession}
         ssm_tran = self.build_all_effects_cols(maf_df)
 
-        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
+        ann_df = get_annotation_df(ssm_tran, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
                                struct(ann_df.drop('ssm_id').columns)
@@ -184,13 +183,9 @@ class ConsequenceBuilder(object):
         # Get aas columns from aa_change
         ssm_tran = extract_aas_position(ssm_tran)
         ssm_tran = convert_empty_str_to_null_in_col(ssm_tran, 'aa_change')
-        
-        # Extract '{polyphen|sift}_{impact|score}':
-        for c in ['PolyPhen', 'SIFT']:
-            ssm_tran = extract_impact(ssm_tran, c, '{}_impact'.format(c.lower()))
-            ssm_tran = extract_score(ssm_tran, c, '{}_score'.format(c.lower()))
-        ssm_tran = ssm_tran.drop('PolyPhen').drop('SIFT')
 
+        # Extract sift, polyphen columns
+        ssm_tran = extract_sift_polyphen(ssm_tran)
         return ssm_tran
 
     def _build_gene_struct(self, maf_df, index_name):

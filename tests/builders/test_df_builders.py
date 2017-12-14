@@ -87,7 +87,6 @@ class TestDFBuilders:
             'gene': ['biotype'],
             'annotation': ['vep_impact']
         }
-        
         get_df = globals()['get_{}_df'.format(df_type)]
 
         df = get_df(maf_df, index_type, unique_fields=None)
@@ -105,12 +104,12 @@ class TestDFBuilders:
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_annotation_df(self, sqlContext, maf_df, index_name):
-        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
-                                   unique_fields=['ssm_id', 'transcript_id'])
-        ann_mapping = select_mapping(index_name, 'annotation')
 
         builder = ConsequenceBuilder(conf, sqlContext)
         exploded = builder.build_all_effects_cols(maf_df)
+        ann_df = get_annotation_df(exploded, index_name, add_fields=['ssm_id'],
+                                   unique_fields=['ssm_id', 'transcript_id'])
+        ann_mapping = select_mapping(index_name, 'annotation')
 
         self.assert_from_maf(exploded, ann_df.first(), 'transcript_id',
                              mapping=ann_mapping['properties'])
