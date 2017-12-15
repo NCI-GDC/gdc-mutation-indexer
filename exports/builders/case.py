@@ -1,5 +1,4 @@
-from pyspark.sql import Row
-
+from pyspark.sql.functions import lit, collect_list
 from utils import select_mapping, get_case_ids_from_source_es
 import logging
 logging.basicConfig()
@@ -22,13 +21,6 @@ class CaseBuilder(object):
         """
         df = self.load(maf_df)
 
-        # Keep only cases that have been tested (aliquots in maf headers)
-        cases_to_keep = get_case_ids_from_source_es(self.config,
-                self.sqlContext,
-                self.urls)
-
-        df = df.join(cases_to_keep, on='case_id', how='inner')
-
         # Select only columns that are in case mapping:
         case_mapping = select_mapping('case_centric', 'case')['properties']
         columns_to_keep = [c for c in df.columns if c in case_mapping.keys()]
@@ -42,6 +34,7 @@ class CaseBuilder(object):
         """
         source = '{}/{}'.format(self.config.graph_index, self.config.graph_document)
 
+        # Load all cases from graph_index
         df = (
             self.sqlContext.read.format("es")
             .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
@@ -55,10 +48,28 @@ class CaseBuilder(object):
             .load(source)
         )
 
-        # Add columns from maf_df
+        # Get set of "tested cases" from maf
+        # NOTE: available_variation_data will be equal 'ssm' for cases that are "tested"
+        # and will be empty for "empty cases"
         maf_columns = ['available_variation_data']
         maf_data = (maf_df.select('case_id', *maf_columns)
                           .dropDuplicates(subset=['case_id'] + maf_columns))
+
+        # Get all the cases that have been tested (from aliquots in maf headers)
+        cases_to_keep = get_case_ids_from_source_es(
+            self.config, self.sqlContext, self.urls
+        )
+        # Add empty rows to maf_data corresponding to "empty cases"
+        maf_data = maf_data.join(cases_to_keep, on=['case_id'], how='right')
+
+        # Set all cases in maf_data to "tested", i.e. 'available_variation_data' == 'ssm'
+        maf_data = (
+            maf_data.withColumn('t', lit('ssm'))
+                    .groupby('case_id')
+                    .agg(
+                        collect_list('t').alias('available_variation_data')
+                    )
+        )
 
         df = df.join(maf_data, on=['case_id'], how='left')
 
