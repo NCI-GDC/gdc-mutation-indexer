@@ -34,12 +34,12 @@ class TestCaseCentricOther:
         # Check that all cases == built cases
         assert set(all_cases) == set([r.case_id for r in df])
 
-        # Check that for empty cases 'available_variation_data' == [] and == ['ssm'] for cases with mutations
+        # Check that 'available_variation_data' == ['ssm'] for all tested cases
+        # NOTE: test data currently contains only tested data but hase some cases
+        # with no mutations. However even not mutated cases will have to have
+        # 'available_variation_data' = ['ssm'] according to Junjun
         for row in df:
-            if row.case_id in empty_cases:
-                assert row.available_variation_data == []
-            else:
-                assert row.available_variation_data == ['ssm']
+            assert row.available_variation_data == ['ssm']
 
     @pytest.mark.parametrize('path', [
                              'case_id',

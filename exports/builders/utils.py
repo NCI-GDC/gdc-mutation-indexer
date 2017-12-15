@@ -58,32 +58,33 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     es = Elasticsearch(config.source_es_host,
                        port=config.source_es_port,
                        http_auth=(config.source_es_user,
-                           config.source_es_pass))
+                                  config.source_es_pass))
     body = {
-            "_source": ["_id"],
-            "size": 1000000,
-            "query":{
-                "nested":{
-                    "path":"samples.portions.analytes.aliquots",
-                    "query":{
-                        "constant_score":{
-                            "filter":{
-                                "terms":{
-                                    "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
-                                }
+        "_source": ["_id"],
+        "size": 1000000,
+        "query": {
+            "nested": {
+                "path": "samples.portions.analytes.aliquots",
+                "query": {
+                    "constant_score": {
+                        "filter": {
+                            "terms": {
+                                "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-    res = es.search(index=config.graph_index,
-            doc_type=config.graph_document,
-            body=body,
-            request_timeout=300)
+    res = es.search(
+        index=config.graph_index, doc_type=config.graph_document, body=body,
+        request_timeout=300
+    )
     assert len(unique_aliquots) == res['hits']['total']
     case_ids = set([hit["_id"] for hit in res['hits']['hits']])
+
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
         ((x,) for x in case_ids), ['case_id']
