@@ -163,13 +163,36 @@ class ConsequenceBuilder(object):
         fields = {name: ix for ix, name in enumerate(effects_legend)
                   if name in effects_to_keep}
 
+        # Before exploding, let's save the transcript_id of the selected transcript
+        ssm_tran = ssm_tran.withColumn('selected_transcript_id',
+                                        col('transcript_id'))
+
         ssm_tran = ssm_tran.select(explode('all_effects').alias('all_effects'),
                                    *ssm_tran.drop('all_effects').columns)
+
+        # Clear the fields that we shouldn't copy
+        do_not_copy_from_selected = ['amino_acids', 'cdna_position', 'cds_end',
+                                     'cds_length', 'cds_position', 'cds_start',
+                                     'clin_sig', 'codons', 'domains', 'ensp',
+                                     'hgvsc', 'hgvsp', 'hgvsp_short',
+                                     'polyphen_impact', 'polyphen_score',
+                                     'protein_position', 'sift_impact',
+                                     'sift_score', 'swissprot', 'trembl',
+                                     'uniparc', 'vep_impact']
+
+        ssm_tran = ssm_tran.withColumn('transcript_id',
+                                       all_effects_udf(3)(col('all_effects')))
+
+        for field in do_not_copy_from_selected:
+            ssm_tran = ssm_tran.withColumn(field,
+                when(col('transcript_id') == col('selected_transcript_id'), col(field))
+                .otherwise(None))
 
         for field, idx in fields.items():
             ssm_tran = ssm_tran.withColumn(field,
                                            all_effects_udf(idx)(col('all_effects')))
         ssm_tran = ssm_tran.drop('all_effects')
+        ssm_tran = ssm_tran.drop('selected_transcript_id')
         # Take out the transcripts from genes that this mutation is not in
         ssm_tran = ssm_tran.filter("symbol == do_not_use")
         ssm_tran = ssm_tran.drop('do_not_use').drop('symbol')
