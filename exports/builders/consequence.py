@@ -47,7 +47,7 @@ class ConsequenceBuilder(object):
         # refs_seq_accession}
         ssm_tran = self.build_all_effects_cols(maf_df)
 
-        ann_df = get_annotation_df(maf_df, index_name, add_fields=['ssm_id'],
+        ann_df = get_annotation_df(ssm_tran, index_name, add_fields=['ssm_id'],
                                    unique_fields=['ssm_id', 'transcript_id'])
         ann_df = ann_df.select('ssm_id', 'transcript_id',
                                struct(ann_df.drop('ssm_id').columns)
@@ -56,7 +56,6 @@ class ConsequenceBuilder(object):
         # is_canonical,
         # do_not_us, consequence_type, aa_change,
         # refs_seq_accession}
-
         tran_df = get_transcript_df(ssm_tran, index_name,
                                     add_fields=['gene_id', 'ssm_id'])
 
@@ -145,62 +144,56 @@ class ConsequenceBuilder(object):
         symbol from the mutation to the do_not_use column.
         These should be removed.
         """
-        # Extract columns from the all_effects column
+        # Convert all_effects column into an array.
+        # Each element corresponds to a transcript and it's effects
         ssm_tran = maf_df.withColumn('all_effects',
                                      extract_rows_udf()(col('all_effects'))
                                      .alias('all_effects'))
 
-        effects_legend = ['do_not_use', 'consequence_type', 'aa_change',
-                          'transcript_id', 'ref_seq_accession', 'HGVSc',
-                          'IMPACT', 'CANONICAL', 'SIFT', 'PolyPhen',
-                          'Transcript_Strand']
-
-        effects_to_keep = ['do_not_use', 'consequence_type', 'aa_change',
-                           'transcript_id', 'ref_seq_accession', 'PolyPhen',
-                           'SIFT']
-
-        # Now extract columns within all_effects to columns in the df
-        fields = {name: ix for ix, name in enumerate(effects_legend)
-                  if name in effects_to_keep}
+        effects_legend = [
+            'do_not_use', 'consequence_type', 'aa_change', 'transcript_id',
+            'ref_seq_accession', 'hgvsc', 'vep_impact', 'is_canonical',
+            'SIFT', 'PolyPhen', 'Transcript_Strand',
+        ]
 
         # Before exploding, let's save the transcript_id of the selected transcript
         ssm_tran = ssm_tran.withColumn('selected_transcript_id',
-                                        col('transcript_id'))
+                                       col('transcript_id'))
 
+        # Explode all_effects, to have each individual transcript data on a separate line
+        # NOTE: after exploding, missing fields for secondary transcripts will be populated
+        # with values from selected transcript (top level columns)
         ssm_tran = ssm_tran.select(explode('all_effects').alias('all_effects'),
                                    *ssm_tran.drop('all_effects').columns)
 
-        # Clear the fields that we shouldn't copy
-        do_not_copy_from_selected = ['amino_acids', 'cdna_position', 'cds_end',
-                                     'cds_length', 'cds_position', 'cds_start',
-                                     'clin_sig', 'codons', 'domains', 'ensp',
-                                     'hgvsc', 'hgvsp', 'hgvsp_short',
-                                     'polyphen_impact', 'polyphen_score',
-                                     'protein_position', 'sift_impact',
-                                     'sift_score', 'swissprot', 'trembl',
-                                     'uniparc', 'vep_impact']
+        # Extract transcripts' effects from 'all_effects'
+        for idx, field in enumerate(effects_legend):
+            ssm_tran = ssm_tran.withColumn(
+                field, all_effects_udf(idx)(col('all_effects'))
+            )
 
-        ssm_tran = ssm_tran.withColumn('transcript_id',
-                                       all_effects_udf(3)(col('all_effects')))
-
-        for field in do_not_copy_from_selected:
-            ssm_tran = ssm_tran.withColumn(field,
+        # Clear the fields that we shouldn't copy from selected transcript (top level of maf_df)
+        must_be_none_for_non_selected = [
+            'amino_acids', 'cdna_position', 'cds_end', 'cds_length',
+            'cds_position', 'cds_start', 'clin_sig', 'codons', 'domains',
+            'ensp', 'hgvsp', 'hgvsp_short', 'protein_position',
+            'swissprot', 'trembl', 'uniparc',
+        ]
+        for field in must_be_none_for_non_selected:
+            ssm_tran = ssm_tran.withColumn(
+                field,
                 when(col('transcript_id') == col('selected_transcript_id'), col(field))
-                .otherwise(None))
+                .otherwise(None)
+            )
 
-        for field, idx in fields.items():
-            ssm_tran = ssm_tran.withColumn(field,
-                                           all_effects_udf(idx)(col('all_effects')))
-        ssm_tran = ssm_tran.drop('all_effects')
-        ssm_tran = ssm_tran.drop('selected_transcript_id')
         # Take out the transcripts from genes that this mutation is not in
         ssm_tran = ssm_tran.filter("symbol == do_not_use")
-        ssm_tran = ssm_tran.drop('do_not_use').drop('symbol')
 
         # get is_canonical
         ssm_tran = ssm_tran.withColumn(
             'is_canonical',
-            ssm_tran.canonical_transcript_id == ssm_tran.transcript_id)
+            ssm_tran.canonical_transcript_id == ssm_tran.transcript_id
+        )
 
         ssm_tran = sanitize_aa_change(ssm_tran)
         # Get aas columns from aa_change
@@ -209,6 +202,11 @@ class ConsequenceBuilder(object):
 
         # Extract sift, polyphen columns
         ssm_tran = extract_sift_polyphen(ssm_tran)
+
+        # Drop used helper columns
+        for column in ['all_effects', 'do_not_use', 'symbol']:
+            ssm_tran = ssm_tran.drop(column)
+
         return ssm_tran
 
     def _build_gene_struct(self, maf_df, index_name):

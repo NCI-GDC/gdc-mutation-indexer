@@ -181,19 +181,62 @@ class TestConsequenceBuilder:
 
             assert sorted(row.gene_aa_change) == expected_list
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_all_effects_cols(self, builder, maf_df, index_name):
+    def test_all_effects_cols(self, builder, maf_df):
         effects = ['consequence_type', 'aa_change',
                    'transcript_id', 'ref_seq_accession', 'polyphen_impact',
-                   'polyphen_score', 'sift_impact', 'sift_score']
-        ssm_trans = builder.build_all_effects_cols(maf_df)
+                   'polyphen_score', 'sift_impact', 'sift_score',
+                   'hgvsc', 'vep_impact']
+        ssm_tran = builder.build_all_effects_cols(maf_df)
 
         for e in effects:
-            assert e in ssm_trans.columns
+            assert e in ssm_tran.columns
 
         # Check that scores are DoubleType
         for col in ['sift_score', 'polyphen_score']:
-            assert ssm_trans.select(col).dtypes[0][1] == 'double'
+            assert ssm_tran.select(col).dtypes[0][1] == 'double'
+
+        # Check that secondary transcripts exploded correctly:
+        # First gather ssm-transcript-effect map
+        effects_map = {}
+        for row in ssm_tran.select('ssm_id', *effects).toJSON().collect():
+            row = json.loads(row)
+            effects_map.setdefault(row['ssm_id'], {})
+            effects_map[row['ssm_id']].setdefault(row['transcript_id'], {})
+            for effect in effects:
+                effects_map[row['ssm_id']][row['transcript_id']].setdefault(effect, set())
+                effects_map[row['ssm_id']][row['transcript_id']][effect].add(row.get(effect, None))
+
+        # Now sanity check
+        for ssm_id, transcripts in effects_map.items():
+            for transcript_id, transcript in transcripts.items():
+                # Make sure all transcripts have vep_impact and it is not None:
+                assert list(transcript['vep_impact'])[0], 'Transcript {} has no vep_impact'.format(transcript_id)
+
+                for effect, values in transcript.items():
+                    # Make sure that effects are same for particular ssm-transcript combination
+                    assert len(values) == 1, '{}/{}/{} unexpected effect values set of length {} != 1'.format(ssm_id, transcript_id, effect, len(values))
+
+        # Check that some fields are None for all non-selected transcripts:
+        null_fields = [
+            'amino_acids', 'cdna_position', 'cds_end', 'cds_length',
+            'cds_position', 'cds_start', 'clin_sig', 'codons', 'domains',
+            'ensp', 'hgvsp', 'hgvsp_short', 'protein_position',
+            'swissprot', 'trembl', 'uniparc',
+        ]
+        null_df = ssm_tran[ssm_tran.transcript_id != ssm_tran.selected_transcript_id]
+        failed_fields = set()
+        for row in null_df.toJSON().collect():
+            data = json.loads(row)
+            for field in null_fields:
+                if field not in data:  # This is expected
+                    continue
+                else:
+                    failed_fields.add(field)
+
+        assert failed_fields == set()
+
+        # Check that there are some mutations with multiple transcripts
+        assert max([len(transcripts) for transcripts in effects_map.values()]) > 1
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_id(self, builder, maf_df, index_name):

@@ -58,9 +58,11 @@ class CaseCentricBuilder(BaseBuilder):
         )
 
         # Coerce any cases that didn't have variation data from None to []
-        case_centric = case_centric.withColumn('available_variation_data',
-                              udf(lambda x: [] if (x == None) else x,
-                              ArrayType(StringType()))(col('available_variation_data')))
+        case_centric = case_centric.withColumn(
+            'available_variation_data',
+            udf(lambda x: [] if (x is None) else x,
+                ArrayType(StringType()))(col('available_variation_data'))
+        )
         self.case_centric = case_centric
 
         # Truncate outliers

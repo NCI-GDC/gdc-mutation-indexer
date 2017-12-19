@@ -160,24 +160,6 @@ def ssm_occurrence_uuid_udf(namespace):
     return udf(ssm_namespaced, StringType())
 
 
-def extract_transcript_id(val):
-    """
-    Extract the transcript ids from the all_effects column
-
-    Rows are delimited by ;
-    Columns are delimited by , or :
-    """
-    delimiter = ',' if ',' in val else ':'
-    rows = val.split(';')
-    transcript_ids = []
-    for r in rows:
-        if len(r.split(delimiter)) > 3:
-            transcript_ids.append(r.split(delimiter)[3])
-        else:
-            raise Exception('Unexpected number of transcripts')
-    return transcript_ids
-
-
 def extract_impact(df, column, res_colname):
     """
     Extracts impact from fields like:
@@ -211,10 +193,6 @@ def extract_sift_polyphen(df):
         df = extract_score(df, c, '{}_score'.format(c.lower()))
     df = df.drop('PolyPhen').drop('SIFT')
     return df
-
-
-def transcript_id_udf():
-    return udf(extract_transcript_id, ArrayType(StringType()))
 
 
 def extract_all_effects(val, index=0):
