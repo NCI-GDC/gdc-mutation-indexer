@@ -62,7 +62,7 @@ class CaseBuilder(object):
         # Add empty rows to maf_data corresponding to "empty cases"
         maf_data = maf_data.join(cases_to_keep, on=['case_id'], how='right')
 
-        # Set all cases in maf_data to "tested", i.e. 'available_variation_data' == 'ssm'
+        # Set all cases in maf_data to "tested", i.e. 'available_variation_data' == ['ssm']
         maf_data = (
             maf_data.withColumn('t', lit('ssm'))
                     .groupby('case_id')
