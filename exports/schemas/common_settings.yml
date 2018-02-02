@@ -37,6 +37,8 @@ mappings:
 common_mapping_settings:
   _all:
     enabled: false
+  _size:
+    enabled: true
   _source:
     excludes: [__comment__]
   dynamic: strict
