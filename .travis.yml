@@ -24,6 +24,7 @@ before_install:
   - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
   - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
+  - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
   - sudo mkswap /mnt/swap.file
   - sudo swapon /mnt/swap.file
