@@ -1,8 +1,11 @@
 import os
+import ssl
+import sys
 import uuid
+import httplib
 from elasticsearch import Elasticsearch
+from distutils.version import StrictVersion
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
-
 from exports.mappers.models_mapper import ModelMapper
 
 
@@ -193,11 +196,29 @@ class BaseConfig(object):
         return indices
 
     def get_maf_urls(self):
+        def create_factory(host,port=443,timeout=10):
+            return (
+                httplib.HTTPSConnection(
+                    host = host,
+                    port = port,
+                    timeout = timeout,
+                    context = ssl._create_unverified_context()
+                )
+            )
+
+        py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+        if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
+            factory = (create_factory, ())
+        else:
+            factory = None
+
         conn = S3Connection(self.s3_access_key,
                             self.s3_secret_key,
                             host=self.s3_host.split('/')[-1],
+                            validate_certs=False,
+                            https_connection_factory=factory,
                             calling_format=OrdinaryCallingFormat(),
-                            is_secure=False)
+                            is_secure=True)
         bucket_name = self.s3_bucket.split('/')[2]
         bucket = conn.get_bucket(bucket_name)
 
