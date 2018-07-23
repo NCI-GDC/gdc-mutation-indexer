@@ -67,6 +67,11 @@ class MAFBuilder(object):
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
         df = extract_sift_polyphen(df)
+        # Add acl
+        # TODO: better comment
+        import pdb; pdb.set_trace()
+        df = self.add_acl(df)
+
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
@@ -155,6 +160,72 @@ class MAFBuilder(object):
         to_array = udf(to_array, ArrayType(StringType()))
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
         return df
+
+    def add_mutation_subtype(self, df):
+
+        def subtype(variant_type):
+            subtypes = {
+                'SNP': 'Single base substitution',
+                'DEL': 'Small deletion',
+                'INS': 'Small insertion'
+            }
+            if variant_type in subtypes:
+                return subtypes[variant_type]
+            else:
+                return None
+
+        sub_type_udf = udf(subtype, StringType())
+        df = df.withColumn('mutation_subtype', sub_type_udf('variant_type'))
+
+        return df
+
+    def add_acl(self, df):
+        """
+        TODO: doc string
+        """
+
+        def acl():
+            # import pdb; pdb.set_trace()
+            # print file_name
+            # dict_results = config.es.search(index=config.graph_index, 
+            #                  doc_type='file',
+            #                  body={"query": { "bool": { "must": [ { "match": { "file_name": file_name}}]}}}, size=1)
+            # assert dict_results
+            # assert dict_results['hits']
+            return "open"
+
+        # acls = []
+
+        # assert self.config.es
+
+        # # is it faster to do this all in one call to ES?
+
+        # for url in self.urls:
+        #     assert url.rfind('/') > 0
+        #     file_name = url[url.rfind('/')+1:] # take last part of the file name?
+        #     print file_name
+        #     # TODO: need to filter this bc there's no need to get the other fields 
+        #     dict_results = self.config.es.search(index=self.config.graph_index, 
+        #                      doc_type='file',
+        #                      body={"query": { "bool": { "must": [ { "match": { "file_name": file_name}}]}}}, size=1)
+        #     assert dict_results
+        #     assert dict_results['hits']
+        #     # assert dict_results['hits']['hits']
+        #     # assert len(dict_results['hits']['hits']) == 1
+        #     # hit = dict_results['hits']['hits'][0]
+        #     # assert hit['_source']
+        #     # assert hit['_source']['acl']
+        #     # acls.append(hit['_source']['acl'])
+            
+        #     # so this data is borked I think
+
+        #     acls.append('open') # ['phs000178']) # for now
+        
+        # # make a column out of this??
+        # assert len(acls) > 0
+        # rdd = self.sqlContext.parallelize(acls)
+        acl_udf = udf(acl) #correct type? 
+        return df.withColumn('acl', acl_udf()) # just guessing        
 
     def add_available_variation_data(self, df):
         """
@@ -362,6 +433,7 @@ class MAFBuilder(object):
         """
         Combines data frames from a list of urls
         """
+        import pdb; pdb.set_trace()
         if urls is None and self.urls is not None:
             urls = self.urls
         elif urls is None and self.urls is None:

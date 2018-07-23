@@ -146,6 +146,10 @@ class BaseConfig(object):
             '*_ids'
     ]
 
+    es = Elasticsearch(es_host,
+                       port=es_port,
+                       http_auth=(es_user, es_pass))
+
     def __init__(self):
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
@@ -165,11 +169,8 @@ class BaseConfig(object):
 
         def get_indices_max_version():
             versions = []
-            es = Elasticsearch(self.es_host,
-                               port=self.es_port,
-                               http_auth=(self.es_user, self.es_pass))
 
-            indices = es.indices.get_alias().keys()
+            indices = self.es.indices.get_alias().keys()
 
             for index_name in self.index_names.values():
                 if index_name is not None:

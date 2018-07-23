@@ -28,6 +28,9 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
+    def memory_address(self, in_var):
+        return hex(id(in_var))
+    
     def build(self):
         """
         Contains the ETL logic to construct a spark dataframe of
