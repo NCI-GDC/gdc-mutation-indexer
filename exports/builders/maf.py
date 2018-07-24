@@ -174,7 +174,7 @@ class MAFBuilder(object):
             #                  body={"query": { "bool": { "must": [ { "match": { "file_name": file_name}}]}}}, size=1)
             # assert dict_results
             # assert dict_results['hits']
-            return "open"
+            return [u'phs000218']
 
         # acls = []
 
@@ -206,7 +206,7 @@ class MAFBuilder(object):
         # # make a column out of this??
         # assert len(acls) > 0
         # rdd = self.sqlContext.parallelize(acls)
-        acl_udf = udf(acl) #correct type? 
+        acl_udf = udf(acl, ArrayType(StringType())) #correct type? 
         return df.withColumn('acl', acl_udf()) # just guessing        
 
     def add_available_variation_data(self, df):
