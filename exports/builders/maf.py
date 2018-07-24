@@ -69,9 +69,9 @@ class MAFBuilder(object):
         df = extract_sift_polyphen(df)
         # Add acl
         # TODO: better comment
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         df = self.add_acl(df)
-
+        # import pdb; pdb.set_trace()
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
@@ -159,24 +159,6 @@ class MAFBuilder(object):
 
         to_array = udf(to_array, ArrayType(StringType()))
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
-        return df
-
-    def add_mutation_subtype(self, df):
-
-        def subtype(variant_type):
-            subtypes = {
-                'SNP': 'Single base substitution',
-                'DEL': 'Small deletion',
-                'INS': 'Small insertion'
-            }
-            if variant_type in subtypes:
-                return subtypes[variant_type]
-            else:
-                return None
-
-        sub_type_udf = udf(subtype, StringType())
-        df = df.withColumn('mutation_subtype', sub_type_udf('variant_type'))
-
         return df
 
     def add_acl(self, df):
@@ -433,7 +415,6 @@ class MAFBuilder(object):
         """
         Combines data frames from a list of urls
         """
-        import pdb; pdb.set_trace()
         if urls is None and self.urls is not None:
             urls = self.urls
         elif urls is None and self.urls is None:
