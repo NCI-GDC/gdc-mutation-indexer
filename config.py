@@ -166,8 +166,8 @@ class BaseConfig(object):
         def get_indices_max_version():
             versions = []
             es = Elasticsearch(self.es_host,
-                       port=self.es_port,
-                       http_auth=(self.es_user, self.es_pass))
+                               port=self.es_port,
+                               http_auth=(self.es_user, self.es_pass))
             indices = es.indices.get_alias().keys()
 
             for index_name in self.index_names.values():
