@@ -111,6 +111,7 @@ class MAFBuilder(object):
 
                 elif 'pattern' in self.schema[column]:
                     pattern = self.schema[column]['pattern']
+
                     def apply_pattern(value):
                         return pattern.format(value)
                     df = df.withColumn(column,
@@ -168,9 +169,9 @@ class MAFBuilder(object):
         5. Dedupe into list of strings
         """
         es = Elasticsearch(self.config.es_host,
-                                port=self.config.es_port,
-                                http_auth=(self.config.es_user,
-                                           self.config.es_pass))
+                           port=self.config.es_port,
+                           http_auth=(self.config.es_user,
+                                      self.config.es_pass))
 
         file_names = []
         for url in self.urls:
@@ -181,12 +182,12 @@ class MAFBuilder(object):
 
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
-                                 body={"query": {"bool": {"must": { "terms": {"file_name": file_names}}}},
+                                 body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
                                        "_source": ["acl"]})
 
         assert dict_results
         assert dict_results['hits']
-        
+
         # TEMP WHILE DATA UNAVAILABLE
         return [u'phs000218']
 
@@ -194,18 +195,19 @@ class MAFBuilder(object):
 
         import ipdb; ipdb.set_trace()
 
-        acls = set(acl for acl in result["_source"]["acl"]
-                   for result in dict_results['hits']['hits'])
+        acls = set(acl for result in dict_results['hits']['hits']
+                   for acl in result["_source"]["acl"])
 
         return list(acls)
 
     def add_acl(self, df):
         """
-        TODO: doc string
+        Populates mutation data with acls
+        Mapped on the maf name level
         """
         acls = self.get_acls()
-        acl_udf = udf(lambda : acls, ArrayType(StringType())) 
-        return df.withColumn('acl', acl_udf())         
+        acl_udf = udf(lambda: acls, ArrayType(StringType()))
+        return df.withColumn('acl', acl_udf())
 
     def add_available_variation_data(self, df):
         """
