@@ -19,7 +19,7 @@ class CaseBuilder(object):
         """
         Builds Case dataframe
         """
-        df = self.load(maf_df)
+        df = self.load_into_df(maf_df)
 
         # Select only columns that are in case mapping:
         case_mapping = select_mapping('case_centric', 'case')['properties']
@@ -28,7 +28,7 @@ class CaseBuilder(object):
 
         return df
 
-    def load(self, maf_df):
+    def load_into_df(self, maf_df):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
@@ -80,4 +80,3 @@ class CaseBuilder(object):
             self.logger.info('Caching repartitioned case dataframe')
             df.cache().count()
         return df
-

@@ -85,8 +85,7 @@ class CaseCentricBuilder(BaseBuilder):
                    .build(maf_df, self.index_name))
 
         # Observation
-        obs_df = (ObservationBuilder(self.config, self.sqlContext)
-                  .build(maf_df, self.index_name))
+        obs_df = ObservationBuilder().build(maf_df, self.index_name)
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM

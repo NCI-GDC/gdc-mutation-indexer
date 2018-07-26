@@ -3,8 +3,6 @@ import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
-from exports.mappers.models_mapper import ModelMapper
-
 
 class BaseConfig(object):
 
@@ -216,4 +214,3 @@ class BaseConfig(object):
                             break
 
         return maf_urls
-
