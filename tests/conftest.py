@@ -9,6 +9,7 @@ from pyspark.sql import SQLContext
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from tests_config import TestConfig
+from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import get_case_ids_from_source_es
 from exports.mappers.models_mapper import ModelMapper
@@ -17,7 +18,6 @@ from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
     CaseBuilder,
-    ObservationBuilder,
     ConsequenceBuilder,
     GeneCentricBuilder,
     CaseCentricBuilder,
@@ -60,6 +60,8 @@ def setup_test_index():
     for case in case_docs['docs']:
         for _file in case['_source']['files']:
             _file.pop('cases', None)
+
+    case_docs = remove_keys_from_dict(case_docs, ['file_state'])
 
     log.info('Bulk loading case docs to the ES...')
     bulk(es, case_docs['docs'], ignore=409)
