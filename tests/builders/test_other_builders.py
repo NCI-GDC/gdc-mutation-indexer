@@ -26,7 +26,7 @@ class TestObservationBuilder:
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
-        yield ObservationBuilder(conf, sqlContext)
+        yield ObservationBuilder()
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_join_columns(self, builder, maf_df, index_name):
