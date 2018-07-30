@@ -1,5 +1,6 @@
 from model_mapper import ModelMapper
 
+
 class DistinctDocTypeModelMapper(ModelMapper):
     """
     The base class assumes that index name == doc_type.
@@ -9,4 +10,3 @@ class DistinctDocTypeModelMapper(ModelMapper):
     def __init__(self, index, doc_type):
         ModelMapper.__init__(self, index)
         self.doc_type = doc_type
-

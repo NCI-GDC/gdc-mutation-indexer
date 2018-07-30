@@ -15,8 +15,8 @@ class ModelMapper(object):
             my_type.mapping.yml
             settings.yml (optional)
 
-    This base class assumes that the index name == document type. 
-    E.g., in index 'case_centric' you find documents of type 'case_centric'. 
+    This base class assumes that the index name == document type.
+    E.g., in index 'case_centric' you find documents of type 'case_centric'.
 
     To specify different document types than index names, use the
     DistinctDocTypeModelMapper subclass.
@@ -33,7 +33,8 @@ class ModelMapper(object):
         self.index = index
 
         # We assume the index name is the same as the document type.
-        # E.g., in index 'case_centric' you find documents of type 'case_centric'.
+        # E.g., in index 'case_centric',
+        # you find documents of type 'case_centric'.
         self.doc_type = index
 
         self._models = get_es_models()
@@ -48,7 +49,7 @@ class ModelMapper(object):
         for each type and the settings, if there is a `settings.yml` file.
         """
         if self._index_settings is None:
-            
+
             final_mapping = {
                 "mappings": self.type_mappings,  # type mapping
                 "settings": self._settings  # custom settings
@@ -59,6 +60,49 @@ class ModelMapper(object):
             self._index_settings = final_mapping
 
         return self._index_settings
+
+    @property
+    def type_mappings(self):
+        """
+        Mappings keyed on the type
+        """
+        if self._type_mappings is None:
+
+            type_mappings = {}
+            type_mappings[self.doc_type] = \
+                self._models[self.index][self.doc_type]['_mapping']
+
+            # Load common settings file:
+            path = os.path.join('schemas', 'common_settings.yml')
+            common_settings_file = pkg_resources.resource_string(
+                'exports',
+                path
+            )
+            common_settings = yaml.safe_load(common_settings_file)
+
+            # Unpack common_settings file:
+            mappings = common_settings.pop('mappings', {})
+            common_mapping_settings = common_settings.pop(
+                'common_mapping_settings',
+                {}
+            )
+
+            # Used to construct index_settings
+            self._settings = common_settings.pop('settings', {})
+            assert common_settings == {}
+
+            # Add mappings from common_settings.yml:
+            type_mappings.update(mappings)
+
+            # Add default common doctype settings from common_settings.yml
+            # (only set if it's not present, don't overwrite if already set)
+            for doctype in type_mappings:
+                for k, v in common_mapping_settings.items():
+                    type_mappings[doctype].setdefault(k, v)
+
+            self._type_mappings = type_mappings
+
+        return self._type_mappings
 
     @classmethod
     def get_dict_paths(cls, d, path_list=None, path='root'):
@@ -121,43 +165,6 @@ class ModelMapper(object):
         paths = [p for p in stripped_paths if p not in paths_to_skip]
 
         return sorted(list(set(paths)))
-
-    @property
-    def type_mappings(self):
-        """
-        Mappings keyed on the type
-        """
-        if self._type_mappings is None:
-
-            type_mappings = {}
-            type_mappings[self.doc_type] = \
-                self._models[self.index][self.doc_type]['_mapping']
-        
-            # Load common settings file:
-            path = os.path.join('schemas', 'common_settings.yml')
-            common_settings_file = pkg_resources.resource_string('exports', path)
-            common_settings = yaml.safe_load(common_settings_file)
-
-            # Unpack common_settings file:
-            mappings = common_settings.pop('mappings', {})
-            common_mapping_settings = common_settings.pop('common_mapping_settings', {})
-            
-            # Used to construct index_settings
-            self._settings = common_settings.pop('settings', {})
-            assert common_settings == {}
-
-            # Add mappings from common_settings.yml:
-            type_mappings.update(mappings)
-
-            # Add default common doctype settings from common_settings.yml
-            # (only set if it's not present, don't overwrite if already set)
-            for doctype in type_mappings:
-                for k, v in common_mapping_settings.items():
-                    type_mappings[doctype].setdefault(k, v)
-
-            self._type_mappings = type_mappings
-            
-        return self._type_mappings
 
     @property
     def paths_map(self):
