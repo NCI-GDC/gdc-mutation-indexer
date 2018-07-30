@@ -8,7 +8,7 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import StringType, ArrayType, LongType, DoubleType, IntegerType
 from urllib import quote_plus
 
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.model_mapper import ModelMapper
 from elasticsearch import Elasticsearch
 
 logging.basicConfig()

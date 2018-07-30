@@ -24,7 +24,7 @@ def mappings(mappers):
 
 @pytest.fixture(scope="session")
 def mappings_with_settings(mappers):
-    return {kind: mapper.create_index_settings()
+    return {kind: mapper.index_settings
             for kind, mapper in mappers.items()}
 
 
