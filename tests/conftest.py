@@ -36,51 +36,103 @@ log.setLevel(logging.INFO)
 @pytest.fixture(scope='session')
 def setup_test_index():
     """
-    Creates graph index with case docs and returns an elasticsearch client
+    Creates graph index with required docs and returns an elasticsearch client
     """
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    case_mapping = DistinctDocTypeModelMapper('gdc_from_graph',
-                                              'case').index_settings
-
+    # if index already exists and we don't need to force rebuild,
+    # return existing index
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:
             return es
         es.indices.delete(index=conf.graph_index)
 
-    es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
+    # set up test ES index
+    create_test_index(es)
 
-    case_docs = {'docs': []}
-    for case_doc in TestDataStats.load_es_graph_dump(conf.cases_file):
-        to_append = {'_id': case_doc['case_id'],
-                     '_index': conf.graph_index,
-                     '_type': 'case',
-                     '_source': case_doc}
-        case_docs['docs'].append(to_append)
+    # insert documents
+    load_docs_into_test_index(es, 'case')
+    load_docs_into_test_index(es, 'file')
 
-    # Remove .cases[] from case.files[].cases[]
-    for case in case_docs['docs']:
-        for _file in case['_source']['files']:
-            _file.pop('cases', None)
-
-    case_docs = remove_keys_from_dict(case_docs, ['file_state'])
-
-    log.info('Bulk loading case docs to the ES...')
-    bulk(es, case_docs['docs'], ignore=409)
-
-    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
-
-    while True:
-        count = es.count(index=conf.graph_index, doc_type='case')['count']
-        print count, len(case_docs['docs'])
-        if count >= len(case_docs['docs']):
-            assert count == len(case_docs['docs'])
-            break
-        time.sleep(5)
-    # Wait for index to be refreshed
-    time.sleep(1)
     return es
+
+
+def create_test_index(es):
+    """
+    Creating an index in elasticsearch requires all doc_type mapping
+    and settings upfront.
+    """
+    case_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
+                                                   'case')
+
+    file_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
+                                                   'file')
+
+    combined = {'mappings': {}, 'settings': {}}
+    combined['mappings'].update(case_model_mapper.index_settings['mappings']) 
+    combined['mappings'].update(file_model_mapper.index_settings['mappings'])
+
+    combined['settings'].update(case_model_mapper.index_settings['settings'])
+    combined['settings'].update(file_model_mapper.index_settings['settings'])
+
+    # set up index/doc_type
+    es.indices.create(index=conf.graph_index,
+                      ignore=400,
+                      body=combined)
+
+
+def load_docs_into_test_index(es, doc_type):
+    """
+    Load documents from zipped test data into test index.
+    """
+
+    docs = {'docs': []}
+    for doc in TestDataStats.load_es_graph_dump(conf.doc_files[doc_type]):
+        to_append = {'_id': doc['{}_id'.format(doc_type)],
+                     '_index': conf.graph_index,
+                     '_type': doc_type,
+                     '_source': doc}
+        docs['docs'].append(to_append)
+
+    # Remove .cases[] from underneath case.files[]
+    if doc_type == 'case':
+        for doc in docs['docs']:
+            for _file in doc['_source']['files']:
+                _file.pop('cases', None)
+
+    # TODO: temp fix
+    docs = remove_keys_from_dict(docs, ['file_state'])
+
+    log.info('Bulk loading {} docs to the ES...'.format(doc_type))
+    bulk(es, docs['docs'], ignore=409)
+
+    log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
+
+    # es.indices.refresh(index=conf.graph_index)
+    
+    wait_for_index_to_refresh(es, doc_type, len(docs['docs']))
+
+
+def wait_for_index_to_refresh(es, doc_type, desired_count):
+    """
+    Wait for index to be refreshed.
+    Wait no longer than x minutes.
+    """
+    overall_time = 0
+
+    while overall_time < 100:
+        count = es.count(index=conf.graph_index, doc_type=doc_type)['count']
+        print count, desired_count, overall_time
+        if count >= desired_count:
+            assert count == desired_count
+            break
+        overall_time += 5
+        time.sleep(5)
+
+    time.sleep(1)
+
+    return
 
 
 @pytest.fixture(scope='session')

@@ -55,8 +55,8 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
 
     # Check that mapping_settings overwrite common_settings
     for key, value in mappings['settings'].items():
-        if key in mapping_settings:
-            assert value == mapping_settings[key]
+        if key in mapping_settings['settings']:
+            assert value == mapping_settings['settings'][key]
         else:
             assert value == common_settings['settings'][key]
 

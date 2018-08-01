@@ -53,7 +53,10 @@ class TestConfig(BaseConfig):
     repartition = 10
 
     # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.json.gz')
+    doc_files = {
+        'case': os.path.join(input_dir, 'cases.json.gz'),
+        'file': os.path.join(input_dir, 'files.json.gz')
+    }
 
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
