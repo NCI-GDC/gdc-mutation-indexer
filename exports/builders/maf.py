@@ -168,13 +168,14 @@ class MAFBuilder(object):
         4. Parse out those files' acls
         5. Dedupe into list of strings
         """
+
         es = Elasticsearch(self.config.es_host,
                            port=self.config.es_port,
                            http_auth=(self.config.es_user,
                                       self.config.es_pass))
 
         file_names = []
-        for url in self.urls:
+        for url in self.config.get_maf_file_names():
             assert url.rfind('/') > 0
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
@@ -188,12 +189,7 @@ class MAFBuilder(object):
         assert dict_results
         assert dict_results['hits']
 
-        # TEMP WHILE DATA UNAVAILABLE
-        return [u'phs000218']
-
         assert dict_results['hits']['hits']
-
-        import ipdb; ipdb.set_trace()
 
         acls = set(acl for result in dict_results['hits']['hits']
                    for acl in result["_source"]["acl"])

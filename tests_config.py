@@ -88,3 +88,6 @@ class TestConfig(BaseConfig):
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)
                 for f in os.listdir(self.maf_dir) if f.endswith('maf')]
+
+    def get_maf_file_names(self):
+        return [f + '.gz' for f in self.get_maf_urls()]

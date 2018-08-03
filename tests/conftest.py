@@ -109,19 +109,21 @@ def load_docs_into_test_index(es, doc_type):
 
     log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
 
-    # es.indices.refresh(index=conf.graph_index)
-    
     wait_for_index_to_refresh(es, doc_type, len(docs['docs']))
 
 
-def wait_for_index_to_refresh(es, doc_type, desired_count):
+def wait_for_index_to_refresh(es,
+                              doc_type,
+                              desired_count,
+                              wait_time=100):
     """
     Wait for index to be refreshed.
-    Wait no longer than x minutes.
+    Wait no longer than wait_time seconds
+    or until all documents have been loaded.
     """
     overall_time = 0
 
-    while overall_time < 100:
+    while overall_time < wait_time:
         count = es.count(index=conf.graph_index, doc_type=doc_type)['count']
         print count, desired_count, overall_time
         if count >= desired_count:
