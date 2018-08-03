@@ -36,6 +36,8 @@ class MAFBuilder(object):
         else:
             self.urls = self.get_urls()
 
+        self.acls = self.get_acls()
+
     def build(self):
         """
         Builds a master MAF dataframe by combining individual MAFs and
@@ -47,8 +49,9 @@ class MAFBuilder(object):
                 return df
             except IOError:
                 self.logger.info('Couldn\'t find existing maf file at given path')
-
         df = self.combine()
+        # use temporary maf_name column to create acl col
+        df = self.add_acl(df)
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
         df = self.add_available_variation_data(df)
@@ -68,8 +71,6 @@ class MAFBuilder(object):
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
         df = extract_sift_polyphen(df)
-        # Add acl
-        df = self.add_acl(df)
         # Build gene model and join with MAF dataframe
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
@@ -162,11 +163,10 @@ class MAFBuilder(object):
 
     def get_acls(self):
         """
-        1. Take list of urls
+        1. Take list of maf file names
         2. Assume the last part of the url is the file_name
         3. Look up corresponding files in es
         4. Parse out those files' acls
-        5. Dedupe into list of strings
         """
 
         es = Elasticsearch(self.config.es_host,
@@ -184,26 +184,30 @@ class MAFBuilder(object):
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
                                  body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
-                                       "_source": ["acl"]})
+                                       "_source": ["file_name", "acl"]})
 
         assert dict_results
         assert dict_results['hits']
 
         assert dict_results['hits']['hits']
 
-        acls = set(acl for result in dict_results['hits']['hits']
-                   for acl in result["_source"]["acl"])
+        filenames_to_acls = {}
 
-        return list(acls)
+        for result in dict_results["hits"]["hits"]:
+            filenames_to_acls[result["_source"]["file_name"]] = \
+                result["_source"]["acl"]
+
+        return filenames_to_acls
 
     def add_acl(self, df):
         """
         Populates mutation data with acls
+        Have to do a little massaging of the file name to match
         Mapped on the maf name level
         """
-        acls = self.get_acls()
-        acl_udf = udf(lambda: acls, ArrayType(StringType()))
-        return df.withColumn('acl', acl_udf())
+        acls = self.acls
+        acl_udf = udf(lambda url: acls[url[url.rfind('/') + 1:] + '.gz'], ArrayType(StringType()))
+        return df.withColumn('acl', acl_udf(col('maf_name')))
 
     def add_available_variation_data(self, df):
         """
@@ -425,6 +429,8 @@ class MAFBuilder(object):
             try:
                 new_df = self.read_maf(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
+                new_df = new_df.withColumn('maf_name', lit(url))
+
                 self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
                 if df is None:
                     df = new_df
