@@ -207,15 +207,23 @@ class MAFBuilder(object):
         acls = self.acls
 
         def acl_inner():
-            print url
+            print "url {0}".format(url)
+            print "url is unicode: {0}".format(isinstance(url, unicode))
             assert url
             maf_name = url
             key = maf_name[maf_name.rfind('/') + 1:] + '.gz'
-            print key
-            key = unicode(key)
+            print "key {0}".format(key)
+            print "key is unicode: {0}".format(isinstance(key, unicode))
+            ukey = unicode(key)
+            print "unicode key {0}".format(ukey)
+            print "unicode key is unicode: {0}".format(isinstance(ukey, unicode))
+            print "acls {0}".format(acls)
+            for k in acls.keys():
+                if k == ukey: print 'found it!'
+                print "acl key {0} is unicode: {1}".format(k, isinstance(k, unicode))
             assert acls
-            assert key in acls
-            return acls[key]
+            assert ukey in acls
+            return acls[ukey]
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
