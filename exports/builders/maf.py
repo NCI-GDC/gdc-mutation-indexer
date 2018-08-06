@@ -179,7 +179,7 @@ class MAFBuilder(object):
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
             file_names.append(file_name)
-        # import ipdb; ipdb.set_trace()
+
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
                                  body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
@@ -195,7 +195,7 @@ class MAFBuilder(object):
         for result in dict_results["hits"]["hits"]:
             filenames_to_acls[result["_source"]["file_name"]] = \
                 result["_source"]["acl"]
-        print filenames_to_acls
+
         return filenames_to_acls
 
     def add_acl(self, df, url):
@@ -207,20 +207,10 @@ class MAFBuilder(object):
         acls = self.acls
 
         def acl_inner():
-            print "url {0}".format(url)
-            print "url is unicode: {0}".format(isinstance(url, unicode))
             assert url
             maf_name = url
             key = maf_name[maf_name.rfind('/') + 1:] + '.gz'
-            print "key {0}".format(key)
-            print "key is unicode: {0}".format(isinstance(key, unicode))
             ukey = unicode(key)
-            print "unicode key {0}".format(ukey)
-            print "unicode key is unicode: {0}".format(isinstance(ukey, unicode))
-            print "acls {0}".format(acls)
-            for k in acls.keys():
-                if k == ukey: print 'found it!'
-                print "acl key {0} is unicode: {1}".format(k, isinstance(k, unicode))
             assert acls
             assert ukey in acls
             return acls[ukey]
