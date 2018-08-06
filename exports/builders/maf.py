@@ -179,7 +179,7 @@ class MAFBuilder(object):
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
             file_names.append(file_name)
-
+        # import ipdb; ipdb.set_trace()
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
                                  body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
@@ -195,7 +195,7 @@ class MAFBuilder(object):
         for result in dict_results["hits"]["hits"]:
             filenames_to_acls[result["_source"]["file_name"]] = \
                 result["_source"]["acl"]
-
+        print filenames_to_acls
         return filenames_to_acls
 
     def add_acl(self, df, url):
@@ -207,9 +207,12 @@ class MAFBuilder(object):
         acls = self.acls
 
         def acl_inner():
+            print url
             assert url
             maf_name = url
             key = maf_name[maf_name.rfind('/') + 1:] + '.gz'
+            print key
+            key = unicode(key)
             assert acls
             assert key in acls
             return acls[key]
