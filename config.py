@@ -214,3 +214,7 @@ class BaseConfig(object):
                             break
 
         return maf_urls
+
+    def get_maf_file_names(self):
+        return self.get_maf_urls()
+
