@@ -50,10 +50,9 @@ class MAFBuilder(object):
             except IOError:
                 self.logger.info('Couldn\'t find existing maf file at given path')
         df = self.combine()
-        # use temporary maf_name column to create acl col
-        df = self.add_acl(df)
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
+
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
@@ -199,15 +198,25 @@ class MAFBuilder(object):
 
         return filenames_to_acls
 
-    def add_acl(self, df):
+    def add_acl(self, df, url):
         """
         Populates mutation data with acls
         Have to do a little massaging of the file name to match
         Mapped on the maf name level
         """
         acls = self.acls
-        acl_udf = udf(lambda url: acls[url[url.rfind('/') + 1:] + '.gz'], ArrayType(StringType()))
-        return df.withColumn('acl', acl_udf(col('maf_name')))
+
+        def acl_inner():
+            assert url
+            maf_name = url
+            key = maf_name[maf_name.rfind('/') + 1:] + '.gz'
+            ukey = unicode(key)
+            assert acls
+            assert ukey in acls
+            return acls[ukey]
+
+        acl_udf = udf(acl_inner, ArrayType(StringType()))
+        return df.withColumn('acl', acl_udf())
 
     def add_available_variation_data(self, df):
         """
@@ -429,7 +438,8 @@ class MAFBuilder(object):
             try:
                 new_df = self.read_maf(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
-                new_df = new_df.withColumn('maf_name', lit(url))
+                # add acl based on individual maf
+                new_df = self.add_acl(new_df, url)
 
                 self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
                 if df is None:
