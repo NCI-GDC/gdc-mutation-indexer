@@ -49,16 +49,16 @@ class CNACentricBuilder(BaseBuilder):
 
         occurrence_df = self.build_occurrence(maf_df)
 
-        self.log('Final join SSM + Consequence + Occurrence')
-        ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
-                            .join(occurrence_df, on='ssm_id')
+        self.log('Final join CNA + Consequence + Occurrence')
+        cna_centric_df = cna_df.join(cons_df, on='cna_id')\
+                               .join(occurrence_df, on='cna_id')
 
         # Truncate outliers
-        treshold = self.config.percentile_threshold['occurrences_per_ssm']
-        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric,
-                                                          'occurrence',
-                                                          treshold)
-        self.log_count(self.ssm_centric)
+        threshold = self.config.percentile_threshold['occurrences_per_cna']
+        self.cna_centric_df = self.truncate_df_at_percentile(cna_centric_df,
+                                                             'occurrence',
+                                                             threshold)
+        self.log_count(self.cna_centric_df)
 
         self.log('Build finished')
         # Check if we should save the resulting dataframe
@@ -82,11 +82,12 @@ class CNACentricBuilder(BaseBuilder):
         Occurrence
         """
         # 1. Observation
-        obs_df = build_observation(self, maf_df)
-        
-        # 2. Case
-        
+        obs_df = self.build_observation(maf_df)
 
+        # 2. Case
+        case_df = self.build_case(maf_df)
+
+        # 3. Join Case to Observation
         self.log('Joining Cases with Observation, [right, case_id]')
         occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
                          .select('ssm_id',
@@ -97,6 +98,7 @@ class CNACentricBuilder(BaseBuilder):
                          .groupby('ssm_id')
                          .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
+
         return occurrence_df
 
     def build_observation(self, maf_df):
@@ -104,11 +106,13 @@ class CNACentricBuilder(BaseBuilder):
         Observation
         """
         self.log('Aggregating Observation from MAF')
-        obs_df = (ObservationBuilder(self.config, self.sqlContext)
-                  .build(maf_df, self.index_name))
+        obs_df = ObservationBuilder().build(maf_df, self.index_name)
         return obs_df
 
     def build_case(self, maf_df):
+        """
+        Case
+        """
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(case_df)
         return case_df

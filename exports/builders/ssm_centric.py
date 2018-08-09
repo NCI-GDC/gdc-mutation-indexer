@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import lit, struct, collect_list
+from pyspark.sql.functions import struct, collect_list
 
 from exports.builders import (
     CaseBuilder,
@@ -11,8 +11,6 @@ from exports.builders import BaseBuilder
 from exports.builders.df_builders import (
     get_ssm_df
 )
-logging.basicConfig()
-
 logging.basicConfig()
 
 
