@@ -198,7 +198,7 @@ class MAFBuilder(object):
 
         return filenames_to_acls
 
-    def add_acl(self, df, url):
+    def add_acl(self, df, maf_name):
         """
         Populates mutation data with acls
         Have to do a little massaging of the file name to match
@@ -207,13 +207,26 @@ class MAFBuilder(object):
         acls = self.acls
 
         def acl_inner():
-            assert url
-            maf_name = url
-            key = maf_name[maf_name.rfind('/') + 1:] + '.gz'
-            ukey = unicode(key)
-            assert acls
-            assert ukey in acls
-            return acls[ukey]
+            try:
+                key = maf_name
+                # trim out leading folders
+                if key.rfind('/') != -1:
+                    key = key[key.rfind('/') + 1:]
+                # mafs may be zipped or unzipped
+                # we expect the file_name in the File to be 'xxx.gz'
+                if key.endswith('.gz'):
+                    pass
+                else:
+                    key += '.gz'
+                # make sure it's unicode
+                ukey = unicode(key)
+
+                return acls[ukey]
+
+            except KeyError:
+
+                # TEMP:
+                return ['phs000218']
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
