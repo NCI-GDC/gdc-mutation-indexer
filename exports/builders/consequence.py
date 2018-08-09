@@ -29,7 +29,8 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, index_name, join_gene=False, add_gene_aa_change=False):
+    def build(self, maf_df, index_name,
+              join_gene=False, add_gene_aa_change=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.

@@ -14,12 +14,12 @@ from exports.builders.df_builders import (
 logging.basicConfig()
 
 
-class CNACentricBuilder(BaseBuilder):
+class CNVCentricBuilder(BaseBuilder):
     """
-    CNA: Copy Number Alteration
-    Builds cna-centric dataframe given case and maf dataframes::
+    CNV: Copy Number Variation
+    Builds cnv-centric dataframe given case and maf dataframes::
 
-        cna{}
+        cnv{}
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
@@ -27,40 +27,50 @@ class CNACentricBuilder(BaseBuilder):
                                 |____ observation[]
     """
 
-    index_name = 'cna_centric'
-    id_field = 'cna_id'
+    index_name = 'cnv_centric'
+    id_field = 'cnv_id'
 
     def build(self, maf_df):
         """
-        Builds CNA Centric index
+        Builds CNV Centric index
         """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
-            self.cna_centric_df = self.get_existing()
-            if self.cna_centric_df is not None:
+            self.cnv_centric_df = self.get_existing()
+            if self.cnv_centric_df is not None:
                 return self
 
-        cna_df = get_single_df(input_df=maf_df,
+        # TODO: Load from gistic files
+        # will not be in maf
+        cnv_df = get_single_df(input_df=maf_df,
                                index_name=self.index_name,
-                               mapping='cna',
-                               unique_fields=['cna_id'])
+                               mapping='cnv',
+                               unique_fields=['cnv_id'])
 
         cons_df = self.build_consequence(maf_df)
 
         occurrence_df = self.build_occurrence(maf_df)
 
-        self.log('Final join CNA + Consequence + Occurrence')
-        cna_centric_df = cna_df.join(cons_df, on='cna_id')\
-                               .join(occurrence_df, on='cna_id')
+        ##############
+        # LOGGING
+        self.log('Final join CNV + Consequence + Occurrence')
+        ###############
+
+        cnv_centric_df = cnv_df.join(cons_df, on='cnv_id')\
+                               .join(occurrence_df, on='cnv_id')
 
         # Truncate outliers
-        threshold = self.config.percentile_threshold['occurrences_per_cna']
-        self.cna_centric_df = self.truncate_df_at_percentile(cna_centric_df,
+        threshold = self.config.percentile_threshold['occurrences_per_cnv']
+        self.cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
                                                              'occurrence',
                                                              threshold)
-        self.log_count(self.cna_centric_df)
 
+        ###############
+        # LOGGING
+        self.log_count(self.cnv_centric_df)
         self.log('Build finished')
+        ###############
+
         # Check if we should save the resulting dataframe
         if self.config.index_keep:
             self.write(self.config.index_paths[self.index_name])
@@ -68,7 +78,10 @@ class CNACentricBuilder(BaseBuilder):
 
     def build_consequence(self, maf_df):
         """
-        I have no idea what these options mean... join_gene, add_gene_aa_change?
+        I have no idea what these options mean...
+        join_gene, add_gene_aa_change?
+        TODO: this is going to need to be a whole different kind
+        of consequence
         """
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build(input_df=maf_df,
@@ -88,7 +101,11 @@ class CNACentricBuilder(BaseBuilder):
         case_df = self.build_case(maf_df)
 
         # 3. Join Case to Observation
+        ###############
+        # LOGGING
         self.log('Joining Cases with Observation, [right, case_id]')
+        ###############
+
         occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
                          .select('ssm_id',
                                  struct('occurrence_id',
@@ -97,7 +114,11 @@ class CNACentricBuilder(BaseBuilder):
                                  .alias('occurrence'))
                          .groupby('ssm_id')
                          .agg(collect_list('occurrence').alias('occurrence')))
+
+        ###############
+        # LOGGING
         self.log_count(occurrence_df)
+        ###############
 
         return occurrence_df
 
@@ -105,7 +126,11 @@ class CNACentricBuilder(BaseBuilder):
         """
         Observation
         """
+        ###############
+        # LOGGING
         self.log('Aggregating Observation from MAF')
+        ###############
+
         obs_df = ObservationBuilder().build(maf_df, self.index_name)
         return obs_df
 
@@ -114,5 +139,10 @@ class CNACentricBuilder(BaseBuilder):
         Case
         """
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+
+        ###############
+        # LOGGING
         self.log_count(case_df)
+        ###############
+
         return case_df

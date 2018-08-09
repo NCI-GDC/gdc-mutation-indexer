@@ -90,4 +90,3 @@ class SSMCentricBuilder(BaseBuilder):
                          .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
         return occurrence_df
-
