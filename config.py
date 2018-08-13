@@ -54,7 +54,8 @@ class BaseConfig(object):
         'case_centric': 'case_centric',
         'gene_centric': 'gene_centric',
         'ssm_centric': 'ssm_centric',
-        'ssm_occurrence_centric': 'ssm_occurrence_centric'
+        'ssm_occurrence_centric': 'ssm_occurrence_centric',
+        'cnv_centric': 'cnv_centric',
     }
 
     # Where to save each index's final json

@@ -54,25 +54,27 @@ class CNVCentricBuilder(BaseBuilder):
         """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
-            self.cnv_centric_df = self.get_existing()
-            if self.cnv_centric_df is not None:
+            self.cnv_centric = self.get_existing()
+            if self.cnv_centric is not None:
                 return self
 
         # read from gistic
-        initial_cnv_df = self.read_gistic()
+        initial_cnv_df = self.get_initial_cnv()
 
         # do joins
-        joined_cnv_df = self.join_cnv(initial_cnv_df, maf_df)
+        # joined_cnv_df = self.join_cnv(initial_cnv_df, maf_df)
 
         # truncate outliers
-        cnv_centric_df = self.truncate(joined_cnv_df)
+        # cnv_centric_df = self.truncate(joined_cnv_df)
+
+        cnv_centric_df = initial_cnv_df
 
         # save final df as property
-        self.cnv_centric_df = cnv_centric_df
+        self.cnv_centric = cnv_centric_df
 
         ###############
         # LOGGING
-        self.log_count(self.cnv_centric_df)
+        self.log_count(self.cnv_centric)
         self.log('Build finished')
         ###############
 
@@ -116,7 +118,7 @@ class CNVCentricBuilder(BaseBuilder):
         # TODO: what should this actually be?
         return "stuff from indexd most likely"
 
-    def massage_cnv(self, url=None):
+    def get_initial_cnv(self, url=None):
         """
         Inevitably there's crap in this gistic
         """
