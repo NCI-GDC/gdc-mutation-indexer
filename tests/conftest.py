@@ -24,7 +24,8 @@ from exports.builders import (
     GeneCentricBuilder,
     CaseCentricBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder
+    SSMOccurrenceCentricBuilder,
+    CNVCentricBuilder,
 )
 
 conf = TestConfig()
@@ -255,6 +256,19 @@ def ssm_occurrence_centric_df(sqlContext, maf_df):
     builder.load()
     return builder.ssm_occurrence_centric
 
+
+@pytest.fixture(scope='session')
+def cnv_centric_df(sqlContext):
+    """
+    Builds cnv centric dataframe
+    """
+    log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
+    builder = CNVCentricBuilder(conf, sqlContext)
+    builder.build()
+
+    log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.cnv_centric_df
 
 @pytest.fixture(scope='session')
 def case_ssm_subtree(sqlContext, maf_df):

@@ -462,6 +462,8 @@ class MAFBuilder(object):
             except BaseException as e:
                 self.logger.error(e)
 
+        assert df is not None
+
         self.config.nb_mutations = df.count()
         self.logger.info('Combined {} files for a total of {} rows'
                          .format(len(urls), self.config.nb_mutations))

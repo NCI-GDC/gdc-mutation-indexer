@@ -218,3 +218,6 @@ class BaseConfig(object):
     def get_maf_file_names(self):
         return self.get_maf_urls()
 
+    def get_gistic_url(self):
+        #TODO: do a real thing
+        return []

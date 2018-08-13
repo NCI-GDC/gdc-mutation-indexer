@@ -1,5 +1,5 @@
-from pyspark.sql.functions import struct, collect_list, udf, size, col
-from pyspark.sql.types import BooleanType, ArrayType, StringType
+from pyspark.sql.functions import struct, collect_list, udf, col
+from pyspark.sql.types import ArrayType, StringType
 
 from exports.builders.df_builders import (
     get_gene_df,

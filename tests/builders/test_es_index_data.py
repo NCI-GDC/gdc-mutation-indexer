@@ -12,7 +12,11 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('all_cases', 'maf_df', 'case_centric_df', 'test_data', 'es_client')
+@pytest.mark.usefixtures('all_cases',
+                         'maf_df',
+                         'case_centric_df',
+                         'test_data',
+                         'es_client')
 class TestCaseCentricData:
 
     def test_case_centric_count(self, all_cases, maf_df, test_data, es_client):
@@ -125,7 +129,8 @@ class TestSSMCentricData:
         assert ssm_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'ssm_occurrence_centric_df', 'es_client')
+@pytest.mark.usefixtures('maf_df', 'test_data',
+                         'ssm_occurrence_centric_df', 'es_client')
 class TestSSMOccurrenceCentricData:
 
     def test_ssm_occurrence_centric_count(self, maf_df, test_data, es_client):
@@ -155,3 +160,9 @@ class TestSSMOccurrenceCentricData:
         ssm_occ_stat = getattr(ssm_occurrence_stats, stat)
         maf_stat = getattr(maf_stats, stat)
         assert ssm_occ_stat == maf_stat
+
+
+@pytest.mark.usefixtures('cnv_centric_df')
+class TestCnvCentricData:
+    def test_creation(self):
+        print 'great'

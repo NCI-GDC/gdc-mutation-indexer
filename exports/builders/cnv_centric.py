@@ -8,9 +8,7 @@ from exports.builders import (
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
-from exports.builders.df_builders import (
-    get_single_df
-)
+
 logging.basicConfig()
 
 
@@ -25,14 +23,34 @@ class CNVCentricBuilder(BaseBuilder):
         |____ occurrence[]
                     |_____ case{}
                                 |____ observation[]
+
+    TODO: this is kinda like mafBuilder, but also kinda like the index_builders.
+    figure out what to do about that
     """
 
+    # region Class-level Fields
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
+    # endregion
+
+    # region Constructor
+
+    def __init__(self, config, sqlContext):
+        BaseBuilder.__init__(self, config, sqlContext)
+        self._url = self.get_url(config)
+
+    # endregion
+
+    # region Abstract Overrides
 
     def build(self, maf_df):
         """
         Builds CNV Centric index
+
+        # TODO: Load from gistic files
+        # "real" file is in BRCA / all_thresholded.by_genes.txt
+        # fake file is (-1).txt
+        # gonna read it in a la maf.py
         """
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
@@ -40,15 +58,45 @@ class CNVCentricBuilder(BaseBuilder):
             if self.cnv_centric_df is not None:
                 return self
 
-        # TODO: Load from gistic files
-        # will not be in maf
-        cnv_df = get_single_df(input_df=maf_df,
-                               index_name=self.index_name,
-                               mapping='cnv',
-                               unique_fields=['cnv_id'])
+        # read from gistic
+        initial_cnv_df = self.read_gistic()
+
+        # do joins
+        joined_cnv_df = self.join_cnv(initial_cnv_df, maf_df)
+
+        # truncate outliers
+        cnv_centric_df = self.truncate(joined_cnv_df)
+
+        # save final df as property
+        self.cnv_centric_df = cnv_centric_df
+
+        ###############
+        # LOGGING
+        self.log_count(self.cnv_centric_df)
+        self.log('Build finished')
+        ###############
+
+        # Check if we should write
+        if self.config.index_keep:
+            self.write(self.config.index_paths[self.index_name])
+
+        return self
+
+    # endregion
+
+    # region Private Helper Functions
+
+    def truncate(self, cnv_df_to_truncate):
+        threshold = self.config.percentile_threshold['occurrences_per_cnv']
+        truncated_df = self.truncate_df_at_percentile(cnv_df_to_truncate,
+                                                      'occurrence',
+                                                      threshold)
+
+        return truncated_df
+
+    def join_cnv(self, cnv_df, maf_df):
 
         cons_df = self.build_consequence(maf_df)
-
         occurrence_df = self.build_occurrence(maf_df)
 
         ##############
@@ -59,22 +107,58 @@ class CNVCentricBuilder(BaseBuilder):
         cnv_centric_df = cnv_df.join(cons_df, on='cnv_id')\
                                .join(occurrence_df, on='cnv_id')
 
-        # Truncate outliers
-        threshold = self.config.percentile_threshold['occurrences_per_cnv']
-        self.cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
-                                                             'occurrence',
-                                                             threshold)
+        return cnv_centric_df
 
-        ###############
-        # LOGGING
-        self.log_count(self.cnv_centric_df)
-        self.log('Build finished')
-        ###############
+    def get_url(self, config):
+        if config.gistic_url is not None:
+            return config.gistic_url
 
-        # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
-        return self
+        # TODO: what should this actually be?
+        return "stuff from indexd most likely"
+
+    def massage_cnv(self, url=None):
+        """
+        Inevitably there's crap in this gistic
+        """
+
+        if url is None:
+            if self._url is not None:
+                url = self._url
+            else:
+                self.logger.error("Url not passed, instance _urls not set")
+                raise Exception("Url not specified to load CNV")
+
+        # to return
+        return_df = None
+
+        try:
+            new_df = self.read_gistic(url)
+
+            # do some crap
+
+            self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                           url))
+
+            return_df = new_df
+        except BaseException as e:
+            self.logger.error(e)
+            # TODO: reraise?
+
+        assert return_df is not None
+        # TODO: ?? self.df = return_df
+
+        return return_df
+
+    def read_gistic(self, url=None):
+        """
+        Reads in dataframes from a url?
+        """
+        return self.sqlContext.read.format('com.databricks.spark.csv')\
+                   .options(header='true')\
+                   .options(comment="#")\
+                   .options(delimiter='\t')\
+                   .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
+                   .load(url)
 
     def build_consequence(self, maf_df):
         """
@@ -146,3 +230,5 @@ class CNVCentricBuilder(BaseBuilder):
         ###############
 
         return case_df
+
+    # endregion
