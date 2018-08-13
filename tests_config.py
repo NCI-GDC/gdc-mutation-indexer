@@ -86,6 +86,7 @@ class TestConfig(BaseConfig):
 
     def __init__(self):
         super(TestConfig, self).__init__()
+        self.gistic_url = self.get_gistic_url()
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)
@@ -97,4 +98,4 @@ class TestConfig(BaseConfig):
     def get_gistic_url(self):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
-                if f.endswith("- (1).txt")][0]
+                if f.endswith("-1.txt")][0]
