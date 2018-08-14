@@ -247,6 +247,17 @@ def select_mapping(index_name, mapping_name):
     return mapping
 
 
+def standardize_schema(dataframe, index_name, mapping_name):
+    """Select only columns that are in specified document mapping"""
+
+    doc_mapping = select_mapping(index_name, mapping_name)['properties']
+    columns_to_keep = [c for c in dataframe.columns
+                       if c in doc_mapping.keys()]
+    return_df = dataframe.select(*columns_to_keep)
+
+    return return_df
+
+
 def struct_select(index_name, mapping_name, ignore=[]):
     """
     Takes the structure from a mapping and produces arguments for a select

@@ -1,5 +1,5 @@
 from pyspark.sql.functions import lit, collect_list
-from utils import select_mapping, get_case_ids_from_source_es
+from utils import standardize_schema, get_case_ids_from_source_es
 import logging
 logging.basicConfig()
 
@@ -22,9 +22,7 @@ class CaseBuilder(object):
         df = self.load_into_df(maf_df)
 
         # Select only columns that are in case mapping:
-        case_mapping = select_mapping('case_centric', 'case')['properties']
-        columns_to_keep = [c for c in df.columns if c in case_mapping.keys()]
-        df = df.select(*columns_to_keep)
+        df = standardize_schema(df, 'case_centric', 'case')
 
         return df
 
