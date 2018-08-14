@@ -115,10 +115,9 @@ class CNVCentricBuilder(BaseBuilder):
         new_df = self.join_to_gene(new_df, maf_df)
 
         # TODO: good renaming
+        new_df = self.rename_cols(new_df)
 
         # add id
-        # should be chromosome + start_position + end_position from gene
-        # + cna_change (-2 to 2)
         new_df = self.add_id(new_df)
 
         # just add a column of true for now
@@ -152,7 +151,10 @@ class CNVCentricBuilder(BaseBuilder):
             return gene_id
 
         trim_gene_symbol_udf = udf(trim_gene_symbol_inner, StringType())
-        trimmed_df = initial_cnv_df.withColumn('gene_id', trim_gene_symbol_udf)
+        trimmed_df = initial_cnv_df.withColumn('gene_id',
+                                               trim_gene_symbol_udf(
+                                                   col('Gene Symbol')
+                                               ))
 
         trimmed_and_deduped_df = trimmed_df.drop('Gene Symbol')
 
@@ -162,7 +164,7 @@ class CNVCentricBuilder(BaseBuilder):
         """
         Get the other gene information
         """
-        gene_df = get_gene_df(maf_df, self.index_name,
+        gene_df = get_gene_df(maf_df, index_name='gene_centric',
                               unique_fields=['gene_id'])
 
         ##############
@@ -179,6 +181,26 @@ class CNVCentricBuilder(BaseBuilder):
 
         return gistic_and_gene_df
 
+    def rename_cols(self, initial_cnv_df):
+
+        # TODO: https://stackoverflow.com/questions/34077353/how-to-change-dataframe-column-names-in-pyspark
+        # test the various ways of doing this to see what's fastest
+
+        old_to_new = {'gene_chromosome': 'chromosome',
+                      'gene_start': 'start_position',
+                      'gene_end': 'end_position'}
+
+        df = initial_cnv_df
+
+        for old, new in old_to_new.items():
+            df = df.withColumnRenamed(old, new)
+
+        # renamed_cols_df = initial_cnv_df.select(col('gene_chromosome').alias('chromosome'),
+        #                                        col('gene_start').alias('start_position'),
+        #                                        col('gene_end').alias('end_position'))
+
+        return df
+
     def add_id(self, initial_cnv_df):
         """
         Business key: chromosome, start_position, end_position, cna_change
@@ -193,6 +215,7 @@ class CNVCentricBuilder(BaseBuilder):
         check against sample output doc
 
         """
+
         cnv_df_with_id = initial_cnv_df.withColumn('cnv_id', uuid5_col(
             col('chromosome'),
             col('start_position'),

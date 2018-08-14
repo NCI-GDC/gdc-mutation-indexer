@@ -12,7 +12,7 @@ class TestConfig(BaseConfig):
     input_dir = os.path.join(data_dir, 'input')
     maf_dir = os.path.join(input_dir, 'maf')
     # TODO: TEMP
-    gistic_dir = os.path.join(root_dir, 'BRCA')
+    gistic_dir = input_dir # os.path.join(root_dir, 'BRCA')
 
     # Initialize test directory tree if incomplete
     for directory in [log_dir, input_dir, maf_dir]:

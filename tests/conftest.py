@@ -264,7 +264,6 @@ def cnv_centric_df(sqlContext, maf_df):
     """
     log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
     builder = CNVCentricBuilder(conf, sqlContext)
-    import ipdb; ipdb.set_trace()
     builder.build(maf_df)
 
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
