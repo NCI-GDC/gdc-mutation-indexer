@@ -127,7 +127,8 @@ class BaseConfig(object):
         'case_centric': True,
         'gene_centric': True,
         'ssm_centric': True,
-        'ssm_occurrence_centric': True
+        'ssm_occurrence_centric': True,
+        'cnv_centric': True,
     }
 
     # Case load settings

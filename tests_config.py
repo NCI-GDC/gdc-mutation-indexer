@@ -81,7 +81,8 @@ class TestConfig(BaseConfig):
          'case_centric': True,
          'gene_centric': True,
          'ssm_centric': True,
-         'ssm_occurrence_centric': True
+         'ssm_occurrence_centric': True,
+         'cnv_centric': True,
      }
 
     def __init__(self):

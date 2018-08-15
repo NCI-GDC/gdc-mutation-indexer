@@ -15,7 +15,7 @@ conf = TestConfig()
 @pytest.mark.usefixtures('cnv_centric_df')
 class TestCnvCentricData:
     def test_creation(self):
-        print 'great'
+        pass
 
 
 @pytest.mark.usefixtures('all_cases',

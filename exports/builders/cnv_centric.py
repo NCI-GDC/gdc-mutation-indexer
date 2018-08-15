@@ -1,7 +1,15 @@
 import logging
 
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import lit, col, udf, struct, collect_list
+from pyspark.sql.functions import (
+    array,
+    col,
+    collect_list,
+    explode,
+    lit,
+    struct,
+    udf,
+)
 
 from exports.builders import (
     BaseBuilder,
@@ -21,6 +29,56 @@ from exports.builders.utils import (
 from utils import standardize_schema
 
 logging.basicConfig()
+
+# region MoveMe
+
+
+def melt(frame,
+         id_vars,
+         value_vars=None,
+         var_name="variable",
+         value_name="value"):
+    """
+    Source:
+    https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
+
+    See also:
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html
+
+    The opposite of pivoting a dataframe
+
+    :param frame: input pyspark.DataFrame
+    :param id_vars: Column(s) to use as identifier variables
+    :type id_vars: Iterable
+    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
+    that are not set as id_vars.
+    :type value_vars: Iterable
+    :param var_name: Name to use for the 'variable' column. If None, default to 'variable'.
+    :param value_name: Name to use for the 'value' column. If none, default to 'value'.
+    :return: long version of dataframe
+    """
+
+    # We assume id_vars is a strict subset of value_vars
+    if not value_vars:
+        value_vars = list(set(frame.columns) - set(id_vars))
+
+    _vars_and_vals = array(*(
+        struct(lit(c).alias(var_name), col(c).alias(value_name))
+        for c in value_vars
+    ))
+
+    _temp = frame.withColumn("_vars_and_vals", explode(_vars_and_vals))
+
+    cols = id_vars + [
+        col("_vars_and_vals")[x].alias(x)
+        for x in [var_name, value_name]
+    ]
+
+    return_df = _temp.select(*cols)
+
+    return return_df
+
+# endregion
 
 
 class CNVCentricBuilder(BaseBuilder):
@@ -81,7 +139,12 @@ class CNVCentricBuilder(BaseBuilder):
         # truncate outliers
         # cnv_centric_df = self.truncate(joined_cnv_df)
 
-        cnv_centric_df = massaged_cnv_df
+        # warning: this will strip out anything that isn't
+        # specified in the schema
+
+        cleansed_df = standardize_schema(massaged_cnv_df, "cnv_centric", "cnv")
+
+        cnv_centric_df = cleansed_df
 
         # save final df as property
         self.cnv_centric = cnv_centric_df
@@ -104,11 +167,19 @@ class CNVCentricBuilder(BaseBuilder):
 
     def massage_cnv_df(self, initial_cnv_df, maf_df):
 
-        import ipdb; ipdb.set_trace()
-
         # trim gene symbol of last .{dd}
-
         new_df = self.trim_gene_symbol(initial_cnv_df)
+
+        new_df = self.remove_extra_columns(new_df)
+
+        # melt
+        # TODO: find a good home for this method,
+        # it doesn't belong in this module
+        # get column names
+        new_df = melt(new_df,
+                      id_vars=["gene_id"],
+                      var_name="aliquot_id",
+                      value_name="cnv_change")
 
         # join to gene df on trimmed gene symbol = gene_id
         # gene df from MAF builder or gene_centric df?
@@ -128,11 +199,17 @@ class CNVCentricBuilder(BaseBuilder):
 
         # do some crap for consequence / occurrence
 
-        # warning: this will strip out anything that isn't
-        # specified in the schema
-        new_df = standardize_schema(new_df, "cnv_centric", "cnv")
-
         return new_df
+
+    def remove_extra_columns(self, initial_cnv_df):
+        """
+        These columns aren't useful right now, and they confuse the melting
+        """
+
+        updated_df = initial_cnv_df.drop('Locus ID')
+        updated_df = updated_df.drop('Cytoband')
+
+        return updated_df
 
     def trim_gene_symbol(self, initial_cnv_df):
         """
@@ -203,14 +280,14 @@ class CNVCentricBuilder(BaseBuilder):
 
     def add_id(self, initial_cnv_df):
         """
-        Business key: chromosome, start_position, end_position, cna_change
+        Business key: chromosome, start_position, end_position, cnv_change
         """
 
         """
         TORI TODO:
 
-        cna_change = -2 to 2
-        Cna = gene + cna change pair
+        cnv_change = -2 to 2
+        cnv = gene + cnv change pair
         load in gene? or is the gene info in the line?
         check against sample output doc
 
@@ -220,7 +297,7 @@ class CNVCentricBuilder(BaseBuilder):
             col('chromosome'),
             col('start_position'),
             col('end_position'),
-            col('cna_change')
+            col('cnv_change')
         ))
 
         return cnv_df_with_id

@@ -268,7 +268,7 @@ def cnv_centric_df(sqlContext, maf_df):
 
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
     builder.load()
-    return builder.cnv_centric_df
+    return builder.cnv_centric
 
 @pytest.fixture(scope='session')
 def case_ssm_subtree(sqlContext, maf_df):
