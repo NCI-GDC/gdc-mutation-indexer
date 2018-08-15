@@ -99,4 +99,4 @@ class TestConfig(BaseConfig):
     def get_gistic_url(self):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
-                if f.endswith("-1.txt")][0]
+                if f.endswith("cnv.txt")][0]
