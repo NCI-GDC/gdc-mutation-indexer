@@ -181,6 +181,9 @@ class CNVCentricBuilder(BaseBuilder):
                       var_name="aliquot_id",
                       value_name="cnv_change")
 
+        # import ipdb; ipdb.set_trace()
+        new_df = new_df.groupby(["gene_id", "cnv_change"]).agg(collect_list("aliquot_id"))
+
         # join to gene df on trimmed gene symbol = gene_id
         # gene df from MAF builder or gene_centric df?
         new_df = self.join_to_gene(new_df, maf_df)
@@ -255,6 +258,9 @@ class CNVCentricBuilder(BaseBuilder):
                          'inner')
                    .drop(initial_cnv_df.gene_id)
         )
+        # import ipdb; ipdb.set_trace()
+        # TEMP
+        # gistic_and_gene_df = gistic_and_gene_df.limit(10)
 
         return gistic_and_gene_df
 
