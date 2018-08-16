@@ -73,6 +73,7 @@ class TestConfig(BaseConfig):
         'occurrences_per_ssm': 100,
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
+        'occurrences_per_cnv': 100,
     }
 
     cache_dataframes = {

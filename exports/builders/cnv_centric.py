@@ -134,15 +134,15 @@ class CNVCentricBuilder(BaseBuilder):
         massaged_cnv_df = self.massage_cnv_df(initial_cnv_df, maf_df)
 
         # do joins
-        # joined_cnv_df = self.join_cnv(initial_cnv_df, maf_df)
+        joined_cnv_df = self.join_cnv(massaged_cnv_df, maf_df)
 
         # truncate outliers
-        # cnv_centric_df = self.truncate(joined_cnv_df)
+        cnv_centric_df = self.truncate(joined_cnv_df)
 
         # warning: this will strip out anything that isn't
         # specified in the schema
 
-        cleansed_df = standardize_schema(massaged_cnv_df, "cnv_centric", "cnv")
+        cleansed_df = standardize_schema(joined_cnv_df, "cnv_centric", "cnv")
 
         cnv_centric_df = cleansed_df
 
@@ -332,16 +332,20 @@ class CNVCentricBuilder(BaseBuilder):
 
     def join_cnv(self, cnv_df, maf_df):
 
-        cons_df = self.build_consequence(maf_df)
-        occurrence_df = self.build_occurrence(maf_df)
+        cons_df = self.build_consequence(cnv_df)
+        # occurrence_df = self.build_occurrence(maf_df)
 
         ##############
         # LOGGING
         self.log('Final join CNV + Consequence + Occurrence')
         ###############
 
-        cnv_centric_df = cnv_df.join(cons_df, on='cnv_id')\
-                               .join(occurrence_df, on='cnv_id')
+        cnv_centric_df = cnv_df.join(cons_df, on='cnv_id', how='left')\
+                               .drop(cnv_df.gene_id)\
+                               .drop(cnv_df.symbol)\
+                               .drop(cnv_df.is_cancer_gene_census)\
+                               .drop(cnv_df.biotype)
+                               #.join(occurrence_df, on='cnv_id')
 
         return cnv_centric_df
 
@@ -396,18 +400,31 @@ class CNVCentricBuilder(BaseBuilder):
                    .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                    .load(url)
 
-    def build_consequence(self, maf_df):
+    def build_consequence(self, cnv_df):
         """
-        I have no idea what these options mean...
-        join_gene, add_gene_aa_change?
-        TODO: this is going to need to be a whole different kind
-        of consequence
+        For now this is just gene information
         """
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(input_df=maf_df,
-                          index_name=self.index_name,
-                          join_gene=True,
-                          add_gene_aa_change=True))
+
+        # Add consequence_id
+        id_added_df = cnv_df.withColumn('consequence_id', uuid5_col(
+            col('symbol'),
+            col('gene_id'),
+            col('is_cancer_gene_census'),
+            col('biotype')
+        ))
+
+        # Create gene structure
+        cons_df = id_added_df.select('cnv_id',
+                                     struct(
+                                        'consequence_id',
+                                        struct(
+                                            'symbol',
+                                            'gene_id',
+                                            'is_cancer_gene_census',
+                                            'biotype'
+                                        ).alias('gene'))
+                                     .alias('consequence'))
+
         return cons_df
 
     def build_occurrence(self, maf_df):

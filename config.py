@@ -113,6 +113,7 @@ class BaseConfig(object):
         'occurrences_per_ssm': 100,
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
+        'occurrences_per_cnv': 100,
     }
 
     # How many partitions to distribute the index file accross
