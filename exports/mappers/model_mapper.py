@@ -173,6 +173,9 @@ class ModelMapper(object):
                 'case_centric':
                     ['case_centric', 'properties', 'gene', 'properties', 'ssm',
                      'properties', 'observation'],
+                'cnv_centric':
+                    ['cnv_centric', 'properties', 'occurrence', 'properties',
+                     'case', 'properties', 'observation'],
                 'gene_centric':
                     ['gene_centric', 'properties', 'case', 'properties', 'ssm',
                      'properties', 'observation'],
@@ -290,6 +293,7 @@ class ModelMapper(object):
             },
             'observation': {
                 'case_centric': [],
+                'cnv_centric': [],
                 'gene_centric': [],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],
