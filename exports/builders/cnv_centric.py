@@ -23,62 +23,12 @@ from exports.builders.df_builders import (
 )
 
 from exports.builders.utils import (
+    melt_df,
     uuid5_col,
-    struct_select,
     standardize_schema,
 )
 
 logging.basicConfig()
-
-# region MoveMe
-
-
-def melt(frame,
-         id_vars,
-         value_vars=None,
-         var_name="variable",
-         value_name="value"):
-    """
-    Source:
-    https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
-
-    See also:
-    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html
-
-    The opposite of pivoting a dataframe
-
-    :param frame: input pyspark.DataFrame
-    :param id_vars: Column(s) to use as identifier variables
-    :type id_vars: Iterable
-    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
-    that are not set as id_vars.
-    :type value_vars: Iterable
-    :param var_name: Name to use for the 'variable' column. If None, default to 'variable'.
-    :param value_name: Name to use for the 'value' column. If none, default to 'value'.
-    :return: long version of dataframe
-    """
-
-    # We assume id_vars is a strict subset of value_vars
-    if not value_vars:
-        value_vars = list(set(frame.columns) - set(id_vars))
-
-    _vars_and_vals = array(*(
-        struct(lit(c).alias(var_name), col(c).alias(value_name))
-        for c in value_vars
-    ))
-
-    _temp = frame.withColumn("_vars_and_vals", explode(_vars_and_vals))
-
-    cols = id_vars + [
-        col("_vars_and_vals")[x].alias(x)
-        for x in [var_name, value_name]
-    ]
-
-    return_df = _temp.select(*cols)
-
-    return return_df
-
-# endregion
 
 
 class CNVCentricBuilder(BaseBuilder):
@@ -97,12 +47,8 @@ class CNVCentricBuilder(BaseBuilder):
     figure out what to do about that
     """
 
-    # region Class-level Fields
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
-    # endregion
-
-    # region Constructor
 
     def __init__(self, config, sqlContext):
         BaseBuilder.__init__(self, config, sqlContext)
@@ -120,8 +66,6 @@ class CNVCentricBuilder(BaseBuilder):
                 mapping[k] = v
 
         self._aliquot_id_to_case_id_map = mapping
-
-    # endregion
 
     # region Abstract Overrides
 
@@ -184,14 +128,14 @@ class CNVCentricBuilder(BaseBuilder):
 
         new_df = self._remove_extra_columns(new_df)
 
-        # melt
+        # melt dataframe
         # TODO: find a good home for this method,
         # it doesn't belong in this module
         # get column names
-        new_df = melt(new_df,
-                      id_vars=["gene_id"],
-                      var_name="aliquot_id",
-                      value_name="cnv_change")
+        new_df = melt_df(new_df,
+                         id_vars=["gene_id"],
+                         var_name="aliquot_id",
+                         value_name="cnv_change")
 
         # import ipdb; ipdb.set_trace()
         # new_df = new_df.groupby(["gene_id", "cnv_change"]).agg(collect_list("aliquot_id"))
@@ -255,10 +199,7 @@ class CNVCentricBuilder(BaseBuilder):
         gene_df = get_gene_df(maf_df, index_name='gene_centric',
                               unique_fields=['gene_id'])
 
-        ##############
-        # LOGGING
         self.log('Joining gene with gistic [inner, "gene_id"]')
-        ###############
 
         gistic_and_gene_df = (
             gene_df.join(initial_cnv_df,
@@ -326,12 +267,7 @@ class CNVCentricBuilder(BaseBuilder):
         cons_df = self._build_consequence(cnv_df)
         occurrence_df = self._build_occurrence(cnv_df, maf_df)
 
-        # import ipdb; ipdb.set_trace()
-
-        ##############
-        # LOGGING
         self.log('Final join CNV + Consequence + Occurrence')
-        ###############
 
         # TODO: how to join?
         test = cnv_df.join(cons_df, on='cnv_id', how='left')
@@ -365,11 +301,8 @@ class CNVCentricBuilder(BaseBuilder):
         try:
             new_df = self._read_gistic(url)
 
-            ###############
-            # LOGGING
             self.logger.info('Read {} rows from {}'.format(new_df.count(),
                                                            url))
-            ###############
 
             return_df = new_df
         except BaseException as e:
@@ -424,7 +357,6 @@ class CNVCentricBuilder(BaseBuilder):
         """
         Occurrence
         """
-        # import ipdb; ipdb.set_trace()
         # 1. Observation
         obs_df = self._build_observation(cnv_df, maf_df)
 
@@ -432,10 +364,7 @@ class CNVCentricBuilder(BaseBuilder):
         case_df = self._build_case(maf_df)
 
         # 3. Join Case to Observation
-        ###############
-        # LOGGING
         self.log('Joining Cases with Observation, [right, case_id]')
-        ###############
 
         occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
                          .select('cnv_id',
@@ -446,10 +375,7 @@ class CNVCentricBuilder(BaseBuilder):
                          .groupby('cnv_id')
                          .agg(collect_list('occurrence').alias('occurrence')))
 
-        ###############
-        # LOGGING
         self.log_count(occurrence_df)
-        ###############
 
         return occurrence_df
 
@@ -457,10 +383,7 @@ class CNVCentricBuilder(BaseBuilder):
         """
         Observation
         """
-        ###############
-        # LOGGING
         self.log('Aggregating Observation from gistic')
-        ###############
 
         mapping = self._aliquot_id_to_case_id_map
 
@@ -474,7 +397,7 @@ class CNVCentricBuilder(BaseBuilder):
                                            case_id_udf(
                                                col('aliquot_id')
                                            ))
-        
+
         # add occurrence id
         new_df = new_df.withColumn('occurrence_id',
                                    uuid5_col(col('cnv_id'),
@@ -504,10 +427,7 @@ class CNVCentricBuilder(BaseBuilder):
         try:
             return_id = self._aliquot_id_to_case_id_map[aliquot_id]
         except KeyError:
-            ###############
-            # LOGGING
             self.log('Aliquot to case id mapping failure')
-            ###############
         else:
             return return_id
 
@@ -517,11 +437,6 @@ class CNVCentricBuilder(BaseBuilder):
         """
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
 
-        ###############
-        # LOGGING
         self.log_count(case_df)
-        ###############
 
         return case_df
-
-    # endregion
