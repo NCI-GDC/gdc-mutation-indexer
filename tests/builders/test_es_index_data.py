@@ -12,10 +12,23 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('cnv_centric_df')
+@pytest.mark.usefixtures('maf_df', 'cnv_centric_df', 'tests_data', 'es_client')
 class TestCnvCentricData:
-    def test_creation(self):
-        pass
+
+    def test_cnv_centric_count(self, maf_df, test_data, es_client):
+        # maf_case_count = TestDataStats.get_stats(maf_df, test_data,
+        #                                          'case_centric')['count']
+        # expected_count = len(all_cases)
+
+        # temp
+        expected_count = 1
+
+        built_count = es_client.count(
+            index=conf.indices['cnv_centric'],
+            doc_type='cnv_centric',
+            body={"query": {"match_all": {}}}
+        )['count']
+        assert built_count == expected_count
 
 
 @pytest.mark.usefixtures('all_cases',
