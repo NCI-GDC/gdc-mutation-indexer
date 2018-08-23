@@ -3,7 +3,7 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    udf, struct, col, explode, array, when, regexp_extract
+    udf, struct, col, explode, array, when, regexp_extract, lit
 )
 from pyspark.sql.types import StringType, ArrayType, LongType, DoubleType, IntegerType
 from urllib import quote_plus
