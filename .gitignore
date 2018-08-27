@@ -64,7 +64,7 @@ gulpfile.js
 package.json
 
 # vim
-*.swp
+*.sw?
 .ropeproject/*
 
 # private files
