@@ -4,7 +4,7 @@ from pyspark.sql.types import StringType
 from pyspark.sql.functions import (
     array,
     col,
-    collect_list,
+    collect_set,
     explode,
     lit,
     struct,
@@ -14,8 +14,6 @@ from pyspark.sql.functions import (
 from exports.builders import (
     BaseBuilder,
     CaseBuilder,
-    ConsequenceBuilder,
-    ObservationBuilder,
 )
 
 from exports.builders.df_builders import (
@@ -24,7 +22,6 @@ from exports.builders.df_builders import (
 
 from exports.builders.utils import (
     uuid5_col,
-    struct_select,
     standardize_schema,
 )
 
@@ -193,9 +190,6 @@ class CNVCentricBuilder(BaseBuilder):
                       var_name="aliquot_id",
                       value_name="cnv_change")
 
-        # import ipdb; ipdb.set_trace()
-        # new_df = new_df.groupby(["gene_id", "cnv_change"]).agg(collect_list("aliquot_id"))
-
         # join to gene df on trimmed gene symbol = gene_id
         # gene df from MAF builder or gene_centric df?
         new_df = self._join_to_gene(new_df, maf_df)
@@ -326,8 +320,6 @@ class CNVCentricBuilder(BaseBuilder):
         cons_df = self._build_consequence(cnv_df)
         occurrence_df = self._build_occurrence(cnv_df, maf_df)
 
-        # import ipdb; ipdb.set_trace()
-
         ##############
         # LOGGING
         self.log('Final join CNV + Consequence + Occurrence')
@@ -407,16 +399,16 @@ class CNVCentricBuilder(BaseBuilder):
         ))
 
         # Create gene structure
-        cons_df = id_added_df.select('cnv_id',
-                                     struct(
-                                        'consequence_id',
-                                        struct(
-                                            'symbol',
-                                            'gene_id',
-                                            'is_cancer_gene_census',
-                                            'biotype'
-                                        ).alias('gene'))
-                                     .alias('consequence'))
+        cons_df = (id_added_df.select('cnv_id',
+                                      struct('consequence_id',
+                                             struct('symbol',
+                                                    'gene_id',
+                                                    'is_cancer_gene_census',
+                                                    'biotype')
+                                             .alias('gene'))
+                                      .alias('consequence')).groupby('cnv_id')
+                              .agg(collect_set('consequence')
+                                   .alias('consequence')))
 
         return cons_df
 
@@ -444,7 +436,7 @@ class CNVCentricBuilder(BaseBuilder):
                                                *case_df.columns).alias('case'))
                                  .alias('occurrence'))
                          .groupby('cnv_id')
-                         .agg(collect_list('occurrence').alias('occurrence')))
+                         .agg(collect_set('occurrence').alias('occurrence')))
 
         ###############
         # LOGGING
@@ -492,7 +484,7 @@ class CNVCentricBuilder(BaseBuilder):
                                 'occurrence_id',
                                 struct('observation_id').alias('observation'))
                         .groupby('cnv_id', 'case_id', 'occurrence_id')
-                        .agg(collect_list('observation').alias('observation')))
+                        .agg(collect_set('observation').alias('observation')))
 
         return obs_df
 
