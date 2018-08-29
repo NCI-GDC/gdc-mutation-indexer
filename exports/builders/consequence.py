@@ -2,6 +2,7 @@ import logging
 from pyspark.sql.functions import (explode,
                                    col,
                                    collect_list,
+                                   collect_set,
                                    struct,
                                    lit,
                                    when,
@@ -120,6 +121,33 @@ class ConsequenceBuilder(object):
                          .agg(collect_list('consequence').alias('consequence')))
 
         return df
+
+    def build_for_cnv(self, cnv_df):
+        """
+        For now this is just gene information
+        """
+
+        # Add consequence_id
+        id_added_df = cnv_df.withColumn('consequence_id', uuid5_col(
+            col('symbol'),
+            col('gene_id'),
+            col('is_cancer_gene_census'),
+            col('biotype')
+        ))
+
+        # Create gene structure
+        cons_df = (id_added_df.select('cnv_id',
+                                      struct('consequence_id',
+                                             struct('symbol',
+                                                    'gene_id',
+                                                    'is_cancer_gene_census',
+                                                    'biotype')
+                                             .alias('gene'))
+                                      .alias('consequence')).groupby('cnv_id')
+                              .agg(collect_set('consequence')
+                                   .alias('consequence')))
+
+        return cons_df
 
     @staticmethod
     def build_all_effects_cols(maf_df):

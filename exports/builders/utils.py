@@ -3,10 +3,9 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    udf, struct, col, explode, array, when, regexp_extract
+    lit, udf, struct, col, explode, array, when, regexp_extract
 )
-from pyspark.sql.types import StringType, ArrayType, LongType, DoubleType, IntegerType
-from urllib import quote_plus
+from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
 from exports.mappers.model_mapper import ModelMapper
 from elasticsearch import Elasticsearch
@@ -15,7 +14,8 @@ logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
 
 
-def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
+              tumor_allele):
     """
     Create a label (genomic change) from an ssm based on its variant type:
 
@@ -228,6 +228,60 @@ def access_json_path(json_dict, step_list):
 
     step = stack.pop(0)
     return access_json_path(json_dict[step], stack)
+
+
+def melt(frame,
+         id_vars,
+         value_vars=None,
+         var_name="variable",
+         value_name="value"):
+    """
+    Source:
+    https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
+
+    See also:
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html
+
+    The opposite of pivoting a dataframe
+
+    :param frame: input pyspark.DataFrame
+    :param id_vars: Column(s) to use as identifier variables
+    :type id_vars: Iterable
+    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
+    that are not set as id_vars.
+    :type value_vars: Iterable
+    :param var_name: Name to use for the 'variable' column. If None, default to 'variable'.
+    :param value_name: Name to use for the 'value' column. If none, default to 'value'.
+    :return: long version of dataframe
+    """
+
+    # We assume id_vars is a strict subset of value_vars
+    if not value_vars:
+        value_vars = list(set(frame.columns) - set(id_vars))
+
+    _vars_and_vals = array(*(
+        struct(lit(c).alias(var_name), col(c).alias(value_name))
+        for c in value_vars
+    ))
+
+    _temp = frame.withColumn("_vars_and_vals", explode(_vars_and_vals))
+
+    cols = id_vars + [
+        col("_vars_and_vals")[x].alias(x)
+        for x in [var_name, value_name]
+    ]
+
+    return_df = _temp.select(*cols)
+
+    return return_df
+
+
+def remove_columns(df, *args):
+
+    for column_name in args:
+        df = df.drop(column_name)
+
+    return df
 
 
 def select_mapping(index_name, mapping_name):

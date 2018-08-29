@@ -76,6 +76,7 @@ class SSMCentricBuilder(BaseBuilder):
         # Observation
         self.log('Aggregating Observation from MAF')
         obs_df = ObservationBuilder().build(maf_df, self.index_name)
+
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(case_df)
 

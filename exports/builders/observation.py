@@ -1,9 +1,12 @@
 import logging
 logging.basicConfig()
 
-from pyspark.sql.functions import struct, collect_list
+from pyspark.sql.functions import (
+    struct, collect_list, collect_set,
+    lit, col,
+)
 
-from exports.builders.utils import struct_select
+from exports.builders.utils import struct_select, uuid5_col
 
 
 class ObservationBuilder(object):
@@ -26,5 +29,36 @@ class ObservationBuilder(object):
                         .groupby('ssm_id', 'case_id', 'occurrence_id')
                         .agg(collect_list('observation')
                              .alias('observation')))
+
+        return obs_df
+
+    def build_for_cnv(self, initial_df):
+        # add occurrence id
+        new_df = initial_df.withColumn('occurrence_id',
+                                       uuid5_col(col('cnv_id'),
+                                                 col('case_id')))
+
+        # add observation id
+        new_df = new_df.withColumn('observation_id',
+                                   uuid5_col(col('cnv_id'),
+                                             col('case_id'),
+                                             col('aliquot_id')))
+
+        # add other observation fields
+        new_df = new_df.withColumn('variant_status', lit('Tumor only'))
+        new_df = new_df.withColumn('variant_caller', lit('GISTIC2'))
+        new_df = new_df.withColumn('variant_calling', struct('variant_caller')
+                                   .alias('variant_calling'))
+        new_df = new_df.drop('variant_caller')
+
+        # observation structure, TODO: add more fields
+        obs_df = (new_df.select('cnv_id',
+                                'case_id',
+                                'occurrence_id',
+                                struct('observation_id',
+                                       'variant_status',
+                                       'variant_calling').alias('observation'))
+                        .groupby('cnv_id', 'case_id', 'occurrence_id')
+                        .agg(collect_set('observation').alias('observation')))
 
         return obs_df
