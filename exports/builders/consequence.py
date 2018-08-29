@@ -2,6 +2,7 @@ import logging
 from pyspark.sql.functions import (explode,
                                    col,
                                    collect_list,
+                                   collect_set,
                                    struct,
                                    lit,
                                    when,
@@ -122,16 +123,10 @@ class ConsequenceBuilder(object):
 
         return df
 
-    def build_for_cnv(self, maf_df, index_name):
+    def build_for_cnv(self, cnv_df):
         """
-        # TODO: describe
+        For now this is just gene information
         """
-
-        # read from gistic
-        cnv_df = self._get_initial_cnv()
-
-        # # do data massaging
-        # cnv_df = self._massage_cnv_df(cnv_df, maf_df)
 
         # Add consequence_id
         id_added_df = cnv_df.withColumn('consequence_id', uuid5_col(
@@ -142,18 +137,18 @@ class ConsequenceBuilder(object):
         ))
 
         # Create gene structure
-        cons_df = id_added_df.select('cnv_id',
-                                     struct(
-                                        'consequence_id',
-                                        struct(
-                                            'symbol',
-                                            'gene_id',
-                                            'is_cancer_gene_census',
-                                            'biotype'
-                                        ).alias('gene'))
-                                     .alias('consequence'))
+        cons_df = (id_added_df.select('cnv_id',
+                                      struct('consequence_id',
+                                             struct('symbol',
+                                                    'gene_id',
+                                                    'is_cancer_gene_census',
+                                                    'biotype')
+                                             .alias('gene'))
+                                      .alias('consequence')).groupby('cnv_id')
+                              .agg(collect_set('consequence')
+                                   .alias('consequence')))
 
-        return df
+        return cons_df
 
     @staticmethod
     def build_all_effects_cols(maf_df):
