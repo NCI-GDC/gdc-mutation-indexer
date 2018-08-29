@@ -125,7 +125,10 @@ class ConsequenceBuilder(object):
 
     def build_for_cnv(self, cnv_df):
         """
-        For now this is just gene information
+        For now this is just gene information:
+
+        consequence[]
+                |_____ gene{}
         """
 
         # Add consequence_id

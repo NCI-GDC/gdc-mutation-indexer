@@ -7,7 +7,7 @@ from pyspark.sql.functions import (
     udf,
 )
 
-from exports.builders.utils import melt, remove_columns
+from exports.builders.utils import melt_df, remove_columns
 
 logging.basicConfig()
 
@@ -29,17 +29,17 @@ class GisticBuilder(object):
         """
         cnv_df = self._get_initial_cnv()
 
-        # trim gene symbol of last .{dd}
         cnv_df = self._trim_gene_symbol(cnv_df)
 
-        # how to pass args?
         cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
 
-        # melt
         cnv_df = melt_df(cnv_df,
                          id_vars=["gene_id"],
                          var_name="aliquot_id",
                          value_name="cnv_change")
+
+        # drop 0 entries
+        # convert to string
 
         return cnv_df
 
@@ -80,7 +80,6 @@ class GisticBuilder(object):
             # TODO: reraise?
 
         assert return_df is not None
-        # TODO: ?? self.df = return_df
 
         return return_df
 
@@ -101,7 +100,7 @@ class GisticBuilder(object):
         Gistic file includes something else
         We want to trim it.
         E.g., ENSG00000008128.21 should be ENSG00000008128
-        Unfortunately there is no easy way to do this in place, 
+        Unfortunately there is no easy way to do this in place,
         so we must add the trimmed column and remove the old column.
         """
 

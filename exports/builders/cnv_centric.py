@@ -17,7 +17,6 @@ from exports.builders.df_builders import (
 )
 
 from exports.builders.utils import (
-    melt_df,
     uuid5_col,
     standardize_schema,
 )
@@ -28,13 +27,13 @@ logging.basicConfig()
 class CNVCentricBuilder(BaseBuilder):
     """
     CNV: Copy Number Variation
-    Builds cnv-centric dataframe given case and maf dataframes::
+    Builds cnv-centric dataframe given case, gene, and maf dataframes:
 
         cnv{}
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
-                    |_____ case{}
+                      |_____ case{}
                                 |____ observation[]
 
     """
@@ -184,4 +183,3 @@ class CNVCentricBuilder(BaseBuilder):
                                    case_id_udf(col('aliquot_id')))
 
         return new_df
-
