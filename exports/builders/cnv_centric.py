@@ -67,8 +67,6 @@ class CNVCentricBuilder(BaseBuilder):
 
         self._aliquot_id_to_case_id_map = mapping
 
-    # region Abstract Overrides
-
     def build(self, maf_df):
         """
         Builds CNV Centric index
@@ -105,21 +103,14 @@ class CNVCentricBuilder(BaseBuilder):
         # save final df as property
         self.cnv_centric = cnv_centric_df
 
-        ###############
-        # LOGGING
         self.log_count(self.cnv_centric)
         self.log('Build finished')
-        ###############
 
         # Check if we should write
         if self.config.index_keep:
             self.write(self.config.index_paths[self.index_name])
 
         return self
-
-    # endregion
-
-    # region Private Helper Functions
 
     def _massage_cnv_df(self, initial_cnv_df, maf_df):
 

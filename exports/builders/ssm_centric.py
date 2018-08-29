@@ -66,10 +66,10 @@ class SSMCentricBuilder(BaseBuilder):
 
     def build_consequence(self, maf_df):
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df,
-                          self.index_name,
-                          join_gene=True,
-                          add_gene_aa_change=True))
+                   .build_for_ssm(maf_df,
+                                  self.index_name,
+                                  join_gene=True,
+                                  add_gene_aa_change=True))
         return cons_df
 
     def build_occurrence(self, maf_df):

@@ -11,8 +11,7 @@ class TestConfig(BaseConfig):
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
     maf_dir = os.path.join(input_dir, 'maf')
-    # TODO: TEMP
-    gistic_dir = input_dir # os.path.join(root_dir, 'BRCA')
+    gistic_dir = os.path.join(input_dir, 'cnv')
 
     # Initialize test directory tree if incomplete
     for directory in [log_dir, input_dir, maf_dir]:
@@ -97,7 +96,7 @@ class TestConfig(BaseConfig):
     def get_maf_file_names(self):
         return [f + '.gz' for f in self.get_maf_urls()]
 
-    def get_gistic_url(self):
+    def get_gistic_urls(self):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
-                if f.endswith("cnv.pruned.txt")][0]
+                if f.endswith(".tsv")]

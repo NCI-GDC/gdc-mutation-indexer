@@ -29,14 +29,15 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, index_name,
-              join_gene=False, add_gene_aa_change=False):
+    def build_for_ssm(self, maf_df, index_name,
+                      join_gene=False, add_gene_aa_change=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
 
         :param maf_df: The formatted MAF dataframe from MAFBuilder
+        :param index_name: name of the index this consequence is a part of
         :param join_gene: Whether or not to join the gene model to the
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
@@ -118,6 +119,39 @@ class ConsequenceBuilder(object):
 
             df = (tran_df.groupby('ssm_id')
                          .agg(collect_list('consequence').alias('consequence')))
+
+        return df
+
+    def build_for_cnv(self, maf_df, index_name):
+        """
+        # TODO: describe
+        """
+
+        # read from gistic
+        cnv_df = self._get_initial_cnv()
+
+        # # do data massaging
+        # cnv_df = self._massage_cnv_df(cnv_df, maf_df)
+
+        # Add consequence_id
+        id_added_df = cnv_df.withColumn('consequence_id', uuid5_col(
+            col('symbol'),
+            col('gene_id'),
+            col('is_cancer_gene_census'),
+            col('biotype')
+        ))
+
+        # Create gene structure
+        cons_df = id_added_df.select('cnv_id',
+                                     struct(
+                                        'consequence_id',
+                                        struct(
+                                            'symbol',
+                                            'gene_id',
+                                            'is_cancer_gene_census',
+                                            'biotype'
+                                        ).alias('gene'))
+                                     .alias('consequence'))
 
         return df
 
@@ -221,3 +255,4 @@ class ConsequenceBuilder(object):
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))
         return gene_struct_df
+

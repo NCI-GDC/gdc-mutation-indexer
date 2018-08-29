@@ -20,9 +20,15 @@ class CaseCentricBuilder(BaseBuilder):
         case{}
              |___ gene[]
                      |___ ssm[]
+                     |     |___ consequence[]
+                     |     |             |_____ transcript{}
+                     |     |                          |_____ annotation{}
+                     |     |___ observation[]
+                     |
+                     |___ cnv[]
                            |___ consequence[]
-                           |             |_____ transcript{}
-                           |                          |_____ annotation{}
+                           |            |_____ gene{}
+                           |
                            |___ observation[]
     """
 
@@ -82,7 +88,7 @@ class CaseCentricBuilder(BaseBuilder):
     def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df, self.index_name))
+                   .build_for_ssm(maf_df, self.index_name, 'ssm'))
 
         # Observation
         obs_df = ObservationBuilder().build(maf_df, self.index_name)
@@ -103,6 +109,19 @@ class CaseCentricBuilder(BaseBuilder):
             .agg(collect_list('ssm').alias('ssm')))
 
         return ssm_df
+
+    def build_cnv_subtree(self, maf_df):
+        # Consequence
+        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
+                   .build_for_cnv(maf_df, self.index_name))
+
+        # Observation
+        obs_df = ObservationBuilder().build(maf_df, self.index_name)
+        obs_df = obs_df.drop('occurrence_id')
+
+        # TODO: build cnv_df
+        cnv_df = 1
+        return cnv_df
 
     def build_gene_ssm(self, maf_df):
         self.log('Building Gene from MAF')

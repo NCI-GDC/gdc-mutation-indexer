@@ -19,13 +19,7 @@ class TestDataStats:
         genes_file = cls.filter_files(data_dir, ['genes', 'json'])[0]
         genes = cls.load_es_graph_dump(os.path.join(data_dir, genes_file))
 
-        # load files
-
-        # load cnvs
-        cnvs_file = cls.filter_files(data_dir, ['cnv', 'pruned'])[0]
-        cnvs = cls.load_tsv_table(os.path.join(data_dir, cnvs_file))
-
-        return {'case': cases, 'gene': genes, 'cnvs': cnvs}
+        return {'case': cases, 'gene': genes}
 
     @staticmethod
     def filter_files(directory, keywords):
@@ -81,9 +75,15 @@ class TestDataStats:
         case{}
              |___ gene[]
                      |___ ssm[]
+                     |     |___ consequence[]
+                     |     |             |_____ transcript{}
+                     |     |                          |_____ annotation{}
+                     |     |___ observation[]
+                     |
+                     |___ cnv[]
                            |___ consequence[]
-                           |             |_____ transcript{}
-                           |                          |_____ annotation{}
+                           |            |_____ gene{}
+                           |
                            |___ observation[]
         """
         count = maf_df.select('case_id').distinct().count()
@@ -95,9 +95,15 @@ class TestDataStats:
         gene{}
              |___ case[]
                      |___ ssm[]
+                     |     |___ consequence[]
+                     |     |             |_____ transcript{}
+                     |     |                          |_____ annotation{}
+                     |     |___ observation[]
+                     |
+                     |___ cnv[]
                            |___ consequence[]
-                           |             |_____ transcript{}
-                           |                          |_____ annotation{}
+                           |            |_____ gene{}
+                           |
                            |___ observation[]
         """
         count = maf_df.select('gene_id').distinct().count()
@@ -147,3 +153,4 @@ class TestDataStats:
         # TODO: fixme
         count = 1
         return {'count': count}
+
