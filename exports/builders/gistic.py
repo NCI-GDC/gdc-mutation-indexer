@@ -5,14 +5,17 @@ from pyspark.sql.functions import (
     col,
     lit,
     udf,
-    uuid5_col,
 )
 
 from exports.builders.df_builders import (
     get_gene_df,
 )
 
-from exports.builders.utils import melt_df, remove_columns
+from exports.builders.utils import (
+    melt_df,
+    remove_columns,
+    uuid5_col,
+)
 
 logging.basicConfig()
 
@@ -50,7 +53,7 @@ class GisticBuilder(object):
                          value_name="cnv_change")
 
         # add gene information
-        cnv_df = self._join_to_gene(cnv_df, maf_df)
+        cnv_df = self._add_gene_information(cnv_df, maf_df)
 
         # TODO: add case id
 
@@ -164,7 +167,7 @@ class GisticBuilder(object):
         gene_df = get_gene_df(maf_df, index_name='gene_centric',
                               unique_fields=['gene_id'])
 
-        self.log('Joining gene with gistic [inner, "gene_id"]')
+        self.logger.info('Joining gene with gistic [inner, "gene_id"]')
         df = (
             gene_df.join(initial_cnv_df,
                          gene_df.gene_id == initial_cnv_df.gene_id,
