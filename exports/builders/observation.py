@@ -1,5 +1,4 @@
 import logging
-logging.basicConfig()
 
 from pyspark.sql.functions import (
     struct, collect_list, collect_set,
@@ -7,6 +6,8 @@ from pyspark.sql.functions import (
 )
 
 from exports.builders.utils import struct_select, uuid5_col
+
+logging.basicConfig()
 
 
 class ObservationBuilder(object):
@@ -42,10 +43,12 @@ class ObservationBuilder(object):
                         |____ variant_caller
 
         """
-        # add occurrence id to map to higher level occurrence
-        new_df = initial_df.withColumn('occurrence_id',
-                                       uuid5_col(col('cnv_id'),
-                                                 col('case_id')))
+        # TODO: this should maybe move to cnv_centric
+        if 'occurrence_id' not in initial_df.columns:
+            # add occurrence id to map to higher level occurrence
+            new_df = initial_df.withColumn('occurrence_id',
+                                           uuid5_col(col('cnv_id'),
+                                                     col('case_id')))
 
         # add observation id
         new_df = new_df.withColumn('observation_id',

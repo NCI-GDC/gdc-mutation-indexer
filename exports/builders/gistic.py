@@ -5,6 +5,11 @@ from pyspark.sql.functions import (
     col,
     lit,
     udf,
+    uuid5_col,
+)
+
+from exports.builders.df_builders import (
+    get_gene_df,
 )
 
 from exports.builders.utils import melt_df, remove_columns
@@ -13,6 +18,12 @@ logging.basicConfig()
 
 
 class GisticBuilder(object):
+
+    # TEMP
+    old_to_new = {'gene_chromosome': 'chromosome',
+                  'gene_start': 'start_position',
+                  'gene_end': 'end_position'}
+
     """
     Read in gistic file and format it for cnv index.
     """
@@ -22,7 +33,7 @@ class GisticBuilder(object):
         self.sqlContext = sqlContext
         self._url = self._get_url(config)
 
-    def build(self):
+    def build(self, maf_df):
         """
         Read in gistic file.
         Do necessary massaging
@@ -37,6 +48,11 @@ class GisticBuilder(object):
                          id_vars=["gene_id"],
                          var_name="aliquot_id",
                          value_name="cnv_change")
+
+        # add gene information
+        cnv_df = self._join_to_gene(cnv_df, maf_df)
+
+        # TODO: add case id
 
         # drop 0 entries
         # convert to string
@@ -68,16 +84,12 @@ class GisticBuilder(object):
         try:
             new_df = self._read_gistic(url)
 
-            ###############
-            # LOGGING
             self.logger.info('Read {} rows from {}'.format(new_df.count(),
                                                            url))
-            ###############
 
             return_df = new_df
         except BaseException as e:
             self.logger.error(e)
-            # TODO: reraise?
 
         assert return_df is not None
 
@@ -134,3 +146,48 @@ class GisticBuilder(object):
             initial_cnv_df.withColumn('gene_level_cn', lit(True))
 
         return cnv_df_with_gene_level_cn
+
+    def _add_gene_information(self, initial_cnv_df, maf_df):
+
+        # join to gene df on trimmed gene symbol = gene_id
+        new_df = self._join_to_gene(initial_cnv_df, maf_df)
+
+        # gene information is required to create cnv_id
+        new_df = self._add_id(new_df)
+
+        return new_df
+
+    def _join_to_gene(self, initial_cnv_df, maf_df):
+        """
+        Get the other gene information
+        """
+        gene_df = get_gene_df(maf_df, index_name='gene_centric',
+                              unique_fields=['gene_id'])
+
+        self.log('Joining gene with gistic [inner, "gene_id"]')
+        df = (
+            gene_df.join(initial_cnv_df,
+                         gene_df.gene_id == initial_cnv_df.gene_id,
+                         'inner')
+                   .drop(initial_cnv_df.gene_id)
+        )
+
+        # rename columns from gene names to cnv names
+        for old, new in GisticBuilder.old_to_new.items():
+            df = df.withColumnRenamed(old, new)
+
+        return df
+
+    def _add_id(self, initial_cnv_df):
+        """
+        Business key: chromosome, start_position, end_position, cnv_change
+        """
+
+        cnv_df_with_id = initial_cnv_df.withColumn('cnv_id', uuid5_col(
+            col('chromosome'),
+            col('start_position'),
+            col('end_position'),
+            col('cnv_change')
+        ))
+
+        return cnv_df_with_id

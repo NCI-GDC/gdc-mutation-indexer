@@ -215,7 +215,8 @@ class ConsequenceBuilder(object):
         for field in must_be_none_for_non_selected:
             ssm_tran = ssm_tran.withColumn(
                 field,
-                when(col('transcript_id') == col('selected_transcript_id'), col(field))
+                when(col('transcript_id') == col('selected_transcript_id'),
+                     col(field))
                 .otherwise(None)
             )
 

@@ -12,12 +12,7 @@ from exports.builders import (
     OccurrenceBuilder,
 )
 
-from exports.builders.df_builders import (
-    get_gene_df,
-)
-
 from exports.builders.utils import (
-    uuid5_col,
     standardize_schema,
 )
 
@@ -40,9 +35,6 @@ class CNVCentricBuilder(BaseBuilder):
 
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
-    old_to_new = {'gene_chromosome': 'chromosome',
-                  'gene_start': 'start_position',
-                  'gene_end': 'end_position'}
 
     def __init__(self, config, sqlContext):
         BaseBuilder.__init__(self, config, sqlContext)
@@ -71,25 +63,24 @@ class CNVCentricBuilder(BaseBuilder):
                 return self
 
         # read from gistic
-        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
+        gistic_df = GisticBuilder(self.config, self.sqlContext).build(maf_df)
 
-        # add gene information
-        cnv_df = self._add_gene_information(gistic_df, maf_df)
+        # add case id, TODO: move inside GisticBuilder
+        cnv_df = self._add_case_id(gistic_df)
 
         # Consequence
         cons_df = ConsequenceBuilder(self.config,
                                      self.sqlContext).build_for_cnv(cnv_df)
 
-        # add case id, needed for occurrence builder
-        cnv_df = self._add_case_id(cnv_df)
-
         # Occurrence
-        occurrence_df = OccurrenceBuilder(self.config,
-                                          self.sqlContext).build_for_cnv(cnv_df, maf_df)
+        occurrence_df = OccurrenceBuilder(
+                            self.config,
+                            self.sqlContext).build_for_cnv(cnv_df, maf_df)
 
         self.log('Final join CNV + Consequence + Occurrence')
         intermediate_df = cnv_df.join(cons_df, on='cnv_id', how='left')
-        joined_cnv_df = intermediate_df.join(occurrence_df, on='cnv_id', how='right')
+        joined_cnv_df = intermediate_df.join(occurrence_df, on='cnv_id',
+                                             how='right')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
@@ -112,51 +103,6 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
-
-    def _add_gene_information(self, initial_cnv_df, maf_df):
-
-        # join to gene df on trimmed gene symbol = gene_id
-        new_df = self._join_to_gene(initial_cnv_df, maf_df)
-
-        # gene information is required to create cnv_id
-        new_df = self._add_id(new_df)
-
-        return new_df
-
-    def _join_to_gene(self, initial_cnv_df, maf_df):
-        """
-        Get the other gene information
-        """
-        gene_df = get_gene_df(maf_df, index_name='gene_centric',
-                              unique_fields=['gene_id'])
-
-        self.log('Joining gene with gistic [inner, "gene_id"]')
-        df = (
-            gene_df.join(initial_cnv_df,
-                         gene_df.gene_id == initial_cnv_df.gene_id,
-                         'inner')
-                   .drop(initial_cnv_df.gene_id)
-        )
-
-        # rename columns from gene names to cnv names
-        for old, new in CNVCentricBuilder.old_to_new.items():
-            df = df.withColumnRenamed(old, new)
-
-        return df
-
-    def _add_id(self, initial_cnv_df):
-        """
-        Business key: chromosome, start_position, end_position, cnv_change
-        """
-
-        cnv_df_with_id = initial_cnv_df.withColumn('cnv_id', uuid5_col(
-            col('chromosome'),
-            col('start_position'),
-            col('end_position'),
-            col('cnv_change')
-        ))
-
-        return cnv_df_with_id
 
     def _get_case_id_from_aliquot_id(self, aliquot_id):
         """

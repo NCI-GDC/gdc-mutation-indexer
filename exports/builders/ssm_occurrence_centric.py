@@ -1,7 +1,6 @@
 import logging
-logging.basicConfig()
 
-from pyspark.sql.functions import col, struct, collect_list
+from pyspark.sql.functions import col, struct
 
 from exports.builders.df_builders import build_ssm_subtree
 from exports.builders import (
@@ -10,6 +9,8 @@ from exports.builders import (
     ObservationBuilder
 )
 from exports.builders import BaseBuilder
+
+logging.basicConfig()
 
 
 class SSMOccurrenceCentricBuilder(BaseBuilder):
