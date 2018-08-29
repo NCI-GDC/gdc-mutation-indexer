@@ -27,21 +27,21 @@ class GisticBuilder(object):
         Read in gistic file.
         Do necessary massaging
         """
-        initial_cnv_df = self._get_initial_cnv()
+        cnv_df = self._get_initial_cnv()
 
         # trim gene symbol of last .{dd}
-        new_df = self._trim_gene_symbol(initial_cnv_df)
+        cnv_df = self._trim_gene_symbol(cnv_df)
 
         # how to pass args?
-        new_df = remove_columns(new_df, 'Locus ID', 'Cytoband')
+        cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
 
         # melt
-        new_df = melt(new_df,
-                      id_vars=["gene_id"],
-                      var_name="aliquot_id",
-                      value_name="cnv_change")
+        cnv_df = melt_df(cnv_df,
+                         id_vars=["gene_id"],
+                         var_name="aliquot_id",
+                         value_name="cnv_change")
 
-        return new_df
+        return cnv_df
 
     def _get_url(self, config):
         if config.gistic_url is not None:

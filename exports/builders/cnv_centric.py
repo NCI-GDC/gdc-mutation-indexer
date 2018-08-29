@@ -17,6 +17,7 @@ from exports.builders.df_builders import (
 )
 
 from exports.builders.utils import (
+    melt_df,
     uuid5_col,
     standardize_schema,
 )
@@ -60,8 +61,6 @@ class CNVCentricBuilder(BaseBuilder):
 
         self._aliquot_id_to_case_id_map = mapping
 
-    # region Abstract Overrides
-
     def build(self, maf_df):
         """
         Builds CNV Centric index
@@ -72,7 +71,6 @@ class CNVCentricBuilder(BaseBuilder):
             if self.cnv_centric is not None:
                 return self
 
-        import ipdb; ipdb.set_trace()
         # read from gistic
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
@@ -115,8 +113,6 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
-
-    # endregion
 
     def _add_gene_information(self, initial_cnv_df, maf_df):
 
@@ -171,10 +167,7 @@ class CNVCentricBuilder(BaseBuilder):
         try:
             return_id = self._aliquot_id_to_case_id_map[aliquot_id]
         except KeyError:
-            ###############
-            # LOGGING
             self.log('Aliquot to case id mapping failure')
-            ###############
         else:
             return return_id
 
@@ -191,3 +184,4 @@ class CNVCentricBuilder(BaseBuilder):
                                    case_id_udf(col('aliquot_id')))
 
         return new_df
+

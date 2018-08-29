@@ -230,11 +230,11 @@ def access_json_path(json_dict, step_list):
     return access_json_path(json_dict[step], stack)
 
 
-def melt(frame,
-         id_vars,
-         value_vars=None,
-         var_name="variable",
-         value_name="value"):
+def melt_df(frame,
+            id_vars,
+            value_vars=None,
+            var_name="variable",
+            value_name="value"):
     """
     Source:
     https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe

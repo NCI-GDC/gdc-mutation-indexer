@@ -30,14 +30,15 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, index_name,
-              join_gene=False, add_gene_aa_change=False):
+    def build_for_ssm(self, maf_df, index_name,
+                      join_gene=False, add_gene_aa_change=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
 
         :param maf_df: The formatted MAF dataframe from MAFBuilder
+        :param index_name: name of the index this consequence is a part of
         :param join_gene: Whether or not to join the gene model to the
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
@@ -249,3 +250,4 @@ class ConsequenceBuilder(object):
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))
         return gene_struct_df
+
