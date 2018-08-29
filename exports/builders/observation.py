@@ -33,7 +33,16 @@ class ObservationBuilder(object):
         return obs_df
 
     def build_for_cnv(self, initial_df):
-        # add occurrence id
+        """
+        observation[]
+        |____ observation{}
+                |____ observation_id
+                |____ variant_status
+                |____ variant_calling {}
+                        |____ variant_caller
+
+        """
+        # add occurrence id to map to higher level occurrence
         new_df = initial_df.withColumn('occurrence_id',
                                        uuid5_col(col('cnv_id'),
                                                  col('case_id')))

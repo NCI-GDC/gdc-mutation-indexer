@@ -23,7 +23,14 @@ class OccurrenceBuilder(object):
 
     def build_for_cnv(self, cnv_df, maf_df):
         """
-        Assumes you've already added 'case_id' somehow
+        Assumes you've already added 'case_id'
+
+        occurrence[]
+        |____ occurrence{}
+                |____ occurrence_id
+                |____ case {}
+                        |____ observation []
+
         """
         assert 'case_id' in cnv_df.columns
 
