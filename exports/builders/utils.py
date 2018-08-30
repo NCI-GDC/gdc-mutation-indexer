@@ -3,12 +3,14 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    lit, udf, struct, col, explode, array, when, regexp_extract
+    lit, udf, struct, col, explode, array, when, regexp_extract,
+    UserDefinedFunction,
 )
 from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
 from exports.mappers.model_mapper import ModelMapper
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import scan
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
@@ -51,6 +53,7 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     """
     Reads aliquots from headers of mafs and queries source es
     for corresponding case_ids
+    TODO: make this use iterate_es_results() and pass es instance instead of initiating one
     """
     # Read unique aliquots from maf headers
     unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
@@ -90,6 +93,22 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         ((x,) for x in case_ids), ['case_id']
     )
     return cases_df
+
+
+def iterate_es_results(es, index_name, doc_type, query=None):
+    """
+    Returns iterator over elasticsearch query results
+    """
+    if query is None:
+        query = {}
+
+    doc_iterator = scan(es,
+                        index=index_name,
+                        doc_type=doc_type,
+                        scroll='2m',
+                        size=100,
+                        query=query)
+    return doc_iterator
 
 
 def get_aliquots_from_headers(sqlContext, maf_urls):
@@ -230,7 +249,17 @@ def access_json_path(json_dict, step_list):
     return access_json_path(json_dict[step], stack)
 
 
-def melt_df(frame,
+def map_create_column(df, map_function, target_column_name, new_column_name):
+    """
+    Creates new column in pyspark DataFrame by mapping :map_function to :target_column
+    """
+    # TODO: allow controlling the return type
+    udf = UserDefinedFunction(map_function, StringType())
+    df = df.withColumn(new_column_name, udf(getattr(df, target_column_name)))
+    return df
+
+
+def melt_df(df,
             id_vars,
             value_vars=None,
             var_name="variable",
@@ -244,7 +273,7 @@ def melt_df(frame,
 
     The opposite of pivoting a dataframe
 
-    :param frame: input pyspark.DataFrame
+    :param df: input pyspark.DataFrame
     :param id_vars: Column(s) to use as identifier variables
     :type id_vars: Iterable
     :param value_vars: Column(s) to unpivot. If not specified, uses all columns
@@ -257,14 +286,14 @@ def melt_df(frame,
 
     # We assume id_vars is a strict subset of value_vars
     if not value_vars:
-        value_vars = list(set(frame.columns) - set(id_vars))
+        value_vars = list(set(df.columns) - set(id_vars))
 
     _vars_and_vals = array(*(
         struct(lit(c).alias(var_name), col(c).alias(value_name))
         for c in value_vars
     ))
 
-    _temp = frame.withColumn("_vars_and_vals", explode(_vars_and_vals))
+    _temp = df.withColumn("_vars_and_vals", explode(_vars_and_vals))
 
     cols = id_vars + [
         col("_vars_and_vals")[x].alias(x)
@@ -277,6 +306,9 @@ def melt_df(frame,
 
 
 def remove_columns(df, *args):
+    """
+    Removes columns from DataFrame
+    """
 
     for column_name in args:
         df = df.drop(column_name)

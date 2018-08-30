@@ -19,6 +19,7 @@ from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
+    GisticBuilder,
     CaseBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
@@ -181,6 +182,15 @@ def maf_df(sqlContext):
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
     return MAFBuilder(conf, sqlContext).build()
+
+
+@pytest.fixture(scope="session")
+def gistic_df(sqlContext):
+    """
+    Builds combined gistic dataframe once. Reused throughout test suite
+    """
+    log.info('\n\n\tBUILDING GISTIC_DF\n\n')
+    return GisticBuilder(conf, sqlContext).build()
 
 
 @pytest.fixture(scope='session')

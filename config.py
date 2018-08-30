@@ -150,6 +150,7 @@ class BaseConfig(object):
     def __init__(self):
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
+        self.gistic_urls = self.get_gistic_urls()
 
     def get_index_prefixes(self):
         '''

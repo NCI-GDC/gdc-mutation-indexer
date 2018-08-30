@@ -449,6 +449,8 @@ class MAFBuilder(object):
             if caller == 'mutect':
                 caller += '2'
             try:
+                # TODO: separate data transforms from combining multiple df into one
+                # latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.read_maf(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
                 # add acl based on individual maf
