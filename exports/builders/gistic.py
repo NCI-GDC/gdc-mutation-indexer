@@ -9,18 +9,28 @@ from pyspark.sql.functions import (
     udf,
 )
 
+from exports.builders.df_builders import (
+    get_gene_df,
+)
+
 from exports.builders.utils import (
     melt_df,
     remove_columns,
     iterate_es_results,
     map_create_column,
+    uuid5_col,
 )
-
 
 logging.basicConfig()
 
 
 class GisticBuilder(object):
+
+    # TEMP
+    old_to_new = {'gene_chromosome': 'chromosome',
+                  'gene_start': 'start_position',
+                  'gene_end': 'end_position'}
+
     """
     Read in gistic file and format it for cnv index.
 
@@ -38,22 +48,18 @@ class GisticBuilder(object):
                                 http_auth=(config.es_user,
                                            config.es_pass))
 
-    def build(self):
+    def build(self, maf_df):
         """
         Read in gistic file.
         Do necessary massaging
         """
         cnv_df = self.combine()
 
-        cnv_df = self._trim_gene_symbol(cnv_df)
+        # add gene information
+        cnv_df = self._add_gene_information(cnv_df, maf_df)
 
-        cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
-
-        # melt dataframe (opposite of pivoting)
-        cnv_df = melt_df(cnv_df,
-                         id_vars=["gene_id"],
-                         var_name="aliquot_id",
-                         value_name="cnv_change")
+        # drop 0 entries
+        # convert to string
 
         # transform aliquot_id column to case_id
         cnv_df = self._aliquot_id_to_case_id(cnv_df)
@@ -74,7 +80,22 @@ class GisticBuilder(object):
         for url in urls:
             try:
                 new_df = self.read(url)
-                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                               url))
+
+                # prepare to melt
+                new_df = self._trim_gene_symbol(new_df)
+
+                new_df = remove_columns(new_df, 'Locus ID', 'Cytoband')
+
+                # melt dataframe (opposite of pivoting)
+                # required to get dfs with the same number of columns
+                # so we can union them together
+                new_df = melt_df(new_df,
+                                 id_vars=["gene_id"],
+                                 var_name="aliquot_id",
+                                 value_name="cnv_change")
+
                 if gistic_df is None:
                     gistic_df = new_df
                 else:
@@ -122,6 +143,55 @@ class GisticBuilder(object):
 
         return trimmed_and_deduped_df
 
+    def _add_gene_information(self, initial_cnv_df, maf_df):
+
+        # join to gene df on trimmed gene symbol = gene_id
+        new_df = self._join_to_gene(initial_cnv_df, maf_df)
+
+        # gene information is required to create cnv_id
+        new_df = self._add_id(new_df)
+
+        new_df = self._add_ncbi_build(new_df)
+
+        new_df = self._add_gene_level_cn(new_df)
+
+        return new_df
+
+    def _join_to_gene(self, initial_cnv_df, maf_df):
+        """
+        Get the other gene information
+        """
+        gene_df = get_gene_df(maf_df, index_name='gene_centric',
+                              unique_fields=['gene_id'])
+
+        self.logger.info('Joining gene with gistic [inner, "gene_id"]')
+        df = (
+            gene_df.join(initial_cnv_df,
+                         gene_df.gene_id == initial_cnv_df.gene_id,
+                         'inner')
+                   .drop(initial_cnv_df.gene_id)
+        )
+
+        # rename columns from gene names to cnv names
+        for old, new in GisticBuilder.old_to_new.items():
+            df = df.withColumnRenamed(old, new)
+
+        return df
+
+    def _add_id(self, initial_cnv_df):
+        """
+        Business key: chromosome, start_position, end_position, cnv_change
+        """
+
+        cnv_df_with_id = initial_cnv_df.withColumn('cnv_id', uuid5_col(
+            col('chromosome'),
+            col('start_position'),
+            col('end_position'),
+            col('cnv_change')
+        ))
+
+        return cnv_df_with_id
+
     def _aliquot_id_to_case_id(self, df):
         """
         Looks up aliquot_id to case_id mapping from gdc_from_graph.case
@@ -132,11 +202,11 @@ class GisticBuilder(object):
 
         # query all case_documents that have relevant aliquots attached
         query = {
-            "query" : {
-                "constant_score" : {
-                    "filter" : {
-                        "terms" : {
-                            "aliquot_ids" : aliquot_ids
+            "query": {
+                "constant_score": {
+                    "filter": {
+                        "terms": {
+                            "aliquot_ids": aliquot_ids
                         }
                     }
                 }
@@ -157,7 +227,7 @@ class GisticBuilder(object):
             return aliquot_to_case_map[aliquot]
 
         df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
-        df = df.drop('aliquot_id')
+        # df = df.drop('aliquot_id')
 
         return df
 

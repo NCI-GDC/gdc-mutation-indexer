@@ -21,12 +21,13 @@ from exports.builders import (
     MAFBuilder,
     GisticBuilder,
     CaseBuilder,
+    CNVCentricBuilder,
+    CNVOccurrenceCentricBuilder,
     ConsequenceBuilder,
     GeneCentricBuilder,
     CaseCentricBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
-    CNVCentricBuilder,
 )
 
 conf = TestConfig()
@@ -279,6 +280,21 @@ def cnv_centric_df(sqlContext, maf_df):
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
     builder.load()
     return builder.cnv_centric
+
+
+@pytest.fixture(scope='session')
+def cnv_occurrence_centric_df(sqlContext, maf_df):
+    """
+    Builds cnv occurrence centric dataframe
+    """
+    log.info('\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n')
+    builder = CNVOccurrenceCentricBuilder(conf, sqlContext)
+    builder.build(maf_df)
+
+    log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.cnv_occurrence_centric
+
 
 @pytest.fixture(scope='session')
 def case_ssm_subtree(sqlContext, maf_df):
