@@ -45,7 +45,6 @@ class GisticBuilder(object):
         """
         cnv_df = self.combine()
 
-        # trim gene symbol of last .{dd}
         cnv_df = self._trim_gene_symbol(cnv_df)
 
         cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
@@ -102,7 +101,7 @@ class GisticBuilder(object):
         Gistic file includes something else
         We want to trim it.
         E.g., ENSG00000008128.21 should be ENSG00000008128
-        Unfortunately there is no easy way to do this in place, 
+        Unfortunately there is no easy way to do this in place,
         so we must add the trimmed column and remove the old column.
         """
 
