@@ -39,6 +39,14 @@ class TestCnvCentricData:
         assert built_count == expected_count
 
 
+@pytest.mark.usefixtures('maf_df', 'test_data', 'es_client',
+                         'cnv_occurrence_centric_df')
+class TestCnvOccurrenceCentricData:
+
+    def test_build(self, maf_df, test_data, es_client):
+        pass
+
+
 @pytest.mark.usefixtures('all_cases',
                          'maf_df',
                          'case_centric_df',

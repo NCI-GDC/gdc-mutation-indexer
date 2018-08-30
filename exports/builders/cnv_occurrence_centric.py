@@ -13,6 +13,10 @@ from exports.builders import (
     ObservationBuilder,
 )
 
+from exports.builders.utils import (
+    standardize_schema,
+)
+
 logging.basicConfig()
 
 
@@ -57,7 +61,11 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                                           .drop('occurrence_id'))
         self.log_count(cnv_occurrence_centric)
 
-        self.cnv_occurrence_centric = cnv_occurrence_centric
+         # warning: this will strip out anything that isn't
+        # specified in the schema
+        cleansed_df = standardize_schema(cnv_occurrence_centric, "cnv_occurrence_centric", "cnv")
+
+        self.cnv_occurrence_centric = cleansed_df
         self.log('Build finished')
         # Check if we should save the resulting dataframe
         if self.config.index_keep:

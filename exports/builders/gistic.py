@@ -136,20 +136,6 @@ class GisticBuilder(object):
 
         return trimmed_and_deduped_df
 
-    def _add_ncbi_build(self, initial_cnv_df):
-
-        cnv_df_with_ncbi_build = \
-            initial_cnv_df.withColumn('ncbi_build', lit('GRCh38'))
-
-        return cnv_df_with_ncbi_build
-
-    def _add_gene_level_cn(self, initial_cnv_df):
-
-        cnv_df_with_gene_level_cn = \
-            initial_cnv_df.withColumn('gene_level_cn', lit(True))
-
-        return cnv_df_with_gene_level_cn
-
     def _add_gene_information(self, initial_cnv_df, maf_df):
 
         # join to gene df on trimmed gene symbol = gene_id
@@ -157,6 +143,10 @@ class GisticBuilder(object):
 
         # gene information is required to create cnv_id
         new_df = self._add_id(new_df)
+
+        new_df = self._add_ncbi_build(new_df)
+
+        new_df = self._add_gene_level_cn(new_df)
 
         return new_df
 
@@ -194,3 +184,17 @@ class GisticBuilder(object):
         ))
 
         return cnv_df_with_id
+
+     def _add_ncbi_build(self, initial_cnv_df):
+
+        cnv_df_with_ncbi_build = \
+            initial_cnv_df.withColumn('ncbi_build', lit('GRCh38'))
+
+        return cnv_df_with_ncbi_build
+
+    def _add_gene_level_cn(self, initial_cnv_df):
+
+        cnv_df_with_gene_level_cn = \
+            initial_cnv_df.withColumn('gene_level_cn', lit(True))
+
+        return cnv_df_with_gene_level_cn
