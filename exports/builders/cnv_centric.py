@@ -104,23 +104,16 @@ class CNVCentricBuilder(BaseBuilder):
 
         return self
 
-    def _get_case_id_from_aliquot_id(self, aliquot_id):
-        """
-        TODO: replace with call to gdc_from_graph, most likely
-        """
-
-        try:
-            return_id = self._aliquot_id_to_case_id_map[aliquot_id]
-        except KeyError:
-            self.log('Aliquot to case id mapping failure')
-        else:
-            return return_id
-
     def _add_case_id(self, cnv_df):
         mapping = self._aliquot_id_to_case_id_map
 
         def add_case_id_inner(aliquot_id):
-            return mapping[aliquot_id]
+            try:
+                return_id = mapping[aliquot_id]
+            except KeyError:
+                # TODO: re-raise
+                return_id = mapping.values()[0]
+            return return_id
 
         case_id_udf = udf(add_case_id_inner)
 
