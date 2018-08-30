@@ -1,5 +1,7 @@
 import logging
 
+from elasticsearch import Elasticsearch
+
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import (
     col,
@@ -7,7 +9,13 @@ from pyspark.sql.functions import (
     udf,
 )
 
-from exports.builders.utils import melt_df, remove_columns
+from exports.builders.utils import (
+    melt_df,
+    remove_columns,
+    iterate_es_results,
+    map_create_column,
+)
+
 
 logging.basicConfig()
 
@@ -15,78 +23,71 @@ logging.basicConfig()
 class GisticBuilder(object):
     """
     Read in gistic file and format it for cnv index.
+
+    TODO: Create abstract base class for this and MAFBuilder enforcing .build(), .combine(), .read()
+
     """
+
     def __init__(self, config, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self._url = self._get_url(config)
+        self.urls = config.get_gistic_urls()
+        self.es = Elasticsearch(config.es_host,
+                                port=config.es_port,
+                                http_auth=(config.es_user,
+                                           config.es_pass))
 
     def build(self):
         """
         Read in gistic file.
         Do necessary massaging
         """
-        cnv_df = self._get_initial_cnv()
+        cnv_df = self.combine()
 
         cnv_df = self._trim_gene_symbol(cnv_df)
 
         cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
 
+        # melt dataframe (opposite of pivoting)
         cnv_df = melt_df(cnv_df,
                          id_vars=["gene_id"],
                          var_name="aliquot_id",
                          value_name="cnv_change")
 
-        # drop 0 entries
-        # convert to string
+        # transform aliquot_id column to case_id
+        cnv_df = self._aliquot_id_to_case_id(cnv_df)
 
         return cnv_df
 
-    def _get_url(self, config):
-        if config.gistic_url is not None:
-            return config.gistic_url
-
-        # TODO: what should this actually be?
-        return "stuff from indexd most likely"
-
-    def _get_initial_cnv(self, url=None):
+    def combine(self, urls=None):
         """
-        Read gistic into dataframe.
+        Combines data frames from a list of urls
         """
+        if urls is None and self.urls is not None:
+            urls = self.urls
+        elif urls is None and self.urls is None:
+            self.logger.error('Urls not passed and get_urls() not yet called')
+            raise Exception
 
-        if url is None:
-            if self._url is not None:
-                url = self._url
-            else:
-                self.logger.error("Url not passed, instance _urls not set")
-                raise Exception("Url not specified to load CNV")
+        gistic_df = None
+        for url in urls:
+            try:
+                new_df = self.read(url)
+                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                if gistic_df is None:
+                    gistic_df = new_df
+                else:
+                    gistic_df = gistic_df.unionAll(new_df)
+            except BaseException as e:
+                self.logger.error(e)
 
-        # to return
-        return_df = None
+        return gistic_df
 
-        try:
-            new_df = self._read_gistic(url)
-
-            ###############
-            # LOGGING
-            self.logger.info('Read {} rows from {}'.format(new_df.count(),
-                                                           url))
-            ###############
-
-            return_df = new_df
-        except BaseException as e:
-            self.logger.error(e)
-            # TODO: reraise?
-
-        assert return_df is not None
-
-        return return_df
-
-    def _read_gistic(self, url=None):
+    def read(self, url):
         """
-        Reads in tab-delimited file into dataframe
-        TODO: put in utils
+        Reads gistic file into dataframe
+        TODO: put in utils as read_tsv and import to use here
         """
         return self.sqlContext.read.format('com.databricks.spark.csv')\
                    .options(header='true')\
@@ -120,6 +121,45 @@ class GisticBuilder(object):
         trimmed_and_deduped_df = trimmed_df.drop('Gene Symbol')
 
         return trimmed_and_deduped_df
+
+    def _aliquot_id_to_case_id(self, df):
+        """
+        Looks up aliquot_id to case_id mapping from gdc_from_graph.case
+        and renames gistic dataframe columns respectively
+        """
+        # get list of aliquot_ids to transform
+        aliquot_ids = df.select('aliquot_id').rdd.map(lambda x: x[0]).collect()
+
+        # query all case_documents that have relevant aliquots attached
+        query = {
+            "query" : {
+                "constant_score" : {
+                    "filter" : {
+                        "terms" : {
+                            "aliquot_ids" : aliquot_ids
+                        }
+                    }
+                }
+            },
+            '_source': ['aliquot_ids']
+        }
+
+        relevant_cases = iterate_es_results(self.es, self.config.graph_index, 'case', query=query)
+
+        # build aliquot to case mapping
+        aliquot_to_case_map = {}
+        for case in relevant_cases:
+            for aliquot_id in case['_source']['aliquot_ids']:
+                aliquot_to_case_map[aliquot_id] = case['_id']
+
+        # create case_id column based on aliquot_id column, drop aliquot_id
+        def map_aliquot_to_case(aliquot):
+            return aliquot_to_case_map[aliquot]
+
+        df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
+        df = df.drop('aliquot_id')
+
+        return df
 
     def _add_ncbi_build(self, initial_cnv_df):
 
