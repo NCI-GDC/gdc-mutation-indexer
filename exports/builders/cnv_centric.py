@@ -36,22 +36,6 @@ class CNVCentricBuilder(BaseBuilder):
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
 
-    def __init__(self, config, sqlContext):
-        BaseBuilder.__init__(self, config, sqlContext)
-
-        # TODO: TEMP
-        temp_file_path = self.config.input_dir + "/temp_aliquot_to_case.txt"
-        mapping = {}
-
-        # TODO: get this for real
-        with open(temp_file_path) as f:
-            # read into dictionary
-            for line in f:
-                (k, v) = line.split()
-                mapping[k] = v
-
-        self._aliquot_id_to_case_id_map = mapping
-
     def build(self, maf_df):
         """
         Builds CNV Centric index
@@ -63,10 +47,7 @@ class CNVCentricBuilder(BaseBuilder):
                 return self
 
         # read from gistic
-        gistic_df = GisticBuilder(self.config, self.sqlContext).build(maf_df)
-
-        # add case id, TODO: move inside GisticBuilder
-        cnv_df = self._add_case_id(gistic_df)
+        cnv_df = GisticBuilder(self.config, self.sqlContext).build(maf_df)
 
         # Consequence
         cons_df = ConsequenceBuilder(self.config,
@@ -103,22 +84,3 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
-
-    def _add_case_id(self, cnv_df):
-        mapping = self._aliquot_id_to_case_id_map
-
-        def add_case_id_inner(aliquot_id):
-            try:
-                return_id = mapping[aliquot_id]
-            except KeyError:
-                # TODO: re-raise
-                return_id = mapping.values()[0]
-            return return_id
-
-        case_id_udf = udf(add_case_id_inner)
-
-        # add case id
-        new_df = cnv_df.withColumn('case_id',
-                                   case_id_udf(col('aliquot_id')))
-
-        return new_df

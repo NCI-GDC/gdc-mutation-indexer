@@ -55,16 +55,6 @@ class GisticBuilder(object):
         """
         cnv_df = self.combine()
 
-        cnv_df = self._trim_gene_symbol(cnv_df)
-
-        cnv_df = remove_columns(cnv_df, 'Locus ID', 'Cytoband')
-
-        # melt dataframe (opposite of pivoting)
-        cnv_df = melt_df(cnv_df,
-                         id_vars=["gene_id"],
-                         var_name="aliquot_id",
-                         value_name="cnv_change")
-
         # add gene information
         cnv_df = self._add_gene_information(cnv_df, maf_df)
 
@@ -90,7 +80,22 @@ class GisticBuilder(object):
         for url in urls:
             try:
                 new_df = self.read(url)
-                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                               url))
+
+                # prepare to melt
+                new_df = self._trim_gene_symbol(new_df)
+
+                new_df = remove_columns(new_df, 'Locus ID', 'Cytoband')
+
+                # melt dataframe (opposite of pivoting)
+                # required to get dfs with the same number of columns
+                # so we can union them together
+                new_df = melt_df(new_df,
+                                 id_vars=["gene_id"],
+                                 var_name="aliquot_id",
+                                 value_name="cnv_change")
+
                 if gistic_df is None:
                     gistic_df = new_df
                 else:
@@ -197,11 +202,11 @@ class GisticBuilder(object):
 
         # query all case_documents that have relevant aliquots attached
         query = {
-            "query" : {
-                "constant_score" : {
-                    "filter" : {
-                        "terms" : {
-                            "aliquot_ids" : aliquot_ids
+            "query": {
+                "constant_score": {
+                    "filter": {
+                        "terms": {
+                            "aliquot_ids": aliquot_ids
                         }
                     }
                 }
@@ -222,7 +227,7 @@ class GisticBuilder(object):
             return aliquot_to_case_map[aliquot]
 
         df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
-        df = df.drop('aliquot_id')
+        # df = df.drop('aliquot_id')
 
         return df
 
