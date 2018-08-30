@@ -56,6 +56,7 @@ class GisticBuilder(object):
                          var_name="aliquot_id",
                          value_name="cnv_change")
 
+        # transform aliquot_id column to case_id
         cnv_df = self._aliquot_id_to_case_id(cnv_df)
 
         return cnv_df
@@ -128,7 +129,7 @@ class GisticBuilder(object):
         and renames gistic dataframe columns respectively
         """
         # get list of aliquot_ids to transform
-        aliquot_ids = [c for c in df.columns if c != 'gene_id']
+        aliquot_ids = df.select('aliquot_id').rdd.map(lambda x: x[0]).collect()
 
         # query all case_documents that have relevant aliquots attached
         query = {
