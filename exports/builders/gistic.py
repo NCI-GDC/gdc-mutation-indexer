@@ -26,10 +26,9 @@ logging.basicConfig()
 
 class GisticBuilder(object):
 
-    # TEMP
-    old_to_new = {'gene_chromosome': 'chromosome',
-                  'gene_start': 'start_position',
-                  'gene_end': 'end_position'}
+    gene_to_cnv_col_names = {'gene_chromosome': 'chromosome',
+                             'gene_start': 'start_position',
+                             'gene_end': 'end_position'}
 
     """
     Read in gistic file and format it for cnv index.
@@ -60,6 +59,7 @@ class GisticBuilder(object):
 
         # drop 0 entries
         # convert to string
+        cnv_df = self._cnv_change_to_string_and_drop_zero(cnv_df)
 
         # transform aliquot_id column to case_id
         cnv_df = self._aliquot_id_to_case_id(cnv_df)
@@ -173,7 +173,7 @@ class GisticBuilder(object):
         )
 
         # rename columns from gene names to cnv names
-        for old, new in GisticBuilder.old_to_new.items():
+        for old, new in GisticBuilder.gene_to_cnv_col_names.items():
             df = df.withColumnRenamed(old, new)
 
         return df
@@ -191,6 +191,20 @@ class GisticBuilder(object):
         ))
 
         return cnv_df_with_id
+
+    def _add_ncbi_build(self, initial_cnv_df):
+
+        cnv_df_with_ncbi_build = \
+            initial_cnv_df.withColumn('ncbi_build', lit('GRCh38'))
+
+        return cnv_df_with_ncbi_build
+
+    def _add_gene_level_cn(self, initial_cnv_df):
+
+        cnv_df_with_gene_level_cn = \
+            initial_cnv_df.withColumn('gene_level_cn', lit(True))
+
+        return cnv_df_with_gene_level_cn
 
     def _aliquot_id_to_case_id(self, df):
         """
@@ -231,16 +245,36 @@ class GisticBuilder(object):
 
         return df
 
-    def _add_ncbi_build(self, initial_cnv_df):
+    def _cnv_change_to_string_and_drop_zero(self, df):
+        """
+        We map input cnv_change str number codes to str interpretations
+        (i.e., '2' becomes 'Amplification').
+        We map '0' to None and drop rows that have 'cnv_change' == None.
+        """
+        # rename col to replace
+        df = df.withColumnRenamed('cnv_change', 'cnv_change_init')
 
-        cnv_df_with_ncbi_build = \
-            initial_cnv_df.withColumn('ncbi_build', lit('GRCh38'))
+        cnv_change_mapping = {'-2': 'Deep Loss',
+                              '-1': 'Shallow Loss',
+                              '0': None,
+                              '1': 'Gain',
+                              '2': 'Amplification'}
 
-        return cnv_df_with_ncbi_build
+        def stringify_cnv_change_inner(int_cnv):
+            try:
+                return cnv_change_mapping[int_cnv]
+            except KeyError as e:
+                raise e
 
-    def _add_gene_level_cn(self, initial_cnv_df):
+        stringify_cnv_change_udf = udf(stringify_cnv_change_inner,
+                                       StringType())
+        new_df = df.withColumn('cnv_change',
+                               stringify_cnv_change_udf(
+                                   col('cnv_change_init')))
 
-        cnv_df_with_gene_level_cn = \
-            initial_cnv_df.withColumn('gene_level_cn', lit(True))
+        new_df = new_df.drop('cnv_change_init')
 
-        return cnv_df_with_gene_level_cn
+        # drop 0/None
+        new_df = new_df.na.drop(subset=['cnv_change'])
+
+        return new_df
