@@ -12,9 +12,10 @@ from pyspark.sql.functions import (
 from exports.builders.df_builders import (
     get_gene_df,
 )
-
+from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.utils import (
     melt_df,
+    uuid5_col,
     remove_columns,
     iterate_es_results,
     map_create_column,
@@ -49,22 +50,32 @@ class GisticBuilder(object):
 
     def build(self, maf_df):
         """
-        Read in gistic file.
-        Do necessary massaging
+        Read, combine and transform gistic files
+
+        Returns gistic_df
         """
-        cnv_df = self.combine()
+        gistic_df = self.combine()
 
         # add gene information
         cnv_df = self._add_gene_information(cnv_df, maf_df)
 
-        # drop 0 entries
-        # convert to string
+        # add cnv_id
+        gistic_df = self._add_cnv_id(gistic_df)
+
+        # drop entries with cnv_change == 0 and cast cnv_change to string
         cnv_df = self._cnv_change_to_string_and_drop_zero(cnv_df)
 
         # transform aliquot_id column to case_id
-        cnv_df = self._aliquot_id_to_case_id(cnv_df)
+        gistic_df = self._aliquot_id_to_case_id(gistic_df)
 
-        return cnv_df
+        # add gene info
+        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+        gistic_df = gistic_df.join(gm_df, gistic_df.gene_id == gm_df._gene_id)
+        
+        # add other custom fields
+        gistic_df = self._add_other_fields(gistic_df)
+
+        return gistic_df
 
     def combine(self, urls=None):
         """
@@ -117,6 +128,42 @@ class GisticBuilder(object):
                    .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                    .load(url)
 
+    def _add_other_fields(self, gistic_df):
+        """
+        - Add start_postion and end_position columns
+            NOTE: For gistic file, these positions exactly match gene_start and gene_end
+            (c) Kyle Hernandez
+        - Add gene_level_cn = True
+            NOTE: Placeholder for now (c) Junjun
+        - Add ncbi_build = 'GRCh38'
+            NOTE: Constant value, same as in ssm branch (c) Zhenyu
+        """
+        # add start and end position
+        gistic_df = gistic_df.withColumn('start_position', gistic_df.gene_start)
+        gistic_df = gistic_df.withColumn('end_position', gistic_df.gene_end)
+
+        # # add gene_level_cn
+        # gistic_df = gistic_df.withColumn('gene_level_cn', lit(True))
+
+        # # add ncbi_build
+        # gistic_df = gistic_df.withColumn('ncbi_build', lit('GRCh38'))
+        return gistic_df
+
+    def _add_cnv_id(self, gistic_df):
+        """
+        cnv_id ~ (chromosome, gene_start, gene_end, cnv_change)
+        """
+
+        # NOTE: start_position and end_position are matching with
+        #       gene_start and gene_end in gistic context (c) Zhenyu and Kyle
+        gistic_df = gistic_df.withColumn('cnv_id', uuid5_col(
+            col('chromosome'),
+            col('start_position'),
+            col('end_position'),
+            col('cnv_change')
+        ))
+        return gistic_df
+
     def _trim_gene_symbol(self, initial_cnv_df):
         """
         Gistic file includes something else
@@ -149,8 +196,6 @@ class GisticBuilder(object):
         new_df = self._join_to_gene(initial_cnv_df, maf_df)
 
         # gene information is required to create cnv_id
-        new_df = self._add_id(new_df)
-
         new_df = self._add_ncbi_build(new_df)
 
         new_df = self._add_gene_level_cn(new_df)
@@ -178,20 +223,6 @@ class GisticBuilder(object):
 
         return df
 
-    def _add_id(self, initial_cnv_df):
-        """
-        Business key: chromosome, start_position, end_position, cnv_change
-        """
-
-        cnv_df_with_id = initial_cnv_df.withColumn('cnv_id', uuid5_col(
-            col('chromosome'),
-            col('start_position'),
-            col('end_position'),
-            col('cnv_change')
-        ))
-
-        return cnv_df_with_id
-
     def _add_ncbi_build(self, initial_cnv_df):
 
         cnv_df_with_ncbi_build = \
@@ -209,7 +240,7 @@ class GisticBuilder(object):
     def _aliquot_id_to_case_id(self, df):
         """
         Looks up aliquot_id to case_id mapping from gdc_from_graph.case
-        and renames gistic dataframe columns respectively
+        and adds case_id column accordingly
         """
         # get list of aliquot_ids to transform
         aliquot_ids = df.select('aliquot_id').rdd.map(lambda x: x[0]).collect()
@@ -241,7 +272,6 @@ class GisticBuilder(object):
             return aliquot_to_case_map[aliquot]
 
         df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
-        # df = df.drop('aliquot_id')
 
         return df
 
@@ -278,3 +308,4 @@ class GisticBuilder(object):
         new_df = new_df.na.drop(subset=['cnv_change'])
 
         return new_df
+

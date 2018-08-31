@@ -89,7 +89,7 @@ class TestCaseCentricJoins:
         # ssm_subtree stats expected:
         cons_df = (ConsequenceBuilder(conf, sqlContext)
                    .build(maf_df, 'case_centric'))
-        obs_df = ObservationBuilder().build(maf_df, 'case_centric')
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'case_centric')
 
         df = cons_df.join(obs_df, on=['ssm_id'], how='left')
 

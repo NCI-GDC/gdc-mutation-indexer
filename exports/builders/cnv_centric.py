@@ -84,3 +84,4 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
+
