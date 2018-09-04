@@ -224,14 +224,14 @@ def case_centric_df(sqlContext, maf_df, gistic_df):
 
 
 @pytest.fixture(scope='session')
-def gene_centric_df(sqlContext, maf_df):
+def gene_centric_df(sqlContext, maf_df, gistic_df):
     """
     Builds gene centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
     builder = GeneCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df)
 
     log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
     builder.load()
