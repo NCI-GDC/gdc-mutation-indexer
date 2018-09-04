@@ -40,25 +40,26 @@ class CaseCentricBuilder(BaseBuilder):
         """
         Builds Case Centric index
         """
+        self.log('Building CaseCentric')
         # Check if we should load a pre-built dataframe
         if self.config.index_use_existing:
             self.case_centric = self.get_existing()
             if self.case_centric is not None:
                 return self
 
-        # Build case dataframe
         self.log('Building Case')
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
         self.log_count(case_df)
 
-        # Join SSM subtree
+        self.log('Building Gene subtree')
         gene_subtree = self.build_gene_subtree(maf_df, gistic_df)
 
-        self.log('Join Gene_SSM in [inner, case_id]')
+        self.log('Join Case with Gene subtree [left, case_id]')
         case_centric = (
             case_df.join(gene_subtree,
                          on=['case_id'], how='left')
         )
+        self.log_count(case_centric)
 
         self.log('Finalizing case_centric build')
         case_centric = self._final_transform(case_centric)
@@ -106,7 +107,6 @@ class CaseCentricBuilder(BaseBuilder):
         )
         self.log_count(gene_ssm_cnv_df)
 
-        
         self.log('Grouping by case_id and aggregating to list under "gene"')
         gene_ssm_cnv_df = (
             gene_ssm_cnv_df.groupBy(gene_ssm_cnv_df.case_id)
@@ -163,7 +163,8 @@ class CaseCentricBuilder(BaseBuilder):
         obs_df = ObservationBuilder().build_for_cnv(gistic_df)
 
         # Build the final cnv dataframe
-        cnv_df = build_cnv_subtree(gistic_df, cons_df, self.index_name, obs_df=obs_df)
+        cnv_df = build_cnv_subtree(gistic_df, cons_df,
+                                   self.index_name, obs_df=obs_df)
 
         # Aggregate CNV
         self.log('Aggregating cnv by case_id and gene_id')
