@@ -17,7 +17,8 @@ def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
     return df
 
 
-def build_cnv_subtree(gistic_df, cons_df, index_name, obs_df=None):
+def build_cnv_subtree(gistic_df, cons_df, index_name, obs_df=None,
+                      add_fields=['gene_id', 'case_id']):
     """
     cnv[]
        |___ consequence[]
@@ -27,7 +28,7 @@ def build_cnv_subtree(gistic_df, cons_df, index_name, obs_df=None):
 
     """
     cnv_df = get_cnv_df(gistic_df, index_name,
-                        add_fields=['gene_id', 'case_id'],
+                        add_fields=add_fields,
                         drop_fields=['occurrence_id'])
 
     df = cnv_df.join(cons_df, on='cnv_id', how='left')
