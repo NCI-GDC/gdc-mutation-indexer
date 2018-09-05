@@ -83,6 +83,7 @@ class TestConfig(BaseConfig):
          'ssm_centric': True,
          'ssm_occurrence_centric': True,
          'cnv_centric': True,
+         'cnv_occurrence_centric': True,
      }
 
     def __init__(self):
