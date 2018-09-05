@@ -83,7 +83,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
     def build_case_subtree(self, maf_df):
         self.log('Building case subtree')
         # Observation
-        obs_df = ObservationBuilder().build(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
 
         self.log('Building Case')
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)

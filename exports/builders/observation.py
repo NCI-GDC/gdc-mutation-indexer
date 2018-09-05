@@ -15,7 +15,7 @@ class ObservationBuilder(object):
     Builds observation dataframe from the maf dataframe
     """
 
-    def build(self, maf_df, index):
+    def build_for_ssm(self, maf_df, index):
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
@@ -33,7 +33,7 @@ class ObservationBuilder(object):
 
         return obs_df
 
-    def build_for_cnv(self, initial_df):
+    def build_for_cnv(self, gistic_df):
         """
         observation[]
         |____ observation{}
@@ -43,12 +43,10 @@ class ObservationBuilder(object):
                         |____ variant_caller
 
         """
-        # TODO: this should maybe move to cnv_centric
-        if 'occurrence_id' not in initial_df.columns:
-            # add occurrence id to map to higher level occurrence
-            new_df = initial_df.withColumn('occurrence_id',
-                                           uuid5_col(col('cnv_id'),
-                                                     col('case_id')))
+        # add occurrence id to map to higher level occurrence
+        new_df = gistic_df.withColumn('occurrence_id',
+                                      uuid5_col(col('cnv_id'),
+                                                col('case_id')))
 
         # add observation id
         new_df = new_df.withColumn('observation_id',

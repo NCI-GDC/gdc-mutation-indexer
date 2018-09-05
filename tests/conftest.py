@@ -209,14 +209,14 @@ def ssm_transcript_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def case_centric_df(sqlContext, maf_df):
+def case_centric_df(sqlContext, maf_df, gistic_df):
     """
     Builds case centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING CASE_CENTRIC_DF\n\n')
     builder = CaseCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df)
 
     log.info('\n\n\tLOADING CASE_CENTRIC_DF\n\n')
     builder.load()
@@ -224,14 +224,14 @@ def case_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def gene_centric_df(sqlContext, maf_df):
+def gene_centric_df(sqlContext, maf_df, gistic_df):
     """
     Builds gene centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
     builder = GeneCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df)
 
     log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
     builder.load()

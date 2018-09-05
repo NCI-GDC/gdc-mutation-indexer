@@ -47,7 +47,7 @@ class CNVCentricBuilder(BaseBuilder):
                 return self
 
         # read from gistic
-        cnv_df = GisticBuilder(self.config, self.sqlContext).build(maf_df)
+        cnv_df = GisticBuilder(self.config, self.sqlContext).build()
 
         # Consequence
         cons_df = ConsequenceBuilder(self.config,
@@ -84,3 +84,4 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
+

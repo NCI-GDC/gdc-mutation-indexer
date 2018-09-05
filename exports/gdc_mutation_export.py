@@ -1,5 +1,6 @@
 from builders import (
     MAFBuilder,
+    GisticBuilder,
     CaseCentricBuilder,
     GeneCentricBuilder,
     SSMCentricBuilder,
@@ -16,23 +17,22 @@ class GDCMutationExport(object):
         self.config = config
         self.sc = sc
         self.sqlContext = sqlContext
+        self.build_map = {
+            'case_centric': CaseCentricBuilder,
+            'gene_centric': GeneCentricBuilder,
+            'cnv_centric': CNVCentricBuilder,
+            'ssm_centric': SSMCentricBuilder,
+            'ssm_occurrence_centric': SSMOccurrenceCentricBuilder,
+            'cnv_occurrence_centric': CNVOccurrenceCentricBuilder,
+        }
 
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
-        df = MAFBuilder(self.config, self.sqlContext).build()
+        maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
-        if ('case_centric' in config.index_names
-                and config.index_names['case_centric'] is not None):
-            CaseCentricBuilder(self.config, self.sqlContext).build(df).load()
+        for index_name, builder in self.build_map.items():
+            if (index_name in config.index_names
+                    and config.index_names[index_name] is not None):
+                builder(self.config, self.sqlContext).build(maf_df, gistic_df).load()
 
-        if ('gene_centric' in config.index_names
-                and config.index_names['gene_centric'] is not None):
-            GeneCentricBuilder(self.config, self.sqlContext).build(df).load()
-
-        if ('ssm_centric' in config.index_names
-                and config.index_names['ssm_centric'] is not None):
-            SSMCentricBuilder(self.config, self.sqlContext).build(df).load()
-
-        if ('ssm_occurrence_centric' in config.index_names
-                and config.index_names['ssm_occurrence_centric'] is not None):
-            SSMOccurrenceCentricBuilder(self.config, self.sqlContext).build(df).load()
