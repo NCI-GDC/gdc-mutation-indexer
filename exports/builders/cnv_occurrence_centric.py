@@ -50,7 +50,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         self.log_count(gistic_df)
 
         # CNV subtree
-        cnv_df = self.build_cnv_subtree(maf_df, gistic_df)
+        cnv_df = self.build_cnv_subtree(gistic_df)
 
         # Case subtree
         case_df = self.build_case_subtree(maf_df, gistic_df)
@@ -73,7 +73,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
         return self
 
-    def build_cnv_subtree(self, maf_df, gistic_df):
+    def build_cnv_subtree(self, gistic_df):
         """
             cnv{}
                 |____ consequence[]
