@@ -95,6 +95,38 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     return cases_df
 
 
+def get_filenames_from_source_es(es, graph_index_name, path, regexp):
+    """
+    Returns all filenames from gdc_from_graph.file documents
+    :path - dot-delimited path to file_name in file document
+    :regexp - regular expression file_name field should follow
+    """
+    if not path.endswith('.file_name'):
+        raise ValueError(
+            'Unexpected path to file_name: {}'.format(path)
+        )
+
+    query = {
+        "query": {
+            "nested": {
+                "path": '.'.join(path.split('.')[:-1]),
+                "query": {
+                    "regexp": {
+                        path: regexp
+                    }
+                }
+            }
+        },
+        '_source': [path]
+    }
+
+    filenames = set()
+    for doc in iterate_es_results(es, graph_index_name, 'file', query=query):
+        import pdb; pdb.set_trace()
+        filename = 1
+        filenames.update(filename)
+    return filenames
+
 def iterate_es_results(es, index_name, doc_type, query=None):
     """
     Returns iterator over elasticsearch query results

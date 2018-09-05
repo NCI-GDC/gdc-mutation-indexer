@@ -22,7 +22,7 @@ class TestConfig(BaseConfig):
 
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
-    s3_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
+    s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
     graph_index = 'test_graph_index__'
 
     # Whether or not to rebuild graph index after every test
@@ -39,10 +39,10 @@ class TestConfig(BaseConfig):
 
     # Where to save each index
     index_paths = {
-        'case_centric': s3_bucket + 'test-case-centric.json',
-        'gene_centric': s3_bucket + 'test-gene-centric.json',
-        'ssm_centric': s3_bucket + 'test-ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket + 'test-ssm-occurrence-centric.json'
+        'case_centric': s3_maf_bucket + 'test-case-centric.json',
+        'gene_centric': s3_maf_bucket + 'test-gene-centric.json',
+        'ssm_centric': s3_maf_bucket + 'test-ssm-centric.json',
+        'ssm_occurrence_centric': s3_maf_bucket + 'test-ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False

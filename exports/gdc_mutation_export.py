@@ -4,7 +4,9 @@ from builders import (
     CaseCentricBuilder,
     GeneCentricBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder
+    SSMOccurrenceCentricBuilder,
+    CNVCentricBuilder,
+    CNVOccurrenceCentricBuilder,
 )
 
 

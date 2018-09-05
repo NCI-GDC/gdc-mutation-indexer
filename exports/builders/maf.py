@@ -174,7 +174,7 @@ class MAFBuilder(object):
                                       self.config.es_pass))
 
         file_names = []
-        for url in self.config.get_maf_file_names():
+        for url in self.config.get_maf_urls():
             assert url.rfind('/') > 0
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
