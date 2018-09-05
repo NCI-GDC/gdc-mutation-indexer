@@ -65,7 +65,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
     def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build(maf_df, self.index_name, join_gene=True))
+                   .build_for_ssm(maf_df, self.index_name, join_gene=True))
 
         # SSM
         ssm_df = build_ssm_subtree(maf_df, cons_df, self.index_name).drop('gene_id')

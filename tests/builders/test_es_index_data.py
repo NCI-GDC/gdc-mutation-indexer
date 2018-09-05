@@ -13,7 +13,7 @@ conf = TestConfig()
 
 
 @pytest.mark.usefixtures('maf_df', 'cnv_centric_df', 'test_data', 'es_client')
-class TestCnvCentricData:
+class TestCNVCentricData:
 
     def test_cnv_centric_count(self, maf_df, test_data, es_client):
         # maf_case_count = TestDataStats.get_stats(maf_df, test_data,
@@ -35,11 +35,11 @@ class TestCnvCentricData:
 
 @pytest.mark.usefixtures('maf_df', 'test_data', 'es_client',
                          'cnv_occurrence_centric_df')
-class TestCnvOccurrenceCentricData:
+class TestCNVOccurrenceCentricData:
 
-    def test_build(self, maf_df, test_data, es_client):
-        pass
-
+    def test_cnv_occurrence_centric_count(self, maf_df, test_data, es_client):
+        # TODO: define
+        1/0
 
 @pytest.mark.usefixtures('all_cases',
                          'maf_df',
@@ -62,6 +62,8 @@ class TestCaseCentricData:
             doc_type='case_centric',
             body={"query": {"match_all": {}}}
         )['count']
+
+        genes = [c['_source']['gene'] for c in es_client.search(index=conf.indices['case_centric'], doc_type='case_centric')]
         assert built_count == expected_count
 
     @pytest.mark.parametrize('stat', ['Nprojects',

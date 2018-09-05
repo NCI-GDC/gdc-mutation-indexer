@@ -36,7 +36,7 @@ class CNVCentricBuilder(BaseBuilder):
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
 
-    def build(self, maf_df):
+    def build(self, maf_df, gistic_df):
         """
         Builds CNV Centric index
         """
@@ -46,26 +46,23 @@ class CNVCentricBuilder(BaseBuilder):
             if self.cnv_centric is not None:
                 return self
 
-        # read from gistic
-        cnv_df = GisticBuilder(self.config, self.sqlContext).build()
-
         # Consequence
         cons_df = ConsequenceBuilder(self.config,
-                                     self.sqlContext).build_for_cnv(cnv_df)
+                                     self.sqlContext).build_for_cnv(gistic_df)
 
         # Occurrence
         occurrence_df = OccurrenceBuilder(
                             self.config,
-                            self.sqlContext).build_for_cnv(cnv_df, maf_df)
+                            self.sqlContext).build_for_cnv(gistic_df, maf_df)
 
         self.log('Final join CNV + Consequence + Occurrence')
-        intermediate_df = cnv_df.join(cons_df, on='cnv_id', how='left')
-        joined_cnv_df = intermediate_df.join(occurrence_df, on='cnv_id',
+        intermediate_df = gistic_df.join(cons_df, on='cnv_id', how='left')
+        joined_gistic_df = intermediate_df.join(occurrence_df, on='cnv_id',
                                              how='right')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
-        truncated_df = self.truncate_df_at_percentile(joined_cnv_df,
+        truncated_df = self.truncate_df_at_percentile(joined_gistic_df,
                                                       'occurrence',
                                                       threshold)
 

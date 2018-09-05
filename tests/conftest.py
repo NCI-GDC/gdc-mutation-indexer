@@ -269,13 +269,13 @@ def ssm_occurrence_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def cnv_centric_df(sqlContext, maf_df):
+def cnv_centric_df(sqlContext, maf_df, gistic_df):
     """
     Builds cnv centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
     builder = CNVCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df)
 
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
     builder.load()
@@ -283,13 +283,13 @@ def cnv_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def cnv_occurrence_centric_df(sqlContext, maf_df):
+def cnv_occurrence_centric_df(sqlContext, maf_df, gistic_df):
     """
     Builds cnv occurrence centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n')
     builder = CNVOccurrenceCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df)
 
     log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()

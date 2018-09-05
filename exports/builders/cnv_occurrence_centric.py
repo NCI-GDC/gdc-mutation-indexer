@@ -35,7 +35,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     index_name = 'cnv_occurrence_centric'
     id_field = 'cnv_occurrence_id'
 
-    def build(self, maf_df):
+    def build(self, maf_df, gistic_df):
         """
         Builds CNV Occurrence Centric index
         """
@@ -45,8 +45,6 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
             if self.cnv_occurrence_centric is not None:
                 return self
 
-        # Helper gistic
-        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
         self.log_count(gistic_df)
 
         # CNV subtree

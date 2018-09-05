@@ -33,8 +33,13 @@ class GDCMutationExport(object):
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
-        for index_name, builder in self.build_map.items():
+        for index_name, builder in sorted(self.build_map.items(),
+                                          key=lambda x: x[0]):
             if (index_name in config.index_names
                     and config.index_names[index_name] is not None):
-                builder(self.config, self.sqlContext).build(maf_df, gistic_df).load()
+                if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
+                    # these builders do not yet depend on gistic_df
+                    builder(self.config, self.sqlContext).build(maf_df).load()
+                else:
+                    builder(self.config, self.sqlContext).build(maf_df, gistic_df).load()
 

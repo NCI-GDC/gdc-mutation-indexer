@@ -101,11 +101,17 @@ class CaseCentricBuilder(BaseBuilder):
         gene_ssm_cnv_df = (
             gene_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
                    .join(cnv_df, on=['gene_id', 'case_id'], how='left')
-                   .select('case_id',
-                           struct('ssm', 'cnv', *gene_df.drop('case_id').columns)
-                           .alias('gene'))
         )
         self.log_count(gene_ssm_cnv_df)
+
+        self.log('Grouping SSM and CNV subtrees under Gene')
+        gene_ssm_cnv_df = (
+            gene_ssm_cnv_df.select('case_id',
+                                   struct('ssm', 'cnv',
+                                          *gene_df.drop('case_id').columns)
+                                   .alias('gene'))
+        )
+        self.log_count(gene_df)
 
         self.log('Grouping by case_id and aggregating to list under "gene"')
         gene_ssm_cnv_df = (

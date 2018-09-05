@@ -253,7 +253,8 @@ class BaseConfig(object):
         gistic_urls = []
         for obj in bucket_contents:
             if not self.projects or any([project in obj.key for project in self.projects]):
-                gistic_urls.append(self.s3_gistic_bucket + obj.key)
+                if 'all_thresholded.by_genes.txt' in obj.key:
+                    gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
 
@@ -314,4 +315,4 @@ class BaseConfig(object):
 
 if __name__ == '__main__':
     conf = BaseConfig()
-    import pdb; pdb.set_trace()
+
