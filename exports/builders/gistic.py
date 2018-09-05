@@ -181,10 +181,10 @@ class GisticBuilder(object):
         for old, new in GisticBuilder.gene_to_cnv_col_names.items():
             new_df = new_df.withColumnRenamed(old, new)
 
-        # gene information is required to create cnv_id
+        # extra columns not included in gene model df
         new_df = self._add_ncbi_build(new_df)
-
         new_df = self._add_gene_level_cn(new_df)
+        new_df = self._add_variant_status(new_df)
 
         return new_df
 
@@ -201,6 +201,16 @@ class GisticBuilder(object):
             initial_cnv_df.withColumn('gene_level_cn', lit(True))
 
         return cnv_df_with_gene_level_cn
+
+    def _add_variant_status(self, initial_df):
+        """
+        For now this is a placeholder.
+        NOTE: Used on observation in cnv_centric,
+                used on cnv in cnv_occurrence_centric
+        """
+        new_df = initial_df.withColumn('variant_status', lit('Tumor only'))
+
+        return new_df
 
     def _aliquot_id_to_case_id(self, df):
         """
@@ -273,4 +283,3 @@ class GisticBuilder(object):
         new_df = new_df.na.drop(subset=['cnv_change'])
 
         return new_df
-

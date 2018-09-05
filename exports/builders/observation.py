@@ -55,7 +55,6 @@ class ObservationBuilder(object):
                                              col('aliquot_id')))
 
         # add other observation fields
-        new_df = new_df.withColumn('variant_status', lit('Tumor only'))
         new_df = new_df.withColumn('variant_caller', lit('GISTIC2'))
         new_df = new_df.withColumn('variant_calling', struct('variant_caller')
                                    .alias('variant_calling'))
@@ -68,6 +67,7 @@ class ObservationBuilder(object):
                                 struct('observation_id',
                                        'variant_status',
                                        'variant_calling').alias('observation'))
+                        .drop('variant_status') # ?
                         .groupby('cnv_id', 'case_id', 'occurrence_id')
                         .agg(collect_set('observation').alias('observation')))
 
