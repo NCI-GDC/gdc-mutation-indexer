@@ -16,7 +16,6 @@ conf = TestConfig()
 class TestMyCnv:
     def test_mytest_data(self, maf_df, test_data):
         expected_count = TestDataStats.get_stats(maf_df, test_data, 'cnv_centric')
-        import pdb; pdb.set_trace()
 
 
 @pytest.mark.usefixtures('maf_df', 'cnv_centric_df', 'test_data', 'es_client')
