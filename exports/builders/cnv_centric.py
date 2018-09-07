@@ -47,18 +47,21 @@ class CNVCentricBuilder(BaseBuilder):
                 return self
 
         # Consequence
-        cons_df = ConsequenceBuilder(self.config,
-                                     self.sqlContext).build_for_cnv(gistic_df)
+        cons_df = (
+            ConsequenceBuilder(self.config, self.sqlContext)
+                .build_for_cnv(gistic_df)
+        )
 
         # Occurrence
-        occurrence_df = OccurrenceBuilder(
-                            self.config,
-                            self.sqlContext).build_for_cnv(gistic_df, maf_df)
+        occurrence_df = (
+            OccurrenceBuilder(self.config, self.sqlContext)
+                .build_for_cnv(gistic_df, maf_df)
+        )
 
         self.log('Final join CNV + Consequence + Occurrence')
         intermediate_df = gistic_df.join(cons_df, on='cnv_id', how='left')
         joined_gistic_df = intermediate_df.join(occurrence_df, on='cnv_id',
-                                             how='right')
+                                                how='right')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']

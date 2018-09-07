@@ -12,34 +12,36 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'cnv_centric_df', 'test_data', 'es_client')
+def get_es_doc_count(es_client, index_name, doc_type):
+    return es_client.count(
+        index=index_name,
+        doc_type=doc_type,
+        body={"query": {"match_all": {}}}
+    )['count']
+
+
+@pytest.mark.usefixtures('gistic_df', 'cnv_centric_df', 'test_data', 'es_client')
 class TestCNVCentricData:
 
-    def test_cnv_centric_count(self, maf_df, test_data, es_client):
-        # maf_case_count = TestDataStats.get_stats(maf_df, test_data,
-        #                                          'case_centric')['count']
-        # expected_count = len(all_cases)
-
-        # temp
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
-                                                 'cnv_centric')['count']
-
-
-        built_count = es_client.count(
-            index=conf.indices['cnv_centric'],
-            doc_type='cnv_centric',
-            body={"query": {"match_all": {}}}
-        )['count']
+    def test_cnv_centric_count(self, gistic_df, test_data, es_client):
+        doc_type = 'cnv_centric'
+        expected_count = TestDataStats.get_stats(
+            gistic_df, test_data, doc_type)['count']
+        built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
         assert built_count == expected_count
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'es_client',
+@pytest.mark.usefixtures('gistic_df', 'test_data', 'es_client',
                          'cnv_occurrence_centric_df')
 class TestCNVOccurrenceCentricData:
 
-    def test_cnv_occurrence_centric_count(self, maf_df, test_data, es_client):
-        # TODO: define
-        1/0
+    def test_cnv_occurrence_centric_count(self, gistic_df, test_data, es_client):
+        doc_type = 'cnv_occurrence_centric'
+        expected_count = TestDataStats.get_stats(
+            gistic_df, test_data, doc_type)['count']
+        built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
+        assert built_count == expected_count
+
 
 @pytest.mark.usefixtures('all_cases',
                          'maf_df',
@@ -63,7 +65,6 @@ class TestCaseCentricData:
             body={"query": {"match_all": {}}}
         )['count']
 
-        genes = [c['_source']['gene'] for c in es_client.search(index=conf.indices['case_centric'], doc_type='case_centric')]
         assert built_count == expected_count
 
     @pytest.mark.parametrize('stat', ['Nprojects',

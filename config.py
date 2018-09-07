@@ -143,17 +143,17 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = [
-            'project.disease_type',
-            'project.primary_site',
-            'case_autocomplete',
-            'annotations',
-            'days_to_index',
-            'diagnoses.treatments',
-            'tissue_source_site',
-            'family_histories',
-            'samples',
-            'files',
-            '*_ids'
+        'project.disease_type',
+        'project.primary_site',
+        'case_autocomplete',
+        'annotations',
+        'days_to_index',
+        'diagnoses.treatments',
+        'tissue_source_site',
+        'family_histories',
+        'samples',
+        'files',
+        '*_ids'
     ]
 
     def __init__(self):
