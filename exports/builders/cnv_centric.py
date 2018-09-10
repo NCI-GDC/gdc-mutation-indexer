@@ -59,22 +59,22 @@ class CNVCentricBuilder(BaseBuilder):
         )
 
         self.log('Final join CNV + Consequence + Occurrence')
-        intermediate_df = gistic_df.join(cons_df, on='cnv_id', how='left')
-        joined_gistic_df = intermediate_df.join(occurrence_df, on='cnv_id',
-                                                how='right')
+        cnv_centric_df = gistic_df.join(cons_df, on='cnv_id', how='left')
+        cnv_centric_df = cnv_centric_df.join(occurrence_df, on='cnv_id',
+                                             how='left')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
-        truncated_df = self.truncate_df_at_percentile(joined_gistic_df,
-                                                      'occurrence',
-                                                      threshold)
+        cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
+                                                        'occurrence',
+                                                        threshold)
 
         # warning: this will strip out anything that isn't
         # specified in the schema
-        cleansed_df = standardize_schema(truncated_df, "cnv_centric", "cnv")
+        cnv_centric_df = standardize_schema(cnv_centric_df, "cnv_centric", "cnv")
 
         # save final df as property
-        self.cnv_centric = cleansed_df
+        self.cnv_centric = cnv_centric_df
 
         self.log_count(self.cnv_centric)
         self.log('Build finished')
