@@ -3,6 +3,11 @@ import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
+from exports.es_utils import (
+    iterate_es_results,
+    get_values_from_path,
+)
+
 
 class BaseConfig(object):
 
@@ -10,9 +15,11 @@ class BaseConfig(object):
     app_name = 'GDC_Mutation_Export'
 
     s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
-    s3_bucket = 's3a://{}/'.format(os.getenv('S3_BUCKET', 'somatic-maf'))
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
     s3_secret_key = os.getenv('S3_SECRET_KEY', '')
+
+    s3_maf_bucket = 's3a://{}/'.format(os.getenv('S3_MAF_BUCKET', 'somatic-maf'))
+    s3_gistic_bucket = 's3a://{}/'.format(os.getenv('S3_GISTIC_BUCKET', 'gistic-cnv'))
 
     es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
@@ -61,10 +68,10 @@ class BaseConfig(object):
 
     # Where to save each index's final json
     index_paths = {
-        'case_centric': s3_bucket + 'case-centric.json',
-        'gene_centric': s3_bucket + 'gene-centric.json',
-        'ssm_centric': s3_bucket + 'ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket + 'ssm-occurrence-centric.json'
+        'case_centric': s3_maf_bucket + 'case-centric.json',
+        'gene_centric': s3_maf_bucket + 'gene-centric.json',
+        'ssm_centric': s3_maf_bucket + 'ssm-centric.json',
+        'ssm_occurrence_centric': s3_maf_bucket + 'ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False
@@ -136,20 +143,24 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = [
-            'project.disease_type',
-            'project.primary_site',
-            'case_autocomplete',
-            'annotations',
-            'days_to_index',
-            'diagnoses.treatments',
-            'tissue_source_site',
-            'family_histories',
-            'samples',
-            'files',
-            '*_ids'
+        'project.disease_type',
+        'project.primary_site',
+        'case_autocomplete',
+        'annotations',
+        'days_to_index',
+        'diagnoses.treatments',
+        'tissue_source_site',
+        'family_histories',
+        'samples',
+        'files',
+        '*_ids'
     ]
 
     def __init__(self):
+        self.es = Elasticsearch(
+            self.es_host, port=self.es_port,
+            http_auth=(self.es_user, self.es_pass)
+        )
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
         self.gistic_urls = self.get_gistic_urls()
@@ -196,17 +207,15 @@ class BaseConfig(object):
         return indices
 
     def get_maf_urls(self):
-        conn = S3Connection(self.s3_access_key,
-                            self.s3_secret_key,
-                            host=self.s3_host.split('/')[-1],
-                            calling_format=OrdinaryCallingFormat(),
-                            is_secure=False)
-        bucket_name = self.s3_bucket.split('/')[2]
-        bucket = conn.get_bucket(bucket_name)
+        """
+        Get maf urls from s3 bucket
+
+        TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
+        """
+        bucket_contents = self.list_bucket(self.s3_maf_bucket)
 
         maf_urls = []
-
-        for obj in bucket.list():
+        for obj in bucket_contents:
             skip = False
             for keyword in self.maf_keywords:
                 if keyword not in obj.key:
@@ -215,15 +224,95 @@ class BaseConfig(object):
             if not skip:
                 if not self.pipelines or any([pipeline in obj.key for pipeline in self.pipelines]):
                     if not self.projects or any([project in obj.key for project in self.projects]):
-                        maf_urls.append(self.s3_bucket + obj.key)
+                        maf_urls.append(self.s3_maf_bucket + obj.key)
                         if self.nb_projects and len(maf_urls) >= self.nb_projects:
                             break
 
         return maf_urls
 
+    def get_maf_urls_from_index(self):
+        path = "downstream_analyses.output_files.file_name"
+        regexp = ".*maf.gz.?"
+
+        return self.get_filenames_from_source_es(
+            self.es, self.graph_index, path, regexp
+        )
+
     def get_maf_file_names(self):
         return self.get_maf_urls()
 
-    def get_gistic_url(self):
-        #TODO: do a real thing
-        return []
+    def get_gistic_urls(self):
+        """
+        Get gistic urls from s3 bucket
+
+        TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
+        """
+
+        bucket_contents = self.list_bucket(self.s3_gistic_bucket)
+
+        gistic_urls = []
+        for obj in bucket_contents:
+            if not self.projects or any([project in obj.key for project in self.projects]):
+                if 'all_thresholded.by_genes.txt' in obj.key:
+                    gistic_urls.append(self.s3_gistic_bucket + obj.key)
+
+        return gistic_urls
+
+    def list_bucket(self, bucket_name):
+        """
+        Return iterator over bucket contents
+        """
+        def get_bucket_name(url):
+            """ Extract bucket name from bucket url """
+            if url.endswith('/'):
+                url = url[:-1]
+
+            for prefix in ['s3://', 's3a://']:
+                url =  url.replace(prefix, '')
+
+            return url
+
+        conn = S3Connection(self.s3_access_key,
+                            self.s3_secret_key,
+                            host=self.s3_host.split('/')[-1],
+                            calling_format=OrdinaryCallingFormat(),
+                            is_secure=False)
+        bucket = conn.get_bucket(get_bucket_name(bucket_name))
+        return bucket.list()
+
+    @staticmethod
+    def get_filenames_from_source_es(es, graph_index_name, path, regexp):
+        """
+        Returns all filenames from gdc_from_graph.file documents
+        :path - dot-delimited path to file_name in file document
+        :regexp - regular expression file_name field should follow
+        """
+        if not path.endswith('.file_name'):
+            raise ValueError(
+                'Unexpected path to file_name: {}'.format(path)
+            )
+
+        query = {
+            "query": {
+                "nested": {
+                    "path": '.'.join(path.split('.')[:-1]),
+                    "query": {
+                        "regexp": {
+                            path: regexp
+                        }
+                    }
+                }
+            },
+            '_source': [path]
+        }
+
+        filenames = set()
+        for doc in iterate_es_results(es, graph_index_name, 'file', query=query):
+            filename = get_values_from_path(doc['_source'], path)
+            filenames.update(filename)
+        return filenames
+
+
+if __name__ == '__main__':
+    conf = BaseConfig()
+

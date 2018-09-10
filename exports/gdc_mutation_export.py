@@ -4,7 +4,9 @@ from builders import (
     CaseCentricBuilder,
     GeneCentricBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder
+    SSMOccurrenceCentricBuilder,
+    CNVCentricBuilder,
+    CNVOccurrenceCentricBuilder,
 )
 
 
@@ -17,22 +19,27 @@ class GDCMutationExport(object):
         self.config = config
         self.sc = sc
         self.sqlContext = sqlContext
-        self.build_map = {
-            'case_centric': CaseCentricBuilder,
-            'gene_centric': GeneCentricBuilder,
-            'cnv_centric': CNVCentricBuilder,
-            'ssm_centric': SSMCentricBuilder,
-            'ssm_occurrence_centric': SSMOccurrenceCentricBuilder,
-            'cnv_occurrence_centric': CNVOccurrenceCentricBuilder,
-        }
+        self.builders = [
+            CaseCentricBuilder,
+            GeneCentricBuilder,
+            SSMCentricBuilder,
+            SSMOccurrenceCentricBuilder,
+            CNVCentricBuilder,
+            CNVOccurrenceCentricBuilder,
+        ]
 
     def run_export(self, config=None):
         # Construct master MAF from all individual MAFs
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
-        for index_name, builder in self.build_map.items():
+        for builder in self.builders:
+            index_name = builder.index_name
             if (index_name in config.index_names
                     and config.index_names[index_name] is not None):
-                builder(self.config, self.sqlContext).build(maf_df, gistic_df).load()
+                if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
+                    # these builders do not yet depend on gistic_df
+                    builder(self.config, self.sqlContext).build(maf_df).load()
+                else:
+                    builder(self.config, self.sqlContext).build(maf_df, gistic_df).load()
 

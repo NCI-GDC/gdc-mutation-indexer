@@ -72,8 +72,8 @@ class GisticBuilder(object):
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
 
-        # transform aliquot_id column to case_id
-        gistic_df = self._aliquot_id_to_case_id(gistic_df)
+        # add case_id based on aliquot_id
+        gistic_df = self._add_case_id(gistic_df)
 
         return gistic_df
 
@@ -212,13 +212,13 @@ class GisticBuilder(object):
 
         return new_df
 
-    def _aliquot_id_to_case_id(self, df):
+    def _add_case_id(self, df):
         """
         Looks up aliquot_id to case_id mapping from gdc_from_graph.case
         and adds case_id column accordingly
         """
         # get list of aliquot_ids to transform
-        aliquot_ids = df.select('aliquot_id').rdd.map(lambda x: x[0]).collect()
+        aliquot_ids = df.select('aliquot_id').distinct().rdd.map(lambda x: x[0]).collect()
 
         # query all case_documents that have relevant aliquots attached
         query = {

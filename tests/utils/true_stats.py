@@ -140,7 +140,7 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
-    def cnv_centric_stats(maf_df, data):
+    def cnv_centric_stats(gistic_df, data):
         """
         cnv{}
             |____ consequence[]
@@ -149,8 +149,19 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
+        count = gistic_df.select('cnv_id').distinct().count()
+        return {'count': count}
 
-        # TODO: fixme
-        count = 1
+    @staticmethod
+    def cnv_occurrence_centric_stats(gistic_df, data):
+        """
+        cnv{}
+            |____ consequence[]
+            |             |_____ gene{}
+            |____ occurrence[]
+                        |_____ case{}
+                                    |____ observation[]
+        """
+        count = gistic_df.select('cnv_id').distinct().count() # this is not correct
         return {'count': count}
 
