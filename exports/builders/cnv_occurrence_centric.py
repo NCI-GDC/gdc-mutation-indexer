@@ -22,7 +22,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     Builds cnv-occurrence-centric dataframe given
     case, gene, and maf dataframes:
 
-        cnv_occurrence{}
+    cnv_occurrence{}
         |
         |____ case{}
         |       |____ observation[]
@@ -56,7 +56,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         self.log('Joining cnv with case')
         cnv_occurrence_centric = (cnv_df.join(case_df,
                                               on='case_id',
-                                              how='right')
+                                              how='inner')
                                         .withColumnRenamed('occurrence_id',
                                                            'cnv_occurrence_id')
                                         .drop('case_id')
@@ -66,6 +66,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
         self.cnv_occurrence_centric = cnv_occurrence_centric
         self.log('Build finished')
+
         # Check if we should save the resulting dataframe
         if self.config.index_keep:
             self.write(self.config.index_paths[self.index_name])
@@ -100,7 +101,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     def build_case_subtree(self, maf_df, gistic_df):
         """
             case{}
-        |       |____ observation[]
+                |____ observation[]
         """
         self.log('Building case subtree')
 
@@ -114,7 +115,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         self.log_count(case_df)
 
         self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
+        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='left')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
                                              *case_df.columns)

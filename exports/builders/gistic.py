@@ -132,7 +132,6 @@ class GisticBuilder(object):
         """
         cnv_id ~ (chromosome, gene_start, gene_end, cnv_change)
         """
-
         # NOTE: start_position and end_position are matching with
         #       gene_start and gene_end in gistic context (c) Zhenyu and Kyle
         gistic_df = gistic_df.withColumn('cnv_id', uuid5_col(
@@ -244,7 +243,7 @@ class GisticBuilder(object):
 
         # create case_id column based on aliquot_id column, drop aliquot_id
         def map_aliquot_to_case(aliquot):
-            return aliquot_to_case_map[aliquot]
+            return aliquot_to_case_map.get(aliquot)
 
         df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
 
@@ -283,3 +282,4 @@ class GisticBuilder(object):
         new_df = new_df.na.drop(subset=['cnv_change'])
 
         return new_df
+
