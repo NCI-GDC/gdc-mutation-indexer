@@ -24,10 +24,11 @@ class BaseJoinsTest:
         return relationships
 
     @staticmethod
-    def unpack_df_list(dataframe, parent_id_field, packed_field, packed_id_field):
+    def unpack_df_list(dataframe, parent_fields, list_field, packed_fields,
+                       additional_fields=None):
         """
         Explodes packed into a list fields in :dataframe
-        Returns flat dataframe with only :parent_id_field and :packed_id_field
+        Returns flat dataframe with only :parent_fields and :packed_fields
 
         Example:
             Given dataframe of format:
@@ -39,12 +40,28 @@ class BaseJoinsTest:
             unpack_df_join(dataframe, 'ssm_id', 'consequence', 'consequence_id')
             will return flat dataframe || ssm_id | consequence_id ||
 
+        NOTE: this works with multiple :parent_fields and :packed_fields too, e.g.
+            unpack_df_join(dataframe, ['ssm_id', 'foo'],
+                           'consequence', ['consequence_id', 'bar'])
+            will return flat dataframe || ssm_id | foo | consequence_id | bar ||
+
         """
+        if isinstance(parent_fields, str):
+            parent_fields = [parent_fields]
+
+        if isinstance(packed_fields, str):
+            packed_fields = [packed_fields]
+
+        child_fields = ['exploded.{}'.format(f) for f in packed_fields]
+
+        all_fields = (
+            [f.split('.')[-1] for f in parent_fields] +  # this allows deeper parent fields like "foo.bar"
+            child_fields
+        )
         unpacked = (
-            dataframe.select(parent_id_field,
-                             explode(packed_field).alias('exploded'))
-                     .select(parent_id_field,
-                             'exploded.{}'.format(packed_id_field))
+            dataframe.select(explode(list_field).alias('exploded'),
+                             *parent_fields)
+                     .select(*all_fields)
         )
 
         return unpacked
