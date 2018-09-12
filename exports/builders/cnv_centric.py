@@ -8,7 +8,6 @@ from pyspark.sql.functions import (
 from exports.builders import (
     BaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
     OccurrenceBuilder,
 )
 
@@ -28,8 +27,9 @@ class CNVCentricBuilder(BaseBuilder):
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
-                      |_____ case{}
-                                |____ observation[]
+        |             |_____ case{}
+        |                       |____ observation[]
+        |____ ... 
 
     """
 
@@ -52,6 +52,15 @@ class CNVCentricBuilder(BaseBuilder):
                 .build_for_cnv(gistic_df)
         )
 
+        # CNV
+        # TEMP: recreate the cnv subtree... but don't include 
+        # consequence and occcurrence
+        # TODO: there should be a generic way to do this
+        just_cnv_df = gistic_df.select(['chromosome', 'cnv_change', 'cnv_id',
+                                        'end_position', 'gene_level_cn',
+                                        'ncbi_build', 'start_position'])
+        cnv_df = just_cnv_df.drop_duplicates()
+
         # Occurrence
         occurrence_df = (
             OccurrenceBuilder(self.config, self.sqlContext)
@@ -59,16 +68,14 @@ class CNVCentricBuilder(BaseBuilder):
         )
 
         self.log('Final join CNV + Consequence + Occurrence')
-        cnv_centric_df = gistic_df.join(cons_df, on='cnv_id', how='left')
-        cnv_centric_df = cnv_centric_df.join(occurrence_df, on='cnv_id',
-                                             how='left')
+        cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
+        cnv_centric_df = cnv_cons_df.join(occurrence_df, on='cnv_id', how='left')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
         cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
                                                         'occurrence',
                                                         threshold)
-
         # warning: this will strip out anything that isn't
         # specified in the schema
         cnv_centric_df = standardize_schema(cnv_centric_df, "cnv_centric", "cnv")
