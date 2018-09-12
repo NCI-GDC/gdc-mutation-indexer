@@ -27,9 +27,8 @@ class CNVCentricBuilder(BaseBuilder):
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
-        |             |_____ case{}
-        |                       |____ observation[]
-        |____ ... 
+                      |_____ case{}
+                                |____ observation[]
 
     """
 
