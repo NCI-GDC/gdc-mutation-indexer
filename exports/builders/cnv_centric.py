@@ -13,7 +13,10 @@ from exports.builders import (
 
 from exports.builders.utils import (
     standardize_schema,
+    struct_select,
 )
+
+from exports.builders.df_builders import build_cnv_subtree
 
 logging.basicConfig()
 
@@ -52,13 +55,8 @@ class CNVCentricBuilder(BaseBuilder):
         )
 
         # CNV
-        # TEMP: recreate the cnv subtree... but don't include 
-        # consequence and occcurrence
-        # TODO: there should be a generic way to do this
-        just_cnv_df = gistic_df.select(['chromosome', 'cnv_change', 'cnv_id',
-                                        'end_position', 'gene_level_cn',
-                                        'ncbi_build', 'start_position'])
-        cnv_df = just_cnv_df.drop_duplicates()
+        cnv_df = build_cnv_subtree(gistic_df, cons_df, self.index_name,
+                                   obs_df=None, add_fields=[])
 
         # Occurrence
         occurrence_df = (
@@ -75,9 +73,6 @@ class CNVCentricBuilder(BaseBuilder):
         cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
                                                         'occurrence',
                                                         threshold)
-        # warning: this will strip out anything that isn't
-        # specified in the schema
-        cnv_centric_df = standardize_schema(cnv_centric_df, "cnv_centric", "cnv")
 
         # save final df as property
         self.cnv_centric = cnv_centric_df

@@ -284,7 +284,7 @@ class ModelMapper(object):
                 'case_centric': ['consequence', 'observation'],
                 'cnv_occurrence_centric': ['consequence', 'observation'],
                 'gene_centric': ['consequence', 'observation'],
-                'cnv_centric': [],
+                'cnv_centric': ['consequence', 'occurrence'],
                 'ssm_centric': ['observation'],
                 'ssm_occurrence_centric': ['observation'],
             },
