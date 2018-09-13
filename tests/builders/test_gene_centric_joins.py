@@ -59,7 +59,6 @@ class TestGeneCentricJoins(BaseJoinsTest):
 
         assert es_spc == spc
 
-    @pytest.mark.mymy
     @pytest.mark.gene_centric_ssm_subtree
     def test_ssm_subtree(self, sqlContext, maf_df, gene_centric_df, gene_ssm_subtree):
         def get_stats(dataframe):
