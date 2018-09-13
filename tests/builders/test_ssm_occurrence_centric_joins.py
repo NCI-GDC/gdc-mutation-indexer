@@ -50,7 +50,6 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
-    @pytest.mark.mymy
     def test_observations_per_ssm_occurrence(self, maf_df, ssm_occurrence_centric_df):
         # Observations and Cases per SSM Occurrence built:
         df = self.unpack_df_list(ssm_occurrence_centric_df,

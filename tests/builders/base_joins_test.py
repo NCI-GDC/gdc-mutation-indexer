@@ -7,6 +7,7 @@ class BaseJoinsTest:
     @staticmethod
     def get_relationship_map(dataframe, parent_id_field, child_id_field):
         """
+        TODO: support arbitrary depth relationships: (parent, child, grandchild, ...)
         Retrieve one-to-many relationship map for 
         :parent_field -> :child_field-s in :dataframe as a dictionary
 
@@ -24,8 +25,7 @@ class BaseJoinsTest:
         return relationships
 
     @staticmethod
-    def unpack_df_list(dataframe, parent_fields, list_field, packed_fields,
-                       additional_fields=None):
+    def unpack_df_list(dataframe, parent_fields, list_field, packed_fields):
         """
         Explodes packed into a list fields in :dataframe
         Returns flat dataframe with only :parent_fields and :packed_fields
@@ -52,14 +52,15 @@ class BaseJoinsTest:
         if isinstance(packed_fields, str):
             packed_fields = [packed_fields]
 
-        child_fields = ['exploded.{}'.format(f) for f in packed_fields]
+        child_fields = ['{}.{}'.format(list_field, f) for f in packed_fields]
 
         all_fields = (
             [f.split('.')[-1] for f in parent_fields] +  # this allows deeper parent fields like "foo.bar"
             child_fields
         )
+
         unpacked = (
-            dataframe.select(explode(list_field).alias('exploded'),
+            dataframe.select(explode(list_field).alias(list_field),
                              *parent_fields)
                      .select(*all_fields)
         )
