@@ -44,24 +44,24 @@ class ObservationBuilder(object):
 
         """
         # add occurrence id to map to higher level occurrence
-        new_df = gistic_df.withColumn('occurrence_id',
+        obs_df = gistic_df.withColumn('occurrence_id',
                                       uuid5_col(col('cnv_id'),
                                                 col('case_id')))
 
         # add observation id
-        new_df = new_df.withColumn('observation_id',
+        obs_df = obs_df.withColumn('observation_id',
                                    uuid5_col(col('cnv_id'),
                                              col('case_id'),
                                              col('aliquot_id')))
 
         # add other observation fields
-        new_df = new_df.withColumn('variant_caller', lit('GISTIC2'))
-        new_df = new_df.withColumn('variant_calling', struct('variant_caller')
+        obs_df = obs_df.withColumn('variant_caller', lit('GISTIC2'))
+        obs_df = obs_df.withColumn('variant_calling', struct('variant_caller')
                                    .alias('variant_calling'))
-        new_df = new_df.drop('variant_caller')
+        obs_df = obs_df.drop('variant_caller')
 
         # observation structure, TODO: add more fields
-        obs_df = (new_df.select('cnv_id',
+        obs_df = (obs_df.select('cnv_id',
                                 'case_id',
                                 'occurrence_id',
                                 struct('observation_id',

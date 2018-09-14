@@ -236,7 +236,7 @@ class TestConsequenceBuilder:
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_consequence_id(self, builder, maf_df, index_name):
         """ Test that consequence_id is created correctly """
-        cons_df = builder.build(maf_df, index_name, join_gene=False)
+        cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=False)
 
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 

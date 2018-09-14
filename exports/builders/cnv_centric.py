@@ -16,7 +16,7 @@ class CNVCentricBuilder(BaseBuilder):
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
 
-        cnv{}
+     cnv{}
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
