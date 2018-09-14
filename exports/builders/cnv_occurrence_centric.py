@@ -59,7 +59,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                                                      'cnv_occurrence_id')
                                   .drop('case_id')
                                   .drop('cnv_id'))
-       
+
         self.log_count(cnv_occ_df)
 
         self.cnv_occurrence_centric = cnv_occ_df
