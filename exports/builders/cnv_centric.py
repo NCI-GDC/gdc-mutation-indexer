@@ -1,19 +1,9 @@
 import logging
 
-from pyspark.sql.functions import (
-    col,
-    udf,
-)
-
 from exports.builders import (
     BaseBuilder,
     ConsequenceBuilder,
     OccurrenceBuilder,
-)
-
-from exports.builders.utils import (
-    standardize_schema,
-    struct_select,
 )
 
 from exports.builders.df_builders import build_cnv_subtree
@@ -51,7 +41,7 @@ class CNVCentricBuilder(BaseBuilder):
         # Consequence
         cons_df = (
             ConsequenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df)
+            .build_for_cnv(gistic_df)
         )
 
         # CNV
@@ -61,12 +51,13 @@ class CNVCentricBuilder(BaseBuilder):
         # Occurrence
         occurrence_df = (
             OccurrenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df, maf_df)
+            .build_for_cnv(gistic_df, maf_df)
         )
 
         self.log('Final join CNV + Consequence + Occurrence')
         cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
-        cnv_centric_df = cnv_cons_df.join(occurrence_df, on='cnv_id', how='left')
+        cnv_centric_df = cnv_cons_df.join(occurrence_df, on='cnv_id',
+                                          how='left')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
@@ -85,4 +76,3 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
-

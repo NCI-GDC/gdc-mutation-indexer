@@ -1,7 +1,7 @@
 import logging
 
 from pyspark.sql.functions import (
-    struct, collect_set,
+    struct,
 )
 from exports.builders.df_builders import (
     build_cnv_subtree,
@@ -10,7 +10,6 @@ from exports.builders import (
     BaseBuilder,
     CaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
     ObservationBuilder,
 )
 
@@ -88,7 +87,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                                    obs_df=None,
                                    add_fields=['case_id'])
 
-        cnv_subtree = cnv_df.select('case_id', 'cnv_id',
+        cnv_subtree = cnv_df.select('cnv_id', 'case_id',
                                     struct('consequence',
                                            *cnv_df.drop('consequence')
                                                   .drop('case_id').columns)
