@@ -10,7 +10,6 @@ from exports.builders import (
     BaseBuilder,
     CaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
     ObservationBuilder,
 )
 
@@ -46,7 +45,6 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                 return self
 
         self.log_count(gistic_df)
-
         # CNV subtree
         cnv_df = self.build_cnv_subtree(gistic_df)
 
@@ -54,17 +52,17 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         case_df = self.build_case_subtree(maf_df, gistic_df)
 
         self.log('Joining cnv with case')
-        cnv_occurrence_centric = (cnv_df.join(case_df,
-                                              on='case_id',
-                                              how='inner')
-                                        .withColumnRenamed('occurrence_id',
-                                                           'cnv_occurrence_id')
-                                        .drop('case_id')
-                                        .drop('cnv_id'))
+        cnv_occ_df = (cnv_df.join(case_df,
+                                  on=['case_id', 'cnv_id'],
+                                  how='left')
+                                  .withColumnRenamed('occurrence_id',
+                                                     'cnv_occurrence_id')
+                                  .drop('case_id')
+                                  .drop('cnv_id'))
 
-        self.log_count(cnv_occurrence_centric)
+        self.log_count(cnv_occ_df)
 
-        self.cnv_occurrence_centric = cnv_occurrence_centric
+        self.cnv_occurrence_centric = cnv_occ_df
         self.log('Build finished')
 
         # Check if we should save the resulting dataframe
@@ -89,8 +87,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                                    obs_df=None,
                                    add_fields=['case_id'])
 
-        # add struct
-        cnv_subtree = cnv_df.select('case_id',
+        cnv_subtree = cnv_df.select('cnv_id', 'case_id',
                                     struct('consequence',
                                            *cnv_df.drop('consequence')
                                                   .drop('case_id').columns)
@@ -113,9 +110,8 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
 
         self.log_count(case_df)
-
         self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='left')
+        case_obs_df = (case_df.join(obs_df, on='case_id', how='right')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
                                              *case_df.columns)

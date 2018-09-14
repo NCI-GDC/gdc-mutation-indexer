@@ -1,20 +1,12 @@
 import logging
 
-from pyspark.sql.functions import (
-    col,
-    udf,
-)
-
 from exports.builders import (
     BaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
     OccurrenceBuilder,
 )
 
-from exports.builders.utils import (
-    standardize_schema,
-)
+from exports.builders.df_builders import build_cnv_subtree
 
 logging.basicConfig()
 
@@ -49,29 +41,29 @@ class CNVCentricBuilder(BaseBuilder):
         # Consequence
         cons_df = (
             ConsequenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df)
+            .build_for_cnv(gistic_df)
         )
+
+        # CNV
+        cnv_df = build_cnv_subtree(gistic_df, cons_df, self.index_name,
+                                   obs_df=None, add_fields=[])
 
         # Occurrence
         occurrence_df = (
             OccurrenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df, maf_df)
+            .build_for_cnv(gistic_df, maf_df)
         )
 
         self.log('Final join CNV + Consequence + Occurrence')
-        cnv_centric_df = gistic_df.join(cons_df, on='cnv_id', how='left')
-        cnv_centric_df = cnv_centric_df.join(occurrence_df, on='cnv_id',
-                                             how='left')
+        cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
+        cnv_centric_df = cnv_cons_df.join(occurrence_df, on='cnv_id',
+                                          how='left')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
         cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
                                                         'occurrence',
                                                         threshold)
-
-        # warning: this will strip out anything that isn't
-        # specified in the schema
-        cnv_centric_df = standardize_schema(cnv_centric_df, "cnv_centric", "cnv")
 
         # save final df as property
         self.cnv_centric = cnv_centric_df
@@ -84,4 +76,3 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
-
