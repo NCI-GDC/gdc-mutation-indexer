@@ -16,11 +16,11 @@ class BaseJoinsTest:
         """
         relationships = {}
         for row in dataframe.toJSON().collect():
-             row = json.loads(row)
-             child_id = row[child_id_field]
-             parent_id = row[parent_id_field]
-             relationships.setdefault(parent_id, set())
-             relationships[parent_id].update({child_id})
+            row = json.loads(row)
+            child_id = row[child_id_field]
+            parent_id = row[parent_id_field]
+            relationships.setdefault(parent_id, set())
+            relationships[parent_id].update({child_id})
 
         return relationships
 
@@ -52,7 +52,8 @@ class BaseJoinsTest:
         if isinstance(packed_fields, str):
             packed_fields = [packed_fields]
 
-        child_fields = ['{}.{}'.format(list_field, f) for f in packed_fields]
+        exploded_alias = list_field.split('.')[-1]
+        child_fields = ['{}.{}'.format(exploded_alias, f) for f in packed_fields]
 
         all_fields = (
             [f.split('.')[-1] for f in parent_fields] +  # this allows deeper parent fields like "foo.bar"
@@ -60,7 +61,7 @@ class BaseJoinsTest:
         )
 
         unpacked = (
-            dataframe.select(explode(list_field).alias(list_field),
+            dataframe.select(explode(list_field).alias(exploded_alias),
                              *parent_fields)
                      .select(*all_fields)
         )
