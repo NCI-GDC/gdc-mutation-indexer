@@ -1,3 +1,4 @@
+import itertools
 import pytest
 from pyspark.sql.types import BooleanType
 from pyspark.sql.functions import UserDefinedFunction, col
@@ -8,6 +9,7 @@ from exports.builders.df_builders import (
     get_annotation_df,
     get_gene_df,
     get_ssm_df,
+    get_cnv_df,
     get_transcript_df,
 )
 from tests_config import TestConfig
@@ -43,14 +45,34 @@ class TestDFBuilders:
             col(join_by) == item[join_by]).first().asDict(recursive=True)
         assert cls.is_sub(item, maf.items(), mapping)
 
-    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
-    @pytest.mark.parametrize('index_type', conf.indices.keys())
-    def test_simple_df_build(self, maf_df, index_type, df_type):
+    @pytest.mark.parametrize(
+        'index_type,df_type',
+        itertools.chain(
+            itertools.product(
+                conf.main_indices,
+                ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
+            ),
+            itertools.product(
+                conf.ssm_indices,
+                ['transcript', 'ssm', 'gene', 'annotation']
+            ),
+            itertools.product(
+                conf.cnv_indices,
+                ['cnv', 'gene']
+            )
+        )
+    )
+    def test_simple_df_build(self, maf_df, gistic_df, index_type, df_type):
         """
         Attempts to build each dataframe from df_builders for each index
         Validates top level keys to match to mapping
         """
-        df = globals()['get_{}_df'.format(df_type)](maf_df, index_type)
+        if 'cnv' in index_type or df_type == 'cnv':
+            input_df = gistic_df
+        else:
+            input_df = maf_df
+
+        df = globals()['get_{}_df'.format(df_type)](input_df, index_type)
         mapping = select_mapping(index_type, df_type)['properties']
         # Do not check for unwanted keys
         stopwords = ['copy_to', '_autocomplete', 'gene_aa_change']
