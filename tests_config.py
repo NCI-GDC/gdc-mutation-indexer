@@ -3,6 +3,7 @@ from config import BaseConfig
 
 
 class TestConfig(BaseConfig):
+    # TODO write fixtures for file access once
     # Directories used for test data
     root_dir = os.path.dirname(os.path.realpath(__file__))
     test_dir = os.path.join(root_dir, 'tests')
@@ -31,7 +32,7 @@ class TestConfig(BaseConfig):
     print_data_errors = False
 
     # Whether or not to skip field-by-field data tests
-    skip_in_depth_tests = True
+    skip_in_depth_tests = False
 
     # Switch tests based on pruned/not_pruned version of indices
     indices_are_pruned = True
