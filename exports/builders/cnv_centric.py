@@ -6,7 +6,7 @@ from exports.builders import (
     OccurrenceBuilder,
 )
 
-from exports.builders.df_builders import build_cnv_subtree
+from exports.builders.df_builders import get_cnv_df
 
 logging.basicConfig()
 
@@ -38,17 +38,16 @@ class CNVCentricBuilder(BaseBuilder):
             if self.cnv_centric is not None:
                 return self
 
-        # Consequence
+        self.log('Select CNV data from Gistic')
+        cnv_df = get_cnv_df(gistic_df, self.index_name)
+
+        self.log('Build Consequence')
         cons_df = (
             ConsequenceBuilder(self.config, self.sqlContext)
             .build_for_cnv(gistic_df)
         )
 
-        # CNV
-        cnv_df = build_cnv_subtree(gistic_df, cons_df, self.index_name,
-                                   obs_df=None, add_fields=[])
-
-        # Occurrence
+        self.log('Build Occurrence')
         occurrence_df = (
             OccurrenceBuilder(self.config, self.sqlContext)
             .build_for_cnv(gistic_df, maf_df)
