@@ -43,19 +43,9 @@ class ObservationBuilder(object):
                         |____ variant_caller
 
         """
-        # add occurrence id to map to higher level occurrence
-        obs_df = gistic_df.withColumn('occurrence_id',
-                                      uuid5_col(col('cnv_id'),
-                                                col('case_id')))
-
-        # add observation id
-        obs_df = obs_df.withColumn('observation_id',
-                                   uuid5_col(col('cnv_id'),
-                                             col('case_id'),
-                                             col('aliquot_id')))
-
+        
         # add other observation fields
-        obs_df = obs_df.withColumn('variant_caller', lit('GISTIC2'))
+        obs_df = gistic_df.withColumn('variant_caller', lit('GISTIC2'))
         obs_df = obs_df.withColumn('variant_calling', struct('variant_caller')
                                    .alias('variant_calling'))
         obs_df = obs_df.drop('variant_caller')
