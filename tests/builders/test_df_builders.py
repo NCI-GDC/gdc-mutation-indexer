@@ -16,6 +16,32 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
+def get_index_df_type_pairs():
+    return itertools.chain(
+        itertools.product(
+            conf.main_indices,
+            ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
+        ),
+        itertools.product(
+            conf.ssm_indices,
+            ['transcript', 'ssm', 'gene', 'annotation']
+        ),
+        itertools.product(
+            conf.cnv_indices,
+            ['cnv', 'gene']
+        )
+    )
+
+
+ID_FIELDS = {
+    'annotation': 'transcript_id',
+    'transcript': 'transcript_id',
+    'gene': 'gene_id',
+    'ssm': 'ssm_id',
+    'cnv': 'cnv_id',
+}
+
+
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestDFBuilders:
 
@@ -39,29 +65,12 @@ class TestDFBuilders:
         return result
 
     @classmethod
-    def assert_from_maf(cls, maf_df, row, join_by, mapping=None):
+    def assert_from_df(cls, df, row, join_by, mapping=None):
         item = row.asDict(recursive=True)
-        maf = maf_df.filter(
-            col(join_by) == item[join_by]).first().asDict(recursive=True)
-        assert cls.is_sub(item, maf.items(), mapping)
+        df = df.filter(col(join_by) == item[join_by]).first().asDict(recursive=True)
+        assert cls.is_sub(item, df.items(), mapping)
 
-    @pytest.mark.parametrize(
-        'index_type,df_type',
-        itertools.chain(
-            itertools.product(
-                conf.main_indices,
-                ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
-            ),
-            itertools.product(
-                conf.ssm_indices,
-                ['transcript', 'ssm', 'gene', 'annotation']
-            ),
-            itertools.product(
-                conf.cnv_indices,
-                ['cnv', 'gene']
-            )
-        )
-    )
+    @pytest.mark.parametrize('index_type,df_type', get_index_df_type_pairs())
     def test_simple_df_build(self, maf_df, gistic_df, index_type, df_type):
         """
         Attempts to build each dataframe from df_builders for each index
@@ -78,77 +87,60 @@ class TestDFBuilders:
         stopwords = ['copy_to', '_autocomplete', 'gene_aa_change']
         must_have_keys = [k for k in mapping.keys()
                           if all([-1 == k.find(s) for s in stopwords])]
+
+        # make sure all required keys exist
         assert set(df.columns) == set(must_have_keys)
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_gene_df(self, maf_df, index_name):
-        # convert is_cancer_gene_census to True as our test self.mafs aren't
-        # in the census list
-        if index_name != 'gene_centric':
-            udf = UserDefinedFunction(lambda x: True, BooleanType())
-            new_df = maf_df.withColumn('is_cancer_gene_census',
-                                       udf(maf_df.is_cancer_gene_census))
-            gene_df = get_gene_df(new_df, index_name)
-            self.assert_from_maf(new_df, gene_df.first(), 'gene_id')
+        # make sure that values came from input_df
+        self.assert_from_df(input_df, df.first(), ID_FIELDS[df_type], mapping=mapping)
 
-    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
-    @pytest.mark.parametrize('index_type', conf.indices.keys())
-    def test_df_drop_fields(self, maf_df, df_type, index_type):
+    @pytest.mark.parametrize('index_type,df_type', get_index_df_type_pairs())
+    def test_df_drop_fields(self, maf_df, gistic_df, index_type, df_type):
+        if 'cnv' in index_type or df_type == 'cnv':
+            input_df = gistic_df
+            fields_to_delete = ['cnv_id', 'cnv_change']
+        else:
+            input_df = maf_df
+            fields_to_delete = ['ssm_id', 'mutation_subtype']
         df = globals()['get_{}_df'.format(df_type)](
-            maf_df, index_type, drop_fields=['ssm_id', 'mutation_subtype']
+            input_df, index_type, drop_fields=fields_to_delete
         )
-        assert 'ssm_id' not in df.columns
-        assert 'mutation_subtype' not in df.columns
 
-    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
-    @pytest.mark.parametrize('index_type', conf.indices.keys())
-    def test_unique_fields(self, maf_df, df_type, index_type):
+        for field in fields_to_delete:
+            assert field not in df.columns
+
+    @pytest.mark.parametrize('index_type,df_type', get_index_df_type_pairs())
+    def test_unique_fields(self, maf_df, gistic_df, index_type, df_type):
+
+        if 'cnv' in index_type or df_type == 'cnv':
+            input_df = gistic_df
+        else:
+            input_df = maf_df
+
         unique_fields = {
             'transcript': ['consequence_type'],
             'ssm': ['chromosome'],
+            'cnv': ['chromosome', 'cnv_change'],
             'gene': ['biotype'],
             'annotation': ['vep_impact']
         }
+
         get_df = globals()['get_{}_df'.format(df_type)]
 
-        df = get_df(maf_df, index_type, unique_fields=None)
-        df_unique = get_df(maf_df, index_type,
+        df = get_df(input_df, index_type, unique_fields=None)
+        df_unique = get_df(input_df, index_type,
                            unique_fields=unique_fields[df_type])
         assert df_unique.count() == (df.select(unique_fields[df_type])
                                        .distinct().count())
 
-    @pytest.mark.parametrize('df_type', ['transcript', 'ssm', 'gene', 'annotation'])
-    @pytest.mark.parametrize('index_type', conf.indices.keys())
-    def test_df_add_fields(self, maf_df, df_type, index_type):
-        df = globals()['get_{}_df'.format(df_type)](maf_df, index_type,
+    @pytest.mark.parametrize('index_type,df_type', get_index_df_type_pairs())
+    def test_df_add_fields(self, maf_df, gistic_df, df_type, index_type):
+        if 'cnv' in index_type or df_type == 'cnv':
+            input_df = gistic_df
+        else:
+            input_df = maf_df
+
+        df = globals()['get_{}_df'.format(df_type)](input_df, index_type,
                                                     add_fields=['case_id'])
         assert 'case_id' in df.columns
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_annotation_df(self, sqlContext, maf_df, index_name):
-
-        builder = ConsequenceBuilder(conf, sqlContext)
-        exploded = builder.build_all_effects_cols(maf_df)
-        ann_df = get_annotation_df(exploded, index_name, add_fields=['ssm_id'],
-                                   unique_fields=['ssm_id', 'transcript_id'])
-        ann_mapping = select_mapping(index_name, 'annotation')
-
-        self.assert_from_maf(exploded, ann_df.first(), 'transcript_id',
-                             mapping=ann_mapping['properties'])
-
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_ssm_df(self, maf_df, index_name):
-        if index_name != 'ssm_centric':
-            ssm_df = get_ssm_df(maf_df, index_name)
-            self.assert_from_maf(maf_df, ssm_df.first(), 'ssm_id')
-
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_transcript_df(self, sqlContext, maf_df, index_name):
-        builder = ConsequenceBuilder(conf, sqlContext)
-        exploded = builder.build_all_effects_cols(maf_df)
-        transcript = get_transcript_df(exploded, index_name)
-
-        transcript_mapping = select_mapping(index_name, 'transcript')
-        self.assert_from_maf(exploded, transcript.first(),
-                             'transcript_id',
-                             mapping=transcript_mapping['properties'])
