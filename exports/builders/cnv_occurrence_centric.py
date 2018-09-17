@@ -55,7 +55,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
         cnv_occurrence_centric = (cnv_df.join(case_df,
                                               on=['case_id', 'cnv_id'],
-                                              how='left')  # TODO: make it inner (not trivial)
+                                              how='inner')
                                         .withColumnRenamed('occurrence_id',
                                                            'cnv_occurrence_id')
                                         .drop('case_id')
