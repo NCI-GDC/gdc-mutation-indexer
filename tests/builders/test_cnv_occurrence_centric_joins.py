@@ -86,7 +86,7 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
 
         # ssm_subtree stats expected:
         cons_df = (ConsequenceBuilder(conf, sqlContext)
-                   .build_for_cnv(gistic_df))
+                   .build_for_cnv(gistic_df, 'cnv_occurrence_centric'))
         df = self.unpack_df_list(cons_df, 'cnv_id', 'consequence',
                                  fields_to_unpack)
         true_stats = get_stats(df)

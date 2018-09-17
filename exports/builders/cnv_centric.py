@@ -44,7 +44,7 @@ class CNVCentricBuilder(BaseBuilder):
         self.log('Build Consequence')
         cons_df = (
             ConsequenceBuilder(self.config, self.sqlContext)
-            .build_for_cnv(gistic_df)
+            .build_for_cnv(gistic_df, self.index_name)
         )
 
         self.log('Build Occurrence')

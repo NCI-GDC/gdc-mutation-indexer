@@ -123,7 +123,7 @@ class ConsequenceBuilder(object):
 
         return df
 
-    def build_for_cnv(self, gistic_df):
+    def build_for_cnv(self, gistic_df, index_name):
         """
         For now this is just gene information:
 
@@ -131,6 +131,7 @@ class ConsequenceBuilder(object):
                 |_____ gene{}
         """
 
+        # TODO: use struct_select(index_name, 'consequence') !!!
         # Create gene structure
         cons_df = (gistic_df.select('cnv_id',
                                     struct('consequence_id',
