@@ -194,8 +194,8 @@ def gistic_df(sqlContext):
 
 
 @pytest.fixture(scope='session')
-def case_df(sqlContext, maf_df):
-    return CaseBuilder(conf, sqlContext).build(maf_df)
+def case_df(sqlContext, maf_df, gistic_df):
+    return CaseBuilder(conf, sqlContext).build(maf_df, gistic_df)
 
 
 @pytest.fixture(scope='session')

@@ -81,7 +81,7 @@ class GeneCentricBuilder(BaseBuilder):
         - join them together
         """
         self.log('Building Case with gene info from MAF and GeneModel')
-        case_df = self._build_case_with_gene_id(maf_df)
+        case_df = self._build_case_with_gene_id(maf_df, gistic_df)
 
         self.log('Building SSM subtree')
         ssm_df = self.build_ssm_subtree(maf_df)
@@ -177,13 +177,14 @@ class GeneCentricBuilder(BaseBuilder):
 
         return cnv_df
 
-    def _build_case_with_gene_id(self, maf_df):
+    def _build_case_with_gene_id(self, maf_df, gistic_df):
         self.log('\nSelecting Gene from MAF')
         gene_df = (get_gene_df(maf_df, self.index_name, add_fields=['case_id'])
                    .select('case_id', 'gene_id'))
 
         self.log("Building Case")
-        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+        case_df = CaseBuilder(self.config,
+                             self.sqlContext).build(maf_df, gistic_df)
         self.log_count(case_df)
 
         self.log('Getting gene_id for each case via joining with gene_df')

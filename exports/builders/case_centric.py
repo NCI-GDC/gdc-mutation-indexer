@@ -48,7 +48,8 @@ class CaseCentricBuilder(BaseBuilder):
                 return self
 
         self.log('Building Case')
-        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+        case_df = CaseBuilder(self.config,
+                              self.sqlContext).build(maf_df, gistic_df)
         self.log_count(case_df)
 
         self.log('Building Gene subtree')

@@ -1,4 +1,7 @@
-from pyspark.sql.functions import lit, collect_list
+from pyspark.sql.functions import (
+    lit, collect_list, collect_set, col, udf,
+)
+from pyspark.sql.types import StringType
 from utils import standardize_schema, get_case_ids_from_source_es
 import logging
 logging.basicConfig()
@@ -13,20 +16,20 @@ class CaseBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self.urls = config.maf_urls
+        self.maf_urls = config.maf_urls
 
-    def build(self, maf_df):
+    def build(self, maf_df, gistic_df=None):
         """
         Builds Case dataframe
         """
-        df = self.load_into_df(maf_df)
+        df = self.load_into_df(maf_df, gistic_df)
 
         # Select only columns that are in case mapping:
         df = standardize_schema(df, 'case_centric', 'case')
 
         return df
 
-    def load_into_df(self, maf_df):
+    def load_into_df(self, maf_df, gistic_df=None):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
@@ -46,30 +49,9 @@ class CaseBuilder(object):
             .load(source)
         )
 
-        # Get set of "tested cases" from maf
-        # NOTE: available_variation_data will be equal 'ssm' for cases that are "tested"
-        # and will be empty for "empty cases"
-        maf_columns = ['available_variation_data']
-        maf_data = (maf_df.select('case_id', *maf_columns)
-                          .dropDuplicates(subset=['case_id'] + maf_columns))
+        maf_and_gistic_df = self.populate_available_variation_data(                                maf_df, gistic_df)
 
-        # Get all the cases that have been tested (from aliquots in maf headers)
-        cases_to_keep = get_case_ids_from_source_es(
-            self.config, self.sqlContext, self.urls
-        )
-        # Add empty rows to maf_data corresponding to "empty cases"
-        maf_data = maf_data.join(cases_to_keep, on=['case_id'], how='right')
-
-        # Set all cases in maf_data to "tested", i.e. 'available_variation_data' == ['ssm']
-        maf_data = (
-            maf_data.withColumn('t', lit('ssm'))
-                    .groupby('case_id')
-                    .agg(
-                        collect_list('t').alias('available_variation_data')
-                    )
-        )
-
-        df = df.join(maf_data, on=['case_id'], how='left')
+        df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.repartition, 'case_id')
@@ -77,4 +59,49 @@ class CaseBuilder(object):
         if self.config.cache_dataframes['cases']:
             self.logger.info('Caching repartitioned case dataframe')
             df.cache().count()
+
+        return df
+
+    def populate_available_variation_data(self, maf_df, gistic_df=None):
+        """
+        This function calculates the value of the column
+        "available_variation_data."
+
+        We retrieve a set of cases from graph_index
+        and add "ssm" if that case id is present in the maf_df,
+        "cnv" if that case id is present in the gistic_df,
+        ["ssm", "cnv"] if both, and [] if neither.
+        """
+
+        avd = 'available_variation_data'
+
+        # Get set of "tested cases" from maf_df
+        maf_data = (maf_df.select('case_id', avd)
+                            .dropDuplicates(
+                                subset=['case_id',
+                                        avd]))
+
+        maf_data = (maf_data.withColumn('temp', lit('ssm'))).drop(avd)
+
+        # Get set of cnv cases from gistic_df
+        if gistic_df:
+            gistic_data = (gistic_df.select('case_id', 'cnv_id'))
+            avd_udf = udf(lambda x: None if x == None else 'cnv', StringType())
+            gistic_data = (gistic_data.withColumn('temp', avd_udf(col('cnv_id')))).drop('cnv_id')
+        
+            # Stack
+            maf_and_gistic_data = maf_data.union(gistic_data)
+        else:
+            maf_and_gistic_data = maf_data
+
+        # Get all the cases that have been tested (from aliquots in maf_df headers)
+        cases_to_keep = get_case_ids_from_source_es(
+            self.config, self.sqlContext, self.maf_urls
+        )
+
+        # Add empty rows to input_data corresponding to "empty cases"
+        df = maf_and_gistic_data.join(cases_to_keep,
+                                      on=['case_id'], how='right')
+        # Finally, group by case
+        df = (df.groupby('case_id').agg(collect_set('temp').alias(avd)))
         return df
