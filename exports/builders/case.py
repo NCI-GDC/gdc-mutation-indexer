@@ -88,7 +88,7 @@ class CaseBuilder(object):
             gistic_data = (gistic_df.select('case_id', 'cnv_id'))
             avd_udf = udf(lambda x: None if x == None else 'cnv', StringType())
             gistic_data = (gistic_data.withColumn('temp', avd_udf(col('cnv_id')))).drop('cnv_id')
-        
+
             # Stack
             maf_and_gistic_data = maf_data.union(gistic_data)
         else:
