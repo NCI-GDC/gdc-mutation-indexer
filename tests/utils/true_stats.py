@@ -31,7 +31,6 @@ class TestDataStats:
             if all([k in f for k in keywords])
         ]
 
-
     @staticmethod
     def load_tsv_table(filename):
         rows = []
@@ -162,6 +161,6 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
-        count = gistic_df.select('cnv_id').distinct().count() # this is not correct
+        count = gistic_df.select('cnv_id', 'case_id').distinct().count()
         return {'count': count}
 
