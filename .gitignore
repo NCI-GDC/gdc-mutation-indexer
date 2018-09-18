@@ -39,6 +39,7 @@ htmlcov/
 .tox/
 .coverage
 .cache
+.pytest_cache
 nosetests.xml
 coverage.xml
 
@@ -72,3 +73,5 @@ tests/data/*
 !tests/data/cases.json
 !tests/data/input
 !tests/data/output
+
+

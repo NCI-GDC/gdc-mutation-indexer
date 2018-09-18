@@ -7,7 +7,6 @@ from gene_model import GeneModelBuilder
 # Utility builders
 from consequence import ConsequenceBuilder
 from observation import ObservationBuilder
-from occurrence import OccurrenceBuilder
 # Centric builders
 from case_centric import CaseCentricBuilder
 from gene_centric import GeneCentricBuilder

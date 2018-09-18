@@ -1,9 +1,11 @@
 import logging
+from pyspark.sql.functions import struct, collect_set
 
 from exports.builders import (
     BaseBuilder,
+    CaseBuilder,
     ConsequenceBuilder,
-    OccurrenceBuilder,
+    ObservationBuilder,
 )
 
 from exports.builders.df_builders import get_cnv_df
@@ -48,10 +50,7 @@ class CNVCentricBuilder(BaseBuilder):
         )
 
         self.log('Build Occurrence')
-        occurrence_df = (
-            OccurrenceBuilder(self.config, self.sqlContext)
-            .build_for_cnv(gistic_df, maf_df)
-        )
+        occurrence_df = self.build_occurrence_df(gistic_df, maf_df)
 
         self.log('Final join CNV + Consequence + Occurrence')
         cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
@@ -75,3 +74,39 @@ class CNVCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
 
         return self
+
+    def build_occurrence_df(self, cnv_df, maf_df):
+        """
+        Assumes you've already added 'case_id'
+
+        occurrence[]
+        |____ occurrence{}
+                |____ occurrence_id
+                |____ case {}
+                        |____ observation []
+
+        """
+        assert 'case_id' in cnv_df.columns
+
+        # 1. Observation
+        self.logger.info('Aggregating Observation from gistic')
+        obs_df = ObservationBuilder().build_for_cnv(cnv_df, 'cnv_centric')
+
+        # 2. Case
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+        # self.log_count(case_df)
+
+        # 3. Join Case to Observation and create structs
+        self.logger.info('Joining Cases with Observation, [right, case_id]')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+                         .select('cnv_id',
+                                 struct('occurrence_id',
+                                        struct('observation',
+                                               *case_df.columns).alias('case'))
+                                 .alias('occurrence'))
+                         .groupby('cnv_id')
+                         .agg(collect_set('occurrence').alias('occurrence')))
+
+        # self.log_count(occurrence_df)
+
+        return occurrence_df
