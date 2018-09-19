@@ -1,5 +1,5 @@
 import json
-from pyspark.sql.functions import explode, lit, col
+from pyspark.sql.functions import explode, col
 
 
 class BaseJoinsTest:
@@ -8,7 +8,7 @@ class BaseJoinsTest:
     def get_relationship_map(dataframe, parent_id_field, child_id_field):
         """
         TODO: support arbitrary depth relationships: (parent, child, grandchild, ...)
-        Retrieve one-to-many relationship map for 
+        Retrieve one-to-many relationship map for
         :parent_field -> :child_field-s in :dataframe as a dictionary
 
         Returns:
