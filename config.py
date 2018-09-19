@@ -212,7 +212,7 @@ class BaseConfig(object):
                    if v is not None}
         return indices
 
-    def get_maf_urls(self):
+    def get_maf_urls_from_s3_bucket(self):
         """
         Get maf urls from s3 bucket
 
@@ -236,13 +236,18 @@ class BaseConfig(object):
 
         return maf_urls
 
-    def get_maf_urls_from_index(self):
+    def get_maf_urls(self):
         path = "downstream_analyses.output_files.file_name"
         regexp = ".*maf.gz.?"
 
-        return self.get_filenames_from_source_es(
+        all_mafs = self.get_filenames_from_source_es(
             self.es, self.graph_index, path, regexp
         )
+        relevant_mafs = []
+        for maf_url in all_mafs:
+            if not self.projects or any([project in maf_url for project in self.projects]):
+                relevant_mafs.append(maf_url)
+        return relevant_mafs
 
     def get_maf_file_names(self):
         """
@@ -293,11 +298,11 @@ class BaseConfig(object):
         return bucket.list()
 
     @staticmethod
-    def get_filenames_from_source_es(es, graph_index_name, path, regexp):
+    def get_files_from_source_es(es, graph_index_name, path, regexp):
         """
-        Returns all filenames from gdc_from_graph.file documents
+        Returns all file ids from gdc_from_graph.file documents
         :path - dot-delimited path to file_name in file document
-        :regexp - regular expression file_name field should follow
+        :regexp - regular expression file_name field should follow (e.g. ".*maf.gz.?")
         """
         if not path.endswith('.file_name'):
             raise ValueError(
@@ -318,11 +323,14 @@ class BaseConfig(object):
             '_source': [path]
         }
 
-        filenames = set()
+        file_ids = set()
         for doc in iterate_es_results(es, graph_index_name, 'file', query=query):
-            filename = get_values_from_path(doc['_source'], path)
-            filenames.update(filename)
-        return filenames
+            for files in get_values_from_path(doc['_source'], 'file_id'):
+                file_ids.update(file_ids)
+
+        print file_ids
+        print len(file_ids)
+        return file_ids
 
 
 if __name__ == '__main__':

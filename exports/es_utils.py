@@ -24,24 +24,17 @@ def get_values_from_path(es_doc, path):
     NOTE: Since there could be array fields in :path, there can be multiple values
     at the :path in :es_doc
     """
-
     if isinstance(path, str):
         path = path.split('.')
 
-    values = []
-    for i, step in enumerate(path):
-        print 'step', step
-        if isinstance(es_doc, list):
-            for subdoc in es_doc:
-                values.extend(get_values_from_path(subdoc, path[i+1:]))
-        elif isinstance(es_doc, dict):
-            subdoc = es_doc[step]
-            print es_doc, subdoc, step, path
-            values.extend(get_values_from_path(subdoc, path[i+1:]))
-        else:
-            values.append(es_doc)
+    if isinstance(es_doc, list):
+        return [get_values_from_path(e, path) for e in es_doc]
 
-    return values
+    if len(path) == 1:
+        return es_doc[path[0]]
+
+    if isinstance(es_doc, dict):
+        return get_values_from_path(es_doc[path[0]], path[1:])
 
 
 def get_es_doc_count(es_client, index_name, doc_type, query=None):
