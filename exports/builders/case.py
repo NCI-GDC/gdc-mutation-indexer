@@ -84,6 +84,18 @@ class CaseBuilder(object):
                               subset=['case_id',
                                       avd]))
 
+        # Get all the cases that have been tested
+        # (from aliquots in maf_df headers)
+        cases_to_keep = get_case_ids_from_source_es(
+            self.config, self.sqlContext, self.maf_urls
+        )
+
+        # Add empty rows to input_data corresponding to "empty cases"
+        maf_data = maf_data.join(cases_to_keep,
+                                 on=['case_id'], how='right')
+
+        # Set all cases in maf_data to "tested"
+        # i.e., 'available_variation_data' == 'ssm'
         maf_data = (maf_data.withColumn('temp', lit('ssm'))).drop(avd)
 
         # Get set of cnv cases from gistic_df
@@ -99,16 +111,9 @@ class CaseBuilder(object):
         else:
             maf_and_gistic_data = maf_data
 
-        # Get all the cases that have been tested
-        # (from aliquots in maf_df headers)
-        cases_to_keep = get_case_ids_from_source_es(
-            self.config, self.sqlContext, self.maf_urls
-        )
-
-        # Add empty rows to input_data corresponding to "empty cases"
-        df = maf_and_gistic_data.join(cases_to_keep,
-                                      on=['case_id'], how='right')
         # Finally, group by case
-        df = (df.groupby('case_id').agg(collect_set('temp').alias(avd)))
+        maf_and_gistic_data = (maf_and_gistic_data
+                               .groupby('case_id')
+                               .agg(collect_set('temp').alias(avd)))
 
-        return df
+        return maf_and_gistic_data
