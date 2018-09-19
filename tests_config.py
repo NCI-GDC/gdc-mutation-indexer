@@ -37,6 +37,11 @@ class TestConfig(BaseConfig):
     # Switch tests based on pruned/not_pruned version of indices
     indices_are_pruned = True
 
+    # This grouping is useful to understand which tests to run
+    main_indices = ['case_centric', 'gene_centric']
+    ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
+    cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
+
     # Where to save each index
     index_paths = {
         'case_centric': s3_maf_bucket + 'test-case-centric.json',

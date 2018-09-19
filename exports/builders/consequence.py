@@ -123,7 +123,7 @@ class ConsequenceBuilder(object):
 
         return df
 
-    def build_for_cnv(self, cnv_df):
+    def build_for_cnv(self, gistic_df, index_name):
         """
         For now this is just gene information:
 
@@ -131,25 +131,18 @@ class ConsequenceBuilder(object):
                 |_____ gene{}
         """
 
-        # Add consequence_id
-        id_added_df = cnv_df.withColumn('consequence_id', uuid5_col(
-            col('symbol'),
-            col('gene_id'),
-            col('is_cancer_gene_census'),
-            col('biotype')
-        ))
-
+        # TODO: use struct_select(index_name, 'consequence') !!!
         # Create gene structure
-        cons_df = (id_added_df.select('cnv_id',
-                                      struct('consequence_id',
-                                             struct('symbol',
-                                                    'gene_id',
-                                                    'is_cancer_gene_census',
-                                                    'biotype')
-                                             .alias('gene'))
-                                      .alias('consequence')).groupby('cnv_id')
-                              .agg(collect_set('consequence')
-                                   .alias('consequence')))
+        cons_df = (gistic_df.select('cnv_id',
+                                    struct('consequence_id',
+                                           struct('symbol',
+                                                  'gene_id',
+                                                  'is_cancer_gene_census',
+                                                  'biotype')
+                                           .alias('gene'))
+                                    .alias('consequence')).groupby('cnv_id')
+                            .agg(collect_set('consequence')
+                                 .alias('consequence')))
 
         return cons_df
 

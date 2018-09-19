@@ -29,6 +29,7 @@ class TestSSMCentricOther:
         """
         ssm_centric_df.select(path)
 
+    @pytest.mark.do_not_collect
     @pytest.mark.parametrize('path', ModelMapper('ssm_centric').get_paths())
     @pytest.mark.skipif(conf.skip_in_depth_tests,
                         reason='we want to merge partial data fixes.'\

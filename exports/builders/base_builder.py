@@ -64,10 +64,6 @@ class BaseBuilder(object):
                      self.index_name).repartition(self.config.repartition,
                                                   self.id_field)
 
-        if self.config.cache_dataframes[self.index_name]:
-            self.log('Caching repartitioned {} dataframe'.format(self.index_name))
-            df.cache().count()
-
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.coalesce).write\
             .format('org.elasticsearch.spark.sql')\

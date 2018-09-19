@@ -27,6 +27,7 @@ class TestSSMOccurrenceCentricOther:
         """
         ssm_occurrence_centric_df.select(path)
 
+    @pytest.mark.do_not_collect
     @pytest.mark.parametrize('path',
                              ModelMapper('ssm_occurrence_centric').get_paths())
     @pytest.mark.skipif(conf.skip_in_depth_tests,

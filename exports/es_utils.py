@@ -1,14 +1,14 @@
 from elasticsearch.helpers import scan
 
 
-def iterate_es_results(es, index_name, doc_type, query=None):
+def iterate_es_results(es_client, index_name, doc_type, query=None):
     """
     Returns iterator over elasticsearch query results
     """
     if query is None:
         query = {}
 
-    doc_iterator = scan(es,
+    doc_iterator = scan(es_client,
                         index=index_name,
                         doc_type=doc_type,
                         scroll='2m',
@@ -42,4 +42,12 @@ def get_values_from_path(es_doc, path):
             values.append(es_doc)
 
     return values
+
+
+def get_es_doc_count(es_client, index_name, doc_type):
+    return es_client.count(
+        index=index_name,
+        doc_type=doc_type,
+        body={"query": {"match_all": {}}}
+    )['count']
 

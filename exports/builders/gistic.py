@@ -66,14 +66,29 @@ class GisticBuilder(object):
         # add gene information
         gistic_df = self._add_gene_information(gistic_df)
 
+        # add case_id based on aliquot_id
+        gistic_df = self._add_case_id(gistic_df)
+
         # add cnv_id
         gistic_df = self._add_cnv_id(gistic_df)
+
+        # add consequence_id
+        gistic_df = self._add_consequence_id(gistic_df)
+
+        # add observation_id
+        gistic_df = self._add_observation_id(gistic_df)
+
+        # add occurrence_id
+        gistic_df = self._add_occurrence_id(gistic_df)
 
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
 
-        # add case_id based on aliquot_id
-        gistic_df = self._add_case_id(gistic_df)
+        self.logger.info('Caching Gistic dataframe')
+        # NOTE: Do not remove next step. This is a workaround for
+        # "udf requires attributes from more than one child" Spark issue
+        # See https://forums.databricks.com/questions/9401/pyspark-20-withcolumn-using-udf-on-two-columns-and.html
+        gistic_df.cache().count()
 
         return gistic_df
 
@@ -139,6 +154,39 @@ class GisticBuilder(object):
             col('start_position'),
             col('end_position'),
             col('cnv_change')
+        ))
+        return gistic_df
+
+    def _add_consequence_id(self, gistic_df):
+        """
+        consequence_id ~ (symbol, gene_id, is_cancer_gene_census, biotype)
+        """
+        gistic_df = gistic_df.withColumn('consequence_id', uuid5_col(
+            col('symbol'),
+            col('gene_id'),
+            col('is_cancer_gene_census'),
+            col('biotype')
+        ))
+        return gistic_df
+
+    def _add_occurrence_id(self, gistic_df):
+        """
+        occurrence_id ~ (cnv_id, case_id)
+        """
+        gistic_df = gistic_df.withColumn('occurrence_id', uuid5_col(
+            col('cnv_id'),
+            col('case_id')
+        ))
+        return gistic_df
+
+    def _add_observation_id(self, gistic_df):
+        """
+        observation_id ~ (cnv_id, case_id, aliquot_id)
+        """
+        gistic_df = gistic_df.withColumn('observation_id', uuid5_col(
+            col('cnv_id'),
+            col('case_id'),
+            col('aliquot_id')
         ))
         return gistic_df
 
