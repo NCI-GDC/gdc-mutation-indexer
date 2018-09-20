@@ -38,7 +38,8 @@ class TestCNVCentricJoins(BaseJoinsTest):
         opc = self.get_relationship_map(df, 'cnv_id', 'occurrence_id')
 
         # Occurrences per CNV expected:
-        true_opc = self.get_relationship_map(gistic_df, 'cnv_id', 'occurrence_id')
+        true_opc = self.get_relationship_map(gistic_df,
+                                             'cnv_id', 'occurrence_id')
 
         assert opc == true_opc
 

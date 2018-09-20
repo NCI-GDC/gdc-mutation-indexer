@@ -1,5 +1,5 @@
 import json
-from pyspark.sql.functions import explode, col
+from pyspark.sql.functions import explode
 
 
 class BaseJoinsTest:
@@ -7,7 +7,8 @@ class BaseJoinsTest:
     @staticmethod
     def get_relationship_map(dataframe, parent_id_field, child_id_field):
         """
-        TODO: support arbitrary depth relationships: (parent, child, grandchild, ...)
+        TODO: support arbitrary depth relationships:
+              (parent, child, grandchild, ...)
         Retrieve one-to-many relationship map for
         :parent_field -> :child_field-s in :dataframe as a dictionary
 
@@ -37,13 +38,17 @@ class BaseJoinsTest:
                   |____ consequence[]
                              |___consequence_id
 
-            unpack_df_join(dataframe, 'ssm_id', 'consequence', 'consequence_id')
-            will return flat dataframe || ssm_id | consequence_id ||
+            unpack_df_join(
+                dataframe, 'ssm_id', 'consequence', 'consequence_id'
+            ) will return flat dataframe || ssm_id | consequence_id ||
 
-        NOTE: this works with multiple :parent_fields and :packed_fields too, e.g.
-            unpack_df_join(dataframe, ['ssm_id', 'foo'],
-                           'consequence', ['consequence_id', 'bar'])
-            will return flat dataframe || ssm_id | foo | consequence_id | bar ||
+        NOTE: this works with multiple :parent_fields and :packed_fields too,
+            e.g.:
+            unpack_df_join(
+                dataframe, ['ssm_id', 'foo'],
+                'consequence', ['consequence_id', 'bar']
+            ) will return flat dataframe
+                                    || ssm_id | foo | consequence_id | bar ||
 
         """
         if isinstance(parent_fields, str):
@@ -53,7 +58,9 @@ class BaseJoinsTest:
             packed_fields = [packed_fields]
 
         exploded_alias = list_field.split('.')[-1]
-        child_fields = ['{}.{}'.format(exploded_alias, f) for f in packed_fields]
+        child_fields = [
+            '{}.{}'.format(exploded_alias, f) for f in packed_fields
+        ]
 
         all_fields = (
             [f.split('.')[-1] for f in parent_fields] +  # this allows deeper parent fields like "foo.bar"
