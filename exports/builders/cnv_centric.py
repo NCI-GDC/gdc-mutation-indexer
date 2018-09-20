@@ -49,7 +49,7 @@ class CNVCentricBuilder(BaseBuilder):
         )
 
         self.log('Build Occurrence')
-        occurrence_df = self.build_occurrence_df(gistic_df)
+        occurrence_df = self.build_occurrence_df(gistic_df, case_df)
 
         self.log('Final join CNV + Consequence + Occurrence')
         cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
