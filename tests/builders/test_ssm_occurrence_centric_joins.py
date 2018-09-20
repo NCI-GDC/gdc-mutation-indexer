@@ -8,12 +8,13 @@ from exports.builders.utils import uuid5_col
 from tests_config import TestConfig
 from base_joins_test import BaseJoinsTest
 
-
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'ssm_transcript_df', 'ssm_occurrence_centric_df',
-                         'ssm_occurrence_ssm_subtree')
+@pytest.mark.usefixtures(
+    'maf_df', 'ssm_transcript_df',
+    'ssm_occurrence_centric_df', 'ssm_occurrence_ssm_subtree'
+)
 class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
     """
         ssm_occurrence{}
@@ -26,7 +27,9 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
                        |____ observation[]
     """
 
-    def test_consequences_per_ssm_occurrence(self, ssm_transcript_df, ssm_occurrence_centric_df):
+    def test_consequences_per_ssm_occurrence(
+            self, ssm_transcript_df, ssm_occurrence_centric_df):
+
         # Consequences per SSM Occurrence built:
         df = ssm_occurrence_centric_df.select('ssm_occurrence_id',
                                               'ssm.ssm_id')
@@ -50,7 +53,9 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
-    def test_observations_per_ssm_occurrence(self, maf_df, ssm_occurrence_centric_df):
+    def test_observations_per_ssm_occurrence(
+            self, maf_df, ssm_occurrence_centric_df):
+
         # Observations and Cases per SSM Occurrence built:
         df = self.unpack_df_list(ssm_occurrence_centric_df,
                                  ['ssm_occurrence_id', 'case.case_id'],
@@ -72,7 +77,8 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
     def test_ssm_subtree(self, sqlContext, maf_df, ssm_occurrence_ssm_subtree):
         def get_stats(dataframe):
             """
-            Extracts ssm, consequence, transcript, gene relationships from a flat dataframe
+            Extracts ssm, consequence, transcript, gene relationships
+            from a flat dataframe
             """
             res = {}
             for row in dataframe.toJSON().collect():
@@ -83,7 +89,9 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
                 gid = row['gene_id']
 
                 res.setdefault(sid, {})
-                res[sid].setdefault(cid, {'transcripts': set(), 'genes': set()})
+                res[sid].setdefault(
+                    cid, {'transcripts': set(), 'genes': set()}
+                )
                 res[sid][cid]['transcripts'].update([tid])
                 res[sid][cid]['genes'].update([gid])
 
@@ -96,14 +104,20 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         ]
 
         # ssm_subtree stats expected:
-        cons_df = (ConsequenceBuilder(conf, sqlContext)
-                   .build_for_ssm(maf_df, 'ssm_occurrence_centric', join_gene=True))
-        df = self.unpack_df_list(cons_df, 'ssm_id', 'consequence', 
+        cons_df = (
+            ConsequenceBuilder(conf, sqlContext).build_for_ssm(
+                maf_df, 'ssm_occurrence_centric',
+                join_gene=True
+            )
+        )
+        df = self.unpack_df_list(cons_df,
+                                 'ssm_id', 'consequence',
                                  fields_to_unpack)
         true_stats = get_stats(df)
 
         # ssm_subtree stats built:
-        df = self.unpack_df_list(ssm_occurrence_ssm_subtree, 'ssm_id', 'ssm.consequence', 
+        df = self.unpack_df_list(ssm_occurrence_ssm_subtree,
+                                 'ssm_id', 'ssm.consequence',
                                  fields_to_unpack)
         stats = get_stats(df)
 

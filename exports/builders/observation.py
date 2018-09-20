@@ -1,11 +1,12 @@
 import logging
 
 from pyspark.sql.functions import (
-    struct, collect_list, collect_set,
-    lit, col,
+    struct,
+    collect_list,
+    collect_set,
 )
 
-from exports.builders.utils import struct_select, uuid5_col
+from exports.builders.utils import struct_select
 
 logging.basicConfig()
 
@@ -45,9 +46,10 @@ class ObservationBuilder(object):
         """
 
         # add other observation fields
-        obs_df = gistic_df.withColumn('variant_caller', lit('GISTIC2'))
-        obs_df = obs_df.withColumn('variant_calling', struct('variant_caller')
-                                   .alias('variant_calling'))
+        obs_df = gistic_df.withColumn(
+            'variant_calling',
+            struct('variant_caller').alias('variant_calling')
+        )
         obs_df = obs_df.drop('variant_caller')
 
         # observation structure, TODO: add more fields

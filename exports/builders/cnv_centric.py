@@ -90,7 +90,7 @@ class CNVCentricBuilder(BaseBuilder):
 
         # 1. Observation
         self.logger.info('Aggregating Observation from gistic')
-        obs_df = ObservationBuilder().build_for_cnv(cnv_df, 'cnv_centric')
+        obs_df = ObservationBuilder().build_for_cnv(cnv_df, self.index_name)
 
         # 2. Case
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
@@ -107,6 +107,6 @@ class CNVCentricBuilder(BaseBuilder):
                          .groupby('cnv_id')
                          .agg(collect_set('occurrence').alias('occurrence')))
 
-        # self.log_count(occurrence_df)
+        self.log_count(occurrence_df)
 
         return occurrence_df

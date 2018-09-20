@@ -45,6 +45,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                 return self
 
         self.log_count(gistic_df)
+
         # CNV subtree
         cnv_df = self.build_cnv_subtree(gistic_df)
 
