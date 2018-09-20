@@ -445,7 +445,7 @@ class MAFBuilder(object):
         df = None
         callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
         for url in urls:
-            caller = [ c for c in callers if c in url ][0]
+            caller = [c for c in callers if c in url][0]
             if caller == 'mutect':
                 caller += '2'
             try:

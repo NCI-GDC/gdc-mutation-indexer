@@ -9,6 +9,7 @@ from pyspark.sql.functions import (explode,
                                    concat_ws)
 from exports.builders.utils import (extract_rows_udf,
                                     all_effects_udf,
+                                    struct_select,
                                     uuid5_col,
                                     extract_aas_position,
                                     extract_sift_polyphen,
@@ -131,18 +132,15 @@ class ConsequenceBuilder(object):
                 |_____ gene{}
         """
 
-        # TODO: use struct_select(index_name, 'consequence') !!!
         # Create gene structure
-        cons_df = (gistic_df.select('cnv_id',
-                                    struct('consequence_id',
-                                           struct('symbol',
-                                                  'gene_id',
-                                                  'is_cancer_gene_census',
-                                                  'biotype')
-                                           .alias('gene'))
-                                    .alias('consequence')).groupby('cnv_id')
-                            .agg(collect_set('consequence')
-                                 .alias('consequence')))
+        cons_df = (
+            gistic_df.select(
+                'cnv_id',
+                struct(*struct_select(index_name, 'consequence'))
+                .alias('consequence')
+            ).groupby('cnv_id')
+             .agg(collect_set('consequence').alias('consequence'))
+        )
 
         return cons_df
 

@@ -16,7 +16,7 @@ class ObservationBuilder(object):
     Builds observation dataframe from the maf dataframe
     """
 
-    def build_for_ssm(self, maf_df, index):
+    def build_for_ssm(self, maf_df, index_name):
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
@@ -25,7 +25,7 @@ class ObservationBuilder(object):
         """
 
         obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
-                                struct(*struct_select(index,
+                                struct(*struct_select(index_name,
                                                       'observation'))
                                 .alias('observation'))
                         .groupby('ssm_id', 'case_id', 'occurrence_id')
@@ -50,18 +50,15 @@ class ObservationBuilder(object):
             'variant_calling',
             struct('variant_caller').alias('variant_calling')
         )
-        obs_df = obs_df.drop('variant_caller')
 
-        # observation structure, TODO: add more fields
-        # TODO: use struct_select(index, 'observation')!!!
-        obs_df = (obs_df.select('cnv_id',
-                                'case_id',
-                                'occurrence_id',
-                                struct('observation_id',
-                                       'variant_status',
-                                       'variant_calling').alias('observation'))
-                        .drop('variant_status')  # ?
-                        .groupby('cnv_id', 'case_id', 'occurrence_id')
-                        .agg(collect_set('observation').alias('observation')))
+        # observation structure
+        obs_df = (
+            obs_df.select(
+                'cnv_id', 'case_id', 'occurrence_id',
+                struct(*struct_select(index, 'observation'))
+                .alias('observation')
+            ).groupby('cnv_id', 'case_id', 'occurrence_id')
+             .agg(collect_set('observation').alias('observation'))
+        )
 
         return obs_df
