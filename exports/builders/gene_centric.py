@@ -1,7 +1,6 @@
 import logging
-logging.basicConfig()
 
-from pyspark.sql.functions import lit, struct, collect_list
+from pyspark.sql.functions import struct, collect_list
 
 from exports.builders.df_builders import (
     get_gene_df,
@@ -14,6 +13,8 @@ from exports.builders import (
     ObservationBuilder,
 )
 from exports.builders import BaseBuilder
+
+logging.basicConfig()
 
 
 class GeneCentricBuilder(BaseBuilder):
@@ -184,7 +185,7 @@ class GeneCentricBuilder(BaseBuilder):
 
         self.log("Building Case")
         case_df = CaseBuilder(self.config,
-                             self.sqlContext).build(maf_df, gistic_df)
+                              self.sqlContext).build(maf_df, gistic_df)
         self.log_count(case_df)
 
         self.log('Getting gene_id for each case via joining with gene_df')
@@ -193,4 +194,3 @@ class GeneCentricBuilder(BaseBuilder):
                             .select('gene_id', *case_df.columns)
                     )
         return case_gene_id
-
