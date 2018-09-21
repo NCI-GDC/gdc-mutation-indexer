@@ -26,7 +26,7 @@ class ObservationBuilder(object):
 
         obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
                                 struct(*struct_select(index_name,
-                                                      'observation'))
+                                                      'observation-ssm'))
                                 .alias('observation'))
                         .groupby('ssm_id', 'case_id', 'occurrence_id')
                         .agg(collect_list('observation')
@@ -55,7 +55,7 @@ class ObservationBuilder(object):
         obs_df = (
             obs_df.select(
                 'cnv_id', 'case_id', 'occurrence_id',
-                struct(*struct_select(index, 'observation'))
+                struct(*struct_select(index, 'observation-cnv'))
                 .alias('observation')
             ).groupby('cnv_id', 'case_id', 'occurrence_id')
              .agg(collect_set('observation').alias('observation'))

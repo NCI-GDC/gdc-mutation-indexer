@@ -2,7 +2,12 @@ import pytest
 from random import randint
 
 from pyspark.sql.functions import lit
-from exports.builders.utils import percentile, struct_select, extract_aas_position
+from exports.builders.utils import (
+    percentile,
+    struct_select,
+    extract_aas_position,
+)
+from exports.mappers.model_mapper import ModelMapper
 from tests_config import TestConfig
 from utils.true_stats import TestDataStats
 from exports.builders.utils import (
@@ -58,14 +63,9 @@ class TestMiscFunctions:
         Test mapping to select
         """
 
-        indices = ['case_centric', 'gene_centric', 'ssm_centric',
-                   'ssm_occurrence_centric']
-        mappings = ['annotation', 'case', 'gene', 'observation', 'ssm',
-                    'transcript']
-
-        for mapping in mappings:
-            for index in indices:
-                print index, mapping
+        paths_map = ModelMapper(None).paths_map
+        for mapping in paths_map:
+            for index in paths_map[mapping]:
                 stmt = struct_select(index, mapping)
                 assert stmt
 
@@ -77,7 +77,7 @@ class TestMiscFunctions:
         assert conf.graph_index is not None
         assert es_client.count()['count'] > 0
         assert (es_client.get(index=conf.graph_index, doc_type='case',
-                       id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
+                              id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
                 == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
 
     def test_properties(self):
@@ -212,3 +212,4 @@ class TestMiscFunctions:
         """
         data = TestDataStats.load_test_data(conf.input_dir)
         stats = TestDataStats.get_stats(maf_df, data, index)
+
