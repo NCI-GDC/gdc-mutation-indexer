@@ -1,5 +1,6 @@
 import pytest
 
+from exports.es_utils import get_es_doc_count
 from utils.true_stats import TestDataStats
 from utils.json_metrics import (
     CaseCentricStats,
@@ -10,14 +11,6 @@ from utils.json_metrics import (
 from tests_config import TestConfig
 
 conf = TestConfig()
-
-
-def get_es_doc_count(es_client, index_name, doc_type):
-    return es_client.count(
-        index=index_name,
-        doc_type=doc_type,
-        body={"query": {"match_all": {}}}
-    )['count']
 
 
 @pytest.mark.usefixtures('gistic_df', 'cnv_centric_df', 'test_data', 'es_client')

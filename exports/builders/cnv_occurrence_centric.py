@@ -10,7 +10,6 @@ from exports.builders import (
     BaseBuilder,
     CaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
     ObservationBuilder,
 )
 
@@ -22,7 +21,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     Builds cnv-occurrence-centric dataframe given
     case, gene, and maf dataframes:
 
-        cnv_occurrence{}
+    cnv_occurrence{}
         |
         |____ case{}
         |       |____ observation[]
@@ -54,9 +53,10 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         case_df = self.build_case_subtree(maf_df, gistic_df)
 
         self.log('Joining cnv with case')
+
         cnv_occurrence_centric = (cnv_df.join(case_df,
-                                              on='case_id',
-                                              how='right')
+                                              on=['case_id', 'cnv_id'],
+                                              how='inner')
                                         .withColumnRenamed('occurrence_id',
                                                            'cnv_occurrence_id')
                                         .drop('case_id')
@@ -66,6 +66,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
         self.cnv_occurrence_centric = cnv_occurrence_centric
         self.log('Build finished')
+
         # Check if we should save the resulting dataframe
         if self.config.index_keep:
             self.write(self.config.index_paths[self.index_name])
@@ -80,7 +81,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_cnv(gistic_df))
+                   .build_for_cnv(gistic_df, self.index_name))
 
         cnv_df = build_cnv_subtree(gistic_df,
                                    cons_df,
@@ -88,8 +89,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
                                    obs_df=None,
                                    add_fields=['case_id'])
 
-        # add struct
-        cnv_subtree = cnv_df.select('case_id',
+        cnv_subtree = cnv_df.select('cnv_id', 'case_id',
                                     struct('consequence',
                                            *cnv_df.drop('consequence')
                                                   .drop('case_id').columns)
@@ -100,21 +100,20 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     def build_case_subtree(self, maf_df, gistic_df):
         """
             case{}
-        |       |____ observation[]
+                |____ observation[]
         """
         self.log('Building case subtree')
 
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
         # Case
         self.log('Building Case')
         case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
 
         self.log_count(case_df)
-
         self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
+        case_obs_df = (case_df.join(obs_df, on='case_id', how='right')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
                                              *case_df.columns)

@@ -156,10 +156,10 @@ class GeneCentricBuilder(BaseBuilder):
         """
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_cnv(gistic_df))
+                   .build_for_cnv(gistic_df, self.index_name))
 
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
         # Build the final cnv dataframe
         cnv_df = build_cnv_subtree(gistic_df, cons_df,

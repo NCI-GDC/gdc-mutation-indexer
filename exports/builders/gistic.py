@@ -66,14 +66,29 @@ class GisticBuilder(object):
         # add gene information
         gistic_df = self._add_gene_information(gistic_df)
 
+        # add case_id based on aliquot_id
+        gistic_df = self._add_case_id(gistic_df)
+
         # add cnv_id
         gistic_df = self._add_cnv_id(gistic_df)
+
+        # add consequence_id
+        gistic_df = self._add_consequence_id(gistic_df)
+
+        # add observation_id
+        gistic_df = self._add_observation_id(gistic_df)
+
+        # add occurrence_id
+        gistic_df = self._add_occurrence_id(gistic_df)
 
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
 
-        # add case_id based on aliquot_id
-        gistic_df = self._add_case_id(gistic_df)
+        self.logger.info('Caching Gistic dataframe')
+        # NOTE: Do not remove next step. This is a workaround for
+        # "udf requires attributes from more than one child" Spark issue
+        # See https://forums.databricks.com/questions/9401/pyspark-20-withcolumn-using-udf-on-two-columns-and.html
+        gistic_df.cache().count()
 
         return gistic_df
 
@@ -132,7 +147,6 @@ class GisticBuilder(object):
         """
         cnv_id ~ (chromosome, gene_start, gene_end, cnv_change)
         """
-
         # NOTE: start_position and end_position are matching with
         #       gene_start and gene_end in gistic context (c) Zhenyu and Kyle
         gistic_df = gistic_df.withColumn('cnv_id', uuid5_col(
@@ -140,6 +154,39 @@ class GisticBuilder(object):
             col('start_position'),
             col('end_position'),
             col('cnv_change')
+        ))
+        return gistic_df
+
+    def _add_consequence_id(self, gistic_df):
+        """
+        consequence_id ~ (symbol, gene_id, is_cancer_gene_census, biotype)
+        """
+        gistic_df = gistic_df.withColumn('consequence_id', uuid5_col(
+            col('symbol'),
+            col('gene_id'),
+            col('is_cancer_gene_census'),
+            col('biotype')
+        ))
+        return gistic_df
+
+    def _add_occurrence_id(self, gistic_df):
+        """
+        occurrence_id ~ (cnv_id, case_id)
+        """
+        gistic_df = gistic_df.withColumn('occurrence_id', uuid5_col(
+            col('cnv_id'),
+            col('case_id')
+        ))
+        return gistic_df
+
+    def _add_observation_id(self, gistic_df):
+        """
+        observation_id ~ (cnv_id, case_id, aliquot_id)
+        """
+        gistic_df = gistic_df.withColumn('observation_id', uuid5_col(
+            col('cnv_id'),
+            col('case_id'),
+            col('aliquot_id')
         ))
         return gistic_df
 
@@ -184,7 +231,7 @@ class GisticBuilder(object):
         # extra columns not included in gene model df
         new_df = self._add_ncbi_build(new_df)
         new_df = self._add_gene_level_cn(new_df)
-        new_df = self._add_variant_status(new_df)
+        new_df = self._add_variant_fields(new_df)
 
         return new_df
 
@@ -202,14 +249,14 @@ class GisticBuilder(object):
 
         return cnv_df_with_gene_level_cn
 
-    def _add_variant_status(self, initial_df):
+    def _add_variant_fields(self, initial_df):
         """
         For now this is a placeholder.
-        NOTE: Used on observation in cnv_centric,
-                used on cnv in cnv_occurrence_centric
         """
-        new_df = initial_df.withColumn('variant_status', lit('Tumor only'))
-
+        new_df = (
+            initial_df.withColumn('variant_status', lit('Tumor only'))
+                      .withColumn('variant_caller', lit('GISTIC2'))
+        )
         return new_df
 
     def _add_case_id(self, df):
@@ -244,7 +291,7 @@ class GisticBuilder(object):
 
         # create case_id column based on aliquot_id column, drop aliquot_id
         def map_aliquot_to_case(aliquot):
-            return aliquot_to_case_map[aliquot]
+            return aliquot_to_case_map.get(aliquot)
 
         df = map_create_column(df, map_aliquot_to_case, 'aliquot_id', 'case_id')
 
@@ -283,3 +330,4 @@ class GisticBuilder(object):
         new_df = new_df.na.drop(subset=['cnv_change'])
 
         return new_df
+

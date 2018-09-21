@@ -1,20 +1,14 @@
 import logging
-
-from pyspark.sql.functions import (
-    col,
-    udf,
-)
+from pyspark.sql.functions import struct, collect_set
 
 from exports.builders import (
     BaseBuilder,
+    CaseBuilder,
     ConsequenceBuilder,
-    GisticBuilder,
-    OccurrenceBuilder,
+    ObservationBuilder,
 )
 
-from exports.builders.utils import (
-    standardize_schema,
-)
+from exports.builders.df_builders import get_cnv_df
 
 logging.basicConfig()
 
@@ -24,7 +18,7 @@ class CNVCentricBuilder(BaseBuilder):
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
 
-        cnv{}
+     cnv{}
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
@@ -46,35 +40,31 @@ class CNVCentricBuilder(BaseBuilder):
             if self.cnv_centric is not None:
                 return self
 
-        # Consequence
+        self.log('Select CNV data from Gistic')
+        cnv_df = get_cnv_df(gistic_df, self.index_name)
+
+        self.log('Build Consequence')
         cons_df = (
             ConsequenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df)
+            .build_for_cnv(gistic_df, self.index_name)
         )
 
-        # Occurrence
-        occurrence_df = (
-            OccurrenceBuilder(self.config, self.sqlContext)
-                .build_for_cnv(gistic_df, maf_df)
-        )
+        self.log('Build Occurrence')
+        occurrence_df = self.build_occurrence_df(gistic_df, maf_df)
 
         self.log('Final join CNV + Consequence + Occurrence')
-        intermediate_df = gistic_df.join(cons_df, on='cnv_id', how='left')
-        joined_gistic_df = intermediate_df.join(occurrence_df, on='cnv_id',
-                                                how='right')
+        cnv_cons_df = cnv_df.join(cons_df, on='cnv_id', how='left')
+        cnv_centric_df = cnv_cons_df.join(occurrence_df, on='cnv_id',
+                                          how='left')
 
         # truncate outliers
         threshold = self.config.percentile_threshold['occurrences_per_cnv']
-        truncated_df = self.truncate_df_at_percentile(joined_gistic_df,
-                                                      'occurrence',
-                                                      threshold)
-
-        # warning: this will strip out anything that isn't
-        # specified in the schema
-        cleansed_df = standardize_schema(truncated_df, "cnv_centric", "cnv")
+        cnv_centric_df = self.truncate_df_at_percentile(cnv_centric_df,
+                                                        'occurrence',
+                                                        threshold)
 
         # save final df as property
-        self.cnv_centric = cleansed_df
+        self.cnv_centric = cnv_centric_df
 
         self.log_count(self.cnv_centric)
         self.log('Build finished')
@@ -85,3 +75,38 @@ class CNVCentricBuilder(BaseBuilder):
 
         return self
 
+    def build_occurrence_df(self, cnv_df, maf_df):
+        """
+        Assumes you've already added 'case_id'
+
+        occurrence[]
+        |____ occurrence{}
+                |____ occurrence_id
+                |____ case {}
+                        |____ observation []
+
+        """
+        assert 'case_id' in cnv_df.columns
+
+        # 1. Observation
+        self.logger.info('Aggregating Observation from gistic')
+        obs_df = ObservationBuilder().build_for_cnv(cnv_df, self.index_name)
+
+        # 2. Case
+        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
+        # self.log_count(case_df)
+
+        # 3. Join Case to Observation and create structs
+        self.logger.info('Joining Cases with Observation, [right, case_id]')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+                         .select('cnv_id',
+                                 struct('occurrence_id',
+                                        struct('observation',
+                                               *case_df.columns).alias('case'))
+                                 .alias('occurrence'))
+                         .groupby('cnv_id')
+                         .agg(collect_set('occurrence').alias('occurrence')))
+
+        self.log_count(occurrence_df)
+
+        return occurrence_df

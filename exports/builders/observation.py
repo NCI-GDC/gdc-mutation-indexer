@@ -1,11 +1,12 @@
 import logging
 
 from pyspark.sql.functions import (
-    struct, collect_list, collect_set,
-    lit, col,
+    struct,
+    collect_list,
+    collect_set,
 )
 
-from exports.builders.utils import struct_select, uuid5_col
+from exports.builders.utils import struct_select
 
 logging.basicConfig()
 
@@ -15,7 +16,7 @@ class ObservationBuilder(object):
     Builds observation dataframe from the maf dataframe
     """
 
-    def build_for_ssm(self, maf_df, index):
+    def build_for_ssm(self, maf_df, index_name):
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
@@ -24,8 +25,8 @@ class ObservationBuilder(object):
         """
 
         obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
-                                struct(*struct_select(index,
-                                                      'observation'))
+                                struct(*struct_select(index_name,
+                                                      'observation-ssm'))
                                 .alias('observation'))
                         .groupby('ssm_id', 'case_id', 'occurrence_id')
                         .agg(collect_list('observation')
@@ -33,7 +34,7 @@ class ObservationBuilder(object):
 
         return obs_df
 
-    def build_for_cnv(self, gistic_df):
+    def build_for_cnv(self, gistic_df, index):
         """
         observation[]
         |____ observation{}
@@ -43,32 +44,21 @@ class ObservationBuilder(object):
                         |____ variant_caller
 
         """
-        # add occurrence id to map to higher level occurrence
-        new_df = gistic_df.withColumn('occurrence_id',
-                                      uuid5_col(col('cnv_id'),
-                                                col('case_id')))
-
-        # add observation id
-        new_df = new_df.withColumn('observation_id',
-                                   uuid5_col(col('cnv_id'),
-                                             col('case_id'),
-                                             col('aliquot_id')))
 
         # add other observation fields
-        new_df = new_df.withColumn('variant_caller', lit('GISTIC2'))
-        new_df = new_df.withColumn('variant_calling', struct('variant_caller')
-                                   .alias('variant_calling'))
-        new_df = new_df.drop('variant_caller')
+        obs_df = gistic_df.withColumn(
+            'variant_calling',
+            struct('variant_caller').alias('variant_calling')
+        )
 
-        # observation structure, TODO: add more fields
-        obs_df = (new_df.select('cnv_id',
-                                'case_id',
-                                'occurrence_id',
-                                struct('observation_id',
-                                       'variant_status',
-                                       'variant_calling').alias('observation'))
-                        .drop('variant_status') # ?
-                        .groupby('cnv_id', 'case_id', 'occurrence_id')
-                        .agg(collect_set('observation').alias('observation')))
+        # observation structure
+        obs_df = (
+            obs_df.select(
+                'cnv_id', 'case_id', 'occurrence_id',
+                struct(*struct_select(index, 'observation-cnv'))
+                .alias('observation')
+            ).groupby('cnv_id', 'case_id', 'occurrence_id')
+             .agg(collect_set('observation').alias('observation'))
+        )
 
         return obs_df
