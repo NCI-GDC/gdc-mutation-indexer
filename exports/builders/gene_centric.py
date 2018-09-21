@@ -8,7 +8,6 @@ from exports.builders.df_builders import (
     build_cnv_subtree,
 )
 from exports.builders import (
-    CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
 )
@@ -39,7 +38,7 @@ class GeneCentricBuilder(BaseBuilder):
     index_name = 'gene_centric'
     id_field = 'gene_id'
 
-    def build(self, maf_df, gistic_df):
+    def build(self, maf_df, gistic_df, case_df):
         """
         Builds Gene Centric index
         """
@@ -56,7 +55,7 @@ class GeneCentricBuilder(BaseBuilder):
         self.log_count(gene_df)
 
         self.log('Building Case subtree')
-        case_subtree = self.build_case_subtree(maf_df, gistic_df)
+        case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df)
 
         self.log('Joining Gene with Case subtree [inner, "gene_id"]')
         gene_centric = (
@@ -75,14 +74,14 @@ class GeneCentricBuilder(BaseBuilder):
             self.write(self.config.index_paths[self.index_name])
         return self
 
-    def build_case_subtree(self, maf_df, gistic_df):
+    def build_case_subtree(self, maf_df, gistic_df, case_df):
         """
         - build_ssm_subtree
         - build_cnv_subtree
         - join them together
         """
         self.log('Building Case with gene info from MAF and GeneModel')
-        case_df = self._build_case_with_gene_id(maf_df, gistic_df)
+        case_and_gene_df = self._build_case_with_gene_id(maf_df, gistic_df)
 
         self.log('Building SSM subtree')
         ssm_df = self.build_ssm_subtree(maf_df)
@@ -93,21 +92,25 @@ class GeneCentricBuilder(BaseBuilder):
         self.log_count(cnv_df)
 
         self.log("Join SSM and CNV subtrees to Case [left, gene_id, case_id]")
-        case_subtree_df = (
-            case_df.join(ssm_df, on=['gene_id', 'case_id'], how='left')
-                   .join(cnv_df, on=['gene_id', 'case_id'], how='left')
-                   .select('gene_id',
-                           struct('ssm', 'cnv', *case_df.drop('gene_id').columns)
-                           .alias('case'))
+        case_subtree = (
+            case_and_gene_df.join(ssm_df,
+                                  on=['gene_id', 'case_id'], how='left')
+                            .join(cnv_df,
+                                  on=['gene_id', 'case_id'], how='left')
+                            .select('gene_id',
+                                    struct('ssm',
+                                           'cnv',
+                                           *case_df.drop('gene_id').columns)
+                                    .alias('case'))
         )
-        self.log_count(case_subtree_df)
+        self.log_count(case_subtree)
 
         self.log('Grouping by case_id and aggregating to list under "gene"')
-        case_subtree_df = (
-            case_subtree_df.groupBy(case_subtree_df.gene_id.alias('gene_id'))
+        case_subtree = (
+            case_subtree.groupBy(case_subtree.gene_id.alias('gene_id'))
             .agg(collect_list('case').alias('case'))
         )
-        return case_subtree_df
+        return case_subtree
 
     def build_ssm_subtree(self, maf_df):
         """
@@ -122,7 +125,8 @@ class GeneCentricBuilder(BaseBuilder):
 
         # Consequence
         cons_df = ConsequenceBuilder(
-            self.config, self.sqlContext).build_for_ssm(maf_df, self.index_name)
+            self.config, self.sqlContext).build_for_ssm(maf_df,
+                                                        self.index_name)
 
         # Observation
         obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
@@ -178,15 +182,10 @@ class GeneCentricBuilder(BaseBuilder):
 
         return cnv_df
 
-    def _build_case_with_gene_id(self, maf_df, gistic_df):
+    def _build_case_with_gene_id(self, maf_df, gistic_df, case_df):
         self.log('\nSelecting Gene from MAF')
         gene_df = (get_gene_df(maf_df, self.index_name, add_fields=['case_id'])
                    .select('case_id', 'gene_id'))
-
-        self.log("Building Case")
-        case_df = CaseBuilder(self.config,
-                              self.sqlContext).build(maf_df, gistic_df)
-        self.log_count(case_df)
 
         self.log('Getting gene_id for each case via joining with gene_df')
         case_gene_id = (

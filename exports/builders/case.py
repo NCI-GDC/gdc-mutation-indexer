@@ -18,7 +18,7 @@ class CaseBuilder(object):
         self.sqlContext = sqlContext
         self.maf_urls = config.maf_urls
 
-    def build(self, maf_df, gistic_df=None):
+    def build(self, maf_df, gistic_df):
         """
         Builds Case dataframe
         """
@@ -29,7 +29,7 @@ class CaseBuilder(object):
 
         return df
 
-    def load_into_df(self, maf_df, gistic_df=None):
+    def load_into_df(self, maf_df, gistic_df):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
@@ -65,7 +65,7 @@ class CaseBuilder(object):
 
         return df
 
-    def populate_available_variation_data(self, maf_df, gistic_df=None):
+    def populate_available_variation_data(self, maf_df, gistic_df):
         """
         This function calculates the value of the column
         "available_variation_data."
@@ -99,17 +99,15 @@ class CaseBuilder(object):
         maf_data = (maf_data.withColumn('temp', lit('ssm'))).drop(avd)
 
         # Get set of cnv cases from gistic_df
-        if gistic_df:
-            gistic_data = (gistic_df.select('case_id', 'cnv_id'))
-            avd_udf = udf(lambda x: None if x is None else 'cnv', StringType())
-            gistic_data = (
-                gistic_data.withColumn('temp',
-                                       avd_udf(col('cnv_id')))).drop('cnv_id')
+        # TODO: test shorter union
+        gistic_data = (gistic_df.select('case_id', 'cnv_id'))
+        avd_udf = udf(lambda x: None if x is None else 'cnv', StringType())
+        gistic_data = (
+            gistic_data.withColumn('temp',
+                                   avd_udf(col('cnv_id')))).drop('cnv_id')
 
-            # Stack
-            maf_and_gistic_data = maf_data.union(gistic_data)
-        else:
-            maf_and_gistic_data = maf_data
+        # Stack
+        maf_and_gistic_data = maf_data.union(gistic_data)
 
         # Finally, group by case
         maf_and_gistic_data = (maf_and_gistic_data

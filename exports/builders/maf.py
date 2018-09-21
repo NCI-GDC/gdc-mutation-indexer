@@ -238,7 +238,7 @@ class MAFBuilder(object):
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
-        avd_udf = udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+        avd_udf = udf(lambda x, y: [] if (x is None and y is not None) else ['ssm'],
                       ArrayType(StringType()))
         return df.withColumn('available_variation_data',
                              avd_udf(col('Tumor_Sample_Barcode'),

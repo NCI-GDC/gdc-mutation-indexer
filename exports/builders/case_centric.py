@@ -7,7 +7,6 @@ from exports.builders.df_builders import (
     build_cnv_subtree,
 )
 from exports.builders import (
-    CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
 )
@@ -36,7 +35,7 @@ class CaseCentricBuilder(BaseBuilder):
     index_name = 'case_centric'
     id_field = 'case_id'
 
-    def build(self, maf_df, gistic_df):
+    def build(self, maf_df, gistic_df, case_df):
         """
         Builds Case Centric index
         """
@@ -46,11 +45,6 @@ class CaseCentricBuilder(BaseBuilder):
             self.case_centric = self.get_existing()
             if self.case_centric is not None:
                 return self
-
-        self.log('Building Case')
-        case_df = CaseBuilder(self.config,
-                              self.sqlContext).build(maf_df, gistic_df)
-        self.log_count(case_df)
 
         self.log('Building Gene subtree')
         gene_subtree = self.build_gene_subtree(maf_df, gistic_df)
@@ -204,4 +198,3 @@ class CaseCentricBuilder(BaseBuilder):
                                                       threshold)
 
         return case_centric
-
