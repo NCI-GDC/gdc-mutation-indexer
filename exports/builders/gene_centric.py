@@ -81,7 +81,7 @@ class GeneCentricBuilder(BaseBuilder):
         - join them together
         """
         self.log('Building Case with gene info from MAF and GeneModel')
-        case_and_gene_df = self._build_case_with_gene_id(maf_df, gistic_df)
+        case_and_gene_df = self._build_case_with_gene_id(maf_df, gistic_df, case_df)
 
         self.log('Building SSM subtree')
         ssm_df = self.build_ssm_subtree(maf_df)
