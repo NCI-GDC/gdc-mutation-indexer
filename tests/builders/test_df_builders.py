@@ -1,8 +1,17 @@
 import itertools
 import pytest
-from pyspark.sql.functions import col
+from pyspark.sql.types import BooleanType
+from pyspark.sql.functions import UserDefinedFunction, col
 
 from exports.builders.utils import select_mapping
+from exports.builders.consequence import ConsequenceBuilder
+from exports.builders.df_builders import (
+    get_annotation_df,
+    get_gene_df,
+    get_ssm_df,
+    get_cnv_df,
+    get_transcript_df,
+)
 from tests_config import TestConfig
 conf = TestConfig()
 
