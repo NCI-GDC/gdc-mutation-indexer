@@ -43,7 +43,7 @@ class GDCMutationExport(object):
                 if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
                     # these builders do not yet depend on gistic_df
                     builder(self.config, self.sqlContext).build(maf_df, case_df).load()
-                if index_name in ['cnv_centric', 'cnv_occurrence_centric']:
+                elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
                     # these builders do not depend on maf_df
                     builder(self.config, self.sqlContext).build(gistic_df, case_df).load()
                 else:
