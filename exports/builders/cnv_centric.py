@@ -93,7 +93,7 @@ class CNVCentricBuilder(BaseBuilder):
 
         # 2. Join Case to Observation and create structs
         self.logger.info('Joining Cases with Observation, [right, case_id]')
-        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='left')
                          .select('cnv_id',
                                  struct('occurrence_id',
                                         struct('observation',

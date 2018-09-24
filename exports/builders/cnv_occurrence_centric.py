@@ -107,7 +107,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
         self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on='case_id', how='right')
+        case_obs_df = (case_df.join(obs_df, on='case_id', how='left')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
                                              *case_df.columns)
