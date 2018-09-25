@@ -72,6 +72,9 @@ class GisticBuilder(object):
         # add cnv_id
         gistic_df = self._add_cnv_id(gistic_df)
 
+        # add available variation data
+        gistic_df = self._add_available_variation_data(gistic_df)
+
         # add consequence_id
         gistic_df = self._add_consequence_id(gistic_df)
 
@@ -258,6 +261,18 @@ class GisticBuilder(object):
                       .withColumn('variant_caller', lit('GISTIC2'))
         )
         return new_df
+
+    def _add_available_variation_data(self, gistic_df):
+        """
+        Populates available_variation_data with 'cnv'.
+        """
+
+        # Get set of cnv cases from gistic_df
+        gistic_df = (
+            gistic_df.withColumn('available_variation_data',
+                                 lit('cnv')))
+
+        return gistic_df
 
     def _add_case_id(self, df):
         """

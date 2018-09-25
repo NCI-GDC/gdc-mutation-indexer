@@ -8,7 +8,6 @@ from exports.builders.df_builders import (
 )
 from exports.builders import (
     BaseBuilder,
-    CaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
 )
@@ -34,7 +33,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
     index_name = 'cnv_occurrence_centric'
     id_field = 'cnv_occurrence_id'
 
-    def build(self, maf_df, gistic_df):
+    def build(self, gistic_df, case_df):
         """
         Builds CNV Occurrence Centric index
         """
@@ -50,11 +49,11 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         cnv_df = self.build_cnv_subtree(gistic_df)
 
         # Case subtree
-        case_df = self.build_case_subtree(maf_df, gistic_df)
+        case_subtree = self.build_case_subtree(gistic_df, case_df)
 
         self.log('Joining cnv with case')
 
-        cnv_occurrence_centric = (cnv_df.join(case_df,
+        cnv_occurrence_centric = (cnv_df.join(case_subtree,
                                               on=['case_id', 'cnv_id'],
                                               how='inner')
                                         .withColumnRenamed('occurrence_id',
@@ -97,7 +96,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
         return cnv_subtree
 
-    def build_case_subtree(self, maf_df, gistic_df):
+    def build_case_subtree(self, gistic_df, case_df):
         """
             case{}
                 |____ observation[]
@@ -107,17 +106,11 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         # Observation
         obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
-        # Case
-        self.log('Building Case')
-        case_df = CaseBuilder(self.config, self.sqlContext).build(maf_df)
-
-        self.log_count(case_df)
         self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on='case_id', how='right')
+        case_obs_df = (case_df.join(obs_df, on='case_id', how='left')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
                                              *case_df.columns)
                                       .alias('case')))
         self.log_count(case_obs_df)
         return case_obs_df
-
