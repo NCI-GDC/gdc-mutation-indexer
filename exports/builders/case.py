@@ -95,10 +95,10 @@ class CaseBuilder(object):
                                  on=['case_id'], how='right')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
-        maf_data = maf_data.withColumnRenamed(avd, 'avd1')
+        maf_data = maf_data.drop(avd)
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data = (maf_data.withColumn(avd, lit('ssm'))).drop('avd1')
+        maf_data = (maf_data.withColumn(avd, lit('ssm')))
 
         # Stack with gistic data
         maf_and_gistic_data = maf_data.union((
