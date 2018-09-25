@@ -71,9 +71,9 @@ class CaseBuilder(object):
         "available_variation_data."
 
         We retrieve a set of cases from graph_index
-        and add "ssm" if that case id is present in the maf_df,
+        and add "ssm" for both those cases and the cases in the maf_df,
         "cnv" if that case id is present in the gistic_df,
-        ["ssm", "cnv"] if both, and [] if neither.
+        ["ssm", "cnv"] if both. 
         """
 
         avd = 'available_variation_data'
@@ -94,24 +94,19 @@ class CaseBuilder(object):
         maf_data = maf_data.join(cases_to_keep,
                                  on=['case_id'], how='right')
 
+        # the original maf_data is in array form ['ssm'] and we need 'ssm'
+        maf_data = maf_data.withColumnRenamed(avd, 'avd1')
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data = (maf_data.withColumn('temp', lit('ssm'))).drop(avd)
+        maf_data = (maf_data.withColumn(avd, lit('ssm'))).drop('avd1')
 
-        # Get set of cnv cases from gistic_df
-        # TODO: test shorter union
-        gistic_data = (gistic_df.select('case_id', 'cnv_id'))
-        avd_udf = udf(lambda x: None if x is None else 'cnv', StringType())
-        gistic_data = (
-            gistic_data.withColumn('temp',
-                                   avd_udf(col('cnv_id')))).drop('cnv_id')
-
-        # Stack
-        maf_and_gistic_data = maf_data.union(gistic_data)
+        # Stack with gistic data
+        maf_and_gistic_data = maf_data.union((
+                                gistic_df.select('case_id', avd)))
 
         # Finally, group by case
         maf_and_gistic_data = (maf_and_gistic_data
                                .groupby('case_id')
-                               .agg(collect_set('temp').alias(avd)))
+                               .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
