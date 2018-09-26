@@ -5,6 +5,8 @@ import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType, ArrayType
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -176,9 +178,22 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
+    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    return MAFBuilder(conf, sqlContext).build()
+    local_maf = MAFBuilder(conf, sqlContext).build()
+
+    def fake_out_acl(chromosome):
+        if int(chromosome) % 2 == 0:
+            return [u'phs000218']
+        return [u'open']
+
+    acl_udf = udf(fake_out_acl, ArrayType(StringType()))
+    local_maf = local_maf.drop('acl')
+    altered_maf = local_maf.withColumn('acl',
+                                       acl_udf('gene_chromosome'))
+
+    return altered_maf
 
 
 @pytest.fixture(scope='session')
