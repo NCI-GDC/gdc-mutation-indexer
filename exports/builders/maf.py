@@ -57,7 +57,6 @@ class MAFBuilder(object):
                                      default_to_none=['normal_bam_uuid',
                                                       'tumor_bam_uuid'])
 
-        import ipdb; ipdb.set_trace()
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
