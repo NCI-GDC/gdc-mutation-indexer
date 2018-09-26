@@ -49,9 +49,12 @@ class MAFBuilder(object):
                 return df
             except IOError:
                 self.logger.info('Couldn\'t find existing maf file at given path')
+
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
-        df = self.standardize_schema(df)
+        df = self.standardize_schema(df,
+                                     default_to_none=['normal_bam_uuid',
+                                                      'tumor_bam_uuid'])
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -126,7 +129,7 @@ class MAFBuilder(object):
         """
         return df.withColumn('empty', lit(None).cast(StringType()))
 
-    def standardize_schema(self, df):
+    def standardize_schema(self, df, default_to_none=[]):
         """
         Renames and select required columns from the MAF documents
         """
@@ -138,8 +141,17 @@ class MAFBuilder(object):
         self.schema = maf_schema
 
         # Select and rename maf fields according to schema
-        maf_df = df.select(*(col(v['name']).alias(k)
-                             for k, v in maf_schema.items()))
+        try:
+            maf_df = df.select(*(col(v['name']).alias(k)
+                                 for k, v in maf_schema.items()))
+        except AnalysisException:
+            maf_df = df.select(*(col(v['name']).alias(k)
+                                 for k, v in maf_schema.items()
+                                 if k not in default_to_none))
+
+            # Add null valued columns
+            for col_name in default_to_none:
+                maf_df = maf_df.withColumn(col_name, lit(None).cast(StringType()))
 
         return maf_df
 
@@ -174,21 +186,27 @@ class MAFBuilder(object):
                                       self.config.es_pass))
 
         file_names = []
+
         for url in self.config.get_maf_file_names():
             assert url.rfind('/') > 0
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
             file_names.append(file_name)
 
+        # TEMP
+        # if file_names[0].index("FM") == 0:
+        #     file_names = ['FM-AD_SNV.Trachea.protected.maf.gz']
+
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
                                  body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
                                        "_source": ["file_name", "acl"]})
 
-        assert dict_results
-        assert dict_results['hits']
+        assert dict_results, 'connection failed'
+        assert dict_results['hits'], 'response improperly formatted'
 
-        assert dict_results['hits']['hits']
+        # TEMP
+        # assert dict_results['hits']['hits'], 'no results for file name {}'.format(file_names)
 
         filenames_to_acls = {}
 
@@ -226,7 +244,7 @@ class MAFBuilder(object):
             except KeyError:
 
                 # TEMP:
-                return ['phs000218']
+                return [u'phs000218']
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
@@ -443,11 +461,10 @@ class MAFBuilder(object):
             self.logger.error('Urls not passed and get_urls() not yet called')
             raise Exception
         df = None
-        callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
+
         for url in urls:
-            caller = [ c for c in callers if c in url ][0]
-            if caller == 'mutect':
-                caller += '2'
+            caller = self.get_caller(url)
+
             try:
                 new_df = self.read_maf(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
@@ -459,7 +476,7 @@ class MAFBuilder(object):
                     df = new_df
                 else:
                     df = df.unionAll(new_df)
-            except BaseException as e:
+            except Exception as e:
                 self.logger.error(e)
 
         self.config.nb_mutations = df.count()
@@ -467,6 +484,25 @@ class MAFBuilder(object):
                          .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
+
+    def get_caller(self, url):
+        """
+        Identify variant caller by portion of url name.
+        """
+
+        possible_callers = ['mutect', 'muse', 'varscan', 'somaticsniper', 'FM']
+
+        try:
+            caller = [c for c in possible_callers if c in url][0]
+            if caller == 'mutect':
+                caller += '2'
+            if caller == 'FM':
+                caller += ' Simple Somatic Mutation'
+
+        except IndexError:
+            raise "Cannot identify caller"
+
+        return caller
 
     def get_urls(self):
         """
@@ -507,7 +543,6 @@ class MAFBuilder(object):
             urls.append(url)
 
         self.logger.info('Found urls for {} files'.format(len(urls)))
-
         return urls
 
     def patch_url(self, url):
