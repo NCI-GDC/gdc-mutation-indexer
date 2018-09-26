@@ -6,6 +6,7 @@ import requests
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 from elasticsearch import Elasticsearch
+from pyspark.sql.utils import AnalysisException
 
 from exports.builders.utils import (
     uuid5_col,
@@ -56,6 +57,7 @@ class MAFBuilder(object):
                                      default_to_none=['normal_bam_uuid',
                                                       'tumor_bam_uuid'])
 
+        import ipdb; ipdb.set_trace()
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
