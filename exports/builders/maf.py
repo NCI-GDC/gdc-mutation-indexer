@@ -119,7 +119,8 @@ class MAFBuilder(object):
                     def apply_pattern(value):
                         return pattern.format(value)
                     df = df.withColumn(column,
-                                       udf(apply_pattern, StringType())(df[column]))
+                                       udf(apply_pattern,
+                                           StringType())(df[column]))
                 else:
                     pass
         return df
@@ -130,7 +131,7 @@ class MAFBuilder(object):
         """
         return df.withColumn('empty', lit(None).cast(StringType()))
 
-    def standardize_schema(self, df, default_to_none=[]):
+    def standardize_schema(self, df, default_to_none=None):
         """
         Renames and select required columns from the MAF documents
         """
@@ -146,6 +147,10 @@ class MAFBuilder(object):
             maf_df = df.select(*(col(v['name']).alias(k)
                                  for k, v in maf_schema.items()))
         except AnalysisException:
+
+            if default_to_none is None:
+                default_to_none = []
+
             maf_df = df.select(*(col(v['name']).alias(k)
                                  for k, v in maf_schema.items()
                                  if k not in default_to_none))
@@ -189,25 +194,22 @@ class MAFBuilder(object):
         file_names = []
 
         for url in self.config.get_maf_file_names():
-            assert url.rfind('/') > 0
+            assert url.rfind('/') > 0, 'unexpected format {}'.format(url)
             # we assume the last part of the url is the file_name
             file_name = url[url.rfind('/') + 1:]
             file_names.append(file_name)
 
-        # TEMP
-        # if file_names[0].index("FM") == 0:
-        #     file_names = ['FM-AD_SNV.Trachea.protected.maf.gz']
-
         dict_results = es.search(index=self.config.graph_index,
                                  doc_type='file',
-                                 body={"query": {"bool": {"must": {"terms": {"file_name": file_names}}}},
+                                 body={"query": {
+                                       "bool": {"must": {"terms":
+                                               {"file_name": file_names}}}},
                                        "_source": ["file_name", "acl"]})
 
         assert dict_results, 'connection failed'
         assert dict_results['hits'], 'response improperly formatted'
-
-        # TEMP
-        # assert dict_results['hits']['hits'], 'no results for file name {}'.format(file_names)
+        assert dict_results['hits']['hits'], 'no results for ' \
+                                             'file name {}'.format(file_names)
 
         filenames_to_acls = {}
 
@@ -233,9 +235,7 @@ class MAFBuilder(object):
                     key = key[key.rfind('/') + 1:]
                 # mafs may be zipped or unzipped
                 # we expect the file_name in the File to be 'xxx.gz'
-                if key.endswith('.gz'):
-                    pass
-                else:
+                if not key.endswith('.gz'):
                     key += '.gz'
                 # make sure it's unicode
                 ukey = unicode(key)
@@ -244,20 +244,21 @@ class MAFBuilder(object):
 
             except KeyError:
 
-                # TEMP:
-                return [u'phs000218']
+                raise "ACL not found for maf {}".format(maf_name)
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
 
     def add_available_variation_data(self, df):
         """
-        Populates available_variation_data with ['ssm'] for all cases with mutations
+        Populates available_variation_data with ['ssm']
+        for all cases with mutations
         WARNING: Requires that cases that have been tested in the calling
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
-        avd_udf = udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+        avd_udf = udf(lambda x, y:
+                      [] if (x is None and y is not None) else ['ssm'],
                       ArrayType(StringType()))
         return df.withColumn('available_variation_data',
                              avd_udf(col('Tumor_Sample_Barcode'),
@@ -265,7 +266,8 @@ class MAFBuilder(object):
 
     def add_canonical_lengths(self, df):
         """
-        Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
+        Adds canonical_transcript_length{'','cds','genomic'}
+        fields to a dataframe
         """
 
         def integer_udf(function):
@@ -351,7 +353,7 @@ class MAFBuilder(object):
         maf_df = df.withColumn('normal_genotype',
                                struct(uuid5_col(col('match_norm_seq_allele1'),
                                                 col('match_norm_seq_allele2'))
-                               .alias('allele_id')))
+                                      .alias('allele_id')))
         return maf_df
 
     def add_ssm_id(self, df):
@@ -501,7 +503,7 @@ class MAFBuilder(object):
                 caller += ' Simple Somatic Mutation'
 
         except IndexError:
-            raise "Cannot identify caller"
+            raise "Cannot identify caller for url {}".format(url)
 
         return caller
 
@@ -539,7 +541,8 @@ class MAFBuilder(object):
 
         urls = []
         for fid in file_ids:
-            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host, fid))
+            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host,
+                                                   fid))
             url = r.json()['urls'][0]
             urls.append(url)
 
