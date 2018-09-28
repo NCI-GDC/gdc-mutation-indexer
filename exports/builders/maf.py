@@ -224,7 +224,7 @@ class MAFBuilder(object):
 
             except KeyError:
 
-                raise "ACL not found for maf {}".format(url)
+                raise Exception("ACL not found for maf {}".format(url))
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
@@ -483,7 +483,7 @@ class MAFBuilder(object):
                 caller += ' Simple Somatic Mutation'
 
         except IndexError:
-            raise "Cannot identify caller for url {}".format(url)
+            raise Exception("Cannot identify caller for url {}".format(url))
 
         return caller
 
