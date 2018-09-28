@@ -1,7 +1,5 @@
 import yaml
-import json
 import logging
-import requests
 
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
@@ -31,12 +29,7 @@ class MAFBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-
-        if config.maf_urls is not None:
-            self.urls = config.maf_urls
-        else:
-            self.urls = self.get_urls()
-
+        self.urls = config.maf_urls
         self.acls = self.get_acls()
 
     def build(self):
@@ -191,35 +184,25 @@ class MAFBuilder(object):
                            http_auth=(self.config.es_user,
                                       self.config.es_pass))
 
-        file_names = []
+        file_names = self.config.get_maf_file_names()
 
-        for url in self.config.get_maf_file_names():
-            assert url.rfind('/') > 0, 'unexpected format {}'.format(url)
-            # we assume the last part of the url is the file_name
-            file_name = url[url.rfind('/') + 1:]
-            file_names.append(file_name)
+        try:
+            dict_results = es.search(index=self.config.graph_index,
+                                     doc_type='file',
+                                     body={"query": {
+                                           "bool": {"must": {"terms":
+                                                   {"file_name": file_names}}}},
+                                           "_source": ["file_name", "acl"]})
 
-        dict_results = es.search(index=self.config.graph_index,
-                                 doc_type='file',
-                                 body={"query": {
-                                       "bool": {"must": {"terms":
-                                               {"file_name": file_names}}}},
-                                       "_source": ["file_name", "acl"]})
+            return {
+                    r['_source']['file_name']: r['_source']['acl']
+                    for r in dict_results['hits']['hits']
+                    }
 
-        assert dict_results, 'connection failed'
-        assert dict_results['hits'], 'response improperly formatted'
-        assert dict_results['hits']['hits'], 'no results for ' \
-                                             'file name {}'.format(file_names)
+        except KeyError:
+            raise 'no results for file names. ACL missing'
 
-        filenames_to_acls = {}
-
-        for result in dict_results["hits"]["hits"]:
-            filenames_to_acls[result["_source"]["file_name"]] = \
-                result["_source"]["acl"]
-
-        return filenames_to_acls
-
-    def add_acl(self, df, maf_name):
+    def add_acl(self, df, url):
         """
         Populates mutation data with acls
         Have to do a little massaging of the file name to match
@@ -229,22 +212,19 @@ class MAFBuilder(object):
 
         def acl_inner():
             try:
-                key = maf_name
                 # trim out leading folders
-                if key.rfind('/') != -1:
-                    key = key[key.rfind('/') + 1:]
+                file_name = url.split('/')[-1]
+
                 # mafs may be zipped or unzipped
                 # we expect the file_name in the File to be 'xxx.gz'
-                if not key.endswith('.gz'):
-                    key += '.gz'
-                # make sure it's unicode
-                ukey = unicode(key)
+                if not file_name.endswith('.gz'):
+                    file_name += '.gz'
 
-                return acls[ukey]
+                return acls[file_name]
 
             except KeyError:
 
-                raise "ACL not found for maf {}".format(maf_name)
+                raise "ACL not found for maf {}".format(url)
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
@@ -461,7 +441,7 @@ class MAFBuilder(object):
         if urls is None and self.urls is not None:
             urls = self.urls
         elif urls is None and self.urls is None:
-            self.logger.error('Urls not passed and get_urls() not yet called')
+            self.logger.error('Urls not passed')
             raise Exception
         df = None
 
@@ -506,48 +486,6 @@ class MAFBuilder(object):
             raise "Cannot identify caller for url {}".format(url)
 
         return caller
-
-    def get_urls(self):
-        """
-        Retrieve file ids from the api then gets the s3 urls from signpost
-        """
-        filt = {
-            "op": "and",
-            "content": [{
-                    "op": "in",
-                    "content": {
-                        "field": "files.data_format",
-                        "value": ["MAF"]
-                    }
-                }, {
-                    "op": "in",
-                    "content": {
-                        "field": "files.access",
-                        "value": ["open"]
-                    }
-                }
-            ]
-        }
-
-        filt = {
-            "filters": json.dumps(filt),
-            "size": "1000",
-            "fields": "file_id"
-        }
-
-        r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
-                         params=filt, verify=False)
-        file_ids = [f['file_id'] for f in r.json()['data']['hits']]
-
-        urls = []
-        for fid in file_ids:
-            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host,
-                                                   fid))
-            url = r.json()['urls'][0]
-            urls.append(url)
-
-        self.logger.info('Found urls for {} files'.format(len(urls)))
-        return urls
 
     def patch_url(self, url):
         """

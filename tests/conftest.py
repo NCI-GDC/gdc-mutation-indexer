@@ -106,37 +106,14 @@ def load_docs_into_test_index(es, doc_type):
     # TODO: temp fix
     docs = remove_keys_from_dict(docs, ['file_state'])
 
+    import ipdb; ipdb.set_trace()
+
     log.info('Bulk loading {} docs to the ES...'.format(doc_type))
     bulk(es, docs['docs'], ignore=409)
 
     log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
 
-    wait_for_index_to_refresh(es, doc_type, len(docs['docs']))
-
-
-def wait_for_index_to_refresh(es,
-                              doc_type,
-                              desired_count,
-                              wait_time=100):
-    """
-    Wait for index to be refreshed.
-    Wait no longer than wait_time seconds
-    or until all documents have been loaded.
-    """
-    overall_time = 0
-
-    while overall_time < wait_time:
-        count = es.count(index=conf.graph_index, doc_type=doc_type)['count']
-        print count, desired_count, overall_time
-        if count >= desired_count:
-            assert count == desired_count
-            break
-        overall_time += 5
-        time.sleep(5)
-
-    time.sleep(1)
-
-    return
+    es.indices.refresh(index=conf.graph_index)
 
 
 @pytest.fixture(scope='session')

@@ -90,4 +90,11 @@ class TestConfig(BaseConfig):
                 for f in os.listdir(self.maf_dir) if f.endswith('maf')]
 
     def get_maf_file_names(self):
-        return [f + '.gz' for f in self.get_maf_urls()]
+        """
+        We store the test mafs as .maf files,
+        but the file names in gdc_from_graph are gzipped.
+        So we append '.gz' for matching.
+        """
+        file_names = super(TestConfig, self).get_maf_file_names()
+
+        return [f + '.gz' for f in file_names]

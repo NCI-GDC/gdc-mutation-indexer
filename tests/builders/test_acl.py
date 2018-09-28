@@ -87,7 +87,9 @@ class TestACL:
 
         if doc_type != 'case_centric':
             # for case centric it is possible that this is not equal
-            # but that's ok
+            # if case has no ssms associated with it, then case.gene.ssm
+            # (and case.gene) is null.
+            # if so, then these docs are not_open but they do not have a value.
             assert not_open_docs == phs000218_docs, \
                    "{} non-open docs and {} " \
                    "phs000218 docs".format(not_open_docs, phs000218_docs)
