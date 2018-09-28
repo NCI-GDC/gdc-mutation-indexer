@@ -106,8 +106,6 @@ def load_docs_into_test_index(es, doc_type):
     # TODO: temp fix
     docs = remove_keys_from_dict(docs, ['file_state'])
 
-    import ipdb; ipdb.set_trace()
-
     log.info('Bulk loading {} docs to the ES...'.format(doc_type))
     bulk(es, docs['docs'], ignore=409)
 
