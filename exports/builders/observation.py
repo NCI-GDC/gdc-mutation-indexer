@@ -3,11 +3,10 @@ logging.basicConfig()
 
 from pyspark.sql.functions import struct, collect_list
 
-from exports.builders import BaseBuilder
 from exports.builders.utils import struct_select
 
 
-class ObservationBuilder(BaseBuilder):
+class ObservationBuilder(object):
     """
     Builds observation dataframe from the maf dataframe
     """

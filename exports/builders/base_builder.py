@@ -5,7 +5,7 @@ import json
 import logging
 import os
 
-from ..mappers.models_mapper import ModelMapper
+from ..mappers.model_mapper import ModelMapper
 
 logging.basicConfig()
 
@@ -28,6 +28,7 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
+    
     def build(self):
         """
         Contains the ETL logic to construct a spark dataframe of
@@ -44,7 +45,7 @@ class BaseBuilder(object):
         doc = self.config.index_names[self.index_name]
         index_doc = '{}/{}'.format(index, doc)
 
-        index_body = ModelMapper(self.index_name).create_index_settings()
+        index_body = ModelMapper(self.index_name).index_settings
         index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))

@@ -5,6 +5,8 @@ import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType, ArrayType
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -12,7 +14,9 @@ from tests_config import TestConfig
 from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import get_case_ids_from_source_es
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.distinct_doctype_model_mapper import (
+    DistinctDocTypeModelMapper
+)
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
@@ -34,50 +38,80 @@ log.setLevel(logging.INFO)
 @pytest.fixture(scope='session')
 def setup_test_index():
     """
-    Creates graph index with case docs and returns an elasticsearch client
+    Creates graph index with required docs and returns an elasticsearch client
     """
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    case_mapping = ModelMapper('gdc_from_graph').create_index_settings()
-
+    # if index already exists and we don't need to force rebuild,
+    # return existing index
     if es.indices.exists(conf.graph_index):
         if not conf.graph_force_build:
             return es
         es.indices.delete(index=conf.graph_index)
 
-    es.indices.create(index=conf.graph_index, ignore=400, body=case_mapping)
+    # set up test ES index
+    create_test_index(es)
 
-    case_docs = {'docs': []}
-    for case_doc in TestDataStats.load_es_graph_dump(conf.cases_file):
-        to_append = {'_id': case_doc['case_id'],
-                     '_index': conf.graph_index,
-                     '_type': 'case',
-                     '_source': case_doc}
-        case_docs['docs'].append(to_append)
+    # insert documents
+    load_docs_into_test_index(es, 'case')
+    load_docs_into_test_index(es, 'file')
 
-    # Remove .cases[] from case.files[].cases[]
-    for case in case_docs['docs']:
-        for _file in case['_source']['files']:
-            _file.pop('cases', None)
-
-    case_docs = remove_keys_from_dict(case_docs, ['file_state'])
-
-    log.info('Bulk loading case docs to the ES...')
-    bulk(es, case_docs['docs'], ignore=409)
-
-    log.info('loaded {} case docs'.format(len(case_docs['docs'])))
-
-    while True:
-        count = es.count(index=conf.graph_index, doc_type='case')['count']
-        print count, len(case_docs['docs'])
-        if count >= len(case_docs['docs']):
-            assert count == len(case_docs['docs'])
-            break
-        time.sleep(5)
-    # Wait for index to be refreshed
-    time.sleep(1)
     return es
+
+
+def create_test_index(es):
+    """
+    Creating an index in elasticsearch requires all doc_type mapping
+    and settings upfront.
+    """
+    case_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
+                                                   'case')
+
+    file_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
+                                                   'file')
+
+    combined = {'mappings': {}, 'settings': {}}
+    combined['mappings'].update(case_model_mapper.index_settings['mappings']) 
+    combined['mappings'].update(file_model_mapper.index_settings['mappings'])
+
+    combined['settings'].update(case_model_mapper.index_settings['settings'])
+    combined['settings'].update(file_model_mapper.index_settings['settings'])
+
+    # set up index/doc_type
+    es.indices.create(index=conf.graph_index,
+                      ignore=400,
+                      body=combined)
+
+
+def load_docs_into_test_index(es, doc_type):
+    """
+    Load documents from zipped test data into test index.
+    """
+
+    docs = {'docs': []}
+    for doc in TestDataStats.load_es_graph_dump(conf.doc_files[doc_type]):
+        to_append = {'_id': doc['{}_id'.format(doc_type)],
+                     '_index': conf.graph_index,
+                     '_type': doc_type,
+                     '_source': doc}
+        docs['docs'].append(to_append)
+
+    # Remove .cases[] from underneath case.files[]
+    if doc_type == 'case':
+        for doc in docs['docs']:
+            for _file in doc['_source']['files']:
+                _file.pop('cases', None)
+
+    # TODO: temp fix
+    docs = remove_keys_from_dict(docs, ['file_state'])
+
+    log.info('Bulk loading {} docs to the ES...'.format(doc_type))
+    bulk(es, docs['docs'], ignore=409)
+
+    log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
+
+    es.indices.refresh(index=conf.graph_index)
 
 
 @pytest.fixture(scope='session')
@@ -119,9 +153,22 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
+    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    return MAFBuilder(conf, sqlContext).build()
+    local_maf = MAFBuilder(conf, sqlContext).build()
+
+    def fake_out_acl(chromosome):
+        if int(chromosome) % 2 == 0:
+            return [u'phs000218']
+        return [u'open']
+
+    acl_udf = udf(fake_out_acl, ArrayType(StringType()))
+    local_maf = local_maf.drop('acl')
+    altered_maf = local_maf.withColumn('acl',
+                                       acl_udf('gene_chromosome'))
+
+    return altered_maf
 
 
 @pytest.fixture(scope='session')

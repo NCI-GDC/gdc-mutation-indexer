@@ -3,8 +3,6 @@ import uuid
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
-from exports.mappers.models_mapper import ModelMapper
-
 
 class BaseConfig(object):
 
@@ -168,7 +166,6 @@ class BaseConfig(object):
             es = Elasticsearch(self.es_host,
                                port=self.es_port,
                                http_auth=(self.es_user, self.es_pass))
-
             indices = es.indices.get_alias().keys()
 
             for index_name in self.index_names.values():
@@ -218,3 +215,11 @@ class BaseConfig(object):
 
         return maf_urls
 
+    def get_maf_file_names(self):
+        """
+        The file name that corresponds to the File node
+        in gdc_from_graph is the last part of the url.
+            e.g. ['//filename/blah/blah2'] becomes ['blah2']
+        """
+
+        return [url.split('/')[-1] for url in self.maf_urls]

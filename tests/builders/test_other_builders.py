@@ -1,18 +1,13 @@
 import pytest
 import json
 
-from pyspark.sql.functions import size, explode, lit
+from pyspark.sql.functions import explode
 from exports.builders.utils import (
     get_aliquots_from_headers,
 )
 from exports.builders import (
-    CaseBuilder,
     ObservationBuilder,
-    ConsequenceBuilder,
-    GeneCentricBuilder,
-    CaseCentricBuilder,
-    SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder,
+    ConsequenceBuilder
 )
 from tests_config import TestConfig
 
@@ -26,7 +21,7 @@ class TestObservationBuilder:
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
-        yield ObservationBuilder(conf, sqlContext)
+        yield ObservationBuilder()
 
     @pytest.mark.parametrize('index_name', conf.indices)
     def test_join_columns(self, builder, maf_df, index_name):

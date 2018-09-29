@@ -9,11 +9,18 @@ class ModelMapper(object):
     """
     The model mapper will create mapping and index settings for a document type
 
-    The expected layout of the model directory should like like::
+    The expected layout of the model directory should look like:
 
         my_index/
             my_type.mapping.yml
             settings.yml (optional)
+
+    This base class assumes that the index name == document type.
+    E.g., in index 'case_centric' you find documents of type 'case_centric'.
+
+    To specify different document types than index names, use the
+    DistinctDocTypeModelMapper subclass.
+
     """
 
     def __init__(self, index):
@@ -25,58 +32,77 @@ class ModelMapper(object):
         """
         self.index = index
 
-        # Mappings keyed on the type
-        self.type_mappings = {}
-
-        if index == 'gdc_from_graph':
-            doc_type = 'case'
-        else:
-            doc_type = index
-        self.doc_type = doc_type
+        # We assume the index name is the same as the document type.
+        # E.g., in index 'case_centric',
+        # you find documents of type 'case_centric'.
+        self.doc_type = index
 
         self._models = get_es_models()
-        # Load the mapping
-        self.type_mappings[doc_type] = self._models[index][doc_type]['_mapping']
 
-        # Load custom settings
-        self.index_settings = self._models[index]['_settings']
+        self._index_settings = None
+        self._type_mappings = None
 
-    def create_index_settings(self):
+    @property
+    def index_settings(self):
         """
         Will create a dict used to make an index including the mappings
-        for each type and the settings, if there is a `settings.yml` file
+        for each type and the settings, if there is a `settings.yml` file.
         """
+        if self._index_settings is None:
 
-        # Load common settings file:
-        path = os.path.join('schemas', 'common_settings.yml')
-        common_settings_file = pkg_resources.resource_string('exports', path)
-        common_settings = yaml.safe_load(common_settings_file)
+            final_mapping = {
+                "mappings": self.type_mappings,  # type mapping
+                "settings": self._settings  # custom settings
+            }
+            initial_index_settings = self._models[self.index]['_settings']
+            final_mapping['settings'].update(initial_index_settings)
 
-        # Unpack common_settings file:
-        mappings = common_settings.pop('mappings', {})
-        common_mapping_settings = common_settings.pop('common_mapping_settings', {})
-        settings = common_settings.pop('settings', {})
-        assert common_settings == {}
+            self._index_settings = final_mapping
 
-        # Add mappings from common_settings.yml:
-        self.type_mappings.update(mappings)
+        return self._index_settings
 
-        # Add default common doctype settings from common_settings.yml
-        # (only set if it's not present, don't overwrite if already set)
-        for doctype in self.type_mappings:
-            for k, v in common_mapping_settings.items():
-                self.type_mappings[doctype].setdefault(k, v)
+    @property
+    def type_mappings(self):
+        """
+        Mappings keyed on the type
+        """
+        if self._type_mappings is None:
 
-        # Populate
-        final_mapping = {
-            "mappings": self.type_mappings,
-            "settings": settings
-        }
+            type_mappings = {}
+            type_mappings[self.doc_type] = \
+                self._models[self.index][self.doc_type]['_mapping']
 
-        # Add custom index settings
-        final_mapping['settings'].update(self.index_settings)
+            # Load common settings file:
+            path = os.path.join('schemas', 'common_settings.yml')
+            common_settings_file = pkg_resources.resource_string(
+                'exports',
+                path
+            )
+            common_settings = yaml.safe_load(common_settings_file)
 
-        return final_mapping
+            # Unpack common_settings file:
+            mappings = common_settings.pop('mappings', {})
+            common_mapping_settings = common_settings.pop(
+                'common_mapping_settings',
+                {}
+            )
+
+            # Used to construct index_settings
+            self._settings = common_settings.pop('settings', {})
+            assert common_settings == {}
+
+            # Add mappings from common_settings.yml:
+            type_mappings.update(mappings)
+
+            # Add default common doctype settings from common_settings.yml
+            # (only set if it's not present, don't overwrite if already set)
+            for doctype in type_mappings:
+                for k, v in common_mapping_settings.items():
+                    type_mappings[doctype].setdefault(k, v)
+
+            self._type_mappings = type_mappings
+
+        return self._type_mappings
 
     @classmethod
     def get_dict_paths(cls, d, path_list=None, path='root'):

@@ -1,1 +1,1 @@
-from models_mapper import ModelMapper
+from model_mapper import ModelMapper

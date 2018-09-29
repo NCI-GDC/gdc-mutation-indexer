@@ -53,7 +53,10 @@ class TestConfig(BaseConfig):
     repartition = 10
 
     # Additional test files
-    cases_file = os.path.join(input_dir, 'cases.json.gz')
+    doc_files = {
+        'case': os.path.join(input_dir, 'cases.json.gz'),
+        'file': os.path.join(input_dir, 'files.json.gz')
+    }
 
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
@@ -85,3 +88,13 @@ class TestConfig(BaseConfig):
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)
                 for f in os.listdir(self.maf_dir) if f.endswith('maf')]
+
+    def get_maf_file_names(self):
+        """
+        We store the test mafs as .maf files,
+        but the file names in gdc_from_graph are gzipped.
+        So we append '.gz' for matching.
+        """
+        file_names = super(TestConfig, self).get_maf_file_names()
+
+        return [f + '.gz' for f in file_names]
