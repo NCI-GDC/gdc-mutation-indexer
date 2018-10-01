@@ -9,7 +9,7 @@ from base_joins_test import BaseJoinsTest
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gene_centric_df', 'gene_ssm_subtree')
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'gene_centric_df', 'gene_ssm_subtree')
 class TestGeneCentricJoins(BaseJoinsTest):
     """
     Test case_centric index joins
@@ -24,13 +24,18 @@ class TestGeneCentricJoins(BaseJoinsTest):
 
     """
 
-    def test_cases_per_gene(self, maf_df, gene_centric_df):
+    def test_cases_per_gene(self, maf_df, gistic_df, gene_centric_df):
         # Cases per gene built:
         df = self.unpack_df_list(gene_centric_df, 'gene_id', 'case', 'case_id')
         cpg = self.get_relationship_map(df, 'gene_id', 'case_id')
 
         # Cases per gene expected:
-        df = maf_df.select('case_id', 'gene_id').distinct()
+        df = (
+            maf_df.select('case_id', 'gene_id')
+                  .union(
+                    gistic_df.select('case_id', 'gene_id')
+                  )
+        ).distinct()
         true_cpg = self.get_relationship_map(df, 'gene_id', 'case_id')
 
         assert cpg == true_cpg

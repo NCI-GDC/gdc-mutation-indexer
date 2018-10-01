@@ -31,7 +31,7 @@ def create_df(sqlContext, values, column_name='values'):
     return sqlContext.createDataFrame(values, [column_name])
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'es_client')
 class TestMiscFunctions:
 
     def test_es_adapter(self, sqlContext):
@@ -41,7 +41,7 @@ class TestMiscFunctions:
         # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
         return (sqlContext.read.format("es")
                           .option('es.nodes', conf.source_es_host)
-                          .option('es.nodes.resolve.hostname','false')
+                          .option('es.nodes.resolve.hostname', 'false')
                           .option('es.resource.read', conf.graph_index)
                           .load(conf.graph_index))
 
@@ -204,12 +204,11 @@ class TestMiscFunctions:
                                       '13afbde8-e5b5-4f3c-8a9d-daef71560005')
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
 
-    @pytest.mark.parametrize('index', ['case_centric', 'gene_centric',
-                                       'ssm_centric', 'ssm_occurrence_centric'])
-    def test_test_data_stats(self, maf_df, index):
+    @pytest.mark.parametrize('index', conf.indices)
+    def test_test_data_stats(self, maf_df, gistic_df, index):
         """
         Test that TestDataStats loads test data and returns stats
         """
         data = TestDataStats.load_test_data(conf.input_dir)
-        stats = TestDataStats.get_stats(maf_df, data, index)
+        stats = TestDataStats.get_stats(maf_df, gistic_df, data, index)
 
