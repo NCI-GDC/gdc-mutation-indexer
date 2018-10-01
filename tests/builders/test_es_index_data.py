@@ -88,11 +88,12 @@ class TestCaseCentricData:
         assert case_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'gene_centric_df', 'es_client')
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data',
+                         'gene_centric_df', 'es_client')
 class TestGeneCentricData:
 
-    def test_gene_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
+    def test_gene_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'gene_centric')['count']
         built_count = es_client.count(
             index=conf.indices['gene_centric'],

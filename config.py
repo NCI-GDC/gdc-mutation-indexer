@@ -268,7 +268,7 @@ class BaseConfig(object):
                 url = url[:-1]
 
             for prefix in ['s3://', 's3a://']:
-                url =  url.replace(prefix, '')
+                url = url.replace(prefix, '')
 
             return url
 
