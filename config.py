@@ -107,14 +107,18 @@ class BaseConfig(object):
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
 
-    # The location of the combined maf file
-    maf_path = 's3a://test/uat_mafs.csv'
-    # Whether to save the maf file or discard it when done
+    # Whether to save the maf, gistic files when done
     maf_keep = False
-    # Use combined maf if it already exists
+    gistic_keep = False
+    # The s3 location to save the combined maf and gistic file
+    maf_path = 's3a://test/uat_mafs.csv'
+    gistic_path = 's3a://test/uat_gistics.csv'
+    # Use combined and saved maf, gistic files if they exist
     maf_use_existing = False
-    # Whether to overwrite the combined maf file if it exists
+    gistic_use_existing = False
+    # Whether to overwrite combined maf, gistic files
     maf_overwrite = True
+    gistic_overwrite = True
 
     percentile_threshold = {
         'genes_per_case': 100,

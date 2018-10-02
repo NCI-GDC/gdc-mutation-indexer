@@ -37,11 +37,9 @@ class MAFBuilder(BaseInputBuilder):
         augmenting them with additional features
         """
         if self.config.maf_use_existing:
-            try:
-                df = self.get_existing()
-                return df
-            except IOError:
-                self.logger.info('Couldn\'t find existing maf file at given path')
+            df = self.get_existing()
+            return df
+
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
@@ -80,7 +78,8 @@ class MAFBuilder(BaseInputBuilder):
 
         # Write data
         if self.config.maf_keep:
-            self.write(df)
+            self.df_to_s3(df, self.config.maf_path,
+                          overwrite=self.config.maf_overwrite)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.repartition, 'ssm_id')
@@ -474,13 +473,4 @@ class MAFBuilder(BaseInputBuilder):
         url = url.replace('cleversafe.service.consul/somatic_maf', 'test')
         url = url.replace('s3://', 's3a://')
         return url
-
-    def write(self, df):
-        """
-        Writes the combined maf file
-        """
-        writer = df.write.format('com.databricks.spark.csv')
-        if self.config.maf_overwrite:
-            writer = writer.mode('overwrite')
-        writer = writer.options(header='true').save(self.config.maf_path)
 

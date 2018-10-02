@@ -39,7 +39,6 @@ class GisticBuilder(BaseInputBuilder):
     """
 
     def __init__(self, config, sqlContext):
-
         super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
         self.es = Elasticsearch(config.es_host,
                                 port=config.es_port,
@@ -52,6 +51,13 @@ class GisticBuilder(BaseInputBuilder):
 
         Returns gistic_df
         """
+        if self.config.gistic_use_existing:
+            try:
+                df = self.get_existing()
+                return df
+            except IOError:
+                self.logger.info('Gistic file not found in s3')
+
         gistic_df = self.combine()
 
         # add gene information
@@ -80,6 +86,11 @@ class GisticBuilder(BaseInputBuilder):
 
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
+
+        # Write data
+        if self.config.gistic_keep:
+            self.df_to_s3(gistic_df, self.config.gistic_path,
+                          overwrite=self.config.gistic_overwrite)
 
         self.logger.info('Caching Gistic dataframe')
         # NOTE: Do not remove next step. This is a workaround for

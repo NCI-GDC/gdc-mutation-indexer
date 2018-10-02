@@ -220,8 +220,6 @@ def extract_rows_udf():
     return vals
 
 
-
-
 def access_json_path(json_dict, step_list):
     """
     Access json path by list of steps

@@ -38,16 +38,30 @@ class BaseInputBuilder(object):
                    .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                    .load(url)
 
+    def df_to_s3(self, df, url, overwrite=False):
+        """
+        Writes the combined input dataframe to s3
+        """
+        writer = df.write.format('com.databricks.spark.csv')
+        if overwrite:
+            writer = writer.mode('overwrite')
+        writer = writer.options(header='true').save(url)
+
     def get_existing(self):
         """
         Loads previously built and saved input into dataframe
         """
         # Load stored built input into dataframe
         saved_path = getattr(self.config, '{}_path'.format(self.input_type))
-        df = self.sqlContext.read.format('com.databricks.spark.csv')\
-                            .options(header='true', inferschema='true')\
-                            .load(saved_path)\
-                            .drop_duplicates()
+        self.logger.info('Loading file from s3 instead of building')
+
+        try:
+            df = self.sqlContext.read.format('com.databricks.spark.csv')\
+                                .options(header='true', inferschema='true')\
+                                .load(saved_path)\
+                                .drop_duplicates()
+        except IOError:
+            self.logger.info('File not found in {}'.format(saved_path))
 
         # Store loaded dataframe count in config
         setattr(self.config, '{}_count'.format(self.input_type), df.count())
@@ -93,5 +107,5 @@ class BaseInputBuilder(object):
                            len_cds_udf(df.transcripts))
         df = df.withColumn('canonical_transcript_length_genomic',
                            len_gen_udf(df.transcripts))
-        return df   
+        return df
 
