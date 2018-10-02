@@ -58,6 +58,7 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     # Read unique aliquots from maf headers
     unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
 
+    # TODO: pass es client from outside
     es = Elasticsearch(config.source_es_host,
                        port=config.source_es_port,
                        http_auth=(config.source_es_user,
@@ -80,10 +81,10 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         }
     }
 
-    case_ids = set()
-    for res in iterate_es_results(es, config.graph_index,
-                                  config.graph_document, query=query):
-        case_ids.update([res['_id']])
+    results = iterate_es_results(
+        es, config.graph_index, config.graph_document, query=query
+    )
+    case_ids = {hit["_id"] for hit in results}
 
     assert len(unique_aliquots) == len(case_ids)
 
