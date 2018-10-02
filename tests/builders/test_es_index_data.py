@@ -19,7 +19,7 @@ class TestCNVCentricData:
     def test_cnv_centric_count(self, gistic_df, test_data, es_client):
         doc_type = 'cnv_centric'
         expected_count = TestDataStats.get_stats(
-            gistic_df, test_data, doc_type)['count']
+            None, gistic_df, test_data, doc_type)['count']
         built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
         assert built_count == expected_count
 
@@ -31,21 +31,22 @@ class TestCNVOccurrenceCentricData:
     def test_cnv_occurrence_centric_count(self, gistic_df, test_data, es_client):
         doc_type = 'cnv_occurrence_centric'
         expected_count = TestDataStats.get_stats(
-            gistic_df, test_data, doc_type)['count']
+            None, gistic_df, test_data, doc_type)['count']
         built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
         assert built_count == expected_count
 
 
 @pytest.mark.usefixtures('all_cases',
                          'maf_df',
+                         'gistic_df',
                          'case_centric_df',
                          'test_data',
                          'es_client')
 class TestCaseCentricData:
 
-    def test_case_centric_count(self, all_cases, maf_df, test_data, es_client):
+    def test_case_centric_count(self, all_cases, maf_df, gistic_df, test_data, es_client):
 
-        maf_case_count = TestDataStats.get_stats(maf_df, test_data,
+        maf_case_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'case_centric')['count']
         expected_count = len(all_cases)
 
@@ -88,11 +89,12 @@ class TestCaseCentricData:
         assert case_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'gene_centric_df', 'es_client')
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data',
+                         'gene_centric_df', 'es_client')
 class TestGeneCentricData:
 
-    def test_gene_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
+    def test_gene_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'gene_centric')['count']
         built_count = es_client.count(
             index=conf.indices['gene_centric'],
@@ -125,7 +127,7 @@ class TestGeneCentricData:
 class TestSSMCentricData:
 
     def test_ssm_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
+        expected_count = TestDataStats.get_stats(maf_df, None, test_data,
                                                  'ssm_centric')['count']
         built_count = es_client.count(
             index=conf.indices['ssm_centric'],
@@ -160,7 +162,7 @@ class TestSSMCentricData:
 class TestSSMOccurrenceCentricData:
 
     def test_ssm_occurrence_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, test_data,
+        expected_count = TestDataStats.get_stats(maf_df, None, test_data,
                                                  'ssm_occurrence_centric')['count']
         built_count = es_client.count(
             index=conf.indices['ssm_occurrence_centric'],

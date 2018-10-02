@@ -26,7 +26,7 @@ class TestGisticBuilder:
         for url in conf.gistic_urls:
             project_name = os.path.basename(url).split('.')[0]
 
-            df = builder.read(url)
+            df = builder.s3_to_df(url)
 
             gene_count = df.count()
             aliquot_count = len(df.columns) - 3  # NOTE there are 3 non aliquot columns

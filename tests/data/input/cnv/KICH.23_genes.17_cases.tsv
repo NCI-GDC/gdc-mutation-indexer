@@ -1,3 +1,5 @@
+# ENSG00000078043 is the special gene purged from mafs (has cnvs but not ssms)
+# '13afbde8-e5b5-4f3c-8a9d-daef71560005' is the corresponding case_id removed from mafs
 Gene Symbol	Locus ID	Cytoband	c74f3074-c901-49af-8a8e-4ab571561794	7d378cc0-6824-453f-bbf9-fdd6a9119e88	eeb8de18-ddb8-4a4a-aaff-081d3d725c05	55303303-8fdf-487e-b25e-2557909ed34e	ba74ffea-38a1-4c60-9c92-977330df1385	abfe497c-2d8d-4761-ba6a-9b672d443553
 ENSG00000084652.14	0	1p35.2	0	-1	0	-1	-1	-1
 ENSG00000077232.15	0	2q32.1	0	-1	0	-1	-1	-1
