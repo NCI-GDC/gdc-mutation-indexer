@@ -1,5 +1,4 @@
 import time
-import json
 import pytest
 import logging
 
@@ -138,13 +137,15 @@ def sqlContext(es_client):
 
 
 @pytest.fixture(scope='session')
-def all_cases(sqlContext, maf_df):
+def all_maf_cases(sqlContext, maf_df):
     """
-    Returns all case_ids expected to build, including "empty cases"
+    Returns all case_ids expected to build and have 'ssm' in available_variation_data
+    (including "empty cases" - ones that have been tested for ssm but had none)
     The info is taken from aliquots in test maf headers
     """
+    # Read aliquots from maf headers and get list of corresponding cases:
     cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
-    return [json.loads(c)['case_id'] for c in cases.toJSON().collect()]
+    return {c.case_id for c in cases.collect()}
 
 
 @pytest.fixture(scope='session')
@@ -319,3 +320,4 @@ def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
 @pytest.fixture(scope='module')
 def maf_stats():
     yield MAFStats(conf.maf_urls)
+

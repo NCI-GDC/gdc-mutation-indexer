@@ -73,7 +73,7 @@ class CaseBuilder(object):
         We retrieve a set of cases from graph_index
         and add "ssm" for both those cases and the cases in the maf_df,
         "cnv" if that case id is present in the gistic_df,
-        ["ssm", "cnv"] if both. 
+        ["ssm", "cnv"] if both.
         """
 
         avd = 'available_variation_data'
@@ -91,8 +91,8 @@ class CaseBuilder(object):
         )
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = maf_data.join(cases_to_keep,
-                                 on=['case_id'], how='right')
+        maf_data = cases_to_keep.join(maf_data,
+                                      on=['case_id'], how='right')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data = maf_data.drop(avd)
@@ -110,3 +110,4 @@ class CaseBuilder(object):
                                .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
+
