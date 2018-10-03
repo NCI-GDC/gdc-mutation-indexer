@@ -84,15 +84,15 @@ class CaseBuilder(object):
                               subset=['case_id',
                                       avd]))
 
-        # Get all the cases that have been tested
+        # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        cases_to_keep = get_case_ids_from_source_es(
+        all_maf_cases = get_case_ids_from_source_es(
             self.config, self.sqlContext, self.maf_urls
         )
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = cases_to_keep.join(maf_data,
-                                      on=['case_id'], how='right')
+        maf_data = all_maf_cases.join(maf_data,
+                                      on=['case_id'], how='left')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data = maf_data.drop(avd)

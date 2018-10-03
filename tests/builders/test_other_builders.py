@@ -279,7 +279,8 @@ class TestConsequenceBuilder(TestOtherBase):
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client',
+                         'all_maf_cases', 'gistic_df')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
@@ -296,8 +297,12 @@ class TestCaseBuilder:
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
 
-    def test_number_of_cases(self, sqlContext, case_df):
+    def test_number_of_cases(self, sqlContext, case_df, gistic_df, all_maf_cases):
         """ Checks if case_df has correct number of lines """
-        n_expected = len(get_aliquots_from_headers(sqlContext, conf.maf_urls))
+        cnv_only_cases = {
+            c.case_id for c in gistic_df.collect()
+            if c.case_id not in all_maf_cases
+        }
+        n_expected = len(all_maf_cases) + len(cnv_only_cases)
         assert case_df.count() == n_expected
 

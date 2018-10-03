@@ -85,7 +85,10 @@ class TestDataStats:
                            |
                            |___ observation[]
         """
-        count = maf_df.select('case_id').distinct().count()
+        # Number of cases in maf_df and gistic_df
+        count = (
+            maf_df.select('case_id').union(gistic_df.select('case_id'))
+        ).distinct().count()
         return {'count': count}
 
     @staticmethod
