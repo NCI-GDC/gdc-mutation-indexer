@@ -19,8 +19,10 @@ class TestCaseCentricOther:
         cases_built = {c.case_id for c in case_centric_df.collect()}
         cases_maf = {c.case_id for c in maf_df.collect()}
 
+        empty_cases = {c for c in all_maf_cases if c not in cases_maf}
+
         # check that there was at least one empty case
-        assert {c for c in all_maf_cases if c not in cases_maf}
+        assert empty_cases
 
         # check that all maf cases were built (even empty ones)
         assert all_maf_cases - cases_built == set()
@@ -38,7 +40,7 @@ class TestCaseCentricOther:
 
         assert 'available_variation_data' in case_centric_df.columns
 
-        gistic_cases = {r.case_id for r in gistic_df.rdd.collect()}
+        gistic_cases = {r.case_id for r in gistic_df.collect()}
         maf_cases = {c for c in all_maf_cases}  # also includes "empty cases"
 
         common_cases = gistic_cases & maf_cases
@@ -46,7 +48,7 @@ class TestCaseCentricOther:
         ssm_cases = maf_cases - gistic_cases
 
         assert common_cases, 'there were no common cases found in test data'
-        # assert cnv_cases, 'there were no cnv cases found in test data'  # FIXME: add test data so this would be true
+        assert cnv_cases, 'there were no cnv cases found in test data'
         assert ssm_cases, 'there were no ssm cases found in test data'
 
         # Check that 'available_variation_data' is populated correctly
