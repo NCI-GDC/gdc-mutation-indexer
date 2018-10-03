@@ -36,7 +36,7 @@ class TestCNVOccurrenceCentricData:
         assert built_count == expected_count
 
 
-@pytest.mark.usefixtures('all_cases',
+@pytest.mark.usefixtures('all_maf_cases',
                          'maf_df',
                          'gistic_df',
                          'case_centric_df',
@@ -44,11 +44,11 @@ class TestCNVOccurrenceCentricData:
                          'es_client')
 class TestCaseCentricData:
 
-    def test_case_centric_count(self, all_cases, maf_df, gistic_df, test_data, es_client):
+    def test_case_centric_count(self, all_maf_cases, maf_df, gistic_df, test_data, es_client):
 
         maf_case_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'case_centric')['count']
-        expected_count = len(all_cases)
+        expected_count = len(all_maf_cases)
 
         # There supposed to be at least one "empty case" in test data
         assert expected_count > maf_case_count
@@ -67,7 +67,7 @@ class TestCaseCentricData:
                                       'NUniqMut',
                                       'Nconseq'])
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
-    def test_case_centric_summary_stats(self, es_client, maf_stats, stat, all_cases):
+    def test_case_centric_summary_stats(self, es_client, maf_stats, stat, all_maf_cases):
         docs = es_client.search(
             index=conf.indices['case_centric'],
             doc_type='case_centric',
@@ -81,7 +81,7 @@ class TestCaseCentricData:
 
         # Take empty cases into account
         if stat == 'Ncases':
-            maf_stat = len(all_cases)
+            maf_stat = len(all_maf_cases)
 
         if conf.indices_are_pruned:
             if stat in ['Ngenes', 'NUniqMut', 'Nconseq']:

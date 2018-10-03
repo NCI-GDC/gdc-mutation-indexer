@@ -27,7 +27,6 @@ class TestCaseCentricOther:
         # check that all maf cases were built (even empty ones)
         assert all_maf_cases - cases_built == set()
 
-    @pytest.mark.mytest
     def test_available_variation_data(self, case_centric_df, maf_df, gistic_df,
                                       all_maf_cases, test_data):
         """
