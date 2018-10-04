@@ -5,6 +5,8 @@ import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType, ArrayType
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -112,32 +114,7 @@ def load_docs_into_test_index(es, doc_type):
 
     log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
 
-    wait_for_index_to_refresh(es, doc_type, len(docs['docs']))
-
-
-def wait_for_index_to_refresh(es,
-                              doc_type,
-                              desired_count,
-                              wait_time=100):
-    """
-    Wait for index to be refreshed.
-    Wait no longer than wait_time seconds
-    or until all documents have been loaded.
-    """
-    overall_time = 0
-
-    while overall_time < wait_time:
-        count = es.count(index=conf.graph_index, doc_type=doc_type)['count']
-        print count, desired_count, overall_time
-        if count >= desired_count:
-            assert count == desired_count
-            break
-        overall_time += 5
-        time.sleep(5)
-
-    time.sleep(1)
-
-    return
+    es.indices.refresh(index=conf.graph_index)
 
 
 @pytest.fixture(scope='session')
@@ -179,9 +156,22 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
+    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    return MAFBuilder(conf, sqlContext).build()
+    local_maf = MAFBuilder(conf, sqlContext).build()
+
+    def fake_out_acl(chromosome):
+        if int(chromosome) % 2 == 0:
+            return [u'phs000218']
+        return [u'open']
+
+    acl_udf = udf(fake_out_acl, ArrayType(StringType()))
+    local_maf = local_maf.drop('acl')
+    altered_maf = local_maf.withColumn('acl',
+                                       acl_udf('gene_chromosome'))
+
+    return altered_maf
 
 
 @pytest.fixture(scope="session")

@@ -243,7 +243,12 @@ class BaseConfig(object):
         )
 
     def get_maf_file_names(self):
-        return self.get_maf_urls()
+        """
+        The file name that corresponds to the File node
+        in gdc_from_graph is the last part of the url.
+            e.g. ['//filename/blah/blah2'] becomes ['blah2']
+        """
+        return [url.split('/')[-1] for url in self.maf_urls]
 
     def get_gistic_urls(self):
         """
@@ -319,4 +324,3 @@ class BaseConfig(object):
 
 if __name__ == '__main__':
     conf = BaseConfig()
-

@@ -61,7 +61,8 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df)
+        df = builder.standardize_schema(df, default_to_none=['normal_bam_uuid',
+                                                             'tumor_bam_uuid'])
 
         path = os.path.join(conf.schemas_dir, 'maf.yml')
         with open(path) as f:
@@ -150,7 +151,8 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df)
+        df = builder.standardize_schema(df, default_to_none=['normal_bam_uuid',
+                                                             'tumor_bam_uuid'])
         df = builder.extract_barcode(df)
 
         assert '_case_submitter_id' in df.columns

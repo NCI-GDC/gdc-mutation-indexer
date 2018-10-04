@@ -99,10 +99,17 @@ class TestConfig(BaseConfig):
         return ['file://' + os.path.join(self.maf_dir, f)
                 for f in os.listdir(self.maf_dir) if f.endswith('maf')]
 
-    def get_maf_file_names(self):
-        return [f + '.gz' for f in self.get_maf_urls()]
-
     def get_gistic_urls(self):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
                 if f.endswith(".tsv")]
+      
+    def get_maf_file_names(self):
+        """
+        We store the test mafs as .maf files,
+        but the file names in gdc_from_graph are gzipped.
+        So we append '.gz' for matching.
+        """
+        file_names = super(TestConfig, self).get_maf_file_names()
+
+        return [f + '.gz' for f in file_names]
