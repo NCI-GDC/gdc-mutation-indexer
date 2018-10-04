@@ -9,6 +9,7 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
 from exports.mappers.model_mapper import ModelMapper
+from exports.es_utils import iterate_es_results
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import scan
 
@@ -53,18 +54,17 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     """
     Reads aliquots from headers of mafs and queries source es
     for corresponding case_ids
-    TODO: make this use iterate_es_results() and pass es instance instead of initiating one
     """
     # Read unique aliquots from maf headers
     unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
 
+    # TODO: pass es client from outside
     es = Elasticsearch(config.source_es_host,
                        port=config.source_es_port,
                        http_auth=(config.source_es_user,
                                   config.source_es_pass))
-    body = {
+    query = {
         "_source": ["_id"],
-        "size": 1000000,
         "query": {
             "nested": {
                 "path": "samples.portions.analytes.aliquots",
@@ -81,34 +81,18 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         }
     }
 
-    res = es.search(
-        index=config.graph_index, doc_type=config.graph_document, body=body,
-        request_timeout=300
+    results = iterate_es_results(
+        es, config.graph_index, config.graph_document, query=query
     )
-    assert len(unique_aliquots) == res['hits']['total']
-    case_ids = set([hit["_id"] for hit in res['hits']['hits']])
+    case_ids = {hit["_id"] for hit in results}
+
+    assert len(unique_aliquots) == len(case_ids)
 
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
         ((x,) for x in case_ids), ['case_id']
     )
     return cases_df
-
-
-def iterate_es_results(es, index_name, doc_type, query=None):
-    """
-    Returns iterator over elasticsearch query results
-    """
-    if query is None:
-        query = {}
-
-    doc_iterator = scan(es,
-                        index=index_name,
-                        doc_type=doc_type,
-                        scroll='2m',
-                        size=100,
-                        query=query)
-    return doc_iterator
 
 
 def get_aliquots_from_headers(sqlContext, maf_urls):

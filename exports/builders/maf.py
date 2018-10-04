@@ -13,6 +13,7 @@ from exports.builders.utils import (
     extract_sift_polyphen,
 )
 
+from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 
 from pkg_resources import resource_filename
@@ -20,22 +21,14 @@ from pkg_resources import resource_filename
 logging.basicConfig()
 
 
-class MAFBuilder(object):
+class MAFBuilder(BaseInputBuilder):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
     """
 
     def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
-
-        if config.maf_urls is not None:
-            self.urls = config.maf_urls
-        else:
-            self.urls = self.get_urls()
-
+        super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
 
     def build(self):
@@ -44,11 +37,9 @@ class MAFBuilder(object):
         augmenting them with additional features
         """
         if self.config.maf_use_existing:
-            try:
-                df = self.get_existing()
-                return df
-            except IOError:
-                self.logger.info('Couldn\'t find existing maf file at given path')
+            df = self.get_existing()
+            return df
+
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
         df = self.standardize_schema(df)
@@ -78,7 +69,7 @@ class MAFBuilder(object):
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
         df = df.drop('_gene_id')
         df = self.add_null(df)
-        df = self.add_canonical_lengths(df)
+        df = self.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
@@ -87,7 +78,8 @@ class MAFBuilder(object):
 
         # Write data
         if self.config.maf_keep:
-            self.write(df)
+            self.df_to_s3(df, self.config.maf_path,
+                          overwrite=self.config.maf_overwrite)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.repartition, 'ssm_id')
@@ -243,47 +235,6 @@ class MAFBuilder(object):
         return df.withColumn('available_variation_data',
                              avd_udf(col('Tumor_Sample_Barcode'),
                                      col('case_id')))
-
-    def add_canonical_lengths(self, df):
-        """
-        Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
-        """
-
-        def integer_udf(function):
-            """ Spark IntegerType udf decorator """
-            return udf(function, IntegerType())
-
-        @integer_udf
-        def len_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    if 'length' in t:
-                        return t['length']
-                    else:
-                        return None
-
-        @integer_udf
-        def len_cds_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    if 'length_cds' in t:
-                        return t['length_cds']
-                    else:
-                        return None
-
-        @integer_udf
-        def len_gen_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    return int(t['end']) - int(t['start']) + 1
-
-        df = df.withColumn('canonical_transcript_length',
-                           len_udf(df.transcripts))
-        df = df.withColumn('canonical_transcript_length_cds',
-                           len_cds_udf(df.transcripts))
-        df = df.withColumn('canonical_transcript_length_genomic',
-                           len_gen_udf(df.transcripts))
-        return df
 
     def add_mutation_type(self, df):
 
@@ -451,7 +402,7 @@ class MAFBuilder(object):
             try:
                 # TODO: separate data transforms from combining multiple df into one
                 # latter should go as a static method to base class for MAF and Gistic Builders
-                new_df = self.read_maf(url)
+                new_df = self.s3_to_df(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
@@ -523,34 +474,3 @@ class MAFBuilder(object):
         url = url.replace('s3://', 's3a://')
         return url
 
-    def read_maf(self, url):
-        """
-        Read and return a single MAF from the given s3 url
-        """
-        return self.sqlContext.read.format('com.databricks.spark.csv')\
-                   .options(header='true')\
-                   .options(comment="#")\
-                   .options(delimiter='\t')\
-                   .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                   .load(url)
-
-    def get_existing(self):
-        """
-        Loads a built combined maf
-        """
-        df = self.sqlContext.read.format('com.databricks.spark.csv')\
-                            .options(header='true', inferschema='true')\
-                            .load(self.config.maf_path)\
-                            .drop_duplicates()
-
-        self.config.nb_mutations = df.count()
-        return df
-
-    def write(self, df):
-        """
-        Writes the combined maf file
-        """
-        writer = df.write.format('com.databricks.spark.csv')
-        if self.config.maf_overwrite:
-            writer = writer.mode('overwrite')
-        writer = writer.options(header='true').save(self.config.maf_path)

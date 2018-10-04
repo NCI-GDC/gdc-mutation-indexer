@@ -61,15 +61,15 @@ class TestDataStats:
         return docs
 
     @classmethod
-    def get_stats(cls, maf_df, test_data, index_name):
+    def get_stats(cls, maf_df, gistic_df, test_data, index_name):
         """
         Returns true stats for :index_name
         """
         function_name = '{}_stats'.format(index_name)
-        return getattr(cls, function_name)(maf_df, test_data)
+        return getattr(cls, function_name)(maf_df, gistic_df, test_data)
 
     @staticmethod
-    def case_centric_stats(maf_df, data):
+    def case_centric_stats(maf_df, gistic_df, data):
         """
         case{}
              |___ gene[]
@@ -89,7 +89,7 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
-    def gene_centric_stats(maf_df, data):
+    def gene_centric_stats(maf_df, gistic_df, data):
         """
         gene{}
              |___ case[]
@@ -105,11 +105,15 @@ class TestDataStats:
                            |
                            |___ observation[]
         """
-        count = maf_df.select('gene_id').distinct().count()
+        count = (
+            maf_df.select('gene_id').union(
+                gistic_df.select('gene_id')
+            ).distinct().count()
+        )
         return {'count': count}
 
     @staticmethod
-    def ssm_centric_stats(maf_df, data):
+    def ssm_centric_stats(maf_df, gistic_df, data):
         """
         ssm{}
           |____ consequence[]
@@ -124,7 +128,7 @@ class TestDataStats:
         return {'count': ssm_count}
 
     @staticmethod
-    def ssm_occurrence_centric_stats(maf_df, data):
+    def ssm_occurrence_centric_stats(maf_df, gistic_df, data):
         """
         ssm_occurrence{}
               |____ ssm{}
@@ -139,7 +143,7 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
-    def cnv_centric_stats(gistic_df, data):
+    def cnv_centric_stats(maf_df, gistic_df, data):
         """
         cnv{}
             |____ consequence[]
@@ -152,7 +156,7 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
-    def cnv_occurrence_centric_stats(gistic_df, data):
+    def cnv_occurrence_centric_stats(maf_df, gistic_df, data):
         """
         cnv{}
             |____ consequence[]

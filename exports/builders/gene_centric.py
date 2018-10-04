@@ -49,9 +49,12 @@ class GeneCentricBuilder(BaseBuilder):
             if self.gene_centric is not None:
                 return self
 
-        self.log('Building Gene')
+        self.log('Building Gene from MAF and Gistic')
         gene_df = get_gene_df(maf_df, self.index_name,
                               unique_fields=['gene_id'])
+        gistic_gene_df = get_gene_df(gistic_df, self.index_name,
+                                     unique_fields=['gene_id'])
+        gene_df = gene_df.union(gistic_gene_df).distinct()
         self.log_count(gene_df)
 
         self.log('Building Case subtree')
@@ -184,12 +187,14 @@ class GeneCentricBuilder(BaseBuilder):
 
     def _build_case_with_gene_id(self, maf_df, gistic_df, case_df):
         self.log('\nSelecting Gene from MAF')
-        gene_df = (get_gene_df(maf_df, self.index_name, add_fields=['case_id'])
-                   .select('case_id', 'gene_id'))
+        maf_and_gistic = (
+            maf_df.select('case_id', 'gene_id')
+            .union(gistic_df.select('case_id', 'gene_id'))
+        )
 
         self.log('Getting gene_id for each case via joining with gene_df')
         case_gene_id = (
-                     gene_df.join(case_df, on='case_id')
-                            .select('gene_id', *case_df.columns)
-                    )
+            maf_and_gistic.join(case_df, on='case_id')
+                          .select('gene_id', *case_df.columns)
+        )
         return case_gene_id

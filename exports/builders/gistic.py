@@ -13,6 +13,7 @@ from exports.builders.df_builders import (
     get_gene_df,
 )
 from exports.builders.gene_model import GeneModelBuilder
+from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import (
     melt_df,
     uuid5_col,
@@ -25,31 +26,20 @@ from exports.builders.utils import (
 logging.basicConfig()
 
 
-class GisticBuilder(object):
-
-    gene_to_cnv_col_names = {'gene_chromosome': 'chromosome',
-                             'gene_start': 'start_position',
-                             'gene_end': 'end_position'}
-
+class GisticBuilder(BaseInputBuilder):
     """
     Read in gistic file and format it for cnv index.
 
-    NOTE: For gistic file, these positions exactly match gene_start and gene_end
+    NOTE: For CNVs, start and end positions exactly match gene_start and gene_end
     (c) Kyle Hernandez
 
     NOTE: gene_level_cn = True is a placeholder for future use (c) Junjun
 
     NOTE: ncbi_build = 'GRCh38' - constant value, same as in ssm branch (c) Zhenyu
-
-    TODO: Create abstract base class for this and MAFBuilder enforcing .build(), .combine(), .read()
-
     """
 
     def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
-        self.urls = config.get_gistic_urls()
+        super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
         self.es = Elasticsearch(config.es_host,
                                 port=config.es_port,
                                 http_auth=(config.es_user,
@@ -61,10 +51,20 @@ class GisticBuilder(object):
 
         Returns gistic_df
         """
+        if self.config.gistic_use_existing:
+            try:
+                df = self.get_existing()
+                return df
+            except IOError:
+                self.logger.info('Gistic file not found in s3')
+
         gistic_df = self.combine()
 
         # add gene information
         gistic_df = self._add_gene_information(gistic_df)
+
+        # add canonical_transcript_lengths
+        gistic_df = self.add_canonical_transcript_lengths(gistic_df)
 
         # add case_id based on aliquot_id
         gistic_df = self._add_case_id(gistic_df)
@@ -87,6 +87,11 @@ class GisticBuilder(object):
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
 
+        # Write data
+        if self.config.gistic_keep:
+            self.df_to_s3(gistic_df, self.config.gistic_path,
+                          overwrite=self.config.gistic_overwrite)
+
         self.logger.info('Caching Gistic dataframe')
         # NOTE: Do not remove next step. This is a workaround for
         # "udf requires attributes from more than one child" Spark issue
@@ -108,10 +113,9 @@ class GisticBuilder(object):
         gistic_df = None
         for url in urls:
             try:
-                new_df = self.read(url)
+                new_df = self.s3_to_df(url)
                 self.logger.info('Read {} rows from {}'.format(new_df.count(),
                                                                url))
-
                 # prepare to melt
                 new_df = self._trim_gene_symbol(new_df)
 
@@ -134,24 +138,13 @@ class GisticBuilder(object):
 
         return gistic_df
 
-    def read(self, url):
-        """
-        Reads gistic file into dataframe
-        TODO: put in utils as read_tsv and import to use here
-        """
-        return self.sqlContext.read.format('com.databricks.spark.csv')\
-                   .options(header='true')\
-                   .options(comment="#")\
-                   .options(delimiter='\t')\
-                   .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                   .load(url)
-
     def _add_cnv_id(self, gistic_df):
         """
         cnv_id ~ (chromosome, gene_start, gene_end, cnv_change)
+
+        NOTE: start_position and end_position are matching with
+              gene_start and gene_end in gistic context (c) Zhenyu and Kyle
         """
-        # NOTE: start_position and end_position are matching with
-        #       gene_start and gene_end in gistic context (c) Zhenyu and Kyle
         gistic_df = gistic_df.withColumn('cnv_id', uuid5_col(
             col('chromosome'),
             col('start_position'),
@@ -220,6 +213,9 @@ class GisticBuilder(object):
         return trimmed_and_deduped_df
 
     def _add_gene_information(self, gistic_df):
+        gene_to_cnv_col_names = {'chromosome': 'gene_chromosome',
+                                 'gene_start': 'start_position',
+                                 'gene_end': 'end_position'}
 
         # get gene_df
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
@@ -227,9 +223,9 @@ class GisticBuilder(object):
         # add gene info to gistic_df
         new_df = gistic_df.join(gm_df, gistic_df.gene_id == gm_df._gene_id)
 
-        # rename columns from gene names to cnv names
-        for old, new in GisticBuilder.gene_to_cnv_col_names.items():
-            new_df = new_df.withColumnRenamed(old, new)
+        # Create cnv columns from gene model
+        for old, new in gene_to_cnv_col_names.items():
+            new_df = new_df.withColumn(new, col(old))
 
         # extra columns not included in gene model df
         new_df = self._add_ncbi_build(new_df)
