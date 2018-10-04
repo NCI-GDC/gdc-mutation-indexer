@@ -8,4 +8,4 @@ PyYAML==3.11
 consulate==0.4
 requests==2.6.0
 boto==2.46.1
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@dave-ca#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/gdc-models.git@6cf6f20262e71d419f9d055cbf5416a2bf25705d#egg=gdcmodels

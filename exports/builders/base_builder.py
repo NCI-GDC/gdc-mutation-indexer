@@ -28,7 +28,10 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
-    
+        # TODO: move CaseBuilder here? think about it
+        # I'm missing maf. but technically everything that subclasses this one
+        # needs maf to do anything, so maybe that can go here too??
+
     def build(self):
         """
         Contains the ETL logic to construct a spark dataframe of
@@ -49,17 +52,17 @@ class BaseBuilder(object):
         index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))
-        response = self.es.indices.create(index=index, ignore=400, body=index_body)
+        response = self.es.indices.create(index=index,
+                                          ignore=400,
+                                          body=index_body)
         self.log(response)
 
         self.save_build_metadata()
 
         self.log('Repartitioning {}'.format(self.index_name))
-        df = getattr(self, self.index_name).repartition(self.config.repartition, self.id_field)
-
-        if self.config.cache_dataframes[self.index_name]:
-            self.log('Caching repartitioned {} dataframe'.format(self.index_name))
-            df.cache().count()
+        df = getattr(self,
+                     self.index_name).repartition(self.config.repartition,
+                                                  self.id_field)
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.coalesce).write\
@@ -82,26 +85,43 @@ class BaseBuilder(object):
 
         df.unpersist()
 
-    def truncate_df_at_percentile(self, df_to_truncate, field,
-                                  percentile_threshold, df_for_percentile_calculation=None):
+    def truncate_df_at_percentile(self,
+                                  df_to_truncate,
+                                  field,
+                                  percentile_threshold,
+                                  df_for_percentile_calculation=None):
         """
-        Truncates df_to_truncate to remove rows where field > percentile_threshold
+        Truncates df_to_truncate to remove rows
+        where field > percentile_threshold
         """
 
         if percentile_threshold < 100:
             self.log('Calculating number of {}'.format(field))
+
             count_col_name = '{}_count'.format(field.replace('.', '_'))
-            df_to_truncate = df_to_truncate.withColumn(count_col_name, size(col(field)))
+            df_to_truncate = df_to_truncate.withColumn(count_col_name,
+                                                       size(col(field)))
             if df_for_percentile_calculation is None:
                 df_for_percentile_calculation = df_to_truncate
             else:
-                df_for_percentile_calculation = df_for_percentile_calculation.withColumn(count_col_name, size(col(field)))
+                df_for_percentile_calculation = \
+                    df_for_percentile_calculation.withColumn(count_col_name,
+                                                             size(col(field)))
 
             self.log('Calculating {} percentile'.format(percentile_threshold))
-            threshold = percentile([int(r[count_col_name]) for r in df_for_percentile_calculation.select(count_col_name).collect()], percentile_threshold)
+            threshold = percentile([
+                                    int(r[count_col_name])
+                                    for r in df_for_percentile_calculation.select(
+                                        count_col_name).collect()
+                                    ], percentile_threshold)
 
-            self.log('Truncating dataframe (removing rows where number of {} > {})'.format(field, threshold))
-            df_to_truncate = df_to_truncate.filter('{} <= {}'.format(count_col_name, threshold)).drop(count_col_name)
+            self.log('Truncating dataframe'
+                     '(removing rows where number of '
+                     '{} > {})'.format(field, threshold))
+
+            df_to_truncate = df_to_truncate.filter(
+                '{} <= {}'.format(count_col_name, threshold)
+                ).drop(count_col_name)
 
         return df_to_truncate
 
@@ -110,7 +130,7 @@ class BaseBuilder(object):
         Loads the computed index's dataframe, if it exists, and return it,
         returns None it does not
         """
-        if path == None:
+        if path is None:
             path = self.config.index_paths[self.index_name]
         try:
             self.logger.info('Using existing index from {}'.format(path))
@@ -124,11 +144,11 @@ class BaseBuilder(object):
         """
         Writes the built dataframe to a json file at path
         """
-        if path == None:
+        if path is None:
             path = self.config.index_paths[self.index_name]
 
         df = getattr(self, self.index_name, None)
-        assert df != None, 'Builder does not have index_name attribute'
+        assert df is not None, 'Builder does not have index_name attribute'
 
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
@@ -160,14 +180,16 @@ class BaseBuilder(object):
             if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
                 commit_hash = os.system('git rev-parse HEAD')
             else:
-                self.logger.error("Can't get commit hash. Either git is not installed or we are not "
-                                  "in a git repo. If running on a spark cluster, make sure "
-                                  "the egg name is gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
+                self.logger.error("Can't get commit hash. "
+                                  "Either git is not installed or we are not "
+                                  "in a git repo. If running on a spark "
+                                  "cluster, make sure the egg name is "
+                                  "gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
                 commit_hash = 'not found'
 
         metadata_doc = {
                 'commit_hash': commit_hash,
-                'indices_built': [k for k,v in self.config.index_names.iteritems() if v],
+                'indices_built': [k for k, v in self.config.index_names.iteritems() if v],
                 'number_of_mutations': nb_mutations,
                 'number_of_projects': len(self.config.maf_urls),
                 'debug': self.config.debug,

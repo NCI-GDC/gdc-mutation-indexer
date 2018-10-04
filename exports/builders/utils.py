@@ -3,19 +3,22 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    udf, struct, col, explode, array, when, regexp_extract
+    lit, udf, struct, col, explode, array, when, regexp_extract,
+    UserDefinedFunction,
 )
-from pyspark.sql.types import StringType, ArrayType, LongType, DoubleType, IntegerType
-from urllib import quote_plus
+from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
 from exports.mappers.model_mapper import ModelMapper
+from exports.es_utils import iterate_es_results
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import scan
 
 logging.basicConfig()
 logger = logging.getLogger("BaseBuilder")
 
 
-def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
+def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
+              tumor_allele):
     """
     Create a label (genomic change) from an ssm based on its variant type:
 
@@ -55,13 +58,13 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     # Read unique aliquots from maf headers
     unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
 
+    # TODO: pass es client from outside
     es = Elasticsearch(config.source_es_host,
                        port=config.source_es_port,
                        http_auth=(config.source_es_user,
                                   config.source_es_pass))
-    body = {
+    query = {
         "_source": ["_id"],
-        "size": 1000000,
         "query": {
             "nested": {
                 "path": "samples.portions.analytes.aliquots",
@@ -78,12 +81,12 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         }
     }
 
-    res = es.search(
-        index=config.graph_index, doc_type=config.graph_document, body=body,
-        request_timeout=300
+    results = iterate_es_results(
+        es, config.graph_index, config.graph_document, query=query
     )
-    assert len(unique_aliquots) == res['hits']['total']
-    case_ids = set([hit["_id"] for hit in res['hits']['hits']])
+    case_ids = {hit["_id"] for hit in results}
+
+    assert len(unique_aliquots) == len(case_ids)
 
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
@@ -230,6 +233,73 @@ def access_json_path(json_dict, step_list):
     return access_json_path(json_dict[step], stack)
 
 
+def map_create_column(df, map_function, target_column_name, new_column_name):
+    """
+    Creates new column in pyspark DataFrame by mapping :map_function to :target_column
+    """
+    # TODO: allow controlling the return type
+    udf = UserDefinedFunction(map_function, StringType())
+    df = df.withColumn(new_column_name, udf(getattr(df, target_column_name)))
+    return df
+
+
+def melt_df(df,
+            id_vars,
+            value_vars=None,
+            var_name="variable",
+            value_name="value"):
+    """
+    Source:
+    https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
+
+    See also:
+    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html
+
+    The opposite of pivoting a dataframe
+
+    :param df: input pyspark.DataFrame
+    :param id_vars: Column(s) to use as identifier variables
+    :type id_vars: Iterable
+    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
+    that are not set as id_vars.
+    :type value_vars: Iterable
+    :param var_name: Name to use for the 'variable' column. If None, default to 'variable'.
+    :param value_name: Name to use for the 'value' column. If none, default to 'value'.
+    :return: long version of dataframe
+    """
+
+    # We assume id_vars is a strict subset of value_vars
+    if not value_vars:
+        value_vars = list(set(df.columns) - set(id_vars))
+
+    _vars_and_vals = array(*(
+        struct(lit(c).alias(var_name), col(c).alias(value_name))
+        for c in value_vars
+    ))
+
+    _temp = df.withColumn("_vars_and_vals", explode(_vars_and_vals))
+
+    cols = id_vars + [
+        col("_vars_and_vals")[x].alias(x)
+        for x in [var_name, value_name]
+    ]
+
+    return_df = _temp.select(*cols)
+
+    return return_df
+
+
+def remove_columns(df, *args):
+    """
+    Removes columns from DataFrame
+    """
+
+    for column_name in args:
+        df = df.drop(column_name)
+
+    return df
+
+
 def select_mapping(index_name, mapping_name):
     mapper = ModelMapper(index_name)
 
@@ -245,6 +315,17 @@ def select_mapping(index_name, mapping_name):
                              if k not in exclude_fields}
 
     return mapping
+
+
+def standardize_schema(dataframe, index_name, mapping_name):
+    """Select only columns that are in specified document mapping"""
+
+    doc_mapping = select_mapping(index_name, mapping_name)['properties']
+    columns_to_keep = [c for c in dataframe.columns
+                       if c in doc_mapping.keys()]
+    return_df = dataframe.select(*columns_to_keep)
+
+    return return_df
 
 
 def struct_select(index_name, mapping_name, ignore=[]):

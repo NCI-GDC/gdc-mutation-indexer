@@ -21,12 +21,15 @@ from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
+    GisticBuilder,
     CaseBuilder,
+    CNVCentricBuilder,
+    CNVOccurrenceCentricBuilder,
     ConsequenceBuilder,
     GeneCentricBuilder,
     CaseCentricBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder
+    SSMOccurrenceCentricBuilder,
 )
 
 conf = TestConfig()
@@ -171,9 +174,18 @@ def maf_df(sqlContext):
     return altered_maf
 
 
+@pytest.fixture(scope="session")
+def gistic_df(sqlContext):
+    """
+    Builds combined gistic dataframe once. Reused throughout test suite
+    """
+    log.info('\n\n\tBUILDING GISTIC_DF\n\n')
+    return GisticBuilder(conf, sqlContext).build()
+
+
 @pytest.fixture(scope='session')
-def case_df(sqlContext, maf_df):
-    return CaseBuilder(conf, sqlContext).build(maf_df)
+def case_df(sqlContext, maf_df, gistic_df):
+    return CaseBuilder(conf, sqlContext).build(maf_df, gistic_df)
 
 
 @pytest.fixture(scope='session')
@@ -187,14 +199,14 @@ def ssm_transcript_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def case_centric_df(sqlContext, maf_df):
+def case_centric_df(sqlContext, maf_df, gistic_df, case_df):
     """
     Builds case centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING CASE_CENTRIC_DF\n\n')
     builder = CaseCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df, case_df)
 
     log.info('\n\n\tLOADING CASE_CENTRIC_DF\n\n')
     builder.load()
@@ -202,14 +214,14 @@ def case_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def gene_centric_df(sqlContext, maf_df):
+def gene_centric_df(sqlContext, maf_df, gistic_df, case_df):
     """
     Builds gene centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
     builder = GeneCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, gistic_df, case_df)
 
     log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
     builder.load()
@@ -217,14 +229,14 @@ def gene_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def ssm_centric_df(sqlContext, maf_df):
+def ssm_centric_df(sqlContext, maf_df, case_df):
     """
     Builds ssm centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_CENTRIC_DF\n\n')
     builder = SSMCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, case_df)
 
     log.info('\n\n\tLOADING SSM_CENTRIC_DF\n\n')
     builder.load()
@@ -232,18 +244,46 @@ def ssm_centric_df(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def ssm_occurrence_centric_df(sqlContext, maf_df):
+def ssm_occurrence_centric_df(sqlContext, maf_df, case_df):
     """
     Builds ssm occurrence centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
-    builder.build(maf_df)
+    builder.build(maf_df, case_df)
 
     log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
     return builder.ssm_occurrence_centric
+
+
+@pytest.fixture(scope='session')
+def cnv_centric_df(sqlContext, gistic_df, case_df):
+    """
+    Builds cnv centric dataframe
+    """
+    log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
+    builder = CNVCentricBuilder(conf, sqlContext)
+    builder.build(gistic_df, case_df)
+
+    log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.cnv_centric
+
+
+@pytest.fixture(scope='session')
+def cnv_occurrence_centric_df(sqlContext, gistic_df, case_df):
+    """
+    Builds cnv occurrence centric dataframe
+    """
+    log.info('\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n')
+    builder = CNVOccurrenceCentricBuilder(conf, sqlContext)
+    builder.build(gistic_df, case_df)
+
+    log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.cnv_occurrence_centric
 
 
 @pytest.fixture(scope='session')

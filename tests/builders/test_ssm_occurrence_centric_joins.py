@@ -1,18 +1,21 @@
 import pytest
 import json
 
-from pyspark.sql.functions import explode, col, lit
+from pyspark.sql.functions import col, lit
 
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.utils import uuid5_col
 from tests_config import TestConfig
+from base_joins_test import BaseJoinsTest
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'ssm_transcript_df', 'ssm_occurrence_centric_df',
-                         'ssm_occurrence_ssm_subtree')
-class TestSSMOccurrenceCentricJoins:
+@pytest.mark.usefixtures(
+    'maf_df', 'ssm_transcript_df',
+    'ssm_occurrence_centric_df', 'ssm_occurrence_ssm_subtree'
+)
+class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
     """
         ssm_occurrence{}
               |____ ssm{}
@@ -24,20 +27,17 @@ class TestSSMOccurrenceCentricJoins:
                        |____ observation[]
     """
 
-    def test_consequences_per_ssm_occurrence(self, ssm_transcript_df, ssm_occurrence_centric_df):
+    def test_consequences_per_ssm_occurrence(
+            self, ssm_transcript_df, ssm_occurrence_centric_df):
+
         # Consequences per SSM Occurrence built:
         df = ssm_occurrence_centric_df.select('ssm_occurrence_id',
                                               'ssm.ssm_id')
-                                                      
-        es_ssm_occ_to_ssm = {}
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            # Save ssm_occurrence_id <-> ssm_id pairs to compare:
-            es_ssm_occ_to_ssm[row['ssm_occurrence_id']] = row['ssm_id']
+        ssm_occ_to_ssm = self.get_relationship_map(
+            df, 'ssm_occurrence_id', 'ssm_id'
+        )
 
         # SSM to SSM Occurrence expected:
-        ssm_occ_to_ssm = {}
-
         df = (ssm_transcript_df
                   .withColumn('consequence_id',
                               uuid5_col(lit('ssm_consequence'),
@@ -47,51 +47,38 @@ class TestSSMOccurrenceCentricJoins:
                   .select('ssm_occurrence_id', 'ssm_id', 'consequence_id',
                           'transcript_id', 'gene_id'))
 
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            # Save ssm_occurrence_id <-> ssm_id pairs to compare:
-            ssm_occ_to_ssm[row['ssm_occurrence_id']] = row['ssm_id']
+        true_ssm_occ_to_ssm = self.get_relationship_map(
+            df, 'ssm_occurrence_id', 'ssm_id'
+        )
 
-        assert es_ssm_occ_to_ssm == ssm_occ_to_ssm
+        assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
-    def test_observations_per_ssm_occurrence(self, maf_df, ssm_occurrence_centric_df):
-        # Observations per SSM Occurrence built:
-        df = (ssm_occurrence_centric_df.select('ssm_occurrence_id',
-                                               'case.case_id',
-                                               explode('case.observation')
-                                               .alias('observation'))
-                                       .select('ssm_occurrence_id', 'case_id',
-                                               'observation.observation_id'))
-        es_opo = {}
-        es_ssm_occ_to_case = {}
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            es_opo.setdefault(row['ssm_occurrence_id'], set([]))
-            es_opo[row['ssm_occurrence_id']].update({row['observation_id']})
-            # Also save ssm_occurrence_id <-> case_id pairs to compare:
-            es_ssm_occ_to_case[row['ssm_occurrence_id']] = row['case_id']
+    def test_observations_per_ssm_occurrence(
+            self, maf_df, ssm_occurrence_centric_df):
 
-        # Observations per SSM Occurrence expected:
-        opo = {}
-        ssm_occ_to_case = {}
+        # Observations and Cases per SSM Occurrence built:
+        df = self.unpack_df_list(ssm_occurrence_centric_df,
+                                 ['ssm_occurrence_id', 'case.case_id'],
+                                 'case.observation', 'observation_id')
+
+        opo = self.get_relationship_map(df, 'ssm_occurrence_id', 'observation_id')
+        cpo = self.get_relationship_map(df, 'ssm_occurrence_id', 'case_id')
+
+        # Observations and Cases per SSM Occurrence expected:
         df = (maf_df.withColumn('ssm_occurrence_id', col('occurrence_id'))
                     .select('ssm_occurrence_id', 'observation_id', 'case_id'))
+        true_opo = self.get_relationship_map(df, 'ssm_occurrence_id', 'observation_id')
+        true_cpo = self.get_relationship_map(df, 'ssm_occurrence_id', 'case_id')
 
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            opo.setdefault(row['ssm_occurrence_id'], set([]))
-            opo[row['ssm_occurrence_id']].update({row['observation_id']})
-            # Also save ssm_occurrence_id <-> case_id pairs to compare:
-            ssm_occ_to_case[row['ssm_occurrence_id']] = row['case_id']
-
-        assert es_opo == opo
-        assert es_ssm_occ_to_case == ssm_occ_to_case
+        assert opo == true_opo
+        assert cpo == true_cpo
 
     @pytest.mark.ssm_occurrence_centric_ssm_subtree
     def test_ssm_subtree(self, sqlContext, maf_df, ssm_occurrence_ssm_subtree):
         def get_stats(dataframe):
             """
-            Extracts ssm, consequence, transcript, gene relationships from a flat dataframe
+            Extracts ssm, consequence, transcript, gene relationships
+            from a flat dataframe
             """
             res = {}
             for row in dataframe.toJSON().collect():
@@ -102,28 +89,37 @@ class TestSSMOccurrenceCentricJoins:
                 gid = row['gene_id']
 
                 res.setdefault(sid, {})
-                res[sid].setdefault(cid, {'transcripts': set(), 'genes': set()})
+                res[sid].setdefault(
+                    cid, {'transcripts': set(), 'genes': set()}
+                )
                 res[sid][cid]['transcripts'].update([tid])
                 res[sid][cid]['genes'].update([gid])
 
             return res
 
+        fields_to_unpack = [
+            'consequence_id',
+            'transcript.transcript_id',
+            'transcript.gene.gene_id'
+        ]
+
         # ssm_subtree stats expected:
-        cons_df = (ConsequenceBuilder(conf, sqlContext)
-                   .build(maf_df, 'ssm_occurrence_centric', join_gene=True))
-        df = (cons_df.select('ssm_id', explode('consequence').alias('c'))
-                     .select('ssm_id', 'c.consequence_id',
-                             'c.transcript.transcript_id',
-                             'c.transcript.gene.gene_id'))
-        stats = get_stats(df)
+        cons_df = (
+            ConsequenceBuilder(conf, sqlContext).build_for_ssm(
+                maf_df, 'ssm_occurrence_centric',
+                join_gene=True
+            )
+        )
+        df = self.unpack_df_list(cons_df,
+                                 'ssm_id', 'consequence',
+                                 fields_to_unpack)
+        true_stats = get_stats(df)
 
         # ssm_subtree stats built:
-        df = (ssm_occurrence_ssm_subtree
-                  .select('ssm_id', explode('ssm.consequence').alias('c'))
-                  .select('ssm_id', 'c.consequence_id',
-                          'c.transcript.transcript_id',
-                          'c.transcript.gene.gene_id'))
+        df = self.unpack_df_list(ssm_occurrence_ssm_subtree,
+                                 'ssm_id', 'ssm.consequence',
+                                 fields_to_unpack)
+        stats = get_stats(df)
 
-        es_stats = get_stats(df)
+        assert stats == true_stats
 
-        assert stats == es_stats

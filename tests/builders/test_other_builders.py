@@ -15,67 +15,105 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
-class TestObservationBuilder:
+@pytest.mark.usefixtures('maf_df', 'gistic_df')
+class TestOtherBase:
+    """
+    Code to reuse throughout all tests in this file
+    """
+
+    @pytest.fixture(scope='function')
+    def get_inputs(self, maf_df, gistic_df, request):
+        """
+        Returns (build_function, input_df, id_field) according to build_type
+        NOTE: build_type is inferred from argument of the test function where
+        this fixture is used
+
+        """
+        build_type = request.getfuncargvalue('build_type')
+        id_field = '{}_id'.format(build_type)
+        build_function = 'build_for_{}'.format(build_type)
+        if build_type == 'ssm':
+            input_df = maf_df
+        else:
+            input_df = gistic_df
+        return build_function, input_df, id_field
+
+    @staticmethod
+    def params():
+        """
+        All tests are parametrized by 'index_name,build_type'
+        """
+        return (
+            [(index_name, 'ssm') for index_name in conf.ssm_indices] +
+            [(index_name, 'cnv') for index_name in conf.cnv_indices]
+        )
+
+
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df')
+class TestObservationBuilder(TestOtherBase):
     """ Test intermediate result from the observation builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield ObservationBuilder()
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_join_columns(self, builder, maf_df, index_name):
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
+    def test_join_columns(self, builder, index_name, build_type, get_inputs):
         """ Check for correct columns """
-        obs_df = builder.build(maf_df, index_name)
-        assert set(obs_df.columns) == {'case_id', 'ssm_id',
+        build_function, input_df, id_field = get_inputs
+        obs_df = getattr(builder, build_function)(input_df, index_name)
+        assert set(obs_df.columns) == {'case_id', id_field,
                                        'observation', 'occurrence_id'}
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_observation_id(self, builder, maf_df, index_name):
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
+    def test_observation_id(self, builder, index_name, build_type, get_inputs):
         """ Test that the observation_id was created """
-        obs_df = builder.build(maf_df, index_name)
+        build_function, input_df, id_field = get_inputs
+        obs_df = getattr(builder, build_function)(input_df, index_name)
         assert 'observation_id' in (obs_df.select(explode('observation')
                                                   .alias('observation'))
                                           .select('observation.*')
                                           .columns)
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_observation_count(self, builder, maf_df, index_name):
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
+    def test_observation_count(self, builder, index_name, build_type, get_inputs):
         """ Check for the right number of observations by submitter_id """
-        n_observations = maf_df.select('case_id', 'ssm_id').distinct().count()
-        assert builder.build(maf_df, index_name).count() == n_observations
+        build_function, input_df, id_field = get_inputs
+        n_observations = input_df.select('case_id', id_field).distinct().count()
+        assert getattr(builder, build_function)(input_df, index_name).count() == n_observations
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_observation_values(self, builder, maf_df, index_name):
-        obs_df = builder.build(maf_df, index_name)
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
+    def test_observation_values(self, builder, index_name, build_type, get_inputs):
+        build_function, input_df, id_field = get_inputs
+        obs_df = getattr(builder, build_function)(input_df, index_name)
 
-        true_obs = map(json.loads, (maf_df.select('case_id', 'ssm_id')
-                                          .distinct().toJSON().collect()))
-
-        obs = map(json.loads, (obs_df.select('case_id', 'ssm_id')
+        true_obs = map(json.loads, (input_df.select('case_id', id_field)
+                                            .distinct().toJSON().collect()))
+        obs = map(json.loads, (obs_df.select('case_id', id_field)
                                      .toJSON().collect()))
 
         assert sorted(obs) == sorted(true_obs)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
-class TestConsequenceBuilder:
+class TestConsequenceBuilder(TestOtherBase):
     """ Test intermediate result from the transcript builder """
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
         yield ConsequenceBuilder(conf, sqlContext)
 
-    @pytest.mark.parametrize('index_name', conf.indices)
-    def test_consequence_count(self, builder, maf_df, index_name):
-        cons_df = builder.build(maf_df, index_name)
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
+    def test_consequence_count(self, builder, index_name, build_type, get_inputs):
+        build_function, input_df, id_field = get_inputs
+        cons_df = getattr(builder, build_function)(input_df, index_name)
 
-        n_consequences = maf_df.select('ssm_id').distinct().count()
+        n_consequences = input_df.select(id_field).distinct().count()
         assert cons_df.count() == n_consequences
 
-    @pytest.mark.parametrize('index_name', conf.indices)
+    @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_transcript_annotation_link(self, builder, maf_df, index_name):
-        cons_df = builder.build(maf_df, index_name)
+        cons_df = builder.build_for_ssm(maf_df, index_name)
 
         # Explode consequences
         tran_df = (
@@ -132,9 +170,9 @@ class TestConsequenceBuilder:
         for row in data:
             assert row['annotation']['vep_impact'] == impacts[row['consequence_type']]
 
-    @pytest.mark.parametrize('index_name', conf.indices)
+    @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_no_gene(self, builder, maf_df, index_name):
-        cons_df = builder.build(maf_df, index_name)
+        cons_df = builder.build_for_ssm(maf_df, index_name)
         transcripts = (cons_df.select(explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
@@ -142,9 +180,9 @@ class TestConsequenceBuilder:
         # Check that gene not in transctipts
         assert 'gene' not in transcripts.columns
 
-    @pytest.mark.parametrize('index_name', conf.indices)
+    @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_with_gene(self, builder, maf_df, index_name):
-        cons_df = builder.build(maf_df, index_name, join_gene=True)
+        cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True)
         transcripts = (cons_df.select(explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
@@ -159,9 +197,9 @@ class TestConsequenceBuilder:
             cytobands = [t['cytoband'] for t in cytobands]
             assert all([type(c) is list for c in cytobands])
 
-    @pytest.mark.parametrize('index_name', conf.indices)
+    @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
-        cons_df = builder.build(maf_df, index_name, add_gene_aa_change=True)
+        cons_df = builder.build_for_ssm(maf_df, index_name, add_gene_aa_change=True)
 
         assert 'gene_aa_change' in cons_df.columns
 
@@ -233,10 +271,10 @@ class TestConsequenceBuilder:
         # Check that there are some mutations with multiple transcripts
         assert max([len(transcripts) for transcripts in effects_map.values()]) > 1
 
-    @pytest.mark.parametrize('index_name', conf.indices)
+    @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_id(self, builder, maf_df, index_name):
         """ Test that consequence_id is created correctly """
-        cons_df = builder.build(maf_df, index_name, join_gene=False)
+        cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=False)
 
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
@@ -262,3 +300,4 @@ class TestCaseBuilder:
         """ Checks if case_df has correct number of lines """
         n_expected = len(get_aliquots_from_headers(sqlContext, conf.maf_urls))
         assert case_df.count() == n_expected
+

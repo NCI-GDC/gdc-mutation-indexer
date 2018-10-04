@@ -11,6 +11,7 @@ class TestConfig(BaseConfig):
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
     maf_dir = os.path.join(input_dir, 'maf')
+    gistic_dir = os.path.join(input_dir, 'cnv')
 
     # Initialize test directory tree if incomplete
     for directory in [log_dir, input_dir, maf_dir]:
@@ -21,7 +22,7 @@ class TestConfig(BaseConfig):
 
     es_host = 'http://localhost'
     source_es_host = 'http://localhost'
-    s3_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
+    s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
     graph_index = 'test_graph_index__'
 
     # Whether or not to rebuild graph index after every test
@@ -36,12 +37,17 @@ class TestConfig(BaseConfig):
     # Switch tests based on pruned/not_pruned version of indices
     indices_are_pruned = True
 
+    # This grouping is useful to understand which tests to run
+    main_indices = ['case_centric', 'gene_centric']
+    ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
+    cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
+
     # Where to save each index
     index_paths = {
-        'case_centric': s3_bucket + 'test-case-centric.json',
-        'gene_centric': s3_bucket + 'test-gene-centric.json',
-        'ssm_centric': s3_bucket + 'test-ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket + 'test-ssm-occurrence-centric.json'
+        'case_centric': s3_maf_bucket + 'test-case-centric.json',
+        'gene_centric': s3_maf_bucket + 'test-gene-centric.json',
+        'ssm_centric': s3_maf_bucket + 'test-ssm-centric.json',
+        'ssm_occurrence_centric': s3_maf_bucket + 'test-ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False
@@ -71,6 +77,7 @@ class TestConfig(BaseConfig):
         'occurrences_per_ssm': 100,
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
+        'occurrences_per_cnv': 100,
     }
 
     cache_dataframes = {
@@ -79,16 +86,24 @@ class TestConfig(BaseConfig):
          'case_centric': True,
          'gene_centric': True,
          'ssm_centric': True,
-         'ssm_occurrence_centric': True
+         'ssm_occurrence_centric': True,
+         'cnv_centric': True,
+         'cnv_occurrence_centric': True,
      }
 
     def __init__(self):
         super(TestConfig, self).__init__()
+        self.gistic_urls = self.get_gistic_urls()
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)
                 for f in os.listdir(self.maf_dir) if f.endswith('maf')]
 
+    def get_gistic_urls(self):
+        return ['file://' + os.path.join(self.gistic_dir, f)
+                for f in os.listdir(self.gistic_dir)
+                if f.endswith(".tsv")]
+      
     def get_maf_file_names(self):
         """
         We store the test mafs as .maf files,

@@ -1,5 +1,4 @@
 import logging
-import sys
 import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
@@ -43,9 +42,10 @@ def main():
     exporter = GDCMutationExport(sc, sqlContext, config)
 
     exporter.run_export(config)
-        
+
     # Tear down actions
     sc.stop()
+
 
 def make_spark_context(config):
     '''
@@ -64,6 +64,7 @@ def make_spark_context(config):
     log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
 
     return sc, sqlContext
+
 
 if __name__ == '__main__':
     # Execute Main functionality

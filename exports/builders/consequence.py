@@ -2,12 +2,14 @@ import logging
 from pyspark.sql.functions import (explode,
                                    col,
                                    collect_list,
+                                   collect_set,
                                    struct,
                                    lit,
                                    when,
                                    concat_ws)
 from exports.builders.utils import (extract_rows_udf,
                                     all_effects_udf,
+                                    struct_select,
                                     uuid5_col,
                                     extract_aas_position,
                                     extract_sift_polyphen,
@@ -29,13 +31,15 @@ class ConsequenceBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, index_name, join_gene=False, add_gene_aa_change=False):
+    def build_for_ssm(self, maf_df, index_name,
+                      join_gene=False, add_gene_aa_change=False):
         """
         Extracts transcript_ids from the all_effects maf column for each ssm,
         then joins transcript data from the gene model.
         Returns arrays of transcripts keyed on ssm_id
 
         :param maf_df: The formatted MAF dataframe from MAFBuilder
+        :param index_name: name of the index this consequence is a part of
         :param join_gene: Whether or not to join the gene model to the
                           consquence. SSM and SSM Occurrence have gene under
                           consequences, while Case and Gene do not.
@@ -120,6 +124,26 @@ class ConsequenceBuilder(object):
 
         return df
 
+    def build_for_cnv(self, gistic_df, index_name):
+        """
+        For now this is just gene information:
+
+        consequence[]
+                |_____ gene{}
+        """
+
+        # Create gene structure
+        cons_df = (
+            gistic_df.select(
+                'cnv_id',
+                struct(*struct_select(index_name, 'consequence'))
+                .alias('consequence')
+            ).groupby('cnv_id')
+             .agg(collect_set('consequence').alias('consequence'))
+        )
+
+        return cons_df
+
     @staticmethod
     def build_all_effects_cols(maf_df):
         """
@@ -182,7 +206,8 @@ class ConsequenceBuilder(object):
         for field in must_be_none_for_non_selected:
             ssm_tran = ssm_tran.withColumn(
                 field,
-                when(col('transcript_id') == col('selected_transcript_id'), col(field))
+                when(col('transcript_id') == col('selected_transcript_id'),
+                     col(field))
                 .otherwise(None)
             )
 
@@ -220,3 +245,4 @@ class ConsequenceBuilder(object):
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))
         return gene_struct_df
+
