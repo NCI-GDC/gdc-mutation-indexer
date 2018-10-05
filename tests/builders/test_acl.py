@@ -1,10 +1,16 @@
 import pytest
+from exports.es_utils import (
+    get_nested_field_by_value_query,
+    get_es_doc_count,
+)
+
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
 @pytest.mark.usefixtures('sqlContext', 'es_client',
+                         'maf_df', 'gistic_df',
                          'gene_centric_df',
                          'case_centric_df',
                          'ssm_centric_df',
@@ -19,94 +25,40 @@ class TestACL:
     TODO: read in path to acl from mapper
     """
 
-    @pytest.mark.parametrize('doc_type,index_name,path,field', [
-        ('gene_centric', conf.indices['gene_centric'],
-         'case.ssm.observation', 'case.ssm.observation.acl'),
-        ('case_centric', conf.indices['case_centric'],
-         'gene.ssm.observation', 'gene.ssm.observation.acl'),
-        ('ssm_centric', conf.indices['ssm_centric'],
-         'occurrence.case.observation', 'occurrence.case.observation.acl'),
-        ('ssm_occurrence_centric', conf.indices['ssm_occurrence_centric'],
-         'case.observation', 'case.observation.acl')
+    @pytest.mark.parametrize('doc_type,nested_path,field', [
+        ('gene_centric', 'case.ssm.observation', 'case.ssm.observation.acl'),
+        ('case_centric', 'gene.ssm.observation', 'gene.ssm.observation.acl'),
+        ('ssm_centric', 'occurrence.case.observation', 'occurrence.case.observation.acl'),
+        ('ssm_occurrence_centric', 'case.observation', 'case.observation.acl')
     ])
-    def test_acl_counts(self, es_client, doc_type, index_name, field, path):
+    def test_acl_counts(self, es_client, doc_type, nested_path, field,
+            maf_df, gistic_df):
 
-        def count_results(query):
-            results = es_client.search(index=index_name,
-                                       doc_type=doc_type,
-                                       body=query)
-            assert results['hits']['hits'], 'no results found'
-            return results['hits']['total']
+        index_name = conf.indices[doc_type]
 
-        def count_acl_value(value):
-            query = {
-                'size': 1,
-                '_source': [field],
-                'query': {
-                    'bool': {
-                        'should': [{
-                            'bool': {
-                                'must': {
-                                    'nested': {
-                                        'path': path,
-                                        'query': {
-                                            'terms': {
-                                                field: value
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }]
-                    }
-                }
-            }
-            return count_results(query)
+        open_docs = get_es_doc_count(
+            es_client, index_name, doc_type,
+            query=get_nested_field_by_value_query(
+                 field, nested_path, ['open']
+            )
+        )
+        phs000218_docs = get_es_doc_count(
+            es_client, index_name, doc_type,
+            query=get_nested_field_by_value_query(
+                 field, nested_path, ['phs000218']
+            )
+        )
+        total_docs = get_es_doc_count(es_client, index_name, doc_type)
 
-        def count_not_value(value):
-            query = {
-                'size': 1,
-                '_source': [field],
-                'query': {
-                    'bool': {
-                        'should': [{
-                            'bool': {
-                                'must_not': {
-                                    'nested': {
-                                        'path': path,
-                                        'query': {
-                                            'terms': {
-                                                field: value
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }]
-                    }
-                }
-            }
-            return count_results(query)
-
-        def count_total_docs():
-            result = es_client.count(index=index_name, doc_type=doc_type)
-            return result['count']
-
-        open_docs = count_acl_value(['open'])
-        phs000218_docs = count_acl_value(['phs000218'])
-        not_open_docs = count_not_value(['open'])
-        total_docs = count_total_docs()
-
-        if doc_type != 'case_centric':
-            # for case centric it is possible that this is not equal
-            # if case has no ssms associated with it, then case.gene.ssm
-            # (and case.gene) is null.
-            # if so, then these docs are not_open but they do not have a value.
-            assert not_open_docs == phs000218_docs, \
-                   "{} non-open docs and {} " \
-                   "phs000218 docs".format(not_open_docs, phs000218_docs)
+        if doc_type == 'gene_centric':
+            # Test data contains gene[s] that have no ssms hence no acls
+            maf_genes = {r.gene_id for r in maf_df.collect()}
+            cnv_genes = {r.gene_id for r in gistic_df.collect()}
+            cnv_only_genes = {g for g in cnv_genes if g not in maf_genes}
+            total_docs = total_docs - len(cnv_only_genes)
 
         assert open_docs + phs000218_docs == total_docs, \
             "{} open docs + {} phs000218 docs != {} total docs".format(
                 open_docs, phs000218_docs, total_docs
             )
+

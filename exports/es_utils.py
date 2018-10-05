@@ -44,10 +44,47 @@ def get_values_from_path(es_doc, path):
     return values
 
 
-def get_es_doc_count(es_client, index_name, doc_type):
+def get_es_doc_count(es_client, index_name, doc_type, query=None):
+    if query is None:
+        query = {}
     return es_client.count(
         index=index_name,
         doc_type=doc_type,
-        body={"query": {"match_all": {}}}
+        body=query
     )['count']
+
+
+def get_nested_field_by_value_query(
+        field, nested_path, value, not_equals=False):
+    """
+    Builds query for :field which is underneath nested :nested_path elasticsearch path
+    and which has value == :value (value != :value if :not_equals is True)
+    """
+    if not_equals:
+        clause = 'must_not'
+    else:
+        clause = 'must'
+
+    query = {
+        'query': {
+            'bool': {
+                'should': [{
+                    'bool': {
+                        clause: {
+                            'nested': {
+                                'path': nested_path,
+                                'query': {
+                                    'terms': {
+                                        field: value
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }]
+            }
+        }
+    }
+
+    return query
 
