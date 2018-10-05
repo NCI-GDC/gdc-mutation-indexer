@@ -51,10 +51,16 @@ class TestACL:
                                         'path': path,
                                         'query': {
                                             'terms': {
-                                                field: value}}}}}}]
+                                                field: value
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
+                        }]
                     }
+                }
+            }
             return count_results(query)
 
         def count_not_value(value):
@@ -70,10 +76,16 @@ class TestACL:
                                         'path': path,
                                         'query': {
                                             'terms': {
-                                                field: value}}}}}}]
+                                                field: value
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
+                        }]
                     }
+                }
+            }
             return count_results(query)
 
         def count_total_docs():
@@ -96,5 +108,5 @@ class TestACL:
 
         assert open_docs + phs000218_docs == total_docs, \
             "{} open docs + {} phs000218 docs != {} total docs".format(
-                   open_docs, phs000218_docs, total_docs
-               )
+                open_docs, phs000218_docs, total_docs
+            )
