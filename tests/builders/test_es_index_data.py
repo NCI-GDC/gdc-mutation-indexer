@@ -16,10 +16,10 @@ conf = TestConfig()
 @pytest.mark.usefixtures('gistic_df', 'cnv_centric_df', 'test_data', 'es_client')
 class TestCNVCentricData:
 
-    def test_cnv_centric_count(self, gistic_df, test_data, es_client):
+    def test_cnv_centric_count(self, maf_df, gistic_df, test_data, es_client):
         doc_type = 'cnv_centric'
         expected_count = TestDataStats.get_stats(
-            None, gistic_df, test_data, doc_type)['count']
+            maf_df, gistic_df, test_data, doc_type)['count']
         built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
         assert built_count == expected_count
 
@@ -28,10 +28,10 @@ class TestCNVCentricData:
                          'cnv_occurrence_centric_df')
 class TestCNVOccurrenceCentricData:
 
-    def test_cnv_occurrence_centric_count(self, gistic_df, test_data, es_client):
+    def test_cnv_occurrence_centric_count(self, maf_df, gistic_df, test_data, es_client):
         doc_type = 'cnv_occurrence_centric'
         expected_count = TestDataStats.get_stats(
-            None, gistic_df, test_data, doc_type)['count']
+            maf_df, gistic_df, test_data, doc_type)['count']
         built_count = get_es_doc_count(es_client, conf.indices[doc_type], doc_type)
         assert built_count == expected_count
 
@@ -126,11 +126,11 @@ class TestGeneCentricData:
         assert gene_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data', 'ssm_centric_df', 'es_client')
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data', 'ssm_centric_df', 'es_client')
 class TestSSMCentricData:
 
-    def test_ssm_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, None, test_data,
+    def test_ssm_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'ssm_centric')['count']
         built_count = es_client.count(
             index=conf.indices['ssm_centric'],
@@ -160,12 +160,12 @@ class TestSSMCentricData:
         assert ssm_stat == maf_stat
 
 
-@pytest.mark.usefixtures('maf_df', 'test_data',
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data',
                          'ssm_occurrence_centric_df', 'es_client')
 class TestSSMOccurrenceCentricData:
 
-    def test_ssm_occurrence_centric_count(self, maf_df, test_data, es_client):
-        expected_count = TestDataStats.get_stats(maf_df, None, test_data,
+    def test_ssm_occurrence_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                                  'ssm_occurrence_centric')['count']
         built_count = es_client.count(
             index=conf.indices['ssm_occurrence_centric'],
