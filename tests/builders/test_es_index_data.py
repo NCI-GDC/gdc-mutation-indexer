@@ -48,13 +48,12 @@ class TestCaseCentricData:
                                 maf_df, gistic_df, test_data, es_client):
 
         # Count of cases in maf + gistic dataframes
-        count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
-                                        'case_centric')['count']
+        stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                        'case_centric')
 
         # Take empty ssm cases into account
-        maf_cases = {c.case_id for c in maf_df.collect()}
-        empty_cases = {c for c in all_maf_cases if c not in maf_cases}
-        expected_count = count + len(empty_cases)
+        empty_cases = {c for c in all_maf_cases if c not in stats['ssm_cases']}
+        expected_count = stats['count'] + len(empty_cases)
 
         built_count = es_client.count(
             index=conf.indices['case_centric'],

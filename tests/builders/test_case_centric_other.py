@@ -1,6 +1,7 @@
 import pytest
 
 from exports.mappers.model_mapper import ModelMapper
+from utils.true_stats import TestDataStats
 from tests_config import TestConfig
 
 conf = TestConfig()
@@ -11,15 +12,17 @@ conf = TestConfig()
 class TestCaseCentricOther:
     """ Other case centric tests """
 
-    def test_empty_cases(self, case_centric_df, maf_df, all_maf_cases):
+    def test_empty_cases(self, case_centric_df, maf_df, gistic_df,
+                         test_data, all_maf_cases):
         """
         "empty cases" - cases that have been tested for ssms and there were no ssm found
         in other words, they are in the maf header as aliquots, but not in maf rows
         """
         cases_built = {c.case_id for c in case_centric_df.collect()}
-        cases_maf = {c.case_id for c in maf_df.collect()}
+        stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                        'case_centric')
 
-        empty_cases = {c for c in all_maf_cases if c not in cases_maf}
+        empty_cases = {c for c in all_maf_cases if c not in stats['ssm_cases']}
 
         # check that there was at least one empty case
         assert empty_cases
@@ -40,7 +43,7 @@ class TestCaseCentricOther:
         assert 'available_variation_data' in case_centric_df.columns
 
         gistic_cases = {r.case_id for r in gistic_df.collect()}
-        maf_cases = {c for c in all_maf_cases}  # also includes "empty cases"
+        maf_cases = all_maf_cases  # also includes "empty cases"
 
         common_cases = gistic_cases & maf_cases
         cnv_cases = gistic_cases - maf_cases

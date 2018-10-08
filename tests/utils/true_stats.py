@@ -65,8 +65,21 @@ class TestDataStats:
         """
         Returns true stats for :index_name
         """
+        # Get index-specific stats:
         function_name = '{}_stats'.format(index_name)
-        return getattr(cls, function_name)(maf_df, gistic_df, test_data)
+        stats = getattr(cls, function_name)(maf_df, gistic_df, test_data)
+
+        # Add maf and gistic info:
+        maf_data = maf_df.select('case_id', 'gene_id').collect()
+        gistic_data = gistic_df.select('case_id', 'gene_id').collect()
+
+        stats['ssm_cases'] = {r.case_id for r in maf_data}
+        stats['cnv_cases'] = {r.case_id for r in gistic_data}
+
+        stats['ssm_genes'] = {r.gene_id for r in maf_data}
+        stats['cnv_genes'] = {r.gene_id for r in gistic_data}
+
+        return stats
 
     @staticmethod
     def case_centric_stats(maf_df, gistic_df, data):

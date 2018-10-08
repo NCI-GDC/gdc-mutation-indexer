@@ -4,13 +4,14 @@ from exports.es_utils import (
     get_es_doc_count,
 )
 
+from utils.true_stats import TestDataStats
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
 @pytest.mark.usefixtures('sqlContext', 'es_client',
-                         'maf_df', 'gistic_df',
+                         'maf_df', 'gistic_df', 'test_data',
                          'gene_centric_df',
                          'case_centric_df',
                          'ssm_centric_df',
@@ -32,7 +33,7 @@ class TestACL:
         ('ssm_occurrence_centric', 'case.observation', 'case.observation.acl')
     ])
     def test_acl_counts(self, es_client, doc_type, nested_path, field,
-            maf_df, gistic_df):
+            maf_df, gistic_df, test_data):
 
         index_name = conf.indices[doc_type]
 
@@ -52,10 +53,17 @@ class TestACL:
 
         if doc_type == 'gene_centric':
             # Test data contains gene[s] that have no ssms hence no acls
-            maf_genes = {r.gene_id for r in maf_df.collect()}
-            cnv_genes = {r.gene_id for r in gistic_df.collect()}
-            cnv_only_genes = {g for g in cnv_genes if g not in maf_genes}
+            stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                            doc_type)
+            cnv_only_genes = stats['cnv_genes'] - stats['ssm_genes']
             total_docs = total_docs - len(cnv_only_genes)
+
+        elif doc_type == 'case_centric':
+            # Test data contains case[s] that have no ssms hence no acls
+            stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                            doc_type)
+            cnv_only_cases = stats['cnv_cases'] - stats['ssm_cases']
+            total_docs = total_docs - len(cnv_only_cases)
 
         assert open_docs + phs000218_docs == total_docs, \
             "{} open docs + {} phs000218 docs != {} total docs".format(
