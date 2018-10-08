@@ -1,9 +1,9 @@
-pytest==3.0.3
+pytest
 addict==0.2.7
 jsonpath-rw==1.4.0
 Sphinx==1.5.2
 ghp-import==0.5.4
 sphinx-autobuild==0.6.0
 sphinx-rtd-theme==0.1.9
-pytest-threadleak==0.2.0
+pytest-threadleak
 -e git+ssh://git@github.com/NCI-GDC/cdisutils.git@1.2.2#egg=cdisutils
