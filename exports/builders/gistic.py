@@ -52,11 +52,8 @@ class GisticBuilder(BaseInputBuilder):
         Returns gistic_df
         """
         if self.config.gistic_use_existing:
-            try:
-                df = self.get_existing()
-                return df
-            except IOError:
-                self.logger.info('Gistic file not found in s3')
+            df = self.get_existing()
+            return df
 
         gistic_df = self.combine()
 
