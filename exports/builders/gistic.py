@@ -314,11 +314,11 @@ class GisticBuilder(BaseInputBuilder):
         # rename col to replace
         df = df.withColumnRenamed('cnv_change', 'cnv_change_init')
 
-        cnv_change_mapping = {'-2': 'Deep Loss',
-                              '-1': 'Shallow Loss',
+        cnv_change_mapping = {'-2': None,
+                              '-1': 'Loss',
                               '0': None,
                               '1': 'Gain',
-                              '2': 'Amplification'}
+                              '2': None}
 
         def stringify_cnv_change_inner(int_cnv):
             try:
