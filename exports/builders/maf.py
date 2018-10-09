@@ -12,6 +12,10 @@ from exports.builders.utils import (
     extract_sift_polyphen,
 )
 
+from exports.es_utils import (
+    iterate_es_results,
+)
+
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 
@@ -182,21 +186,29 @@ class MAFBuilder(BaseInputBuilder):
 
         file_names = self.config.get_maf_file_names()
 
-        try:
-            dict_results = es.search(index=self.config.graph_index,
-                                     doc_type='file',
-                                     body={"query": {
-                                           "bool": {"must": {"terms":
-                                                   {"file_name": file_names}}}},
-                                           "_source": ["file_name", "acl"]})
+        query = {
+                "query": {
+                    "bool": {
+                        "must": {
+                            "terms": {
+                                "file_name": file_names
+                                }
+                            }
+                        }
+                    },
+                "_source": ["file_name", "acl"]
+        }
 
-            return {
-                    r['_source']['file_name']: r['_source']['acl']
-                    for r in dict_results['hits']['hits']
-                    }
+        # Build up dictionary of file_name to acl
+        filenames_to_acls = {}
+        for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):
+            source = doc['_source']
+            filename = source['file_name']
+            acl = source['acl']
 
-        except KeyError:
-            raise 'no results for file names. ACL missing'
+            filenames_to_acls[filename] = acl
+
+        return filenames_to_acls
 
     def add_acl(self, df, url):
         """
@@ -220,7 +232,8 @@ class MAFBuilder(BaseInputBuilder):
 
             except KeyError:
 
-                raise Exception("ACL not found for maf {}".format(url))
+                raise Exception("ACL not found for maf with url {}, "
+                                "file_name {}".format(url, file_name))
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
