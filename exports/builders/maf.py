@@ -220,7 +220,8 @@ class MAFBuilder(BaseInputBuilder):
 
             except KeyError:
 
-                raise Exception("ACL not found for maf {}".format(url))
+                raise Exception("ACL not found for maf with url {}, "
+                                "file_name {}".format(url, file_name))
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
