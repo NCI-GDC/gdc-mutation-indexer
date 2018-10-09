@@ -48,4 +48,4 @@ script:
   - java -version
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
-  - "python -m pytest -vv tests"
+  - "python -m pytest -vv"
