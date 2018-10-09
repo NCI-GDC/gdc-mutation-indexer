@@ -27,22 +27,27 @@ class BaseInputBuilder(object):
     def combine():
         raise NotImplementedError
 
-    def s3_to_df(self, url):
+    def s3_to_df(self, url, data_format='csv'):
         """
         Read a single file from the given s3 url and return as dataframe
         """
-        return self.sqlContext.read.format('com.databricks.spark.csv')\
-                   .options(header='true')\
-                   .options(comment="#")\
-                   .options(delimiter='\t')\
-                   .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                   .load(url)
+        if data_format == 'csv':
+            return self.sqlContext.read.format('com.databricks.spark.csv')\
+                       .options(header='true')\
+                       .options(comment="#")\
+                       .options(delimiter='\t')\
+                       .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
+                       .load(url)
+        elif data_format == 'parquet':
+            return self.sqlContext.read.parquet(url)
+        else:
+            raise ValueError("Unknown read format: {}".format(data_format))
 
     def df_to_s3(self, df, url, overwrite=False):
         """
-        Writes the combined input dataframe to s3
+        Writes the combined input dataframe to s3 in .parquet format
         """
-        writer = df.write.format('com.databricks.spark.csv')
+        writer = df.write.format('parquet')
         if overwrite:
             writer = writer.mode('overwrite')
         writer = writer.options(header='true').save(url)
@@ -56,10 +61,7 @@ class BaseInputBuilder(object):
         self.logger.info('Loading file from s3 instead of building')
 
         try:
-            df = self.sqlContext.read.format('com.databricks.spark.csv')\
-                                .options(header='true', inferschema='true')\
-                                .load(saved_path)\
-                                .drop_duplicates()
+            df = self.s3_to_df(saved_path, data_format='parquet')
         except IOError:
             self.logger.info('File not found in {}'.format(saved_path))
 

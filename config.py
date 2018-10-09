@@ -83,12 +83,12 @@ class BaseConfig(object):
     index_overwrite = True
 
     mappings = {
-                'ssm': 'ssm.yml',
-                'gene': 'gene.yml',
-                'transcript': 'transcript.yml',
-                'annotation': 'annotation.yml',
-                'observation': 'observation.yml',
-                }
+        'ssm': 'ssm.yml',
+        'gene': 'gene.yml',
+        'transcript': 'transcript.yml',
+        'annotation': 'annotation.yml',
+        'observation': 'observation.yml',
+    }
 
     # Index revision number, will be determined automatically if not specified
     revision = None
@@ -112,9 +112,9 @@ class BaseConfig(object):
     # Whether to save the maf, gistic files when done
     maf_keep = False
     gistic_keep = False
-    # The s3 location to save the combined maf and gistic file
-    maf_path = 's3a://test/uat_mafs.csv'
-    gistic_path = 's3a://test/uat_gistics.csv'
+    # The location to save the combined maf and gistic dataframes
+    maf_path = 'maf_df.parquet'
+    gistic_path = 'gistic_df.parquet'
     # Use combined and saved maf, gistic files if they exist
     maf_use_existing = False
     gistic_use_existing = False
