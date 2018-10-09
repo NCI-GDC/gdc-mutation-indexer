@@ -64,6 +64,6 @@ class TestGisticBuilder:
         """
         distinct = gistic_df.select('cnv_change').distinct()
         values = {r.cnv_change for r in distinct.collect()}
-        expected_values = {'Shallow Loss', 'Deep Loss', 'Amplification', 'Gain'}
+        expected_values = {'Loss', 'Gain'}
         assert values == expected_values
 
