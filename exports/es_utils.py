@@ -31,7 +31,7 @@ def get_values_from_path(es_doc, path):
         return [get_values_from_path(e, path) for e in es_doc]
 
     if len(path) == 1:
-        return es_doc[path[0]]
+        return es_doc.get(path[0])
 
     if isinstance(es_doc, dict):
         return get_values_from_path(es_doc[path[0]], path[1:])

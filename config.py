@@ -8,6 +8,8 @@ from exports.es_utils import (
     get_values_from_path,
 )
 
+from indexclient.client import IndexClient
+
 
 class BaseConfig(object):
 
@@ -26,6 +28,12 @@ class BaseConfig(object):
     es_nodes = os.getenv('ES_NODES', '{}:{}'.format(es_host, es_port))
     es_user = os.getenv('ES_USER', '')
     es_pass = os.getenv('ES_PASS', '')
+
+    # Indexd
+    indexd = IndexClient(
+        baseurl=os.getenv('INDEXD_HOST'),
+        auth=(os.getenv('INDEXD_USER'), os.getenv('INDEXD_PASS'))
+    )
 
     # Keywords that should appear in the S3 key for it to be picked up
     # Note that ALL of these keywords have to be present for the MAF to be used
@@ -237,17 +245,40 @@ class BaseConfig(object):
         return maf_urls
 
     def get_maf_urls(self):
-        path = "downstream_analyses.output_files.file_name"
-        regexp = ".*maf.gz.?"
 
-        all_mafs = self.get_filenames_from_source_es(
-            self.es, self.graph_index, path, regexp
+        all_mafs = self.get_file_ids_by_filename_regex(
+            self.es, self.graph_index,
+            "downstream_analyses.output_files.file_name",
+            ".*maf.gz.?"
         )
+
         relevant_mafs = []
-        for maf_url in all_mafs:
-            if not self.projects or any([project in maf_url for project in self.projects]):
+        for maf_name in all_mafs:
+            if not self.projects or any([project in maf_name for project in self.projects]):
+                maf_url = self.get_url_from_indexd(maf_name)
                 relevant_mafs.append(maf_url)
+
+        if self.nb_projects:
+            relevant_mafs = relevant_mafs[:self.nb_projects]
         return relevant_mafs
+
+    def get_url_from_indexd(self, file_name):
+        """
+        Queries indexd by file_name and returns corresponding validated cleversafe url
+        """
+
+        indexd_doc = self.indexd.list_with_params(
+            params={'file_name': file_name}
+        ).next()
+
+        valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
+        for url, metadata in indexd_doc.urls_metadata.keys():
+            if metadata == valid_metadata:
+                return url
+
+        raise Exception(
+            'Did not find validated cleversafe url for {}'.format(file_name)
+        )
 
     def get_maf_file_names(self):
         """
@@ -298,7 +329,7 @@ class BaseConfig(object):
         return bucket.list()
 
     @staticmethod
-    def get_files_from_source_es(es, graph_index_name, path, regexp):
+    def get_file_ids_by_filename_regex(es, graph_index_name, path, regexp):
         """
         Returns all file ids from gdc_from_graph.file documents
         :path - dot-delimited path to file_name in file document
@@ -325,8 +356,7 @@ class BaseConfig(object):
 
         file_ids = set()
         for doc in iterate_es_results(es, graph_index_name, 'file', query=query):
-            for files in get_values_from_path(doc['_source'], 'file_id'):
-                file_ids.update(file_ids)
+            file_ids.update([doc['_id']])
 
         print file_ids
         print len(file_ids)
