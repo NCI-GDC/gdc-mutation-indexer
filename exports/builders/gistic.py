@@ -55,6 +55,13 @@ class GisticBuilder(BaseInputBuilder):
         """
         gistic_df = self.combine()
 
+        # to isolate the process of building the Gistic dataframe,
+        # make the executors iterate over the whole thing and then bail out
+        counter = self.sqlContext.sparkSession.sparkContext.accumulator(0)
+        gistic_df.foreach(lambda _: counter.add(1))
+        self.logger.info('Read {} rows'.format(counter.value))
+        return
+
         # add gene information
         gistic_df = self._add_gene_information(gistic_df)
 
@@ -114,10 +121,12 @@ class GisticBuilder(BaseInputBuilder):
                 # melt dataframe (opposite of pivoting)
                 # required to get dfs with the same number of columns
                 # so we can union them together
-                new_df = melt_df(new_df,
-                                 id_vars=["gene_id"],
-                                 var_name="aliquot_id",
-                                 value_name="cnv_change")
+                # if the input is already melted, we can skip this
+                if not self.config.gistic_melted:
+                    new_df = melt_df(new_df,
+                                     id_vars=["gene_id"],
+                                     var_name="aliquot_id",
+                                     value_name="cnv_change")
 
                 if gistic_df is None:
                     gistic_df = new_df

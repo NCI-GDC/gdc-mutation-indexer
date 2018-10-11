@@ -46,7 +46,10 @@ class BaseConfig(object):
     maf_keywords = [keyword.strip() for keyword in maf_keywords.split(',')] if maf_keywords else []
     # maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
 
+    # Keyword for finding Gistic files in the S3 bucket
     gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
+    # Whether the input gistic files are already melted and filtered
+    gistic_melted = bool(os.getenv('GISTIC_MELTED'))
 
     # Pipelines to use. If an empty list is given, all 4 pipelies will be used
     # somaticsniper: 2227614  2.6GB
@@ -258,6 +261,10 @@ class BaseConfig(object):
 
         TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
         """
+
+        env_urls = os.getenv('GISTIC_URLS', '').split(',')
+        if env_urls:
+            return [url.strip() for url in env_urls]
 
         bucket_contents = self.list_bucket(self.s3_gistic_bucket)
 

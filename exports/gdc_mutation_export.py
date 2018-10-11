@@ -30,6 +30,11 @@ class GDCMutationExport(object):
         ]
 
     def run_export(self, config=None):
+        # Temporarily test building the Gistic dataframe without spending time
+        # on anything else
+        GisticBuilder(self.config, self.sqlContext).build()
+        return
+
         # Construct master MAF from all individual MAFs
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
