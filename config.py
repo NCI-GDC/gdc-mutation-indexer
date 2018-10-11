@@ -8,6 +8,8 @@ from exports.es_utils import (
     get_values_from_path,
 )
 
+from config_utils import ReadWriteMode
+
 
 class BaseConfig(object):
 
@@ -109,18 +111,13 @@ class BaseConfig(object):
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
 
-    # Whether to save the maf, gistic files when done
-    maf_keep = False
-    gistic_keep = False
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
-    # Use combined and saved maf, gistic files if they exist
-    maf_use_existing = False
-    gistic_use_existing = False
-    # Whether to overwrite combined maf, gistic files
-    maf_overwrite = True
-    gistic_overwrite = True
+
+    # Whether to read/write/neither
+    read_write_mode = {'maf': ReadWriteMode.read,
+                       'gistic': ReadWriteMode.read}
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -323,7 +320,6 @@ class BaseConfig(object):
             filename = get_values_from_path(doc['_source'], path)
             filenames.update(filename)
         return filenames
-
 
 if __name__ == '__main__':
     conf = BaseConfig()

@@ -45,16 +45,12 @@ class GisticBuilder(BaseInputBuilder):
                                 http_auth=(config.es_user,
                                            config.es_pass))
 
-    def build(self):
+    def build_from_scratch(self):
         """
         Read, combine and transform gistic files
 
         Returns gistic_df
         """
-        if self.config.gistic_use_existing:
-            df = self.get_existing()
-            return df
-
         gistic_df = self.combine()
 
         # add gene information
@@ -83,11 +79,6 @@ class GisticBuilder(BaseInputBuilder):
 
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
-
-        # Write data
-        if self.config.gistic_keep:
-            self.df_to_s3(gistic_df, self.config.gistic_path,
-                          overwrite=self.config.gistic_overwrite)
 
         self.logger.info('Caching Gistic dataframe')
         # NOTE: Do not remove next step. This is a workaround for

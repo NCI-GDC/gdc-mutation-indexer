@@ -1,6 +1,10 @@
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
+from pyspark.sql.utils import AnalysisException
+
 import logging
+
+from config_utils import ReadWriteMode
 
 
 class BaseInputBuilder(object):
@@ -21,11 +25,86 @@ class BaseInputBuilder(object):
             return config_urls
         return self.get_urls()
 
-    def build():
+    def build(self):
+        """
+        ALWAYS
+
+        #1. read (if applicable)
+        #2. build from files
+        #3. write (if applicable)
+        #4. return (PROFIT)
+        """
+
+        # read
+        df = self.read()
+
+        # if reading not applicable, build from files
+        df = df if df is not None else self.build_from_scratch()
+
+        # write
+        self.write(df)
+
+        return df
+
+    def build_from_scratch(self):
         raise NotImplementedError
 
     def combine():
         raise NotImplementedError
+
+    def write(self, df):
+
+        should_read_write = getattr(self.config,
+                                    'read_write_mode')[self.input_type]
+
+        if should_read_write is ReadWriteMode.write:
+
+            url = getattr(self.config, '{}_path'.format(self.input_type))
+
+            self.df_to_s3(df, url)
+
+    def df_to_s3(self, df, url):
+        """
+        Writes the combined input dataframe to s3 in .parquet format
+        """
+        writer = df.write.format('parquet')
+        writer = writer.mode('overwrite')
+        writer = writer.options(header='true').save(url)
+
+    def read(self):
+        """
+        Loads previously built and saved input into dataframe
+        if we are in read mode
+        """
+        # to return
+        df = None
+
+        should_read_write = getattr(self.config,
+                                    'read_write_mode')[self.input_type]
+
+        if should_read_write is ReadWriteMode.read:
+
+            # Load stored built input into dataframe
+            saved_path = getattr(self.config, '{}_path'.format(self.input_type))
+            self.logger.info('Loading file from s3 instead of building')
+
+            try:
+                df = self.s3_to_df(saved_path, data_format='parquet')
+            except IOError:
+                self.logger.info('File not found in {}'.format(saved_path))
+            except AnalysisException:
+                # TODO: is this the best way to catch this error?
+                # or is checking the path first acceptable?
+                self.logger.info('Something went wrong in spark when trying to'
+                                 ' get existing df from path '
+                                 '{}'.format(saved_path))
+            else:
+                # Store loaded dataframe count in config
+                setattr(self.config,
+                        '{}_count'.format(self.input_type),
+                        df.count())
+
+        return df
 
     def s3_to_df(self, url, data_format='csv'):
         """
@@ -42,32 +121,6 @@ class BaseInputBuilder(object):
             return self.sqlContext.read.parquet(url)
         else:
             raise ValueError("Unknown read format: {}".format(data_format))
-
-    def df_to_s3(self, df, url, overwrite=False):
-        """
-        Writes the combined input dataframe to s3 in .parquet format
-        """
-        writer = df.write.format('parquet')
-        if overwrite:
-            writer = writer.mode('overwrite')
-        writer = writer.options(header='true').save(url)
-
-    def get_existing(self):
-        """
-        Loads previously built and saved input into dataframe
-        """
-        # Load stored built input into dataframe
-        saved_path = getattr(self.config, '{}_path'.format(self.input_type))
-        self.logger.info('Loading file from s3 instead of building')
-
-        try:
-            df = self.s3_to_df(saved_path, data_format='parquet')
-        except IOError:
-            self.logger.info('File not found in {}'.format(saved_path))
-
-        # Store loaded dataframe count in config
-        setattr(self.config, '{}_count'.format(self.input_type), df.count())
-        return df
 
     @staticmethod
     def add_canonical_transcript_lengths(df):
