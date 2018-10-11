@@ -1,5 +1,6 @@
 import os
 from config import BaseConfig
+from config_utils import ReadWriteMode
 
 
 class TestConfig(BaseConfig):
@@ -69,8 +70,9 @@ class TestConfig(BaseConfig):
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(input_dir, 'genes.json.gz')
 
-    maf_keep = False
-    maf_use_existing = False
+    # Whether to read/write/neither
+    read_write_mode = {'maf': ReadWriteMode.neither,
+                       'gistic': ReadWriteMode.neither}
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -103,7 +105,7 @@ class TestConfig(BaseConfig):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
                 if f.endswith(".tsv")]
-      
+
     def get_maf_file_names(self):
         """
         We store the test mafs as .maf files,

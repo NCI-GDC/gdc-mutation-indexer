@@ -34,14 +34,11 @@ class MAFBuilder(BaseInputBuilder):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
 
-    def build(self):
+    def build_from_scratch(self):
         """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
         """
-        if self.config.maf_use_existing:
-            df = self.get_existing()
-            return df
 
         df = self.combine()
         # Warn:this will strip anything out of the maf that isnt in the schema
@@ -80,11 +77,6 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
-
-        # Write data
-        if self.config.maf_keep:
-            self.df_to_s3(df, self.config.maf_path,
-                          overwrite=self.config.maf_overwrite)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.repartition, 'ssm_id')
