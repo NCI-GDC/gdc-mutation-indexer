@@ -1,5 +1,5 @@
 import os
-from config import BaseConfig
+from config import BaseConfig, LOG_FORMAT
 from config_utils import ReadWriteMode
 
 
