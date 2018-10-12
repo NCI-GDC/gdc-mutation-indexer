@@ -12,7 +12,9 @@ from exports.builders import (
     ObservationBuilder,
 )
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class CNVOccurrenceCentricBuilder(BaseBuilder):

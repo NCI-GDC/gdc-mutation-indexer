@@ -10,7 +10,10 @@ from exports.builders import BaseBuilder
 from exports.builders.df_builders import (
     get_ssm_df
 )
-logging.basicConfig()
+
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class SSMCentricBuilder(BaseBuilder):

@@ -4,7 +4,10 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import StringType
 from utils import standardize_schema, get_case_ids_from_source_es
 import logging
-logging.basicConfig()
+
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class CaseBuilder(object):

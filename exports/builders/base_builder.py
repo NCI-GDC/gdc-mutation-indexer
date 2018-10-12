@@ -7,7 +7,9 @@ import os
 
 from ..mappers.model_mapper import ModelMapper
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class BaseBuilder(object):

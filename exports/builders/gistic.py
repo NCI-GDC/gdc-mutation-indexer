@@ -23,7 +23,9 @@ from exports.builders.utils import (
     uuid5_col,
 )
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class GisticBuilder(BaseInputBuilder):

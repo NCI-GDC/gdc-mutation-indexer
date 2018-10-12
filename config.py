@@ -10,6 +10,7 @@ from exports.es_utils import (
 
 from config_utils import ReadWriteMode
 
+LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 
 class BaseConfig(object):
 

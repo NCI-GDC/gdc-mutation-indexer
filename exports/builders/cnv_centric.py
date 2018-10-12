@@ -9,7 +9,9 @@ from exports.builders import (
 
 from exports.builders.df_builders import get_cnv_df
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class CNVCentricBuilder(BaseBuilder):

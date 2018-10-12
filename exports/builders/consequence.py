@@ -18,7 +18,10 @@ from exports.builders.utils import (extract_rows_udf,
                                     sanitize_gene_aa_change,
                                     )
 from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
-logging.basicConfig()
+
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class ConsequenceBuilder(object):

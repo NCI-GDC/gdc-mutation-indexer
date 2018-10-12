@@ -21,7 +21,9 @@ from exports.builders.gene_model import GeneModelBuilder
 
 from pkg_resources import resource_filename
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class MAFBuilder(BaseInputBuilder):

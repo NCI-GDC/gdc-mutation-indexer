@@ -9,7 +9,9 @@ from exports.builders import (
 )
 from exports.builders import BaseBuilder
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class SSMOccurrenceCentricBuilder(BaseBuilder):
