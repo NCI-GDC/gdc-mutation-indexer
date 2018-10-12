@@ -75,12 +75,22 @@ class CaseCentricBuilder(BaseBuilder):
         - build_cnv_subtree
         - join them together
         """
-        self.log('Building Gene from MAF')
+
+        # TODO Refactor with gene centric.
+        self.log('Building Gene from MAF and Gistic')
         gene_df = get_gene_df(maf_df, self.index_name,
                               add_fields=['case_id'],
                               drop_fields=['canonical_transcript_length',
                                            'canonical_transcript_length_cds',
                                            'canonical_transcript_length_genomic'])
+
+        gistic_gene_df = get_gene_df(gistic_df, self.index_name,
+                              add_fields=['case_id'],
+                              drop_fields=['canonical_transcript_length',
+                                           'canonical_transcript_length_cds',
+                                           'canonical_transcript_length_genomic'])
+
+        gene_df = gene_df.union(gistic_gene_df).distinct()
         self.log_count(gene_df)
 
         self.log('Building SSM subtree')
