@@ -190,6 +190,7 @@ class GeneCentricBuilder(BaseBuilder):
         maf_and_gistic = (
             maf_df.select('case_id', 'gene_id')
             .union(gistic_df.select('case_id', 'gene_id'))
+            .distinct()
         )
 
         self.log('Getting gene_id for each case via joining with gene_df')
