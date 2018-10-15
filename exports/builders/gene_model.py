@@ -5,7 +5,9 @@ from pyspark.sql.types import (
     StringType, ArrayType, StructType, StructField
 )
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class GeneModelBuilder(object):

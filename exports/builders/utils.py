@@ -13,7 +13,9 @@ from exports.es_utils import iterate_es_results
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import scan
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
 
 

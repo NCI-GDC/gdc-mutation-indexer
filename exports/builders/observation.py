@@ -8,7 +8,9 @@ from pyspark.sql.functions import (
 
 from exports.builders.utils import struct_select
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class ObservationBuilder(object):
