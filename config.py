@@ -1,16 +1,26 @@
 import os
 import uuid
+from enum import Enum
+
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
-from exports.es_utils import (
-    iterate_es_results,
-    get_values_from_path,
-)
 
-from config_utils import ReadWriteMode
+class ReadWriteMode(Enum):
+    """
+    We can 1) read from saved input file,
+           2) write to saved input file,
+           3) or neither.
+    It doesn't make sense to read from input file x
+    and then write that same x, so we exclude both as an option.
+    """
+    neither = 0
+    read = 1
+    write = 2
+
 
 LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+
 
 class BaseConfig(object):
 
@@ -234,14 +244,6 @@ class BaseConfig(object):
 
         return maf_urls
 
-    def get_maf_urls_from_index(self):
-        path = "downstream_analyses.output_files.file_name"
-        regexp = ".*maf.gz.?"
-
-        return self.get_filenames_from_source_es(
-            self.es, self.graph_index, path, regexp
-        )
-
     def get_maf_file_names(self):
         """
         The file name that corresponds to the File node
@@ -262,7 +264,7 @@ class BaseConfig(object):
         gistic_urls = []
         for obj in bucket_contents:
             if not self.projects or any([project in obj.key for project in self.projects]):
-                #if 'all_thresholded.by_genes.txt' in obj.key:
+                # if 'all_thresholded.by_genes.txt' in obj.key:
                 if self.gistic_filename_string in obj.key:
                     gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
@@ -290,37 +292,6 @@ class BaseConfig(object):
         bucket = conn.get_bucket(get_bucket_name(bucket_name))
         return bucket.list()
 
-    @staticmethod
-    def get_filenames_from_source_es(es, graph_index_name, path, regexp):
-        """
-        Returns all filenames from gdc_from_graph.file documents
-        :path - dot-delimited path to file_name in file document
-        :regexp - regular expression file_name field should follow
-        """
-        if not path.endswith('.file_name'):
-            raise ValueError(
-                'Unexpected path to file_name: {}'.format(path)
-            )
-
-        query = {
-            "query": {
-                "nested": {
-                    "path": '.'.join(path.split('.')[:-1]),
-                    "query": {
-                        "regexp": {
-                            path: regexp
-                        }
-                    }
-                }
-            },
-            '_source': [path]
-        }
-
-        filenames = set()
-        for doc in iterate_es_results(es, graph_index_name, 'file', query=query):
-            filename = get_values_from_path(doc['_source'], path)
-            filenames.update(filename)
-        return filenames
 
 if __name__ == '__main__':
     conf = BaseConfig()

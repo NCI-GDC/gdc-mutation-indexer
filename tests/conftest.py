@@ -9,7 +9,7 @@ from pyspark.sql.types import StringType, ArrayType
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
-from tests_config import TestConfig, LOG_FORMAT
+from tests_config import TestConfig
 from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import get_case_ids_from_source_es

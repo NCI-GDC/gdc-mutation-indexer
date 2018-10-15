@@ -1,6 +1,5 @@
 import os
-from config import BaseConfig, LOG_FORMAT
-from config_utils import ReadWriteMode
+from config import BaseConfig, ReadWriteMode
 
 
 class TestConfig(BaseConfig):

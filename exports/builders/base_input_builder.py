@@ -4,7 +4,7 @@ from pyspark.sql.utils import AnalysisException
 
 import logging
 
-from config_utils import ReadWriteMode
+from config import ReadWriteMode
 
 
 class BaseInputBuilder(object):

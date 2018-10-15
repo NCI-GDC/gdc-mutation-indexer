@@ -11,7 +11,7 @@ setup(
     description="ETL for mutation elasticsearch indices",
     license="Apache",
     packages=PACKAGES,
-    py_modules=["config", "config_utils"],
+    py_modules=["config"],
     include_package_data=True,
     options=dict(egg_info=dict(tag_build=('_rev_' + GIT_HEAD_REV))),
 )
