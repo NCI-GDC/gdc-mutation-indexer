@@ -48,8 +48,8 @@ class BaseConfig(object):
 
     # Keyword for finding Gistic files in the S3 bucket
     gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
-    # Whether the input gistic files are already melted and filtered
-    gistic_melted = bool(os.getenv('GISTIC_MELTED'))
+    # How to process Gistic files (normal, rdd, melted)
+    gistic_mode = os.getenv('GISTIC_MODE', 'normal')
 
     # Pipelines to use. If an empty list is given, all 4 pipelies will be used
     # somaticsniper: 2227614  2.6GB

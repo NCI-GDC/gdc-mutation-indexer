@@ -16,6 +16,7 @@ from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import (
     melt_df,
+    melt_df_rdd,
     uuid5_col,
     remove_columns,
     iterate_es_results,
@@ -121,12 +122,17 @@ class GisticBuilder(BaseInputBuilder):
                 # melt dataframe (opposite of pivoting)
                 # required to get dfs with the same number of columns
                 # so we can union them together
-                # if the input is already melted, we can skip this
-                if not self.config.gistic_melted:
+                # select the appropriate melt method based on configuration
+                if self.config.gistic_mode == 'normal':
                     new_df = melt_df(new_df,
                                      id_vars=["gene_id"],
                                      var_name="aliquot_id",
                                      value_name="cnv_change")
+                elif self.config.gistic_mode == 'rdd':
+                    new_df = melt_df_rdd(new_df,
+                                         id_vars=["gene_id"],
+                                         var_name="aliquot_id",
+                                         value_name="cnv_change")
 
                 if gistic_df is None:
                     gistic_df = new_df

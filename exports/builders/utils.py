@@ -6,7 +6,9 @@ from pyspark.sql.functions import (
     lit, udf, struct, col, explode, array, when, regexp_extract,
     UserDefinedFunction,
 )
-from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
+from pyspark.sql.types import (
+    ArrayType, DoubleType, IntegerType, StringType, StructField, StructType
+)
 
 from exports.mappers.model_mapper import ModelMapper
 from exports.es_utils import iterate_es_results
@@ -289,6 +291,56 @@ def melt_df(df,
     return_df = _temp.select(*cols)
 
     return return_df
+
+
+def melt_df_rdd(df,
+                id_vars,
+                value_vars=None,
+                var_name="variable",
+                value_name="value",
+                filter_zeroes=False):
+    """
+    "Unpivot" a dataframe by creating a separate row for each value column.
+
+    :param df: input pyspark.DataFrame
+    :param id_vars: Column(s) to use as identifier variables
+    :type id_vars: Iterable
+    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
+    that are not set as id_vars.
+    :type value_vars: Iterable
+    :param var_name: Name to use for the 'variable' column.
+        If None, default to 'variable'.
+    :param value_name: Name to use for the 'value' column.
+        If none, default to 'value'.
+    :param filter_zeroes: Whether to omit the rows for zero/falsy values.
+    :return: long version of dataframe
+    """
+
+    # We assume id_vars is a strict subset of value_vars
+    if not value_vars:
+        value_vars = list(set(df.columns) - set(id_vars))
+
+    # Preserve the schema of the original data frame as best we can.
+    # Since we have to the values into a single column anyway, assume
+    # all values have the same datatype.
+    schema = StructType(
+        [df.schema[col] for col in id_vars] +
+        [StructField(var_name, StringType()),
+         StructField(value_name, df.schema[value_vars[0]].dataType)]
+    )
+
+    # Filter out the string '0' because the Gistic data has that for neutral
+    # measurements rather than the numeric 0.
+    def melt_row(row):
+        ids = [row[id] for id in id_vars]
+        return [
+            ids + [var, row[var]]
+            for var in value_vars
+            if (row[var] != '0' and row[var]) or not filter_zeroes
+        ]
+
+    rdd = df.rdd.flatMap(melt_row)
+    return df.sql_ctx.createDataFrame(data=rdd, schema=schema)
 
 
 def remove_columns(df, *args):
