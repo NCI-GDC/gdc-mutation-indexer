@@ -4,7 +4,6 @@ import logging
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 from elasticsearch import Elasticsearch
-from pyspark.sql.utils import AnalysisException
 
 from exports.builders.utils import (
     uuid5_col,
@@ -35,6 +34,7 @@ class MAFBuilder(BaseInputBuilder):
     def __init__(self, config, sqlContext):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
+        self.schema = self.get_schema()
 
     def build_from_scratch(self):
         """
@@ -43,10 +43,6 @@ class MAFBuilder(BaseInputBuilder):
         """
 
         df = self.combine()
-        # Warn:this will strip anything out of the maf that isnt in the schema
-        df = self.standardize_schema(df,
-                                     default_to_none=['normal_bam_uuid',
-                                                      'tumor_bam_uuid'])
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -122,31 +118,35 @@ class MAFBuilder(BaseInputBuilder):
         """
         Renames and select required columns from the MAF documents
         """
+        if default_to_none is None:
+            default_to_none = []
+
+        df_columns = set(df.columns)
+
+        # Map old columns to their new names as given in the schema.
+        # Some columns are optional; supply None values for those as specified.
+        def standardize(new_column, props):
+            old_column = props['name']
+            if old_column in df_columns:
+                return col(old_column).alias(new_column)
+            elif old_column in default_to_none:
+                return lit(None).cast(StringType()).alias(new_column)
+            else:
+                raise KeyError(
+                    'Required column {} missing from MAF'.format(old_column))
+
+        # Iterate over the output schema rather than the input dataframe.
+        # As long as we don't modify the schema after loading it, this should
+        # ensure that we output columns in a consistent order.
+        return df.select(*[standardize(k, v) for k, v in self.schema.items()])
+
+    def get_schema(self):
+        """
+        Load the intended MAF schema from the local YAML file
+        """
         path = resource_filename('exports.schemas', 'maf.yml')
         with open(path) as f:
-            maf_schema = yaml.load(f)['maf_schema']
-
-        # Save maf_schema for later use
-        self.schema = maf_schema
-
-        # Select and rename maf fields according to schema
-        try:
-            maf_df = df.select(*(col(v['name']).alias(k)
-                                 for k, v in maf_schema.items()))
-        except AnalysisException:
-
-            if default_to_none is None:
-                default_to_none = []
-
-            maf_df = df.select(*(col(v['name']).alias(k)
-                                 for k, v in maf_schema.items()
-                                 if k not in default_to_none))
-
-            # Add null valued columns
-            for col_name in default_to_none:
-                maf_df = maf_df.withColumn(col_name, lit(None).cast(StringType()))
-
-        return maf_df
+            return yaml.load(f)['maf_schema']
 
     def format_cosmic_id(self, df):
         """
@@ -415,6 +415,13 @@ class MAFBuilder(BaseInputBuilder):
                 new_df = new_df.withColumn('variant_caller', lit(caller))
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
+
+                # ensure a consistent schema so that the union works correctly
+                # this will strip out any columns that aren't in the schema,
+                # but we should not need those columns
+                new_df = self.standardize_schema(
+                    new_df, default_to_none=['normal_bam_uuid',
+                                             'tumor_bam_uuid'])
 
                 self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
                 if df is None:
