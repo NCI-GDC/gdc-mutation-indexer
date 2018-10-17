@@ -4,6 +4,7 @@ import json
 import yaml
 import pytest
 from collections import Counter
+from pyspark.sql.functions import lit
 from pyspark.sql.types import ArrayType, StringType
 
 from exports.builders import MAFBuilder
@@ -28,6 +29,14 @@ class TestMAFBuilder:
             expected_counts.setdefault(pipeline, 0)
             expected_counts[pipeline] += df.count()
         yield expected_counts
+
+    @pytest.fixture
+    def maf_schema(self):
+        path = os.path.join(conf.schemas_dir, 'maf.yml')
+        with open(path) as f:
+            maf_schema = yaml.load(f)['maf_schema']
+
+        return maf_schema
 
     def test_patch_url(self, sqlContext):
         ''' Test that s3 urls are patched correctly '''
@@ -54,22 +63,71 @@ class TestMAFBuilder:
         for pipeline, count in expected_counts.items():
             assert c[pipeline] == count
 
-    def test_schema(self, sqlContext):
+    def test_schema(self, sqlContext, maf_schema):
         '''
         Test that maf has columns correctly renamed
         '''
         builder = MAFBuilder(conf, sqlContext)
 
+        # combine() should standardize the columns while loading the data
         df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df, default_to_none=['normal_bam_uuid',
-                                                             'tumor_bam_uuid'])
-
-        path = os.path.join(conf.schemas_dir, 'maf.yml')
-        with open(path) as f:
-            maf_schema = yaml.load(f)['maf_schema']
 
         for field in maf_schema.keys():
             assert field in df.columns
+
+    def test_standardize_schema_field_order(self, sqlContext, maf_schema):
+        '''
+        Confirm that standardize_schema standardizes the field order
+
+        This verifies that we can safely union mafs together
+        '''
+        builder = MAFBuilder(conf, sqlContext)
+
+        # Bypass combine() so the dataframe isn't already standardized.
+        df = (
+            builder.s3_to_df(conf.maf_urls[0])
+            .withColumn('variant_caller', lit('variant_caller'))
+            .withColumn('acl', lit(None))
+        )
+        columns = df.columns
+
+        sort_df = builder.standardize_schema(df.select(*sorted(columns)))
+        assert sort_df.columns == maf_schema.keys()
+
+        reverse_df = builder.standardize_schema(df.select(*reversed(columns)))
+        assert reverse_df.columns == maf_schema.keys()
+
+        extra_columns = columns[:]
+        extra_columns.insert(0, lit('asdf').alias('extra'))
+        extra_columns.insert(4, lit(300).alias('extraneous'))
+        extra_columns.append(lit(None).alias('superfluous'))
+        extra_df = builder.standardize_schema(df.select(*extra_columns))
+        assert extra_df.columns == maf_schema.keys()
+
+    def test_standardize_schema_missing_field(self, sqlContext, maf_schema):
+        '''
+        Test standardize_schema's handling of missing fields
+
+        Fields that default_to_none should be filled in with None columns;
+        other missing fields should trigger an exception
+        '''
+        builder = MAFBuilder(conf, sqlContext)
+
+        # The raw dataframe is missing a couple columns, so it should
+        # initially fail standardization.
+        df = builder.s3_to_df(conf.maf_urls[0])
+
+        try:
+            builder.standardize_schema(df)
+            assert False, 'Builder accepted df missing required columns'
+        except KeyError:
+            pass
+
+        # If we tell the builder to supply None values for the missing columns,
+        # then it should fill in those columns and standardize successfully.
+        standardized_df = builder.standardize_schema(
+            df, default_to_none=['variant_caller', 'acl'])
+        assert standardized_df.columns == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
         '''
@@ -151,8 +209,6 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         df = builder.combine(conf.maf_urls)
-        df = builder.standardize_schema(df, default_to_none=['normal_bam_uuid',
-                                                             'tumor_bam_uuid'])
         df = builder.extract_barcode(df)
 
         assert '_case_submitter_id' in df.columns
