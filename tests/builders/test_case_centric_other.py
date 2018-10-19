@@ -7,51 +7,58 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gistic_df', 'all_maf_cases',
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'all_cases', 'all_maf_cases',
                          'case_centric_df', 'test_data')
 class TestCaseCentricOther:
     """ Other case centric tests """
 
     def test_empty_cases(self, case_centric_df, maf_df, gistic_df,
-                         test_data, all_maf_cases):
+                         test_data, all_cases, all_maf_cases):
         """
-        "empty cases" - cases that have been tested for ssms and there were no ssm found
-        in other words, they are in the maf header as aliquots, but not in maf rows
+        Test "empty cases"
+
+        Confirm that we index cases even if they have no maf or cnv data.
+        This is necessary for the portal to visualize such cases.
         """
         cases_built = {c.case_id for c in case_centric_df.collect()}
         stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
                                         'case_centric')
 
-        empty_cases = {c for c in all_maf_cases if c not in stats['ssm_cases']}
+        empty_cases = {
+            c for c in all_cases
+            if c not in all_maf_cases and c not in stats['cnv_cases']
+        }
 
-        # check that there was at least one empty case
+        # confirm that we have at least one empty case in our test data
         assert empty_cases
 
-        # check that all maf cases were built (even empty ones)
-        assert all_maf_cases - cases_built == set()
+        # check that all cases were built (even empty ones)
+        assert all_cases - cases_built == set()
 
     def test_available_variation_data(self, case_centric_df, maf_df, gistic_df,
-                                      all_maf_cases, test_data):
+                                      all_cases, all_maf_cases, test_data):
         """
         Test that available_variation_data is correctly populated:
-            * ['cnv'] - for cnv-only genes
-            * ['ssm'] - for ssm-only genes
-            * ['cnv', 'ssm'] - for genes that have both ssms and cnvs
-
+            * ['cnv'] - for cnv-only cases
+            * ['ssm'] - for cases in the maf header that do not have cnv data
+            * ['cnv', 'ssm'] - for cases that have both maf and cnv data
+            * [] - for cases that have no maf or cnv data
         """
 
         assert 'available_variation_data' in case_centric_df.columns
 
         gistic_cases = {r.case_id for r in gistic_df.collect()}
-        maf_cases = all_maf_cases  # also includes "empty cases"
+        maf_cases = all_maf_cases  # includes cases in maf header without ssms
 
         common_cases = gistic_cases & maf_cases
         cnv_cases = gistic_cases - maf_cases
         ssm_cases = maf_cases - gistic_cases
+        empty_cases = all_cases - gistic_cases - maf_cases
 
         assert common_cases, 'there were no common cases found in test data'
         assert cnv_cases, 'there were no cnv cases found in test data'
         assert ssm_cases, 'there were no ssm cases found in test data'
+        assert empty_cases, 'there were no empty cases found in test data'
 
         # Check that 'available_variation_data' is populated correctly
         for row in case_centric_df.collect():
@@ -61,6 +68,8 @@ class TestCaseCentricOther:
                 assert row.available_variation_data == ['cnv']
             elif row.case_id in ssm_cases:
                 assert row.available_variation_data == ['ssm']
+            elif row.case_id in empty_cases:
+                assert row.available_variation_data == []
 
     @pytest.mark.parametrize('path', [
                              'case_id',
