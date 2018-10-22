@@ -12,7 +12,10 @@ from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 from cdisutils.dictionary import remove_keys_from_dict
 
-from exports.builders.utils import get_case_ids_from_source_es
+from exports.builders.utils import (
+    get_case_ids_from_source_es,
+    iterate_es_results,
+)
 from exports.mappers.distinct_doctype_model_mapper import (
     DistinctDocTypeModelMapper
 )
@@ -146,6 +149,20 @@ def all_maf_cases(sqlContext, maf_df):
     # Read aliquots from maf headers and get list of corresponding cases:
     cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
     return {c.case_id for c in cases.collect()}
+
+
+@pytest.fixture(scope='session')
+def all_cases(es_client):
+    """
+    Returns the IDs of all cases in the GDC graph, including those with no
+    maf or cnv data
+    """
+    hits = iterate_es_results(es_client=es_client,
+                              index_name=conf.graph_index,
+                              doc_type=conf.graph_document,
+                              query={'_source': ['case_id']})
+
+    return {hit['_source']['case_id'] for hit in hits}
 
 
 @pytest.fixture(scope='session')
