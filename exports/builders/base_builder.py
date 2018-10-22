@@ -82,7 +82,7 @@ class BaseBuilder(object):
             .option('es.batch.size.bytes', self.config.batch_size_bytes)\
             .option('es.batch.size.entries', self.config.batch_size_entries)\
             .option('es.mapping.id', self.id_field)\
-            .option('es.spark.dataframe.write.null', 'true')\
+            .option('es.spark.dataframe.write.null', 'false')\
             .save(index_doc)
 
         df.unpersist()
