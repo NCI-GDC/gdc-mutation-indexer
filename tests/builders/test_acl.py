@@ -81,6 +81,10 @@ class TestACL:
             # It is rare for ssms to be read from multiple mafs, and our test
             # data does not have any ssms with multiple mafs. Therefore, no
             # ssms should have both acls present.
+            #
+            # NOTE: As we apply more granular acls in the future, this
+            # assumption of one acl per ssm may not apply, but it should be
+            # valid for now with our particular set of test data.
             assert not overlap_docs, (
                 "{} docs have overlapping acls"
                 .format(overlap_docs, index_name)
