@@ -320,4 +320,3 @@ def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
 @pytest.fixture(scope='module')
 def maf_stats():
     yield MAFStats(conf.maf_urls)
-
