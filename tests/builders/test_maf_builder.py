@@ -29,12 +29,6 @@ class TestMAFBuilder:
             expected_counts[pipeline] += df.count()
         yield expected_counts
 
-    def test_patch_url(self, sqlContext):
-        ''' Test that s3 urls are patched correctly '''
-        builder = MAFBuilder(conf, sqlContext)
-        url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
-        assert builder.patch_url(url1).startswith('s3a://')
-
     def test_combine(self, sqlContext, expected_counts):
         '''
         Test that mafs are combined correctly

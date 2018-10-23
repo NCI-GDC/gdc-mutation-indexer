@@ -456,13 +456,3 @@ class MAFBuilder(BaseInputBuilder):
             raise Exception("Cannot identify caller for url {}".format(url))
 
         return caller
-
-    def patch_url(self, url):
-        """
-        changes domain/bucket to bucket format
-        s3:// -> s3a://
-        """
-        url = url.replace('cleversafe.service.consul/somatic_maf', 'test')
-        url = url.replace('s3://', 's3a://')
-        return url
-

@@ -110,4 +110,3 @@ class BaseInputBuilder(object):
         df = df.withColumn('canonical_transcript_length_genomic',
                            len_gen_udf(df.transcripts))
         return df
-

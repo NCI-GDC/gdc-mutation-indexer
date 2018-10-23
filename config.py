@@ -37,9 +37,11 @@ class BaseConfig(object):
         auth=(os.getenv('INDEXD_USER'), os.getenv('INDEXD_PASS'))
     )
 
-    # Keywords that should appear in the S3 key for it to be picked up
-    # Note that ALL of these keywords have to be present for the MAF to be used
-    maf_regex = os.getenv('MAF_REGEX', '.*maf.gz')
+    # Files of which data_type should be considered MAFs
+    maf_data_types = [
+        'Aggregated Somatic Mutation',
+        'Masked Somatic Mutation',
+    ]
 
     gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
 
@@ -60,7 +62,7 @@ class BaseConfig(object):
     # Number of projects to use. Set to 0 to use all projects
     # The projects are taken in alphabetic order
     # To target specific projects, use 'projects' above
-    nb_projects = os.getenv('NB_PROJECTS', 0)
+    nb_projects = int(os.getenv('NB_PROJECTS', 0))
 
     # Debug mode
     debug = False
@@ -223,14 +225,15 @@ class BaseConfig(object):
     def get_maf_urls(self):
         """
         Returns list of relevant maf_urls
-        - gets file_id-s from elasticsearch "{self.graph_index}/file" index
+        - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
         - gets corresponding urls from indexd
         """
+
         query = {
             "_source": ["file_name"],
             "query": {
-                "regexp": {
-                    "file_name": self.maf_regex
+                "terms": {
+                    "data_type": self.maf_data_types
                 }
             }
         }
@@ -243,11 +246,19 @@ class BaseConfig(object):
         for file_id, maf_name in file_id_to_name.items():
             if not self.projects or any([project in maf_name for project in self.projects]):
                 maf_url = self.get_url_from_indexd(file_id)
-                maf_urls.append(maf_url)
+                maf_urls.append(self.patch_url(maf_url))
 
-        if self.nb_projects:
+        if self.nb_projects != 0:
             maf_urls = maf_urls[:self.nb_projects]
         return maf_urls
+
+    def patch_url(self, url):
+        """
+        Change s3 url to s3a
+        """
+        url = url.replace('s3://cleversafe.service.consul/', '')
+        url = 's3a://' + url
+        return url
 
     def get_url_from_indexd(self, file_id):
         """
@@ -257,7 +268,7 @@ class BaseConfig(object):
         indexd_doc = self.indexd.get(file_id)
 
         valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
-        for url, metadata in indexd_doc.urls_metadata.keys():
+        for url, metadata in indexd_doc.urls_metadata.items():
             if metadata == valid_metadata:
                 return url
 

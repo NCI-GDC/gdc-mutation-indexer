@@ -103,7 +103,7 @@ class TestConfig(BaseConfig):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
                 if f.endswith(".tsv")]
-      
+
     def get_maf_file_names(self):
         """
         We store the test mafs as .maf files,
