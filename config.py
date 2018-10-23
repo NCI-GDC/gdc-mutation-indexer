@@ -32,10 +32,6 @@ class BaseConfig(object):
     es_pass = os.getenv('ES_PASS', '')
 
     # Indexd
-    print '!!!!!!!!!'
-    print os.getenv('INDEXD_HOST')
-    print os.getenv('INDEXD_USER')
-    print '!!!!!!!!!'
     indexd = IndexClient(
         baseurl=os.getenv('INDEXD_HOST'),
         auth=(os.getenv('INDEXD_USER'), os.getenv('INDEXD_PASS'))
@@ -258,9 +254,7 @@ class BaseConfig(object):
         Queries indexd by file_name and returns corresponding validated cleversafe url
         """
 
-        print '!', file_id
         indexd_doc = self.indexd.get(file_id)
-        print indexd_doc.to_json()
 
         valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
         for url, metadata in indexd_doc.urls_metadata.keys():
@@ -291,7 +285,6 @@ class BaseConfig(object):
         gistic_urls = []
         for obj in bucket_contents:
             if not self.projects or any([project in obj.key for project in self.projects]):
-                #if 'all_thresholded.by_genes.txt' in obj.key:
                 if self.gistic_filename_string in obj.key:
                     gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
