@@ -30,6 +30,7 @@ from exports.builders import (
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CaseForSSMJoinsCentricBuilder,
+    CaseForCNVJoinsCentricBuilder,
 )
 
 conf = TestConfig()
@@ -300,6 +301,20 @@ def case_for_ssm_joins_centric_df(sqlContext, maf_df, case_df):
     log.info('\n\n\tLOADING case_for_ssm_joins\n\n')
     builder.load()
     return builder.case_for_ssm_joins_centric
+
+
+@pytest.fixture(scope='session')
+def case_for_cnv_joins_centric_df(sqlContext, gistic_df, case_df):
+    """
+    Builds case_for_cnv_joins centric dataframe
+    """
+    log.info('\n\n\tBUILDING case_for_cnv_joins DF\n\n')
+    builder = CaseForCNVJoinsCentricBuilder(conf, sqlContext)
+    builder.build(gistic_df, case_df)
+
+    log.info('\n\n\tLOADING case_for_cnv_joins\n\n')
+    builder.load()
+    return builder.case_for_cnv_joins_centric
 
 
 @pytest.fixture(scope='session')
