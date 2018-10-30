@@ -1,6 +1,5 @@
 import logging
 
-from pyspark.sql.functions import struct, collect_list
 from exports.builders import (
     ObservationBuilder
 )
@@ -20,7 +19,7 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
     """
 
     index_name = 'case_for_ssm_joins_centric'
-    id_field = 'case_for_ssm_joins_id'
+    id_field = 'case_id'
 
     def build(self, maf_df, case_df):
         """
@@ -32,9 +31,9 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
             if self.ssm_centric is not None:
                 return self
 
-        occurrence_df = self.build_occurrence(maf_df, case_df)
+        case_for_ssm_df = self.build_case_for_ssm(maf_df, case_df)
 
-        self.case_for_ssm_joins_centric = occurrence_df
+        self.case_for_ssm_joins_centric = case_for_ssm_df
         self.log_count(self.case_for_ssm_joins_centric)
 
         self.log('Build finished')
@@ -44,24 +43,18 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
 
         return self
 
-    def build_occurrence(self, maf_df, case_df):
+    def build_case_for_ssm(self, maf_df, case_df):
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'ssm_centric')
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
 
         self.log('Joining Cases with Observation, [right, case_id]')
-        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                         .select('ssm_id',
-                                 struct('occurrence_id',
-                                        struct('observation',
-                                               *case_df.columns).alias('case'))
-                                 .alias('occurrence'))
-                         .groupby('ssm_id')
-                         .agg(collect_list('occurrence').alias('occurrence')))
-        self.log_count(occurrence_df)
-        import ipdb; ipdb.set_trace()
+        case_for_ssm_df = (case_df.join(obs_df,
+                                        on=['case_id'],
+                                        how='right')
+                           ).drop('ssm_id').drop('occurrence_id')
 
-        occurrence_df = occurrence_df.drop('ssm_id')
+        self.log_count(case_for_ssm_df)
 
-        return occurrence_df
+        return case_for_ssm_df

@@ -29,6 +29,7 @@ from exports.builders import (
     CaseCentricBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
+    CaseForSSMJoinsCentricBuilder,
 )
 
 conf = TestConfig()
@@ -285,6 +286,20 @@ def cnv_occurrence_centric_df(sqlContext, gistic_df, case_df):
     log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
     return builder.cnv_occurrence_centric
+
+
+@pytest.fixture(scope='session')
+def case_for_ssm_joins_centric_df(sqlContext, maf_df, case_df):
+    """
+    Builds case_for_ssm_joins centric dataframe
+    """
+    log.info('\n\n\tBUILDING case_for_ssm_joins DF\n\n')
+    builder = CaseForSSMJoinsCentricBuilder(conf, sqlContext)
+    builder.build(maf_df, case_df)
+
+    log.info('\n\n\tLOADING case_for_ssm_joins\n\n')
+    builder.load()
+    return builder.case_for_ssm_joins_centric
 
 
 @pytest.fixture(scope='session')
