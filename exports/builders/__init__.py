@@ -9,6 +9,7 @@ from consequence import ConsequenceBuilder
 from observation import ObservationBuilder
 # Centric builders
 from case_for_ssm_joins_centric import CaseForSSMJoinsCentricBuilder
+from case_for_cnv_joins_centric import CaseForCNVJoinsCentricBuilder
 from case_centric import CaseCentricBuilder
 from gene_centric import GeneCentricBuilder
 from ssm_centric import SSMCentricBuilder

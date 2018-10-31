@@ -13,10 +13,14 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('case_for_ssm_joins_centric_df')
+@pytest.mark.usefixtures('case_for_cnv_joins_centric_df',
+                         'case_for_ssm_joins_centric_df')
 class TestJoins:
 
     def test_one(self, case_for_ssm_joins_centric_df):
+        pass
+
+    def test_two(self, case_for_cnv_joins_centric_df):
         pass
 
 @pytest.mark.usefixtures('gistic_df', 'cnv_centric_df', 'test_data', 'es_client')

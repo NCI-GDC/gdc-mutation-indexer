@@ -21,7 +21,7 @@ class CaseForCNVJoinsCentricBuilder(BaseBuilder):
     index_name = 'case_for_cnv_joins_centric'
     id_field = 'case_id'
 
-    def build(self, maf_df, case_df):
+    def build(self, gistic_df, case_df):
         """
         TODO
         """
@@ -32,7 +32,7 @@ class CaseForCNVJoinsCentricBuilder(BaseBuilder):
                 return self
 
         self.case_for_cnv_joins_centric = \
-            self.build_case_for_cnv(maf_df, case_df)
+            self.build_case_for_cnv(gistic_df, case_df)
 
         self.log('Build finished')
 
@@ -42,12 +42,12 @@ class CaseForCNVJoinsCentricBuilder(BaseBuilder):
 
         return self
 
-    def build_case_for_cnv(self, maf_df, case_df):
+    def build_case_for_cnv(self, gistic_df, case_df):
 
         # Observation
         self.log('Aggregating Observation from MAF')
+
         obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
-        import ipdb; ipdb.set_trace()
 
         self.log('Joining Cases with Observation, [right, case_id]')
         case_for_cnv_df = (case_df.join(obs_df,
