@@ -24,8 +24,9 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
               |                     |_____ transcript{}
               |                                   |_____ gene{}
               |                                   |_____ annotation{}
-              |____ case{}
-                       |____ observation[]
+            #   |____ case{}
+            #            |____ observation[]
+            NOPE
     """
 
     index_name = 'ssm_occurrence_centric'
@@ -82,14 +83,12 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         return ssm_cons
 
     def build_case_subtree(self, maf_df, case_df):
-        self.log('Building case subtree')
-        # Observation
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        # self.log('Building case subtree')
+        # # Observation
+        # obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
 
-        self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                              .select('case_id', 'ssm_id', 'occurrence_id',
-                                      struct('observation',
-                                             *case_df.columns).alias('case')))
-        self.log_count(case_obs_df)
-        return case_obs_df
+        # self.log('Join observation with case')
+        case_occ_df = (case_df.join(maf_df, on=['case_id'], how='right')
+                              .select('case_id', 'ssm_id', 'occurrence_id'))
+        self.log_count(case_occ_df)
+        return case_occ_df

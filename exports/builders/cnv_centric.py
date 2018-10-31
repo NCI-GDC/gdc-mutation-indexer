@@ -23,8 +23,8 @@ class CNVCentricBuilder(BaseBuilder):
         |____ consequence[]
         |             |_____ gene{}
         |____ occurrence[]
-                      |_____ case{}
-                                |____ observation[]
+                      |_____ occurrence_id
+                      |_____ [case_id1, case_id2, ...]
 
     """
 
@@ -83,25 +83,31 @@ class CNVCentricBuilder(BaseBuilder):
         occurrence[]
         |____ occurrence{}
                 |____ occurrence_id
-                |____ case {}
-                        |____ observation []
+                |____ [case_id1, case_id2, ...]
 
         """
         assert 'case_id' in gistic_df.columns
 
-        # 1. Observation
-        self.logger.info('Aggregating Observation from gistic')
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
-
-        # 2. Join Case to Observation and create structs
-        self.logger.info('Joining Cases with Observation, [right, case_id]')
-        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='left')
+        occurrence_df = (case_df.join(gistic_df, on=['case_id'], how='left')
                          .select('cnv_id',
                                  struct('occurrence_id',
-                                        struct('observation',
-                                               *case_df.columns).alias('case'))
+                                        'case_id')
                                  .alias('occurrence'))
                          .groupby('cnv_id')
                          .agg(collect_set('occurrence').alias('occurrence')))
+
+        # # 1. Observation
+        # self.logger.info('Aggregating Observation from gistic')
+        # obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+
+        # # 2. Join Case to Observation and create structs
+        # self.logger.info('Joining Cases with Observation, [right, case_id]')
+        # occurrence_df = (case_df.join(obs_df, on=['case_id'], how='left')
+        #                  .select('cnv_id',
+        #                          struct('occurrence_id',
+        #                                 'case_id')
+        #                          .alias('occurrence'))
+        #                  .groupby('cnv_id')
+        #                  .agg(collect_set('occurrence').alias('occurrence')))
 
         return occurrence_df

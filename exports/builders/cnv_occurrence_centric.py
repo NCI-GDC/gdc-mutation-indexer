@@ -24,8 +24,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
     cnv_occurrence{}
         |
-        |____ case{}
-        |       |____ observation[]
+        |____ case_id
         |
         |____ cnv{}
                 |____ consequence[]
@@ -100,20 +99,20 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
     def build_case_subtree(self, gistic_df, case_df):
         """
-            case{}
-                |____ observation[]
+            # case{}
+            #     |____ observation[]
+            NOPE
         """
-        self.log('Building case subtree')
+        # self.log('Building case subtree')
 
-        # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        # # Observation
+        # obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
-        self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on='case_id', how='left')
-                              .select('case_id', 'occurrence_id', 'cnv_id',
-                                      struct('observation',
-                                             *case_df.columns)
-                                      .alias('case')))
-        self.log_count(case_obs_df)
-        return case_obs_df
+        # self.log('Join observation with case')
+        import ipdb; ipdb.set_trace()
+        case_occ_df = (case_df.join(gistic_df, on='case_id', how='left')
+                              .select('case_id', 'occurrence_id', 'cnv_id'
+                                      ))
+        self.log_count(case_occ_df)
+        return case_occ_df
 

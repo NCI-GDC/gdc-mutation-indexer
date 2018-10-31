@@ -26,8 +26,9 @@ class SSMCentricBuilder(BaseBuilder):
           |                        |_____ gene{}
           |                        |_____ annotation{}
           |____ occurrence[]
-                      |_____ case{}
-                               |____ observation[]
+                      |_____ {
+                          occurrence_id: [case_id1, case_id2, ...]
+                          }
     """
 
     index_name = 'ssm_centric'
@@ -76,15 +77,14 @@ class SSMCentricBuilder(BaseBuilder):
 
     def build_occurrence(self, maf_df, case_df):
         # Observation
-        self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        # self.log('Aggregating Observation from MAF')
+        # obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
 
         self.log('Joining Cases with Observation, [right, case_id]')
-        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
+        occurrence_df = (case_df.join(maf_df, on=['case_id'], how='right')
                          .select('ssm_id',
                                  struct('occurrence_id',
-                                        struct('observation',
-                                               *case_df.columns).alias('case'))
+                                        'case_id')
                                  .alias('occurrence'))
                          .groupby('ssm_id')
                          .agg(collect_list('occurrence').alias('occurrence')))
