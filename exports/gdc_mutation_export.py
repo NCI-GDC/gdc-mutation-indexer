@@ -8,6 +8,8 @@ from builders import (
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
+    CaseForSSMJoinsCentricBuilder,
+    CaseForCNVJoinsCentricBuilder,
 )
 
 
@@ -27,6 +29,8 @@ class GDCMutationExport(object):
             SSMOccurrenceCentricBuilder,
             CNVCentricBuilder,
             CNVOccurrenceCentricBuilder,
+            CaseForSSMJoinsCentricBuilder,
+            CaseForCNVJoinsCentricBuilder,
         ]
 
     def run_export(self, config=None):
@@ -40,10 +44,12 @@ class GDCMutationExport(object):
             index_name = builder.index_name
             if (index_name in config.index_names
                     and config.index_names[index_name] is not None):
-                if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
+                if index_name in ['ssm_centric', 'ssm_occurrence_centric',
+                                  'case_for_ssm_joins_centric']:
                     # these builders do not yet depend on gistic_df
                     builder(self.config, self.sqlContext).build(maf_df, case_df).load()
-                elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
+                elif index_name in ['cnv_centric', 'cnv_occurrence_centric',
+                                    'case_for_cnv_joins_centric']:
                     # these builders do not depend on maf_df
                     builder(self.config, self.sqlContext).build(gistic_df, case_df).load()
                 else:
