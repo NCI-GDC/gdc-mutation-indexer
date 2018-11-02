@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import struct, collect_list
+from pyspark.sql.functions import struct, collect_set
 
 from exports.builders import (
     ConsequenceBuilder,
