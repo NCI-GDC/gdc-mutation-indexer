@@ -1,6 +1,6 @@
 import pytest
 
-from exports.mappers.models_mapper import ModelMapper
+from exports.mappers.model_mapper import ModelMapper
 from tests_config import TestConfig
 
 conf = TestConfig()
@@ -29,6 +29,7 @@ class TestSSMCentricOther:
         """
         ssm_centric_df.select(path)
 
+    @pytest.mark.do_not_collect
     @pytest.mark.parametrize('path', ModelMapper('ssm_centric').get_paths())
     @pytest.mark.skipif(conf.skip_in_depth_tests,
                         reason='we want to merge partial data fixes.'\

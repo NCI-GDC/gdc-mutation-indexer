@@ -2,7 +2,12 @@ import pytest
 from random import randint
 
 from pyspark.sql.functions import lit
-from exports.builders.utils import percentile, struct_select, extract_aas_position
+from exports.builders.utils import (
+    percentile,
+    struct_select,
+    extract_aas_position,
+)
+from exports.mappers.model_mapper import ModelMapper
 from tests_config import TestConfig
 from utils.true_stats import TestDataStats
 from exports.builders.utils import (
@@ -26,7 +31,7 @@ def create_df(sqlContext, values, column_name='values'):
     return sqlContext.createDataFrame(values, [column_name])
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'es_client')
 class TestMiscFunctions:
 
     def test_es_adapter(self, sqlContext):
@@ -36,7 +41,7 @@ class TestMiscFunctions:
         # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
         return (sqlContext.read.format("es")
                           .option('es.nodes', conf.source_es_host)
-                          .option('es.nodes.resolve.hostname','false')
+                          .option('es.nodes.resolve.hostname', 'false')
                           .option('es.resource.read', conf.graph_index)
                           .load(conf.graph_index))
 
@@ -58,14 +63,9 @@ class TestMiscFunctions:
         Test mapping to select
         """
 
-        indices = ['case_centric', 'gene_centric', 'ssm_centric',
-                   'ssm_occurrence_centric']
-        mappings = ['annotation', 'case', 'gene', 'observation', 'ssm',
-                    'transcript']
-
-        for mapping in mappings:
-            for index in indices:
-                print index, mapping
+        paths_map = ModelMapper(None).paths_map
+        for mapping in paths_map:
+            for index in paths_map[mapping]:
                 stmt = struct_select(index, mapping)
                 assert stmt
 
@@ -77,7 +77,7 @@ class TestMiscFunctions:
         assert conf.graph_index is not None
         assert es_client.count()['count'] > 0
         assert (es_client.get(index=conf.graph_index, doc_type='case',
-                       id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
+                              id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
                 == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
 
     def test_properties(self):
@@ -204,11 +204,11 @@ class TestMiscFunctions:
                                       '13afbde8-e5b5-4f3c-8a9d-daef71560005')
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
 
-    @pytest.mark.parametrize('index', ['case_centric', 'gene_centric',
-                                       'ssm_centric', 'ssm_occurrence_centric'])
-    def test_test_data_stats(self, maf_df, index):
+    @pytest.mark.parametrize('index', conf.indices)
+    def test_test_data_stats(self, maf_df, gistic_df, index):
         """
         Test that TestDataStats loads test data and returns stats
         """
         data = TestDataStats.load_test_data(conf.input_dir)
-        stats = TestDataStats.get_stats(maf_df, data, index)
+        stats = TestDataStats.get_stats(maf_df, gistic_df, data, index)
+

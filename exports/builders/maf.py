@@ -1,10 +1,9 @@
 import yaml
-import json
 import logging
-import requests
 
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from elasticsearch import Elasticsearch
 
 from exports.builders.utils import (
     uuid5_col,
@@ -12,44 +11,39 @@ from exports.builders.utils import (
     extract_sift_polyphen,
 )
 
+from exports.es_utils import (
+    iterate_es_results,
+)
+
+from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 
 from pkg_resources import resource_filename
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
-class MAFBuilder(object):
+class MAFBuilder(BaseInputBuilder):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
     """
 
     def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
+        self.acls = self.get_acls()
+        self.schema = self.get_schema()
 
-        if config.maf_urls is not None:
-            self.urls = config.maf_urls
-        else:
-            self.urls = self.get_urls()
-
-    def build(self):
+    def build_from_scratch(self):
         """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
         """
-        if self.config.maf_use_existing:
-            try:
-                df = self.get_existing()
-                return df
-            except IOError:
-                self.logger.info('Couldn\'t find existing maf file at given path')
 
         df = self.combine()
-        # Warn:this will strip anything out of the maf that isnt in the schema
-        df = self.standardize_schema(df)
+
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
@@ -75,16 +69,12 @@ class MAFBuilder(object):
         df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
         df = df.drop('_gene_id')
         df = self.add_null(df)
-        df = self.add_canonical_lengths(df)
+        df = self.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
         df = self.map_transform(df)
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
-
-        # Write data
-        if self.config.maf_keep:
-            self.write(df)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.repartition, 'ssm_id')
@@ -108,10 +98,12 @@ class MAFBuilder(object):
 
                 elif 'pattern' in self.schema[column]:
                     pattern = self.schema[column]['pattern']
+
                     def apply_pattern(value):
                         return pattern.format(value)
                     df = df.withColumn(column,
-                                       udf(apply_pattern, StringType())(df[column]))
+                                       udf(apply_pattern,
+                                           StringType())(df[column]))
                 else:
                     pass
         return df
@@ -122,22 +114,39 @@ class MAFBuilder(object):
         """
         return df.withColumn('empty', lit(None).cast(StringType()))
 
-    def standardize_schema(self, df):
+    def standardize_schema(self, df, default_to_none=None):
         """
         Renames and select required columns from the MAF documents
         """
+        if default_to_none is None:
+            default_to_none = []
+
+        df_columns = set(df.columns)
+
+        # Map old columns to their new names as given in the schema.
+        # Some columns are optional; supply None values for those as specified.
+        def standardize(new_column, props):
+            old_column = props['name']
+            if old_column in df_columns:
+                return col(old_column).alias(new_column)
+            elif old_column in default_to_none:
+                return lit(None).cast(StringType()).alias(new_column)
+            else:
+                raise KeyError(
+                    'Required column {} missing from MAF'.format(old_column))
+
+        # Iterate over the output schema rather than the input dataframe.
+        # As long as we don't modify the schema after loading it, this should
+        # ensure that we output columns in a consistent order.
+        return df.select(*[standardize(k, v) for k, v in self.schema.items()])
+
+    def get_schema(self):
+        """
+        Load the intended MAF schema from the local YAML file
+        """
         path = resource_filename('exports.schemas', 'maf.yml')
         with open(path) as f:
-            maf_schema = yaml.load(f)['maf_schema']
-
-        # Save maf_schema for later use
-        self.schema = maf_schema
-
-        # Select and rename maf fields according to schema
-        maf_df = df.select(*(col(v['name']).alias(k)
-                             for k, v in maf_schema.items()))
-
-        return maf_df
+            return yaml.load(f)['maf_schema']
 
     def format_cosmic_id(self, df):
         """
@@ -156,59 +165,87 @@ class MAFBuilder(object):
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
         return df
 
+    def get_acls(self):
+        """
+        1. Take list of maf file names
+        2. Assume the last part of the url is the file_name
+        3. Look up corresponding files in es
+        4. Parse out those files' acls
+        """
+
+        es = Elasticsearch(self.config.es_host,
+                           port=self.config.es_port,
+                           http_auth=(self.config.es_user,
+                                      self.config.es_pass))
+
+        file_names = self.config.get_maf_file_names()
+
+        query = {
+                "query": {
+                    "bool": {
+                        "must": {
+                            "terms": {
+                                "file_name": file_names
+                                }
+                            }
+                        }
+                    },
+                "_source": ["file_name", "acl"]
+        }
+
+        # Build up dictionary of file_name to acl
+        filenames_to_acls = {}
+        for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):
+            source = doc['_source']
+            filename = source['file_name']
+            acl = source['acl']
+
+            filenames_to_acls[filename] = acl
+
+        return filenames_to_acls
+
+    def add_acl(self, df, url):
+        """
+        Populates mutation data with acls
+        Have to do a little massaging of the file name to match
+        Mapped on the maf name level
+        """
+        acls = self.acls
+
+        def acl_inner():
+            try:
+                # trim out leading folders
+                file_name = url.split('/')[-1]
+
+                # mafs may be zipped or unzipped
+                # we expect the file_name in the File to be 'xxx.gz'
+                if not file_name.endswith('.gz'):
+                    file_name += '.gz'
+
+                return acls[file_name]
+
+            except KeyError:
+
+                raise Exception("ACL not found for maf with url {}, "
+                                "file_name {}".format(url, file_name))
+
+        acl_udf = udf(acl_inner, ArrayType(StringType()))
+        return df.withColumn('acl', acl_udf())
+
     def add_available_variation_data(self, df):
         """
-        Populates available_variation_data with ['ssm'] for all cases with mutations
+        Populates available_variation_data with ['ssm']
+        for all cases with mutations
         WARNING: Requires that cases that have been tested in the calling
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
-        avd_udf = udf(lambda x, y: [] if (x == None and y != None) else ['ssm'],
+        avd_udf = udf(lambda x, y:
+                      [] if (x is None and y is not None) else ['ssm'],
                       ArrayType(StringType()))
         return df.withColumn('available_variation_data',
                              avd_udf(col('Tumor_Sample_Barcode'),
                                      col('case_id')))
-
-    def add_canonical_lengths(self, df):
-        """
-        Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
-        """
-
-        def integer_udf(function):
-            """ Spark IntegerType udf decorator """
-            return udf(function, IntegerType())
-
-        @integer_udf
-        def len_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    if 'length' in t:
-                        return t['length']
-                    else:
-                        return None
-
-        @integer_udf
-        def len_cds_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    if 'length_cds' in t:
-                        return t['length_cds']
-                    else:
-                        return None
-
-        @integer_udf
-        def len_gen_udf(transcripts):
-            for t in transcripts:
-                if t['is_canonical']:
-                    return int(t['end']) - int(t['start']) + 1
-
-        df = df.withColumn('canonical_transcript_length',
-                           len_udf(df.transcripts))
-        df = df.withColumn('canonical_transcript_length_cds',
-                           len_cds_udf(df.transcripts))
-        df = df.withColumn('canonical_transcript_length_genomic',
-                           len_gen_udf(df.transcripts))
-        return df
 
     def add_mutation_type(self, df):
 
@@ -257,7 +294,7 @@ class MAFBuilder(object):
         maf_df = df.withColumn('normal_genotype',
                                struct(uuid5_col(col('match_norm_seq_allele1'),
                                                 col('match_norm_seq_allele2'))
-                               .alias('allele_id')))
+                                      .alias('allele_id')))
         return maf_df
 
     def add_ssm_id(self, df):
@@ -365,24 +402,36 @@ class MAFBuilder(object):
         if urls is None and self.urls is not None:
             urls = self.urls
         elif urls is None and self.urls is None:
-            self.logger.error('Urls not passed and get_urls() not yet called')
+            self.logger.error('Urls not passed')
             raise Exception
         df = None
-        callers = ['mutect', 'muse', 'varscan', 'somaticsniper']
+
         for url in urls:
-            caller = [ c for c in callers if c in url ][0]
-            if caller == 'mutect':
-                caller += '2'
+            caller = self.get_caller(url)
             try:
-                new_df = self.read_maf(url)
+                # TODO: separate data transforms from combining multiple df into one
+                # latter should go as a static method to base class for MAF and Gistic Builders
+                new_df = self.s3_to_df(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
+                # add acl based on individual maf
+                new_df = self.add_acl(new_df, url)
+
+                # ensure a consistent schema so that the union works correctly
+                # this will strip out any columns that aren't in the schema,
+                # but we should not need those columns
+                new_df = self.standardize_schema(
+                    new_df, default_to_none=['normal_bam_uuid',
+                                             'tumor_bam_uuid'])
+
                 self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
                 if df is None:
                     df = new_df
                 else:
                     df = df.unionAll(new_df)
-            except BaseException as e:
+            except Exception as e:
                 self.logger.error(e)
+
+        assert df is not None
 
         self.config.nb_mutations = df.count()
         self.logger.info('Combined {} files for a total of {} rows'
@@ -390,47 +439,24 @@ class MAFBuilder(object):
         self.df = df
         return df
 
-    def get_urls(self):
+    def get_caller(self, url):
         """
-        Retrieve file ids from the api then gets the s3 urls from signpost
+        Identify variant caller by portion of url name.
         """
-        filt = {
-            "op": "and",
-            "content": [{
-                    "op": "in",
-                    "content": {
-                        "field": "files.data_format",
-                        "value": ["MAF"]
-                    }
-                }, {
-                    "op": "in",
-                    "content": {
-                        "field": "files.access",
-                        "value": ["open"]
-                    }
-                }
-            ]
-        }
 
-        filt = {
-            "filters": json.dumps(filt),
-            "size": "1000",
-            "fields": "file_id"
-        }
+        possible_callers = ['mutect', 'muse', 'varscan', 'somaticsniper', 'FM']
 
-        r = requests.get('{}/files?pretty=true'.format(self.config.api_host),
-                         params=filt, verify=False)
-        file_ids = [f['file_id'] for f in r.json()['data']['hits']]
+        try:
+            caller = [c for c in possible_callers if c in url][0]
+            if caller == 'mutect':
+                caller += '2'
+            if caller == 'FM':
+                caller += ' Simple Somatic Mutation'
 
-        urls = []
-        for fid in file_ids:
-            r = requests.get('{}/v0/did/{}'.format(self.config.signpost_host, fid))
-            url = r.json()['urls'][0]
-            urls.append(url)
+        except IndexError:
+            raise Exception("Cannot identify caller for url {}".format(url))
 
-        self.logger.info('Found urls for {} files'.format(len(urls)))
-
-        return urls
+        return caller
 
     def patch_url(self, url):
         """
@@ -441,34 +467,3 @@ class MAFBuilder(object):
         url = url.replace('s3://', 's3a://')
         return url
 
-    def read_maf(self, url):
-        """
-        Read and return a single MAF from the given s3 url
-        """
-        return self.sqlContext.read.format('com.databricks.spark.csv')\
-                   .options(header='true')\
-                   .options(comment="#")\
-                   .options(delimiter='\t')\
-                   .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                   .load(url)
-
-    def get_existing(self):
-        """
-        Loads a built combined maf
-        """
-        df = self.sqlContext.read.format('com.databricks.spark.csv')\
-                            .options(header='true', inferschema='true')\
-                            .load(self.config.maf_path)\
-                            .drop_duplicates()
-
-        self.config.nb_mutations = df.count()
-        return df
-
-    def write(self, df):
-        """
-        Writes the combined maf file
-        """
-        writer = df.write.format('com.databricks.spark.csv')
-        if self.config.maf_overwrite:
-            writer = writer.mode('overwrite')
-        writer = writer.options(header='true').save(self.config.maf_path)
