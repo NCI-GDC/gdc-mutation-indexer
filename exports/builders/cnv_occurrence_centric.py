@@ -109,7 +109,6 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         # obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
 
         # self.log('Join observation with case')
-        import ipdb; ipdb.set_trace()
         case_occ_df = (case_df.join(gistic_df, on='case_id', how='left')
                               .select('case_id', 'occurrence_id', 'cnv_id'
                                       ))
