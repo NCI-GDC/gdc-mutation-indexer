@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import struct, collect_list
+from pyspark.sql.functions import struct, collect_set
 
 from exports.builders import (
     ConsequenceBuilder,
@@ -81,12 +81,17 @@ class SSMCentricBuilder(BaseBuilder):
         # obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
 
         self.log('Joining Cases with Observation, [right, case_id]')
+        # occurrence_df = (case_df.join(maf_df, on=['case_id'], how='right')
+        #                  .select('ssm_id',
+        #                          struct('occurrence_id',
+        #                                 'case_id')
+        #                          .alias('occurrence'))
+        #                  .groupby('ssm_id')
+        #                  .agg(collect_set('occurrence').alias('occurrence')))
+        # self.log_count(occurrence_df)
+        # import ipdb; ipdb.set_trace()
         occurrence_df = (case_df.join(maf_df, on=['case_id'], how='right')
-                         .select('ssm_id',
-                                 struct('occurrence_id',
-                                        'case_id')
-                                 .alias('occurrence'))
+                         .select('ssm_id', 'case_id')
                          .groupby('ssm_id')
-                         .agg(collect_set('occurrence').alias('occurrence')))
-        self.log_count(occurrence_df)
+                         .agg(collect_set('case_id').alias('case_id')))
         return occurrence_df
