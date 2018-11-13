@@ -7,7 +7,7 @@ PACKAGES = find_packages()
 
 setup(
     name="gdc-mutation-indexer",
-    version="0.2.0",
+    version="0.1.0",  # do not bump, egg name is hardcoded in wrappers
     description="ETL for mutation elasticsearch indices",
     license="Apache",
     packages=PACKAGES,
