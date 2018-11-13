@@ -141,9 +141,9 @@ class BaseConfig(object):
     # How many partitions to distribute the index file accross
     # The index will be split up into this many json files
     repartition = int(os.getenv('INDEX_REPARTITION') or 2048)
-    coalesce = int(os.getenv('INDEX_COALESCE') or 6)
-    batch_size_bytes = os.getenv('ES_BATCH_SIZE_BYTES', '3mb')
-    batch_size_entries = int(os.getenv('ES_BATCH_SIZE_ENTRIES') or 100)
+    coalesce = int(os.getenv('INDEX_COALESCE') or 12)
+    batch_size_bytes = os.getenv('ES_BATCH_SIZE_BYTES', '16mb')
+    batch_size_entries = int(os.getenv('ES_BATCH_SIZE_ENTRIES') or 1000)
     cache_dataframes = {
         'mafs': True,
         'cases': True,
