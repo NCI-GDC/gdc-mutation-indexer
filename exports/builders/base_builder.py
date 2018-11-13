@@ -81,6 +81,7 @@ class BaseBuilder(object):
             .option('es.batch.write.retry.wait', '10m')\
             .option('es.batch.size.bytes', self.config.batch_size_bytes)\
             .option('es.batch.size.entries', self.config.batch_size_entries)\
+            .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
             .option('es.spark.dataframe.write.null', 'true')\
             .save(index_doc)
