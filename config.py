@@ -1,9 +1,18 @@
 import os
 import uuid
+import subprocess
+import shlex
 from enum import Enum
-
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
+
+from parsers import (
+    Parser,
+    S3Args,
+    ESArgs,
+    BuildArgs,
+    SparkArgs,
+)
 
 
 class ReadWriteMode(Enum):
@@ -19,13 +28,22 @@ class ReadWriteMode(Enum):
     write = 2
 
 
-LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+ALL_PARSERS = [S3Args, ESArgs, BuildArgs, SparkArgs]
+LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
+CONFIG_PATH = os.path.abspath(__file__)
+ROOT_DIR = os.path.dirname(CONFIG_PATH)
+
+
+VERSION = "0.1.0"
+GIT_HEAD_REV = subprocess.check_output(
+    shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(ROOT_DIR))
+).strip()
 
 
 class BaseConfig(object):
 
     # The Spark application name
-    app_name = 'GDC_Mutation_Export'
+    name = 'GDC_Mutation_Export'
 
     s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
@@ -73,12 +91,12 @@ class BaseConfig(object):
     # Index names, these also double as document type names
     # If name is None, the index will not be built
     index_names = {
-        'case_centric': 'case_centric',
-        'gene_centric': 'gene_centric',
-        'ssm_centric': 'ssm_centric',
-        'ssm_occurrence_centric': 'ssm_occurrence_centric',
-        'cnv_centric': 'cnv_centric',
-        'cnv_occurrence_centric': 'cnv_occurrence_centric',
+        'case_centric',
+        'gene_centric',
+        'ssm_centric',
+        'ssm_occurrence_centric',
+        'cnv_centric',
+        'cnv_occurrence_centric',
     }
 
     # Where to save each index's final json
@@ -127,8 +145,8 @@ class BaseConfig(object):
     gistic_path = 'gistic_df.parquet'
 
     # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.read,
-                       'gistic': ReadWriteMode.read}
+    read_write_mode = {'maf': ReadWriteMode.read,  # TODO: add arg
+                       'gistic': ReadWriteMode.read}  # TODO: add arg
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -140,10 +158,10 @@ class BaseConfig(object):
 
     # How many partitions to distribute the index file accross
     # The index will be split up into this many json files
-    repartition = int(os.getenv('INDEX_REPARTITION') or 2048)
-    coalesce = int(os.getenv('INDEX_COALESCE') or 12)
-    batch_size_bytes = os.getenv('ES_BATCH_SIZE_BYTES', '16mb')
-    batch_size_entries = int(os.getenv('ES_BATCH_SIZE_ENTRIES') or 1000)
+    repartition = int(os.getenv('INDEX_REPARTITION') or 2048) # TODO: add arg
+    coalesce = int(os.getenv('INDEX_COALESCE') or 12) # TODO: add arg
+    # batch_size_bytes = os.getenv('ES_BATCH_SIZE_BYTES', '16mb')
+    # batch_size_entries = int(os.getenv('ES_BATCH_SIZE_ENTRIES') or 1000)
     cache_dataframes = {
         'mafs': True,
         'cases': True,
@@ -171,53 +189,36 @@ class BaseConfig(object):
     ]
 
     def __init__(self):
+        self.assign_props()
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
         )
-        self.indices = self.get_index_prefixes()
+        self.indices = self.get_index_names()
         self.maf_urls = self.get_maf_urls()
         self.gistic_urls = self.get_gistic_urls()
 
-    def get_index_prefixes(self):
-        '''
-        Uses the version specified in the config, or will resolve the next
-        version number by looking for an existing index and incrementing by one
+    def assign_props(self):
+        for parser in ALL_PARSERS:
+            for key in parser.args:
+                setattr(self, key, os.getenv(key))
 
-        Eg:
-            No indices exist in ES:
-                index_name='case_centric' -> gdc_r0_case_centric
+    def get_index_names(self):
+        """
+        """
+        if self.build_type == 'release':
+            # verify_label(self.build_label)
+            # verify_version(self.build_label)
+            prefix = 'release-'
+        else:
+            prefix = ''
 
-            gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
-                index_name='case_centric' -> gdc_r7_case_centric
-        '''
-
-        def get_indices_max_version():
-            versions = []
-            es = Elasticsearch(self.es_host,
-                               port=self.es_port,
-                               http_auth=(self.es_user, self.es_pass))
-            indices = es.indices.get_alias().keys()
-
-            for index_name in self.index_names.values():
-                if index_name is not None:
-                    versions = (versions + [int(v.split('_')[1].replace('r', ''))
-                                for v in indices if v.endswith(index_name)
-                                            and v[:4] == 'gdc_'])
-
-            if versions == []:
-                version = 0
-            else:
-                version = max(versions) + 1
-            return version
-
-        def get_prefix(index_name):
-            version = get_indices_max_version()
-            prefix = 'gdc_r{}_{}'.format(version, index_name)
-            return prefix
-
-        indices = {k: get_prefix(v) for k, v in self.index_names.items()
-                   if v is not None}
+        indices = {
+            k: prefix + '{}-{}-{}'.format(
+                self.build_label, self.build_version, self.index_type,
+            )
+            for k, v in self.index_names.items() if v is not None
+        }
         return indices
 
     def get_maf_urls(self):

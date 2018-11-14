@@ -43,8 +43,7 @@ class GDCMutationExport(object):
 
         for builder in self.builders:
             index_name = builder.index_name
-            if (index_name in config.index_names
-                    and config.index_names[index_name] is not None):
+            if index_name in config.index_names:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
 
                 if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
@@ -56,4 +55,3 @@ class GDCMutationExport(object):
                 else:
                     builder(self.config,
                             self.sqlContext).build(maf_df, gistic_df, case_df).load()
-

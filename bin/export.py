@@ -51,7 +51,7 @@ def make_spark_context(config):
     '''
     Makes a spark and sqlContext
     '''
-    conf = SparkConf().setAppName(config.app_name)
+    conf = SparkConf().setAppName(config.name)
     if config.config_type == 'Test':
         # We should only use the value of `config.spark_master` in
         # a test context. Production runs need to set the Spark Master

@@ -47,8 +47,7 @@ class BaseBuilder(object):
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-        doc = self.config.index_names[self.index_name]
-        index_doc = '{}/{}'.format(index, doc)
+        index_doc = '{}/{}'.format(index, self.index_name)
 
         index_body = ModelMapper(self.index_name).index_settings
         index_body = json.dumps(index_body)
@@ -177,7 +176,7 @@ class BaseBuilder(object):
             nb_mutations = self.config.nb_mutations
 
         if '_rev_' in __file__:
-            # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
+            # The egg name is gdc_mutation_indexer-VERSION_rev_COMMITHASH-py2.7.egg
             commit_hash = __file__.split('_rev_')[1].split('-')[0]
         else:
             if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
@@ -190,22 +189,25 @@ class BaseBuilder(object):
                                   "gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
                 commit_hash = 'not found'
 
+        # Set of index names aliased to self.config.graph_index
+        graph_indices = self.es.indices.get_alias(self.config.graph_index).keys()
         metadata_doc = {
-                'commit_hash': commit_hash,
-                'indices_built': [k for k, v in self.config.index_names.iteritems() if v],
-                'number_of_mutations': nb_mutations,
-                'number_of_projects': len(self.config.maf_urls),
-                'debug': self.config.debug,
-                'maf_urls': self.config.maf_urls,
-                'percentile_threshold': [{'name': k, 'value': v}
-                                         for k, v in (self.config
-                                                          .percentile_threshold
-                                                          .iteritems())],
-                'coalesce': self.config.coalesce,
-                'repartition': self.config.repartition,
-                'batch_size_bytes': self.config.batch_size_bytes,
-                'batch_size_entries': int(self.config.batch_size_entries)
-                }
+            'commit_hash': commit_hash,
+            'graph_indices': graph_indices,
+            'indices_built': [k for k in self.config.index_names],
+            'number_of_mutations': nb_mutations,
+            'number_of_projects': len(self.config.maf_urls),
+            'debug': self.config.debug,
+            'maf_urls': self.config.maf_urls,
+            'percentile_threshold': [{'name': k, 'value': v}
+                                     for k, v in (self.config
+                                                      .percentile_threshold
+                                                      .iteritems())],
+            'coalesce': self.config.coalesce,
+            'repartition': self.config.repartition,
+            'batch_size_bytes': self.config.batch_size_bytes,
+            'batch_size_entries': int(self.config.batch_size_entries)
+        }
 
         self.log('Saving build metadata')
 
