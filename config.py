@@ -262,9 +262,9 @@ class BaseConfig(object):
         TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
         """
 
-        env_urls = os.getenv('GISTIC_URLS', '').split(',')
+        env_urls = os.getenv('GISTIC_URLS', '')
         if env_urls:
-            return [url.strip() for url in env_urls]
+            return [url.strip() for url in env_urls.split(',')]
 
         bucket_contents = self.list_bucket(self.s3_gistic_bucket)
 

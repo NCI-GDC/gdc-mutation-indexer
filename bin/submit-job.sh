@@ -50,6 +50,8 @@ exec $SPARK_HOME/bin/spark-submit \
     --conf spark.yarn.appMasterEnv.PIPELINES="$PIPELINES" \
     --conf spark.yarn.appMasterEnv.PROJECTS="$PROJECTS" \
     --conf spark.yarn.appMasterEnv.NB_PROJECTS="${NB_PROJECTS:-0}" \
+    --conf spark.yarn.appMasterEnv.GISTIC_MODE="$GISTIC_MODE" \
+    --conf spark.yarn.appMasterEnv.GISTIC_URLS="$GISTIC_URLS" \
     --conf spark.executorEnv.S3_HOST="$S3_HOST" \
     --conf spark.executorEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
     --conf spark.executorEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \

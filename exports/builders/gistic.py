@@ -108,6 +108,8 @@ class GisticBuilder(BaseInputBuilder):
             self.logger.error('Urls not passed and get_urls() not yet called')
             raise Exception
 
+        self.logger.info('gistic mode is {}'.format(self.config.gistic_mode))
+
         gistic_df = None
         for url in urls:
             try:
