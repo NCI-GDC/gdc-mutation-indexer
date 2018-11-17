@@ -48,7 +48,7 @@ class BaseConfig(object):
 
     # Keyword for finding Gistic files in the S3 bucket
     gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
-    # How to process Gistic files (normal, rdd, melted)
+    # How to process Gistic files (normal, rdd, rdd_filter, melted)
     gistic_mode = os.getenv('GISTIC_MODE', 'normal')
 
     # Pipelines to use. If an empty list is given, all 4 pipelies will be used

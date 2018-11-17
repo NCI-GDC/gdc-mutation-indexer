@@ -133,6 +133,12 @@ class GisticBuilder(BaseInputBuilder):
                                          id_vars=["gene_id"],
                                          var_name="aliquot_id",
                                          value_name="cnv_change")
+                elif self.config.gistic_mode == 'rdd_filter':
+                    new_df = melt_df_rdd(new_df,
+                                         id_vars=["gene_id"],
+                                         var_name="aliquot_id",
+                                         value_name="cnv_change",
+                                         filter_zeroes=True)
 
                 if gistic_df is None:
                     gistic_df = new_df
