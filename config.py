@@ -131,7 +131,7 @@ class BaseConfig(object):
 
     # Whether to read/write/neither
     read_write_mode = {'maf': ReadWriteMode.read,
-                       'gistic': ReadWriteMode.read}
+                       'gistic': ReadWriteMode.neither}
 
     percentile_threshold = {
         'genes_per_case': 100,
