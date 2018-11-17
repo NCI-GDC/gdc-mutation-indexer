@@ -158,7 +158,7 @@ class BaseBuilder(object):
             df = df.repartition(self.config.index_repartition, id_field).write
         else:
             df = df.repartition(self.config.index_repartition).write
-        if self.config.overwrite_raw:
+        if not self.config.no_overwrite_raw:
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)
@@ -194,7 +194,7 @@ class BaseBuilder(object):
         metadata_doc = {
             'commit_hash': commit_hash,
             'graph_indices': graph_indices,
-            'indices_built': [k for k in self.config.index_names],
+            'indices_built': [k for k in self.config.index_types],
             'number_of_mutations': nb_mutations,
             'number_of_projects': len(self.config.maf_urls),
             'debug': self.config.debug,

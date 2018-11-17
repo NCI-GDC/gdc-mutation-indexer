@@ -18,13 +18,6 @@ class TestConfig(BaseConfig):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    spark_master = 'local[1]'
-
-    es_host = 'http://localhost'
-    source_es_host = 'http://localhost'
-    s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
-    graph_index = 'test_graph_index__'
-
     # Whether or not to rebuild graph index after every test
     graph_force_build = False
 
@@ -42,19 +35,6 @@ class TestConfig(BaseConfig):
     ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
     cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
 
-    # Where to save each index
-    index_paths = {
-        'case_centric': s3_maf_bucket + 'test-case-centric.json',
-        'gene_centric': s3_maf_bucket + 'test-gene-centric.json',
-        'ssm_centric': s3_maf_bucket + 'test-ssm-centric.json',
-        'ssm_occurrence_centric': s3_maf_bucket + 'test-ssm-occurrence-centric.json'
-    }
-    # Whether to save the indices once they've been built
-    store_raw = False
-    # Load a prebuilt index and load it into elasticsearch
-    load_raw = False
-    # Whether to overwrite a built index file, if it exists
-    overwrite_raw = True
     # How many partitions to distribute the index file accross
     index_repartition = 10
 
@@ -68,10 +48,6 @@ class TestConfig(BaseConfig):
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(input_dir, 'genes.json.gz')
-
-    # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.neither,
-                       'gistic': ReadWriteMode.neither}
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -94,7 +70,21 @@ class TestConfig(BaseConfig):
 
     def __init__(self):
         super(TestConfig, self).__init__()
+        self.amend_parameters()
+
+    def amend_parameters(self):
+        """
+        Overwrite base config parameters with test ones
+        """
+        self.es_host = 'http://localhost'
+        self.source_es_host = 'http://localhost'
+        self.s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
+        self.graph_index = 'test_graph_index__'
         self.gistic_urls = self.get_gistic_urls()
+        self.read_write_mode = {
+            'maf': ReadWriteMode.neither,
+            'gistic': ReadWriteMode.neither,
+        }
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)

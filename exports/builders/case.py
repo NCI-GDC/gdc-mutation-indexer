@@ -1,7 +1,7 @@
 from pyspark.sql.functions import (
-    lit, collect_set, col, udf,
+    lit,
+   collect_set,
 )
-from pyspark.sql.types import StringType
 from utils import standardize_schema, get_case_ids_from_source_es
 import logging
 

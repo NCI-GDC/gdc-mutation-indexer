@@ -1,5 +1,4 @@
 import subprocess
-import shlex
 import logging
 import os
 
@@ -15,8 +14,9 @@ from config import (
     VERSION,
     ROOT_DIR,
     LOG_FORMAT,
-    ALL_PARSERS,
-    GIT_HEAD_REV,
+    CONFIG_PARSERS,
+    FLAG_PARAMETERS,
+    get_git_commit,
 )
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -28,13 +28,32 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
+    all_parsers = CONFIG_PARSERS + [SparkArgs]
     parser = Parser.build(
-        ALL_PARSERS,
+        all_parsers,
         description='Mutation indexer argument',
     )
 
     args = parser.parse_args()
-    Parser.log_args(args, ALL_PARSERS, logger)
+
+    args = process_args(args)
+    Parser.log_args(args, all_parsers, logger)
+    return args
+
+
+def process_args(args):
+    """
+    Process parsed arguments
+    Takes care of all argument dependencies and special treatment
+    """
+    # If source es creds not assigned, set them to ones of output es
+    for key in ['host', 'port', 'user', 'pass']:
+        param_name = 'source_es_{}'.format(key)
+        if getattr(args, param_name) == '':
+            value = getattr(args, 'es_{}'.format(key))
+            setattr(args, param_name, value)
+
+    # TODO: handle mutually exclusive here (load_raw, read_raw)
     return args
 
 
@@ -47,7 +66,8 @@ def get_spark_args(args):
     eggs_dir = os.path.join(ROOT_DIR, 'artifacts', 'eggs')
     jars = [os.path.join(jars_dir, j) for j in os.listdir(jars_dir)]
     eggs = [os.path.join(eggs_dir, e) for e in os.listdir(eggs_dir)]
-    app_egg = 'gdc_mutation_indexer-{}_rev_{}-py2.7.egg'.format(VERSION, GIT_HEAD_REV)
+    app_egg = 'gdc_mutation_indexer-{}_rev_{}-py2.7.egg'.format(VERSION,
+                                                                get_git_commit(ROOT_DIR))
     eggs.append(os.path.join(ROOT_DIR, 'dist', app_egg))
     spark_args = ['--py-files', ','.join(eggs), '--jars', ','.join(jars)]
 
@@ -61,18 +81,14 @@ def get_spark_args(args):
 
 def get_config_args(args):
     """
-    Returns list of configuration arguments and values for `spark-submit` 
+    Returns list of configuration arguments and values for `spark-submit`
     """
     config_args = []
-    for arg in S3Args.args | ESArgs.args | BuildArgs.args:
+    for arg in S3Args.args | ESArgs.args | BuildArgs.args | SparkArgs.args:
         varname = arg.upper()
         value = getattr(args, arg)
         if isinstance(value, list):
-            if arg == 'version':
-                separator = '_'
-            else:
-                separator = ','
-            value = separator.join(map(str, value))
+            value = ','.join(map(str, value))
         config_args.extend(['--conf', 'spark.yarn.appMasterEnv.{}="{}"'.format(varname, value)])
         config_args.extend(['--conf', 'spark.executorEnv.{}="{}"'.format(varname, value)])
 

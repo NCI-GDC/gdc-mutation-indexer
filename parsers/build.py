@@ -7,14 +7,11 @@ class BuildArgs(BaseArgs):
     """
     args = {
         'build_type',
-        # 'index_type',
         'build_label',
         'build_version',
         'projects',
-        'maf_keywords',
         'pipelines',
-        'n_projects',  # NOTE: rename from NB_projects
-        'overwrite_raw',
+        'no_overwrite_raw',
         'store_raw',
         'load_raw',
         'debug',
@@ -31,15 +28,6 @@ class BuildArgs(BaseArgs):
             choices=['release', 'develop'],
             required=True,
         )
-        # build_args.add_argument(  # NOTE: not needed? Or implement separate building
-        #     '--index-type', help='Type of index to build',
-        #     choices=[
-        #         'all', 'case_centric', 'gene_centric',
-        #         'ssm_centric', 'ssm_occurrence_centric',
-        #         'cnv_centric', 'cnv_occurrence_centric',
-        #     ],
-        #     default='all',
-        # )
         build_args.add_argument(
             '--build-label', help='Label for the index (will be automatically assigned to the value in '
             'DataRelease.name for release candidate node if --build-type == "release")',
@@ -53,54 +41,37 @@ class BuildArgs(BaseArgs):
             type=int,
             default=[0],
         )
-
-        build_args.add_argument(
-            '--maf-keywords',
-            help="List of keywords MAF file name should contain in order to be picked up",
-            nargs='*',
-            default=None,  # NOTE: figure it out
-        )
         build_args.add_argument(
             '--pipelines',
             help="List of pipelines to build",
             nargs='*',
-            default='',  # NOTE: figure it out
+            default=['mutect', 'muse', 'varscan', 'somaticsniper', 'FM'],
         )
         build_args.add_argument(
             '--debug',
             help="Debug mode. More explicit logging but slower.",
             action='store_true',
         )
-
-        raw_args = parser.add_mutually_exclusive_group()
-        raw_args.add_argument(
+        build_args.add_argument(
             '--store-raw',
             help="Store raw json indices in S3",
             action='store_true',
         )
-        raw_args.add_argument(
+        build_args.add_argument(
             '--load-raw',
             help="Load raw json indices from S3 to DataFrame",
             action='store_true',
         )
-
         build_args.add_argument(
-            '--overwrite-raw',
-            help="Whether to overwrite previously stored in S3 raw indices",
-            default=True,
+            '--no-overwrite-raw',
+            help="If set, will not overwrite raw indices previously stored in S3",
+            action='store_true',
         )
-
-        project_args = parser.add_mutually_exclusive_group()
-        project_args.add_argument(
+        build_args.add_argument(
             '--projects',
             help="Subset of projects to build. If not provided, builds all",
             nargs='*',
             default=[],
-        )
-        project_args.add_argument(
-            '--n-projects',
-            help="Number of projects to build",
-            default=0, type=int,  # NOTE: test that 0 means all
         )
 
         return parser

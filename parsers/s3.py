@@ -41,7 +41,7 @@ class S3Args(BaseArgs):
         )
         s3_args.add_argument(# NOTE: verify that bucket name is correct
             '--s3-raw-bucket', help='S3 bucket with raw json indices',
-            default='s3a://mutation_indexer-raw/',
+            default='s3a://mutation-indexer-raw/',
         )
 
         return parser

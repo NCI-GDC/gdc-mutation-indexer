@@ -1,3 +1,11 @@
+import logging
+
+from parsers import (
+    BuildArgs,
+    S3Args,
+    ESArgs,
+)
+from config import LOG_FORMAT
 from builders import (
     MAFBuilder,
     GisticBuilder,
@@ -10,6 +18,21 @@ from builders import (
     CNVOccurrenceCentricBuilder,
 )
 
+logging.basicConfig(format=LOG_FORMAT)
+
+
+def log_params(logger, config):  # TODO: unite with parser's log_args
+    """
+    """
+    for parser in [BuildArgs, S3Args, ESArgs]:
+        logger.info("\t{}:".format(parser.__name__))
+        for key in parser.args:
+            if not any([k in key for k in ['key', 'pass', 'secret']]):
+                value = getattr(config, key)
+            else:
+                value = 'VALUE_IS_SECRET'
+            logger.info("{} = {}".format(key, value))
+
 
 class GDCMutationExport(object):
     """
@@ -18,6 +41,7 @@ class GDCMutationExport(object):
 
     def __init__(self, sc, sqlContext, config):
         self.config = config
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.sc = sc
         self.sqlContext = sqlContext
         self.builders = [
@@ -29,8 +53,12 @@ class GDCMutationExport(object):
             CNVOccurrenceCentricBuilder,
         ]
 
-    def run_export(self, config=None):
+    def run_export(self):
         # Construct master MAF from all individual MAFs
+        log_params(self.logger, self.config)
+        self.logger.info('MAFs: {}'.format(self.config.maf_urls))
+        self.logger.info('GISTICs: {}'.format(self.config.gistic_urls))
+
         self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
@@ -43,7 +71,7 @@ class GDCMutationExport(object):
 
         for builder in self.builders:
             index_name = builder.index_name
-            if index_name in config.index_names:
+            if index_name in self.config.index_types:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
 
                 if index_name in ['ssm_centric', 'ssm_occurrence_centric']:

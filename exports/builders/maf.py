@@ -466,4 +466,3 @@ class MAFBuilder(BaseInputBuilder):
         url = url.replace('cleversafe.service.consul/somatic_maf', 'test')
         url = url.replace('s3://', 's3a://')
         return url
-

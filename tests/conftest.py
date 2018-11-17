@@ -126,7 +126,7 @@ def es_client(setup_test_index):
 
 @pytest.fixture(scope='session')
 def sqlContext(es_client):
-    sc = SparkContext(conf.spark_master, 'sqlContextFixture')
+    sc = SparkContext('local[1]', 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")

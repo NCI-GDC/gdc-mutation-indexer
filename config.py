@@ -28,29 +28,33 @@ class ReadWriteMode(Enum):
     write = 2
 
 
-ALL_PARSERS = [S3Args, ESArgs, BuildArgs, SparkArgs]
+CONFIG_PARSERS = [S3Args, ESArgs, BuildArgs]
+ALL_PARSERS = CONFIG_PARSERS + [SparkArgs]
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-
 VERSION = "0.1.0"
-GIT_HEAD_REV = subprocess.check_output(
-    shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(ROOT_DIR))
-).strip()
+# Unfortunate workarounds:
+LIST_PARAMETERS = ['projects', 'pipelines']
+FLAG_PARAMETERS = ['load_raw', 'store_raw', 'no_overwrite_raw', 'debug']
+
+
+def get_git_commit(git_dir):
+    return subprocess.check_output(
+        shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
+    ).strip()
 
 
 class BaseConfig(object):
 
     # Keywords that should appear in the S3 key for it to be picked up
     # Note that ALL of these keywords have to be present for the MAF to be used
-    maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz'] # NOTE: Will be removed when reading mafs from the index will be merged
+    maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz']  # NOTE: Will be removed when reading mafs from the index will be merged
+    gistic_filename_string = 'focal_score_by_genes'  # NOTE: this will be removed when gistics will be read from graph
 
-    gistic_filename_string = 'focal_score_by_genes' # NOTE: this will be removed when gistics will be read from graph
-
-    # Index names, these also double as document type names
-    # If name is None, the index will not be built
-    index_names = {
+    # Index types, these also double as document type names
+    index_types = {
         'case_centric',
         'gene_centric',
         'ssm_centric',
@@ -84,9 +88,10 @@ class BaseConfig(object):
     gistic_path = 'gistic_df.parquet'
 
     # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.read,  # TODO: add arg?
-                       'gistic': ReadWriteMode.read}  # TODO: add arg?
-
+    read_write_mode = {  # TODO: add arg?
+        'maf': ReadWriteMode.neither,  # FIXME: change to read before merging!
+        'gistic': ReadWriteMode.neither,  # FIXME: change to read before merging!
+    }
     percentile_threshold = {
         'genes_per_case': 100,
         'occurrences_per_ssm': 100,
@@ -133,29 +138,71 @@ class BaseConfig(object):
 
     def assign_all_parameters(self):
         """
-        Assigns all arguments' values as self.arg_name = arg_value
+        Takes care of all config parameters to be set correctly
         """
+        # Assign all arguments defined in parsers to corresponding values from env
         for parser in ALL_PARSERS:
+            args = []
+            # Gather arguments from venv
             for key in parser.args:
-                setattr(self, key, os.getenv(key))
+                venv_key = key.upper()
+                value = os.getenv(venv_key)
+                if key in LIST_PARAMETERS:
+                    values = value.split(',')
+                else:
+                    values = [value]
+                args.append('--{}'.format(key.replace('_', '-')))
+                args.extend(values)
+
+            # Build parser and parse gathered arguments
+            argparser = Parser.build([parser])
+            print parser
+            print args, 'RAW'
+            args = argparser.parse_args(args)
+            print args, 'PARSED'
+
+            # Set properties with parsed values
+            for key in parser.args:
+                setattr(self, key, getattr(args, key))
 
     def get_index_names(self):
         """
+        Returns {index_type: es_index_name} dictionary
         """
         if self.build_type == 'release':
-            # verify_label(self.build_label)
-            # verify_version(self.build_label)
+            release_name, version = self.get_release_info()
+            self.build_label = release_name
+            self.build_version = version
             prefix = 'release-'
         else:
             prefix = ''
 
         indices = {
-            k: prefix + '{}-{}-{}'.format(
-                self.build_label, self.build_version, self.index_type,
+            index_type: prefix + '{}-{}-{}'.format(
+                self.build_label, self.build_version, index_type,
             )
-            for k, v in self.index_names.items() if v is not None
+            for index_type in self.index_types
         }
+
+        existing_indices = self.es.indices.get_alias().keys()
+        name_collisions = [name for name in indices.values()
+                           if name in existing_indices]
+        if name_collisions:  # TODO: move check to master.py
+            raise Exception(
+                "These indices already exist: {}.\n"
+                "Change version or label, or remove existing indices"
+                .format(', '.join(name_collisions))
+            )
         return indices
+
+    def get_release_info(self):
+        """
+        Queries unreleased DataRelease node to get next release name and version
+        """
+        # TODO: query the graph
+        release_name = 'Marvin'
+        version = [14, 0]
+        return release_name, version
 
     def get_raw_output_path(self, index_name):
         return self.s3_raw_bucket + index_name + '.json'
@@ -170,17 +217,13 @@ class BaseConfig(object):
 
         maf_urls = []
         for obj in bucket_contents:
-            skip = False
-            for keyword in self.maf_keywords:
-                if keyword not in obj.key:
-                    skip = True
-                    break
-            if not skip:
-                if not self.pipelines or any([pipeline in obj.key for pipeline in self.pipelines]):
-                    if not self.projects or any([project in obj.key for project in self.projects]):
-                        maf_urls.append(self.s3_maf_bucket + obj.key)
-                        if self.nb_projects and len(maf_urls) >= self.nb_projects:
-                            break
+            # If not all keywords present, skip
+            if any([keyword not in obj.key for keyword in self.maf_keywords]):
+                continue
+
+            if any([pipeline in obj.key for pipeline in self.pipelines]):
+                if any([project.replace('-', '.') in obj.key for project in self.projects]):
+                    maf_urls.append(self.s3_maf_bucket + obj.key)
 
         return maf_urls
 
@@ -200,11 +243,9 @@ class BaseConfig(object):
         """
 
         bucket_contents = self.list_bucket(self.s3_gistic_bucket)
-
         gistic_urls = []
         for obj in bucket_contents:
-            if not self.projects or any([project in obj.key for project in self.projects]):
-                # if 'all_thresholded.by_genes.txt' in obj.key:
+            if any([project.split('-')[1] in obj.key for project in self.projects]):
                 if self.gistic_filename_string in obj.key:
                     gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
