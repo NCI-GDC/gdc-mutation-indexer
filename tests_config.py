@@ -50,13 +50,13 @@ class TestConfig(BaseConfig):
         'ssm_occurrence_centric': s3_maf_bucket + 'test-ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
-    index_keep = False
+    store_raw = False
     # Load a prebuilt index and load it into elasticsearch
-    index_use_existing = False
+    load_raw = False
     # Whether to overwrite a built index file, if it exists
-    index_overwrite = True
+    overwrite_raw = True
     # How many partitions to distribute the index file accross
-    repartition = 10
+    index_repartition = 10
 
     # Additional test files
     doc_files = {

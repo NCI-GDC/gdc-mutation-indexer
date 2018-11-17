@@ -10,9 +10,9 @@ root.setLevel(logging.INFO)
 
 
 def main():
-    '''
+    """
     Define the spark context and parse agruments into config
-    '''
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config',
                         help='The configuration set to run with',
@@ -48,9 +48,9 @@ def main():
 
 
 def make_spark_context(config):
-    '''
+    """
     Makes a spark and sqlContext
-    '''
+    """
     conf = SparkConf().setAppName(config.name)
     if config.config_type == 'Test':
         # We should only use the value of `config.spark_master` in

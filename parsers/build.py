@@ -8,12 +8,16 @@ class BuildArgs(BaseArgs):
     args = {
         'build_type',
         # 'index_type',
-        'label',
-        'version',
+        'build_label',
+        'build_version',
         'projects',
         'maf_keywords',
         'pipelines',
         'n_projects',  # NOTE: rename from NB_projects
+        'overwrite_raw',
+        'store_raw',
+        'load_raw',
+        'debug',
     }
 
     def add_args(self, parser):
@@ -37,12 +41,12 @@ class BuildArgs(BaseArgs):
         #     default='all',
         # )
         build_args.add_argument(
-            '--label', help='Label for the index (will be automatically assigned to the value in '
+            '--build-label', help='Label for the index (will be automatically assigned to the value in '
             'DataRelease.name for release candidate node if --build-type == "release")',
             default='mutation_indexer',
         )
         build_args.add_argument(
-            '--version',
+            '--build-version',
             help='Version number (will be automatically assigned to the value in '
             'DataRelease node for release candidate if --build-type == "release")',
             nargs=1,
@@ -62,18 +66,41 @@ class BuildArgs(BaseArgs):
             nargs='*',
             default='',  # NOTE: figure it out
         )
+        build_args.add_argument(
+            '--debug',
+            help="Debug mode. More explicit logging but slower.",
+            action='store_true',
+        )
+
+        raw_args = parser.add_mutually_exclusive_group()
+        raw_args.add_argument(
+            '--store-raw',
+            help="Store raw json indices in S3",
+            action='store_true',
+        )
+        raw_args.add_argument(
+            '--load-raw',
+            help="Load raw json indices from S3 to DataFrame",
+            action='store_true',
+        )
+
+        build_args.add_argument(
+            '--overwrite-raw',
+            help="Whether to overwrite previously stored in S3 raw indices",
+            default=True,
+        )
 
         project_args = parser.add_mutually_exclusive_group()
         project_args.add_argument(
             '--projects',
             help="Subset of projects to build. If not provided, builds all",
             nargs='*',
-            default='',
+            default=[],
         )
         project_args.add_argument(
             '--n-projects',
             help="Number of projects to build",
-            default=0, type=int,  # NOTE: figure it out
+            default=0, type=int,  # NOTE: test that 0 means all
         )
 
         return parser

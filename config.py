@@ -42,51 +42,11 @@ GIT_HEAD_REV = subprocess.check_output(
 
 class BaseConfig(object):
 
-    # The Spark application name
-    name = 'GDC_Mutation_Export'
-
-    s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
-    s3_access_key = os.getenv('S3_ACCESS_KEY', '')
-    s3_secret_key = os.getenv('S3_SECRET_KEY', '')
-
-    s3_maf_bucket = 's3a://{}/'.format(os.getenv('S3_MAF_BUCKET', 'somatic-maf'))
-    s3_gistic_bucket = 's3a://{}/'.format(os.getenv('S3_GISTIC_BUCKET', 'gistic-cnv'))
-
-    es_host = os.getenv('ES_HOST', 'http://localhost')
-    es_port = os.getenv('ES_PORT', 9200)
-    es_nodes = os.getenv('ES_NODES', '{}:{}'.format(es_host, es_port))
-    es_user = os.getenv('ES_USER', '')
-    es_pass = os.getenv('ES_PASS', '')
-
     # Keywords that should appear in the S3 key for it to be picked up
     # Note that ALL of these keywords have to be present for the MAF to be used
-    maf_keywords = os.getenv('MAF_KEYWORDS')
-    maf_keywords = [keyword.strip() for keyword in maf_keywords.split(',')] if maf_keywords else []
-    # maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
+    maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz'] # NOTE: Will be removed when reading mafs from the index will be merged
 
-    gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
-
-    # Pipelines to use. If an empty list is given, all 4 pipelies will be used
-    # somaticsniper: 2227614  2.6GB
-    # muse: 2730127  3.1GB
-    # varscan: 2782495  3.2GB
-    # mutect: 3416739  3.9GB
-    pipelines = os.getenv('PIPELINES')
-    pipelines = [pipeline.strip() for pipeline in pipelines.split(',')] if pipelines else []
-    # pipelines = ['somaticsniper', 'mutect']
-
-    # Projects to use. If an empty list is given, all 33 projects will be used
-    projects = os.getenv('PROJECTS')
-    projects = [project.strip() for project in projects.split(',')] if projects else []
-    # projects = ['BLCA', 'BRCA']
-
-    # Number of projects to use. Set to 0 to use all projects
-    # The projects are taken in alphabetic order
-    # To target specific projects, use 'projects' above
-    nb_projects = os.getenv('NB_PROJECTS', 0)
-
-    # Debug mode
-    debug = False
+    gistic_filename_string = 'focal_score_by_genes' # NOTE: this will be removed when gistics will be read from graph
 
     # Index names, these also double as document type names
     # If name is None, the index will not be built
@@ -99,20 +59,6 @@ class BaseConfig(object):
         'cnv_occurrence_centric',
     }
 
-    # Where to save each index's final json
-    index_paths = {
-        'case_centric': s3_maf_bucket + 'case-centric.json',
-        'gene_centric': s3_maf_bucket + 'gene-centric.json',
-        'ssm_centric': s3_maf_bucket + 'ssm-centric.json',
-        'ssm_occurrence_centric': s3_maf_bucket + 'ssm-occurrence-centric.json'
-    }
-    # Whether to save the indices once they've been built
-    index_keep = False
-    # Load a prebuilt index and load it into elasticsearch
-    index_use_existing = False
-    # Whether to overwrite a built index file, if it exists
-    index_overwrite = True
-
     mappings = {
         'ssm': 'ssm.yml',
         'gene': 'gene.yml',
@@ -121,16 +67,9 @@ class BaseConfig(object):
         'observation': 'observation.yml',
     }
 
-    # Index revision number, will be determined automatically if not specified
-    revision = None
-
     # Used for loading case/graph documents from a different es cluster
-    source_es_host = os.getenv('SOURCE_ES_HOST', es_host)
-    source_es_port = os.getenv('SOURCE_ES_PORT', es_port)
-    source_es_user = os.getenv('SOURCE_ES_USER', es_user)
-    source_es_pass = os.getenv('SOURCE_ES_PASS', es_pass)
-    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph')
-    graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
+    graph_index = 'gdc_from_graph'
+    graph_document = 'case'
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
@@ -145,8 +84,8 @@ class BaseConfig(object):
     gistic_path = 'gistic_df.parquet'
 
     # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.read,  # TODO: add arg
-                       'gistic': ReadWriteMode.read}  # TODO: add arg
+    read_write_mode = {'maf': ReadWriteMode.read,  # TODO: add arg?
+                       'gistic': ReadWriteMode.read}  # TODO: add arg?
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -156,12 +95,6 @@ class BaseConfig(object):
         'occurrences_per_cnv': 100,
     }
 
-    # How many partitions to distribute the index file accross
-    # The index will be split up into this many json files
-    repartition = int(os.getenv('INDEX_REPARTITION') or 2048) # TODO: add arg
-    coalesce = int(os.getenv('INDEX_COALESCE') or 12) # TODO: add arg
-    # batch_size_bytes = os.getenv('ES_BATCH_SIZE_BYTES', '16mb')
-    # batch_size_entries = int(os.getenv('ES_BATCH_SIZE_ENTRIES') or 1000)
     cache_dataframes = {
         'mafs': True,
         'cases': True,
@@ -189,7 +122,7 @@ class BaseConfig(object):
     ]
 
     def __init__(self):
-        self.assign_props()
+        self.assign_all_parameters()
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
@@ -198,7 +131,10 @@ class BaseConfig(object):
         self.maf_urls = self.get_maf_urls()
         self.gistic_urls = self.get_gistic_urls()
 
-    def assign_props(self):
+    def assign_all_parameters(self):
+        """
+        Assigns all arguments' values as self.arg_name = arg_value
+        """
         for parser in ALL_PARSERS:
             for key in parser.args:
                 setattr(self, key, os.getenv(key))
@@ -220,6 +156,9 @@ class BaseConfig(object):
             for k, v in self.index_names.items() if v is not None
         }
         return indices
+
+    def get_raw_output_path(self, index_name):
+        return self.s3_raw_bucket + index_name + '.json'
 
     def get_maf_urls(self):
         """

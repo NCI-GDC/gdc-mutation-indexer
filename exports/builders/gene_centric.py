@@ -46,8 +46,8 @@ class GeneCentricBuilder(BaseBuilder):
         """
         self.log('Building GeneCentric')
         # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.gene_centric = self.get_existing()
+        if self.config.load_raw:
+            self.gene_centric = self.load_raw()
             if self.gene_centric is not None:
                 return self
 
@@ -75,8 +75,8 @@ class GeneCentricBuilder(BaseBuilder):
         self.log('Build finished')
 
         # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
+        if self.config.store_raw:
+            self.write(self.config.get_raw_output_path(self.index_name))
         return self
 
     def build_case_subtree(self, maf_df, gistic_df, case_df):

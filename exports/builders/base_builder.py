@@ -62,11 +62,11 @@ class BaseBuilder(object):
 
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self,
-                     self.index_name).repartition(self.config.repartition,
+                     self.index_name).repartition(self.config.index_repartition,
                                                   self.id_field)
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        df.coalesce(self.config.coalesce).write\
+        df.coalesce(self.config.index_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', self.config.es_nodes)\
             .option('es.net.http.auth.user', self.config.es_user)\
@@ -127,13 +127,13 @@ class BaseBuilder(object):
 
         return df_to_truncate
 
-    def get_existing(self, path=None):
+    def load_raw(self, path=None):
         """
         Loads the computed index's dataframe, if it exists, and return it,
         returns None it does not
         """
         if path is None:
-            path = self.config.index_paths[self.index_name]
+            path = self.config.get_raw_output_path(self.index_name)
         try:
             self.logger.info('Using existing index from {}'.format(path))
             df = self.sqlContext.read.load(path)
@@ -147,7 +147,7 @@ class BaseBuilder(object):
         Writes the built dataframe to a json file at path
         """
         if path is None:
-            path = self.config.index_paths[self.index_name]
+            path = self.config.get_raw_output_path(self.index_name)
 
         df = getattr(self, self.index_name, None)
         assert df is not None, 'Builder does not have index_name attribute'
@@ -155,10 +155,10 @@ class BaseBuilder(object):
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
         if id_field:
-            df = df.repartition(self.config.repartition, id_field).write
+            df = df.repartition(self.config.index_repartition, id_field).write
         else:
-            df = df.repartition(self.config.repartition).write
-        if self.config.index_overwrite:
+            df = df.repartition(self.config.index_repartition).write
+        if self.config.overwrite_raw:
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)
@@ -203,8 +203,8 @@ class BaseBuilder(object):
                                      for k, v in (self.config
                                                       .percentile_threshold
                                                       .iteritems())],
-            'coalesce': self.config.coalesce,
-            'repartition': self.config.repartition,
+            'coalesce': self.config.index_coalesce,
+            'repartition': self.config.index_repartition,
             'batch_size_bytes': self.config.batch_size_bytes,
             'batch_size_entries': int(self.config.batch_size_entries)
         }

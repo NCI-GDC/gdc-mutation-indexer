@@ -36,8 +36,8 @@ class CNVCentricBuilder(BaseBuilder):
         Builds CNV Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.cnv_centric = self.get_existing()
+        if self.config.load_raw:
+            self.cnv_centric = self.load_raw()
             if self.cnv_centric is not None:
                 return self
 
@@ -71,8 +71,8 @@ class CNVCentricBuilder(BaseBuilder):
         self.log('Build finished')
 
         # Check if we should write
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
+        if self.config.store_raw:
+            self.write(self.config.get_raw_output_path(self.index_name))
 
         return self
 

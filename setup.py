@@ -8,7 +8,6 @@ from config import (
     GIT_HEAD_REV,
 )
 
-
 PACKAGES = find_packages()
 
 setup(
