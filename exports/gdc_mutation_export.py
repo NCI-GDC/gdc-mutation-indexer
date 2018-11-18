@@ -30,16 +30,16 @@ class GDCMutationExport(object):
         ]
 
     def run_export(self, config=None):
-        # Temporarily test building the Gistic dataframe without spending time
-        # on anything else
-        GisticBuilder(self.config, self.sqlContext).build()
-        return
-
         # Construct master MAF from all individual MAFs
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
         case_df = CaseBuilder(self.config,
                               self.sqlContext).build(maf_df, gistic_df)
+
+        # Temporarily test building the CNV centric index only
+        CNVCentricBuilder(self.config,
+                          self.sqlContext).build(gistic_df, case_df).load()
+        return
 
         for builder in self.builders:
             index_name = builder.index_name

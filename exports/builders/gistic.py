@@ -56,13 +56,6 @@ class GisticBuilder(BaseInputBuilder):
         """
         gistic_df = self.combine()
 
-        # to isolate the process of building the Gistic dataframe,
-        # make the executors iterate over the whole thing and then bail out
-        counter = self.sqlContext.sparkSession.sparkContext.accumulator(0)
-        gistic_df.foreach(lambda _: counter.add(1))
-        self.logger.info('Read {} rows'.format(counter.value))
-        return
-
         # add gene information
         gistic_df = self._add_gene_information(gistic_df)
 

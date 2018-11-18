@@ -216,7 +216,7 @@ class BaseConfig(object):
 
         def get_prefix(index_name):
             version = get_indices_max_version()
-            prefix = 'gdc_r{}_{}'.format(version, index_name)
+            prefix = 'test_r{}_{}'.format(version, index_name)
             return prefix
 
         indices = {k: get_prefix(v) for k, v in self.index_names.items()
