@@ -57,7 +57,7 @@ class CaseBuilder(object):
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
                                                                    gistic_df)
 
-        df = df.join(maf_and_gistic_df, on=['case_id'], how='inner')
+        df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.repartition, 'case_id')
