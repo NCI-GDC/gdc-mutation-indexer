@@ -11,7 +11,6 @@ from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 from exports.mappers.model_mapper import ModelMapper
 from exports.es_utils import iterate_es_results
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import scan
 
 from config import LOG_FORMAT
 
@@ -55,10 +54,13 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
 def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     """
     Reads aliquots from headers of mafs and queries source es
-    for corresponding case_ids
+    for corresponding case_ids.
+    This function _also_ returns the acls associated with the
+    case_id -> aliquot -> maf_url -> maf_filename.
     """
     # Read unique aliquots from maf headers
-    unique_aliquots = get_aliquots_from_headers(sqlContext, maf_urls)
+    unique_aliquots, aliquot_to_url = get_aliquots_from_headers(
+        sqlContext, maf_urls)
 
     # TODO: pass es client from outside
     es = Elasticsearch(config.source_es_host,
@@ -66,7 +68,7 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
                        http_auth=(config.source_es_user,
                                   config.source_es_pass))
     query = {
-        "_source": ["_id"],
+        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
         "query": {
             "nested": {
                 "path": "samples.portions.analytes.aliquots",
@@ -86,22 +88,54 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     results = iterate_es_results(
         es, config.graph_index, config.graph_document, query=query
     )
-    case_ids = {hit["_id"] for hit in results}
 
-    assert len(unique_aliquots) == len(case_ids)
+    cases_urls = []  # TODO: uniqueness?
+    case_ids = set()
+
+    filenames_to_acls = config.acls
+
+    # walk to the aliquot
+    for hit in results:
+        case_id = hit["_id"]
+        case_ids.add(case_id)
+        samples = hit['_source']['samples']
+        aliquots_to_lookup = []
+        for sample in samples:
+            portions = sample['portions']
+            for portion in portions:
+                analytes = portion['analytes']
+                for analyte in analytes:
+                    aliquots = analyte['aliquots']
+                    for aliquot in aliquots:
+                        submitter_id = aliquot['submitter_id']
+                        aliquots_to_lookup.append(submitter_id)
+
+        # go from aliquots to url to maf_name to acl
+        for aliquot in aliquots_to_lookup:
+            try:
+                url = aliquot_to_url[aliquot]
+                filename = config.maf_url_to_file_name(url)
+                acl = filenames_to_acls[filename]
+            except KeyError:
+                continue
+            else:
+                cases_urls.append((case_id, acl))
+
+    assert len(unique_aliquots) == len(case_ids) == len(cases_urls)
 
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
-        ((x,) for x in case_ids), ['case_id']
+        ((x, y) for x, y in cases_urls), ['case_id', 'case_acl']
     )
     return cases_df
 
 
 def get_aliquots_from_headers(sqlContext, maf_urls):
     """
-    Reads a set of unique aliquots from maf headers
+    Reads a set of tuples of (unique aliquots, maf headers)
     """
     unique_aliquots = set()
+    aliquot_to_url = {}
     for url in maf_urls:
         header = read_maf_header(sqlContext, url, n_lines=5).collect()
         header = map(lambda r: r.asDict().values()[0].split(), header)
@@ -112,8 +146,10 @@ def get_aliquots_from_headers(sqlContext, maf_urls):
 
         assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
         unique_aliquots.update(aliquots)
+        for aliquot in aliquots:
+            aliquot_to_url[aliquot] = url
 
-    return unique_aliquots
+    return unique_aliquots, aliquot_to_url
 
 
 def read_maf_header(sqlContext, url, n_lines=5):

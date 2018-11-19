@@ -177,7 +177,9 @@ class BaseConfig(object):
         )
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
+        self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
+        self.acls = self.get_acls()
 
     def get_index_prefixes(self):
         '''
@@ -194,10 +196,7 @@ class BaseConfig(object):
 
         def get_indices_max_version():
             versions = []
-            es = Elasticsearch(self.es_host,
-                               port=self.es_port,
-                               http_auth=(self.es_user, self.es_pass))
-            indices = es.indices.get_alias().keys()
+            indices = self.es.indices.get_alias().keys()
 
             for index_name in self.index_names.values():
                 if index_name is not None:
@@ -246,11 +245,21 @@ class BaseConfig(object):
 
     def get_maf_file_names(self):
         """
-        The file name that corresponds to the File node
-        in gdc_from_graph is the last part of the url.
-            e.g. ['//filename/blah/blah2'] becomes ['blah2']
+        Transform the full url to the file_name stored in the File node
         """
-        return [url.split('/')[-1] for url in self.maf_urls]
+        return [self.maf_url_to_file_name(url) for url in self.maf_urls]
+
+    def maf_url_to_file_name(self, url):
+        """
+        Trim out leading folders;
+        Mafs may be zipped or unzipped, but
+        we expect the file_name in the File to be 'xxx.gz'
+        """
+        file_name = url.split('/')[-1]
+
+        if not file_name.endswith('.gz'):
+            file_name += '.gz'
+        return file_name
 
     def get_gistic_urls(self):
         """
@@ -269,6 +278,45 @@ class BaseConfig(object):
                     gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
+
+    def get_acls(self):
+        """
+        1. Take list of maf file names
+        2. Assume the last part of the url is the file_name
+        3. Look up corresponding files in es
+        4. Parse out those files' acls
+        """
+
+        file_names = self.maf_file_names
+
+        query = {
+                "query": {
+                    "bool": {
+                        "must": {
+                            "terms": {
+                                "file_name": file_names
+                                }
+                            }
+                        }
+                    },
+                "_source": ["file_name", "acl"],
+                "size": 1000000,
+        }
+
+        docs = self.es.search(index=self.graph_index,
+                              doc_type='file',
+                              body=query)
+
+        # Build up dictionary of file_name to acl
+        filenames_to_acls = {}
+        for doc in docs['hits']['hits']:
+            source = doc['_source']
+            filename = source['file_name']
+            acl = source['acl']
+
+            filenames_to_acls[filename] = acl
+
+        return filenames_to_acls
 
     def list_bucket(self, bucket_name):
         """
