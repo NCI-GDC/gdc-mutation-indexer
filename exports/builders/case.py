@@ -2,7 +2,11 @@ from pyspark.sql.functions import (
     lit, collect_set, col, udf,
 )
 from pyspark.sql.types import StringType, ArrayType
-from utils import standardize_schema, get_case_ids_from_source_es
+from utils import (
+    get_case_ids_from_source_es,
+    remove_columns,
+    standardize_schema,
+)
 import logging
 
 from config import LOG_FORMAT
@@ -123,15 +127,30 @@ class CaseBuilder(object):
 
     def populate_ssm_acl(self, maf_df, all_maf_cases):
         """
-        DOC STRING
+        We use the observation level case_acl calculated in all_maf_cases.
+        If no observation level ssm acl exists,
+            case level ssm_acl will be populated according to SSM access policy
+            assuming the case had ssm data.
         """
 
         # Get set of "tested cases" from maf_df
-        maf_data = (maf_df.select('case_id')
+        maf_data = (maf_df.select('case_id', 'acl')
                           .dropDuplicates(subset=['case_id']))
 
         # Add empty rows to input_data corresponding to "empty cases"
         maf_data = all_maf_cases.join(maf_data,
                                       on=['case_id'], how='left')
 
-        return maf_data.withColumnRenamed('case_acl', 'ssm_acl')
+        # Merge maf-level 'acl' with case-level acl
+        # I.e., use case-level acl where it exists, otherwise ssm-level
+        ssm_acl_udf = udf(lambda x, y:
+                          x if x is not None else y,
+                          ArrayType(StringType()))
+
+        ssm_acl_df = maf_data.withColumn('ssm_acl',
+                                         ssm_acl_udf(col('case_acl'),
+                                                     col('acl')))
+        # drop the input acl columns
+        ssm_acl_df = remove_columns(ssm_acl_df, 'acl', 'case_acl')
+
+        return ssm_acl_df

@@ -55,8 +55,16 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     """
     Reads aliquots from headers of mafs and queries source es
     for corresponding case_ids.
+
     This function _also_ returns the acls associated with the
     case_id -> aliquot -> maf_url -> maf_filename.
+
+    1) if any of the observations is open then case level is open;
+    2) if all observations are controlled
+       and populated with the same dbgap study code,
+       then case level will be the same dbgap study code;
+    3) if study code in 2) have different values from observation,
+       then there is something wrong.
     """
     # Read unique aliquots from maf headers
     unique_aliquots, aliquot_to_url = get_aliquots_from_headers(
@@ -89,7 +97,7 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         es, config.graph_index, config.graph_document, query=query
     )
 
-    cases_urls = []  # TODO: uniqueness?
+    cases_urls = {}
     case_ids = set()
 
     filenames_to_acls = config.acls
@@ -116,17 +124,31 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
                 url = aliquot_to_url[aliquot]
                 filename = config.maf_url_to_file_name(url)
                 acl = filenames_to_acls[filename]
+
+                if case_id not in cases_urls:
+                    cases_urls[case_id] = acl
+                else:
+                    curr_acl = cases_urls[case_id]
+                    if curr_acl == acl:
+                        continue  # they match
+                    # if any acl is open, we keep open
+                    # if we get more than one phsid, we throw an error
+                    # otherwise we use whatever acl we get
+                    elif curr_acl or acl == ['open']:
+                        return ['open']
+                    raise Exception('Multiple phsids found for case {},'
+                                    'aliquot {}, phsids {}{}'
+                                    ''.format(case_id, aliquot, curr_acl, acl))
             except KeyError:
                 continue
-            else:
-                cases_urls.append((case_id, acl))
 
     assert len(unique_aliquots) == len(case_ids) == len(cases_urls)
 
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
-        ((x, y) for x, y in cases_urls), ['case_id', 'case_acl']
+        ((x, y) for x, y in cases_urls.items()), ['case_id', 'case_acl']
     )
+
     return cases_df
 
 
