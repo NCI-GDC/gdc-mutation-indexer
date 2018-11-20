@@ -174,6 +174,15 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
+    """
+    log.info('\n\n\tBUILDING MAF_DF\n\n')
+    return MAFBuilder(conf, sqlContext).build()
+
+
+@pytest.fixture(scope="module")
+def acl_maf_df(sqlContext):
+    """
+    Builds combined maf dataframe
     Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
