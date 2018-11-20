@@ -3,7 +3,7 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    lit, udf, struct, col, explode, array, when, regexp_extract,
+    lit, udf, struct, col, explode, create_map, when, regexp_extract,
     UserDefinedFunction,
 )
 from pyspark.sql.types import (
@@ -276,21 +276,13 @@ def melt_df(df,
     if not value_vars:
         value_vars = list(set(df.columns) - set(id_vars))
 
-    _vars_and_vals = array(*(
-        struct(lit(c).alias(var_name), col(c).alias(value_name))
-        for c in value_vars
-    ))
+    value_map = create_map(*[
+        c for var in value_vars for c in [lit(var), col(var)]
+    ])
 
-    _temp = df.withColumn("_vars_and_vals", explode(_vars_and_vals))
+    cols = id_vars + [explode(value_map).alias(var_name, value_name)]
 
-    cols = id_vars + [
-        col("_vars_and_vals")[x].alias(x)
-        for x in [var_name, value_name]
-    ]
-
-    return_df = _temp.select(*cols)
-
-    return return_df
+    return df.select(*cols)
 
 
 def melt_df_rdd(df,
