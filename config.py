@@ -179,7 +179,7 @@ class BaseConfig(object):
         self.maf_urls = self.get_maf_urls()
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
-        self.acls = self.get_acls()
+        self._acls = None
 
     def get_index_prefixes(self):
         '''
@@ -278,6 +278,12 @@ class BaseConfig(object):
                     gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
+
+    @property
+    def acls(self):
+        if self._acls is None:
+            self._acls = self.get_acls()
+        return self._acls
 
     def get_acls(self):
         """
