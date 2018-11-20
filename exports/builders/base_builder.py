@@ -30,10 +30,6 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
-        # TODO: move CaseBuilder here? think about it
-        # I'm missing maf. but technically everything that subclasses this one
-        # needs maf to do anything, so maybe that can go here too??
-
     def build(self):
         """
         Contains the ETL logic to construct a spark dataframe of

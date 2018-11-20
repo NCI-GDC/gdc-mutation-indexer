@@ -132,7 +132,6 @@ class CaseBuilder(object):
             case level ssm_acl will be populated according to SSM access policy
             assuming the case had ssm data.
         """
-
         # Get set of "tested cases" from maf_df
         maf_data = (maf_df.select('case_id', 'acl')
                           .dropDuplicates(subset=['case_id']))

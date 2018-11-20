@@ -134,8 +134,8 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
                     # if any acl is open, we keep open
                     # if we get more than one phsid, we throw an error
                     # otherwise we use whatever acl we get
-                    elif curr_acl or acl == ['open']:
-                        return ['open']
+                    elif curr_acl == ['open'] or acl == ['open']:
+                        cases_urls[case_id] = ['open']
                     raise Exception('Multiple phsids found for case {},'
                                     'aliquot {}, phsids {}{}'
                                     ''.format(case_id, aliquot, curr_acl, acl))
