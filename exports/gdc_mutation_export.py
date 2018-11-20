@@ -26,9 +26,9 @@ def log_params(logger, config):  # TODO: unite with parser's log_args
     """
     for parser in [BuildArgs, S3Args, ESArgs]:
         logger.info("\t{}:".format(parser.__name__))
-        for key in parser.args:
+        for key in parser.arguments:
             if not any([k in key for k in ['key', 'pass', 'secret']]):
-                value = getattr(config, key)
+                value = getattr(config, key.replace('-', '_'))
             else:
                 value = 'VALUE_IS_SECRET'
             logger.info("{} = {}".format(key, value))
@@ -56,8 +56,6 @@ class GDCMutationExport(object):
     def run_export(self):
         # Construct master MAF from all individual MAFs
         log_params(self.logger, self.config)
-        self.logger.info('MAFs: {}'.format(self.config.maf_urls))
-        self.logger.info('GISTICs: {}'.format(self.config.gistic_urls))
 
         self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
         maf_df = MAFBuilder(self.config, self.sqlContext).build()

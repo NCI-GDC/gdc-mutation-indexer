@@ -113,4 +113,3 @@ class CaseBuilder(object):
                                .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
-

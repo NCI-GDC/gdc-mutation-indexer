@@ -14,8 +14,7 @@ from config import (
     VERSION,
     ROOT_DIR,
     LOG_FORMAT,
-    CONFIG_PARSERS,
-    FLAG_PARAMETERS,
+    ALL_PARSERS,
     get_git_commit,
 )
 
@@ -28,16 +27,14 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
-    all_parsers = CONFIG_PARSERS + [SparkArgs]
     parser = Parser.build(
-        all_parsers,
+        ALL_PARSERS,
         description='Mutation indexer argument',
     )
 
     args = parser.parse_args()
-
     args = process_args(args)
-    Parser.log_args(args, all_parsers, logger)
+    Parser.log_args(args, ALL_PARSERS, logger)
     return args
 
 
@@ -53,7 +50,6 @@ def process_args(args):
             value = getattr(args, 'es_{}'.format(key))
             setattr(args, param_name, value)
 
-    # TODO: handle mutually exclusive here (load_raw, read_raw)
     return args
 
 
@@ -72,9 +68,9 @@ def get_spark_args(args):
     spark_args = ['--py-files', ','.join(eggs), '--jars', ','.join(jars)]
 
     # Add other spark arguments
-    for arg in SparkArgs.args:
-        name = '--' + arg.replace('_', '-')
-        value = str(getattr(args, arg))
+    for arg in SparkArgs.arguments:
+        name = '--' + arg
+        value = str(getattr(args, arg.replace('-', '_')))
         spark_args.extend([name, value])
     return spark_args
 
@@ -84,13 +80,23 @@ def get_config_args(args):
     Returns list of configuration arguments and values for `spark-submit`
     """
     config_args = []
-    for arg in S3Args.args | ESArgs.args | BuildArgs.args | SparkArgs.args:
-        varname = arg.upper()
-        value = getattr(args, arg)
-        if isinstance(value, list):
-            value = ','.join(map(str, value))
-        config_args.extend(['--conf', 'spark.yarn.appMasterEnv.{}="{}"'.format(varname, value)])
-        config_args.extend(['--conf', 'spark.executorEnv.{}="{}"'.format(varname, value)])
+    for parser in ALL_PARSERS:
+        for name, info in parser.arguments.items():
+            varname = name.upper().replace('-', '_')
+            value = getattr(args, name.replace('-', '_'))
+            if isinstance(value, list):
+                value = ','.join(map(str, value))
+
+            arg_action = info.get('action')
+            # Do not pass bool flags if not needed
+            # If default is True and value is True
+            if arg_action == 'store_false' and value == 'True':
+                continue
+            # If default is False and value is False
+            if arg_action == 'store_true' and value == 'False':
+                continue
+            config_args.extend(['--conf', 'spark.yarn.appMasterEnv.{}="{}"'.format(varname, value)])
+            config_args.extend(['--conf', 'spark.executorEnv.{}="{}"'.format(varname, value)])
 
     return config_args
 

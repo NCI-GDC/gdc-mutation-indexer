@@ -10,6 +10,7 @@ from parsers import (
     Parser,
     S3Args,
     ESArgs,
+    ESHadoopArgs,
     BuildArgs,
     SparkArgs,
 )
@@ -28,16 +29,18 @@ class ReadWriteMode(Enum):
     write = 2
 
 
-CONFIG_PARSERS = [S3Args, ESArgs, BuildArgs]
-ALL_PARSERS = CONFIG_PARSERS + [SparkArgs]
+ALL_PARSERS = [
+    S3Args,
+    ESArgs,
+    ESHadoopArgs,
+    BuildArgs,
+    SparkArgs
+]
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
 VERSION = "0.1.0"
-# Unfortunate workarounds:
-LIST_PARAMETERS = ['projects', 'pipelines']
-FLAG_PARAMETERS = ['load_raw', 'store_raw', 'no_overwrite_raw', 'debug']
 
 
 def get_git_commit(git_dir):
@@ -143,26 +146,41 @@ class BaseConfig(object):
         # Assign all arguments defined in parsers to corresponding values from env
         for parser in ALL_PARSERS:
             args = []
-            # Gather arguments from venv
-            for key in parser.args:
-                venv_key = key.upper()
-                value = os.getenv(venv_key)
-                if key in LIST_PARAMETERS:
+            # Gather arguments from env
+            for key, kwargs in parser.arguments.items():
+                arg_action = kwargs.get('action')
+                is_arg_bool = arg_action in ['store_true', 'store_false']
+                is_arg_list = kwargs.get('nargs') is not None
+                # Get value from env
+                value = os.getenv(key.upper().replace('-', '_'))
+                # Split lists and handle bools
+                if is_arg_list:
                     values = value.split(',')
                 else:
                     values = [value]
-                args.append('--{}'.format(key.replace('_', '-')))
-                args.extend(values)
+
+                # Add to arguments list:
+                # Do not pass bool flags if not needed
+                # Skip when default is False and value is False
+                if arg_action == 'store_true' and value == 'False':
+                    continue
+                # Skip when default is True and value is True
+                if arg_action == 'store_false' and value == 'True':
+                    continue
+
+                # Append argument
+                args.append('--{}'.format(key))
+                # Append values
+                if not is_arg_bool:  # Bool args have no values
+                    args.extend(values)
 
             # Build parser and parse gathered arguments
             argparser = Parser.build([parser])
-            print parser
-            print args, 'RAW'
             args = argparser.parse_args(args)
-            print args, 'PARSED'
 
             # Set properties with parsed values
-            for key in parser.args:
+            for key in parser.arguments:
+                key = key.replace('-', '_')
                 setattr(self, key, getattr(args, key))
 
     def get_index_names(self):
@@ -177,9 +195,10 @@ class BaseConfig(object):
         else:
             prefix = ''
 
+        version_tag = '_'.join(map(str, self.build_version))
         indices = {
             index_type: prefix + '{}-{}-{}'.format(
-                self.build_label, self.build_version, index_type,
+                self.build_label, version_tag, index_type,
             )
             for index_type in self.index_types
         }
@@ -187,7 +206,7 @@ class BaseConfig(object):
         existing_indices = self.es.indices.get_alias().keys()
         name_collisions = [name for name in indices.values()
                            if name in existing_indices]
-        if name_collisions:  # TODO: move check to master.py
+        if name_collisions:
             raise Exception(
                 "These indices already exist: {}.\n"
                 "Change version or label, or remove existing indices"

@@ -5,89 +5,85 @@ class ESArgs(BaseArgs):
     """
     Elasticsearch arguments
     """
-    args = {
-        'es_host',
-        'es_port',
-        'es_user',
-        'es_pass',
-        'es_nodes',
-        'es_batch_size_bytes',
-        'es_batch_size_entries',
-        'index_coalesce',
-        'index_repartition',
-        'source_es_host',
-        'source_es_port',
-        'source_es_user',
-        'source_es_pass',
+    group = {
+        'title': 'Elasticsearch arguments',
+        'description': 'Elasticsearch related arguments',
     }
 
-    def add_args(self, parser):
-        es_args = parser.add_argument_group(
-            title='Elasticsearch arguments',
-            description='Elasticsearch related arguments'
-        )
+    arguments = {
         # Output Elasticsearch creds
-        es_args.add_argument(
-            '--es-host', help='Elasticsearch host',
-            default='http://localhost',
-        )
-        es_args.add_argument(
-            '--es-port', help='Elasticsearch port',
-            default=9200,
-        )
-        es_args.add_argument(
-            '--es-user', help='Elasticsearch user',
-            default='',
-        )
-        es_args.add_argument(
-            '--es-pass', help='Elasticsearch password',
-            default='',
-        )
-        es_args.add_argument(
-            '--es-nodes', help='List of elasticsearch nodes to write to',
-            nargs='*',
-            required=True,
-        )
+        'es-host': {
+            'help': 'Elasticsearch host',
+            'default': 'http://localhost',
+        },
+        'es-port': {
+            'help': 'Elasticsearch port',
+            'default': 9200,
+        },
+        'es-user': {
+            'help': 'Elasticsearch user',
+            'default': '',
+        },
+        'es-pass': {
+            'help': 'Elasticsearch password',
+            'default': '',
+        },
+        'es-nodes': {
+            'help': 'Coma-delimited dist of elasticsearch nodes to write to. '
+                'E.g. "node1_ip:9200,node2_ip:9200"',
+            'type': str,
+            'required': True,
+        },
         # Input Elasticsearch creds (if not provided, same as output ones)
-        es_args.add_argument(
-            '--source-es-host', help='Elasticsearch with graph index host. '
-            'Keep empty if same as output elasticsearch.',
-            default='',
-        )
-        es_args.add_argument(
-            '--source-es-port', help='Elasticsearch with graph index port. '
-            'Keep empty if same as output elasticsearch.',
-            default='',
-        )
-        es_args.add_argument(
-            '--source-es-user', help='Elasticsearch with graph index user. '
-            'Keep empty if same as output elasticsearch.',
-            default='',
-        )
-        es_args.add_argument(
-            '--source-es-pass', help='Elasticsearch with graph index password. '
-            'Keep empty if same as output elasticsearch.',
-            default='',
-        )
-        # Elasticsearch tweaking parameters
-        es_hadoop_args = parser.add_argument_group(
-            title='Elasticsearch-Hadoop adapter arguments',
-            description='Parameters to tweak ES Hadoop adapter'
-        )
-        es_hadoop_args.add_argument(
-            '--es-batch-size-bytes', help='',  # FIXME: text
-            default='16mb',
-        )
-        es_hadoop_args.add_argument(
-            '--es-batch-size-entries', help='', # FIXME: text
-            default=1000, type=int,
-        )
-        es_hadoop_args.add_argument(
-            '--index-repartition', help='Number of partitions to distribute the index file accross',
-            default=2048, type=int,
-        )
-        es_hadoop_args.add_argument(
-            '--index-coalesce', help='', # FIXME: text
-            default=12, type=int,
-        )
-        return parser
+        'source-es-host': {
+            'help': 'Elasticsearch with graph index host. '
+                'Keep empty if same as output elasticsearch.',
+            'default': '',
+        },
+        'source-es-port': {
+            'help': 'Elasticsearch with graph index port. '
+                'Keep empty if same as output elasticsearch.',
+            'default': '',
+        },
+        'source-es-user': {
+            'help': 'Elasticsearch with graph index user. '
+                'Keep empty if same as output elasticsearch.',
+            'default': '',
+        },
+        'source-es-pass': {
+            'help': 'Elasticsearch with graph index password. '
+                'Keep empty if same as output elasticsearch.',
+            'default': '',
+        },
+    }
+
+
+class ESHadoopArgs(BaseArgs):
+    """
+    Elasticsearch-Hadoop adapter parameters
+    """
+    group = {
+        'title': 'Elasticsearch-Hadoop adapter arguments',
+        'description': 'Parameters to tweak ES Hadoop adapter',
+    }
+    arguments = {
+        'batch-size-bytes': {
+            'help': '',  # FIXME: text
+            'default': '16mb',
+        },
+        'batch-size-entries': {
+            'help': '',  # FIXME: text
+            'default': 1000,
+            'type': int,
+        },
+        'index-repartition': {
+            'help': 'Number of partitions to distribute the index file accross',
+            'default': 2048,
+            'type': int,
+        },
+        'index-coalesce': {
+            'help': '',  # FIXME: text
+            'default': 12,
+            'type': int,
+        },
+    }
