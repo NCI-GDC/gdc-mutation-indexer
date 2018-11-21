@@ -278,11 +278,15 @@ def melt_df(df,
 
     value_map = create_map(*[
         c for var in value_vars for c in [lit(var), col(var)]
+    ]).alias('_value_map')
+
+    # Try really hard to convince Spark to drop all of the variable columns
+    # before exploding the map.
+    df = df.select(id_vars + [value_map])
+
+    return df.select(id_vars + [
+        explode('_value_map').alias(var_name, value_name)
     ])
-
-    cols = id_vars + [explode(value_map).alias(var_name, value_name)]
-
-    return df.select(*cols)
 
 
 def melt_df_rdd(df,
