@@ -67,3 +67,5 @@ class GDCMutationExport(object):
                 else:
                     builder(self.config,
                             self.sqlContext).build(maf_df, gistic_df, case_df).load()
+
+        self.logger.info('Mutation Indexer finished successfully')

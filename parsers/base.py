@@ -36,9 +36,9 @@ class Parser:
         Logs arguments and values provided by user
         """
         for parser in parsers:
-            args_to_print = sorted([
+            args_to_print = [
                 arg for arg in args._get_kwargs() if arg[0].replace('_', '-') in parser.arguments
-            ])
+            ]
             logger.info("\t{}:".format(parser.__name__))
             for name, value in args_to_print:
                 if any([k in name.lower() for k in ['pass', 'key', 'secret']]):

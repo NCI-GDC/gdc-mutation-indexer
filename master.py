@@ -13,6 +13,7 @@ from config import (
     LOG_FORMAT,
     ALL_PARSERS,
     get_git_commit,
+    get_release_info,
 )
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -46,6 +47,12 @@ def process_args(args):
         if getattr(args, param_name) == '':
             value = getattr(args, 'es_{}'.format(key))
             setattr(args, param_name, value)
+
+    # If build-type == 'release', get label and version from DataRelease node
+    if args.build_type == 'release':
+        release_name, version = get_release_info()
+        args.build_label = release_name
+        args.build_version = version
 
     return args
 

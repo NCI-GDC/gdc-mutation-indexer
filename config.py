@@ -2,7 +2,6 @@ import os
 import uuid
 import subprocess
 import shlex
-from enum import Enum
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
@@ -14,19 +13,6 @@ from parsers import (
     BuildArgs,
     SparkArgs,
 )
-
-
-class ReadWriteMode(Enum):
-    """
-    We can 1) read from saved input file,
-           2) write to saved input file,
-           3) or neither.
-    It doesn't make sense to read from input file x
-    and then write that same x, so we exclude both as an option.
-    """
-    neither = 0
-    read = 1
-    write = 2
 
 
 ALL_PARSERS = [
@@ -47,6 +33,12 @@ def get_git_commit(git_dir):
     return subprocess.check_output(
         shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
     ).strip()
+
+
+def get_release_info():
+    release_name = 'marvin'
+    version = [14, 0]
+    return release_name, version
 
 
 class BaseConfig(object):
@@ -80,11 +72,6 @@ class BaseConfig(object):
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
 
-    # Whether to read/write/neither
-    read_write_mode = {  # TODO: add arg?
-        'maf': ReadWriteMode.neither,  # FIXME: change to read before merging!
-        'gistic': ReadWriteMode.neither,  # FIXME: change to read before merging!
-    }
     percentile_threshold = {
         'genes_per_case': 100,
         'occurrences_per_ssm': 100,
@@ -143,6 +130,7 @@ class BaseConfig(object):
                 is_arg_list = kwargs.get('nargs') is not None
                 # Get value from env
                 value = os.getenv(key.upper().replace('-', '_'))
+
                 # Split lists and handle bools
                 if is_arg_list:
                     values = value.split(',')
@@ -179,9 +167,6 @@ class BaseConfig(object):
         Returns {index_type: es_index_name} dictionary
         """
         if self.build_type == 'release':
-            release_name, version = self.get_release_info()
-            self.build_label = release_name
-            self.build_version = version
             prefix = 'release-'
         else:
             prefix = ''
@@ -204,15 +189,6 @@ class BaseConfig(object):
                 .format(', '.join(name_collisions))
             )
         return indices
-
-    def get_release_info(self):
-        """
-        Queries unreleased DataRelease node to get next release name and version
-        """
-        # TODO: query the graph
-        release_name = 'Marvin'
-        version = [14, 0]
-        return release_name, version
 
     def get_raw_output_path(self, index_name):
         return self.s3_raw_bucket + index_name + '.json'

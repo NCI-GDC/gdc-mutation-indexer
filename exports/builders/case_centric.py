@@ -41,7 +41,7 @@ class CaseCentricBuilder(BaseBuilder):
         """
         self.log('Building CaseCentric')
         # Check if we should load a pre-built dataframe
-        if self.config.load_raw:
+        if self.config.output_raw == 'load':
             self.case_centric = self.load_raw()
             if self.case_centric is not None:
                 return self
@@ -64,7 +64,7 @@ class CaseCentricBuilder(BaseBuilder):
         self.log('Build finished')
 
         # Check if we should save the resulting dataframe
-        if self.config.store_raw:
+        if self.config.output_raw == 'write':
             self.write(self.config.get_raw_output_path(self.index_name))
 
         return self

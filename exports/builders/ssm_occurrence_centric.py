@@ -36,7 +36,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         Builds SSM Occurrence Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.load_raw:
+        if self.config.output_raw == 'read':
             self.ssm_occurrence_centric = self.load_raw()
             if self.ssm_occurrence_centric is not None:
                 return self
@@ -59,7 +59,7 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
         # Check if we should save the resulting dataframe
-        if self.config.store_raw:
+        if self.config.output_raw == 'write':
             self.write(self.config.get_raw_output_path(self.index_name))
         return self
 

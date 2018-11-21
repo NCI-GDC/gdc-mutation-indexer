@@ -1,5 +1,5 @@
 import os
-from config import BaseConfig, ReadWriteMode
+from config import BaseConfig
 
 
 class TestConfig(BaseConfig):
@@ -81,10 +81,6 @@ class TestConfig(BaseConfig):
         self.s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
         self.graph_index = 'test_graph_index__'
         self.gistic_urls = self.get_gistic_urls()
-        self.read_write_mode = {
-            'maf': ReadWriteMode.neither,
-            'gistic': ReadWriteMode.neither,
-        }
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)

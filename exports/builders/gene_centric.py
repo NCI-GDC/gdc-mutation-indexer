@@ -46,7 +46,7 @@ class GeneCentricBuilder(BaseBuilder):
         """
         self.log('Building GeneCentric')
         # Check if we should load a pre-built dataframe
-        if self.config.load_raw:
+        if self.config.output_raw == 'read':
             self.gene_centric = self.load_raw()
             if self.gene_centric is not None:
                 return self
@@ -75,7 +75,7 @@ class GeneCentricBuilder(BaseBuilder):
         self.log('Build finished')
 
         # Check if we should save the resulting dataframe
-        if self.config.store_raw:
+        if self.config.output_raw == 'write':
             self.write(self.config.get_raw_output_path(self.index_name))
         return self
 
