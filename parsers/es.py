@@ -1,7 +1,7 @@
-from base import BaseArgs
+from base import Parser
 
 
-class ESArgs(BaseArgs):
+class ESArgs(Parser):
     """
     Elasticsearch arguments
     """
@@ -58,7 +58,7 @@ class ESArgs(BaseArgs):
     }
 
 
-class ESHadoopArgs(BaseArgs):
+class ESHadoopArgs(Parser):
     """
     Elasticsearch-Hadoop adapter parameters
     """
@@ -68,21 +68,21 @@ class ESHadoopArgs(BaseArgs):
     }
     arguments = {
         'batch-size-bytes': {
-            'help': '',  # FIXME: text
+            'help': 'Batch size when writing DataFrame to Elasticsearch',
             'default': '16mb',
         },
         'batch-size-entries': {
-            'help': '',  # FIXME: text
+            'help': 'Batch number of documents when writing DataFrame to Elasticsearch',
             'default': 1000,
             'type': int,
         },
-        'index-repartition': {
+        'df-repartition': {
             'help': 'Number of partitions to distribute the index file accross',
             'default': 2048,
             'type': int,
         },
-        'index-coalesce': {
-            'help': '',  # FIXME: text
+        'df-coalesce': {
+            'help': 'Decrease the number of partitions in the DataFrame to this number',
             'default': 12,
             'type': int,
         },

@@ -40,7 +40,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.1.0"
+VERSION = "0.1.5"
 
 
 def get_git_commit(git_dir):
@@ -55,16 +55,6 @@ class BaseConfig(object):
     # Note that ALL of these keywords have to be present for the MAF to be used
     maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz']  # NOTE: Will be removed when reading mafs from the index will be merged
     gistic_filename_string = 'focal_score_by_genes'  # NOTE: this will be removed when gistics will be read from graph
-
-    # Index types, these also double as document type names
-    index_types = {
-        'case_centric',
-        'gene_centric',
-        'ssm_centric',
-        'ssm_occurrence_centric',
-        'cnv_centric',
-        'cnv_occurrence_centric',
-    }
 
     mappings = {
         'ssm': 'ssm.yml',
@@ -181,7 +171,8 @@ class BaseConfig(object):
             # Set properties with parsed values
             for key in parser.arguments:
                 key = key.replace('-', '_')
-                setattr(self, key, getattr(args, key))
+                value = getattr(args, key)
+                setattr(self, key, value)
 
     def get_index_names(self):
         """

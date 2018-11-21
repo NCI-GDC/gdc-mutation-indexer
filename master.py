@@ -4,9 +4,6 @@ import os
 
 from parsers import (
     Parser,
-    S3Args,
-    ESArgs,
-    BuildArgs,
     SparkArgs,
 )
 
@@ -29,7 +26,7 @@ def parse_args():
     """
     parser = Parser.build(
         ALL_PARSERS,
-        description='Mutation indexer argument',
+        description='Mutation Indexer',
     )
 
     args = parser.parse_args()

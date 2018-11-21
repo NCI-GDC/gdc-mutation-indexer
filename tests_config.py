@@ -35,8 +35,8 @@ class TestConfig(BaseConfig):
     ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
     cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
 
-    # How many partitions to distribute the index file accross
-    index_repartition = 10
+    # How many partitions to distribute the result df accross
+    df_repartition = 10
 
     # Additional test files
     doc_files = {

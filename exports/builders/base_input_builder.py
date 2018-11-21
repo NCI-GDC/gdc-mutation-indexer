@@ -49,7 +49,7 @@ class BaseInputBuilder(object):
     def build_from_scratch(self):
         raise NotImplementedError
 
-    def get_urls(self):\
+    def get_urls(self):
         raise NotImplementedError
 
     def combine(self):

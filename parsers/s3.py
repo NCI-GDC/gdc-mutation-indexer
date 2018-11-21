@@ -1,7 +1,7 @@
-from base import BaseArgs
+from base import Parser
 
 
-class S3Args(BaseArgs):
+class S3Args(Parser):
     """
     S3 arguments
     """

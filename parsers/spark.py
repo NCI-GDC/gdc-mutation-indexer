@@ -1,7 +1,7 @@
-from base import BaseArgs
+from base import Parser
 
 
-class SparkArgs(BaseArgs):
+class SparkArgs(Parser):
     """
     Spark configuration arguments
     """

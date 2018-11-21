@@ -21,19 +21,6 @@ from builders import (
 logging.basicConfig(format=LOG_FORMAT)
 
 
-def log_params(logger, config):  # TODO: unite with parser's log_args
-    """
-    """
-    for parser in [BuildArgs, S3Args, ESArgs]:
-        logger.info("\t{}:".format(parser.__name__))
-        for key in parser.arguments:
-            if not any([k in key for k in ['key', 'pass', 'secret']]):
-                value = getattr(config, key.replace('-', '_'))
-            else:
-                value = 'VALUE_IS_SECRET'
-            logger.info("{} = {}".format(key, value))
-
-
 class GDCMutationExport(object):
     """
     The main entry point into the index export process for the mutation indices
@@ -54,15 +41,15 @@ class GDCMutationExport(object):
         ]
 
     def run_export(self):
-        # Construct master MAF from all individual MAFs
-        log_params(self.logger, self.config)
-
+        # Combine MAFs into one DataFrame
         self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
         maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
+        # Combine Gistics into one DataFrame
         self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
         gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
+        # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup('CaseBuilder', 'Build Case dataframe')
         case_df = CaseBuilder(self.config,
                               self.sqlContext).build(maf_df, gistic_df)
@@ -71,7 +58,6 @@ class GDCMutationExport(object):
             index_name = builder.index_name
             if index_name in self.config.index_types:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
-
                 if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
                     # these builders do not yet depend on gistic_df
                     builder(self.config, self.sqlContext).build(maf_df, case_df).load()

@@ -1,7 +1,7 @@
-from base import BaseArgs
+from base import Parser
 
 
-class BuildArgs(BaseArgs):
+class BuildArgs(Parser):
     """
     Arguments controlling the build
     """
@@ -29,10 +29,24 @@ class BuildArgs(BaseArgs):
             'type': int,
             'default': [0],
         },
+        'projects': {
+            'help': 'Subset of projects to build. If not provided, builds all',
+            'nargs': '*',
+            'default': [],
+        },
         'pipelines': {
             'help': 'List of pipelines to build',
             'nargs': '*',
             'default': ['mutect', 'muse', 'varscan', 'somaticsniper', 'FM'],
+        },
+        'index-types': {
+            'help': 'List of pipelines to build',
+            'nargs': '*',
+            'default': [
+                'case_centric', 'gene_centric',
+                'ssm_centric', 'ssm_occurrence_centric',
+                'cnv_centric', 'cnv_occurrence_centric',
+            ],
         },
         'debug': {
             'help': 'Debug mode. More explicit logging but slower.',
@@ -49,10 +63,5 @@ class BuildArgs(BaseArgs):
         'no-overwrite-raw': {
             'help': 'If set, will not overwrite raw indices previously stored in S3',
             'action': 'store_false',
-        },
-        'projects': {
-            'help': 'Subset of projects to build. If not provided, builds all',
-            'nargs': '*',
-            'default': [],
         },
     }

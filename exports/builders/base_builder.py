@@ -62,11 +62,11 @@ class BaseBuilder(object):
 
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self,
-                     self.index_name).repartition(self.config.index_repartition,
+                     self.index_name).repartition(self.config.df_repartition,
                                                   self.id_field)
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        df.coalesce(self.config.index_coalesce).write\
+        df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', self.config.es_nodes)\
             .option('es.net.http.auth.user', self.config.es_user)\
@@ -155,9 +155,9 @@ class BaseBuilder(object):
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
         if id_field:
-            df = df.repartition(self.config.index_repartition, id_field).write
+            df = df.repartition(self.config.df_repartition, id_field).write
         else:
-            df = df.repartition(self.config.index_repartition).write
+            df = df.repartition(self.config.df_repartition).write
         if not self.config.no_overwrite_raw:
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
@@ -203,8 +203,8 @@ class BaseBuilder(object):
                                      for k, v in (self.config
                                                       .percentile_threshold
                                                       .iteritems())],
-            'coalesce': self.config.index_coalesce,
-            'repartition': self.config.index_repartition,
+            'coalesce': self.config.df_coalesce,
+            'repartition': self.config.df_repartition,
             'batch_size_bytes': self.config.batch_size_bytes,
             'batch_size_entries': int(self.config.batch_size_entries)
         }

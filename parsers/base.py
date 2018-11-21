@@ -6,6 +6,12 @@ class Parser:
     Used to build composite parsers from argument group classes
     """
 
+    def __init__(self):
+        """
+        Builds parser for self only when initialized
+        """
+        return self.build([self])
+
     @staticmethod
     def build(parsers, description=None):
         """
@@ -39,13 +45,3 @@ class Parser:
                     logger.info('{}={}'.format(name, 'VALUE_IS_SECRET'))
                 else:
                     logger.info('{}={}'.format(name, value))
-
-
-class BaseArgs:
-    """
-    """
-
-    def __init__(self):
-        """
-        """
-        return Parser.build([self])

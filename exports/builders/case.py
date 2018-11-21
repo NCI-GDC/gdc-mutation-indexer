@@ -60,7 +60,7 @@ class CaseBuilder(object):
         df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.index_repartition, 'case_id')
+        df = df.repartition(self.config.df_repartition, 'case_id')
 
         if self.config.cache_dataframes['cases']:
             self.logger.info('Caching repartitioned case dataframe')
