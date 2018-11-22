@@ -9,3 +9,5 @@ consulate==0.4
 requests==2.6.0
 boto==2.46.1
 -e git+ssh://git@github.com/NCI-GDC/gdc-models.git@release/lorax#egg=gdcmodels
+# -e git+ssh://git@github.com/NCI-GDC/psqlgraph.git@1.2.0#egg=psqlgraph
+# -e git+ssh://git@github.com/NCI-GDC/gdcdatamodel.git@dict_v1.13.0-Ichabod#egg=gdcdatamodel

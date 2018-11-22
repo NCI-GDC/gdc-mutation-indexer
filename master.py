@@ -51,7 +51,7 @@ def process_args(args):
     # If build-type == 'release', get label and version from DataRelease node
     if args.build_type == 'release':
         release_name, version = get_release_info()
-        args.build_label = release_name
+        args.build_label = release_name.lower()
         args.build_version = version
 
     return args
