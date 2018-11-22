@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 from config import BaseConfig
 
 
@@ -18,7 +20,7 @@ class TestConfig(BaseConfig):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    # Whether or not to rebuild graph index after every test
+        # Whether or not to rebuild graph index after every test
     graph_force_build = False
 
     # Whether or not to print document mismatches to stdout when testing
@@ -34,9 +36,6 @@ class TestConfig(BaseConfig):
     main_indices = ['case_centric', 'gene_centric']
     ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
     cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
-
-    # How many partitions to distribute the result df accross
-    df_repartition = 10
 
     # Additional test files
     doc_files = {
@@ -69,18 +68,27 @@ class TestConfig(BaseConfig):
      }
 
     def __init__(self):
-        super(TestConfig, self).__init__()
-        self.amend_parameters()
+        env = self.get_env_dict()
+        pprint(env)
+        super(TestConfig, self).__init__(env_dict=env)
 
-    def amend_parameters(self):
+    def get_env_dict(self):
         """
-        Overwrite base config parameters with test ones
+        Simulate environment variables with dictionary
         """
-        self.es_host = 'http://localhost'
-        self.source_es_host = 'http://localhost'
-        self.s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
-        self.graph_index = 'test_graph_index__'
-        self.gistic_urls = self.get_gistic_urls()
+        env_dict = {
+            'BUILD_TYPE': 'develop',
+            'ES_NODES': 'http://localhost',
+            'ES_HOST': 'http://localhost',
+            'SOURCE_ES_HOST': 'http://localhost',
+            'S3_HOST': 'fake_s3',
+            'S3_ACCESS_KEY': 'fake_s3_access',
+            'S3_SECRET_KEY': 'fake_s3_secret',
+            'DF_REPARTITION': '10',
+            #'S3_MAF_BUCKET': 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/',
+        }
+
+        return env_dict
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)

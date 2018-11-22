@@ -123,8 +123,11 @@ class BaseConfig(object):
         '*_ids'
     ]
 
-    def __init__(self):
-        self.assign_all_parameters()
+    def __init__(self, env_dict=None):
+        """
+        :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
+        """
+        self.assign_all_parameters(env_dict=env_dict)
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
@@ -133,10 +136,16 @@ class BaseConfig(object):
         self.maf_urls = self.get_maf_urls()
         self.gistic_urls = self.get_gistic_urls()
 
-    def assign_all_parameters(self):
+    def assign_all_parameters(self, env_dict=None):
         """
         Takes care of all config parameters to be set correctly
+        Will assign self.var_name = value where os.environ['VAR-NAME'] == value
+        for each parameter defined in ALL_PARSERS
+
+        :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
         """
+        if env_dict is None:
+            env_dict = os.environ
         # Assign all arguments defined in parsers to corresponding values from env
         for parser in ALL_PARSERS:
             args = []
@@ -146,8 +155,9 @@ class BaseConfig(object):
                 is_arg_bool = arg_action in ['store_true', 'store_false']
                 is_arg_list = kwargs.get('nargs') is not None
                 # Get value from env
-                value = os.getenv(key.upper().replace('-', '_'))
-
+                value = env_dict.get(key.upper().replace('-', '_'))
+                if value is None:
+                    continue
                 # Split lists and handle bools
                 if is_arg_list:
                     values = value.split(',')
