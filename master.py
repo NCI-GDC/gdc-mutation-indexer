@@ -2,6 +2,9 @@ import subprocess
 import logging
 import os
 
+from psqlgraph import PsqlGraphDriver
+from gdcdatamodel import models as md
+
 from parsers import (
     Parser,
     SparkArgs,
@@ -13,12 +16,29 @@ from config import (
     LOG_FORMAT,
     ALL_PARSERS,
     get_git_commit,
-    get_release_info,
 )
 
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
+
+
+def get_release_info():
+    """
+    Lookup release candidate name and version in postgres
+    """
+    postgres_driver = PsqlGraphDriver(
+        os.environ["PG_HOST"],
+        os.environ["PG_USER"],
+        os.environ["PG_PASS"],
+        os.environ["PG_NAME"],
+    )
+    with postgres_driver.session_scope():
+        release_node = (postgres_driver.nodes(md.DataRelease)
+                                       .props(released=False).first())
+    release_name = release_node.name
+    version = [release_node.major_version, release_node.minor_version]
+    return release_name, version
 
 
 def parse_args():

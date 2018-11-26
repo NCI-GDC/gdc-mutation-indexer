@@ -5,9 +5,6 @@ import shlex
 from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
-# from psqlgraph import PsqlGraphDriver
-# from gdcdatamodel import models as md
-
 from parsers import (
     Parser,
     S3Args,
@@ -16,7 +13,6 @@ from parsers import (
     BuildArgs,
     SparkArgs,
 )
-
 
 ALL_PARSERS = [
     S3Args,
@@ -36,26 +32,6 @@ def get_git_commit(git_dir):
     return subprocess.check_output(
         shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
     ).strip()
-
-
-def get_release_info():
-    """
-    Lookup release candidate name and version in postgres
-    """
-    # postgres_driver = PsqlGraphDriver(
-    #     os.environ["PG_HOST"],
-    #     os.environ["PG_USER"],
-    #     os.environ["PG_PASS"],
-    #     os.environ["PG_NAME"],
-    # )
-    # with postgres_driver.session_scope():
-    #     release_node = (postgres_driver.nodes(md.DataRelease)
-    #                                    .props(released=False).first())
-    # release_name = release_node.name
-    # version = [release_node.major_version, release_node.minor_version]
-    release_name = 'Marvin'
-    version = [14, 0]
-    return release_name, version
 
 
 class BaseConfig(object):
