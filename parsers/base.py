@@ -1,7 +1,7 @@
 import argparse
 
 
-class Parser:
+class Parser(object):
     """
     Used to build composite parsers from argument group classes
     """
@@ -29,6 +29,36 @@ class Parser:
                 group.add_argument('--{}'.format(name), **kwargs)
 
         return parser
+
+    @staticmethod
+    def get_arg_attrnames(parsers):
+        """
+        Returns attribute names corresponding to arguments of :parsers
+        """
+        attrs = []
+        for p in parsers:
+            for arg in p.arguments:
+                attrs.append(arg.replace('-', '_'))
+        return attrs
+
+    @classmethod
+    def get_environment_dict(cls, args, parsers):
+        """
+        Given list of args and parsers, return environment variable dictionary
+        e.g.  args = Namespace(my_int=1, my_list=[1, 2, 3]) will return:
+        {'MY_INT': '1', 'MY_LIST': '1,2,3'}
+        """
+        env_dict = {}
+        for parser in parsers:
+            for argname in parser.arguments:
+                argname = argname.replace('-', '_')
+                value = getattr(args, argname)
+                if isinstance(value, list):
+                    value = ','.join(map(str, value))
+                else:
+                    value = str(value)
+                env_dict[argname.upper()] = value
+        return env_dict
 
     @staticmethod
     def log_args(args, parsers, logger):

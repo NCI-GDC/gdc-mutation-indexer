@@ -1,5 +1,6 @@
 import subprocess
 import logging
+import pprint
 import os
 
 from psqlgraph import PsqlGraphDriver
@@ -16,6 +17,7 @@ from config import (
     LOG_FORMAT,
     ALL_PARSERS,
     get_git_commit,
+    BaseConfig,
 )
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -49,10 +51,8 @@ def parse_args():
         ALL_PARSERS,
         description='Mutation Indexer',
     )
-
     args = parser.parse_args()
     args = process_args(args)
-    Parser.log_args(args, ALL_PARSERS, logger)
     return args
 
 
@@ -75,6 +75,38 @@ def process_args(args):
         args.build_version = version
 
     return args
+
+
+def user_confirm(prompt_string, logger):
+    """
+    Prompt user confirmation to proceed
+    """
+    while True:
+        logger.info(prompt_string)
+        ans = raw_input().lower()
+        if ans in ['y', 'yes']:
+            return
+        elif ans in ['n', 'no']:
+            raise Exception('User refused to continue')
+        else:
+            logger.error('Invalid answer: {}'.format(ans))
+
+
+def confirm_args(args):
+    """
+    Confirm with user that args and index names are as expected
+    """
+    # Log arguments
+    Parser.log_args(args, ALL_PARSERS, logger)
+
+    # Initialize config with environment variables (the way spark worker will see it)
+    env_dict = Parser.get_environment_dict(args, ALL_PARSERS)
+    config = BaseConfig(env_dict=env_dict)
+
+    # Confirm with user
+    user_confirm("Will build indices:\n{}\nContinue?"
+                .format(pprint.pformat(config.indices)), logger)
+    return
 
 
 def get_spark_args(args):
@@ -138,6 +170,9 @@ def get_submit_command(args):
 
 
 if __name__ == "__main__":
+    # Parse and confirm arguments
     args = parse_args()
+    confirm_args(args)
+    # Assemble and run the command
     command = get_submit_command(args)
     subprocess.call(command)
