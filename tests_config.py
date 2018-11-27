@@ -80,12 +80,13 @@ class TestConfig(BaseConfig):
             'BUILD_TYPE': 'develop',
             'ES_NODES': 'http://localhost',
             'ES_HOST': 'http://localhost',
+            'ES_PORT': '9200',
             'SOURCE_ES_HOST': 'http://localhost',
+            'SOURCE_ES_PORT': '9200',
             'S3_HOST': 'fake_s3',
             'S3_ACCESS_KEY': 'fake_s3_access',
             'S3_SECRET_KEY': 'fake_s3_secret',
             'DF_REPARTITION': '10',
-            #'S3_MAF_BUCKET': 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/',
         }
 
         return env_dict

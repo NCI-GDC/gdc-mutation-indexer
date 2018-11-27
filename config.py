@@ -145,6 +145,7 @@ class BaseConfig(object):
                 # Skip when default is False and value is False
                 if arg_action == 'store_true' and value == 'False':
                     continue
+
                 # Skip when default is True and value is True
                 if arg_action == 'store_false' and value == 'True':
                     continue
