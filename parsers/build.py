@@ -1,7 +1,7 @@
-from base import Parser
+from base import BaseParser
 
 
-class BuildArgs(Parser):
+class BuildArgs(BaseParser):
     """
     Arguments controlling the build
     """

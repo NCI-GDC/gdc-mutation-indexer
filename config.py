@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
 from parsers import (
-    Parser,
+    ParserBuilder,
     S3Args,
     ESArgs,
     ESHadoopArgs,
@@ -157,7 +157,7 @@ class BaseConfig(object):
                     args.extend(values)
 
             # Build parser and parse gathered arguments
-            argparser = Parser.build([parser])
+            argparser = ParserBuilder.build([parser])
             args = argparser.parse_args(args)
 
             # Set properties with parsed values

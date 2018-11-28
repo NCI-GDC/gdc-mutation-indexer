@@ -7,7 +7,7 @@ from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
 
 from parsers import (
-    Parser,
+    ParserBuilder,
     SparkArgs,
 )
 
@@ -47,7 +47,7 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
-    parser = Parser.build(
+    parser = ParserBuilder.build(
         ALL_PARSERS,
         description='Mutation Indexer',
     )
@@ -97,10 +97,10 @@ def confirm_args(args):
     Confirm with user that args and index names are as expected
     """
     # Log arguments
-    Parser.log_args(args, ALL_PARSERS, logger)
+    ParserBuilder.log_args(args, ALL_PARSERS, logger)
 
     # Initialize config with environment variables (the way spark worker will see it)
-    env_dict = Parser.get_environment_dict(args, ALL_PARSERS)
+    env_dict = ParserBuilder.get_environment_dict(args, ALL_PARSERS)
     config = BaseConfig(env_dict=env_dict)
 
     # Confirm with user

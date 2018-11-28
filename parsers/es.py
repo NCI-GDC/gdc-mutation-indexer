@@ -1,7 +1,7 @@
-from base import Parser
+from base import BaseParser
 
 
-class ESArgs(Parser):
+class ESArgs(BaseParser):
     """
     Elasticsearch arguments
     """
@@ -58,7 +58,7 @@ class ESArgs(Parser):
     }
 
 
-class ESHadoopArgs(Parser):
+class ESHadoopArgs(BaseParser):
     """
     Elasticsearch-Hadoop adapter parameters
     """
