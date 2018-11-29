@@ -129,8 +129,9 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
 
         # dedupe (annoying because acls are lists)
         aliquot_acls = list(set(x for l in aliquot_acls for x in l))
-        assert 0 < len(aliquot_acls) <= 2, 'Invalid acls'
-        'for case {}, aliquot(s) {}, phsids {}'
+
+        assert 0 < len(aliquot_acls) <= 2, 'Invalid acls ' \
+        'for case {}, aliquot(s) {}, phsids {}' \
         ''.format(case_id, aliquots_to_lookup, aliquot_acls)
 
         # If only one acl across aliquots, use that
@@ -138,13 +139,13 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
             cases_urls[case_id] = aliquot_acls
         else:
             # If we find more than one acl, we must have
-            # the scenario [open], phsid000x
-            # (phsid000x, phsid000y means something is wrong)
-            assert '[open]' in aliquot_acls, 'Multiple phsids'
-            'found for case {}, aliquots {}, phsids {}'
+            # the scenario [open, phsid000x]
+            # ([phsid000x, phsid000y] means something is wrong)
+            assert u'open' in aliquot_acls, 'Multiple phsids ' \
+            'found for case {}, aliquots {}, phsids {}' \
             ''.format(case_id, aliquots_to_lookup, aliquot_acls)
 
-            cases_urls[case_id] = '[open]'
+            cases_urls[case_id] = [u'open']
 
     assert len(unique_aliquots) == len(case_ids) == len(cases_urls)
 
