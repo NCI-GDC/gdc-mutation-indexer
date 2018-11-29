@@ -120,28 +120,31 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
                             aliquots_to_lookup.append(submitter_id)
 
         # go from aliquots to url to maf_name to acl
+        aliquot_acls = []
         for aliquot in aliquots_to_lookup:
-            try:
-                url = aliquot_to_url[aliquot]
-                filename = config.maf_url_to_file_name(url)
-                acl = filenames_to_acls[filename]
+            url = aliquot_to_url[aliquot]
+            filename = config.maf_url_to_file_name(url)
+            acl = filenames_to_acls[filename]
+            aliquot_acls.append(acl)
 
-                if case_id not in cases_urls:
-                    cases_urls[case_id] = acl
-                else:
-                    curr_acl = cases_urls[case_id]
-                    if curr_acl == acl:
-                        continue  # they match
-                    # if any acl is open, we keep open
-                    # if we get more than one phsid, we throw an error
-                    # otherwise we use whatever acl we get
-                    elif curr_acl == ['open'] or acl == ['open']:
-                        cases_urls[case_id] = ['open']
-                    raise Exception('Multiple phsids found for case {},'
-                                    'aliquot {}, phsids {}{}'
-                                    ''.format(case_id, aliquot, curr_acl, acl))
-            except KeyError:
-                continue
+        # dedupe (annoying because acls are lists)
+        aliquot_acls = list(set(x for l in aliquot_acls for x in l))
+        assert 0 < len(aliquot_acls) <= 2, 'Invalid acls'
+        'for case {}, aliquot(s) {}, phsids {}'
+        ''.format(case_id, aliquots_to_lookup, aliquot_acls)
+
+        # If only one acl across aliquots, use that
+        if len(aliquot_acls) == 1:
+            cases_urls[case_id] = aliquot_acls
+        else:
+            # If we find more than one acl, we must have
+            # the scenario [open], phsid000x
+            # (phsid000x, phsid000y means something is wrong)
+            assert '[open]' in aliquot_acls, 'Multiple phsids'
+            'found for case {}, aliquots {}, phsids {}'
+            ''.format(case_id, aliquots_to_lookup, aliquot_acls)
+
+            cases_urls[case_id] = '[open]'
 
     assert len(unique_aliquots) == len(case_ids) == len(cases_urls)
 
