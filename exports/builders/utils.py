@@ -116,7 +116,8 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
                     aliquots = analyte['aliquots']
                     for aliquot in aliquots:
                         submitter_id = aliquot['submitter_id']
-                        aliquots_to_lookup.append(submitter_id)
+                        if submitter_id in unique_aliquots:
+                            aliquots_to_lookup.append(submitter_id)
 
         # go from aliquots to url to maf_name to acl
         for aliquot in aliquots_to_lookup:
