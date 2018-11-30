@@ -70,9 +70,8 @@ class CNVCentricBuilder(BaseBuilder):
         self.log_count(self.cnv_centric)
         self.log('Build finished')
 
-        # Check if we should write
-        if self.config.output_raw == 'write':
-            self.write(self.config.get_raw_output_path(self.index_name))
+        # Save the resulting dataframe to s3
+        self.write()
 
         return self
 

@@ -58,9 +58,10 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
 
         self.ssm_occurrence_centric = ssm_occurrence_centric
         self.log('Build finished')
-        # Check if we should save the resulting dataframe
-        if self.config.output_raw == 'write':
-            self.write(self.config.get_raw_output_path(self.index_name))
+
+        # Save the resulting dataframe to s3
+        self.write()
+
         return self
 
     def build_ssm_subtree(self, maf_df):

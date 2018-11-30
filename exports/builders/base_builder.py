@@ -146,6 +146,10 @@ class BaseBuilder(object):
         """
         Writes the built dataframe to a json file at path
         """
+        if not self.config.output_raw == 'write':
+            self.logger.info('Will not write raw output to s3')
+            return
+
         if path is None:
             path = self.config.get_raw_output_path(self.index_name)
 
@@ -158,7 +162,6 @@ class BaseBuilder(object):
             df = df.repartition(self.config.df_repartition, id_field).write
         else:
             df = df.repartition(self.config.df_repartition).write
-        if not self.config.no_overwrite_raw:
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)

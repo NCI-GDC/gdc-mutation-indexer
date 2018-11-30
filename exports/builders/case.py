@@ -1,6 +1,6 @@
 from pyspark.sql.functions import (
     lit,
-   collect_set,
+    collect_set,
 )
 from utils import standardize_schema, get_case_ids_from_source_es
 import logging

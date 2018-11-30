@@ -63,9 +63,8 @@ class CaseCentricBuilder(BaseBuilder):
         self.case_centric = case_centric
         self.log('Build finished')
 
-        # Check if we should save the resulting dataframe
-        if self.config.output_raw == 'write':
-            self.write(self.config.get_raw_output_path(self.index_name))
+        # Save the resulting dataframe to s3
+        self.write()
 
         return self
 
