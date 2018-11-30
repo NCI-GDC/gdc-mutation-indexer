@@ -66,7 +66,7 @@ class ParserBuilder(object):
         """
         for parser in parsers:
             args_to_print = [
-                arg for arg in args._get_kwargs() if arg[0].replace('_', '-') in parser.arguments
+                arg for arg in args._get_kwargs() if arg[0].replace('_', '-') in parser().arguments
             ]
             logger.info("\t{}:".format(parser.__name__))
             for name, value in args_to_print:
@@ -82,7 +82,7 @@ class ParserBuilder(object):
         """
         attrs = []
         for p in parsers:
-            for arg in p.arguments:
+            for arg in p().arguments:
                 attrs.append(arg.replace('-', '_'))
         return attrs
 
@@ -95,7 +95,7 @@ class ParserBuilder(object):
         """
         env_dict = {}
         for parser in parsers:
-            for argname in parser.arguments:
+            for argname in parser().arguments:
                 argname = argname.replace('-', '_')
                 value = getattr(args, argname)
                 if isinstance(value, list):

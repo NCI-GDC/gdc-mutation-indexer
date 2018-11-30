@@ -124,7 +124,7 @@ def get_spark_args(args):
     spark_args = ['--py-files', ','.join(eggs), '--jars', ','.join(jars)]
 
     # Add other spark arguments
-    for arg in SparkArgs.arguments:
+    for arg in SparkArgs().arguments:
         name = '--' + arg
         value = str(getattr(args, arg.replace('-', '_')))
         spark_args.extend([name, value])
@@ -137,7 +137,7 @@ def get_config_args(args):
     """
     config_args = []
     for parser in ALL_PARSERS:
-        for name, info in parser.arguments.items():
+        for name, info in parser().arguments.items():
             varname = name.upper().replace('-', '_')
             value = getattr(args, name.replace('-', '_'))
             if isinstance(value, list):

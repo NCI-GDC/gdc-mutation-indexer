@@ -126,7 +126,7 @@ class BaseConfig(object):
         for parser in ALL_PARSERS:
             args = []
             # Gather arguments from env
-            for key, kwargs in parser.arguments.items():
+            for key, kwargs in parser().arguments.items():
                 arg_action = kwargs.get('action')
                 is_arg_bool = arg_action in ['store_true', 'store_false']
                 is_arg_list = kwargs.get('nargs') is not None
@@ -161,7 +161,7 @@ class BaseConfig(object):
             args = argparser.parse_args(args)
 
             # Set properties with parsed values
-            for key in parser.arguments:
+            for key in parser().arguments:
                 key = key.replace('-', '_')
                 value = getattr(args, key)
                 setattr(self, key, value)
