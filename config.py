@@ -306,7 +306,7 @@ class BaseConfig(object):
                         }
                     },
                 "_source": ["file_name", "acl"],
-                "size": 1000000,
+                "size": 10000,
         }
 
         docs = self.es.search(index=self.graph_index,
