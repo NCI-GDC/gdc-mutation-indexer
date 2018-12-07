@@ -31,8 +31,8 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
             if self.case_for_ssm_joins_centric is not None:
                 return self
 
-        self.case_for_ssm_joins_centric = \
-            self.build_case_for_ssm(maf_df, case_df)
+        self.case_for_ssm_joins_centric = (case_df.drop('ssm_id')).drop('occurrence_id')
+        #    self.build_case_for_ssm(maf_df, case_df)
 
         self.log('Build finished')
         # Check if we should save the resulting dataframe

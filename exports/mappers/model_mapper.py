@@ -181,8 +181,8 @@ class ModelMapper(object):
                 # 'ssm_occurrence_centric':
                 #     ['ssm_occurrence_centric', 'properties', 'case',
                 #      'properties', 'observation'],
-                'case_for_ssm_joins_centric':
-                    ['case_for_ssm_joins_centric', 'properties', 'observation'],
+                #'case_for_ssm_joins_centric':
+                #    ['case_for_ssm_joins_centric', 'properties', 'observation'],
             },
             'observation-cnv': {
                 'gene_centric':
