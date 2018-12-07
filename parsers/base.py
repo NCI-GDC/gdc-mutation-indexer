@@ -99,6 +99,8 @@ class ParserBuilder(object):
                 argname = argname.replace('-', '_')
                 value = getattr(args, argname)
                 if isinstance(value, list):
+                    if value == []:
+                        continue
                     value = ','.join(map(str, value))
                 else:
                     value = str(value)

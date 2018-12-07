@@ -212,7 +212,8 @@ class BaseConfig(object):
                 continue
 
             if any([pipeline in obj.key for pipeline in self.pipelines]):
-                if any([project.replace('-', '.') in obj.key for project in self.projects]):
+                include_project = any([project.replace('-', '.') in obj.key for project in self.projects])
+                if self.projects == [] or include_project:
                     maf_urls.append(self.s3_maf_bucket + obj.key)
 
         return maf_urls
@@ -235,9 +236,18 @@ class BaseConfig(object):
         bucket_contents = self.list_bucket(self.s3_gistic_bucket)
         gistic_urls = []
         for obj in bucket_contents:
-            if any([project.split('-')[1] in obj.key for project in self.projects]):
-                if self.gistic_filename_string in obj.key:
-                    gistic_urls.append(self.s3_gistic_bucket + obj.key)
+            # Filter out files by gistic keyword string
+            if not self.gistic_filename_string in obj.key:
+                continue
+
+            # Filter out irrelevant projects
+            if self.projects != []:
+                relevant_project = any([project.split('-')[1] in obj.key for project in self.projects])
+                if not relevant_project:
+                    continue
+
+            # Add gistic url
+            gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
 
