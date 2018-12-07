@@ -26,13 +26,12 @@ class ObservationBuilder(object):
         tumor and normal sample uuids and an ssm uuid.
         """
 
-        obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
-                                struct(*struct_select(index_name,
-                                                      'observation-ssm'))
+        obs_df = (maf_df.select('ssm_id',
+                                struct('case_id', *struct_select(index_name,
+                                                        'observation-ssm'))
                                 .alias('observation'))
-                        .groupby('ssm_id', 'case_id', 'occurrence_id')
-                        .agg(collect_list('observation')
-                             .alias('observation')))
+                        .groupby('ssm_id')
+                        .agg(collect_set('observation').alias('observation')))
 
         return obs_df
 
