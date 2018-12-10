@@ -1,17 +1,22 @@
-from setuptools import setup, find_packages
+import os
 import shlex
 from subprocess import check_output
+from setuptools import setup, find_packages
+from config import (
+    VERSION,
+    ROOT_DIR,
+    get_git_commit,
+)
 
-GIT_HEAD_REV = check_output(shlex.split('git rev-parse HEAD')).strip()
 PACKAGES = find_packages()
 
 setup(
     name="gdc-mutation-indexer",
-    version="0.1.0",  # do not bump, egg name is hardcoded in wrappers
+    version=VERSION,
     description="ETL for mutation elasticsearch indices",
     license="Apache",
     packages=PACKAGES,
     py_modules=["config"],
     include_package_data=True,
-    options=dict(egg_info=dict(tag_build=('_rev_' + GIT_HEAD_REV))),
+    options=dict(egg_info=dict(tag_build=('_rev_' + get_git_commit(ROOT_DIR)))),
 )

@@ -4,8 +4,6 @@ from pyspark.sql.utils import AnalysisException
 
 import logging
 
-from config import ReadWriteMode
-
 
 class BaseInputBuilder(object):
 
@@ -49,18 +47,16 @@ class BaseInputBuilder(object):
     def build_from_scratch(self):
         raise NotImplementedError
 
-    def combine():
+    def get_urls(self):
+        raise NotImplementedError
+
+    def combine(self):
         raise NotImplementedError
 
     def write(self, df):
-
-        should_read_write = getattr(self.config,
-                                    'read_write_mode')[self.input_type]
-
-        if should_read_write is ReadWriteMode.write:
-
+        mode = getattr(self.config, '{}_backup'.format(self.input_type))
+        if mode == 'write':
             url = getattr(self.config, '{}_path'.format(self.input_type))
-
             self.df_to_s3(df, url)
 
     def df_to_s3(self, df, url):
@@ -79,10 +75,9 @@ class BaseInputBuilder(object):
         # to return
         df = None
 
-        should_read_write = getattr(self.config,
-                                    'read_write_mode')[self.input_type]
+        mode = getattr(self.config, '{}_backup'.format(self.input_type))
 
-        if should_read_write is ReadWriteMode.read:
+        if mode == 'read':
 
             # Load stored built input into dataframe
             saved_path = getattr(self.config, '{}_path'.format(self.input_type))
