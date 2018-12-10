@@ -26,7 +26,7 @@ class ObservationBuilder(object):
         tumor and normal sample uuids and an ssm uuid.
         """
 
-        obs_df = (maf_df.select('ssm_id',
+        obs_df = (maf_df.select('ssm_id', 'case_id',
                                 struct('case_id', *struct_select(index_name,
                                                         'observation-ssm'))
                                 .alias('observation'))

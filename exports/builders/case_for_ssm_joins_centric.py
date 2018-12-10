@@ -31,8 +31,8 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
             if self.case_for_ssm_joins_centric is not None:
                 return self
 
-        self.case_for_ssm_joins_centric = (case_df.drop('ssm_id')).drop('occurrence_id')
-        #    self.build_case_for_ssm(maf_df, case_df)
+        self.case_for_ssm_joins_centric = \
+            self.build_case_for_ssm(maf_df, case_df)
 
         self.log('Build finished')
         # Check if we should save the resulting dataframe
@@ -45,13 +45,13 @@ class CaseForSSMJoinsCentricBuilder(BaseBuilder):
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'ssm_centric')
 
         self.log('Joining Cases with Observation, [right, case_id]')
         case_for_ssm_df = (case_df.join(obs_df,
                                         on=['case_id'],
                                         how='right')
-                           ).drop('ssm_id').drop('occurrence_id')
+                           ).drop('ssm_id').drop('observation')
 
         self.log_count(case_for_ssm_df)
 
