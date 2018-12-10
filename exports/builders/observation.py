@@ -30,7 +30,7 @@ class ObservationBuilder(object):
                                 struct('case_id', *struct_select(index_name,
                                                         'observation-ssm'))
                                 .alias('observation'))
-                        .groupby('ssm_id')
+                        .groupby('ssm_id', 'case_id')
                         .agg(collect_set('observation').alias('observation')))
 
         return obs_df

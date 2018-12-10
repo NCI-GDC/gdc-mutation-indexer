@@ -79,6 +79,6 @@ class SSMCentricBuilder(BaseBuilder):
 
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name).drop('case_id')
 
         return obs_df
