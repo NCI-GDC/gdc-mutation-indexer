@@ -1,15 +1,16 @@
 import pytest
 import json
-from pyspark.sql.functions import explode
 
 from exports.builders import ConsequenceBuilder, ObservationBuilder
 from tests_config import TestConfig
+from base_joins_test import BaseJoinsTest
+
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gene_centric_df', 'gene_ssm_subtree')
-class TestGeneCentricJoins:
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'gene_centric_df', 'gene_ssm_subtree')
+class TestGeneCentricJoins(BaseJoinsTest):
     """
     Test case_centric index joins
 
@@ -23,32 +24,28 @@ class TestGeneCentricJoins:
 
     """
 
-    def test_cases_per_gene(self, maf_df, gene_centric_df):
+    def test_cases_per_gene(self, maf_df, gistic_df, gene_centric_df):
         # Cases per gene built:
-        df = (gene_centric_df.select('gene_id', explode('case').alias('case'))
-                             .select('gene_id', 'case.case_id'))
-        es_cpg = {}
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            es_cpg.setdefault(row['gene_id'], set())
-            es_cpg[row['gene_id']].update({row['case_id']})
+        df = self.unpack_df_list(gene_centric_df, 'gene_id', 'case', 'case_id')
+        cpg = self.get_relationship_map(df, 'gene_id', 'case_id')
 
         # Cases per gene expected:
-        cpg = {}
-        df = maf_df.select('case_id', 'gene_id').distinct()
-        for row in df.toJSON().collect():
-            row = json.loads(row)
-            cpg.setdefault(row['gene_id'], set())
-            cpg[row['gene_id']].update({row['case_id']})
+        df = (
+            maf_df.select('case_id', 'gene_id')
+                  .union(
+                    gistic_df.select('case_id', 'gene_id')
+                  )
+        ).distinct()
+        true_cpg = self.get_relationship_map(df, 'gene_id', 'case_id')
 
-        assert es_cpg == cpg
+        assert cpg == true_cpg
 
     def test_ssm_per_case(self, maf_df, gene_centric_df):
         # SSMs per case built:
-        df = (gene_centric_df.select('gene_id', explode('case').alias('case'))
-                             .select('gene_id', 'case.case_id',
-                                     explode('case.ssm').alias('ssm'))
-                             .select('gene_id', 'case_id', 'ssm.ssm_id'))
+        df = self.unpack_df_list(gene_centric_df, 'gene_id', 'case',
+                                 ['case_id', 'ssm'])
+        df = self.unpack_df_list(df, ['gene_id', 'case_id'], 'ssm', 'ssm_id')
+
         es_spc = {}
         for row in df.toJSON().collect():
             row = json.loads(row)
@@ -88,29 +85,25 @@ class TestGeneCentricJoins:
 
         # ssm_subtree stats expected:
         cons_df = (ConsequenceBuilder(conf, sqlContext)
-                   .build(maf_df, 'gene_centric'))
-        obs_df = (ObservationBuilder(conf, sqlContext)
-                  .build(maf_df, 'gene_centric'))
+                   .build_for_ssm(maf_df, 'gene_centric'))
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'gene_centric')
 
         df = cons_df.join(obs_df, on=['ssm_id'], how='left')
 
-        df = (df.select('ssm_id', 'observation',
-                        explode('consequence').alias('c'))
-                .select('ssm_id', 'c.consequence_id',
-                        explode('observation').alias('o'))
-                .select('ssm_id', 'consequence_id', 'o.observation_id'))
-
-        stats = get_stats(df)
+        df = self.unpack_df_list(df, ['ssm_id', 'observation'],
+                                 'consequence', 'consequence_id')
+        df = self.unpack_df_list(df, ['ssm_id', 'consequence_id'],
+                                 'observation', 'observation_id')
+        true_stats = get_stats(df)
 
         # ssm_subtree stats built:
-        df = (gene_ssm_subtree.select(explode('ssm').alias('s'))
-                              .select('s.ssm_id', 's',
-                                      explode('s.consequence').alias('c'))
-                              .select('ssm_id', 'c.consequence_id',
-                                      explode('s.observation').alias('o'))
-                              .select('ssm_id', 'consequence_id', 'o.observation_id'))
+        df = self.unpack_df_list(gene_ssm_subtree, [], 'ssm',
+                                 ['ssm_id', 'consequence', 'observation'])
+        df = self.unpack_df_list(df, ['ssm_id', 'observation'], 'consequence',
+                                 ['consequence_id'])
+        df = self.unpack_df_list(df, ['ssm_id', 'consequence_id'], 'observation',
+                                 ['observation_id'])
+        stats = get_stats(df)
 
-        es_stats = get_stats(df)
-
-        assert stats == es_stats
+        assert stats == true_stats
 

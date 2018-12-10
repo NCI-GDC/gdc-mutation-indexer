@@ -11,7 +11,8 @@ from urllib import quote_plus
 from elasticsearch import Elasticsearch
 from distutils.version import StrictVersion
 
-root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..'))
+from elasticsearch import Elasticsearch
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(root_dir)
 from tests_config import TestConfig
 
@@ -49,8 +50,8 @@ def update_genes():
     gene_model = [gene for gene in gene_model if gene['_gene_id'] in genes_to_keep]
 
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'genes.json')
-    print '- Writing gene model to {}'.format(filepath + '.gz') 
-    write_to_file(gene_model, filepath) 
+    print '- Writing gene model to {}'.format(filepath + '.gz')
+    write_to_file(gene_model, filepath)
 
 
 def update_cases(es):
@@ -83,17 +84,41 @@ def update_cases(es):
 
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.json')
     print '- Writing cases to {}'.format(filepath + '.gz')
-    write_to_file(cases, filepath) 
+    write_to_file(cases, filepath)
+
+
+def update_files(es):
+
+    print '- Extracting aliquots from headers'
+    aliquots_in_headers = get_all_aliquots_from_mafs()
+    aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
+
+    if aliquots_in_data - aliquots_in_headers != set():
+        raise Exception('Aliquots missing from headers: {}'
+                        .format(aliquots_in_data - aliquots_in_headers))
+    if aliquots_in_headers - aliquots_in_data == set():
+        raise Exception('No empty aliquots in test data')
+
+    print '\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data)
+
+    print '- Getting case_ids for aliquots in maf headers'
+    case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
+
+    print '- Getting files data for case_ids'
+    files = get_files(es, case_ids)
+
+    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'files.json')
+    print '- Writing files to {}'.format(filepath + '.gz')
+    write_to_file(files, filepath)
 
 
 def get_case_ids_from_aliquots(es, aliquot_ids):
     """
     Get case_ids corresponding to aliquot_ids from gdc_from_graph
     """
-    n_expected = len(aliquot_ids)
 
     print "make it use the data from gdc_from_graph instead"
-    
+
     cases = []
     for aliquot_id in aliquot_ids:
         query = {
@@ -114,7 +139,7 @@ def get_case_ids_from_aliquots(es, aliquot_ids):
         assert len(res['hits']['hits']) == 1, 'Unexpected number of cases found'
 
         cases.append(res['hits']['hits'][0]['_source'])
-    
+
     return {c['case_id'] for c in cases}
 
 
@@ -126,6 +151,20 @@ def get_cases(es, case_ids):
     for case_id in case_ids:
         doc = es.get(index='gdc_from_graph', doc_type='case', id=case_id)['_source']
         docs.append(doc)
+    return docs
+
+
+def get_files(es, case_ids):
+    """
+    Get file documents from gdc_from_graph
+    """
+    docs = []
+    for case_id in case_ids:
+        case_doc = es.get(index='gdc_from_graph',
+                          doc_type='case',
+                          id=case_id)['_source']
+        file_docs = case_doc['files'][:2]
+        docs.extend(file_docs)
     return docs
 
 
@@ -165,14 +204,14 @@ def get_full_gene_model():
 
     bucket = conn.get_bucket('test')
     key = bucket.get_key(filename)
-    gene_model = key.get_contents_as_string()    
+    gene_model = key.get_contents_as_string()
 
     return (json.loads(gene) for gene in gene_model.split('\n') if gene != '')
 
 
 def get_unique_from_mafs(column):
     """
-    Returns set of unique column values extracted from test mafs 
+    Returns set of unique column values extracted from test mafs
     """
     values = set()
     for filepath in cfg_test.maf_urls:
@@ -225,3 +264,5 @@ if __name__ == '__main__':
     update_cases(es)
     print '\n\tUpdating genes.json.gz:'
     update_genes()
+    print '\n\tUpdating files.json.gz'
+    update_files(es)

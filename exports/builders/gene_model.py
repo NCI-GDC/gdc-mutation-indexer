@@ -1,11 +1,13 @@
 import logging
 
-from pyspark.sql.functions import udf, lit, col, regexp_extract
+from pyspark.sql.functions import udf, col
 from pyspark.sql.types import (
-    StringType, ArrayType, LongType, StructType, StructField
+    StringType, ArrayType, StructType, StructField
 )
 
-logging.basicConfig()
+from config import LOG_FORMAT
+
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class GeneModelBuilder(object):

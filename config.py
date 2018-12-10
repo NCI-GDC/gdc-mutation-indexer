@@ -3,10 +3,28 @@ import ssl
 import sys
 import uuid
 import httplib
+from enum import Enum
+
 from elasticsearch import Elasticsearch
 from distutils.version import StrictVersion
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from exports.mappers.models_mapper import ModelMapper
+
+
+class ReadWriteMode(Enum):
+    """
+    We can 1) read from saved input file,
+           2) write to saved input file,
+           3) or neither.
+    It doesn't make sense to read from input file x
+    and then write that same x, so we exclude both as an option.
+    """
+    neither = 0
+    read = 1
+    write = 2
+
+
+LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 
 
 class BaseConfig(object):
@@ -15,9 +33,11 @@ class BaseConfig(object):
     app_name = 'GDC_Mutation_Export'
 
     s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
-    s3_bucket = 's3a://{}/'.format(os.getenv('S3_BUCKET', 'somatic-maf'))
     s3_access_key = os.getenv('S3_ACCESS_KEY', '')
     s3_secret_key = os.getenv('S3_SECRET_KEY', '')
+
+    s3_maf_bucket = 's3a://{}/'.format(os.getenv('S3_MAF_BUCKET', 'somatic-maf'))
+    s3_gistic_bucket = 's3a://{}/'.format(os.getenv('S3_GISTIC_BUCKET', 'gistic-cnv'))
 
     es_host = os.getenv('ES_HOST', 'http://localhost')
     es_port = os.getenv('ES_PORT', 9200)
@@ -30,6 +50,8 @@ class BaseConfig(object):
     maf_keywords = os.getenv('MAF_KEYWORDS')
     maf_keywords = [keyword.strip() for keyword in maf_keywords.split(',')] if maf_keywords else []
     # maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
+
+    gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
 
     # Pipelines to use. If an empty list is given, all 4 pipelies will be used
     # somaticsniper: 2227614  2.6GB
@@ -59,15 +81,17 @@ class BaseConfig(object):
         'case_centric': 'case_centric',
         'gene_centric': 'gene_centric',
         'ssm_centric': 'ssm_centric',
-        'ssm_occurrence_centric': 'ssm_occurrence_centric'
+        'ssm_occurrence_centric': 'ssm_occurrence_centric',
+        'cnv_centric': 'cnv_centric',
+        'cnv_occurrence_centric': 'cnv_occurrence_centric',
     }
 
     # Where to save each index's final json
     index_paths = {
-        'case_centric': s3_bucket + 'case-centric.json',
-        'gene_centric': s3_bucket + 'gene-centric.json',
-        'ssm_centric': s3_bucket + 'ssm-centric.json',
-        'ssm_occurrence_centric': s3_bucket + 'ssm-occurrence-centric.json'
+        'case_centric': s3_maf_bucket + 'case-centric.json',
+        'gene_centric': s3_maf_bucket + 'gene-centric.json',
+        'ssm_centric': s3_maf_bucket + 'ssm-centric.json',
+        'ssm_occurrence_centric': s3_maf_bucket + 'ssm-occurrence-centric.json'
     }
     # Whether to save the indices once they've been built
     index_keep = False
@@ -77,12 +101,12 @@ class BaseConfig(object):
     index_overwrite = True
 
     mappings = {
-                'ssm': 'ssm.yml',
-                'gene': 'gene.yml',
-                'transcript': 'transcript.yml',
-                'annotation': 'annotation.yml',
-                'observation': 'observation.yml',
-                }
+        'ssm': 'ssm.yml',
+        'gene': 'gene.yml',
+        'transcript': 'transcript.yml',
+        'annotation': 'annotation.yml',
+        'observation': 'observation.yml',
+    }
 
     # Index revision number, will be determined automatically if not specified
     revision = None
@@ -103,20 +127,20 @@ class BaseConfig(object):
     citobands_file = 's3a://test/genes.cytobands.tsv.gz'
     census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
 
-    # The location of the combined maf file
-    maf_path = 's3a://test/uat_mafs.csv'
-    # Whether to save the maf file or discard it when done
-    maf_keep = False
-    # Use combined maf if it already exists
-    maf_use_existing = False
-    # Whether to overwrite the combined maf file if it exists
-    maf_overwrite = True
+    # The location to save the combined maf and gistic dataframes
+    maf_path = 'maf_df.parquet'
+    gistic_path = 'gistic_df.parquet'
+
+    # Whether to read/write/neither
+    read_write_mode = {'maf': ReadWriteMode.read,
+                       'gistic': ReadWriteMode.read}
 
     percentile_threshold = {
         'genes_per_case': 100,
         'occurrences_per_ssm': 100,
         'consequences_per_ssm': 100,
         'observations_per_ssm': 100,
+        'occurrences_per_cnv': 100,
     }
 
     # How many partitions to distribute the index file accross
@@ -131,27 +155,34 @@ class BaseConfig(object):
         'case_centric': True,
         'gene_centric': True,
         'ssm_centric': True,
-        'ssm_occurrence_centric': True
+        'ssm_occurrence_centric': True,
+        'cnv_centric': True,
+        'cnv_occurrence_centric': True,
     }
 
     # Case load settings
     case_exclude_fields = [
-            'project.disease_type',
-            'project.primary_site',
-            'case_autocomplete',
-            'annotations',
-            'days_to_index',
-            'diagnoses.treatments',
-            'tissue_source_site',
-            'family_histories',
-            'samples',
-            'files',
-            '*_ids'
+        'project.disease_type',
+        'project.primary_site',
+        'case_autocomplete',
+        'annotations',
+        'days_to_index',
+        'diagnoses.treatments',
+        'tissue_source_site',
+        'family_histories',
+        'samples',
+        'files',
+        '*_ids'
     ]
 
     def __init__(self):
+        self.es = Elasticsearch(
+            self.es_host, port=self.es_port,
+            http_auth=(self.es_user, self.es_pass)
+        )
         self.indices = self.get_index_prefixes()
         self.maf_urls = self.get_maf_urls()
+        self.gistic_urls = self.get_gistic_urls()
 
     def get_index_prefixes(self):
         '''
@@ -171,7 +202,6 @@ class BaseConfig(object):
             es = Elasticsearch(self.es_host,
                                port=self.es_port,
                                http_auth=(self.es_user, self.es_pass))
-
             indices = es.indices.get_alias().keys()
 
             for index_name in self.index_names.values():
@@ -221,10 +251,15 @@ class BaseConfig(object):
                             is_secure=True)
         bucket_name = self.s3_bucket.split('/')[2]
         bucket = conn.get_bucket(bucket_name)
+        """
+        Get maf urls from s3 bucket
+
+        TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
+        """
+        bucket_contents = self.list_bucket(self.s3_maf_bucket)
 
         maf_urls = []
-
-        for obj in bucket.list():
+        for obj in bucket_contents:
             skip = False
             for keyword in self.maf_keywords:
                 if keyword not in obj.key:
@@ -233,9 +268,60 @@ class BaseConfig(object):
             if not skip:
                 if not self.pipelines or any([pipeline in obj.key for pipeline in self.pipelines]):
                     if not self.projects or any([project in obj.key for project in self.projects]):
-                        maf_urls.append(self.s3_bucket + obj.key)
+                        maf_urls.append(self.s3_maf_bucket + obj.key)
                         if self.nb_projects and len(maf_urls) >= self.nb_projects:
                             break
 
         return maf_urls
 
+    def get_maf_file_names(self):
+        """
+        The file name that corresponds to the File node
+        in gdc_from_graph is the last part of the url.
+            e.g. ['//filename/blah/blah2'] becomes ['blah2']
+        """
+        return [url.split('/')[-1] for url in self.maf_urls]
+
+    def get_gistic_urls(self):
+        """
+        Get gistic urls from s3 bucket
+
+        TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
+        """
+
+        bucket_contents = self.list_bucket(self.s3_gistic_bucket)
+
+        gistic_urls = []
+        for obj in bucket_contents:
+            if not self.projects or any([project in obj.key for project in self.projects]):
+                # if 'all_thresholded.by_genes.txt' in obj.key:
+                if self.gistic_filename_string in obj.key:
+                    gistic_urls.append(self.s3_gistic_bucket + obj.key)
+
+        return gistic_urls
+
+    def list_bucket(self, bucket_name):
+        """
+        Return iterator over bucket contents
+        """
+        def get_bucket_name(url):
+            """ Extract bucket name from bucket url """
+            if url.endswith('/'):
+                url = url[:-1]
+
+            for prefix in ['s3://', 's3a://']:
+                url = url.replace(prefix, '')
+
+            return url
+
+        conn = S3Connection(self.s3_access_key,
+                            self.s3_secret_key,
+                            host=self.s3_host.split('/')[-1],
+                            calling_format=OrdinaryCallingFormat(),
+                            is_secure=False)
+        bucket = conn.get_bucket(get_bucket_name(bucket_name))
+        return bucket.list()
+
+
+if __name__ == '__main__':
+    conf = BaseConfig()

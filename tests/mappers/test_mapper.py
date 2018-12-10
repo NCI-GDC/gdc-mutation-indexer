@@ -24,7 +24,7 @@ def mappings(mappers):
 
 @pytest.fixture(scope="session")
 def mappings_with_settings(mappers):
-    return {kind: mapper.create_index_settings()
+    return {kind: mapper.index_settings
             for kind, mapper in mappers.items()}
 
 
@@ -55,8 +55,8 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
 
     # Check that mapping_settings overwrite common_settings
     for key, value in mappings['settings'].items():
-        if key in mapping_settings:
-            assert value == mapping_settings[key]
+        if key in mapping_settings['settings']:
+            assert value == mapping_settings['settings'][key]
         else:
             assert value == common_settings['settings'][key]
 
@@ -189,4 +189,3 @@ def test_get_paths():
     paths = mapper.get_paths(stop_words=stop_words, paths_to_skip=paths_to_skip)
 
     assert sorted(paths) == ['other.field.good', 'path.to.my_good_field']
- 
