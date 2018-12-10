@@ -1,20 +1,14 @@
 import json
 import gzip
 import sys
-import ssl
 import os
 import boto
 import boto.s3.connection
-import httplib
-import requests
-from urllib import quote_plus
-from elasticsearch import Elasticsearch
-from distutils.version import StrictVersion
-
 from elasticsearch import Elasticsearch
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(root_dir)
 from tests_config import TestConfig
+from config import factory
 
 cfg_test = TestConfig()
 
@@ -173,22 +167,6 @@ def get_full_gene_model():
     Downloads full gene model from S3
     Returns gene json generator
     """
-    def create_factory(host,port=443,timeout=10):
-        return (
-            httplib.HTTPSConnection(
-                host = host,
-                port = port,
-                timeout = timeout,
-                context = ssl._create_unverified_context()
-            )
-        )
-
-    py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
-    if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
-        factory = (create_factory, ())
-    else:
-        factory = None
-
     conn = boto.connect_s3(
         S3_ACCESS_KEY,
         S3_SECRET_KEY,
