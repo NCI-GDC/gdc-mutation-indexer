@@ -1,10 +1,31 @@
 import os
+import ssl
+import sys
 import uuid
+import httplib
 import subprocess
 import shlex
 from elasticsearch import Elasticsearch
+from distutils.version import StrictVersion
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
+
+def create_factory(host,port=443,timeout=10):
+    return (
+        httplib.HTTPSConnection(
+            host = host,
+            port = port,
+            timeout = timeout,
+            context = ssl._create_unverified_context()
+        )
+    )
+
+py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
+    factory = (create_factory, ())
+else:
+    factory = None
+    
 from parsers import (
     ParserBuilder,
     S3Args,
@@ -255,6 +276,7 @@ class BaseConfig(object):
         """
         Return iterator over bucket contents
         """
+
         def get_bucket_name(url):
             """ Extract bucket name from bucket url """
             if url.endswith('/'):
@@ -268,8 +290,10 @@ class BaseConfig(object):
         conn = S3Connection(self.s3_access_key,
                             self.s3_secret_key,
                             host=self.s3_host.split('/')[-1],
+                            validate_certs=False,
+                            https_connection_factory=factory,
                             calling_format=OrdinaryCallingFormat(),
-                            is_secure=False)
+                            is_secure=True)
         bucket = conn.get_bucket(get_bucket_name(bucket_name))
         return bucket.list()
 
