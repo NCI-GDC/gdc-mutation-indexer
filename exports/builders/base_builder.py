@@ -47,8 +47,7 @@ class BaseBuilder(object):
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-        doc = self.config.index_names[self.index_name]
-        index_doc = '{}/{}'.format(index, doc)
+        index_doc = '{}/{}'.format(index, self.index_name)
 
         index_body = ModelMapper(self.index_name).index_settings
         index_body = json.dumps(index_body)
@@ -63,11 +62,11 @@ class BaseBuilder(object):
 
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self,
-                     self.index_name).repartition(self.config.repartition,
+                     self.index_name).repartition(self.config.df_repartition,
                                                   self.id_field)
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        df.coalesce(self.config.coalesce).write\
+        df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', self.config.es_nodes)\
             .option('es.net.http.auth.user', self.config.es_user)\
@@ -81,6 +80,7 @@ class BaseBuilder(object):
             .option('es.batch.write.retry.wait', '10m')\
             .option('es.batch.size.bytes', self.config.batch_size_bytes)\
             .option('es.batch.size.entries', self.config.batch_size_entries)\
+            .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
             .option('es.spark.dataframe.write.null', 'true')\
             .save(index_doc)
@@ -127,13 +127,13 @@ class BaseBuilder(object):
 
         return df_to_truncate
 
-    def get_existing(self, path=None):
+    def load_raw(self, path=None):
         """
         Loads the computed index's dataframe, if it exists, and return it,
         returns None it does not
         """
         if path is None:
-            path = self.config.index_paths[self.index_name]
+            path = self.config.get_raw_output_path(self.index_name)
         try:
             self.logger.info('Using existing index from {}'.format(path))
             df = self.sqlContext.read.load(path)
@@ -146,8 +146,12 @@ class BaseBuilder(object):
         """
         Writes the built dataframe to a json file at path
         """
+        if not self.config.output_raw == 'write':
+            self.logger.info('Will not write raw output to s3')
+            return
+
         if path is None:
-            path = self.config.index_paths[self.index_name]
+            path = self.config.get_raw_output_path(self.index_name)
 
         df = getattr(self, self.index_name, None)
         assert df is not None, 'Builder does not have index_name attribute'
@@ -155,10 +159,9 @@ class BaseBuilder(object):
         # Repartition by the id into number of partitions specified in config
         id_field = getattr(self, self.id_field, None)
         if id_field:
-            df = df.repartition(self.config.repartition, id_field).write
+            df = df.repartition(self.config.df_repartition, id_field).write
         else:
-            df = df.repartition(self.config.repartition).write
-        if self.config.index_overwrite:
+            df = df.repartition(self.config.df_repartition).write
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)
@@ -176,7 +179,7 @@ class BaseBuilder(object):
             nb_mutations = self.config.nb_mutations
 
         if '_rev_' in __file__:
-            # The egg name is gdc_mutation_indexer-0.1.0_rev_COMMITHASH-py2.7.egg
+            # The egg name is gdc_mutation_indexer-VERSION_rev_COMMITHASH-py2.7.egg
             commit_hash = __file__.split('_rev_')[1].split('-')[0]
         else:
             if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
@@ -189,22 +192,25 @@ class BaseBuilder(object):
                                   "gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
                 commit_hash = 'not found'
 
+        # Set of index names aliased to self.config.graph_index
+        graph_indices = self.es.indices.get_alias(self.config.graph_index).keys()
         metadata_doc = {
-                'commit_hash': commit_hash,
-                'indices_built': [k for k, v in self.config.index_names.iteritems() if v],
-                'number_of_mutations': nb_mutations,
-                'number_of_projects': len(self.config.maf_urls),
-                'debug': self.config.debug,
-                'maf_urls': self.config.maf_urls,
-                'percentile_threshold': [{'name': k, 'value': v}
-                                         for k, v in (self.config
-                                                          .percentile_threshold
-                                                          .iteritems())],
-                'coalesce': self.config.coalesce,
-                'repartition': self.config.repartition,
-                'batch_size_bytes': self.config.batch_size_bytes,
-                'batch_size_entries': int(self.config.batch_size_entries)
-                }
+            'commit_hash': commit_hash,
+            'graph_indices': graph_indices,
+            'indices_built': [k for k in self.config.index_types],
+            'number_of_mutations': nb_mutations,
+            'number_of_projects': len(self.config.maf_urls),
+            'debug': self.config.debug,
+            'maf_urls': self.config.maf_urls,
+            'percentile_threshold': [{'name': k, 'value': v}
+                                     for k, v in (self.config
+                                                      .percentile_threshold
+                                                      .iteritems())],
+            'coalesce': self.config.df_coalesce,
+            'repartition': self.config.df_repartition,
+            'batch_size_bytes': self.config.batch_size_bytes,
+            'batch_size_entries': int(self.config.batch_size_entries)
+        }
 
         self.log('Saving build metadata')
 

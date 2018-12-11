@@ -1,7 +1,7 @@
 from pyspark.sql.functions import (
-    lit, collect_set, col, udf,
+    lit,
+    collect_set,
 )
-from pyspark.sql.types import StringType
 from utils import standardize_schema, get_case_ids_from_source_es
 import logging
 
@@ -60,7 +60,7 @@ class CaseBuilder(object):
         df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.repartition, 'case_id')
+        df = df.repartition(self.config.df_repartition, 'case_id')
 
         if self.config.cache_dataframes['cases']:
             self.logger.info('Caching repartitioned case dataframe')
@@ -113,4 +113,3 @@ class CaseBuilder(object):
                                .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
-

@@ -87,23 +87,6 @@ class TestMiscFunctions:
         assert 's3_host' in dir(conf)
         assert 'es_host' in dir(conf)
 
-    def test_index_prefix(self, es_client):
-        """
-        Test that index prefixes are determined correctly
-        """
-
-        index_name = 'case_centric'
-
-        if es_client.indices.exists('gdc_r998_{}'.format(index_name)):
-            es_client.indices.delete('gdc_r998_{}'.format(index_name))
-
-        # Create a new index
-        es_client.indices.create(index='gdc_r998_{}'.format(index_name))
-
-        assert ('gdc_r999_{}'.format(index_name)
-                == TestConfig().indices['case_centric'])
-        es_client.indices.delete(index='gdc_r998_{}'.format(index_name))
-
     def test_sanitize_aa_change(self, sqlContext):
         # Fake input and expected output
         fake_input = ['a', 'p.b', 'cp.']
