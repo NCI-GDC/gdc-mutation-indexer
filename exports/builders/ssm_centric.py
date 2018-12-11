@@ -87,6 +87,6 @@ class SSMCentricBuilder(BaseBuilder):
                                         'case_id')
                                  .alias('occurrence'))
                          .groupby('ssm_id')
-                         .agg(collect_set('occurrence').alias('occurrence')))
+                         .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
         return occurrence_df
