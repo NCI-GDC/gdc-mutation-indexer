@@ -2,7 +2,12 @@ from pyspark.sql.functions import (
     lit,
     collect_set,
 )
-from utils import standardize_schema, get_case_ids_from_source_es
+from pyspark.sql.types import StringType, ArrayType
+from utils import (
+    get_case_ids_from_source_es,
+    remove_columns,
+    standardize_schema,
+)
 import logging
 
 from config import LOG_FORMAT
@@ -54,10 +59,21 @@ class CaseBuilder(object):
             .load(source)
         )
 
+        # Get all the cases that have been tested for ssm
+        # (from aliquots in maf_df headers)
+        all_maf_cases = get_case_ids_from_source_es(
+            self.config, self.sqlContext, self.maf_urls
+        )
+
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
+                                                                   all_maf_cases,
                                                                    gistic_df)
 
         df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
+
+        acl_df = self.populate_ssm_acl(maf_df, all_maf_cases)
+
+        df = df.join(acl_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.df_repartition, 'case_id')
@@ -68,7 +84,7 @@ class CaseBuilder(object):
 
         return df
 
-    def populate_available_variation_data(self, maf_df, gistic_df):
+    def populate_available_variation_data(self, maf_df, all_maf_cases, gistic_df):
         """
         This function calculates the value of the column
         "available_variation_data."
@@ -77,6 +93,7 @@ class CaseBuilder(object):
         and add "ssm" for both those cases and the cases in the maf_df,
         "cnv" if that case id is present in the gistic_df,
         ["ssm", "cnv"] if both.
+
         """
 
         avd = 'available_variation_data'
@@ -87,15 +104,10 @@ class CaseBuilder(object):
                               subset=['case_id',
                                       avd]))
 
-        # Get all the cases that have been tested for ssm
-        # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(
-            self.config, self.sqlContext, self.maf_urls
-        )
-
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = all_maf_cases.join(maf_data,
-                                      on=['case_id'], how='left')
+        maf_data = (all_maf_cases.join(maf_data,
+                                       on=['case_id'],
+                                       how='left')).drop('case_acl')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data = maf_data.drop(avd)
@@ -113,3 +125,32 @@ class CaseBuilder(object):
                                .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
+
+    def populate_ssm_acl(self, maf_df, all_maf_cases):
+        """
+        We use the observation level case_acl calculated in all_maf_cases.
+        If no observation level ssm acl exists,
+            case level ssm_acl will be populated according to SSM access policy
+            assuming the case had ssm data.
+        """
+        # Get set of "tested cases" from maf_df
+        maf_data = (maf_df.select('case_id', 'acl')
+                          .dropDuplicates(subset=['case_id']))
+
+        # Add empty rows to input_data corresponding to "empty cases"
+        maf_data = all_maf_cases.join(maf_data,
+                                      on=['case_id'], how='left')
+
+        # Merge maf-level 'acl' with case-level acl
+        # I.e., use case-level acl where it exists, otherwise ssm-level
+        ssm_acl_udf = udf(lambda x, y:
+                          x if x is not None else y,
+                          ArrayType(StringType()))
+
+        ssm_acl_df = maf_data.withColumn('ssm_acl',
+                                         ssm_acl_udf(col('case_acl'),
+                                                     col('acl')))
+        # drop the input acl columns
+        ssm_acl_df = remove_columns(ssm_acl_df, 'acl', 'case_acl')
+
+        return ssm_acl_df

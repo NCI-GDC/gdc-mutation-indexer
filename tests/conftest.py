@@ -174,20 +174,26 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
-    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    local_maf = MAFBuilder(conf, sqlContext).build()
+    return MAFBuilder(conf, sqlContext).build()
 
+
+@pytest.fixture(scope="session")
+def acl_maf_df(sqlContext, maf_df):
+    """
+    Builds combined maf dataframe
+    Note: alters naturally-occurring acls for testing purposes.
+    """
     def fake_out_acl(chromosome):
         if int(chromosome) % 2 == 0:
             return [u'phs000218']
         return [u'open']
 
     acl_udf = udf(fake_out_acl, ArrayType(StringType()))
-    local_maf = local_maf.drop('acl')
-    altered_maf = local_maf.withColumn('acl',
-                                       acl_udf('gene_chromosome'))
+    altered_maf = maf_df.drop('acl')
+    altered_maf = altered_maf.withColumn('acl',
+                                         acl_udf('gene_chromosome'))
 
     return altered_maf
 

@@ -2,10 +2,8 @@ import pytest
 import json
 
 from pyspark.sql.functions import explode
-from exports.builders.utils import (
-    get_aliquots_from_headers,
-)
 from exports.builders import (
+    CaseBuilder,
     ObservationBuilder,
     ConsequenceBuilder
 )
@@ -279,7 +277,7 @@ class TestConsequenceBuilder(TestOtherBase):
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client', 'all_cases')
+@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client', 'all_cases', 'acl_maf_df')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
@@ -292,6 +290,7 @@ class TestCaseBuilder:
     def test_case_columns(self, sqlContext, case_df):
         """ Test that the right properties were loaded from case docs """
         assert 'case_id' in case_df.columns
+        assert 'ssm_acl' in case_df.columns
         assert 'files' not in case_df.columns
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
@@ -304,3 +303,13 @@ class TestCaseBuilder:
         """
         assert case_df.count() == len(all_cases)
 
+    def test_open_overrides_acl(self, sqlContext, acl_maf_df, gistic_df):
+        """
+        Using a maf_df with phsids in it, but the test cases have 'open',
+        the resulting case_df should have acl set to 'open'
+        or None
+        """
+
+        df = CaseBuilder(conf, sqlContext).build(acl_maf_df, gistic_df)
+        for row in df.select('ssm_acl').collect():
+            assert row.ssm_acl in [['open'], None]
