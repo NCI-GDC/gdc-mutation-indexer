@@ -1,6 +1,8 @@
 from pyspark.sql.functions import (
     lit,
+    col,
     collect_set,
+    udf,
 )
 from pyspark.sql.types import StringType, ArrayType
 from utils import (
