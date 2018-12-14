@@ -147,7 +147,23 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
 
             cases_urls[case_id] = [u'open']
 
-    assert len(unique_aliquots) == len(case_ids) == len(cases_urls)
+    # We found a url for each case
+    assert len(case_ids) == len(cases_urls)
+
+    # There may be more than one aliquot per case
+    # I.e., the following example is valid:
+    #
+    # case 1: aliquot x, aliquot y
+    # case 2: aliquot z
+    #
+    # (or)
+    #
+    # aliquot | case
+    # --------------
+    #    x    | 1
+    #    y    | 1
+    #    z    | 2
+    assert len(unique_aliquots) >= len(case_ids)
 
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
