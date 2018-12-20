@@ -81,6 +81,7 @@ class BaseConfig(object):
         'cnv_occurrence_centric': 'cnv_occurrence_centric',
         'case_for_ssm_joins_centric': 'case_for_ssm_joins_centric',
         'case_for_cnv_joins_centric': 'case_for_cnv_joins_centric',
+        'gene_for_joins_centric': 'gene_for_joins_centric',
     }
 
     # Where to save each index's final json
@@ -157,6 +158,7 @@ class BaseConfig(object):
         'cnv_occurrence_centric': True,
         'case_for_ssm_joins_centric': True,
         'case_for_cnv_joins_centric': True,
+        'gene_for_joins_centric': True,
     }
 
     # Case load settings
