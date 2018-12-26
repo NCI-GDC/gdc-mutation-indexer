@@ -52,6 +52,7 @@ class ConsequenceBuilder(object):
         # empty, canonical_tracript_id, is_canonical,
         # do_not_us, consequence_type, aa_change
         # refs_seq_accession}
+
         ssm_tran = self.build_all_effects_cols(maf_df)
 
         ann_df = get_annotation_df(ssm_tran, index_name, add_fields=['ssm_id'],
@@ -64,7 +65,7 @@ class ConsequenceBuilder(object):
         # do_not_us, consequence_type, aa_change,
         # refs_seq_accession}
         tran_df = get_transcript_df(ssm_tran, index_name,
-                                    add_fields=['gene_id', 'ssm_id'])
+                                    add_fields=['ssm_id'])
 
         # {*fields} => {*fields, annotation: {}}
         tran_with_ann = tran_df.join(ann_df, on=['ssm_id', 'transcript_id'],
@@ -83,7 +84,7 @@ class ConsequenceBuilder(object):
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
-        tran_with_ann = tran_with_ann.drop('gene_id').drop('empty')
+        tran_with_ann = tran_with_ann.drop('empty')
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',

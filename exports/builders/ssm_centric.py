@@ -45,7 +45,7 @@ class SSMCentricBuilder(BaseBuilder):
                 return self
 
         ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
-
+        import ipdb; ipdb.set_trace()
         cons_df = self.build_consequence(maf_df)
 
         occurrence_df = self.build_occurrence(maf_df, case_df)
@@ -71,8 +71,8 @@ class SSMCentricBuilder(BaseBuilder):
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build_for_ssm(maf_df,
                                   self.index_name,
-                                  join_gene=True,
-                                  add_gene_aa_change=True))
+                                  join_gene=False,
+                                  add_gene_aa_change=False))
         return cons_df
 
     def build_occurrence(self, maf_df, case_df):
