@@ -45,7 +45,7 @@ class SSMCentricBuilder(BaseBuilder):
                 return self
 
         ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
-        import ipdb; ipdb.set_trace()
+
         cons_df = self.build_consequence(maf_df)
 
         occurrence_df = self.build_occurrence(maf_df, case_df)
