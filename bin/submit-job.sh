@@ -40,6 +40,8 @@ exec $SPARK_HOME/bin/spark-submit \
     --conf spark.yarn.appMasterEnv.ES_USER="$ES_USER" \
     --conf spark.yarn.appMasterEnv.ES_PASS="$ES_PASS" \
     --conf spark.yarn.appMasterEnv.ES_NODES="$ES_NODES" \
+    --conf spark.yarn.appMasterEnv.ES_BATCH_SIZE_BYTES="$ES_BATCH_SIZE_BYTES" \
+    --conf spark.yarn.appMasterEnv.ES_BATCH_SIZE_ENTRIES="$ES_BATCH_SIZE_ENTRIES" \
     --conf spark.yarn.appMasterEnv.SOURCE_ES_HOST="${SOURCE_ES_HOST:-$ES_HOST}" \
     --conf spark.yarn.appMasterEnv.SOURCE_ES_PORT="${SOURCE_ES_PORT:-$ES_PORT}" \
     --conf spark.yarn.appMasterEnv.SOURCE_ES_USER="${SOURCE_ES_USER:-$ES_USER}" \
@@ -50,6 +52,8 @@ exec $SPARK_HOME/bin/spark-submit \
     --conf spark.yarn.appMasterEnv.PIPELINES="$PIPELINES" \
     --conf spark.yarn.appMasterEnv.PROJECTS="$PROJECTS" \
     --conf spark.yarn.appMasterEnv.NB_PROJECTS="${NB_PROJECTS:-0}" \
+    --conf spark.yarn.appMasterEnv.INDEX_REPARTITION="$INDEX_REPARTITION" \
+    --conf spark.yarn.appMasterEnv.INDEX_COALESCE="$INDEX_COALESCE" \
     --conf spark.executorEnv.S3_HOST="$S3_HOST" \
     --conf spark.executorEnv.S3_ACCESS_KEY="$S3_ACCESS_KEY" \
     --conf spark.executorEnv.S3_SECRET_KEY="$S3_SECRET_KEY" \
