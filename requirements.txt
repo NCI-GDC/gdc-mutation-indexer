@@ -9,3 +9,4 @@ consulate==0.4
 requests==2.6.0
 boto==2.46.1
 -e git+ssh://git@github.com/NCI-GDC/gdc-models.git@release/ned#egg=gdcmodels
+-e git+https://git@github.com/uc-cdis/indexclient.git@1.5.6#egg=indexclient
