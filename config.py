@@ -279,7 +279,7 @@ class BaseConfig(object):
 
         valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
         for url, metadata in indexd_doc.urls_metadata.items():
-            if metadata == valid_metadata:
+            if all([metadata.get(k) == v for k, v in valid_metadata.items()]):
                 return url
 
         raise Exception(
