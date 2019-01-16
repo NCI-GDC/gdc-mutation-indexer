@@ -1,102 +1,66 @@
 import os
+import ssl
+import sys
 import uuid
-from enum import Enum
-
+import httplib
+import subprocess
+import shlex
 from elasticsearch import Elasticsearch
+from distutils.version import StrictVersion
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
 
-class ReadWriteMode(Enum):
-    """
-    We can 1) read from saved input file,
-           2) write to saved input file,
-           3) or neither.
-    It doesn't make sense to read from input file x
-    and then write that same x, so we exclude both as an option.
-    """
-    neither = 0
-    read = 1
-    write = 2
+def create_factory(host,port=443,timeout=10):
+    return (
+        httplib.HTTPSConnection(
+            host = host,
+            port = port,
+            timeout = timeout,
+            context = ssl._create_unverified_context()
+        )
+    )
+
+py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
+    factory = (create_factory, ())
+else:
+    factory = None
+    
+from parsers import (
+    ParserBuilder,
+    S3Args,
+    ESArgs,
+    ESHadoopArgs,
+    BuildArgs,
+    SparkArgs,
+)
+
+ALL_PARSERS = [
+    S3Args,
+    ESArgs,
+    ESHadoopArgs,
+    BuildArgs,
+    SparkArgs
+]
+LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
+CONFIG_PATH = os.path.abspath(__file__)
+ROOT_DIR = os.path.dirname(CONFIG_PATH)
+
+VERSION = "0.1.5"
 
 
-LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+def get_git_commit(git_dir):
+    return subprocess.check_output(
+        shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
+    ).strip()
 
 
 class BaseConfig(object):
 
-    # The Spark application name
-    app_name = 'GDC_Mutation_Export'
-
-    s3_host = 's3://{}'.format(os.getenv('S3_HOST', 'cleversafe.service.consul'))
-    s3_access_key = os.getenv('S3_ACCESS_KEY', '')
-    s3_secret_key = os.getenv('S3_SECRET_KEY', '')
-
-    s3_maf_bucket = 's3a://{}/'.format(os.getenv('S3_MAF_BUCKET', 'somatic-maf'))
-    s3_gistic_bucket = 's3a://{}/'.format(os.getenv('S3_GISTIC_BUCKET', 'gistic-cnv'))
-
-    es_host = os.getenv('ES_HOST', 'http://localhost')
-    es_port = os.getenv('ES_PORT', 9200)
-    es_nodes = os.getenv('ES_NODES', '{}:{}'.format(es_host, es_port))
-    es_user = os.getenv('ES_USER', '')
-    es_pass = os.getenv('ES_PASS', '')
-
     # Keywords that should appear in the S3 key for it to be picked up
     # Note that ALL of these keywords have to be present for the MAF to be used
-    maf_keywords = os.getenv('MAF_KEYWORDS')
-    maf_keywords = [keyword.strip() for keyword in maf_keywords.split(',')] if maf_keywords else []
-    # maf_keywords = ['SomaticMaf20170510', 'DR-7.0', '.maf.gz']
-
-    gistic_filename_string = os.getenv('GISTIC_FILENAME_STRING', 'focal_score_by_genes')
-
-    # Pipelines to use. If an empty list is given, all 4 pipelies will be used
-    # somaticsniper: 2227614  2.6GB
-    # muse: 2730127  3.1GB
-    # varscan: 2782495  3.2GB
-    # mutect: 3416739  3.9GB
-    pipelines = os.getenv('PIPELINES')
-    pipelines = [pipeline.strip() for pipeline in pipelines.split(',')] if pipelines else []
-    # pipelines = ['somaticsniper', 'mutect']
-
-    # Projects to use. If an empty list is given, all 33 projects will be used
-    projects = os.getenv('PROJECTS')
-    projects = [project.strip() for project in projects.split(',')] if projects else []
-    # projects = ['BLCA', 'BRCA']
-
-    # Number of projects to use. Set to 0 to use all projects
-    # The projects are taken in alphabetic order
-    # To target specific projects, use 'projects' above
-    nb_projects = os.getenv('NB_PROJECTS', 0)
-
-    # Debug mode
-    debug = False
-
-    # Index names, these also double as document type names
-    # If name is None, the index will not be built
-    index_names = {
-        'case_centric': 'case_centric',
-        'gene_centric': 'gene_centric',
-        'ssm_centric': 'ssm_centric',
-        'ssm_occurrence_centric': 'ssm_occurrence_centric',
-        'cnv_centric': 'cnv_centric',
-        'cnv_occurrence_centric': 'cnv_occurrence_centric',
-        'case_for_ssm_joins_centric': 'case_for_ssm_joins_centric',
-        'case_for_cnv_joins_centric': 'case_for_cnv_joins_centric',
-        'gene_for_joins_centric': 'gene_for_joins_centric',
-    }
-
-    # Where to save each index's final json
-    index_paths = {
-        'case_centric': s3_maf_bucket + 'case-centric.json',
-        'gene_centric': s3_maf_bucket + 'gene-centric.json',
-        'ssm_centric': s3_maf_bucket + 'ssm-centric.json',
-        'ssm_occurrence_centric': s3_maf_bucket + 'ssm-occurrence-centric.json'
-    }
-    # Whether to save the indices once they've been built
-    index_keep = False
-    # Load a prebuilt index and load it into elasticsearch
-    index_use_existing = False
-    # Whether to overwrite a built index file, if it exists
-    index_overwrite = True
+    maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz']  # NOTE: Will be removed when reading mafs from the index will be merged
+    gistic_filename_string = 'focal_score_by_genes'  # NOTE: this will be removed when gistics will be read from graph
 
     mappings = {
         'ssm': 'ssm.yml',
@@ -106,16 +70,9 @@ class BaseConfig(object):
         'observation': 'observation.yml',
     }
 
-    # Index revision number, will be determined automatically if not specified
-    revision = None
-
     # Used for loading case/graph documents from a different es cluster
-    source_es_host = os.getenv('SOURCE_ES_HOST', es_host)
-    source_es_port = os.getenv('SOURCE_ES_PORT', es_port)
-    source_es_user = os.getenv('SOURCE_ES_USER', es_user)
-    source_es_pass = os.getenv('SOURCE_ES_PASS', es_pass)
-    graph_index = os.getenv('SOURCE_ES_INDEX', 'gdc_from_graph')
-    graph_document = os.getenv('SOURCE_ES_DOCUMENT', 'case')
+    graph_index = 'gdc_from_graph'
+    graph_document = 'case'
 
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
@@ -129,10 +86,6 @@ class BaseConfig(object):
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
 
-    # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.read,
-                       'gistic': ReadWriteMode.read}
-
     percentile_threshold = {
         'genes_per_case': 100,
         'occurrences_per_ssm': 100,
@@ -141,12 +94,6 @@ class BaseConfig(object):
         'occurrences_per_cnv': 100,
     }
 
-    # How many partitions to distribute the index file accross
-    # The index will be split up into this many json files
-    repartition = 2048
-    coalesce = 6
-    batch_size_bytes = '3mb'
-    batch_size_entries = '100'
     cache_dataframes = {
         'mafs': True,
         'cases': True,
@@ -176,55 +123,105 @@ class BaseConfig(object):
         '*_ids'
     ]
 
-    def __init__(self):
+    def __init__(self, env_dict=None):
+        """
+        :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
+        """
+        self.assign_all_parameters(env_dict=env_dict)
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
         )
-        self.indices = self.get_index_prefixes()
+        self.indices = self.get_index_names()
         self.maf_urls = self.get_maf_urls()
+        self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
+        self._acls = None
 
-    def get_index_prefixes(self):
-        '''
-        Uses the version specified in the config, or will resolve the next
-        version number by looking for an existing index and incrementing by one
+    def assign_all_parameters(self, env_dict=None):
+        """
+        Takes care of all config parameters to be set correctly
+        Will assign self.var_name = value where os.environ['VAR-NAME'] == value
+        for each parameter defined in ALL_PARSERS
 
-        Eg:
-            No indices exist in ES:
-                index_name='case_centric' -> gdc_r0_case_centric
+        :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
+        """
+        if env_dict is None:
+            env_dict = os.environ
+        # Assign all arguments defined in parsers to corresponding values from env
+        for parser in ALL_PARSERS:
+            args = []
+            # Gather arguments from env
+            for key, kwargs in parser().arguments.items():
+                arg_action = kwargs.get('action')
+                is_arg_bool = arg_action in ['store_true', 'store_false']
+                is_arg_list = kwargs.get('nargs') is not None
+                # Get value from env
+                value = env_dict.get(key.upper().replace('-', '_'))
+                if value is None:
+                    continue
+                # Split lists and handle bools
+                if is_arg_list:
+                    values = value.split(',')
+                else:
+                    values = [value]
 
-            gdc_r1_case_centric and gdc_r6_case_centric exist in ES:
-                index_name='case_centric' -> gdc_r7_case_centric
-        '''
+                # Add to arguments list:
+                # Do not pass bool flags if not needed
+                # Skip when default is False and value is False
+                if arg_action == 'store_true' and value == 'False':
+                    continue
 
-        def get_indices_max_version():
-            versions = []
-            es = Elasticsearch(self.es_host,
-                               port=self.es_port,
-                               http_auth=(self.es_user, self.es_pass))
-            indices = es.indices.get_alias().keys()
+                # Skip when default is True and value is True
+                if arg_action == 'store_false' and value == 'True':
+                    continue
 
-            for index_name in self.index_names.values():
-                if index_name is not None:
-                    versions = (versions + [int(v.split('_')[1].replace('r', ''))
-                                for v in indices if v.endswith(index_name)
-                                            and v[:4] == 'gdc_'])
+                # Append argument
+                args.append('--{}'.format(key))
+                # Append values
+                if not is_arg_bool:  # Bool args have no values
+                    args.extend(values)
 
-            if versions == []:
-                version = 0
-            else:
-                version = max(versions) + 1
-            return version
+            # Build parser and parse gathered arguments
+            argparser = ParserBuilder.build([parser])
+            args = argparser.parse_args(args)
 
-        def get_prefix(index_name):
-            version = get_indices_max_version()
-            prefix = 'gdc_r{}_{}'.format(version, index_name)
-            return prefix
+            # Set properties with parsed values
+            for key in parser().arguments:
+                key = key.replace('-', '_')
+                value = getattr(args, key)
+                setattr(self, key, value)
 
-        indices = {k: get_prefix(v) for k, v in self.index_names.items()
-                   if v is not None}
+    def get_index_names(self):
+        """
+        Returns {index_type: es_index_name} dictionary
+        """
+        if self.build_type == 'release':
+            prefix = 'release-'
+        else:
+            prefix = ''
+
+        version_tag = '_'.join(map(str, self.build_version))
+        indices = {
+            index_type: prefix + '{}-{}-{}'.format(
+                self.build_label, version_tag, index_type,
+            )
+            for index_type in self.index_types
+        }
+
+        existing_indices = self.es.indices.get_alias().keys()
+        name_collisions = [name for name in indices.values()
+                           if name in existing_indices]
+        if name_collisions:
+            raise Exception(
+                "These indices already exist: {}.\n"
+                "Change version or label, or remove existing indices"
+                .format(', '.join(name_collisions))
+            )
         return indices
+
+    def get_raw_output_path(self, index_name):
+        return self.s3_raw_bucket + index_name + '.json'
 
     def get_maf_urls(self):
         """
@@ -236,27 +233,34 @@ class BaseConfig(object):
 
         maf_urls = []
         for obj in bucket_contents:
-            skip = False
-            for keyword in self.maf_keywords:
-                if keyword not in obj.key:
-                    skip = True
-                    break
-            if not skip:
-                if not self.pipelines or any([pipeline in obj.key for pipeline in self.pipelines]):
-                    if not self.projects or any([project in obj.key for project in self.projects]):
-                        maf_urls.append(self.s3_maf_bucket + obj.key)
-                        if self.nb_projects and len(maf_urls) >= self.nb_projects:
-                            break
+            # If not all keywords present, skip
+            if any([keyword not in obj.key for keyword in self.maf_keywords]):
+                continue
+
+            if any([pipeline in obj.key for pipeline in self.pipelines]):
+                include_project = any([project.replace('-', '.') in obj.key for project in self.projects])
+                if self.projects == [] or include_project:
+                    maf_urls.append(self.s3_maf_bucket + obj.key)
 
         return maf_urls
 
     def get_maf_file_names(self):
         """
-        The file name that corresponds to the File node
-        in gdc_from_graph is the last part of the url.
-            e.g. ['//filename/blah/blah2'] becomes ['blah2']
+        Transform the full url to the file_name stored in the File node
         """
-        return [url.split('/')[-1] for url in self.maf_urls]
+        return [self.maf_url_to_file_name(url) for url in self.maf_urls]
+
+    def maf_url_to_file_name(self, url):
+        """
+        Trim out leading folders;
+        Mafs may be zipped or unzipped, but
+        we expect the file_name in the File to be 'xxx.gz'
+        """
+        file_name = url.split('/')[-1]
+
+        if not file_name.endswith('.gz'):
+            file_name += '.gz'
+        return file_name
 
     def get_gistic_urls(self):
         """
@@ -266,20 +270,73 @@ class BaseConfig(object):
         """
 
         bucket_contents = self.list_bucket(self.s3_gistic_bucket)
-
         gistic_urls = []
         for obj in bucket_contents:
-            if not self.projects or any([project in obj.key for project in self.projects]):
-                # if 'all_thresholded.by_genes.txt' in obj.key:
-                if self.gistic_filename_string in obj.key:
-                    gistic_urls.append(self.s3_gistic_bucket + obj.key)
+            # Filter out files by gistic keyword string
+            if not self.gistic_filename_string in obj.key:
+                continue
+
+            # Filter out irrelevant projects
+            if self.projects != []:
+                relevant_project = any([project.split('-')[1] in obj.key for project in self.projects])
+                if not relevant_project:
+                    continue
+
+            # Add gistic url
+            gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
+
+    @property
+    def acls(self):
+        if self._acls is None:
+            self._acls = self.get_acls()
+        return self._acls
+
+    def get_acls(self):
+        """
+        1. Take list of maf file names
+        2. Assume the last part of the url is the file_name
+        3. Look up corresponding files in es
+        4. Parse out those files' acls
+        """
+
+        file_names = self.maf_file_names
+
+        query = {
+                "query": {
+                    "bool": {
+                        "must": {
+                            "terms": {
+                                "file_name": file_names
+                                }
+                            }
+                        }
+                    },
+                "_source": ["file_name", "acl"],
+                "size": 10000,
+        }
+
+        docs = self.es.search(index=self.graph_index,
+                              doc_type='file',
+                              body=query)
+
+        # Build up dictionary of file_name to acl
+        filenames_to_acls = {}
+        for doc in docs['hits']['hits']:
+            source = doc['_source']
+            filename = source['file_name']
+            acl = source['acl']
+
+            filenames_to_acls[filename] = acl
+
+        return filenames_to_acls
 
     def list_bucket(self, bucket_name):
         """
         Return iterator over bucket contents
         """
+
         def get_bucket_name(url):
             """ Extract bucket name from bucket url """
             if url.endswith('/'):
@@ -293,8 +350,10 @@ class BaseConfig(object):
         conn = S3Connection(self.s3_access_key,
                             self.s3_secret_key,
                             host=self.s3_host.split('/')[-1],
+                            validate_certs=False,
+                            https_connection_factory=factory,
                             calling_format=OrdinaryCallingFormat(),
-                            is_secure=False)
+                            is_secure=True)
         bucket = conn.get_bucket(get_bucket_name(bucket_name))
         return bucket.list()
 

@@ -12,7 +12,10 @@ from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 from cdisutils.dictionary import remove_keys_from_dict
 
-from exports.builders.utils import get_case_ids_from_source_es
+from exports.builders.utils import (
+    get_case_ids_from_source_es,
+    iterate_es_results,
+)
 from exports.mappers.distinct_doctype_model_mapper import (
     DistinctDocTypeModelMapper
 )
@@ -126,7 +129,7 @@ def es_client(setup_test_index):
 
 @pytest.fixture(scope='session')
 def sqlContext(es_client):
-    sc = SparkContext(conf.spark_master, 'sqlContextFixture')
+    sc = SparkContext('local[1]', 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")
@@ -152,6 +155,20 @@ def all_maf_cases(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
+def all_cases(es_client):
+    """
+    Returns the IDs of all cases in the GDC graph, including those with no
+    maf or cnv data
+    """
+    hits = iterate_es_results(es_client=es_client,
+                              index_name=conf.graph_index,
+                              doc_type=conf.graph_document,
+                              query={'_source': ['case_id']})
+
+    return {hit['_source']['case_id'] for hit in hits}
+
+
+@pytest.fixture(scope='session')
 def test_data():
     return TestDataStats.load_test_data(conf.input_dir)
 
@@ -160,20 +177,26 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
-    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    local_maf = MAFBuilder(conf, sqlContext).build()
+    return MAFBuilder(conf, sqlContext).build()
 
+
+@pytest.fixture(scope="session")
+def acl_maf_df(sqlContext, maf_df):
+    """
+    Builds combined maf dataframe
+    Note: alters naturally-occurring acls for testing purposes.
+    """
     def fake_out_acl(chromosome):
         if int(chromosome) % 2 == 0:
             return [u'phs000218']
         return [u'open']
 
     acl_udf = udf(fake_out_acl, ArrayType(StringType()))
-    local_maf = local_maf.drop('acl')
-    altered_maf = local_maf.withColumn('acl',
-                                       acl_udf('gene_chromosome'))
+    altered_maf = maf_df.drop('acl')
+    altered_maf = altered_maf.withColumn('acl',
+                                         acl_udf('gene_chromosome'))
 
     return altered_maf
 

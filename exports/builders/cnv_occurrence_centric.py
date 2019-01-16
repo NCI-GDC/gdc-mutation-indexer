@@ -39,8 +39,8 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         Builds CNV Occurrence Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.cnv_occurrence_centric = self.get_existing()
+        if self.config.output_raw == 'read':
+            self.cnv_occurrence_centric = self.load_raw()
             if self.cnv_occurrence_centric is not None:
                 return self
 
@@ -67,9 +67,9 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         self.cnv_occurrence_centric = cnv_occurrence_centric
         self.log('Build finished')
 
-        # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
+        # Save the resulting dataframe to s3
+        self.write()
+
         return self
 
     def build_cnv_subtree(self, gistic_df):

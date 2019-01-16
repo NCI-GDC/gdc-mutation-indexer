@@ -8,6 +8,7 @@ from elasticsearch import Elasticsearch
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(root_dir)
 from tests_config import TestConfig
+from config import factory
 
 cfg_test = TestConfig()
 
@@ -171,6 +172,8 @@ def get_full_gene_model():
         S3_SECRET_KEY,
         host=S3_HOST,
         is_secure=True,
+        validate_certs=False,
+        https_connection_factory=factory,
         calling_format=boto.s3.connection.OrdinaryCallingFormat()
     )
 

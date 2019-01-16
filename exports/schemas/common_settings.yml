@@ -1,7 +1,7 @@
 settings:
   index:
     refresh_interval: 1m
-    number_of_shards: 8
+    number_of_shards: 12
     number_of_replicas: 0
     mapper.dynamic: False
     mapping.total_fields.limit: 2000
@@ -9,6 +9,8 @@ mappings:
   build_metadata:
     properties:
       commit_hash:
+        type: text
+      graph_indices:
         type: text
       number_of_mutations:
         type: double

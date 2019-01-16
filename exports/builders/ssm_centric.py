@@ -39,8 +39,8 @@ class SSMCentricBuilder(BaseBuilder):
         Builds SSM Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.ssm_centric = self.get_existing()
+        if self.config.output_raw == 'read':
+            self.ssm_centric = self.load_raw()
             if self.ssm_centric is not None:
                 return self
 
@@ -60,11 +60,11 @@ class SSMCentricBuilder(BaseBuilder):
                                                           'occurrence',
                                                           treshold)
         self.log_count(self.ssm_centric)
-
         self.log('Build finished')
-        # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
+
+        # Save the resulting dataframe to s3
+        self.write()
+
         return self
 
     def build_consequence(self, maf_df):
