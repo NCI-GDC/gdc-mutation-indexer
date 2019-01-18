@@ -60,7 +60,6 @@ class GeneCentricBuilder(BaseBuilder):
         self.log_count(gene_df)
 
         # Default to joins structure
-        import ipdb; ipdb.set_trace()
         gene_centric = gene_df
         if self.config.structure == 'nested':
 

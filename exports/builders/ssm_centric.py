@@ -89,8 +89,8 @@ class SSMCentricBuilder(BaseBuilder):
         # Default to joins
         case_cols = ['case_id']
         if self.config.structure == 'nested':
-            case_cols = case_df.columns  # TODO: this might just break. yeah I think I need spark syntax
-        import ipdb; ipdb.set_trace()
+            case_cols = case_df.columns
+
         # Observation
         self.log('Aggregating Observation from MAF')
         obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)

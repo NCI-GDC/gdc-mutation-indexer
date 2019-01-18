@@ -47,7 +47,6 @@ class CaseCentricBuilder(BaseBuilder):
                 return self
 
         # Default to joins structure
-        import ipdb; ipdb.set_trace()
         case_centric = case_df
         if self.config.structure == 'nested':
             # keep gene
