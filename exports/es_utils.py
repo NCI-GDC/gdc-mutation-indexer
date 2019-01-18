@@ -45,6 +45,7 @@ def get_values_from_path(es_doc, path):
 def get_es_doc_count(es_client, index_name, doc_type, query=None):
     if query is None:
         query = {}
+    es_client.indices.refresh(index=index_name)
     return es_client.count(
         index=index_name,
         doc_type=doc_type,
