@@ -49,25 +49,17 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         # CNV subtree
         cnv_df = self.build_cnv_subtree(gistic_df)
 
-        if self.config.structure == 'nested':
+        # Case subtree
+        case_subtree = self.build_case_subtree(gistic_df, case_df)
 
-            # Case subtree
-            case_subtree = self.build_case_subtree(gistic_df, case_df)
-
-            self.log('Joining cnv with case')
-
-            cnv_occurrence_centric = (cnv_df.join(case_subtree,
-                                                  on=['case_id', 'cnv_id'],
-                                                  how='inner')
-                                            .withColumnRenamed('occurrence_id',
-                                                              'cnv_occurrence_id')
-                                            .drop('case_id')
-                                            .drop('cnv_id'))
-        elif self.config.structure == 'joins':
-            # TODO: not sure what this should be in joins world
-            cnv_occurrence_centric = (cnv_df.withColumnRenamed('occurrence_id',
-                                                               'cnv_occurrence_id')
-                                            .drop('cnv_id')) # ?
+        self.log('Joining cnv with case')
+        cnv_occurrence_centric = (cnv_df.join(case_subtree,
+                                              on=['case_id', 'cnv_id'],
+                                              how='inner')
+                                        .withColumnRenamed('occurrence_id',
+                                                           'cnv_occurrence_id')
+                                        .drop('case_id')
+                                        .drop('cnv_id'))
 
         self.log_count(cnv_occurrence_centric)
 
@@ -111,14 +103,20 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         """
         self.log('Building case subtree')
 
+        # Default to joins
+        case_cols = ["case_id"]
+        if self.config.structure == "nested":
+            case_cols = case_df.columns
+
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df,
+                                                    self.index_name)
 
         self.log('Join observation with case')
         case_obs_df = (case_df.join(obs_df, on='case_id', how='left')
                               .select('case_id', 'occurrence_id', 'cnv_id',
                                       struct('observation',
-                                             *case_df.columns)
+                                             *case_cols)
                                       .alias('case')))
         self.log_count(case_obs_df)
         return case_obs_df
