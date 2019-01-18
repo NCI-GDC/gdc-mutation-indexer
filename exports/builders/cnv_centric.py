@@ -86,32 +86,27 @@ class CNVCentricBuilder(BaseBuilder):
         """
         assert 'case_id' in gistic_df.columns
 
-        # TODO: ugly branching logic can be simplified
+        # default to joins
+        case_cols = ['case_id']
+
         if self.config.structure == 'nested':
+            case_cols = case_df.columns
 
-            # 1. Observation
-            self.logger.info('Aggregating Observation from gistic')
-            obs_df = ObservationBuilder().build_for_cnv(gistic_df,
-                                                        self.index_name)
+        # 1. Observation
+        self.logger.info('Aggregating Observation from gistic')
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df,
+                                                    self.index_name)
 
-            # 2. Join Case to Observation and create structs
-            self.logger.info('Joining Cases with Observation, [right, case_id]')
-            occurrence_df = (case_df.join(obs_df, on=['case_id'], how='left')
-                                    .select('cnv_id',
-                                            struct('occurrence_id',
-                                                   struct('observation',
-                                                          *case_df.columns).alias('case'))
-                                            .alias('occurrence'))
-                                    .groupby('cnv_id')
-                                    .agg(collect_set('occurrence').alias('occurrence')))
 
-        elif self.config.structure == 'joins':
-            occurrence_df = (case_df.join(gistic_df, on=['case_id'], how='left')
-                                    .select('cnv_id',
-                                            struct('occurrence_id',
-                                                   'case_id')  # TODO: shpuld we keep observation here?
-                                            .alias('occurrence'))
-                                    .groupby('cnv_id')
-                                    .agg(collect_set('occurrence').alias('occurrence')))
+        # 2. Join Case to Observation and create structs
+        self.logger.info('Joining Cases with Observation, [right, case_id]')
+        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='left')
+                                .select('cnv_id',
+                                        struct('occurrence_id',
+                                               struct('observation',
+                                                      *case_cols).alias('case'))
+                                        .alias('occurrence'))
+                                .groupby('cnv_id')
+                                .agg(collect_set('occurrence').alias('occurrence')))
 
         return occurrence_df
