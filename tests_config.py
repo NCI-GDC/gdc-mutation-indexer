@@ -87,6 +87,7 @@ class TestConfig(BaseConfig):
             'S3_ACCESS_KEY': 'fake_s3_access',
             'S3_SECRET_KEY': 'fake_s3_secret',
             'DF_REPARTITION': '10',
+            'STRUCTURE': 'joins',
         }
 
         return env_dict
