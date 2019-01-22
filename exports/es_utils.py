@@ -86,4 +86,3 @@ def get_nested_field_by_value_query(
     }
 
     return query
-
