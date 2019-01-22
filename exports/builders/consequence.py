@@ -82,9 +82,8 @@ class ConsequenceBuilder(object):
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
             tran_with_ann = (tran_with_ann.join(gene_df, on='gene_id'))
 
-        elif self.config.structure == "joins" and index_name == 'ssm_centric':
+        elif self.config.structure == "joins":
             # we need the gene.gene_id for ssm_centric
-            # this shouldn't be called from any other index, but just in case
             tran_with_ann = tran_with_ann.select(struct('gene_id')
                                                  .alias('gene'),
                                                  *tran_with_ann.drop('gene_id'))

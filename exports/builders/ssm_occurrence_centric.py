@@ -42,22 +42,19 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
             if self.ssm_occurrence_centric is not None:
                 return self
 
+        case_obs_df = self.build_case_subtree(maf_df, case_df)
+
         ssm_cons = self.build_ssm_subtree(maf_df)
 
-        if self.config.structure == 'nested':
-            case_obs_df = self.build_case_subtree(maf_df, case_df)
-
-            self.log('Joining ssm with case')
-            ssm_occurrence_centric = (ssm_cons.join(case_obs_df,
-                                                    on=['case_id', 'ssm_id'],
-                                                    how='inner')
-                                            .withColumn('ssm_occurrence_id',
-                                                        col('occurrence_id'))
-                                            .drop('case_id')
-                                            .drop('ssm_id')
-                                            .drop('occurrence_id'))
-        elif self.config.structure == 'joins':
-            ssm_occurrence_centric = ssm_cons  # TODO: ???
+        self.log('Joining ssm with case')
+        ssm_occurrence_centric = (ssm_cons.join(case_obs_df,
+                                                on=['case_id', 'ssm_id'],
+                                                how='inner')
+                                        .withColumn('ssm_occurrence_id',
+                                                    col('occurrence_id'))
+                                        .drop('case_id')
+                                        .drop('ssm_id')
+                                        .drop('occurrence_id'))
 
         self.log_count(ssm_occurrence_centric)
 
@@ -70,9 +67,14 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         return self
 
     def build_ssm_subtree(self, maf_df):
+        # Default to joins
+        join_gene = False
+        if self.config.structure == 'nested':
+            join_gene = True
+
         # Consequence
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_ssm(maf_df, self.index_name, join_gene=True))
+                   .build_for_ssm(maf_df, self.index_name, join_gene=join_gene))
 
         # SSM
         ssm_df = build_ssm_subtree(maf_df, cons_df, self.index_name).drop('gene_id')
@@ -88,6 +90,12 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         return ssm_cons
 
     def build_case_subtree(self, maf_df, case_df):
+
+        # Default to joins
+        case_cols = ["case_id"]
+        if self.config.structure == "nested":
+            case_cols = case_df.columns
+
         self.log('Building case subtree')
         # Observation
         obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
@@ -96,6 +104,6 @@ class SSMOccurrenceCentricBuilder(BaseBuilder):
         case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
                               .select('case_id', 'ssm_id', 'occurrence_id',
                                       struct('observation',
-                                             *case_df.columns).alias('case')))
+                                             *case_cols).alias('case')))
         self.log_count(case_obs_df)
         return case_obs_df
