@@ -8,24 +8,8 @@ import shlex
 from elasticsearch import Elasticsearch
 from distutils.version import StrictVersion
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
-
-
-def create_factory(host,port=443,timeout=10):
-    return (
-        httplib.HTTPSConnection(
-            host = host,
-            port = port,
-            timeout = timeout,
-            context = ssl._create_unverified_context()
-        )
-    )
-
-py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
-if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
-    factory = (create_factory, ())
-else:
-    factory = None
-    
+from exports.es_utils import iterate_es_results
+from indexclient.client import IndexClient
 from parsers import (
     ParserBuilder,
     S3Args,
@@ -33,12 +17,33 @@ from parsers import (
     ESHadoopArgs,
     BuildArgs,
     SparkArgs,
+    IndexdArgs,
 )
+
+
+def create_factory(host, port=443, timeout=10):
+    return (
+        httplib.HTTPSConnection(
+            host=host,
+            port=port,
+            timeout=timeout,
+            context=ssl._create_unverified_context()
+        )
+    )
+
+
+py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
+    factory = (create_factory, ())
+else:
+    factory = None
+
 
 ALL_PARSERS = [
     S3Args,
     ESArgs,
     ESHadoopArgs,
+    IndexdArgs,
     BuildArgs,
     SparkArgs
 ]
@@ -57,9 +62,11 @@ def get_git_commit(git_dir):
 
 class BaseConfig(object):
 
-    # Keywords that should appear in the S3 key for it to be picked up
-    # Note that ALL of these keywords have to be present for the MAF to be used
-    maf_keywords = ['SomaticMaf20170928', 'DR-10.0', 'somatic.maf.gz']  # NOTE: Will be removed when reading mafs from the index will be merged
+    # data_type field values that correspond to MAF files in gdc_from_graph.file
+    maf_data_types = [
+        'Aggregated Somatic Mutation',
+        'Masked Somatic Mutation',
+    ]
     gistic_filename_string = 'focal_score_by_genes'  # NOTE: this will be removed when gistics will be read from graph
 
     mappings = {
@@ -103,9 +110,6 @@ class BaseConfig(object):
         'ssm_occurrence_centric': True,
         'cnv_centric': True,
         'cnv_occurrence_centric': True,
-        'case_for_ssm_joins_centric': True,
-        'case_for_cnv_joins_centric': True,
-        'gene_for_joins_centric': True,
     }
 
     # Case load settings
@@ -131,6 +135,10 @@ class BaseConfig(object):
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
+        )
+        self.indexd = IndexClient(
+            baseurl='{}:{}'.format(self.indexd_host, self.indexd_port),
+            auth=(self.indexd_user, self.indexd_pass)
         )
         self.indices = self.get_index_names()
         self.maf_urls = self.get_maf_urls()
@@ -225,24 +233,58 @@ class BaseConfig(object):
 
     def get_maf_urls(self):
         """
-        Get maf urls from s3 bucket
-
-        TODO: Fetch relevant to the release urls from gdc_from_graph.file directly
+        Returns list of relevant maf_urls
+        - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
+        - gets corresponding urls from indexd
         """
-        bucket_contents = self.list_bucket(self.s3_maf_bucket)
+        query = {
+            "_source": ["file_name"],
+            "query": {
+                "terms": {
+                    "data_type": self.maf_data_types
+                }
+            }
+        }
 
+        file_id_to_name = {}
+        for doc in iterate_es_results(self.es, self.graph_index, 'file', query=query):
+            file_id_to_name[doc['_id']] = doc['_source']['file_name']
+
+        # Get urls from indexd for relevant files
         maf_urls = []
-        for obj in bucket_contents:
-            # If not all keywords present, skip
-            if any([keyword not in obj.key for keyword in self.maf_keywords]):
-                continue
-
-            if any([pipeline in obj.key for pipeline in self.pipelines]):
-                include_project = any([project.replace('-', '.') in obj.key for project in self.projects])
-                if self.projects == [] or include_project:
-                    maf_urls.append(self.s3_maf_bucket + obj.key)
+        for file_id, maf_name in file_id_to_name.items():
+            if not self.projects or any([project.replace('-', '.') in maf_name for project in self.projects]):
+                maf_url = self.get_url_from_indexd(file_id)
+                # only add urls that are not protected
+                # NOTE: this has to be removed once DAVE CA is properly implemented
+                if 'protected.maf.gz' not in maf_url:
+                    maf_urls.append(self.patch_s3_url(maf_url))
 
         return maf_urls
+
+    def patch_s3_url(self, url):
+        """
+        Change s3 url to s3a
+        """
+        url = url.replace('s3://cleversafe.service.consul/', '')
+        url = 's3a://' + url
+        return url
+
+    def get_url_from_indexd(self, file_id):
+        """
+        Queries indexd by file_name and returns corresponding validated cleversafe url
+        """
+
+        indexd_doc = self.indexd.get(file_id)
+
+        valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
+        for url, metadata in indexd_doc.urls_metadata.items():
+            if all([metadata.get(k) == v for k, v in valid_metadata.items()]):
+                return url
+
+        raise Exception(
+            'Did not find validated cleversafe url for {}'.format(file_id)
+        )
 
     def get_maf_file_names(self):
         """

@@ -1,5 +1,10 @@
 import logging
 
+from parsers import (
+    BuildArgs,
+    S3Args,
+    ESArgs,
+)
 from config import LOG_FORMAT
 from builders import (
     MAFBuilder,
@@ -11,9 +16,6 @@ from builders import (
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
-    CaseForSSMJoinsCentricBuilder,
-    CaseForCNVJoinsCentricBuilder,
-    GeneForJoinsCentricBuilder,
 )
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -36,9 +38,6 @@ class GDCMutationExport(object):
             SSMOccurrenceCentricBuilder,
             CNVCentricBuilder,
             CNVOccurrenceCentricBuilder,
-            CaseForSSMJoinsCentricBuilder,
-            CaseForCNVJoinsCentricBuilder,
-            GeneForJoinsCentricBuilder,
         ]
 
     def run_export(self):
@@ -59,20 +58,14 @@ class GDCMutationExport(object):
             index_name = builder.index_name
             if index_name in self.config.index_types:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
-                if index_name in ['ssm_centric', 'ssm_occurrence_centric',
-                                  'case_for_ssm_joins_centric']:
+                if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
                     # these builders do not yet depend on gistic_df
-                    builder(self.config,
-                            self.sqlContext).build(maf_df, case_df).load()
-                elif index_name in ['cnv_centric', 'cnv_occurrence_centric',
-                                    'case_for_cnv_joins_centric']:
+                    builder(self.config, self.sqlContext).build(maf_df, case_df).load()
+                elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
                     # these builders do not depend on maf_df
-                    builder(self.config,
-                            self.sqlContext).build(gistic_df, case_df).load()
+                    builder(self.config, self.sqlContext).build(gistic_df, case_df).load()
                 else:
                     builder(self.config,
-                            self.sqlContext).build(maf_df,
-                                                   gistic_df,
-                                                   case_df).load()
+                            self.sqlContext).build(maf_df, gistic_df, case_df).load()
 
         self.logger.info('Mutation Indexer finished successfully')
