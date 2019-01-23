@@ -319,7 +319,7 @@ class BaseConfig(object):
                 continue
 
             # Filter out irrelevant projects
-            if self.projects != []:
+            if self.projects:
                 relevant_project = any([project.split('-')[1] in obj.key for project in self.projects])
                 if not relevant_project:
                     continue
