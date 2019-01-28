@@ -143,16 +143,28 @@ class ConsequenceBuilder(object):
         consequence[]
                 |_____ gene{}
         """
-
-        # Create gene structure
-        cons_df = (
-            gistic_df.select(
-                'cnv_id',
-                struct(*struct_select(index_name, 'consequence'))
-                .alias('consequence')
-            ).groupby('cnv_id')
-             .agg(collect_set('consequence').alias('consequence'))
-        )
+        if self.config.structure == "nested":
+            # Create gene structure
+            cons_df = (
+                gistic_df.select(
+                    'cnv_id',
+                    struct(*struct_select(index_name, 'consequence'))
+                    .alias('consequence')
+                ).groupby('cnv_id')
+                .agg(collect_set('consequence').alias('consequence'))
+            )
+        else:
+            # simplified gene structure
+            cons_df = (
+                gistic_df.select(
+                    'cnv_id',
+                    struct('consequence_id',
+                           struct('gene_id')
+                           .alias('gene'))
+                    .alias('consequence')
+                ).groupby('cnv_id').agg(collect_set('consequence')
+                                        .alias('consequence'))
+            )
 
         return cons_df
 
