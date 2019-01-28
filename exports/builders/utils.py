@@ -180,17 +180,18 @@ def get_aliquots_from_headers(sqlContext, maf_urls):
     unique_aliquots = set()
     aliquot_to_url = {}
     for url in maf_urls:
-        header = read_maf_header(sqlContext, url, n_lines=5).collect()
-        header = map(lambda r: r.asDict().values()[0].split(), header)
-        assert header[-2][0] == '#n.analyzed.samples'
-        assert header[-1][0] == '#tumor.aliquots.submitter_id'
-        aliquots = header[-1][1].split(',')
-        n_aliquots = int(header[-2][1])
+        if str(url).endswith('DR-10.0.somatic.maf.gz'):
+            header = read_maf_header(sqlContext, url, n_lines=5).collect()
+            header = map(lambda r: r.asDict().values()[0].split(), header)
+            assert header[-2][0] == '#n.analyzed.samples'
+            assert header[-1][0] == '#tumor.aliquots.submitter_id'
+            aliquots = header[-1][1].split(',')
+            n_aliquots = int(header[-2][1])
 
-        assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
-        unique_aliquots.update(aliquots)
-        for aliquot in aliquots:
-            aliquot_to_url[aliquot] = url
+            assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
+            unique_aliquots.update(aliquots)
+            for aliquot in aliquots:
+                aliquot_to_url[aliquot] = url
 
     return unique_aliquots, aliquot_to_url
 
