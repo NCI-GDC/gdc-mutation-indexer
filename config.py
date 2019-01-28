@@ -257,7 +257,7 @@ class BaseConfig(object):
                 maf_url = self.get_url_from_indexd(file_id)
                 # only add urls that are not protected
                 # NOTE: this has to be removed once DAVE CA is properly implemented
-                if 'protected.maf.gz' not in maf_url:
+                if 'protected.maf.gz' not in maf_url and str(maf_url).endswith('.DR-10.0.somatic.maf.gz'):
                     maf_urls.append(self.patch_s3_url(maf_url))
 
         return maf_urls
@@ -319,7 +319,7 @@ class BaseConfig(object):
                 continue
 
             # Filter out irrelevant projects
-            if self.projects != []:
+            if self.projects and self.projects != [] and self.projects != ['']:
                 relevant_project = any([project.split('-')[1] in obj.key for project in self.projects])
                 if not relevant_project:
                     continue
