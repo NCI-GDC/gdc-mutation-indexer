@@ -164,7 +164,6 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     #    y    | 1
     #    z    | 2
     assert len(unique_aliquots) >= len(case_ids)
-
     # Create a dataframe from case_ids set
     cases_df = sqlContext.createDataFrame(
         ((x, y) for x, y in cases_urls.items()), ['case_id', 'case_acl']
@@ -180,7 +179,7 @@ def get_aliquots_from_headers(sqlContext, maf_urls):
     unique_aliquots = set()
     aliquot_to_url = {}
     for url in maf_urls:
-        if str(url).endswith('DR-10.0.somatic.maf.gz'):
+        if str(url).endswith('maf') or str(url).endswith('maf.gz'):
             header = read_maf_header(sqlContext, url, n_lines=5).collect()
             header = map(lambda r: r.asDict().values()[0].split(), header)
             assert header[-2][0] == '#n.analyzed.samples'
