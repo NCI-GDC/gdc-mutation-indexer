@@ -1,6 +1,7 @@
 from base_builder import BaseBuilder
 # External dependency builders
 from maf import MAFBuilder
+from case_acl_builder import CaseACLBuilder
 from case import CaseBuilder
 from gistic import GisticBuilder
 from gene_model import GeneModelBuilder

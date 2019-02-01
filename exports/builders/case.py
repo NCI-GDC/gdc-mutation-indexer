@@ -1,15 +1,15 @@
 from pyspark.sql.functions import (
-    lit,
     col,
     collect_set,
+    lit,
     udf,
 )
 from pyspark.sql.types import StringType, ArrayType
 from utils import (
-    get_case_ids_from_source_es,
     remove_columns,
     standardize_schema,
 )
+from exports.builders import CaseACLBuilder
 import logging
 
 from config import LOG_FORMAT
@@ -63,9 +63,7 @@ class CaseBuilder(object):
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(
-            self.config, self.sqlContext, self.maf_urls
-        )
+        all_maf_cases = CaseACLBuilder(self.config, self.sqlContext).build()
 
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
                                                                    all_maf_cases,

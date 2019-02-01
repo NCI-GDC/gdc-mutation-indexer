@@ -9,7 +9,7 @@ class BaseInputBuilder(object):
 
     def __init__(self, config, sqlContext, input_type):
         """
-        :input_type in ['gistic', 'maf']
+        :input_type in ['gistic', 'maf', 'case_acl']
         """
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)

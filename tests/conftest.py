@@ -12,8 +12,7 @@ from elasticsearch.helpers import bulk
 from tests_config import TestConfig
 from cdisutils.dictionary import remove_keys_from_dict
 
-from exports.builders.utils import (
-    get_case_ids_from_source_es,
+from exports.es_utils import (
     iterate_es_results,
 )
 from exports.mappers.distinct_doctype_model_mapper import (
@@ -24,6 +23,7 @@ from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
     GisticBuilder,
+    CaseACLBuilder,
     CaseBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
@@ -147,7 +147,7 @@ def all_maf_cases(sqlContext, maf_df):
     The info is taken from aliquots in test maf headers
     """
     # Read aliquots from maf headers and get list of corresponding cases:
-    cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
+    cases = CaseACLBuilder().get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
     return {c.case_id for c in cases.collect()}
 
 

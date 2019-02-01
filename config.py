@@ -92,6 +92,7 @@ class BaseConfig(object):
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
+    case_acl_path = 'case_acl_df.parquet'
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -132,6 +133,8 @@ class BaseConfig(object):
         :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
         """
         self.assign_all_parameters(env_dict=env_dict)
+
+        self.case_acl_backup = self.maf_backup
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
