@@ -9,7 +9,7 @@ from utils import (
     remove_columns,
     standardize_schema,
 )
-from exports.builders import CaseACLBuilder
+from exports.builders.utils import get_case_ids_from_source_es
 import logging
 
 from config import LOG_FORMAT
@@ -63,7 +63,8 @@ class CaseBuilder(object):
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = CaseACLBuilder(self.config, self.sqlContext).build()
+        all_maf_cases = get_case_ids_from_source_es(self.config,
+                                                    self.sqlContext)
 
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
                                                                    all_maf_cases,

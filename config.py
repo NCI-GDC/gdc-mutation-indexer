@@ -92,7 +92,7 @@ class BaseConfig(object):
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
-    case_acl_path = 'case_acl_df.parquet'
+    aliquot_path = 'aliquot_df.parquet'
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -133,8 +133,8 @@ class BaseConfig(object):
         :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
         """
         self.assign_all_parameters(env_dict=env_dict)
-
-        self.case_acl_backup = self.maf_backup
+        # aliquot should be synced with maf, don't allow users to deviate
+        self.aliquot_backup = self.maf_backup
         self.es = Elasticsearch(
             self.es_host, port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
@@ -254,7 +254,7 @@ class BaseConfig(object):
             file_id_to_name[doc['_id']] = doc['_source']['file_name']
 
         # Get urls from indexd for relevant files
-        maf_urls = []
+        maf_urls = []  # TODO: FM maf name here for controlled data
         for file_id, maf_name in file_id_to_name.items():
             if not self.projects or any([project.replace('-', '.') in maf_name for project in self.projects]):
                 maf_url = self.get_url_from_indexd(file_id)
@@ -318,7 +318,7 @@ class BaseConfig(object):
         gistic_urls = []
         for obj in bucket_contents:
             # Filter out files by gistic keyword string
-            if not self.gistic_filename_string in obj.key:
+            if self.gistic_filename_string not in obj.key:
                 continue
 
             # Filter out irrelevant projects
