@@ -150,7 +150,7 @@ def all_maf_cases(sqlContext, maf_df):
     The info is taken from aliquots in test maf headers
     """
     # Read aliquots from maf headers and get list of corresponding cases:
-    cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
+    cases = get_case_ids_from_source_es(conf, sqlContext)
     return {c.case_id for c in cases.collect()}
 
 
