@@ -6,10 +6,10 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import StringType, ArrayType
 from utils import (
+    get_case_ids_from_source_es,
     remove_columns,
     standardize_schema,
 )
-from exports.builders.utils import get_case_ids_from_source_es
 import logging
 
 from config import LOG_FORMAT
@@ -26,7 +26,6 @@ class CaseBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self.maf_urls = config.maf_urls
 
     def build(self, maf_df, gistic_df):
         """
