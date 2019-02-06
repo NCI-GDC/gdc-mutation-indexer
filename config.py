@@ -266,12 +266,12 @@ class BaseConfig(object):
 
         return maf_urls
 
-    @property
     def projects_valid(self):
-        if self._projects_valid:
-            return self._projects_valid
-        else:
-            self._projects_valid = (self.projects and any(self.projects))
+        """
+        Valid projects values: ['TCGA-UVM'], ['TCGA-UVM', 'FM-AD']
+        Invalid projects values: None, [], ['']
+        """
+        return self.projects and any(self.projects)
 
     def maf_passes_project_check(self, maf_name):
         """
@@ -282,7 +282,7 @@ class BaseConfig(object):
             (due to unpacking spark variables on minion nodes)
         we do not need to filter. Maf passes check vacuously
         """
-        if self.projects_valid:
+        if self.projects_valid():
             return any([project.replace('-', '.') in maf_name
                         for project in self.projects])
         else:
@@ -296,7 +296,7 @@ class BaseConfig(object):
             (due to unpacking spark variables on minion nodes)
         we do not need to filter. Gistic passes check vacuously
         """
-        if self.projects_valid:
+        if self.projects_valid():
             return any([project.split('-')[1] in gistic_name
                         for project in self.projects])
         else:
