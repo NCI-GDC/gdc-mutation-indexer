@@ -52,6 +52,8 @@ CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
 VERSION = "0.1.5"
+FORMATTED_MAF_KEYWORDS = 'DR-10.0.somatic.maf.gz'
+PROTECTED_MAF_KEYWORDS = 'protected.maf.gz'
 
 
 def get_git_commit(git_dir):
@@ -254,16 +256,61 @@ class BaseConfig(object):
             file_id_to_name[doc['_id']] = doc['_source']['file_name']
 
         # Get urls from indexd for relevant files
-        maf_urls = []  # TODO: FM maf name here for controlled data
+        maf_urls = []  # NOTE: FM maf name here for controlled data
         for file_id, maf_name in file_id_to_name.items():
-            if not self.projects or any([project.replace('-', '.') in maf_name for project in self.projects]):
+            if self.maf_passes_project_check(maf_name):
                 maf_url = self.get_url_from_indexd(file_id)
-                # only add urls that are not protected
-                # NOTE: this has to be removed once DAVE CA is properly implemented
-                if 'protected.maf.gz' not in maf_url and str(maf_url).endswith('.DR-10.0.somatic.maf.gz'):
+                # NOTE: TEMP
+                if self.temp_filter_maf_urls(maf_url):
                     maf_urls.append(self.patch_s3_url(maf_url))
 
         return maf_urls
+
+    @property
+    def projects_valid(self):
+        if self._projects_valid:
+            return self._projects_valid
+        else:
+            self._projects_valid = (self.projects and any(self.projects))
+
+    def maf_passes_project_check(self, maf_name):
+        """
+        If projects is a valid list, e.g. ['TCGA-UVM', 'FM-AD'],
+            check that maf_name contains the equivalent phrase,
+            'TCGA.UVM' or 'FM.AD'
+        If projects is not valid, e.g. None, [], or [''],
+            (due to unpacking spark variables on minion nodes)
+        we do not need to filter. Maf passes check vacuously
+        """
+        if self.projects_valid:
+            return any([project.replace('-', '.') in maf_name
+                        for project in self.projects])
+        else:
+            return True
+
+    def gistic_passes_project_check(self, gistic_name):
+        """
+        If projects is a valid list, e.g. ['TCGA-UVM', 'FM-AD'],
+            check that gistic_name contains the equivalent phrase
+        If projects is not valid, e.g. None, [], or [''],
+            (due to unpacking spark variables on minion nodes)
+        we do not need to filter. Gistic passes check vacuously
+        """
+        if self.projects_valid:
+            return any([project.split('-')[1] in gistic_name
+                        for project in self.projects])
+        else:
+            return True
+
+    def temp_filter_maf_urls(self, maf_url):
+        """
+        Only add urls that are not protected
+        and filter out improperly formatted mafs.
+        NOTE: this has to be removed once DAVE CA is properly implemented
+        TODO: Long-term solution for improperly formatted mafs
+        """
+        return PROTECTED_MAF_KEYWORDS not in maf_url \
+            and FORMATTED_MAF_KEYWORDS in maf_url
 
     def patch_s3_url(self, url):
         """
@@ -322,13 +369,9 @@ class BaseConfig(object):
                 continue
 
             # Filter out irrelevant projects
-            if self.projects and self.projects != [] and self.projects != ['']:
-                relevant_project = any([project.split('-')[1] in obj.key for project in self.projects])
-                if not relevant_project:
-                    continue
-
-            # Add gistic url
-            gistic_urls.append(self.s3_gistic_bucket + obj.key)
+            if self.gistic_passes_project_check(obj.key):
+                # Add gistic url
+                gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
 
