@@ -1,7 +1,7 @@
 from pyspark.sql.functions import (
-    lit,
     col,
     collect_set,
+    lit,
     udf,
 )
 from pyspark.sql.types import StringType, ArrayType
@@ -26,7 +26,6 @@ class CaseBuilder(object):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
-        self.maf_urls = config.maf_urls
 
     def build(self, maf_df, gistic_df):
         """
@@ -63,9 +62,8 @@ class CaseBuilder(object):
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(
-            self.config, self.sqlContext, self.maf_urls
-        )
+        all_maf_cases = get_case_ids_from_source_es(self.config,
+                                                    self.sqlContext)
 
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
                                                                    all_maf_cases,

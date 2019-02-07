@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 
 from config import BaseConfig
 
@@ -69,7 +68,6 @@ class TestConfig(BaseConfig):
 
     def __init__(self):
         env = self.get_env_dict()
-        pprint(env)
         super(TestConfig, self).__init__(env_dict=env)
 
     def get_env_dict(self):

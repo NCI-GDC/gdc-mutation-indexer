@@ -10,7 +10,7 @@ from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
 from exports.mappers.model_mapper import ModelMapper
 from exports.es_utils import iterate_es_results
-from elasticsearch import Elasticsearch
+from exports.builders.aliquot import AliquotBuilder
 
 from config import LOG_FORMAT
 
@@ -51,30 +51,28 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     return label
 
 
-def get_case_ids_from_source_es(config, sqlContext, maf_urls):
+def get_case_ids_from_source_es(config, sqlContext):
     """
-    Reads aliquots from headers of mafs and queries source es
-    for corresponding case_ids.
+    Queries source es for case_ids and acls that correspond to maf aliquots.
 
-    This function _also_ returns the acls associated with the
+    This function returns the acls associated with the
     case_id -> aliquot -> maf_url -> maf_filename.
 
     1) if any of the observations is open then case level is open;
     2) if all observations are controlled
-       and populated with the same dbgap study code,
-       then case level will be the same dbgap study code;
+    and populated with the same dbgap study code,
+    then case level will be the same dbgap study code;
     3) if study code in 2) have different values from observation,
-       then there is something wrong.
+    then there is something wrong.
     """
-    # Read unique aliquots from maf headers
-    unique_aliquots, aliquot_to_url = get_aliquots_from_headers(
-        sqlContext, maf_urls)
 
-    # TODO: pass es client from outside
-    es = Elasticsearch(config.source_es_host,
-                       port=config.source_es_port,
-                       http_auth=(config.source_es_user,
-                                  config.source_es_pass))
+    # Read unique aliquots from maf headers
+    aliquot_to_url = AliquotBuilder(config, sqlContext).build()
+
+    # Convert to dictionary
+    aliquot_to_url = aliquot_to_url.select('aliquot_id', 'url').rdd.collectAsMap()
+    unique_aliquots = aliquot_to_url.keys()
+
     query = {
         "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
         "query": {
@@ -94,13 +92,14 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     }
 
     results = iterate_es_results(
-        es, config.graph_index, config.graph_document, query=query
+        config.es,
+        config.graph_index,
+        config.graph_document,
+        query=query
     )
 
     cases_urls = {}
     case_ids = set()
-
-    filenames_to_acls = config.acls
 
     # walk to the aliquot
     for hit in results:
@@ -124,15 +123,15 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
         for aliquot in aliquots_to_lookup:
             url = aliquot_to_url[aliquot]
             filename = config.maf_url_to_file_name(url)
-            acl = filenames_to_acls[filename]
+            acl = config.acls[filename]
             aliquot_acls.append(acl)
 
         # dedupe (annoying because acls are lists)
         aliquot_acls = list(set(x for l in aliquot_acls for x in l))
 
         assert 0 < len(aliquot_acls) <= 2, 'Invalid acls ' \
-        'for case {}, aliquot(s) {}, phsids {}' \
-        ''.format(case_id, aliquots_to_lookup, aliquot_acls)
+            'for case {}, aliquot(s) {}, phsids {}' \
+            ''.format(case_id, aliquots_to_lookup, aliquot_acls)
 
         # If only one acl across aliquots, use that
         if len(aliquot_acls) == 1:
@@ -142,8 +141,8 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
             # the scenario [open, phsid000x]
             # ([phsid000x, phsid000y] means something is wrong)
             assert u'open' in aliquot_acls, 'Multiple phsids ' \
-            'found for case {}, aliquots {}, phsids {}' \
-            ''.format(case_id, aliquots_to_lookup, aliquot_acls)
+                'found for case {}, aliquots {}, phsids {}' \
+                ''.format(case_id, aliquots_to_lookup, aliquot_acls)
 
             cases_urls[case_id] = [u'open']
 
@@ -171,37 +170,6 @@ def get_case_ids_from_source_es(config, sqlContext, maf_urls):
     )
 
     return cases_df
-
-
-def get_aliquots_from_headers(sqlContext, maf_urls):
-    """
-    Reads a set of tuples of (unique aliquots, maf headers)
-    """
-    unique_aliquots = set()
-    aliquot_to_url = {}
-    for url in maf_urls:
-        header = read_maf_header(sqlContext, url, n_lines=5).collect()
-        header = map(lambda r: r.asDict().values()[0].split(), header)
-        assert header[-2][0] == '#n.analyzed.samples'
-        assert header[-1][0] == '#tumor.aliquots.submitter_id'
-        aliquots = header[-1][1].split(',')
-        n_aliquots = int(header[-2][1])
-
-        assert len(aliquots) == n_aliquots, '{} has inconsistent aliquot data in header'.format(url)
-        unique_aliquots.update(aliquots)
-        for aliquot in aliquots:
-            aliquot_to_url[aliquot] = url
-
-    return unique_aliquots, aliquot_to_url
-
-
-def read_maf_header(sqlContext, url, n_lines=5):
-    """
-    Reads only maf header
-    """
-    return sqlContext.read.format('com.databricks.spark.csv')\
-                          .options(delimiter='\t')\
-                          .load(url).limit(n_lines)
 
 
 def ssm_label_col(chromosome,
