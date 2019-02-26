@@ -77,7 +77,7 @@ class MAFBuilder(BaseInputBuilder):
         df = self.format_cosmic_id(df)
 
         self.logger.info('Repartitioning MAF dataframe')
-        df = df.repartition(self.config.repartition, 'ssm_id')
+        df = df.repartition(self.config.df_repartition, 'ssm_id')
 
         if self.config.cache_dataframes['mafs']:
             self.logger.info('Caching repartitioned MAF dataframe')
@@ -466,4 +466,3 @@ class MAFBuilder(BaseInputBuilder):
         url = url.replace('cleversafe.service.consul/somatic_maf', 'test')
         url = url.replace('s3://', 's3a://')
         return url
-

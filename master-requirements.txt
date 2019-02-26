@@ -1,0 +1,5 @@
+# These are only required by master.py and will not be distributed to spark workers
+-e git+ssh://git@github.com/NCI-GDC/cdisutils.git@1.2.2#egg=cdisutils
+-e git+ssh://git@github.com/NCI-GDC/gdcdictionary.git@1.13.0-pre#egg=gdcdictionary
+-e git+ssh://git@github.com/NCI-GDC/gdcdatamodel.git@dict_v1.13.0-Ichabod#egg=gdcdatamodel
+-e git+ssh://git@github.com/NCI-GDC/psqlgraph.git@1.2.0#egg=psqlgraph

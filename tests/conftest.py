@@ -14,6 +14,8 @@ from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import (
     get_case_ids_from_source_es,
+)
+from exports.es_utils import (
     iterate_es_results,
 )
 from exports.mappers.distinct_doctype_model_mapper import (
@@ -23,6 +25,7 @@ from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
+    AliquotBuilder,
     GisticBuilder,
     CaseBuilder,
     CNVCentricBuilder,
@@ -126,7 +129,7 @@ def es_client(setup_test_index):
 
 @pytest.fixture(scope='session')
 def sqlContext(es_client):
-    sc = SparkContext(conf.spark_master, 'sqlContextFixture')
+    sc = SparkContext('local[1]', 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")
@@ -147,7 +150,7 @@ def all_maf_cases(sqlContext, maf_df):
     The info is taken from aliquots in test maf headers
     """
     # Read aliquots from maf headers and get list of corresponding cases:
-    cases = get_case_ids_from_source_es(conf, sqlContext, conf.maf_urls)
+    cases = get_case_ids_from_source_es(conf, sqlContext)
     return {c.case_id for c in cases.collect()}
 
 
@@ -174,20 +177,26 @@ def test_data():
 def maf_df(sqlContext):
     """
     Builds combined maf dataframe once. Reused throughout test suite
-    Note: alters naturally-occurring acls for testing purposes.
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
-    local_maf = MAFBuilder(conf, sqlContext).build()
+    return MAFBuilder(conf, sqlContext).build()
 
+
+@pytest.fixture(scope="session")
+def acl_maf_df(sqlContext, maf_df):
+    """
+    Builds combined maf dataframe
+    Note: alters naturally-occurring acls for testing purposes.
+    """
     def fake_out_acl(chromosome):
         if int(chromosome) % 2 == 0:
             return [u'phs000218']
         return [u'open']
 
     acl_udf = udf(fake_out_acl, ArrayType(StringType()))
-    local_maf = local_maf.drop('acl')
-    altered_maf = local_maf.withColumn('acl',
-                                       acl_udf('gene_chromosome'))
+    altered_maf = maf_df.drop('acl')
+    altered_maf = altered_maf.withColumn('acl',
+                                         acl_udf('gene_chromosome'))
 
     return altered_maf
 

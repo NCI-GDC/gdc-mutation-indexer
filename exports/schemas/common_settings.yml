@@ -10,6 +10,8 @@ mappings:
     properties:
       commit_hash:
         type: text
+      graph_indices:
+        type: text
       number_of_mutations:
         type: double
       number_of_projects:

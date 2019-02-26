@@ -9,19 +9,15 @@ from pyspark.sql.functions import (
     udf,
 )
 
-from exports.builders.df_builders import (
-    get_gene_df,
-)
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import (
-    melt_df,
-    uuid5_col,
-    remove_columns,
-    iterate_es_results,
     map_create_column,
+    melt_df,
+    remove_columns,
     uuid5_col,
 )
+from exports.es_utils import iterate_es_results
 
 from config import LOG_FORMAT
 

@@ -4,14 +4,13 @@ from exports.es_utils import (
     get_es_doc_count,
 )
 
-from utils.true_stats import TestDataStats
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
 @pytest.mark.usefixtures('sqlContext', 'es_client',
-                         'maf_df', 'gistic_df', 'test_data',
+                         'acl_maf_df', 'gistic_df', 'test_data',
                          'gene_centric_df',
                          'case_centric_df',
                          'ssm_centric_df',
@@ -33,7 +32,7 @@ class TestACL:
         ('ssm_occurrence_centric', 'case.observation', 'case.observation.acl')
     ])
     def test_acl_counts(self, es_client, doc_type, nested_path, field,
-            maf_df, gistic_df, test_data):
+            acl_maf_df, gistic_df, test_data):
 
         index_name = conf.indices[doc_type]
 

@@ -41,8 +41,8 @@ class CaseCentricBuilder(BaseBuilder):
         """
         self.log('Building CaseCentric')
         # Check if we should load a pre-built dataframe
-        if self.config.index_use_existing:
-            self.case_centric = self.get_existing()
+        if self.config.output_raw == 'load':
+            self.case_centric = self.load_raw()
             if self.case_centric is not None:
                 return self
 
@@ -63,9 +63,8 @@ class CaseCentricBuilder(BaseBuilder):
         self.case_centric = case_centric
         self.log('Build finished')
 
-        # Check if we should save the resulting dataframe
-        if self.config.index_keep:
-            self.write(self.config.index_paths[self.index_name])
+        # Save the resulting dataframe to s3
+        self.write()
 
         return self
 

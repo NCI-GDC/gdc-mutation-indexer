@@ -1,5 +1,6 @@
 import os
-from config import BaseConfig, ReadWriteMode
+
+from config import BaseConfig
 
 
 class TestConfig(BaseConfig):
@@ -18,13 +19,6 @@ class TestConfig(BaseConfig):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    spark_master = 'local[1]'
-
-    es_host = 'http://localhost'
-    source_es_host = 'http://localhost'
-    s3_maf_bucket = 'file:///' + os.path.abspath('tests/data/output/test_bucket') + '/'
-    graph_index = 'test_graph_index__'
-
     # Whether or not to rebuild graph index after every test
     graph_force_build = False
 
@@ -42,22 +36,6 @@ class TestConfig(BaseConfig):
     ssm_indices = ['ssm_centric', 'ssm_occurrence_centric']
     cnv_indices = ['cnv_centric', 'cnv_occurrence_centric']
 
-    # Where to save each index
-    index_paths = {
-        'case_centric': s3_maf_bucket + 'test-case-centric.json',
-        'gene_centric': s3_maf_bucket + 'test-gene-centric.json',
-        'ssm_centric': s3_maf_bucket + 'test-ssm-centric.json',
-        'ssm_occurrence_centric': s3_maf_bucket + 'test-ssm-occurrence-centric.json'
-    }
-    # Whether to save the indices once they've been built
-    index_keep = False
-    # Load a prebuilt index and load it into elasticsearch
-    index_use_existing = False
-    # Whether to overwrite a built index file, if it exists
-    index_overwrite = True
-    # How many partitions to distribute the index file accross
-    repartition = 10
-
     # Additional test files
     doc_files = {
         'case': os.path.join(input_dir, 'cases.json.gz'),
@@ -68,10 +46,6 @@ class TestConfig(BaseConfig):
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
     gene_model_file = os.path.join(input_dir, 'genes.json.gz')
-
-    # Whether to read/write/neither
-    read_write_mode = {'maf': ReadWriteMode.neither,
-                       'gistic': ReadWriteMode.neither}
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -93,8 +67,29 @@ class TestConfig(BaseConfig):
      }
 
     def __init__(self):
-        super(TestConfig, self).__init__()
-        self.gistic_urls = self.get_gistic_urls()
+        env = self.get_env_dict()
+        super(TestConfig, self).__init__(env_dict=env)
+
+    def get_env_dict(self):
+        """
+        Simulate environment variables with dictionary
+        """
+        env_dict = {
+            'BUILD_TYPE': 'develop',
+            'ES_NODES': 'http://localhost',
+            'ES_HOST': 'http://localhost',
+            'ES_PORT': '9200',
+            'SOURCE_ES_HOST': 'http://localhost',
+            'SOURCE_ES_PORT': '9200',
+            'S3_HOST': 'fake_s3',
+            'S3_ACCESS_KEY': 'fake_s3_access',
+            'S3_SECRET_KEY': 'fake_s3_secret',
+            'DF_REPARTITION': '10',
+            'INDEXD_USER': 'fake_indexd_user',
+            'INDEXD_PASS': 'fake_indexd_pass',
+        }
+
+        return env_dict
 
     def get_maf_urls(self):
         return ['file://' + os.path.join(self.maf_dir, f)
@@ -104,13 +99,3 @@ class TestConfig(BaseConfig):
         return ['file://' + os.path.join(self.gistic_dir, f)
                 for f in os.listdir(self.gistic_dir)
                 if f.endswith(".tsv")]
-
-    def get_maf_file_names(self):
-        """
-        We store the test mafs as .maf files,
-        but the file names in gdc_from_graph are gzipped.
-        So we append '.gz' for matching.
-        """
-        file_names = super(TestConfig, self).get_maf_file_names()
-
-        return [f + '.gz' for f in file_names]
