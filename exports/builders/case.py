@@ -45,6 +45,8 @@ class CaseBuilder(object):
         source = '{}/{}'.format(self.config.graph_index,
                                 self.config.graph_document)
 
+        case_exclude_fields = (self.config.case_exclude_fields
+            + self.config.get_samples_fields_to_exclude())
         # Load all cases from graph_index
         df = (
             self.sqlContext.read.format("es")
@@ -54,8 +56,7 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
             .option('es.nodes.resolve.hostname', 'false')
-            .option('es.read.field.exclude',
-                    ','.join(self.config.case_exclude_fields))
+            .option('es.read.field.exclude', ','.join(case_exclude_fields))
             .option('es.resource.read', source)
             .load(source)
         )
