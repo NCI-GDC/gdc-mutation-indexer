@@ -77,4 +77,3 @@ def get_single_df(input_df, index_name, mapping_name,
 
     df = df.drop_duplicates(subset=unique_fields)
     return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
-
