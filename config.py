@@ -51,7 +51,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 FORMATTED_MAF_KEYWORDS = 'DR-10.0.somatic.maf.gz'
 PROTECTED_MAF_KEYWORDS = 'protected.maf.gz'
 
@@ -124,10 +124,11 @@ class BaseConfig(object):
         'days_to_index',
         'tissue_source_site',
         'family_histories',
-        'samples',
         'files',
         '*_ids'
     ]
+
+    samples_include_fields = ['samples.sample_type']
 
     def __init__(self, env_dict=None):
         """
@@ -137,7 +138,8 @@ class BaseConfig(object):
         # aliquot should be synced with maf, don't allow users to deviate
         self.aliquot_backup = self.maf_backup
         self.es = Elasticsearch(
-            self.es_host, port=self.es_port,
+            self.es_host,
+            port=self.es_port,
             http_auth=(self.es_user, self.es_pass)
         )
         self.indexd = IndexClient(
@@ -418,6 +420,22 @@ class BaseConfig(object):
             filenames_to_acls[filename] = acl
 
         return filenames_to_acls
+
+    def get_samples_fields_to_exclude(self):
+        """
+        Gets the case.samples mapping from es and list all the first degree
+        child fields (for example `samples.portions.analytes.annotations.entity_id`
+        would become `samples.portions`) so they can be excluded. It will
+        keep any field in `samples_include_fields`
+        """
+        samples_mapping = self.es.indices.get_field_mapping(
+            index=self.graph_index,
+            doc_type=self.graph_document,
+            fields='samples.*')
+        index_name = samples_mapping.keys()[0]
+        fields = samples_mapping[index_name]['mappings']['case'].keys()
+        fields_to_exclude = {'.'.join(x.split('.', 2)[:2]) for x in fields}
+        return list(fields_to_exclude - set(self.samples_include_fields))
 
     def list_bucket(self, bucket_name):
         """
