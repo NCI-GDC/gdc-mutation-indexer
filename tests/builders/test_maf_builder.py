@@ -85,7 +85,7 @@ class TestMAFBuilder:
 
         # Bypass combine() so the dataframe isn't already standardized.
         df = (
-            builder.s3_to_df(conf.maf_urls[0])
+            builder.file_to_df(conf.maf_urls[0])
             .withColumn('variant_caller', lit('variant_caller'))
             .withColumn('acl', lit(None))
         )
@@ -115,7 +115,7 @@ class TestMAFBuilder:
 
         # The raw dataframe is missing a couple columns, so it should
         # initially fail standardization.
-        df = builder.s3_to_df(conf.maf_urls[0])
+        df = builder.file_to_df(conf.maf_urls[0])
 
         try:
             builder.standardize_schema(df)

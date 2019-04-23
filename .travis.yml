@@ -32,6 +32,9 @@ before_install:
   - sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
   - sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
   - sudo service elasticsearch restart
+  - sudo apt-get update
+  - sudo add-apt-repository ppa:webupd8team/java
+  - sudo apt-get update
 
 install:
   - pip install -r requirements.txt

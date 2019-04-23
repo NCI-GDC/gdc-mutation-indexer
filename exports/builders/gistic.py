@@ -99,7 +99,7 @@ class GisticBuilder(BaseInputBuilder):
         gistic_df = None
         for url in urls:
             try:
-                new_df = self.s3_to_df(url)
+                new_df = self.file_to_df(url)
                 self.logger.info('Read {} rows from {}'.format(new_df.count(),
                                                                url))
                 # prepare to melt

@@ -1,4 +1,8 @@
 from exports.builders.utils import struct_select
+from exports.builders.clinical_annotations import get_clinical_annotation_df
+
+import logging
+logger = logging.getLogger('df_builder')
 
 
 def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
@@ -54,8 +58,13 @@ def get_gene_df(input_df, index_name, add_fields=[], drop_fields=[],
 
 def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
                unique_fields=None, ignore=[]):
-    return get_single_df(input_df, index_name, 'ssm',
+    clinical_anno_df = get_clinical_annotation_df(index_name, input_df)
+    logger.info('Clinical annotation')
+    logger.info(clinical_anno_df.first())
+    df = get_single_df(input_df, index_name, 'ssm',
                          add_fields,  drop_fields, unique_fields, ignore)
+    df = df.join(clinical_anno_df, on='ssm_id', how='left')
+    return df
 
 
 def get_cnv_df(input_df, index_name, add_fields=[], drop_fields=[],

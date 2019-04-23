@@ -36,7 +36,7 @@ maf_schema:
   variant_type:
       name:  Variant_Type
   tumor_allele:
-      name:  Tumor_Seq_Allele2
+      name:  Allele
   reference_allele:
       name:  Reference_Allele
   mutation_type:

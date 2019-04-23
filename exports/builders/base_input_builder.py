@@ -84,7 +84,7 @@ class BaseInputBuilder(object):
             self.logger.info('Loading file from s3 instead of building')
 
             try:
-                df = self.s3_to_df(saved_path, data_format='parquet')
+                df = self.file_to_df(saved_path, data_format='parquet')
             except IOError:
                 self.logger.info('File not found in {}'.format(saved_path))
             except AnalysisException:
@@ -101,15 +101,16 @@ class BaseInputBuilder(object):
 
         return df
 
-    def s3_to_df(self, url, data_format='csv'):
+    def file_to_df(self, url, data_format='tsv'):
         """
         Read a single file from the given s3 url and return as dataframe
         """
-        if data_format == 'csv':
+        if data_format in ['csv', 'tsv']:
+            delimiter = '\t' if data_format == 'tsv' else ','
             return self.sqlContext.read.format('com.databricks.spark.csv')\
                        .options(header='true')\
                        .options(comment="#")\
-                       .options(delimiter='\t')\
+                       .options(delimiter=delimiter)\
                        .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                        .load(url)
         elif data_format == 'parquet':
@@ -158,4 +159,3 @@ class BaseInputBuilder(object):
         df = df.withColumn('canonical_transcript_length_genomic',
                            len_gen_udf(df.transcripts))
         return df
-

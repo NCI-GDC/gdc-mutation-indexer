@@ -17,6 +17,7 @@ from exports.es_utils import (
 
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
+from exports.builders.clinical_annotations.civic import CivicBuilder
 
 from pkg_resources import resource_filename
 
@@ -35,6 +36,7 @@ class MAFBuilder(BaseInputBuilder):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
         self.schema = self.get_schema()
+        self.annotation_builder = CivicBuilder(config, sqlContext)
 
     def build_from_scratch(self):
         """
@@ -75,6 +77,7 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
+        df = self.annotation_builder.build_with_maf(df)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.df_repartition, 'ssm_id')
@@ -407,7 +410,7 @@ class MAFBuilder(BaseInputBuilder):
             try:
                 # TODO: separate data transforms from combining multiple df into one
                 # latter should go as a static method to base class for MAF and Gistic Builders
-                new_df = self.s3_to_df(url)
+                new_df = self.file_to_df(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
