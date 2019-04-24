@@ -122,7 +122,6 @@ class BaseConfig(object):
         'case_autocomplete',
         'annotations',
         'days_to_index',
-        'diagnoses.treatments',
         'tissue_source_site',
         'family_histories',
         'files',
