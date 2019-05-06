@@ -117,14 +117,17 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = [
-        'project.disease_type',
-        'project.primary_site',
-        'case_autocomplete',
         'annotations',
+        'case_autocomplete',
         'days_to_index',
-        'tissue_source_site',
+        'diagnoses.days_to_birth',
+        'diagnoses.days_to_death',
+        'diagnoses.vital_status',
         'family_histories',
         'files',
+        'project.disease_type',
+        'project.primary_site',
+        'tissue_source_site',
         '*_ids'
     ]
 
