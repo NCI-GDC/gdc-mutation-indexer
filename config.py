@@ -140,6 +140,9 @@ class BaseConfig(object):
         'diagnoses.metastasis_at_diagnosis',
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
+
+        # Work around bug in how elasticsearch-hadoop filters grandchild fields
+        'treatments.initial_disease_status',
     ]
 
     samples_include_fields = ['samples.sample_type']
