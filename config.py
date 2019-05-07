@@ -120,6 +120,7 @@ class BaseConfig(object):
         'annotations',
         'case_autocomplete',
         'days_to_index',
+        'demographic.age_at_index',
         'diagnoses.days_to_birth',
         'diagnoses.days_to_death',
         'diagnoses.vital_status',
