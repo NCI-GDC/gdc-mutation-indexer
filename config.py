@@ -117,19 +117,29 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = [
+        # Pieces of the graph index we don't want to copy over
         'annotations',
         'case_autocomplete',
         'days_to_index',
-        'demographic.age_at_index',
-        'diagnoses.days_to_birth',
-        'diagnoses.days_to_death',
-        'diagnoses.vital_status',
         'family_histories',
         'files',
         'project.disease_type',
         'project.primary_site',
         'tissue_source_site',
-        '*_ids'
+        '*_ids',
+
+        # Fields removed from dictionary, but not yet removed from graph index
+        'diagnoses.days_to_birth',
+        'diagnoses.days_to_death',
+        'diagnoses.vital_status',
+
+        # Fields omitted from *_centric models that have values in graph index
+        'demographic.age_at_index',
+        'diagnoses.days_to_diagnosis',
+        'diagnoses.icd_10_code',
+        'diagnoses.metastasis_at_diagnosis',
+        'diagnoses.synchronous_malignancy',
+        'diagnoses.treatments.initial_disease_status',
     ]
 
     samples_include_fields = ['samples.sample_type']
