@@ -117,15 +117,27 @@ class BaseConfig(object):
 
     # Case load settings
     case_exclude_fields = [
-        'project.disease_type',
-        'project.primary_site',
-        'case_autocomplete',
+        # Pieces of the graph index we don't want to copy over
         'annotations',
+        'case_autocomplete',
         'days_to_index',
-        'tissue_source_site',
         'family_histories',
         'files',
-        '*_ids'
+        'project.disease_type',
+        'project.primary_site',
+        'tissue_source_site',
+        '*_ids',
+
+        # Fields omitted from *_centric models that have values in graph index
+        'demographic.age_at_index',
+        'diagnoses.days_to_diagnosis',
+        'diagnoses.icd_10_code',
+        'diagnoses.metastasis_at_diagnosis',
+        'diagnoses.synchronous_malignancy',
+        'diagnoses.treatments.initial_disease_status',
+
+        # Work around bug in how elasticsearch-hadoop filters grandchild fields
+        'treatments.initial_disease_status',
     ]
 
     samples_include_fields = ['samples.sample_type']
