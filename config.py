@@ -128,11 +128,6 @@ class BaseConfig(object):
         'tissue_source_site',
         '*_ids',
 
-        # Fields removed from dictionary, but not yet removed from graph index
-        'diagnoses.days_to_birth',
-        'diagnoses.days_to_death',
-        'diagnoses.vital_status',
-
         # Fields omitted from *_centric models that have values in graph index
         'demographic.age_at_index',
         'diagnoses.days_to_diagnosis',
