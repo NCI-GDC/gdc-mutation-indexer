@@ -130,6 +130,7 @@ class BaseConfig(object):
 
         # Fields omitted from *_centric models that have values in graph index
         'demographic.age_at_index',
+        'diagnoses.annotations',
         'diagnoses.days_to_diagnosis',
         'diagnoses.icd_10_code',
         'diagnoses.metastasis_at_diagnosis',
