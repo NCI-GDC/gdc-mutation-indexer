@@ -45,13 +45,13 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fiel
                     cols.append(col(name).alias(k))
                 else:
                     if 'properties' in v:
-                        cols.append(restructure(v['properties'], k)).alias(k)
+                        cols.append(struct(restructure(v['properties'], k)).alias(k))
                     else:
                         cols.append(struct(restructure(v, k)).alias(k))
         return cols
 
     name = 'clinical_annotations'
-    cols = ['ssm_id'] + [struct(restructure(mapping['properties'], '')).alias(name)]
+    cols = ['ssm_id'] + restructure({name: mapping['properties'].get(name)}, '')
     logger.info(cols)
 
     df = input_df.select(*cols)
