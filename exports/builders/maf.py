@@ -6,6 +6,7 @@ from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 from elasticsearch import Elasticsearch
 
 from exports.builders.utils import (
+    multiply_df,
     uuid5_col,
     ssm_label_col,
     extract_sift_polyphen,
@@ -53,6 +54,12 @@ class MAFBuilder(BaseInputBuilder):
         df = self.add_mutation_subtype(df)
         # ssm_id from hashing unique columns in the maf
         df = self.add_ssm_id(df)
+
+        # TODO See what happens if we invent more SSMs per case here.
+        # Do this before minting the occurrence/observation IDs as those take
+        # the SSM ID as input.
+        df = multiply_df(df, 'ssm_id', 10)
+
         # Create occurrence_id
         df = self.add_occurrence_id(df)
         # Create observation_id
@@ -75,6 +82,9 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
+
+        # TODO Also try inventing more mutated cases here (sync with case.py).
+        df = multiply_df(df, 'case_id', 1)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.df_repartition, 'ssm_id')

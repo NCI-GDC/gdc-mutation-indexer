@@ -51,6 +51,18 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     return label
 
 
+def multiply_df(df, id_column, n):
+    """Multiply the row count by N, updating the IDs at the given column."""
+    if n <= 1:
+        return df
+
+    sqlContext = df.sql_ctx
+    multiplier_df = sqlContext.createDataFrame(list(range(n)), ['_temp_n'])
+    joined_df = df.crossJoin(multiplier_df)
+    return joined_df.withColumn(id_column,
+                                joined_df[id_column] + '-' + joined_df._temp_n)
+
+
 def get_case_ids_from_source_es(config, sqlContext):
     """
     Queries source es for case_ids and acls that correspond to maf aliquots.

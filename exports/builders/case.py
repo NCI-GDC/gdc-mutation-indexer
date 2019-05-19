@@ -7,6 +7,7 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import StringType, ArrayType
 from utils import (
     get_case_ids_from_source_es,
+    multiply_df,
     remove_columns,
     standardize_schema,
 )
@@ -75,6 +76,9 @@ class CaseBuilder(object):
         acl_df = self.populate_ssm_acl(maf_df, all_maf_cases)
 
         df = df.join(acl_df, on=['case_id'], how='left')
+
+        # TODO Sync this with the multiplication in maf.py.
+        df = multiply_df(df, 'case_id', 1)
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.df_repartition, 'case_id')
