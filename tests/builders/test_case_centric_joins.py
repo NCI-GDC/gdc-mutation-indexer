@@ -15,12 +15,12 @@ class TestCaseCentricJoins(BaseJoinsTest):
     Test case_centric index joins
 
         case{}
-             |___ gene[]
-                     |___ ssm[]
-                           |___ consequence[]
-                           |             |_____ transcript{}
-                           |                          |_____ annotation{}
-                           |___ observation[]
+        |___gene[]
+            |___ssm[]
+                |___consequence[]
+                    |___transcript{}
+                        |___annotation{}
+                |___observation[]
 
     """
 

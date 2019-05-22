@@ -13,28 +13,27 @@ logger = logging.getLogger('clinical_annotation')
 def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fields=None):
     mapping = select_mapping(index_name, 'ssm')
 
-    """
-    Takes the structure from a mapping and produces arguments for a select
-    to reorganize a flat dataframe of those fields into the desired structure.
-    Eg:
-    Given the mapping:
-    ```
-    properties:
-      clinical_annotations:
-        properties:
-          civic:
-            properties:
-              gene_id:
-                type: keyword
-              variant_id:
-                type: keyword
-        type: nested
-    ```
-    Produce the select arguments:
-    
-    """
-
     def restructure(doc, parent_name):
+        """
+        Takes the structure from a mapping and produces arguments for a select
+        to reorganize a flat dataframe of those fields into the desired structure.
+        Eg:
+        Given the mapping:
+        ```
+        properties:
+          clinical_annotations:
+            properties:
+              civic:
+                properties:
+                  gene_id:
+                    type: keyword
+                  variant_id:
+                    type: keyword
+            type: nested
+        ```
+        Produce the select arguments:
+        """
+
         cols = []
         if type(doc) is dict:
             for k, v in doc.items():

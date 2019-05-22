@@ -50,6 +50,8 @@ class CivicBuilder(ClinicalAnnotationBuilder):
 
     def combine_with_maf(self, maf_df):
         self.logger.info('Number of columns MAF data frame: {}'.format(len(maf_df.columns)))
+        maf_df_count = maf_df.count()
+        self.logger.info(str(maf_df_count))
         for k, v in self.sources.items():
             file_path = resource_filename(Requirement.parse(
                 'mutationindexerresource'), 'clinical_variant_annotation/civic/{}'.format(v)

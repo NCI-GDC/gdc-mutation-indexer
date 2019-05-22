@@ -34,8 +34,8 @@ class BaseJoinsTest:
         Example:
             Given dataframe of format:
                 ssm{}
-                  |____ ssm_id
-                  |____ consequence[]
+                    |___ ssm_id
+                    |___ consequence[]
                              |___consequence_id
 
             unpack_df_join(
