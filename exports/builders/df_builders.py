@@ -62,8 +62,12 @@ def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
     logger.info('Clinical annotation')
     logger.info(clinical_anno_df.first())
     df = get_single_df(input_df, index_name, 'ssm',
-                         add_fields,  drop_fields, unique_fields, ignore)
+                       add_fields,  drop_fields, unique_fields, ignore)
+    logger.info('Frame before joining')
+    logger.info(df.first())
     df = df.join(clinical_anno_df, on='ssm_id', how='left')
+    logger.info('Frame after joining')
+    logger.info(df.first())
     return df
 
 

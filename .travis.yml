@@ -50,4 +50,4 @@ script:
   - java -version
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
-  - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
+  - "py.test tests/builders/test_df_builders.py -vvv -s -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
