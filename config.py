@@ -136,6 +136,7 @@ class BaseConfig(object):
         'diagnoses.metastasis_at_diagnosis',
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
+        'diagnoses.vascular_invasion_type',
 
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
