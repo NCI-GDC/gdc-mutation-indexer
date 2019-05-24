@@ -51,7 +51,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 FORMATTED_MAF_KEYWORDS = 'DR-10.0.somatic.maf.gz'
 PROTECTED_MAF_KEYWORDS = 'protected.maf.gz'
 
