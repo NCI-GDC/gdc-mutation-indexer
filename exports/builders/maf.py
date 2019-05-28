@@ -36,7 +36,7 @@ class MAFBuilder(BaseInputBuilder):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
         self.schema = self.get_schema()
-        self.annotation_builder = CivicBuilder(config, sqlContext)
+        self.annotation_builders = [CivicBuilder(config, sqlContext)]
 
     def build_from_scratch(self):
         """
@@ -77,7 +77,8 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
-        df = self.annotation_builder.build_with_maf(df)
+        for builder in self.annotation_builders:
+            df = builder.merge_with_maf(df)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.df_repartition, 'ssm_id')

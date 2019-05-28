@@ -16,7 +16,7 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fiel
     def restructure(doc, parent_name):
         """
         Takes the structure from a mapping and produces arguments for a select
-        to reorganize a flat dataframe of those fields into the desired structure.
+        to reorganize a flat dataframe of clinical annotations into the desired structure.
         Eg:
         Given the mapping:
         ```

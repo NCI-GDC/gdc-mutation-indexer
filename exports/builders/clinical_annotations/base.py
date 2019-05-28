@@ -26,7 +26,7 @@ class ClinicalAnnotationBuilder(BaseInputBuilder):
 
         return df
 
-    def combine_with_maf(self, maf_df):
+    def merge_with_maf(self, maf_df):
         pass
 
     def standardize_schema_with_maf(self, df, maf_df, field_not_none=None):

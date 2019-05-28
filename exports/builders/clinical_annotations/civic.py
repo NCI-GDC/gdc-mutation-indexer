@@ -19,7 +19,7 @@ logging.basicConfig(format=LOG_FORMAT)
 
 class CivicBuilder(ClinicalAnnotationBuilder):
     """
-    Class responsible for assembling maf files into a single dataframe with
+    Class responsible for assembling CIVIC annotation into a single dataframe with
     uniform features
     """
 
@@ -27,20 +27,19 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         super(CivicBuilder, self).__init__(config, sqlContext)
         self.sources, self.schema = self.get_resouce()
 
-    def build_with_maf(self, df):
-        """
-        Builds a master MAF dataframe by combining individual MAFs and
-        augmenting them with additional features
-        """
-
-        return self.combine_with_maf(df)
-
     def merge_columns_by_name(self, df, adding_fields):
+        """
+        Civic has multiple (two) files to be merged. Each of these two files contain different parts of information to be merged.
+        This function will be called multiple times (one time for every file).
+        :param df:
+        :param adding_fields: fields to be added from a file
+        :return:
+        """
         def get_first_not_null(*cols):
             for col in cols:
                 if col is not None:
                     return col
-            return 'null'
+            return None
 
         for field in adding_fields:
             cols = [col('{}_{}'.format(field, k)) for k in self.sources.keys()]
@@ -48,18 +47,18 @@ class CivicBuilder(ClinicalAnnotationBuilder):
             df = remove_columns(df, *cols)
         return df
 
-    def combine_with_maf(self, maf_df):
-        self.logger.info('Number of columns MAF data frame: {}'.format(len(maf_df.columns)))
-        maf_df_count = maf_df.count()
-        self.logger.info(str(maf_df_count))
+    def merge_with_maf(self, maf_df):
+        """
+        Builds a CIVIC dataframe by merging with existing MAF and
+        augmenting them with additional features
+        """
         for k, v in self.sources.items():
             file_path = resource_filename(Requirement.parse(
                 'mutationindexerresource'), 'clinical_variant_annotation/civic/{}'.format(v)
             )
-            self.logger.info('File path: {}'.format(file_path))
             try:
+                # read Civic annotation from csv files into pandas dataset
                 pd_df = pd.read_table(file_path)  # , sep='\t')
-                # new_df = self.file_to_df(file_path)
                 new_df = self.sqlContext.createDataFrame(pd_df)
                 maf_df = self.standardize_schema_with_maf(new_df, maf_df, k)
 
@@ -69,17 +68,11 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         adding_fields = [k for (k, v) in self.schema.items() if v.get('src_key') is None]
 
         maf_df = self.merge_columns_by_name(maf_df, adding_fields)
-        self.logger.info('Data frame after joining')
-        self.logger.info('Number of columns MAF data frame: {}'.format(len(maf_df.columns)))
-        maf_df_first = maf_df.first()
-        maf_df_count = maf_df.count()
-        self.logger.info(str(maf_df_first))
-        self.logger.info(str(maf_df_count))
         return maf_df
 
     def standardize_schema_with_maf(self, df, maf_df, dataset_key=None):
         """
-        Renames and select required columns from the MAF documents
+        Renames and select required columns for Civic annotation
         """
         if dataset_key is None:
             default_to_none = []
@@ -91,7 +84,6 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         df_columns = set(df.columns)
 
         # Map old columns to their new names as given in the schema.
-        # Some columns are optional; supply None values for those as specified.
         def standardize(new_column, props, dataset_key):
             old_column = props['src_field']
 
@@ -109,6 +101,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         return df
 
     def get_resouce(self):
+        # read Civic annotation from csv files into pandas dataset
         path = resource_filename('exports.schemas.clinical_annotations', 'civic.yml')
         with open(path, 'r') as f:
             s_yaml = yaml.load(f, Loader=yaml.SafeLoader)

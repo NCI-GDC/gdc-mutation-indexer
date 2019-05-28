@@ -96,11 +96,11 @@ class TestDFBuildersBase:
     @classmethod
     def assert_from_df(cls, df, row, join_by, mapping=None):
         item = row.asDict(recursive=True)
-        print('join_by: {}'.format(join_by))
-        df = df.filter(col(join_by) == item[join_by]).first().asDict(recursive=True)
-        print(df.items())
-        print(item)
-        assert cls.is_sub(item, df.items(), mapping)
+        filtered_dict = {}
+        filtered_list = df.filter(col(join_by) == item[join_by]).collect()
+        for it in filtered_list:
+            filtered_dict.update(it.asDict(recursive=True))
+        assert cls.is_sub(item, filtered_dict.items(), mapping)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')

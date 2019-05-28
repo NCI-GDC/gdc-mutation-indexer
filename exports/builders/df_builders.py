@@ -59,16 +59,10 @@ def get_gene_df(input_df, index_name, add_fields=[], drop_fields=[],
 def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
                unique_fields=None, ignore=[]):
     clinical_anno_df = get_clinical_annotation_df(index_name, input_df)
-    logger.info('Clinical annotation')
-    logger.info(clinical_anno_df.first())
     df = get_single_df(input_df, index_name, 'ssm',
-                       add_fields,  drop_fields, unique_fields, ignore)
-    logger.info('Frame before joining')
-    logger.info(df.first())
+                       add_fields,  [], unique_fields, ignore)
     df = df.join(clinical_anno_df, on='ssm_id', how='left')
-    logger.info('Frame after joining')
-    logger.info(df.first())
-    return df
+    return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
 
 
 def get_cnv_df(input_df, index_name, add_fields=[], drop_fields=[],
