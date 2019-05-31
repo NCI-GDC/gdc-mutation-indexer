@@ -77,14 +77,13 @@ class TestDFBuildersBase:
 
     @classmethod
     def is_sub(cls, subset, superset, mapping=None):
-
         result = True
         for item in subset.items():
             (key, val) = item
             if type(val) is dict:
-                result = result and cls.is_sub(val, superset)
+                result = result and cls.is_sub(val, superset, mapping)
             elif item not in superset:
-                if val is not None:
+                if key in mapping and val is not None:
                     if (mapping[key].get('default'), val) in superset:
                         continue
                     print 'item not in superset:', item
@@ -97,8 +96,11 @@ class TestDFBuildersBase:
     @classmethod
     def assert_from_df(cls, df, row, join_by, mapping=None):
         item = row.asDict(recursive=True)
-        df = df.filter(col(join_by) == item[join_by]).first().asDict(recursive=True)
-        assert cls.is_sub(item, df.items(), mapping)
+        filtered_dict = {}
+        filtered_list = df.filter(col(join_by) == item[join_by]).collect()
+        for it in filtered_list:
+            filtered_dict.update(it.asDict(recursive=True))
+        assert cls.is_sub(item, filtered_dict.items(), mapping)
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -156,4 +158,3 @@ class TestDFBuilders(TestDFBuildersBase):
         get_function, input_df, _ = get_inputs
         df = get_function(input_df, index_type, add_fields=['case_id'])
         assert 'case_id' in df.columns
-
