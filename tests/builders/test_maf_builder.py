@@ -246,4 +246,3 @@ class TestMAFBuilder:
                         is_matching = re.search(pattern.replace('{}', '.*'),
                                                 val)
                         assert is_matching
-
