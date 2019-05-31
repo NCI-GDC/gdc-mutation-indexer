@@ -123,8 +123,13 @@ class BaseConfig(object):
         'files',
         'project.disease_type',
         'project.primary_site',
+        'project.releasable',
+        'project.released',
+        'project.state',
         'tissue_source_site',
         '*_ids',
+        '*.updated_datetime',
+        '*.created_datetime',
 
         # Fields omitted from *_centric models that have values in graph index
         'demographic.age_at_index',
