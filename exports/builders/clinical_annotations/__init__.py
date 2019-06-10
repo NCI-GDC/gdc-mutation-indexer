@@ -1,10 +1,7 @@
-from exports.builders.utils import select_mapping
 from pyspark.sql.functions import (
     struct, col,
 )
-
-from civic import CivicBuilder
-from base import ClinicalAnnotationBuilder
+from exports.builders.utils import select_mapping
 
 import logging
 logger = logging.getLogger('clinical_annotation')
@@ -31,7 +28,6 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fiel
                     type: keyword
             type: nested
         ```
-        Produce the select arguments:
         """
 
         cols = []

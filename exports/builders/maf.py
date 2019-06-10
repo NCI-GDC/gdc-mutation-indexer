@@ -89,6 +89,9 @@ class MAFBuilder(BaseInputBuilder):
 
         return df
 
+    def get_annotation_schemas(self):
+        return [ann.schema for ann in self.annotation_builders]
+
     def map_transform(self, df):
         """
         Transforms maf_df according to maf.yml :type and :pattern

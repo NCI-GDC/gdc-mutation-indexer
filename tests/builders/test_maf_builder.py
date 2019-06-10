@@ -38,6 +38,11 @@ class TestMAFBuilder:
 
         return maf_schema
 
+    @pytest.fixture
+    def annotation_schemas(self, sqlContext):
+        builder = MAFBuilder(conf, sqlContext)
+        return builder.get_annotation_schemas()
+
     def test_patch_url(self, sqlContext):
         ''' Test that s3 urls are patched correctly '''
         builder = MAFBuilder(conf, sqlContext)
@@ -214,14 +219,13 @@ class TestMAFBuilder:
         assert '_case_submitter_id' in df.columns
         assert (df.where(df.tumor_sample_barcode
                          == 'TCGA-A4-A6HP-01A-11D-A31X-10')
-                  .select('_case_submitter_id')
-                  .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
+                .select('_case_submitter_id')
+                .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
 
     def test_maf_field_types(self, maf_df):
         """
         Test that maf_df field types correspond to maf.yml
         """
-
         types = {'int': 'integer', 'bool': 'boolean', 'float': 'float'}
         for col in maf_df.schema:
             col_info = json.loads(col.json())
@@ -233,7 +237,6 @@ class TestMAFBuilder:
         """
         Test that maf_df field pattern correspond to maf.yml
         """
-
         for col in maf_df.schema:
             col_info = json.loads(col.json())
             colname = col_info['name']
@@ -246,3 +249,7 @@ class TestMAFBuilder:
                         is_matching = re.search(pattern.replace('{}', '.*'),
                                                 val)
                         assert is_matching
+
+    def test_annotations(self, annotation_schemas, maf_df):
+        for k in annotation_schemas.keys():
+            assert k in maf_df.schema

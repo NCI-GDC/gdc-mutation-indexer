@@ -4,11 +4,11 @@ import pandas as pd
 
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import (
-    lit, col, udf
+    col, udf
 )
 
 from exports.builders.clinical_annotations.base import ClinicalAnnotationBuilder
-from exports.builders.utils import remove_columns
+from exports.builders.utils import remove_columns, get_column_name
 
 from pkg_resources import resource_filename, Requirement
 
@@ -25,7 +25,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
 
     def __init__(self, config, sqlContext):
         super(CivicBuilder, self).__init__(config, sqlContext)
-        self.sources, self.schema = self.get_resouce()
+        self.sources, self.schema = self._get_resource()
 
     def merge_columns_by_name(self, df, adding_fields):
         """
@@ -89,7 +89,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
 
             if old_column in df_columns:
                 if not props.get('src_key'):
-                    new_column = '{}_{}'.format(new_column, dataset_key)
+                    new_column = get_column_name(new_column, dataset_key)
                 return col(old_column).alias(new_column)
             elif old_column not in default_to_none:
                 raise KeyError(
@@ -100,7 +100,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         df = maf_df.join(df, joining_fields, 'left')
         return df
 
-    def get_resouce(self):
+    def _get_resource(self):
         # read Civic annotation from csv files into pandas dataset
         path = resource_filename('exports.schemas.clinical_annotations', 'civic.yml')
         with open(path, 'r') as f:
