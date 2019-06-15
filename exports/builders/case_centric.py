@@ -46,14 +46,19 @@ class CaseCentricBuilder(BaseBuilder):
             if self.case_centric is not None:
                 return self
 
-        self.log('Building Gene subtree')
-        gene_subtree = self.build_gene_subtree(maf_df, gistic_df)
+        # Default to joins structure
+        case_centric = case_df
+        if self.config.structure == 'nested':
+            # keep gene
+            self.log('Building Gene subtree')
+            gene_subtree = self.build_gene_subtree(maf_df, gistic_df)
 
-        self.log('Join Case with Gene subtree [left, case_id]')
-        case_centric = (
-            case_df.join(gene_subtree,
-                         on=['case_id'], how='left')
-        )
+            self.log('Join Case with Gene subtree [left, case_id]')
+            case_centric = (
+                case_df.join(gene_subtree,
+                             on=['case_id'], how='left')
+            )
+
         self.log_count(case_centric)
 
         self.log('Finalizing case_centric build')

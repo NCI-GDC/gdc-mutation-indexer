@@ -20,7 +20,7 @@ logging.basicConfig(format=LOG_FORMAT)
 
 class GeneCentricBuilder(BaseBuilder):
     """
-    Builds gene-centric dataframe given case and maf dataframes::
+    Builds gene-centric dataframe given case and maf dataframes:
 
         gene{}
              |___ case[]
@@ -59,16 +59,21 @@ class GeneCentricBuilder(BaseBuilder):
         gene_df = gene_df.union(gistic_gene_df).distinct()
         self.log_count(gene_df)
 
-        self.log('Building Case subtree')
-        case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df)
+        # Default to joins structure
+        gene_centric = gene_df
+        if self.config.structure == 'nested':
 
-        self.log('Joining Gene with Case subtree [inner, "gene_id"]')
-        gene_centric = (
-            gene_df.join(case_subtree,
-                         gene_df.gene_id == case_subtree.gene_id,
-                         'inner')
-                   .drop(case_subtree.gene_id)
-        )
+            self.log('Building Case subtree')
+            case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df)
+
+            self.log('Joining Gene with Case subtree [inner, "gene_id"]')
+            gene_centric = (
+                gene_df.join(case_subtree,
+                             gene_df.gene_id == case_subtree.gene_id,
+                             'inner')
+                       .drop(case_subtree.gene_id)
+            )
+
         self.log_count(gene_centric)
 
         self.gene_centric = gene_centric

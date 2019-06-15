@@ -72,4 +72,9 @@ class BuildArgs(BaseParser):
                 'help': 'Debug mode. More explicit logging but slower.',
                 'action': 'store_true',
             },
+            'structure': {
+                'help': 'Case/gene are fully nested or replaced with case_id/gene_id in joins',
+                'choices': ['joins', 'nested'],
+                'default': 'joins',
+            }
         }

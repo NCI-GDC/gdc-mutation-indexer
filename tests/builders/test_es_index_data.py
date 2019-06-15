@@ -13,19 +13,41 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data', 'es_client',
-                         'cnv_occurrence_centric_df', 'cnv_centric_df',
-                         'gene_centric_df', 'ssm_centric_df',
-                         'ssm_occurrence_centric_df'
-                         )
-class TestCentricCounts:
-    # NOTE: case_centric has its own special counting method.
-    @pytest.mark.parametrize('doc_type',
-                             ['cnv_centric', 'cnv_occurrence_centric',
-                              'gene_centric', 'ssm_centric',
-                              'ssm_occurrence_centric'])
-    def test_centric_count(self, doc_type, maf_df, gistic_df, test_data,
-                           es_client):
+# @pytest.mark.usefixtures(#'case_for_cnv_joins_centric_df',
+#                          #'case_for_ssm_joins_centric_df',
+#                          'gene_for_joins_centric_df')
+
+# class TestJoins:
+
+#     def test_one(self, case_for_ssm_joins_centric_df):
+#         pass
+
+#     def test_two(self, case_for_cnv_joins_centric_df):
+#         pass
+
+#     def test_three(self, gene_for_joins_centric_df):
+#         pass
+
+@pytest.mark.usefixtures('gistic_df', 'cnv_centric_df', 'test_data', 'es_client')
+class TestCNVCentricData:
+
+    def test_cnv_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        doc_type = 'cnv_centric'
+        expected_count = TestDataStats.get_stats(
+            maf_df, gistic_df, test_data, doc_type)['count']
+
+        built_count = get_es_doc_count(es_client,
+                                       conf.indices[doc_type],
+                                       doc_type)
+        assert built_count == expected_count
+
+
+@pytest.mark.usefixtures('gistic_df', 'test_data', 'es_client',
+                         'cnv_occurrence_centric_df')
+class TestCNVOccurrenceCentricData:
+
+    def test_cnv_occurrence_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        doc_type = 'cnv_occurrence_centric'
         expected_count = TestDataStats.get_stats(
             maf_df, gistic_df, test_data, doc_type)['count']
 
@@ -86,6 +108,17 @@ class TestCaseCentricData:
                          'gene_centric_df', 'es_client')
 class TestGeneCentricData:
 
+    doc_type = 'gene_centric'
+
+    def test_gene_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                                 self.doc_type)['count']
+        built_count = get_es_doc_count(es_client,
+                                       conf.indices[self.doc_type],
+                                       self.doc_type)
+
+        assert built_count == expected_count
+
     @pytest.mark.parametrize('stat', ['Nprojects',
                                       'Ncases',
                                       'Ngenes',
@@ -94,7 +127,7 @@ class TestGeneCentricData:
     @pytest.mark.skipif(conf.indices_are_pruned, reason='n/a if pruned')
     def test_gene_centric_summary_stats(self, es_client, maf_stats, stat):
         docs = es_client.search(
-            index=conf.indices['gene_centric'],
+            index=conf.indices[self.doc_type],
             doc_type='gene_centric',
             body={"query": {"match_all": {}}},
             size=1000
@@ -110,6 +143,16 @@ class TestGeneCentricData:
                          'es_client')
 class TestSSMCentricData:
 
+    doc_type = 'ssm_centric'
+
+    def test_ssm_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                                 'ssm_centric')['count']
+        built_count = get_es_doc_count(es_client,
+                                       conf.indices[self.doc_type],
+                                       self.doc_type)
+        assert built_count == expected_count
+
     @pytest.mark.parametrize('stat', ['Nprojects',
                                       'Ncases',
                                       'Ngenes',
@@ -119,8 +162,8 @@ class TestSSMCentricData:
     def test_ssm_centric_summary_stats(self, maf_stats, stat,
                                        es_client):
         docs = es_client.search(
-            index=conf.indices['ssm_centric'],
-            doc_type='ssm_centric',
+            index=conf.indices[self.doc_type],
+            doc_type=self.doc_type,
             body={"query": {"match_all": {}}},
             size=1000
         )['hits']['hits']
@@ -135,6 +178,17 @@ class TestSSMCentricData:
                          'ssm_occurrence_centric_df', 'es_client')
 class TestSSMOccurrenceCentricData:
 
+    doc_type = 'ssm_occurrence_centric'
+
+    def test_ssm_occurrence_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                                 'ssm_occurrence_centric')['count']
+        built_count = get_es_doc_count(es_client,
+                                       conf.indices[self.doc_type],
+                                       self.doc_type)
+
+        assert built_count == expected_count
+
     @pytest.mark.parametrize('stat', ['Nprojects',
                                       'Ncases',
                                       'Ngenes',
@@ -144,8 +198,8 @@ class TestSSMOccurrenceCentricData:
     def test_ssm_occurrence_centric_summary_stats(self, maf_stats, stat,
                                                   es_client):
         docs = es_client.search(
-            index=conf.indices['ssm_occurrence_centric'],
-            doc_type='ssm_occurrence_centric',
+            index=conf.indices[self.doc_type],
+            doc_type=self.doc_type,
             body={"query": {"match_all": {}}},
             size=1000
         )['hits']['hits']

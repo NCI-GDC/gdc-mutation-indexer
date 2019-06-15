@@ -52,6 +52,7 @@ class ConsequenceBuilder(object):
         # empty, canonical_tracript_id, is_canonical,
         # do_not_us, consequence_type, aa_change
         # refs_seq_accession}
+
         ssm_tran = self.build_all_effects_cols(maf_df)
 
         ann_df = get_annotation_df(ssm_tran, index_name, add_fields=['ssm_id'],
@@ -81,9 +82,17 @@ class ConsequenceBuilder(object):
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
             tran_with_ann = (tran_with_ann.join(gene_df, on='gene_id'))
 
+        elif self.config.structure == "joins":
+            # we need the gene.gene_id for ssm_centric
+            tran_with_ann = tran_with_ann.select(struct('gene_id')
+                                                 .alias('gene'),
+                                                 *tran_with_ann.drop('gene_id'))
+
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
-        tran_with_ann = tran_with_ann.drop('gene_id').drop('empty')
+        tran_with_ann = tran_with_ann.drop('empty')
+        if self.config.structure == "nested":
+            tran_with_ann = tran_with_ann.drop('gene_id')
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',
@@ -134,16 +143,28 @@ class ConsequenceBuilder(object):
         consequence[]
                 |_____ gene{}
         """
-
-        # Create gene structure
-        cons_df = (
-            gistic_df.select(
-                'cnv_id',
-                struct(*struct_select(index_name, 'consequence'))
-                .alias('consequence')
-            ).groupby('cnv_id')
-             .agg(collect_set('consequence').alias('consequence'))
-        )
+        if self.config.structure == "nested":
+            # Create gene structure
+            cons_df = (
+                gistic_df.select(
+                    'cnv_id',
+                    struct(*struct_select(index_name, 'consequence'))
+                    .alias('consequence')
+                ).groupby('cnv_id')
+                .agg(collect_set('consequence').alias('consequence'))
+            )
+        else:
+            # simplified gene structure
+            cons_df = (
+                gistic_df.select(
+                    'cnv_id',
+                    struct('consequence_id',
+                           struct('gene_id')
+                           .alias('gene'))
+                    .alias('consequence')
+                ).groupby('cnv_id').agg(collect_set('consequence')
+                                        .alias('consequence'))
+            )
 
         return cons_df
 
