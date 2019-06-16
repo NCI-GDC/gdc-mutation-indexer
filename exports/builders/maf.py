@@ -58,7 +58,7 @@ class MAFBuilder(BaseInputBuilder):
         # TODO See what happens if we invent more SSMs per case here.
         # Do this before minting the occurrence/observation IDs as those take
         # the SSM ID as input.
-        df = multiply_df(df, 'ssm_id', 10)
+        df = multiply_df(df, 'ssm_id', 1)
 
         # Create occurrence_id
         df = self.add_occurrence_id(df)

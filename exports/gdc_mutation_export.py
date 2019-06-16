@@ -12,6 +12,7 @@ from builders import (
     CaseBuilder,
     CaseCentricBuilder,
     GeneCentricBuilder,
+    ScoreCentricBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
@@ -34,6 +35,7 @@ class GDCMutationExport(object):
         self.builders = [
             CaseCentricBuilder,
             GeneCentricBuilder,
+            ScoreCentricBuilder,
             SSMCentricBuilder,
             SSMOccurrenceCentricBuilder,
             CNVCentricBuilder,

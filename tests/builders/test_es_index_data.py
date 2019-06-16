@@ -139,6 +139,22 @@ class TestGeneCentricData:
         assert gene_stat == maf_stat
 
 
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data',
+                         'score_centric_df', 'es_client')
+class TestScoreCentricData:
+
+    doc_type = 'score_centric'
+
+    def test_score_centric_count(self, maf_df, gistic_df, test_data, es_client):
+        expected_count = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+                                                 self.doc_type)['count']
+        built_count = get_es_doc_count(es_client,
+                                       conf.indices[self.doc_type],
+                                       self.doc_type)
+
+        assert built_count == expected_count
+
+
 @pytest.mark.usefixtures('maf_df', 'gistic_df', 'test_data', 'ssm_centric_df',
                          'es_client')
 class TestSSMCentricData:

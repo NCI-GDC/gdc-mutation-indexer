@@ -80,19 +80,11 @@ class ConsequenceBuilder(object):
             gene_df = self._build_gene_struct(maf_df, index_name)
 
             # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
-            tran_with_ann = (tran_with_ann.join(gene_df, on='gene_id'))
-
-        elif self.config.structure == "joins":
-            # we need the gene.gene_id for ssm_centric
-            tran_with_ann = tran_with_ann.select(struct('gene_id')
-                                                 .alias('gene'),
-                                                 *tran_with_ann.drop('gene_id'))
+            tran_with_ann = tran_with_ann.join(gene_df, on='gene_id')
 
         # => {ssm_id, consequence {transcript:
         #       {transcript_id, *transcript_fields}}}
-        tran_with_ann = tran_with_ann.drop('empty')
-        if self.config.structure == "nested":
-            tran_with_ann = tran_with_ann.drop('gene_id')
+        tran_with_ann = tran_with_ann.drop('empty', 'gene_id')
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn('consequence_id',
@@ -261,11 +253,17 @@ class ConsequenceBuilder(object):
     def _build_gene_struct(self, maf_df, index_name):
         # Build and join the gene if required
 
-        to_drop = ['transcripts', 'description', 'canonical_transcript_length',
-                   'name', 'canonical_transcript_length_cds',
-                   'canonical_transcript_length_genomic']
+        if self.config.structure == 'nested':
+            to_drop = ['transcripts', 'description',
+                       'canonical_transcript_length', 'name',
+                       'canonical_transcript_length_cds',
+                       'canonical_transcript_length_genomic']
 
-        gene_df = get_gene_df(maf_df, index_name, drop_fields=to_drop)
+            gene_df = get_gene_df(maf_df, index_name, drop_fields=to_drop)
+        else:
+            # If we're not nesting all of the gene data, we only need the IDs.
+            gene_df = maf_df.select('gene_id').dropDuplicates()
+
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))
         return gene_struct_df

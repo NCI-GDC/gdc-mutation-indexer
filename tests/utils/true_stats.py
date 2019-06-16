@@ -129,6 +129,15 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
+    def score_centric_stats(maf_df, gistic_df, data):
+        count = (
+            maf_df.select('case_id', 'gene_id').union(
+              gistic_df.select('case_id', 'gene_id')
+            ).distinct().count()
+        )
+        return {'count': count}
+
+    @staticmethod
     def ssm_centric_stats(maf_df, gistic_df, data):
         """
         ssm{}

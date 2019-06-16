@@ -71,14 +71,14 @@ class SSMCentricBuilder(BaseBuilder):
         Check config.structure. If nested, add gene info, otherwise no.
         """
         # Default to joins
-        join_gene = add_gene_aa_change = False
-        if self.config.structure == 'nested':
-            join_gene = add_gene_aa_change = True
+        # TODO Not sure how to handle AA change. We probably want it even with
+        # joins, but need to rearrange consequence builder more to get it.
+        add_gene_aa_change = (self.config.structure == 'nested')
 
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build_for_ssm(maf_df,
                                   self.index_name,
-                                  join_gene=join_gene,
+                                  join_gene=True,
                                   add_gene_aa_change=add_gene_aa_change))
         return cons_df
 
