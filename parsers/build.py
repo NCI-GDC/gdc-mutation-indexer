@@ -77,5 +77,15 @@ class BuildArgs(BaseParser):
                 'help': 'Case/gene are fully nested or replaced with case_id/gene_id in joins',
                 'choices': ['joins', 'nested'],
                 'default': 'joins',
-            }
+            },
+            'multiply-case': {
+                'help': 'Multiply the number of cases by this factor',
+                'type': int,
+                'default': 1,
+            },
+            'multiply-ssm': {
+                'help': 'Multiply the number of SSMs by this factor',
+                'type': int,
+                'default': 1,
+            },
         }

@@ -77,8 +77,8 @@ class CaseBuilder(object):
 
         df = df.join(acl_df, on=['case_id'], how='left')
 
-        # TODO Sync this with the multiplication in maf.py.
-        df = multiply_df(df, 'case_id', 1)
+        # TODO Try artificially creating fake cases based on real ones.
+        df = multiply_df(df, 'case_id', self.config.multiply_case)
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.df_repartition, 'case_id')
