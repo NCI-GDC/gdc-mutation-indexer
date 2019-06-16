@@ -5,7 +5,11 @@ from exports.builders import (
     ConsequenceBuilder,
     ObservationBuilder,
 )
-from exports.builders.df_builders import build_cnv_subtree, build_ssm_subtree
+from exports.builders.df_builders import (
+    build_cnv_subtree,
+    build_ssm_subtree,
+    get_gene_df,
+)
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.utils import uuid5_col
 
@@ -95,11 +99,12 @@ class ScoreCentricBuilder(BaseBuilder):
         gm_df = gm_df.withColumnRenamed('_gene_id', 'gene_id')
 
         if self.config.structure == 'nested':
-            subtree_columns = gm_df.columns
+            gene_subtree = (
+                get_gene_df(gm_df, self.index_name)
+                .select(struct(col('*')).alias('gene'))
+            )
         else:
-            subtree_columns = 'gene_id'
-
-        gene_subtree = gm_df.select(struct(subtree_columns).alias('gene'))
+            gene_subtree = gm_df.select(struct('gene_id').alias('gene'))
 
         self.log_count(gene_subtree)
         return gene_subtree
