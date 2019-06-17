@@ -55,9 +55,7 @@ class MAFBuilder(BaseInputBuilder):
         # ssm_id from hashing unique columns in the maf
         df = self.add_ssm_id(df)
 
-        # TODO See what happens if we invent more SSMs per case here.
-        # Do this before minting the occurrence/observation IDs as those take
-        # the SSM ID as input.
+        # Optionally scale up the size of the SSM data.
         df = multiply_df(df, 'ssm_id', self.config.multiply_ssm)
 
         # Create occurrence_id
@@ -83,7 +81,7 @@ class MAFBuilder(BaseInputBuilder):
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
 
-        # TODO Also try inventing more mutated cases here.
+        # Match the scaling of the case dataframe so the IDs line up.
         df = multiply_df(df, 'case_id', self.config.multiply_case)
 
         self.logger.info('Repartitioning MAF dataframe')

@@ -14,6 +14,7 @@ from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import (
     map_create_column,
     melt_df,
+    multiply_df,
     remove_columns,
     uuid5_col,
 )
@@ -63,6 +64,9 @@ class GisticBuilder(BaseInputBuilder):
         # add cnv_id
         gistic_df = self._add_cnv_id(gistic_df)
 
+        # Optionally scale up the size of the CNV data,
+        gistic_df = multiply_df(gistic_df, 'cnv_id', self.config.multiply_cnv)
+
         # add available variation data
         gistic_df = self._add_available_variation_data(gistic_df)
 
@@ -77,6 +81,11 @@ class GisticBuilder(BaseInputBuilder):
 
         # drop entries with cnv_change == 0 and cast cnv_change to string
         gistic_df = self._cnv_change_to_string_and_drop_zero(gistic_df)
+
+        # Match any scaling of the case dataframe so that the IDs are in sync.
+        gistic_df = multiply_df(gistic_df,
+                                'case_id',
+                                self.config.multiply_case)
 
         self.logger.info('Caching Gistic dataframe')
         # NOTE: Do not remove next step. This is a workaround for

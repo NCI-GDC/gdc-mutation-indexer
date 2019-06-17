@@ -77,7 +77,7 @@ class CaseBuilder(object):
 
         df = df.join(acl_df, on=['case_id'], how='left')
 
-        # TODO Try artificially creating fake cases based on real ones.
+        # Optionally scale up the size of the case data.
         df = multiply_df(df, 'case_id', self.config.multiply_case)
 
         self.logger.info('Repartitioning case dataframe')

@@ -3,8 +3,16 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql.functions import (
-    lit, udf, struct, col, explode, array, when, regexp_extract,
+    array,
+    col,
+    concat_ws,
+    explode,
+    lit,
+    regexp_extract,
+    struct,
+    udf,
     UserDefinedFunction,
+    when,
 )
 from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
@@ -57,13 +65,14 @@ def multiply_df(df, id_column, n):
         return df
 
     sqlContext = df.sql_ctx
-    multiplier_df = sqlContext.createDataFrame([(n,) for n in range(n)],
+    multiplier_df = sqlContext.createDataFrame([(m,) for m in range(n)],
                                                '_temp_n: int')
 
     joined_df = df.crossJoin(multiplier_df)
     joined_df = joined_df.withColumn(id_column,
-                                     joined_df[id_column] + '-' + joined_df._temp_n)
+                                     concat_ws('-', joined_df[id_column], joined_df._temp_n))
     joined_df = joined_df.drop('_temp_n')
+
     return joined_df
 
 

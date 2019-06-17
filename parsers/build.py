@@ -88,4 +88,9 @@ class BuildArgs(BaseParser):
                 'type': int,
                 'default': 1,
             },
+            'multiply-cnv': {
+                'help': 'Multiply the number of CNVs by this factor',
+                'type': int,
+                'default': 1,
+            },
         }
