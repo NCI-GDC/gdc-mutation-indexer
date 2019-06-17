@@ -57,10 +57,14 @@ def multiply_df(df, id_column, n):
         return df
 
     sqlContext = df.sql_ctx
-    multiplier_df = sqlContext.createDataFrame(list(range(n)), ['_temp_n'])
+    multiplier_df = sqlContext.createDataFrame([(n,) for n in range(n)],
+                                               '_temp_n: int')
+
     joined_df = df.crossJoin(multiplier_df)
-    return joined_df.withColumn(id_column,
-                                joined_df[id_column] + '-' + joined_df._temp_n)
+    joined_df = joined_df.withColumn(id_column,
+                                     joined_df[id_column] + '-' + joined_df._temp_n)
+    joined_df = joined_df.drop('_temp_n')
+    return joined_df
 
 
 def get_case_ids_from_source_es(config, sqlContext):
