@@ -2,10 +2,10 @@ import re
 import uuid
 import logging
 from functools import partial
+from pyspark.sql import Row
 from pyspark.sql.functions import (
     array,
     col,
-    concat_ws,
     explode,
     lit,
     regexp_extract,
@@ -64,16 +64,28 @@ def multiply_df(df, id_column, n):
     if n <= 1:
         return df
 
+    # Turn each row to a list and back so we can preserve the field order in
+    # the original schema. Start by figuring out which entry in the list
+    # corresponds to the ID column.
+    column_index = df.columns.index(id_column)
+
+    def multiply_column(row):
+        old_id = row[id_column]
+
+        new_rows = []
+        for i in xrange(n):
+            # Append the counter to make the new IDs unique and predictable.
+            new_row_data = list(row)
+            new_row_data[column_index] = '{}-{}'.format(old_id, i)
+            new_rows.append(Row(*new_row_data))
+
+        return new_rows
+
     sqlContext = df.sql_ctx
-    multiplier_df = sqlContext.createDataFrame([(m,) for m in range(n)],
-                                               '_temp_n: int')
+    new_rdd = df.rdd.flatMap(multiply_column)
+    new_df = sqlContext.createDataFrame(new_rdd, schema=df.schema)
 
-    joined_df = df.crossJoin(multiplier_df)
-    joined_df = joined_df.withColumn(id_column,
-                                     concat_ws('-', joined_df[id_column], joined_df._temp_n))
-    joined_df = joined_df.drop('_temp_n')
-
-    return joined_df
+    return new_df
 
 
 def get_case_ids_from_source_es(config, sqlContext):
