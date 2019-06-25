@@ -14,9 +14,7 @@ from parsers import (
     ParserBuilder,
     S3Args,
     ESArgs,
-    ESHadoopArgs,
-    BuildArgs,
-    SparkArgs,
+    ESHadoopArgs, BuildArgs, SparkArgs,
     IndexdArgs,
 )
 
@@ -133,13 +131,16 @@ class BaseConfig(object):
         'diagnoses.annotations',
         'diagnoses.days_to_diagnosis',
         'diagnoses.icd_10_code',
+        'diagnoses.iss_stage'
         'diagnoses.metastasis_at_diagnosis',
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
+        'diagnoses.treatments.regimen_or_line_of_therapy',
         'diagnoses.vascular_invasion_type',
 
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
+        'treatments.regimen_or_line_of_therapy',
     ]
 
     samples_include_fields = ['samples.sample_type']
