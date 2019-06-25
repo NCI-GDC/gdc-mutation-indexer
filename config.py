@@ -131,7 +131,7 @@ class BaseConfig(object):
         'diagnoses.annotations',
         'diagnoses.days_to_diagnosis',
         'diagnoses.icd_10_code',
-        'diagnoses.iss_stage'
+        'diagnoses.iss_stage',
         'diagnoses.metastasis_at_diagnosis',
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
