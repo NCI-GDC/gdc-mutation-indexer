@@ -11,13 +11,14 @@ from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from exports.es_utils import iterate_es_results
 from indexclient.client import IndexClient
 from parsers import (
-    ParserBuilder,
-    S3Args,
+    BuildArgs,
     ESArgs,
     ESHadoopArgs,
-    BuildArgs,
-    SparkArgs,
     IndexdArgs,
+    ParserBuilder,
+    S3Args,
+    SparkArgs,
+    SparkConfArgs,
 )
 
 
@@ -45,7 +46,8 @@ ALL_PARSERS = [
     ESHadoopArgs,
     IndexdArgs,
     BuildArgs,
-    SparkArgs
+    SparkArgs,
+    SparkConfArgs,
 ]
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)

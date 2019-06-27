@@ -9,6 +9,7 @@ from gdcdatamodel import models as md
 from parsers import (
     ParserBuilder,
     SparkArgs,
+    SparkConfArgs,
 )
 
 from config import (
@@ -126,9 +127,15 @@ def get_spark_args(args):
 
     # Add other spark arguments
     for arg in SparkArgs().arguments:
-        name = '--' + arg
+        name = '--{}'.format(arg)
         value = str(getattr(args, arg.replace('-', '_')))
         spark_args.extend([name, value])
+
+    for arg in SparkConfArgs().arguments:
+        name = arg.replace('-', '.')
+        value = str(getattr(args, arg.replace('-', '_')))
+        spark_args.extend(['--conf', '{}={}'.format(name, value)])
+
     return spark_args
 
 
