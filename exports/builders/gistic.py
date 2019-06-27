@@ -16,6 +16,7 @@ from exports.builders.utils import (
     melt_df,
     multiply_df,
     remove_columns,
+    skew_join,
     uuid5_col,
 )
 from exports.es_utils import iterate_es_results
@@ -214,7 +215,7 @@ class GisticBuilder(BaseInputBuilder):
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
         # add gene info to gistic_df
-        new_df = gistic_df.join(gm_df, gistic_df.gene_id == gm_df._gene_id)
+        new_df = skew_join(gistic_df, gm_df, 'gene_id', '_gene_id')
 
         # Create cnv columns from gene model
         for old, new in gene_to_cnv_col_names.items():

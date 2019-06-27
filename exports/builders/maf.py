@@ -6,10 +6,11 @@ from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
 from elasticsearch import Elasticsearch
 
 from exports.builders.utils import (
-    multiply_df,
-    uuid5_col,
-    ssm_label_col,
     extract_sift_polyphen,
+    multiply_df,
+    skew_join,
+    ssm_label_col,
+    uuid5_col,
 )
 
 from exports.es_utils import (
@@ -75,7 +76,7 @@ class MAFBuilder(BaseInputBuilder):
 
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
+        df = skew_join(df, gm_df, 'gene_id', '_gene_id')
         df = df.drop('_gene_id')
         df = self.add_null(df)
         df = self.add_canonical_transcript_lengths(df)

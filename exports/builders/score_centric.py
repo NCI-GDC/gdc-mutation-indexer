@@ -11,7 +11,7 @@ from exports.builders.df_builders import (
     get_gene_df,
 )
 from exports.builders.gene_model import GeneModelBuilder
-from exports.builders.utils import uuid5_col
+from exports.builders.utils import skew_join, uuid5_col
 
 
 class ScoreCentricBuilder(BaseBuilder):
@@ -59,9 +59,7 @@ class ScoreCentricBuilder(BaseBuilder):
             case_subtree,
             on=(score_df.case_id == case_subtree.case.case_id))
 
-        score_df = score_df.join(
-            gene_subtree,
-            on=(score_df.gene_id == gene_subtree.gene.gene_id))
+        score_df = skew_join(score_df, gene_subtree, 'gene_id', 'gene.gene_id')
 
         score_df = self.add_score_centric_id(score_df)
 

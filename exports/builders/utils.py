@@ -3,6 +3,7 @@ import uuid
 import logging
 from functools import partial
 from pyspark.sql import Row
+import pyspark.sql.functions
 from pyspark.sql.functions import (
     array,
     col,
@@ -10,6 +11,7 @@ from pyspark.sql.functions import (
     lit,
     regexp_extract,
     struct,
+    rand,
     udf,
     UserDefinedFunction,
     when,
@@ -24,6 +26,9 @@ from config import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
+
+# Name of the temporary column used by skew_join.
+SKEW_COLUMN = '_skew_correction_'
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
@@ -86,6 +91,61 @@ def multiply_df(df, id_column, n):
     new_df = sqlContext.createDataFrame(new_rdd, schema=df.schema)
 
     return new_df
+
+
+def skew_join(left, right, left_id, right_id, how=None, skew_correction=10):
+    """
+    Join a large dataframe with a small one, compensating for ID skew.
+
+    Scale the small dataframe (on the right) by the given correction factor,
+    then use that to distribute the rows in the large dataframe (on the left)
+    more evenly during the join. A larger correction factor yields more even
+    partitioning at the expense of a larger temporary right-hand dataframe.
+
+    Mitigate scenarios where, e.g., 50% of the rows in the left-hand dataframe
+    share the same ID and Spark would otherwise shuffle all of those rows into
+    a single partition to carry out the join.
+
+    :param left: Dataframe for the (large) left side of the join.
+    :type left: DataFrame
+    :param right: Dataframe for the (small) right side of the join.
+    :type right: DataFrame
+    :param left_id: Name of the ID column to join in the left dataframe.
+    :type left_id: str
+    :param right_id: Name of the ID column to join in the right dataframe.
+    :type right_id: str
+    :param how: What kind of join to execute. May be inner or left.
+        Defaults to inner.
+    :type how: str
+    :param skew_correction: Scaling factor for correcting skew.
+    :type skew_correction: int
+    :return: A new dataframe with the two joined together.
+    """
+    # Expand the right-hand dataframe with flatMap and this UDF because
+    # the obvious way (crossJoin) sometimes doesn't perform well.
+    def add_skew_column(row):
+        return [row + (i,) for i in xrange(skew_correction)]
+
+    salted_df = left.withColumn(
+        SKEW_COLUMN,
+        pyspark.sql.functions.floor(rand() * skew_correction)
+    )
+
+    sqlContext = right.sql_ctx
+    scaled_rdd = right.rdd.flatMap(add_skew_column)
+    scaled_schema = right.schema.add(SKEW_COLUMN, IntegerType())
+    scaled_df = sqlContext.createDataFrame(scaled_rdd,
+                                           schema=scaled_schema)
+
+    joined_df = salted_df.join(
+        scaled_df,
+        ((salted_df[left_id] == scaled_df[right_id])
+            & (salted_df[SKEW_COLUMN] == scaled_df[SKEW_COLUMN])),
+        how=how
+    )
+    joined_df = joined_df.drop(SKEW_COLUMN)
+
+    return joined_df
 
 
 def get_case_ids_from_source_es(config, sqlContext):
