@@ -272,7 +272,7 @@ class BaseConfig(object):
             file_id_to_name[doc['_id']] = doc['_source']['file_name']
 
         # Get urls from indexd for relevant files
-        maf_urls = []  # NOTE: FM maf name here for controlled data
+        maf_urls = self.include_maf_urls + []
         for file_id, maf_name in file_id_to_name.items():
             if self.maf_passes_project_check(maf_name):
                 maf_url = self.get_url_from_indexd(file_id)

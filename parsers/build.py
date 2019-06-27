@@ -72,4 +72,8 @@ class BuildArgs(BaseParser):
                 'help': 'Debug mode. More explicit logging but slower.',
                 'action': 'store_true',
             },
+            'include-maf-urls': {
+                'help': 'Add additional maf urls that might not be in the graph',
+                'nargs': '*',
+            },
         }
