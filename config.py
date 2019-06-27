@@ -19,6 +19,7 @@ from parsers import (
     ParserBuilder,
     S3Args,
     SparkArgs,
+    SparkConfArgs,
 )
 
 
@@ -46,7 +47,8 @@ ALL_PARSERS = [
     ESHadoopArgs,
     IndexdArgs,
     BuildArgs,
-    SparkArgs
+    SparkArgs,
+    SparkConfArgs,
 ]
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
