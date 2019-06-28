@@ -121,7 +121,8 @@ class GisticBuilder(BaseInputBuilder):
                 new_df = melt_df(new_df,
                                  id_vars=["gene_id"],
                                  var_name="aliquot_id",
-                                 value_name="cnv_change")
+                                 value_name="cnv_change",
+                                 filter_zeroes=True)
 
                 if gistic_df is None:
                     gistic_df = new_df
