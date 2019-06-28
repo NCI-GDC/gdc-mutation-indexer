@@ -7,7 +7,7 @@ import os
 
 from ..mappers.model_mapper import ModelMapper
 
-from config import LOG_FORMAT
+from config import ES_TIMEOUT, LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -27,6 +27,7 @@ class BaseBuilder(object):
         self.debug = config.debug
         self.es = Elasticsearch(self.config.es_host,
                                 port=self.config.es_port,
+                                timeout=ES_TIMEOUT,
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 

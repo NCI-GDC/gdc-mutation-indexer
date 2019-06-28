@@ -21,7 +21,7 @@ from exports.builders.utils import (
 )
 from exports.es_utils import iterate_es_results
 
-from config import LOG_FORMAT
+from config import ES_TIMEOUT, LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -42,6 +42,7 @@ class GisticBuilder(BaseInputBuilder):
         super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
         self.es = Elasticsearch(config.es_host,
                                 port=config.es_port,
+                                timeout=ES_TIMEOUT,
                                 http_auth=(config.es_user,
                                            config.es_pass))
 

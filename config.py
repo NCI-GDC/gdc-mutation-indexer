@@ -57,6 +57,9 @@ VERSION = "0.1.7"
 FORMATTED_MAF_KEYWORDS = 'DR-10.0.somatic.maf.gz'
 PROTECTED_MAF_KEYWORDS = 'protected.maf.gz'
 
+# Default timeout for Elasticsearch requests, in seconds.
+ES_TIMEOUT = 60
+
 
 def get_git_commit(git_dir):
     return subprocess.check_output(
@@ -156,6 +159,7 @@ class BaseConfig(object):
         self.es = Elasticsearch(
             self.es_host,
             port=self.es_port,
+            timeout=ES_TIMEOUT,
             http_auth=(self.es_user, self.es_pass)
         )
         self.indexd = IndexClient(
