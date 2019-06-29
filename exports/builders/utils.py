@@ -97,7 +97,7 @@ def multiply_df(df, id_column, n):
     return new_df
 
 
-def skew_join(left, right, left_id, right_id, how=None, skew_correction=25):
+def skew_join(left, right, left_id, right_id, how=None, skew_correction=16):
     """
     Join a large dataframe with a small one, compensating for ID skew.
 
