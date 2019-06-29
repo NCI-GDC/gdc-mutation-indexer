@@ -80,11 +80,8 @@ class CaseBuilder(object):
         # Optionally scale up the size of the case data.
         df = multiply_df(df, 'case_id', self.config.multiply_case)
 
-        self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.df_repartition, 'case_id')
-
         if self.config.cache_dataframes['cases']:
-            self.logger.info('Caching repartitioned case dataframe')
+            self.logger.info('Caching case dataframe')
             df.cache().count()
 
         return df

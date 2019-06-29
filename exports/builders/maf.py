@@ -86,11 +86,8 @@ class MAFBuilder(BaseInputBuilder):
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
 
-        self.logger.info('Repartitioning MAF dataframe')
-        df = df.repartition(self.config.df_repartition, 'ssm_id')
-
         if self.config.cache_dataframes['mafs']:
-            self.logger.info('Caching repartitioned MAF dataframe')
+            self.logger.info('Caching MAF dataframe')
             df.cache().count()
 
         return df
