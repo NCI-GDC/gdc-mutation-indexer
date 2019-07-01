@@ -1,10 +1,5 @@
 import logging
 
-from parsers import (
-    BuildArgs,
-    S3Args,
-    ESArgs,
-)
 from config import LOG_FORMAT
 from builders import (
     MAFBuilder,
@@ -42,14 +37,33 @@ class GDCMutationExport(object):
             CNVOccurrenceCentricBuilder,
         ]
 
+        self.maf_only_indices = {'ssm_centric', 'ssm_occurrence_centric'}
+        self.gistic_only_indices = {'cnv_centric', 'cnv_occurrence_centric'}
+
+    def need_to_build_maf(self):
+        """Return whether the MAF df is needed given the current config."""
+        return len(set(self.config.index_types) - self.gistic_only_indices) > 0
+
+    def need_to_build_gistic(self):
+        """Return whether the Gistic df is needed given the current config."""
+        return len(set(self.config.index_types) - self.maf_only_indices) > 0
+
     def run_export(self):
         # Combine MAFs into one DataFrame
-        self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
-        maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        if self.need_to_build_maf():
+            self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
+            maf_df = MAFBuilder(self.config, self.sqlContext).build()
+        else:
+            self.logger.warn('Skipping MAF dataframe')
+            maf_df = None
 
         # Combine Gistics into one DataFrame
-        self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
-        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
+        if self.need_to_build_gistic():
+            self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
+            gistic_df = GisticBuilder(self.config, self.sqlContext).build()
+        else:
+            self.logger.warn('Skipping Gistic dataframe')
+            gistic_df = None
 
         # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup('CaseBuilder', 'Build Case dataframe')
@@ -60,10 +74,10 @@ class GDCMutationExport(object):
             index_name = builder.index_name
             if index_name in self.config.index_types:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
-                if index_name in ['ssm_centric', 'ssm_occurrence_centric']:
+                if index_name in self.maf_only_indices:
                     # these builders do not yet depend on gistic_df
                     builder(self.config, self.sqlContext).build(maf_df, case_df).load()
-                elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
+                elif index_name in self.gistic_only_indices:
                     # these builders do not depend on maf_df
                     builder(self.config, self.sqlContext).build(gistic_df, case_df).load()
                 else:
