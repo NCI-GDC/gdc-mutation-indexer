@@ -189,7 +189,6 @@ class MAFBuilder(BaseInputBuilder):
             "_source": ["file_name", "acl"]
         }
 
-        import pdb; pdb.set_trace()
         # Build up dictionary of file_name to acl
         filenames_to_acls = {}
         for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):

@@ -49,8 +49,6 @@ def setup_test_index():
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
-    import pdb; pdb.set_trace()
-
     # if index already exists and we don't need to force rebuild,
     # return existing index
     if es.indices.exists(conf.graph_index):
