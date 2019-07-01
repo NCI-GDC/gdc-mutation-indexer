@@ -48,7 +48,7 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
     # Load common settings file:
     cs_file = pkg_resources.resource_string(
         'normalizer',
-        os.path.join('schemas', 'common_settings.yaml')
+        os.path.join('schemas', 'gdcmi.common.settings.yaml')
     )
     common_settings = yaml.safe_load(cs_file)
 
