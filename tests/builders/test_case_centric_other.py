@@ -1,6 +1,6 @@
 import pytest
 
-from exports.mappers.model_mapper import ModelMapper
+from exports.mappers import ModelMapper
 from utils.true_stats import TestDataStats
 from tests_config import TestConfig
 

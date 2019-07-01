@@ -8,9 +8,9 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
-from exports.mappers.model_mapper import ModelMapper
 from exports.es_utils import iterate_es_results
 from exports.builders.aliquot import AliquotBuilder
+from exports.mappers import ModelMapper
 
 from config import LOG_FORMAT
 

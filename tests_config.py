@@ -20,7 +20,7 @@ class TestConfig(BaseConfig):
             os.makedirs(directory)
 
     # Whether or not to rebuild graph index after every test
-    graph_force_build = False
+    graph_force_build = True
 
     # Whether or not to print document mismatches to stdout when testing
     print_data_errors = False

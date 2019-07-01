@@ -5,9 +5,8 @@ import json
 import logging
 import os
 
-from ..mappers.model_mapper import ModelMapper
-
 from config import LOG_FORMAT
+from exports.mappers import ModelMapper
 
 logging.basicConfig(format=LOG_FORMAT)
 

@@ -18,9 +18,7 @@ from exports.builders.utils import (
 from exports.es_utils import (
     iterate_es_results,
 )
-from exports.mappers.distinct_doctype_model_mapper import (
-    DistinctDocTypeModelMapper
-)
+from exports.mappers import ModelMapper
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
@@ -51,6 +49,8 @@ def setup_test_index():
     print '\n\n\tSETTING UP TEST INDEX\n\n'
     es = Elasticsearch(conf.source_es_host, port=conf.es_port)
 
+    import pdb; pdb.set_trace()
+
     # if index already exists and we don't need to force rebuild,
     # return existing index
     if es.indices.exists(conf.graph_index):
@@ -73,11 +73,9 @@ def create_test_index(es):
     Creating an index in elasticsearch requires all doc_type mapping
     and settings upfront.
     """
-    case_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
-                                                   'case')
+    case_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='case')
 
-    file_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
-                                                   'file')
+    file_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='file')
 
     combined = {'mappings': {}, 'settings': {}}
     combined['mappings'].update(case_model_mapper.index_settings['mappings']) 

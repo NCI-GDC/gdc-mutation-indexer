@@ -181,18 +181,15 @@ class MAFBuilder(BaseInputBuilder):
         file_names = self.config.get_maf_file_names()
 
         query = {
-                "query": {
-                    "bool": {
-                        "must": {
-                            "terms": {
-                                "file_name": file_names
-                                }
-                            }
-                        }
-                    },
-                "_source": ["file_name", "acl"]
+            "query": {
+                "terms": {
+                    "file_name": file_names
+                },
+            },
+            "_source": ["file_name", "acl"]
         }
 
+        import pdb; pdb.set_trace()
         # Build up dictionary of file_name to acl
         filenames_to_acls = {}
         for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):

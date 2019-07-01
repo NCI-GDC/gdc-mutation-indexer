@@ -46,9 +46,10 @@ def test_mapping_settings(mappers, mappings_with_settings, index_name):
     mapper = mappers[index_name]
 
     # Load common settings file:
-    cs_file = pkg_resources.resource_string('exports',
-                                            os.path.join('schemas',
-                                                         'common_settings.yml'))
+    cs_file = pkg_resources.resource_string(
+        'normalizer',
+        os.path.join('schemas', 'common_settings.yaml')
+    )
     common_settings = yaml.safe_load(cs_file)
 
     mapping_settings = mapper.index_settings

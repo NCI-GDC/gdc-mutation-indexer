@@ -7,7 +7,7 @@ from exports.builders.utils import (
     struct_select,
     extract_aas_position,
 )
-from exports.mappers.model_mapper import ModelMapper
+from exports.mappers import ModelMapper
 from tests_config import TestConfig
 from utils.true_stats import TestDataStats
 from exports.builders.utils import (

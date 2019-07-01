@@ -1,1 +1,1 @@
-from model_mapper import ModelMapper
+from normalizer.mapper import ModelMapper
