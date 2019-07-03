@@ -63,7 +63,7 @@ class TestMiscFunctions:
         Test mapping to select
         """
 
-        paths_map = ModelMapper(None).paths_map
+        paths_map = ModelMapper('gdc_from_graph').paths_map
         for mapping in paths_map:
             for index in paths_map[mapping]:
                 stmt = struct_select(index, mapping)
