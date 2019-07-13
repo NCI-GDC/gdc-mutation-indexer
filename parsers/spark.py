@@ -73,6 +73,11 @@ class SparkConfArgs(BaseParser):
     @property
     def arguments(self):
         return {
+            'spark-driver-maxResultSize': {
+                'help': 'Maximum total size of results returned to driver',
+                'default': '1g',
+                'type': str,
+            },
             'spark-sql-autoBroadcastJoinThreshold': {
                 'help': 'Maximum broadcast join table size (-1 to disable)',
                 'default': -1,
