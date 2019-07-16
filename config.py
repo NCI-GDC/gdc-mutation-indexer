@@ -142,6 +142,11 @@ class BaseConfig(object):
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
         'diagnoses.vascular_invasion_type',
+        '*.updated_datetime',
+        '*.created_datetime',
+        'project.releasable',
+        'project.released',
+        'project.state',
 
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',

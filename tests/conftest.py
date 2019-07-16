@@ -248,8 +248,9 @@ def gene_centric_df(sqlContext, maf_df, gistic_df, case_df):
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
+    sub_case_df = case_df.drop('summary')
     builder = GeneCentricBuilder(conf, sqlContext)
-    builder.build(maf_df, gistic_df, case_df)
+    builder.build(maf_df, gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
     builder.load()
@@ -278,8 +279,9 @@ def ssm_centric_df(sqlContext, maf_df, case_df):
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_CENTRIC_DF\n\n')
+    sub_case_df = case_df.drop('summary')
     builder = SSMCentricBuilder(conf, sqlContext)
-    builder.build(maf_df, case_df)
+    builder.build(maf_df, sub_case_df)
 
     log.info('\n\n\tLOADING SSM_CENTRIC_DF\n\n')
     builder.load()
@@ -293,8 +295,9 @@ def ssm_occurrence_centric_df(sqlContext, maf_df, case_df):
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n')
+    sub_case_df = case_df.drop('summary')
     builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
-    builder.build(maf_df, case_df)
+    builder.build(maf_df, sub_case_df)
 
     log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
@@ -307,8 +310,9 @@ def cnv_centric_df(sqlContext, gistic_df, case_df):
     Builds cnv centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
+    sub_case_df = case_df.drop('summary')
     builder = CNVCentricBuilder(conf, sqlContext)
-    builder.build(gistic_df, case_df)
+    builder.build(gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
     builder.load()
@@ -321,8 +325,9 @@ def cnv_occurrence_centric_df(sqlContext, gistic_df, case_df):
     Builds cnv occurrence centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n')
+    sub_case_df = case_df.drop('summary')
     builder = CNVOccurrenceCentricBuilder(conf, sqlContext)
-    builder.build(gistic_df, case_df)
+    builder.build(gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()

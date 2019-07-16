@@ -69,19 +69,24 @@ class GDCMutationExport(object):
         self.sc.setJobGroup('CaseBuilder', 'Build Case dataframe')
         case_df = CaseBuilder(self.config,
                               self.sqlContext).build(maf_df, gistic_df)
+        sub_case_df = case_df.drop('summary')
+        sub_case_df.persist()
 
         for builder in self.builders:
             index_name = builder.index_name
             if index_name in self.config.index_types:
                 self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
-                if index_name in self.maf_only_indices:
+                if index_name == 'case_centric':
+                    # only the case_centric index needs the full case DF
+                    builder(self.config, self.sqlContext).build(maf_df, gistic_df, case_df).load()
+                elif index_name in self.maf_only_indices:
                     # these builders do not yet depend on gistic_df
-                    builder(self.config, self.sqlContext).build(maf_df, case_df).load()
+                    builder(self.config, self.sqlContext).build(maf_df, sub_case_df).load()
                 elif index_name in self.gistic_only_indices:
                     # these builders do not depend on maf_df
-                    builder(self.config, self.sqlContext).build(gistic_df, case_df).load()
+                    builder(self.config, self.sqlContext).build(gistic_df, sub_case_df).load()
                 else:
                     builder(self.config,
-                            self.sqlContext).build(maf_df, gistic_df, case_df).load()
+                            self.sqlContext).build(maf_df, gistic_df, sub_case_df).load()
 
         self.logger.info('Mutation Indexer finished successfully')
