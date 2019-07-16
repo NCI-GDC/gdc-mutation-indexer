@@ -85,7 +85,7 @@ class BaseConfig(object):
     }
 
     # Used for loading case/graph documents from a different es cluster
-    graph_index = 'gdc_from_graph'
+    # The graph_index name is set by the environment/command line parser.
     graph_document = 'case'
 
     # Namespace for ssm_ids so that they may be reproduced
