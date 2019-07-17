@@ -1,21 +1,24 @@
+import httplib
 import os
+import shlex
 import ssl
+import subprocess
 import sys
 import uuid
-import httplib
-import subprocess
-import shlex
-from elasticsearch import Elasticsearch
-from distutils.version import StrictVersion
+
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
+from distutils.version import StrictVersion
+from elasticsearch import Elasticsearch
 from exports.es_utils import iterate_es_results
 from indexclient.client import IndexClient
 from parsers import (
+    BuildArgs,
+    ESArgs,
+    ESHadoopArgs,
+    IndexdArgs,
     ParserBuilder,
     S3Args,
-    ESArgs,
-    ESHadoopArgs, BuildArgs, SparkArgs,
-    IndexdArgs,
+    SparkArgs,
 )
 
 
