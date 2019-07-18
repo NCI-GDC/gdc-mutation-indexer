@@ -1,13 +1,14 @@
+import httplib
 import os
+import shlex
 import ssl
+import subprocess
 import sys
 import uuid
-import httplib
-import subprocess
-import shlex
-from elasticsearch import Elasticsearch
-from distutils.version import StrictVersion
+
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
+from distutils.version import StrictVersion
+from elasticsearch import Elasticsearch
 from exports.es_utils import iterate_es_results
 from indexclient.client import IndexClient
 from parsers import (
@@ -130,26 +131,29 @@ class BaseConfig(object):
         'files',
         'project.disease_type',
         'project.primary_site',
+        'project.releasable',
+        'project.released',
+        'project.state',
         'tissue_source_site',
         '*_ids',
+        '*.updated_datetime',
+        '*.created_datetime',
 
         # Fields omitted from *_centric models that have values in graph index
         'demographic.age_at_index',
         'diagnoses.annotations',
         'diagnoses.days_to_diagnosis',
         'diagnoses.icd_10_code',
+        'diagnoses.iss_stage',
         'diagnoses.metastasis_at_diagnosis',
         'diagnoses.synchronous_malignancy',
         'diagnoses.treatments.initial_disease_status',
+        'diagnoses.treatments.regimen_or_line_of_therapy',
         'diagnoses.vascular_invasion_type',
-        '*.updated_datetime',
-        '*.created_datetime',
-        'project.releasable',
-        'project.released',
-        'project.state',
 
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
+        'treatments.regimen_or_line_of_therapy',
     ]
 
     samples_include_fields = ['samples.sample_type']
@@ -282,7 +286,7 @@ class BaseConfig(object):
             file_id_to_name[doc['_id']] = doc['_source']['file_name']
 
         # Get urls from indexd for relevant files
-        maf_urls = []  # NOTE: FM maf name here for controlled data
+        maf_urls = self.include_maf_urls + []
         for file_id, maf_name in file_id_to_name.items():
             if self.maf_passes_project_check(maf_name):
                 maf_url = self.get_url_from_indexd(file_id)

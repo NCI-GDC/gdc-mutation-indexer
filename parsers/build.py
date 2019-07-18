@@ -93,4 +93,9 @@ class BuildArgs(BaseParser):
                 'type': int,
                 'default': 1,
             },
+            'include-maf-urls': {
+                'help': 'Add additional maf urls that might not be in the graph',
+                'nargs': '*',
+                'default': [],
+            },
         }
