@@ -194,7 +194,7 @@ class BaseConfig(object):
                     continue
                 # Split lists and handle bools
                 if is_arg_list:
-                    values = value.split(',')
+                    values = value.split(',') if value else []
                 else:
                     values = [value]
 
