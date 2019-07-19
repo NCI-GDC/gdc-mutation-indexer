@@ -68,30 +68,50 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     return label
 
 
-def multiply_df(df, id_column, n):
-    """Multiply the row count by N, updating the IDs at the given column."""
+def multiply_df(df, id_columns, n):
+    """
+    Multiply the row count by N, updating the IDs in the given column(s).
+
+    :param df: Dataframe to expand.
+    :type df: DataFrame
+    :param id_columns: The column(s) to update to maintain the uniqueness of
+        IDs in the returned dataframe. Some text will be appended to each
+        of these columns. Either a single string or a sequence of strings
+        identifying the column name(s) may be given.
+    :param n: Multiplication factor. If this is less than or equal to 1,
+        the original dataframe will be returned.
+    :type n: int
+    :return: A new dataframe with N times as many rows.
+    """
     if n <= 1:
         return df
 
-    # Turn each row to a list and back so we can preserve the field order in
-    # the original schema. Start by figuring out which entry in the list
-    # corresponds to the ID column.
-    column_index = df.columns.index(id_column)
+    if isinstance(id_columns, basestring):
+        id_columns = [id_columns]
 
-    def multiply_column(row):
-        old_id = row[id_column]
+    # Turn each row into a list and back so we preserve the field order in
+    # the original schema. Start by figuring out which indices in the list
+    # correspond to the ID columns.
+    column_indices = [df.columns.index(column) for column in id_columns]
+
+    def multiply_columns(row):
+        old_ids = {index: row[index] for index in column_indices}
 
         new_rows = []
         for i in xrange(n):
             # Append the counter to make the new IDs unique and predictable.
+            # Predictability is necessary so that, e.g., we can scale the case
+            # and MAF dataframes together and still have the case IDs line up.
             new_row_data = list(row)
-            new_row_data[column_index] = '{}-{}'.format(old_id, i)
+            for index in column_indices:
+                old_id = old_ids[index]
+                new_row_data[index] = '{}-{}'.format(old_id, i)
             new_rows.append(Row(*new_row_data))
 
         return new_rows
 
     sqlContext = df.sql_ctx
-    new_rdd = df.rdd.flatMap(multiply_column)
+    new_rdd = df.rdd.flatMap(multiply_columns)
     new_df = sqlContext.createDataFrame(new_rdd, schema=df.schema)
 
     return new_df

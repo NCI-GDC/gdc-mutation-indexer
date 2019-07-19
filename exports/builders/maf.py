@@ -60,8 +60,14 @@ class MAFBuilder(BaseInputBuilder):
         # of the case dataframe so the IDs line up. We need to do this between
         # when we mint the SSM IDs and when we mint the occurrence IDs since
         # the occurrence IDs take the SSM and case IDs as input.
+        #
+        # When we scale up the number of cases, also scale up the SSM IDs since
+        # most SSMs are typically unique to individual cases. This doesn't
+        # exactly match the behavior of adding new cases (well-known mutations
+        # like BRAF V600E are present on many cases), but it's more realistic
+        # than not creating any new SSMs at all.
         df = multiply_df(df, 'ssm_id', self.config.multiply_ssm)
-        df = multiply_df(df, 'case_id', self.config.multiply_case)
+        df = multiply_df(df, ['case_id', 'ssm_id'], self.config.multiply_case)
 
         # Create occurrence_id
         df = self.add_occurrence_id(df)
