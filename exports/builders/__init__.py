@@ -11,8 +11,8 @@ from observation import ObservationBuilder
 # Centric builders
 from case_centric import CaseCentricBuilder
 from gene_centric import GeneCentricBuilder
-from score_centric import ScoreCentricBuilder
 from ssm_centric import SSMCentricBuilder
 from ssm_occurrence_centric import SSMOccurrenceCentricBuilder
+from ssm_score_centric import SSMScoreCentricBuilder
 from cnv_centric import CNVCentricBuilder
 from cnv_occurrence_centric import CNVOccurrenceCentricBuilder

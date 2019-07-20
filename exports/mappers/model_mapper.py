@@ -176,15 +176,15 @@ class ModelMapper(object):
                 'gene_centric':
                     ['gene_centric', 'properties', 'case', 'properties', 'ssm',
                      'properties', 'observation'],
-                'score_centric':
-                    ['score_centric', 'properties', 'ssm', 'properties',
-                     'observation'],
                 'ssm_centric':
                     ['ssm_centric', 'properties', 'occurrence', 'properties',
                      'case', 'properties', 'observation'],
                 'ssm_occurrence_centric':
                     ['ssm_occurrence_centric', 'properties', 'case',
                      'properties', 'observation'],
+                'ssm_score_centric':
+                    ['ssm_score_centric', 'properties', 'ssm', 'properties',
+                     'observation'],
             },
             'observation-cnv': {
                 'gene_centric':
@@ -199,9 +199,6 @@ class ModelMapper(object):
                 'cnv_occurrence_centric':
                     ['cnv_occurrence_centric', 'properties', 'case',
                      'properties', 'observation'],
-                'score_centric':
-                    ['score_centric', 'properties', 'cnv', 'properties',
-                     'observation'],
             },
             'consequence': {
                 'case_centric':
@@ -214,9 +211,6 @@ class ModelMapper(object):
                 'cnv_occurrence_centric':
                     ['cnv_occurrence_centric', 'properties', 'cnv',
                      'properties', 'consequence'],
-                'score_centric':
-                    ['score_centric', 'properties', 'cnv', 'properties',
-                     'consequence'],
             },
             'annotation': {
                 'case_centric':
@@ -227,10 +221,6 @@ class ModelMapper(object):
                     ['gene_centric', 'properties', 'case', 'properties', 'ssm',
                      'properties', 'consequence', 'properties', 'transcript',
                      'properties', 'annotation'],
-                'score_centric':
-                    ['score_centric', 'properties', 'ssm', 'properties',
-                     'consequence', 'properties', 'transcript', 'properties',
-                     'annotation'],
                 'ssm_centric':
                     ['ssm_centric', 'properties', 'consequence', 'properties',
                      'transcript', 'properties', 'annotation'],
@@ -238,6 +228,10 @@ class ModelMapper(object):
                     ['ssm_occurrence_centric', 'properties', 'ssm',
                      'properties', 'consequence', 'properties', 'transcript',
                      'properties', 'annotation'],
+                'ssm_score_centric':
+                    ['ssm_score_centric', 'properties', 'ssm', 'properties',
+                     'consequence', 'properties', 'transcript', 'properties',
+                     'annotation'],
             },
             'transcript': {
                 'case_centric': ['case_centric', 'properties', 'gene',
@@ -246,15 +240,15 @@ class ModelMapper(object):
                 'gene_centric': ['gene_centric', 'properties', 'case',
                                  'properties', 'ssm', 'properties',
                                  'consequence', 'properties', 'transcript'],
-                'score_centric': ['score_centric', 'properties', 'ssm',
-                                  'properties', 'consequence', 'properties',
-                                  'transcript'],
                 'ssm_centric': ['ssm_centric', 'properties', 'consequence',
                                 'properties', 'transcript'],
                 'ssm_occurrence_centric': ['ssm_occurrence_centric',
                                            'properties', 'ssm', 'properties',
                                            'consequence', 'properties',
                                            'transcript'],
+                'ssm_score_centric': ['ssm_score_centric', 'properties', 'ssm',
+                                      'properties', 'consequence',
+                                      'properties', 'transcript'],
             },
             'case': {
                 'case_centric': ['case_centric'],  # ??
@@ -263,11 +257,12 @@ class ModelMapper(object):
                 'cnv_occurrence_centric': ['cnv_occurrence_centric',
                                            'properties', 'case'],
                 'gene_centric': ['gene_centric', 'properties', 'case'],
-                'score_centric': ['score_centric', 'properties', 'case'],
                 'ssm_centric': ['ssm_centric', 'properties', 'occurrence',
                                 'properties', 'case'],
                 'ssm_occurrence_centric': ['ssm_occurrence_centric',
                                            'properties', 'case'],
+                'ssm_score_centric': ['ssm_score_centric',
+                                       'properties', 'case'],
             },
             'gene': {
                 'case_centric': ['case_centric', 'properties', 'gene'],
@@ -278,7 +273,6 @@ class ModelMapper(object):
                                            'consequence', 'properties',
                                            'gene'],
                 'gene_centric': ['gene_centric'],  # ??
-                'score_centric': ['score_centric', 'properties', 'gene'],
                 'ssm_centric': ['ssm_centric', 'properties', 'consequence',
                                 'properties', 'transcript', 'properties',
                                 'gene'],
@@ -286,16 +280,19 @@ class ModelMapper(object):
                                            'properties', 'ssm', 'properties',
                                            'consequence', 'properties',
                                            'transcript', 'properties', 'gene'],
+                'ssm_score_centric': ['ssm_score_centric',
+                                      'properties', 'gene'],
             },
             'ssm': {
                 'case_centric': ['case_centric', 'properties', 'gene',
                                  'properties', 'ssm'],
                 'gene_centric': ['gene_centric', 'properties', 'case',
                                  'properties', 'ssm'],
-                'score_centric': ['score_centric', 'properties', 'ssm'],
                 'ssm_centric': ['ssm_centric'],  # ??
                 'ssm_occurrence_centric': ['ssm_occurrence_centric',
                                            'properties', 'ssm'],
+                'ssm_score_centric': ['ssm_score_centric',
+                                      'properties', 'ssm'],
             },
             'cnv': {
                 'case_centric': ['case_centric', 'properties', 'gene',
@@ -305,7 +302,6 @@ class ModelMapper(object):
                                            'properties', 'cnv'],
                 'gene_centric': ['gene_centric', 'properties', 'case',
                                  'properties', 'cnv'],
-                'score_centric': ['score_centric', 'properties', 'cnv'],
             },
 
         }
@@ -318,48 +314,48 @@ class ModelMapper(object):
                 'cnv_centric': ['observation'],
                 'cnv_occurrence_centric': ['observation'],
                 'gene_centric': ['ssm'],
-                'score_centric': [],
                 'ssm_centric': ['observation'],
                 'ssm_occurrence_centric': ['observation'],
+                'ssm_score_centric': [],
             },
             'cnv': {
                 'case_centric': ['consequence', 'observation'],
                 'cnv_occurrence_centric': ['consequence', 'observation'],
                 'gene_centric': ['consequence', 'observation'],
                 'cnv_centric': ['consequence', 'occurrence'],
-                'score_centric': ['consequence', 'observation'],
                 'ssm_centric': ['observation'],
                 'ssm_occurrence_centric': ['observation'],
+                'ssm_score_centric': ['consequence', 'observation'],
             },
             'gene': {
                 'gene_centric': ['case'],
                 'case_centric': ['ssm', 'cnv'],
                 'cnv_centric': [],
                 'cnv_occurrence_centric': [],
-                'score_centric': [],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],
+                'ssm_score_centric': [],
             },
             'ssm': {
                 'case_centric': ['consequence', 'observation'],
                 'gene_centric': ['consequence', 'observation'],
-                'score_centric': ['consequence', 'observation'],
                 'ssm_centric': ['consequence', 'occurrence'],
                 'ssm_occurrence_centric': ['consequence'],
+                'ssm_score_centric': ['consequence', 'observation'],
             },
             'transcript': {
                 'case_centric': ['annotation'],
                 'gene_centric': ['annotation'],
-                'score_centric': ['annotation'],
                 'ssm_centric': ['annotation', 'gene'],
                 'ssm_occurrence_centric': ['annotation', 'gene'],
+                'ssm_score_centric': ['annotation'],
             },
             'observation-ssm': {
                 'case_centric': [],
                 'gene_centric': [],
-                'score_centric': [],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],
+                'ssm_score_centric': [],
             },
             'observation-cnv': {
                 # there is no sample and src_file_id data in gistic file yet
@@ -367,14 +363,13 @@ class ModelMapper(object):
                 'gene_centric': ['sample', 'src_file_id'],
                 'cnv_centric': ['sample', 'src_file_id'],
                 'cnv_occurrence_centric': ['sample', 'src_file_id'],
-                'score_centric': ['sample', 'src_file_id'],
             },
             'consequence': {
                 'case_centric': [],
                 'gene_centric': [],
-                'score_centric': [],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],
+                'ssm_score_centric': [],
                 'cnv_centric': [],
                 'cnv_occurrence_centric': [],
             },
@@ -382,8 +377,8 @@ class ModelMapper(object):
                 'case_centric': [],
                 'cnv_occurrence_centric': [],
                 'gene_centric': [],
-                'score_centric': [],
                 'ssm_centric': [],
                 'ssm_occurrence_centric': [],
+                'ssm_score_centric': [],
             }
         }

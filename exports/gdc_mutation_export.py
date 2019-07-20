@@ -7,9 +7,9 @@ from builders import (
     CaseBuilder,
     CaseCentricBuilder,
     GeneCentricBuilder,
-    ScoreCentricBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
+    SSMScoreCentricBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
 )
@@ -30,23 +30,27 @@ class GDCMutationExport(object):
         self.builders = [
             CaseCentricBuilder,
             GeneCentricBuilder,
-            ScoreCentricBuilder,
             SSMCentricBuilder,
             SSMOccurrenceCentricBuilder,
+            SSMScoreCentricBuilder,
             CNVCentricBuilder,
             CNVOccurrenceCentricBuilder,
         ]
 
-        self.maf_only_indices = {'ssm_centric', 'ssm_occurrence_centric'}
+        self.maf_only_indices = {
+            'ssm_centric',
+            'ssm_occurrence_centric',
+            'ssm_score_centric',
+        }
         self.gistic_only_indices = {'cnv_centric', 'cnv_occurrence_centric'}
 
     def need_to_build_maf(self):
         """Return whether the MAF df is needed given the current config."""
-        return len(set(self.config.index_types) - self.gistic_only_indices) > 0
+        return bool(set(self.config.index_types) - self.gistic_only_indices)
 
     def need_to_build_gistic(self):
         """Return whether the Gistic df is needed given the current config."""
-        return len(set(self.config.index_types) - self.maf_only_indices) > 0
+        return bool(set(self.config.index_types) - self.maf_only_indices)
 
     def run_export(self):
         # Combine MAFs into one DataFrame

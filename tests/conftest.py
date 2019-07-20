@@ -33,9 +33,9 @@ from exports.builders import (
     ConsequenceBuilder,
     GeneCentricBuilder,
     CaseCentricBuilder,
-    ScoreCentricBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
+    SSMScoreCentricBuilder,
 )
 
 conf = TestConfig()
@@ -258,21 +258,6 @@ def gene_centric_df(sqlContext, maf_df, gistic_df, case_df):
 
 
 @pytest.fixture(scope='session')
-def score_centric_df(sqlContext, maf_df, gistic_df, case_df):
-    """
-    Builds score centric dataframe once. Loads to elasticsearch index
-    Reused throughout test suite
-    """
-    log.info('\n\n\tBUILDING SCORE_CENTRIC_DF\n\n')
-    builder = ScoreCentricBuilder(conf, sqlContext)
-    builder.build(maf_df, gistic_df, case_df)
-
-    log.info('\n\n\tLOADING SCORE_CENTRIC_DF\n\n')
-    builder.load()
-    return builder.score_centric
-
-
-@pytest.fixture(scope='session')
 def ssm_centric_df(sqlContext, maf_df, case_df):
     """
     Builds ssm centric dataframe once. Loads to elasticsearch index
@@ -302,6 +287,21 @@ def ssm_occurrence_centric_df(sqlContext, maf_df, case_df):
     log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
     return builder.ssm_occurrence_centric
+
+
+@pytest.fixture(scope='session')
+def ssm_score_centric_df(sqlContext, maf_df, case_df):
+    """
+    Builds ssm score centric dataframe once. Loads to elasticsearch index
+    Reused throughout test suite
+    """
+    log.info('\n\n\tBUILDING SSM_SCORE_CENTRIC_DF\n\n')
+    builder = SSMScoreCentricBuilder(conf, sqlContext)
+    builder.build(maf_df, case_df)
+
+    log.info('\n\n\tLOADING SSM_SCORE_CENTRIC_DF\n\n')
+    builder.load()
+    return builder.ssm_score_centric
 
 
 @pytest.fixture(scope='session')
