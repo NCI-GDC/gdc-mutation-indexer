@@ -1,3 +1,5 @@
+import json
+
 from pyspark.sql.functions import (
     col,
     collect_set,
@@ -48,7 +50,18 @@ class CaseBuilder(object):
 
         case_exclude_fields = (self.config.case_exclude_fields
             + self.config.get_samples_fields_to_exclude())
-        # Load all cases from graph_index
+
+        # Only load cases from the requested projects
+        if self.config.projects:
+            query = json.dumps({
+                'query': {
+                    'terms': {'project.project_id': self.config.projects}
+                }
+            })
+        else:
+            query = json.dumps({'query': {'match_all': {}}})
+
+        # Load cases from graph_index
         df = (
             self.sqlContext.read.format("es")
             .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
@@ -57,6 +70,7 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
             .option('es.nodes.resolve.hostname', 'false')
+            .option('es.query', query)
             .option('es.read.field.exclude', ','.join(case_exclude_fields))
             .option('es.resource.read', source)
             .load(source)
