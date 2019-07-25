@@ -200,10 +200,10 @@ class ModelMapper(object):
             'consequence': {
                 'case_centric':
                     ['case_centric', 'properties', 'gene', 'properties',
-                     'cnv', 'properties', 'consequence'],
+                     'cnv'],
                 'gene_centric':
                     ['gene_centric', 'properties', 'case', 'properties',
-                     'cnv', 'properties', 'consequence'],
+                     'cnv'],
                 'cnv_centric': ['cnv_centric', 'properties', 'consequence'],
                 'cnv_occurrence_centric':
                     ['cnv_occurrence_centric', 'properties', 'cnv',
