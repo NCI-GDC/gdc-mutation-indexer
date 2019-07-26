@@ -1,16 +1,19 @@
-from pyspark.sql.functions import col, collect_list, lit, struct
+from pyspark.sql.functions import col, collect_list, lit, struct, udf
+from pyspark.sql.types import StringType
 
-from exports.builders import (
+from . import (
     BaseBuilder,
     ConsequenceBuilder,
     ObservationBuilder,
 )
-from exports.builders.df_builders import (
+from .df_builders import (
     build_ssm_subtree,
     get_gene_df,
 )
-from exports.builders.gene_model import GeneModelBuilder
-from exports.builders.utils import skew_join, uuid5_col
+from .gene_model import GeneModelBuilder
+from .utils import skew_join, uuid5_col
+
+from ..mappers.model_mapper import ModelMapper
 
 
 class SSMScoreCentricBuilder(BaseBuilder):
@@ -29,6 +32,10 @@ class SSMScoreCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_score_centric'
     id_field = 'ssm_score_centric_id'
+
+    def __init__(self, config, sqlContext):
+        super(SSMScoreCentricBuilder, self).__init__(config, sqlContext)
+        self.routing_column = '_routing_'
 
     def build(self, maf_df, case_df):
         """
@@ -49,6 +56,7 @@ class SSMScoreCentricBuilder(BaseBuilder):
         score_df = skew_join(score_df, gene_subtree, 'gene_id', 'gene.gene_id')
 
         score_df = self.add_ssm_score_centric_id(score_df)
+        score_df = self.add_routing_column(score_df)
 
         # Now that we're done joining things together, we don't need the
         # top-level gene or case ID columns.
@@ -142,3 +150,40 @@ class SSMScoreCentricBuilder(BaseBuilder):
                                                     col('gene_id')))
 
         return df
+
+    def add_routing_column(self, df):
+        """Add the column for routing documents to shards during indexing."""
+
+        # TODO Try again with gene_split 2 or 3.
+
+        # TODO If 2 or 3 does better than 1, make gene_split configurable.
+        # If gene_split 1 is way better, maybe we should just hash the case ID.
+
+        # Hash the case and gene IDs to arrange documents as follows:
+        #
+        # 1. Route all documents for a given case/gene pair to the same shard.
+        # 2. Route all documents for a given case to the same N shards, and
+        #    divide cases evenly among the respective N-shard groupings.
+        # 3. Split genes evenly within each group of N shards (the value of N
+        #    is therefore referred to as the "gene split").
+        #
+        # Limit the maximum number of cases or genes per shard in this way
+        # and hopefully make terms aggregations go faster.
+        gene_split = 1
+
+        index_settings = ModelMapper(self.index_name).index_settings
+        num_shards = index_settings['settings']['index']['number_of_shards']
+
+        # Make sure we really can divide evenly with these settings.
+        case_split, remainder = divmod(num_shards, gene_split)
+        assert remainder == 0
+
+        def compute_routing(case_id, gene_id):
+            case_hash = hash(case_id) % case_split
+            gene_hash = hash(gene_id) % gene_split
+            return '{}-{}'.format(case_hash, gene_hash)
+
+        routing_udf = udf(compute_routing, StringType())
+        df = df.withColumn(
+            colName=self.routing_column,
+            col=routing_udf(df.case_id, df.gene_id))

@@ -31,6 +31,10 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
+        # If set, the name of the column for routing documents to shards.
+        # Instance rather than class property so it can be configured per-run.
+        self.routing_column = None
+
     def build(self):
         """
         Contains the ETL logic to construct a spark dataframe of
@@ -63,24 +67,33 @@ class BaseBuilder(object):
                                                   self.id_field)
 
         self.log('Exporting {} index to {}'.format(self.index_name, index))
-        df.coalesce(self.config.df_coalesce).write\
-            .format('org.elasticsearch.spark.sql')\
-            .option('es.nodes', self.config.es_nodes)\
-            .option('es.net.http.auth.user', self.config.es_user)\
-            .option('es.net.http.auth.pass', self.config.es_pass)\
-            .option('es.nodes.wan.only', 'true')\
-            .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.resource.write', index_doc)\
-            .option('es.http.timeout', '20m')\
-            .option('es.http.retries', '-1')\
-            .option('es.batch.write.retry.count', '-1')\
-            .option('es.batch.write.retry.wait', '10m')\
-            .option('es.batch.size.bytes', self.config.batch_size_bytes)\
-            .option('es.batch.size.entries', self.config.batch_size_entries)\
-            .option('es.batch.write.refresh', False)\
-            .option('es.mapping.id', self.id_field)\
-            .save(index_doc)
 
+        writer = (
+            df.coalesce(self.config.df_coalesce)
+            .write
+            .format('org.elasticsearch.spark.sql')
+            .option('es.nodes', self.config.es_nodes)
+            .option('es.net.http.auth.user', self.config.es_user)
+            .option('es.net.http.auth.pass', self.config.es_pass)
+            .option('es.nodes.wan.only', 'true')
+            .option('es.nodes.resolve.hostname', 'false')
+            .option('es.resource.write', index_doc)
+            .option('es.http.timeout', '20m')
+            .option('es.http.retries', '-1')
+            .option('es.batch.write.retry.count', '-1')
+            .option('es.batch.write.retry.wait', '10m')
+            .option('es.batch.size.bytes', self.config.batch_size_bytes)
+            .option('es.batch.size.entries', self.config.batch_size_entries)
+            .option('es.batch.write.refresh', False)
+            .option('es.mapping.id', self.id_field)
+        )
+
+        if self.routing_column:
+            writer = writer.option('es.mapping.routing', self.routing_column)
+
+        writer.save(index_doc)
+
+        # TODO Do we cache the output DFs anywhere? Does this do anything?
         df.unpersist()
 
     def truncate_df_at_percentile(self,
