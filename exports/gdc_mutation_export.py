@@ -44,30 +44,14 @@ class GDCMutationExport(object):
         }
         self.gistic_only_indices = {'cnv_centric', 'cnv_occurrence_centric'}
 
-    def need_to_build_maf(self):
-        """Return whether the MAF df is needed given the current config."""
-        return bool(set(self.config.index_types) - self.gistic_only_indices)
-
-    def need_to_build_gistic(self):
-        """Return whether the Gistic df is needed given the current config."""
-        return bool(set(self.config.index_types) - self.maf_only_indices)
-
     def run_export(self):
         # Combine MAFs into one DataFrame
-        if self.need_to_build_maf():
-            self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
-            maf_df = MAFBuilder(self.config, self.sqlContext).build()
-        else:
-            self.logger.warn('Skipping MAF dataframe')
-            maf_df = None
+        self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
+        maf_df = MAFBuilder(self.config, self.sqlContext).build()
 
         # Combine Gistics into one DataFrame
-        if self.need_to_build_gistic():
-            self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
-            gistic_df = GisticBuilder(self.config, self.sqlContext).build()
-        else:
-            self.logger.warn('Skipping Gistic dataframe')
-            gistic_df = None
+        self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
+        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
 
         # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup('CaseBuilder', 'Build Case dataframe')
