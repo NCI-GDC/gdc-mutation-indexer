@@ -89,7 +89,10 @@ class BaseBuilder(object):
         )
 
         if self.routing_column:
-            writer = writer.option('es.mapping.routing', self.routing_column)
+            writer = (
+                writer.option('es.mapping.routing', self.routing_column)
+                .option('es.mapping.exclude', self.routing_column)
+            )
 
         writer.save(index_doc)
 
