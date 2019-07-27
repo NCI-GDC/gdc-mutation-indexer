@@ -187,3 +187,5 @@ class SSMScoreCentricBuilder(BaseBuilder):
         df = df.withColumn(
             colName=self.routing_column,
             col=routing_udf(df.case_id, df.gene_id))
+
+        return df
