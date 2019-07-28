@@ -1,9 +1,10 @@
+from functools import partial
+import logging
 import re
 import uuid
-import logging
-from functools import partial
-from pyspark.sql import Row
-from pyspark.sql import functions
+
+import mmh3
+from pyspark.sql import functions, Row
 from pyspark.sql.functions import (
     col,
     regexp_extract,
@@ -662,3 +663,29 @@ def convert_empty_str_to_null_in_col(df, col_name):
     return df.withColumn(col_name,
                          when(col(col_name) != "", col(col_name))
                          .otherwise(None))
+
+
+def get_unique_hash_inputs(n):
+    """
+    Find N values with unique murmur3 hashes.
+
+    Generate a mapping that can be used to route documents to distinct shards
+    in an index with N shards. Brute-force it because we won't be creating any
+    indices with nearly enough shards for the brute-force approach to be slow,
+    and brute force is easier than reversing murmur3.
+
+    :param n: Number of inputs to find.
+    :type n: int
+    :return: dict A mapping from each value V in the range [0, n) to an input
+        string S such that (murmur3(S) % n) == V.
+    """
+    inputs = {}
+    counter = 0
+    while len(inputs) < n:
+        possible_input = str(counter)
+        hashed_input = mmh3.hash(possible_input) % n
+        if hashed_input not in inputs:
+            inputs[hashed_input] = possible_input
+        counter += 1
+
+    return inputs

@@ -11,7 +11,7 @@ from .df_builders import (
     get_gene_df,
 )
 from .gene_model import GeneModelBuilder
-from .utils import skew_join, uuid5_col
+from .utils import get_unique_hash_inputs, skew_join, uuid5_col
 
 from ..mappers.model_mapper import ModelMapper
 
@@ -154,11 +154,6 @@ class SSMScoreCentricBuilder(BaseBuilder):
     def add_routing_column(self, df):
         """Add the column for routing documents to shards during indexing."""
 
-        # TODO Try again with gene_split 2 or 3.
-
-        # TODO If 2 or 3 does better than 1, make gene_split configurable.
-        # If gene_split 1 is way better, maybe we should just hash the case ID.
-
         # Hash the case and gene IDs to arrange documents as follows:
         #
         # 1. Route all documents for a given case/gene pair to the same shard.
@@ -169,19 +164,24 @@ class SSMScoreCentricBuilder(BaseBuilder):
         #
         # Limit the maximum number of cases or genes per shard in this way
         # and hopefully make terms aggregations go faster.
-        gene_split = 1
+
+        # TODO Possibly make this configurable.
+        gene_split = 2
 
         index_settings = ModelMapper(self.index_name).index_settings
         num_shards = index_settings['settings']['index']['number_of_shards']
+        hash_inputs = get_unique_hash_inputs(num_shards)
 
         # Make sure we really can divide evenly with these settings.
         case_split, remainder = divmod(num_shards, gene_split)
         assert remainder == 0
 
         def compute_routing(case_id, gene_id):
+            # TODO Would mmh3 be any better than the built-in hash()?
             case_hash = hash(case_id) % case_split
             gene_hash = hash(gene_id) % gene_split
-            return '{}-{}'.format(case_hash, gene_hash)
+            final_hash = (case_hash * gene_split) + gene_hash
+            return hash_inputs[final_hash]
 
         routing_udf = udf(compute_routing, StringType())
         df = df.withColumn(
