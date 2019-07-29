@@ -674,6 +674,10 @@ def get_unique_hash_inputs(n):
     indices with nearly enough shards for the brute-force approach to be slow,
     and brute force is easier than reversing murmur3.
 
+    WARNING: This function is coupled to Elasticsearch's internal document
+    routing algorithm, so if you see empty or terribly imbalanced shards after
+    an Elasticsearch upgrade, the likely reason is that this got ouf of sync.
+
     :param n: Number of inputs to find.
     :type n: int
     :return: dict A mapping from each value V in the range [0, n) to an input
@@ -682,8 +686,11 @@ def get_unique_hash_inputs(n):
     inputs = {}
     counter = 0
     while len(inputs) < n:
+        # Elasticsearch (as of 5.6.14) encodes the routing key as UTF-16 prior
+        # to hashing, so do the same (and strip the BOM Python adds).
         possible_input = str(counter)
-        hashed_input = mmh3.hash(possible_input) % n
+        input_bytes = possible_input.encode('utf-16')[2:]
+        hashed_input = mmh3.hash(input_bytes) % n
         if hashed_input not in inputs:
             inputs[hashed_input] = possible_input
         counter += 1
