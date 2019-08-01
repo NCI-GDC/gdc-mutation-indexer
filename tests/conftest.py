@@ -7,10 +7,11 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType, ArrayType
 
+from cdisutils.dictionary import remove_keys_from_dict
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+from normalizer.mapper import ModelMapper
 from tests_config import TestConfig
-from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import (
     get_case_ids_from_source_es,
@@ -18,7 +19,6 @@ from exports.builders.utils import (
 from exports.es_utils import (
     iterate_es_results,
 )
-from exports.mappers import ModelMapper
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (

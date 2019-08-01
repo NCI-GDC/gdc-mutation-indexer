@@ -1,0 +1,73 @@
+case:
+  case_centric:
+  - gene
+  - transcripts
+  cnv_centric:
+  - observation
+  cnv_occurrence_centric:
+  - observation
+  gene_centric:
+  - ssm
+  ssm_centric:
+  - observation
+  ssm_occurrence_centric:
+  - observation
+cnv:
+  case_centric:
+  - consequence
+  - observation
+  cnv_centric:
+  - consequence
+  - occurrence
+  cnv_occurrence_centric:
+  - consequence
+  - observation
+  gene_centric:
+  - consequence
+  - observation
+  ssm_centric:
+  - observation
+  ssm_occurrence_centric:
+  - observation
+gene:
+  case_centric:
+  - ssm
+  - cnv
+  gene_centric:
+  - case
+observation-cnv:
+  case_centric:
+  - sample
+  - src_file_id
+  cnv_centric:
+  - sample
+  - src_file_id
+  cnv_occurrence_centric:
+  - sample
+  - src_file_id
+  gene_centric:
+  - sample
+  - src_file_id
+ssm:
+  case_centric:
+  - consequence
+  - observation
+  gene_centric:
+  - consequence
+  - observation
+  ssm_centric:
+  - consequence
+  - occurrence
+  ssm_occurrence_centric:
+  - consequence
+transcript:
+  case_centric:
+  - annotation
+  gene_centric:
+  - annotation
+  ssm_centric:
+  - annotation
+  - gene
+  ssm_occurrence_centric:
+  - annotation
+  - gene
