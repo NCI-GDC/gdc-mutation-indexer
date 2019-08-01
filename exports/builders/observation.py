@@ -18,7 +18,7 @@ class ObservationBuilder(object):
     Builds observation dataframe from the maf dataframe
     """
 
-    def build_for_ssm(self, maf_df, index_name):
+    def build_for_ssm(self, maf_df, index_name, selector=None):
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
@@ -26,17 +26,22 @@ class ObservationBuilder(object):
         tumor and normal sample uuids and an ssm uuid.
         """
 
-        obs_df = (maf_df.select('ssm_id', 'case_id', 'occurrence_id',
-                                struct(*struct_select(index_name,
-                                                      'observation-ssm'))
-                                .alias('observation'))
-                        .groupby('ssm_id', 'case_id', 'occurrence_id')
-                        .agg(collect_list('observation')
-                             .alias('observation')))
+        obs_df = (
+            maf_df.select(
+                'ssm_id',
+                'case_id',
+                'occurrence_id',
+                struct(
+                    *struct_select(index_name, 'observation', selector=selector)
+                ).alias('observation')
+            )
+            .groupby('ssm_id', 'case_id', 'occurrence_id')
+            .agg(collect_list('observation').alias('observation'))
+        )
 
         return obs_df
 
-    def build_for_cnv(self, gistic_df, index):
+    def build_for_cnv(self, gistic_df, index, selector=None):
         """
         observation[]
         |____ observation{}
@@ -56,11 +61,15 @@ class ObservationBuilder(object):
         # observation structure
         obs_df = (
             obs_df.select(
-                'cnv_id', 'case_id', 'occurrence_id',
-                struct(*struct_select(index, 'observation-cnv'))
-                .alias('observation')
-            ).groupby('cnv_id', 'case_id', 'occurrence_id')
-             .agg(collect_set('observation').alias('observation'))
+                'cnv_id',
+                'case_id',
+                'occurrence_id',
+                struct(
+                    *struct_select(index, 'observation', selector=selector)
+                ).alias('observation')
+            )
+            .groupby('cnv_id', 'case_id', 'occurrence_id')
+            .agg(collect_set('observation').alias('observation'))
         )
 
         return obs_df

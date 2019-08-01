@@ -35,7 +35,7 @@ gene:
   - cnv
   gene_centric:
   - case
-observation-cnv:
+observation:
   case_centric:
   - sample
   - src_file_id

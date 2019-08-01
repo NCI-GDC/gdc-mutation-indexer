@@ -134,7 +134,8 @@ class GeneCentricBuilder(BaseBuilder):
                                                         self.index_name)
 
         # Observation
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name,
+                                                    selector='ssm')
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM
@@ -163,7 +164,8 @@ class GeneCentricBuilder(BaseBuilder):
 
         """
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name,
+                                                    selector='cnv')
 
         # Build the final cnv dataframe
         cnv_df = build_cnv_subtree(gistic_df, self.index_name, obs_df=obs_df)
