@@ -86,7 +86,8 @@ class TestGeneCentricJoins(BaseJoinsTest):
         # ssm_subtree stats expected:
         cons_df = (ConsequenceBuilder(conf, sqlContext)
                    .build_for_ssm(maf_df, 'gene_centric'))
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'gene_centric')
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'gene_centric',
+                                                    selector='ssm')
 
         df = cons_df.join(obs_df, on=['ssm_id'], how='left')
 
