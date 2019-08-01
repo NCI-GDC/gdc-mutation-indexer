@@ -140,6 +140,11 @@ class BaseConfig(object):
         'diagnoses.treatments.initial_disease_status',
         'diagnoses.treatments.regimen_or_line_of_therapy',
         'diagnoses.vascular_invasion_type',
+        '*.updated_datetime',
+        '*.created_datetime',
+        'project.releasable',
+        'project.released',
+        'project.state',
 
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
@@ -194,7 +199,7 @@ class BaseConfig(object):
                     continue
                 # Split lists and handle bools
                 if is_arg_list:
-                    values = value.split(',')
+                    values = value.split(',') if value else []
                 else:
                     values = [value]
 

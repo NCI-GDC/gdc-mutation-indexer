@@ -497,5 +497,5 @@ def convert_empty_str_to_null_in_col(df, col_name):
     '''
 
     return df.withColumn(col_name,
-            when(col(col_name) != "", col(col_name))
-            .otherwise(None))
+                         when(col(col_name) != "", col(col_name))
+                         .otherwise(None))

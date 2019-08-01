@@ -17,7 +17,7 @@ def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
     return df
 
 
-def build_cnv_subtree(gistic_df, cons_df, index_name, obs_df=None,
+def build_cnv_subtree(gistic_df, index_name, cons_df=None, obs_df=None,
                       add_fields=['gene_id', 'case_id']):
     """
     cnv[]
@@ -31,7 +31,7 @@ def build_cnv_subtree(gistic_df, cons_df, index_name, obs_df=None,
                         add_fields=add_fields,
                         drop_fields=['occurrence_id'])
 
-    df = cnv_df.join(cons_df, on='cnv_id', how='left')
+    df = cnv_df.join(cons_df, on='cnv_id', how='left') if cons_df else cnv_df
     if obs_df:
         df = df.join(obs_df, on=['cnv_id', 'case_id'], how='left')
 
@@ -77,4 +77,3 @@ def get_single_df(input_df, index_name, mapping_name,
 
     df = df.drop_duplicates(subset=unique_fields)
     return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
-
