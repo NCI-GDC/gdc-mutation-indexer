@@ -64,6 +64,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
 
             except Exception as e:
                 self.logger.error(e)
+                raise e
 
         adding_fields = [k for (k, v) in self.schema.items() if v.get('src_key') is None]
 
