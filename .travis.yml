@@ -32,7 +32,6 @@ before_install:
   - sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
   - sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
   - sudo service elasticsearch restart
-  - sudo apt-get update
 
 install:
   - pip install -r requirements.txt
@@ -49,4 +48,4 @@ script:
   - java -version
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
-  - "py.test tests -vvv -s -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
+  - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output

@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger('clinical_annotation')
 
 
-def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fields=None):
+def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fields=None):
     mapping = select_mapping(index_name, 'ssm')
 
     def restructure(doc, parent_name):
@@ -26,7 +26,6 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=[], unique_fiel
                     type: keyword
                   variant_id:
                     type: keyword
-            type: nested
         ```
         """
 

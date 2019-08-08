@@ -1,6 +1,6 @@
 import yaml
 import logging
-import pandas as pd
+import csv
 
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import (
@@ -57,9 +57,12 @@ class CivicBuilder(ClinicalAnnotationBuilder):
                 'mutationindexerresource'), 'clinical_variant_annotation/civic/{}'.format(v)
             )
             try:
-                # read Civic annotation from csv files into pandas dataset
-                pd_df = pd.read_table(file_path)  # , sep='\t')
-                new_df = self.sqlContext.createDataFrame(pd_df)
+                # read Civic annotation from csv files and merge with existing dataframe
+                with open(file_path) as f:
+                    reader = csv.reader(f, delimiter='\t')
+                    data = [tuple(r) for r in reader]
+                    headers = data.pop(0)
+                new_df = self.sqlContext.createDataFrame(data, headers)
                 maf_df = self.standardize_schema_with_maf(new_df, maf_df, k)
 
             except Exception as e:

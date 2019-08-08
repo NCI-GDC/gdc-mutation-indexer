@@ -4,13 +4,12 @@ consulate==0.4
 elasticsearch==5.0.0
 filechunkio==1.6
 networkx==1.10
-pandas==0.15.2
 progressbar==2.2
 PyYAML==3.11
 requests==2.6.0
 boto==2.46.1
 xlrd==0.9.3
--e git+ssh://git@github.com/NCI-GDC/normalizer.git@feat/gdc-models-interface#egg=normalizer
+-e git+ssh://git@github.com/NCI-GDC/normalizer.git@master#egg=normalizer
 -e git+ssh://git@github.com/NCI-GDC/gdc-models.git@release/redfish#egg=gdcmodels
 -e git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
 -e git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource

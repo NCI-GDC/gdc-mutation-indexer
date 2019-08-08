@@ -251,5 +251,6 @@ class TestMAFBuilder:
                         assert is_matching
 
     def test_annotations(self, annotation_schemas, maf_df):
-        for k in annotation_schemas.keys():
-            assert k in maf_df.schema
+        for schema in annotation_schemas:
+            for k in schema.keys():
+                assert k in maf_df.columns
