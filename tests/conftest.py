@@ -7,19 +7,17 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType, ArrayType
 
+from cdisutils.dictionary import remove_keys_from_dict
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+from normalizer.mapper import ModelMapper
 from tests_config import TestConfig
-from cdisutils.dictionary import remove_keys_from_dict
 
 from exports.builders.utils import (
     get_case_ids_from_source_es,
 )
 from exports.es_utils import (
     iterate_es_results,
-)
-from exports.mappers.distinct_doctype_model_mapper import (
-    DistinctDocTypeModelMapper
 )
 from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
@@ -73,11 +71,9 @@ def create_test_index(es):
     Creating an index in elasticsearch requires all doc_type mapping
     and settings upfront.
     """
-    case_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
-                                                   'case')
+    case_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='case')
 
-    file_model_mapper = DistinctDocTypeModelMapper('gdc_from_graph',
-                                                   'file')
+    file_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='file')
 
     combined = {'mappings': {}, 'settings': {}}
     combined['mappings'].update(case_model_mapper.index_settings['mappings']) 

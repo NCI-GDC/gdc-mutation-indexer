@@ -70,6 +70,15 @@ class TestConfig(BaseConfig):
         env = self.get_env_dict()
         super(TestConfig, self).__init__(env_dict=env)
 
+    def validate_indices(self, indices):
+        existing_indices = self.es.indices.get_alias().keys()
+        name_collisions = [name for name in indices.values()
+                           if name in existing_indices]
+        if name_collisions:
+            for collision in name_collisions:
+                self.es.indices.delete(collision)
+            self.es.indices.refresh()
+
     def get_env_dict(self):
         """
         Simulate environment variables with dictionary

@@ -1,13 +1,14 @@
-from exports.builders.utils import percentile
-from pyspark.sql.functions import col, size
-from elasticsearch import Elasticsearch
 import json
 import logging
 import os
 
-from ..mappers.model_mapper import ModelMapper
+from elasticsearch import Elasticsearch
+from normalizer.mapper import ModelMapper
+from pyspark.sql.functions import col, size
 
 from config import LOG_FORMAT
+from exports.builders.utils import percentile
+
 
 logging.basicConfig(format=LOG_FORMAT)
 

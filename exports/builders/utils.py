@@ -1,21 +1,43 @@
+import copy
+import pkg_resources
 import re
 import uuid
 import logging
 from functools import partial
+
+import yaml
+from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import (
     lit, udf, struct, col, explode, array, when, regexp_extract,
     UserDefinedFunction,
 )
 from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
 
-from exports.mappers.model_mapper import ModelMapper
 from exports.es_utils import iterate_es_results
 from exports.builders.aliquot import AliquotBuilder
-
 from config import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
+
+
+DEFAULT_EXCLUDE_FIELDS = {}
+
+
+def get_default_excludes(index, mapping):
+    if DEFAULT_EXCLUDE_FIELDS:
+        return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
+
+    path = pkg_resources.resource_filename('exports',
+                                           'schemas/exclude.defaults.yaml')
+
+    with open(path) as f:
+        excludes = yaml.safe_load(f)
+
+    for k, v in excludes.items():
+        DEFAULT_EXCLUDE_FIELDS[k] = v
+
+    return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
 
 def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
@@ -79,12 +101,8 @@ def get_case_ids_from_source_es(config, sqlContext):
             "nested": {
                 "path": "samples.portions.analytes.aliquots",
                 "query": {
-                    "constant_score": {
-                        "filter": {
-                            "terms": {
-                                "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
-                            }
-                        }
+                    "terms": {
+                        "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
                     }
                 }
             }
@@ -349,16 +367,13 @@ def remove_columns(df, *args):
     return df
 
 
-def select_mapping(index_name, mapping_name):
+def select_mapping(index_name, mapping_name, selector=None,
+                   exclude_fields=None):
+    if not exclude_fields:
+        exclude_fields = get_default_excludes(index_name, mapping_name)
+
     mapper = ModelMapper(index_name)
-
-    paths_map = mapper.paths_map
-    exclude_map = mapper.exclude_map
-
-    steps = paths_map[mapping_name][index_name]
-    exclude_fields = exclude_map[mapping_name][index_name]
-
-    mapping = access_json_path(dict(mapper.type_mappings), steps)
+    mapping = mapper.select_mapping(mapping_name, selector)
 
     mapping['properties'] = {k: v for k, v in mapping['properties'].items()
                              if k not in exclude_fields}
@@ -377,7 +392,7 @@ def standardize_schema(dataframe, index_name, mapping_name):
     return return_df
 
 
-def struct_select(index_name, mapping_name, ignore=[]):
+def struct_select(index_name, mapping_name, ignore=(), selector=None):
     """
     Takes the structure from a mapping and produces arguments for a select
     to reorganize a flat dataframe of those fields into the desired structure.
@@ -397,30 +412,31 @@ def struct_select(index_name, mapping_name, ignore=[]):
     """
 
     def restructure(doc):
-        cols = []
-        if type(doc) is dict:
-            for k, v in doc.items():
-                # Ignore OICR autocomplete features
-                if (k == 'gene_aa_change'
-                    or k == 'copy_to'
-                    or '_autocomplete' in k):
-                    pass
+        if not isinstance(doc, dict):
+            return []
 
-                elif 'type' in v and 'properties' not in v:
-                    name = k
-                    if 'default' in v:
-                        name = v['default']
-                    cols.append(col(name).alias(k))
+        cols = []
+        for k, v in doc.items():
+            # Ignore OICR autocomplete features
+            if (k == 'gene_aa_change' or k == 'copy_to' or
+                    '_autocomplete' in k):
+                pass
+
+            elif 'type' in v and 'properties' not in v:
+                name = k
+                if 'default' in v:
+                    name = v['default']
+                cols.append(col(name).alias(k))
+            else:
+                if k not in ignore and 'properties' in v:
+                    cols.append(struct(restructure(v['properties'])).alias(k))
+                elif k not in ignore:
+                    cols.append(struct(restructure(v)).alias(k))
                 else:
-                    if k not in ignore and 'properties' in v:
-                        cols.append(struct(restructure(v['properties'])).alias(k))
-                    elif k not in ignore:
-                        cols.append(struct(restructure(v)).alias(k))
-                    else:
-                        cols.append(k)
+                    cols.append(k)
         return cols
 
-    mapping = select_mapping(index_name, mapping_name)
+    mapping = select_mapping(index_name, mapping_name, selector=selector)
 
     return restructure(mapping['properties'])
 

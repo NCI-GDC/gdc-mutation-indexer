@@ -76,3 +76,6 @@ tests/data/*
 !tests/data/output
 
 *.DS_Store
+
+*.tgz
+*.zip

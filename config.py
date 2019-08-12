@@ -246,16 +246,21 @@ class BaseConfig(object):
             for index_type in self.index_types
         }
 
+        self.validate_indices(indices)
+
+        return indices
+
+    def validate_indices(self, indices):
         existing_indices = self.es.indices.get_alias().keys()
         name_collisions = [name for name in indices.values()
                            if name in existing_indices]
+
         if name_collisions:
             raise Exception(
                 "These indices already exist: {}.\n"
                 "Change version or label, or remove existing indices"
                 .format(', '.join(name_collisions))
             )
-        return indices
 
     def get_raw_output_path(self, index_name):
         return self.s3_raw_bucket + index_name + '.json'
