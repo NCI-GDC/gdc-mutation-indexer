@@ -9,7 +9,7 @@ PyYAML==3.11
 requests==2.6.0
 boto==2.46.1
 xlrd==0.9.3
--e git+ssh://git@github.com/NCI-GDC/normalizer.git@master#egg=normalizer
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@release/redfish#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/normalizer.git@e6c16651cbc9bb282b6fee6be13db82cfd22dbad#egg=normalizer
+-e git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/case_centric-with-normalizer#egg=gdcmodels
 -e git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
 -e git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
