@@ -1,5 +1,6 @@
 import yaml
 import logging
+import os
 
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
@@ -179,7 +180,6 @@ class MAFBuilder(BaseInputBuilder):
         3. Look up corresponding files in es
         4. Parse out those files' acls
         """
-
         es = Elasticsearch(self.config.es_host,
                            port=self.config.es_port,
                            http_auth=(self.config.es_user,
@@ -218,7 +218,7 @@ class MAFBuilder(BaseInputBuilder):
         def acl_inner():
             try:
                 # trim out leading folders
-                file_name = url.split('/')[-1]
+                file_name = os.path.basename(url)
 
                 # mafs may be zipped or unzipped
                 # we expect the file_name in the File to be 'xxx.gz'

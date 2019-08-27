@@ -2,6 +2,7 @@ import yaml
 import logging
 import csv
 
+from pyspark.sql import Row
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import (
     col, udf
@@ -53,16 +54,16 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         augmenting them with additional features
         """
         for k, v in self.sources.items():
-            file_path = resource_filename(Requirement.parse(
-                'mutationindexerresource'), 'clinical_variant_annotation/civic/{}'.format(v)
+            file_path = resource_filename(
+                Requirement.parse('mutationindexerresource'),
+                'clinical_variant_annotation/civic/{}'.format(v),
             )
             try:
                 # read Civic annotation from csv files and merge with existing dataframe
                 with open(file_path) as f:
-                    reader = csv.reader(f, delimiter='\t')
-                    data = [tuple(r) for r in reader]
-                    headers = data.pop(0)
-                new_df = self.sqlContext.createDataFrame(data, headers)
+                    reader = csv.DictReader(f, delimiter='\t')
+                    new_df = self.sqlContext.createDataFrame(Row(**d) for d in reader)
+
                 maf_df = self.standardize_schema_with_maf(new_df, maf_df, k)
 
             except Exception as e:
@@ -108,6 +109,6 @@ class CivicBuilder(ClinicalAnnotationBuilder):
         # read Civic annotation from csv files into pandas dataset
         path = resource_filename('exports.schemas.clinical_annotations', 'civic.yml')
         with open(path, 'r') as f:
-            s_yaml = yaml.load(f, Loader=yaml.SafeLoader)
+            s_yaml = yaml.safe_load(f)
             self.logger.info(s_yaml)
             return s_yaml.get('source'), s_yaml.get('schema')

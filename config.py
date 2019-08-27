@@ -146,6 +146,10 @@ class BaseConfig(object):
         'project.released',
         'project.state',
 
+        # TODO: Follow up with User Services to confirm if these are not needed
+        'diagnoses.inss_stage',
+        'diagnoses.international_prognostic_index',
+
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
         'treatments.regimen_or_line_of_therapy',

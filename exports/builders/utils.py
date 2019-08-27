@@ -95,16 +95,31 @@ def get_case_ids_from_source_es(config, sqlContext):
     aliquot_to_url = aliquot_to_url.select('aliquot_id', 'url').rdd.collectAsMap()
     unique_aliquots = aliquot_to_url.keys()
 
-    query = {
-        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
-        "query": {
-            "nested": {
-                "path": "samples.portions.analytes.aliquots",
-                "query": {
-                    "terms": {
-                        "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
+    musts = [
+        {
+            'nested': {
+                'path': 'samples.portions.analytes.aliquots',
+                'query': {
+                    'terms': {
+                        'samples.portions.analytes.aliquots.submitter_id': list(unique_aliquots)
                     }
                 }
+            }
+        }
+    ]
+
+    if config.projects:
+        musts.append({
+            'terms': {
+                'project.project_id': config.projects
+            }
+        })
+
+    query = {
+        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
+        'query': {
+            'bool': {
+                'must': musts
             }
         }
     }
