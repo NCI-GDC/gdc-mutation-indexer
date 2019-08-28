@@ -1,5 +1,5 @@
 import json
-from pyspark.sql.functions import explode
+from pyspark.sql.functions import col, explode
 
 
 class BaseJoinsTest:
@@ -62,16 +62,18 @@ class BaseJoinsTest:
             '{}.{}'.format(exploded_alias, f) for f in packed_fields
         ]
 
+        # this split allows deeper parent fields like "foo.bar"
         all_fields = (
-            [f.split('.')[-1] for f in parent_fields] +  # this allows deeper parent fields like "foo.bar"
+            [f.split('.')[-1] for f in parent_fields] +
             child_fields
         )
 
         unpacked = (
-            dataframe.select(explode(list_field).alias(exploded_alias),
-                             *parent_fields)
-                     .select(*all_fields)
+            dataframe.select(
+                explode(list_field).alias(exploded_alias),
+                *[col(f).alias(f.split('.')[-1]) for f in parent_fields]
+            )
+            .select(*all_fields)
         )
 
         return unpacked
-
