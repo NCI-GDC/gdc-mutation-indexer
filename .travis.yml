@@ -17,13 +17,13 @@ cache: pip
 
 env:
   global:
-    - SPARK_VERSION="2.0.1"
+    - SPARK_VERSION="2.4.3"
     - ES_VERSION="5.4.3"
     - BOTO_CONFIG=/dev/null
 
 before_install:
-  - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
-  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  - wget https://mirrors.ocf.berkeley.edu/apache/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+  - wget https://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
@@ -41,7 +41,7 @@ install:
   - unzip elasticsearch-hadoop-${ES_VERSION}.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
   - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
-  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
+  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
   - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
 
 script:
