@@ -54,7 +54,7 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     :param start_pos: The starting position of the mutation
     :param end_pos: The end position of the mutation
     :param ref_allele: The reference allele
-    :param tumor_allel: The tumor allele
+    :param tumor_allele: The tumor allele
     """
     chromosome = chromosome.replace('chr', '')
 
@@ -524,13 +524,14 @@ def sanitize_gene_aa_change(df):
 
 
 def convert_empty_str_to_null_in_col(df, col_name):
-    '''
+    """
     Converts empty string to null in df.col_name
-    '''
+    """
 
-    return df.withColumn(col_name,
-            when(col(col_name) != "", col(col_name))
-            .otherwise(None))
+    return df.withColumn(
+        col_name,
+        when(col(col_name) != "", col(col_name)).otherwise(None)
+    )
 
 
 def get_column_name(column_name, dataset_key):

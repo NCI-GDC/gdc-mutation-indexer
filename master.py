@@ -2,6 +2,7 @@ import subprocess
 import logging
 import pprint
 import os
+from functools import partial
 
 from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
@@ -19,6 +20,8 @@ from config import (
     get_git_commit,
     BaseConfig,
 )
+from exports.es_utils import get_non_null_fields
+
 
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger(__file__)
@@ -78,19 +81,39 @@ def process_args(args):
     return args
 
 
-def user_confirm(prompt_string, logger):
+def no_op():
+    """
+    Callable that does nothing
+    """
+    pass
+
+
+def raise_on_decline():
+    """
+    Raise a generic exception
+    """
+    raise Exception('User refused to continue')
+
+
+def user_confirm(prompt_string, log, on_confirm=no_op,
+                 on_decline=raise_on_decline):
     """
     Prompt user confirmation to proceed
+
+    :param prompt_string: prompt string
+    :param log: logging instance
+    :param on_confirm: callable to invoke when user confirms
+    :param on_decline: callable to invoke when user declines
     """
     while True:
-        logger.info(prompt_string)
+        log.info(prompt_string)
         ans = raw_input().lower()
         if ans in ['y', 'yes']:
-            return
+            return on_confirm()
         elif ans in ['n', 'no']:
-            raise Exception('User refused to continue')
+            return on_decline()
         else:
-            logger.error('Invalid answer: {}'.format(ans))
+            log.error('Invalid answer: {}'.format(ans))
 
 
 def confirm_args(args):
@@ -105,8 +128,31 @@ def confirm_args(args):
     config = BaseConfig(env_dict=env_dict)
 
     # Confirm with user
-    user_confirm("Will build indices:\n{}\nContinue?"
-                .format(pprint.pformat(config.indices)), logger)
+    user_confirm(
+        "Will build indices:\n{}\nContinue?".format(
+            pprint.pformat(config.indices)),
+        logger
+    )
+
+    logger.info("Validating differences in mappings...")
+
+    non_null_fields = get_non_null_fields(config)
+
+    if not non_null_fields:
+        return
+
+    user_confirm(
+        (
+            "\nThe following fields have new values and are missing from the "
+            "case_centric mappings:\n\n{}\n\nWould you like to extend the "
+            "blacklist? NOTE: Skipping expand might result in ES index upload "
+            "failure.\n".format("\n".join(non_null_fields))
+        ),
+        logger,
+        on_confirm=partial(config.case_exclude_fields.extend, non_null_fields),
+        on_decline=no_op,
+    )
+
     return
 
 

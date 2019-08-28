@@ -1,3 +1,5 @@
+import logging
+
 from pyspark.sql.functions import (
     col,
     collect_set,
@@ -5,12 +7,12 @@ from pyspark.sql.functions import (
     udf,
 )
 from pyspark.sql.types import StringType, ArrayType
+
 from utils import (
     get_case_ids_from_source_es,
     remove_columns,
     standardize_schema,
 )
-import logging
 
 from config import LOG_FORMAT
 
@@ -42,6 +44,7 @@ class CaseBuilder(object):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
+
         source = '{}/{}'.format(self.config.graph_index,
                                 self.config.graph_document)
 
