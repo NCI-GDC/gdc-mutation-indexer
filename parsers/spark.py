@@ -83,11 +83,9 @@ class SparkConfArgs(BaseParser):
                 'default': -1,
                 'type': int,
             },
-            # Support joins between the gene model and very large volumes of
-            # MAF/GISTIC data by setting a huge default.
             'spark-sql-shuffle-partitions': {
                 'help': 'Number of shuffle partitions for joins/aggregations',
-                'default': 8192,
+                'default': 1024,
                 'type': int,
             },
         }
