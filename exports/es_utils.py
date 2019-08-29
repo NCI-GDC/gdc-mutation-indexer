@@ -194,11 +194,9 @@ def get_non_null_fields(config, blacklist=None):
         else:
             query = exists
 
-        resp = es.count(index=config.graph_index,
-                        doc_type=config.graph_document,
-                        body={'query': query})
-
-        if resp['count'] > 0:
+        if get_es_doc_count(
+                es_client=es, index_name=config.graph_index,
+                doc_type=config.graph_document, query={'query': query}) > 0:
             paths_with_data.append(path)
 
     return paths_with_data

@@ -149,7 +149,7 @@ def confirm_args(args):
             "failure.\n".format("\n".join(non_null_fields))
         ),
         logger,
-        on_confirm=partial(config.case_exclude_fields.extend, non_null_fields),
+        on_confirm=partial(args.exclude_fields.extend, non_null_fields),
         on_decline=no_op,
     )
 

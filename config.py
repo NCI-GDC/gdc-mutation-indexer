@@ -176,6 +176,9 @@ class BaseConfig(object):
         self.gistic_urls = self.get_gistic_urls()
         self._acls = None
 
+        if self.exclude_fields:
+            self.case_exclude_fields.extend(self.exclude_fields)
+
     def assign_all_parameters(self, env_dict=None):
         """
         Takes care of all config parameters to be set correctly

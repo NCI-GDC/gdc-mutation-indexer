@@ -50,6 +50,9 @@ class CaseBuilder(object):
 
         case_exclude_fields = (self.config.case_exclude_fields
                                + self.config.get_samples_fields_to_exclude())
+
+        self.logger.info('Exclude fields: {}'.format(case_exclude_fields))
+
         # Load all cases from graph_index
         df = (
             self.sqlContext.read.format("es")
