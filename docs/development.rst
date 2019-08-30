@@ -26,19 +26,18 @@ distribution`_ from apache and a couple dependency jars placed appropriately.
 Requirements
 ------------
 
-Elasticsearch 5.0 and Spark 2.0 will need to be installed. Both need Java 8.
+Elasticsearch 5.6 and Spark 2.4 will need to be installed. Both need Java 8.
 
-- `elasticsearch 5.0.0 <https://www.elastic.co/downloads/elasticsearch>`_
-- `spark-2.0.1-hadoop-2.7 <http://spark.apache.org/downloads.html>`_
+- `elasticsearch 5.6.14 <https://www.elastic.co/downloads/elasticsearch>`_
+- `spark-2.4.3-hadoop-2.7 <http://spark.apache.org/downloads.html>`_
 
 The following libraries are required by spark. Install by either adding them to
 the maven dependencies or download the jars and place them in the class path.
 The easiest way to add them to the classpath is by placing them in ``spark/jars``.
 
 - `hadoop-aws-2.7.7 <https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/2.7.3>`_
-- `elasticsearch-hadoop-5.0.0 <https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop/5.0.0>`_
+- `elasticsearch-hadoop-5.6.14 <https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch-hadoop/5.6.14>`_
 - `aws-java-sdk-1.7.4 <https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk/1.7.4>`_
-- `spark-csv-1.5 <https://mvnrepository.com/artifact/com.databricks/spark-csv_2.11/1.5.0>`_
 
 Elasticsearch
 -------------
