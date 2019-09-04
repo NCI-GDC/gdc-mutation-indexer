@@ -1,28 +1,24 @@
-import yaml
 import logging
 import os
+from pkg_resources import resource_filename
 
-from pyspark.sql.types import StringType, IntegerType, ArrayType
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+import yaml
 from elasticsearch import Elasticsearch
+from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from pyspark.sql.types import StringType, IntegerType, ArrayType
 
+from config import LOG_FORMAT
 from exports.builders.utils import (
     uuid5_col,
     ssm_label_col,
     extract_sift_polyphen,
 )
-
 from exports.es_utils import (
     iterate_es_results,
 )
-
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.clinical_annotations.civic import CivicBuilder
-
-from pkg_resources import resource_filename
-
-from config import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 

@@ -139,6 +139,7 @@ def confirm_args(args):
     non_null_fields = get_non_null_fields(config)
 
     if not non_null_fields:
+        logger.info("No new breaking differences were found.")
         return
 
     user_confirm(
@@ -149,7 +150,7 @@ def confirm_args(args):
             "failure.\n".format("\n".join(non_null_fields))
         ),
         logger,
-        on_confirm=partial(args.exclude_fields.extend, non_null_fields),
+        on_confirm=partial(args.blacklist_fields.extend, non_null_fields),
         on_decline=no_op,
     )
 

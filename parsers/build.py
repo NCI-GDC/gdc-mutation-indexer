@@ -77,7 +77,7 @@ class BuildArgs(BaseParser):
                 'nargs': '*',
                 'default': [],
             },
-            'exclude-fields': {
+            'blacklist-fields': {
                 'help': 'Specify additional fields to be excluded when loading graph index case df',
                 'nargs': '*',
                 'default': [],

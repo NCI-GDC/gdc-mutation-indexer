@@ -105,22 +105,15 @@ def get_non_null_fields(config, blacklist=None):
     """
     if not blacklist:
         # Load default blacklist fields from the config
-        blacklist = (
-            config.case_exclude_fields +
-            config.get_samples_fields_to_exclude()
-        )
+        blacklist = config.exclude_fields
 
-    es = Elasticsearch(
-        hosts=[config.source_es_host],
-        port=config.source_es_port,
-        http_auth=(config.source_es_user, config.source_es_pass),
-    )
+    es_client = config.es
 
     # get actual graph index mappings
-    gi_mappings = es.indices.get_mapping(config.graph_index,
-                                         config.graph_document)
+    gi_mappings = es_client.indices.get_mapping(config.graph_index,
+                                                config.graph_document)
     # get actual graph index settings
-    gi_settings = es.indices.get_settings(config.graph_index)
+    gi_settings = es_client.indices.get_settings(config.graph_index)
     gi_doc_mappings = gi_mappings.values()[0]['mappings']
 
     # Need to create the mappings in gdcmodels format
@@ -195,7 +188,7 @@ def get_non_null_fields(config, blacklist=None):
             query = exists
 
         if get_es_doc_count(
-                es_client=es, index_name=config.graph_index,
+                es_client=es_client, index_name=config.graph_index,
                 doc_type=config.graph_document, query={'query': query}) > 0:
             paths_with_data.append(path)
 
