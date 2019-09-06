@@ -54,7 +54,7 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     :param start_pos: The starting position of the mutation
     :param end_pos: The end position of the mutation
     :param ref_allele: The reference allele
-    :param tumor_allel: The tumor allele
+    :param tumor_allele: The tumor allele
     """
     chromosome = chromosome.replace('chr', '')
 
@@ -95,16 +95,31 @@ def get_case_ids_from_source_es(config, sqlContext):
     aliquot_to_url = aliquot_to_url.select('aliquot_id', 'url').rdd.collectAsMap()
     unique_aliquots = aliquot_to_url.keys()
 
-    query = {
-        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
-        "query": {
-            "nested": {
-                "path": "samples.portions.analytes.aliquots",
-                "query": {
-                    "terms": {
-                        "samples.portions.analytes.aliquots.submitter_id": list(unique_aliquots)
+    musts = [
+        {
+            'nested': {
+                'path': 'samples.portions.analytes.aliquots',
+                'query': {
+                    'terms': {
+                        'samples.portions.analytes.aliquots.submitter_id': list(unique_aliquots)
                     }
                 }
+            }
+        }
+    ]
+
+    if config.projects:
+        musts.append({
+            'terms': {
+                'project.project_id': config.projects
+            }
+        })
+
+    query = {
+        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
+        'query': {
+            'bool': {
+                'must': musts
             }
         }
     }
@@ -509,13 +524,14 @@ def sanitize_gene_aa_change(df):
 
 
 def convert_empty_str_to_null_in_col(df, col_name):
-    '''
+    """
     Converts empty string to null in df.col_name
-    '''
+    """
 
-    return df.withColumn(col_name,
-            when(col(col_name) != "", col(col_name))
-            .otherwise(None))
+    return df.withColumn(
+        col_name,
+        when(col(col_name) != "", col(col_name)).otherwise(None)
+    )
 
 
 def get_column_name(column_name, dataset_key):

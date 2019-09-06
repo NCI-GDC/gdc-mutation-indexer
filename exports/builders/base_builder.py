@@ -46,7 +46,7 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         index_doc = '{}/{}'.format(index, self.index_name)
 
-        index_body = ModelMapper(self.index_name).index_settings
+        index_body = ModelMapper(self.index_name).get_normalized_mappings()
         index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))

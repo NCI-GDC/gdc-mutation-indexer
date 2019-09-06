@@ -124,6 +124,7 @@ class BaseConfig(object):
         'days_to_index',
         'family_histories',
         'files',
+        'follow_ups',
         'project.disease_type',
         'project.primary_site',
         'tissue_source_site',
@@ -174,6 +175,10 @@ class BaseConfig(object):
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
         self._acls = None
+        self._exclude_fields = None
+
+        if self.blacklist_fields:
+            self.exclude_fields.extend(self.blacklist_fields)
 
     def assign_all_parameters(self, env_dict=None):
         """
@@ -489,6 +494,15 @@ class BaseConfig(object):
                             is_secure=True)
         bucket = conn.get_bucket(get_bucket_name(bucket_name))
         return bucket.list()
+
+    @property
+    def exclude_fields(self):
+        if self._exclude_fields is None:
+            self._exclude_fields = (
+                self.case_exclude_fields +
+                self.get_samples_fields_to_exclude()
+            )
+        return self._exclude_fields
 
 
 if __name__ == '__main__':

@@ -76,7 +76,7 @@ def create_test_index(es):
     file_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='file')
 
     combined = {'mappings': {}, 'settings': {}}
-    combined['mappings'].update(case_model_mapper.index_settings['mappings']) 
+    combined['mappings'].update(case_model_mapper.index_settings['mappings'])
     combined['mappings'].update(file_model_mapper.index_settings['mappings'])
 
     combined['settings'].update(case_model_mapper.index_settings['settings'])

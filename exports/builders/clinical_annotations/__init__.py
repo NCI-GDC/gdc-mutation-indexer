@@ -8,7 +8,6 @@ logger = logging.getLogger('clinical_annotation')
 
 
 def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fields=None):
-    mapping = select_mapping(index_name, 'ssm')
 
     def restructure(doc, parent_name):
         """
@@ -29,23 +28,31 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fiel
         ```
         """
 
+        if type(doc) is not dict:
+            return []
+
         cols = []
-        if type(doc) is dict:
-            for k, v in doc.items():
-                if 'type' in v and 'properties' not in v:
-                    name = '{}_{}'.format(parent_name, k)
-                    if 'default' in v:
-                        name = v['default']
-                    cols.append(col(name).alias(k))
+        for k, v in doc.items():
+            if 'type' in v and 'properties' not in v:
+                name = '{}_{}'.format(parent_name, k)
+                if 'default' in v:
+                    name = v['default']
+                cols.append(col(name).alias(k))
+            else:
+                if 'properties' in v:
+                    cols.append(
+                        struct(restructure(v['properties'], k)).alias(k)
+                    )
                 else:
-                    if 'properties' in v:
-                        cols.append(struct(restructure(v['properties'], k)).alias(k))
-                    else:
-                        cols.append(struct(restructure(v, k)).alias(k))
+                    cols.append(
+                        struct(restructure(v, k)).alias(k)
+                    )
         return cols
 
     name = 'clinical_annotations'
-    cols = ['ssm_id'] + restructure({name: mapping['properties'].get(name)}, '')
+    mapping = select_mapping(index_name, name)
+    cols = ['ssm_id'] + restructure({name: mapping}, '')
+    logger.info(input_df)
     logger.info(cols)
 
     df = input_df.select(*cols)
