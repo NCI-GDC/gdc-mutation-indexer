@@ -144,6 +144,15 @@ class BaseConfig(object):
         # Work around bug in how elasticsearch-hadoop filters grandchild fields
         'treatments.initial_disease_status',
         'treatments.regimen_or_line_of_therapy',
+
+        # Extra fields with data introduced in DR-19
+        'diagnoses.igcccg_stage',
+        'diagnoses.inss_stage',
+        'diagnoses.masaoka_stage',
+        'diagnoses.primary_gleason_grade',
+        'diagnoses.secondary_gleason_grade',
+        'index_date',
+        'lost_to_followup',
     ]
 
     samples_include_fields = ['samples.sample_type']
