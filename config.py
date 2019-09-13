@@ -81,7 +81,7 @@ class BaseConfig(object):
     }
 
     # Used for loading case/graph documents from a different es cluster
-    graph_index = 'gdc_from_graph'
+    graph_index = 'esbuild-dr-19-from-scratch-index'
     graph_document = 'case'
 
     # Namespace for ssm_ids so that they may be reproduced
