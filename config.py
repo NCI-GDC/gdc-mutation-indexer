@@ -151,6 +151,7 @@ class BaseConfig(object):
         'diagnoses.masaoka_stage',
         'diagnoses.primary_gleason_grade',
         'diagnoses.secondary_gleason_grade',
+        'diagnoses.international_prognostic_index',
         'index_date',
         'lost_to_followup',
     ]
