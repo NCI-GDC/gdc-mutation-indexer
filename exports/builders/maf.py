@@ -443,7 +443,11 @@ class MAFBuilder(BaseInputBuilder):
         Identify variant caller by portion of url name.
         """
 
-        possible_callers = ['mutect', 'muse', 'varscan', 'somaticsniper', 'FM']
+        # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
+        # the addition of dots, so that the code does what it should be
+        # TODO: Find a better way to get this information
+        possible_callers = ['.mutect.', '.muse.', '.varscan.',
+                            '.somaticsniper.', 'FM-AD_SNV']
 
         try:
             caller = [c for c in possible_callers if c in url][0]
