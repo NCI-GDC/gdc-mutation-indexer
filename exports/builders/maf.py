@@ -446,17 +446,22 @@ class MAFBuilder(BaseInputBuilder):
         # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
         # the addition of dots, so that the code does what it should be
         # TODO: Find a better way to get this information
-        possible_callers = ['.mutect.', '.muse.', '.varscan.',
-                            '.somaticsniper.', 'FM-AD_SNV']
+        possible_callers = {
+            '.mutect.': 'mutect2',
+            '.muse.': 'muse',
+            '.varscan.': 'varscan',
+            '.somaticsniper.': 'somaticsniper',
+            'FM-AD_SNV': 'FM Simple Somatic Mutation',
+        }
 
         try:
-            caller = [c for c in possible_callers if c in url][0]
-            if caller == 'mutect':
-                caller += '2'
-            if caller == 'FM':
-                caller += ' Simple Somatic Mutation'
+            caller_keys = [c for c in possible_callers if c in url]
 
-        except IndexError:
+            assert len(caller_keys) == 1
+
+            caller = possible_callers[caller_keys[0]]
+
+        except AssertionError:
             raise Exception("Cannot identify caller for url {}".format(url))
 
         return caller
