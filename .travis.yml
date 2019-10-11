@@ -27,7 +27,7 @@ before_install:
   # The official Spark builds are compiled on Java 8.
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
-  - wget https://mirrors.ocf.berkeley.edu/apache/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+  - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
   - wget https://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
