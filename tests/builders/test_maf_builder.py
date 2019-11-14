@@ -1,9 +1,11 @@
 import os
 import re
 import json
+from collections import Counter
+from contextlib import contextmanager
+
 import yaml
 import pytest
-from collections import Counter
 from pyspark.sql.functions import lit
 from pyspark.sql.types import ArrayType, StringType
 
@@ -11,6 +13,30 @@ from exports.builders import MAFBuilder
 from tests_config import TestConfig
 
 conf = TestConfig()
+
+
+@contextmanager
+def does_not_raise():
+    yield
+
+
+@pytest.mark.parametrize('url, expected, behavior', [
+    ('s3a://varscan-10/bar.somaticsniper.baz', 'somaticsniper', does_not_raise()),
+    ('s3a://varscan-10/bar.mutect.baz', 'mutect2', does_not_raise()),
+    ('s3a://varscan-10/bar.muse.baz', 'muse', does_not_raise()),
+    ('s3a://varscan-10/bar.varscan.baz', 'varscan', does_not_raise()),
+    ('s3a://varscan-10/bar.FM-AD_SNV.baz', 'FM Simple Somatic Mutation', does_not_raise()),
+    ('s3://foo-bar/bar.something.baz', None, pytest.raises(Exception)),
+    ('s3a://varscan-10/bar.FM-AD.baz', None, pytest.raises(Exception)),
+    ('s3a://varscan-10/bar.muse.varscan.baz', None, pytest.raises(Exception)),
+])
+def test_maf_builder_get_caller(sqlContext, maf_df, url, expected, behavior):
+    builder = MAFBuilder(conf, sqlContext)
+
+    with behavior:
+        result = builder.get_caller(url)
+
+        assert result == expected
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
