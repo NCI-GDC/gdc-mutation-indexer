@@ -1,13 +1,14 @@
-from exports.builders.utils import percentile
-from pyspark.sql.functions import col, size
-from elasticsearch import Elasticsearch
 import json
 import logging
 import os
 
-from ..mappers.model_mapper import ModelMapper
+from elasticsearch import Elasticsearch
+from normalizer.mapper import ModelMapper
+from pyspark.sql.functions import col, size
 
 from config import LOG_FORMAT
+from exports.builders.utils import percentile
+
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -45,7 +46,11 @@ class BaseBuilder(object):
         index = self.config.indices[self.index_name]
         index_doc = '{}/{}'.format(index, self.index_name)
 
-        index_body = ModelMapper(self.index_name).index_settings
+        index_mapper = ModelMapper(self.index_name)
+        if self.config.skip_normalization:
+            index_body = index_mapper.index_settings
+        else:
+            index_body = index_mapper.get_normalized_mappings()
         index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))
@@ -78,7 +83,6 @@ class BaseBuilder(object):
             .option('es.batch.size.entries', self.config.batch_size_entries)\
             .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
-            .option('es.spark.dataframe.write.null', 'true')\
             .save(index_doc)
 
         df.unpersist()

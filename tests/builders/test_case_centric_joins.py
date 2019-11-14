@@ -15,12 +15,12 @@ class TestCaseCentricJoins(BaseJoinsTest):
     Test case_centric index joins
 
         case{}
-             |___ gene[]
-                     |___ ssm[]
-                           |___ consequence[]
-                           |             |_____ transcript{}
-                           |                          |_____ annotation{}
-                           |___ observation[]
+        |___gene[]
+            |___ssm[]
+                |___consequence[]
+                    |___transcript{}
+                        |___annotation{}
+                |___observation[]
 
     """
 
@@ -84,7 +84,8 @@ class TestCaseCentricJoins(BaseJoinsTest):
         # ssm_subtree stats expected:
         cons_df = (ConsequenceBuilder(conf, sqlContext)
                    .build_for_ssm(maf_df, 'case_centric'))
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'case_centric')
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'case_centric',
+                                                    selector='ssm')
 
         df = cons_df.join(obs_df, on=['ssm_id'], how='left')
 
@@ -104,4 +105,3 @@ class TestCaseCentricJoins(BaseJoinsTest):
         es_stats = get_stats(df)
 
         assert stats == es_stats
-

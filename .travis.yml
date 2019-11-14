@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 
 language: python
 
@@ -17,13 +17,18 @@ cache: pip
 
 env:
   global:
-    - SPARK_VERSION="2.0.1"
-    - ES_VERSION="5.4.3"
+    - SPARK_VERSION="2.4.4"
+    - ES_VERSION="5.6.14"
     - BOTO_CONFIG=/dev/null
 
 before_install:
-  - wget http://d3kbcqa49mib13.cloudfront.net/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz;
-  - wget http://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  # Work around a bug in the Travis Xenial image where the environment is
+  # always configured for OpenJDK 11 unless you set language: java.
+  # The official Spark builds are compiled on Java 8.
+  - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+  - export PATH="${JAVA_HOME}/bin:${PATH}"
+  - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+  - wget https://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
@@ -41,9 +46,8 @@ install:
   - unzip elasticsearch-hadoop-${ES_VERSION}.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
   - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
-  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.3-src.zip:$PYTHONPATH
+  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
   - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
-  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 
 script:
   - java -version

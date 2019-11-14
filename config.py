@@ -121,38 +121,20 @@ class BaseConfig(object):
         # Pieces of the graph index we don't want to copy over
         'annotations',
         'case_autocomplete',
-        'days_to_index',
         'family_histories',
         'files',
+        'follow_ups',
         'project.disease_type',
         'project.primary_site',
-        'tissue_source_site',
         '*_ids',
 
         # Fields omitted from *_centric models that have values in graph index
-        'demographic.age_at_index',
         'diagnoses.annotations',
-        'diagnoses.days_to_diagnosis',
-        'diagnoses.icd_10_code',
-        'diagnoses.iss_stage',
-        'diagnoses.metastasis_at_diagnosis',
-        'diagnoses.synchronous_malignancy',
-        'diagnoses.treatments.initial_disease_status',
-        'diagnoses.treatments.regimen_or_line_of_therapy',
-        'diagnoses.vascular_invasion_type',
-
-        # Work around bug in how elasticsearch-hadoop filters grandchild fields
-        'treatments.initial_disease_status',
-        'treatments.regimen_or_line_of_therapy',
-
-        # Extra fields with data introduced in DR-19
-        'diagnoses.igcccg_stage',
-        'diagnoses.inss_stage',
-        'diagnoses.masaoka_stage',
-        'diagnoses.primary_gleason_grade',
-        'diagnoses.secondary_gleason_grade',
-        'index_date',
-        'lost_to_followup',
+        '*.updated_datetime',
+        '*.created_datetime',
+        'project.releasable',
+        'project.released',
+        'project.state',
     ]
 
     samples_include_fields = ['samples.sample_type']
@@ -178,6 +160,10 @@ class BaseConfig(object):
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
         self._acls = None
+        self._exclude_fields = None
+
+        if self.blacklist_fields:
+            self.exclude_fields.extend(self.blacklist_fields)
 
     def assign_all_parameters(self, env_dict=None):
         """
@@ -250,16 +236,21 @@ class BaseConfig(object):
             for index_type in self.index_types
         }
 
+        self.validate_indices(indices)
+
+        return indices
+
+    def validate_indices(self, indices):
         existing_indices = self.es.indices.get_alias().keys()
         name_collisions = [name for name in indices.values()
                            if name in existing_indices]
+
         if name_collisions:
             raise Exception(
                 "These indices already exist: {}.\n"
                 "Change version or label, or remove existing indices"
                 .format(', '.join(name_collisions))
             )
-        return indices
 
     def get_raw_output_path(self, index_name):
         return self.s3_raw_bucket + index_name + '.json'
@@ -488,6 +479,15 @@ class BaseConfig(object):
                             is_secure=True)
         bucket = conn.get_bucket(get_bucket_name(bucket_name))
         return bucket.list()
+
+    @property
+    def exclude_fields(self):
+        if self._exclude_fields is None:
+            self._exclude_fields = (
+                self.case_exclude_fields +
+                self.get_samples_fields_to_exclude()
+            )
+        return self._exclude_fields
 
 
 if __name__ == '__main__':

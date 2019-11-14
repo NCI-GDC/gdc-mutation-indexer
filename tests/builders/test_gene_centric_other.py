@@ -1,6 +1,6 @@
 import pytest
 
-from exports.mappers.model_mapper import ModelMapper
+from normalizer.mapper import ModelMapper
 from tests_config import TestConfig
 
 conf = TestConfig()

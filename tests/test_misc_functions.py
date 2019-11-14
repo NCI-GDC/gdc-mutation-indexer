@@ -1,13 +1,13 @@
 import pytest
 from random import randint
 
+from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import lit
 from exports.builders.utils import (
     percentile,
     struct_select,
     extract_aas_position,
 )
-from exports.mappers.model_mapper import ModelMapper
 from tests_config import TestConfig
 from utils.true_stats import TestDataStats
 from exports.builders.utils import (
@@ -29,6 +29,43 @@ def create_df(sqlContext, values, column_name='values'):
     """
     values = map(lambda v: (v,), values)
     return sqlContext.createDataFrame(values, [column_name])
+
+
+@pytest.mark.parametrize('index', ['ssm_centric', 'ssm_occurrence_centric',
+                                   'cnv_centric', 'cnv_occurrence_centric'])
+def test_struct_select_without_selector(sqlContext, index):
+    mapper = ModelMapper(index)
+
+    # Make sure that we are actually testing something
+    assert len(mapper.nested_mappings) > 0
+
+    for mapping in mapper.nested_mappings:
+        stmt = struct_select(index, mapping)
+        assert stmt
+
+
+@pytest.mark.parametrize(
+    'index, selector',
+    [
+        ('case_centric', lambda x: x[:1]),
+        ('case_centric', lambda x: [x[1]] if len(x) > 1 else x[:1]),
+        ('gene_centric', lambda x: x[:1]),
+        ('gene_centric', lambda x: [x[1]] if len(x) > 1 else x[:1]),
+    ]
+)
+def test_struct_select_with_selector(sqlContext, index, selector):
+    """
+    Since case_centric and gene_centric have same nested mappings under
+    different paths we need to provide a selector to resolve it.
+    """
+    mapper = ModelMapper(index)
+
+    # Make sure that we are actually testing something
+    assert len(mapper.nested_mappings) > 0
+
+    for mapping in mapper.nested_mappings:
+        stmt = struct_select(index, mapping, selector=selector)
+        assert stmt
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'es_client')
@@ -57,17 +94,6 @@ class TestMiscFunctions:
         assert percentile(v, 0) == sorted_v[0]
         assert percentile(v, 50) == sorted_v[l/2]
         assert percentile(v, 100) == sorted_v[-1]
-
-    def test_struct_select(self):
-        """
-        Test mapping to select
-        """
-
-        paths_map = ModelMapper(None).paths_map
-        for mapping in paths_map:
-            for index in paths_map[mapping]:
-                stmt = struct_select(index, mapping)
-                assert stmt
 
     def test_graph_index(self, es_client):
         """

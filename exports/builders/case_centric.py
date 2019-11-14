@@ -84,10 +84,10 @@ class CaseCentricBuilder(BaseBuilder):
                                            'canonical_transcript_length_genomic'])
 
         gistic_gene_df = get_gene_df(gistic_df, self.index_name,
-                              add_fields=['case_id'],
-                              drop_fields=['canonical_transcript_length',
-                                           'canonical_transcript_length_cds',
-                                           'canonical_transcript_length_genomic'])
+                                     add_fields=['case_id'],
+                                     drop_fields=['canonical_transcript_length',
+                                                  'canonical_transcript_length_cds',
+                                                  'canonical_transcript_length_genomic'])
 
         gene_df = gene_df.union(gistic_gene_df).distinct()
         self.log_count(gene_df)
@@ -137,7 +137,8 @@ class CaseCentricBuilder(BaseBuilder):
                    .build_for_ssm(maf_df, self.index_name, join_gene=False))
 
         # Observation
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name,
+                                                    selector='ssm')
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM
@@ -159,21 +160,16 @@ class CaseCentricBuilder(BaseBuilder):
     def build_cnv_subtree(self, gistic_df):
         """
         cnv[]
-           |___ consequence[]
-           |            |_____ gene{}
            |___ observation[]
 
         """
-        # Consequence
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_cnv(gistic_df, self.index_name))
 
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name,
+                                                    selector='cnv')
 
         # Build the final cnv dataframe
-        cnv_df = build_cnv_subtree(gistic_df, cons_df,
-                                   self.index_name, obs_df=obs_df)
+        cnv_df = build_cnv_subtree(gistic_df, self.index_name, obs_df=obs_df)
 
         # Aggregate CNV
         self.log('Aggregating cnv by case_id and gene_id')

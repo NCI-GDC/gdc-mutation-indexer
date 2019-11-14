@@ -134,7 +134,8 @@ class GeneCentricBuilder(BaseBuilder):
                                                         self.index_name)
 
         # Observation
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name,
+                                                    selector='ssm')
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM
@@ -159,21 +160,15 @@ class GeneCentricBuilder(BaseBuilder):
         """
         TODO: This branch is same as in case_centric and can be reused
         cnv[]
-           |___ consequence[]
-           |            |_____ gene{}
            |___ observation[]
 
         """
-        # Consequence
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_cnv(gistic_df, self.index_name))
-
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name,
+                                                    selector='cnv')
 
         # Build the final cnv dataframe
-        cnv_df = build_cnv_subtree(gistic_df, cons_df,
-                                   self.index_name, obs_df=obs_df)
+        cnv_df = build_cnv_subtree(gistic_df, self.index_name, obs_df=obs_df)
 
         # Aggregate CNV
         self.log('Aggregating cnv by case_id and gene_id')

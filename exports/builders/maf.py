@@ -1,26 +1,24 @@
-import yaml
 import logging
+import os
+from pkg_resources import resource_filename
 
-from pyspark.sql.types import StringType, IntegerType, ArrayType
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+import yaml
 from elasticsearch import Elasticsearch
+from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from pyspark.sql.types import StringType, IntegerType, ArrayType
 
+from config import LOG_FORMAT
 from exports.builders.utils import (
     uuid5_col,
     ssm_label_col,
     extract_sift_polyphen,
 )
-
 from exports.es_utils import (
     iterate_es_results,
 )
-
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
-
-from pkg_resources import resource_filename
-
-from config import LOG_FORMAT
+from exports.builders.clinical_annotations.civic import CivicBuilder
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -35,6 +33,7 @@ class MAFBuilder(BaseInputBuilder):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.acls = self.get_acls()
         self.schema = self.get_schema()
+        self.annotation_builders = [CivicBuilder(config, sqlContext)]
 
     def build_from_scratch(self):
         """
@@ -75,6 +74,8 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('variant_process', lit('masked'))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
+        for builder in self.annotation_builders:
+            df = builder.merge_with_maf(df)
 
         self.logger.info('Repartitioning MAF dataframe')
         df = df.repartition(self.config.df_repartition, 'ssm_id')
@@ -84,6 +85,9 @@ class MAFBuilder(BaseInputBuilder):
             df.cache().count()
 
         return df
+
+    def get_annotation_schemas(self):
+        return [ann.schema for ann in self.annotation_builders]
 
     def map_transform(self, df):
         """
@@ -172,7 +176,6 @@ class MAFBuilder(BaseInputBuilder):
         3. Look up corresponding files in es
         4. Parse out those files' acls
         """
-
         es = Elasticsearch(self.config.es_host,
                            port=self.config.es_port,
                            http_auth=(self.config.es_user,
@@ -181,16 +184,12 @@ class MAFBuilder(BaseInputBuilder):
         file_names = self.config.get_maf_file_names()
 
         query = {
-                "query": {
-                    "bool": {
-                        "must": {
-                            "terms": {
-                                "file_name": file_names
-                                }
-                            }
-                        }
-                    },
-                "_source": ["file_name", "acl"]
+            "query": {
+                "terms": {
+                    "file_name": file_names
+                },
+            },
+            "_source": ["file_name", "acl"]
         }
 
         # Build up dictionary of file_name to acl
@@ -215,7 +214,7 @@ class MAFBuilder(BaseInputBuilder):
         def acl_inner():
             try:
                 # trim out leading folders
-                file_name = url.split('/')[-1]
+                file_name = os.path.basename(url)
 
                 # mafs may be zipped or unzipped
                 # we expect the file_name in the File to be 'xxx.gz'
@@ -411,7 +410,7 @@ class MAFBuilder(BaseInputBuilder):
             try:
                 # TODO: separate data transforms from combining multiple df into one
                 # latter should go as a static method to base class for MAF and Gistic Builders
-                new_df = self.s3_to_df(url)
+                new_df = self.file_to_df(url)
                 new_df = new_df.withColumn('variant_caller', lit(caller))
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
@@ -444,16 +443,25 @@ class MAFBuilder(BaseInputBuilder):
         Identify variant caller by portion of url name.
         """
 
-        possible_callers = ['mutect', 'muse', 'varscan', 'somaticsniper', 'FM']
+        # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
+        # the addition of dots, so that the code does what it should be
+        # TODO: Find a better way to get this information
+        possible_callers = {
+            '.mutect.': 'mutect2',
+            '.muse.': 'muse',
+            '.varscan.': 'varscan',
+            '.somaticsniper.': 'somaticsniper',
+            'FM-AD_SNV': 'FM Simple Somatic Mutation',
+        }
 
         try:
-            caller = [c for c in possible_callers if c in url][0]
-            if caller == 'mutect':
-                caller += '2'
-            if caller == 'FM':
-                caller += ' Simple Somatic Mutation'
+            caller_keys = [c for c in possible_callers if c in url]
 
-        except IndexError:
+            assert len(caller_keys) == 1
+
+            caller = possible_callers[caller_keys[0]]
+
+        except AssertionError:
             raise Exception("Cannot identify caller for url {}".format(url))
 
         return caller

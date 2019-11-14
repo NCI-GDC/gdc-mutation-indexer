@@ -1,3 +1,5 @@
+import logging
+
 from pyspark.sql.functions import (
     col,
     collect_set,
@@ -5,12 +7,12 @@ from pyspark.sql.functions import (
     udf,
 )
 from pyspark.sql.types import StringType, ArrayType
+
 from utils import (
     get_case_ids_from_source_es,
     remove_columns,
     standardize_schema,
 )
-import logging
 
 from config import LOG_FORMAT
 
@@ -42,11 +44,12 @@ class CaseBuilder(object):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
+
         source = '{}/{}'.format(self.config.graph_index,
                                 self.config.graph_document)
 
-        case_exclude_fields = (self.config.case_exclude_fields
-            + self.config.get_samples_fields_to_exclude())
+        self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
+
         # Load all cases from graph_index
         df = (
             self.sqlContext.read.format("es")
@@ -56,7 +59,7 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
             .option('es.nodes.resolve.hostname', 'false')
-            .option('es.read.field.exclude', ','.join(case_exclude_fields))
+            .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
             .option('es.resource.read', source)
             .load(source)
         )

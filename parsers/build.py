@@ -77,4 +77,13 @@ class BuildArgs(BaseParser):
                 'nargs': '*',
                 'default': [],
             },
+            'blacklist-fields': {
+                'help': 'Specify additional fields to be excluded when loading graph index case df',
+                'nargs': '*',
+                'default': [],
+            },
+            'skip-normalization': {
+                'help': 'Use mappings without normalizers',
+                'action': 'store_true',
+            }
         }

@@ -1,9 +1,11 @@
 import os
 import re
 import json
+from collections import Counter
+from contextlib import contextmanager
+
 import yaml
 import pytest
-from collections import Counter
 from pyspark.sql.functions import lit
 from pyspark.sql.types import ArrayType, StringType
 
@@ -11,6 +13,30 @@ from exports.builders import MAFBuilder
 from tests_config import TestConfig
 
 conf = TestConfig()
+
+
+@contextmanager
+def does_not_raise():
+    yield
+
+
+@pytest.mark.parametrize('url, expected, behavior', [
+    ('s3a://varscan-10/bar.somaticsniper.baz', 'somaticsniper', does_not_raise()),
+    ('s3a://varscan-10/bar.mutect.baz', 'mutect2', does_not_raise()),
+    ('s3a://varscan-10/bar.muse.baz', 'muse', does_not_raise()),
+    ('s3a://varscan-10/bar.varscan.baz', 'varscan', does_not_raise()),
+    ('s3a://varscan-10/bar.FM-AD_SNV.baz', 'FM Simple Somatic Mutation', does_not_raise()),
+    ('s3://foo-bar/bar.something.baz', None, pytest.raises(Exception)),
+    ('s3a://varscan-10/bar.FM-AD.baz', None, pytest.raises(Exception)),
+    ('s3a://varscan-10/bar.muse.varscan.baz', None, pytest.raises(Exception)),
+])
+def test_maf_builder_get_caller(sqlContext, maf_df, url, expected, behavior):
+    builder = MAFBuilder(conf, sqlContext)
+
+    with behavior:
+        result = builder.get_caller(url)
+
+        assert result == expected
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -37,6 +63,11 @@ class TestMAFBuilder:
             maf_schema = yaml.load(f)['maf_schema']
 
         return maf_schema
+
+    @pytest.fixture
+    def annotation_schemas(self, sqlContext):
+        builder = MAFBuilder(conf, sqlContext)
+        return builder.get_annotation_schemas()
 
     def test_patch_url(self, sqlContext):
         ''' Test that s3 urls are patched correctly '''
@@ -85,7 +116,7 @@ class TestMAFBuilder:
 
         # Bypass combine() so the dataframe isn't already standardized.
         df = (
-            builder.s3_to_df(conf.maf_urls[0])
+            builder.file_to_df(conf.maf_urls[0])
             .withColumn('variant_caller', lit('variant_caller'))
             .withColumn('acl', lit(None))
         )
@@ -115,7 +146,7 @@ class TestMAFBuilder:
 
         # The raw dataframe is missing a couple columns, so it should
         # initially fail standardization.
-        df = builder.s3_to_df(conf.maf_urls[0])
+        df = builder.file_to_df(conf.maf_urls[0])
 
         try:
             builder.standardize_schema(df)
@@ -214,14 +245,13 @@ class TestMAFBuilder:
         assert '_case_submitter_id' in df.columns
         assert (df.where(df.tumor_sample_barcode
                          == 'TCGA-A4-A6HP-01A-11D-A31X-10')
-                  .select('_case_submitter_id')
-                  .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
+                .select('_case_submitter_id')
+                .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
 
     def test_maf_field_types(self, maf_df):
         """
         Test that maf_df field types correspond to maf.yml
         """
-
         types = {'int': 'integer', 'bool': 'boolean', 'float': 'float'}
         for col in maf_df.schema:
             col_info = json.loads(col.json())
@@ -233,7 +263,6 @@ class TestMAFBuilder:
         """
         Test that maf_df field pattern correspond to maf.yml
         """
-
         for col in maf_df.schema:
             col_info = json.loads(col.json())
             colname = col_info['name']
@@ -247,3 +276,7 @@ class TestMAFBuilder:
                                                 val)
                         assert is_matching
 
+    def test_annotations(self, annotation_schemas, maf_df):
+        for schema in annotation_schemas:
+            for k in schema.keys():
+                assert k in maf_df.columns

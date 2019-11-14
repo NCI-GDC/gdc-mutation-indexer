@@ -84,10 +84,8 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
                    .build_for_cnv(gistic_df, self.index_name))
 
-        cnv_df = build_cnv_subtree(gistic_df,
-                                   cons_df,
-                                   self.index_name,
-                                   obs_df=None,
+        cnv_df = build_cnv_subtree(gistic_df, self.index_name,
+                                   cons_df=cons_df,
                                    add_fields=['case_id'])
 
         cnv_subtree = cnv_df.select('cnv_id', 'case_id',
