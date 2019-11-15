@@ -19,6 +19,7 @@ from parsers import (
     ParserBuilder,
     S3Args,
     SparkArgs,
+    SparkConfArgs,
 )
 
 
@@ -46,7 +47,8 @@ ALL_PARSERS = [
     ESHadoopArgs,
     IndexdArgs,
     BuildArgs,
-    SparkArgs
+    SparkArgs,
+    SparkConfArgs,
 ]
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
@@ -81,7 +83,7 @@ class BaseConfig(object):
     }
 
     # Used for loading case/graph documents from a different es cluster
-    graph_index = 'gdc_from_graph'
+    # The graph_index name is set by the environment/command line parser.
     graph_document = 'case'
 
     # Namespace for ssm_ids so that they may be reproduced

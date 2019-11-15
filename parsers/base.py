@@ -35,6 +35,15 @@ class BaseParser(object):
         """
         return ParserBuilder.build([self])
 
+    def iter_args(self, args):
+        """
+        Iterate over the parsed arguments from an argparse Namespace.
+
+        Yield tuples of (original argument name, parsed value).
+        """
+        for key in self.arguments:
+            yield (key, getattr(args, key.replace('-', '_')))
+
 
 class ParserBuilder(object):
     """
@@ -75,17 +84,6 @@ class ParserBuilder(object):
                 else:
                     logger.info('{}={}'.format(name, value))
 
-    @staticmethod
-    def get_arg_attrnames(parsers):
-        """
-        Returns attribute names corresponding to arguments of :parsers
-        """
-        attrs = []
-        for p in parsers:
-            for arg in p().arguments:
-                attrs.append(arg.replace('-', '_'))
-        return attrs
-
     @classmethod
     def get_environment_dict(cls, args, parsers):
         """
@@ -95,14 +93,15 @@ class ParserBuilder(object):
         """
         env_dict = {}
         for parser in parsers:
-            for argname in parser().arguments:
-                argname = argname.replace('-', '_')
-                value = getattr(args, argname)
+            for key, value in parser().iter_args(args):
+                argname = key.replace('-', '_').upper()
+
                 if isinstance(value, list):
                     if value == []:
                         continue
                     value = ','.join(map(str, value))
                 else:
                     value = str(value)
-                env_dict[argname.upper()] = value
+
+                env_dict[argname] = value
         return env_dict

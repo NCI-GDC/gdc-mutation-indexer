@@ -10,6 +10,7 @@ from gdcdatamodel import models as md
 from parsers import (
     ParserBuilder,
     SparkArgs,
+    SparkConfArgs,
 )
 
 from config import (
@@ -172,10 +173,14 @@ def get_spark_args(args):
     spark_args = ['--py-files', ','.join(eggs), '--jars', ','.join(jars)]
 
     # Add other spark arguments
-    for arg in SparkArgs().arguments:
-        name = '--' + arg
-        value = str(getattr(args, arg.replace('-', '_')))
-        spark_args.extend([name, value])
+    for key, value in SparkArgs().iter_args(args):
+        name = '--{}'.format(key)
+        spark_args.extend([name, str(value)])
+
+    for key, value in SparkConfArgs().iter_args(args):
+        name = key.replace('-', '.')
+        spark_args.extend(['--conf', '{}={}'.format(name, value)])
+
     return spark_args
 
 
@@ -184,10 +189,12 @@ def get_config_args(args):
     Returns list of configuration arguments and values for `spark-submit`
     """
     config_args = []
-    for parser in ALL_PARSERS:
-        for name, info in parser().arguments.items():
-            varname = name.upper().replace('-', '_')
-            value = getattr(args, name.replace('-', '_'))
+    for parser_cls in ALL_PARSERS:
+        parser = parser_cls()
+        for key, value in parser.iter_args(args):
+            info = parser.arguments[key]
+
+            varname = key.upper().replace('-', '_')
             if isinstance(value, list):
                 value = ','.join(map(str, value))
 

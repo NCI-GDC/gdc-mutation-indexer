@@ -60,6 +60,11 @@ class ESArgs(BaseParser):
                     'Keep empty if same as output elasticsearch.',
                 'default': '',
             },
+            # Name of source graph index with case data
+            'graph-index': {
+                'help': 'Name of Elasticsearch graph index',
+                'default': 'gdc_from_graph',
+            },
         }
 
 
