@@ -178,6 +178,9 @@ class MAFBuilder(BaseInputBuilder):
         """
         es = Elasticsearch(self.config.es_host,
                            port=self.config.es_port,
+                           use_ssl=self.config.es_use_ssl,
+                           verify_certs=self.config.es_verify_certs,
+                           ca_certs=self.config.es_ca_cert_path,
                            http_auth=(self.config.es_user,
                                       self.config.es_pass))
 

@@ -33,6 +33,20 @@ class ESArgs(BaseParser):
                 'help': 'Elasticsearch password',
                 'default': '',
             },
+            'es-use-ssl': {
+                'help': 'HTTPS for Elasticsearch',
+                'action': 'store_true',
+                'default': False,
+            },
+            'es-verify-certs': {
+                'help': 'Verify the ca certs for Elasticsearch',
+                'action': 'store_true',
+                'default': False,
+            },
+            'es-ca-cert-path': {
+                'help': 'Location of ca certs for Elasticsearch',
+                'default': '',
+            },
             'es-nodes': {
                 'help': 'Coma-delimited dist of elasticsearch nodes to write to. '
                     'E.g. "node1_ip:9200,node2_ip:9200"',
