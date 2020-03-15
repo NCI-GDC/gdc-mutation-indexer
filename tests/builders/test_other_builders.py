@@ -1,11 +1,12 @@
-import pytest
 import json
 
+import pytest
 from pyspark.sql.functions import explode
+
 from exports.builders import (
     CaseBuilder,
+    ConsequenceBuilder,
     ObservationBuilder,
-    ConsequenceBuilder
 )
 from tests_config import TestConfig
 
@@ -304,12 +305,51 @@ class TestCaseBuilder:
         assert case_df.count() == len(all_cases)
 
     def test_open_overrides_acl(self, sqlContext, acl_maf_df, gistic_df):
-        """
-        Using a maf_df with phsids in it, but the test cases have 'open',
-        the resulting case_df should have acl set to 'open'
-        or None
+        """Confirm an open ssm_acl is set on cases with open-access MAFs.
+
+        Confirm the ssm_acl on cases with open-access MAFs is set to 'open',
+        and is not set at all on cases without MAFs.
+
+        To verify that the ssm_acl comes from the ACL on the MAFs themselves,
+        start with a maf_df that already has controlled-access ACL columns.
+        The resulting case_df should override those ACLs with 'open' or None.
         """
 
         df = CaseBuilder(conf, sqlContext).build(acl_maf_df, gistic_df)
-        for row in df.select('ssm_acl').collect():
-            assert row.ssm_acl in [['open'], None]
+
+        # These cases don't have any observations in our test MAFs.
+        expected_none_case_ids = {
+            '00000000-1111-2222-4444-888888888888',
+            '0ff579a1-e295-408d-b194-febbca798e34',
+        }
+
+        for row in df.collect():
+            if row.case_id in expected_none_case_ids:
+                assert row.ssm_acl is None
+            else:
+                assert row.ssm_acl == ['open']
+
+    @pytest.mark.parametrize(
+        'projects, expected_count',
+        [
+            (['TCGA-KICH'], 6),
+            (['TCGA-KIRP', 'TCGA-SKCM'], 9),
+            (['TCGA-TEST-NO-DATA'], 0),
+        ],
+    )
+    def test_project_filter(
+        self, projects, expected_count, sqlContext, maf_df, gistic_df
+    ):
+        """Test filtering the projects included in the case DF.
+
+        Confirm that the expected number of cases are extracted and that
+        all cases are in one of the expected projects.
+        """
+        local_conf = TestConfig()
+        local_conf.projects = projects
+
+        df = CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
+
+        assert df.count() == expected_count
+        for row in df.collect():
+            assert row.project.project_id in projects
