@@ -1,3 +1,4 @@
+import json
 import logging
 
 from pyspark.sql.functions import (
@@ -45,12 +46,23 @@ class CaseBuilder(object):
         Loads case docs from the gdc_from_graph index into a dataframe
         """
 
+        # Only load cases from the requested projects
+        if self.config.projects:
+            query = json.dumps({
+                'query': {
+                    'terms': {'project.project_id': self.config.projects}
+                }
+            })
+        else:
+            query = json.dumps({'query': {'match_all': {}}})
+
+        # Only retrieve the fields we want
         source = '{}/{}'.format(self.config.graph_index,
                                 self.config.graph_document)
 
         self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
 
-        # Load all cases from graph_index
+        # Load cases from graph_index
         df = (
             self.sqlContext.read.format("es")
             .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
@@ -59,6 +71,7 @@ class CaseBuilder(object):
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
             .option('es.nodes.resolve.hostname', 'false')
+            .option('es.query', query)
             .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
             .option('es.resource.read', source)
             .load(source)

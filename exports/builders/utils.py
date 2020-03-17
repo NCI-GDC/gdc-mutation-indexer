@@ -1,4 +1,3 @@
-import copy
 import pkg_resources
 import re
 import uuid
@@ -11,7 +10,9 @@ from pyspark.sql.functions import (
     lit, udf, struct, col, explode, array, when, regexp_extract,
     UserDefinedFunction,
 )
-from pyspark.sql.types import StringType, ArrayType, DoubleType, IntegerType
+from pyspark.sql.types import (
+    ArrayType, DoubleType, IntegerType, StringType, StructField, StructType
+)
 
 from exports.es_utils import iterate_es_results
 from exports.builders.aliquot import AliquotBuilder
@@ -197,9 +198,15 @@ def get_case_ids_from_source_es(config, sqlContext):
     #    z    | 2
     assert len(unique_aliquots) >= len(case_ids)
 
-    # Create a dataframe from case_ids set
+    # Create a dataframe with the cases IDs and ACLs corresponding to the
+    # identified aliquots. Give an explicit schema in case we found nothing,
+    # as schema inference doesn't work on empty dataframes.
+    cases_df_schema = StructType([
+        StructField('case_id', StringType()),
+        StructField('case_acl', ArrayType(StringType())),
+    ])
     cases_df = sqlContext.createDataFrame(
-        ((x, y) for x, y in cases_urls.items()), ['case_id', 'case_acl']
+        cases_urls.items(), schema=cases_df_schema
     )
 
     return cases_df
