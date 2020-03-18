@@ -1,12 +1,22 @@
 import logging
 
 from pyspark.sql.functions import (
+    col,
+    explode,
     struct,
     collect_list,
     collect_set,
+    udf,
+    lit,
 )
+from pyspark.sql.types import ArrayType, StringType
 
-from exports.builders.utils import struct_select
+from exports.builders.utils import (
+    struct_select,
+    select_nested,
+    transform_variant_caller,
+    uuid5_col,
+)
 
 from config import LOG_FORMAT
 
@@ -26,17 +36,54 @@ class ObservationBuilder(object):
         tumor and normal sample uuids and an ssm uuid.
         """
 
+        # Select all of the nested fields
+        flat_obs_df = maf_df.select(
+            'ssm_id',
+            'case_id',
+            'occurrence_id',
+            *select_nested(index_name, 'observation', selector=selector,
+                           ignore=['observation_id'])
+        )
+
+        # This will be used to explode variant_caller column
+        variant_caller = udf(
+            transform_variant_caller,
+            ArrayType(StringType()),
+        )
+
+        flat_obs_df = (
+            flat_obs_df.
+            # Explode variant_caller into multiple observations
+            withColumn(
+                'variant_caller',
+                explode(variant_caller(col('variant_caller')))
+            ).
+            # Add observation_id
+            withColumn(
+                'observation_id',
+                uuid5_col(
+                    lit('ssm_observation'),
+                    col('occurrence_id'),
+                    col('tumor_sample_uuid'),
+                    col('matched_norm_sample_uuid'),
+                    col('variant_caller'),
+                    lit('masked'),
+                )
+            )
+        )
+
         obs_df = (
-            maf_df.select(
+            flat_obs_df.
+            select(
                 'ssm_id',
                 'case_id',
                 'occurrence_id',
                 struct(
                     *struct_select(index_name, 'observation', selector=selector)
-                ).alias('observation')
-            )
-            .groupby('ssm_id', 'case_id', 'occurrence_id')
-            .agg(collect_list('observation').alias('observation'))
+                ).alias('observation'),
+            ).
+            groupby('ssm_id', 'case_id', 'occurrence_id').
+            agg(collect_list('observation').alias('observation'))
         )
 
         return obs_df

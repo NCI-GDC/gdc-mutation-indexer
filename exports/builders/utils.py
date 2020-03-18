@@ -391,7 +391,7 @@ def remove_columns(df, *args):
 
 def select_mapping(index_name, mapping_name, selector=None,
                    exclude_fields=None):
-    if not exclude_fields:
+    if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
 
     mapper = ModelMapper(index_name)
@@ -462,6 +462,38 @@ def struct_select(index_name, mapping_name, ignore=(), selector=None):
     mapping = select_mapping(index_name, mapping_name, selector=selector)
 
     return restructure(mapping['properties'])
+
+
+def select_nested(index_name, mapping_name, ignore=(), selector=None):
+    def flatten_nested(doc):
+        if not isinstance(doc, dict):
+            return []
+
+        cols = []
+        for k, v in doc.items():
+            if (k == 'gene_aa_change' or k == 'copy_to' or
+                    '_autocompolete' in k or k == 'clinical_annotations'):
+                continue
+
+            if k in ignore:
+                continue
+
+            if 'type' in v and 'properties' not in v:
+                name = k
+                if 'default' in v:
+                    name = v['default']
+                cols.append(col(name).alias(k))
+            else:
+                if 'properties' in v:
+                    cols.extend(flatten_nested(v['properties']))
+                else:
+                    cols.extend(flatten_nested(v))
+        return cols
+
+    mapping = select_mapping(index_name, mapping_name, selector=selector,
+                             exclude_fields=())
+
+    return flatten_nested(mapping['properties'])
 
 
 def percentile(vector, p):
@@ -543,3 +575,10 @@ def convert_empty_str_to_null_in_col(df, col_name):
 
 def get_column_name(column_name, dataset_key):
     return '{}_{}'.format(column_name, dataset_key)
+
+
+def transform_variant_caller(callers):
+    partitioned = callers.split(';')
+    sanitized = [caller.strip('*') for caller in partitioned]
+
+    return sanitized

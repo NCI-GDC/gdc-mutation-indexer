@@ -54,8 +54,6 @@ class MAFBuilder(BaseInputBuilder):
         df = self.add_ssm_id(df)
         # Create occurrence_id
         df = self.add_occurrence_id(df)
-        # Create observation_id
-        df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
@@ -214,21 +212,18 @@ class MAFBuilder(BaseInputBuilder):
         acls = self.acls
 
         def acl_inner():
-            try:
-                # trim out leading folders
-                file_name = os.path.basename(url)
+            # trim out leading folders
+            file_name = os.path.basename(url)
 
-                # mafs may be zipped or unzipped
-                # we expect the file_name in the File to be 'xxx.gz'
-                if not file_name.endswith('.gz'):
-                    file_name += '.gz'
+            # mafs may be zipped or unzipped
+            # we expect the file_name in the File to be 'xxx.gz'
+            if not file_name.endswith('.gz'):
+                file_name += '.gz'
 
-                return acls[file_name]
-
-            except KeyError:
-
+            if file_name not in acls:
                 raise Exception("ACL not found for maf with url {}, "
                                 "file_name {}".format(url, file_name))
+            return acls[file_name]
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
@@ -276,7 +271,10 @@ class MAFBuilder(BaseInputBuilder):
             subtypes = {
                 'SNP': 'Single base substitution',
                 'DEL': 'Small deletion',
-                'INS': 'Small insertion'
+                'INS': 'Small insertion',
+                'DNP': 'Di-nucleotide polymorphism',
+                'TNP': 'Tri-nucleotide polymorphism',
+                'ONP': 'Oligo-nucleotide polymorphism',
             }
             if variant_type in subtypes:
                 return subtypes[variant_type]
@@ -314,27 +312,13 @@ class MAFBuilder(BaseInputBuilder):
 
     def add_occurrence_id(self, df):
         """
-        Adds the observation_id, a uuid hash of:
+        Adds the occurrence_id, a uuid hash of:
         'ssm_occurrence' + ssm_id + case_id
         """
         df = df.withColumn('occurrence_id',
                            uuid5_col(lit('ssm_occurrence'),
                                      col('ssm_id'),
                                      col('case_id')))
-        return df
-
-    def add_observation_id(self, df):
-        """
-        Adds the observation_id, a uuid hash of:
-        occurrence_id+tumor_sample_uuid+matched_norm_sample_uuid+variant_caller+variant_process
-        """
-        df = df.withColumn('observation_id',
-                           uuid5_col(lit('ssm_observation'),
-                                     col('occurrence_id'),
-                                     col('tumor_sample_uuid'),
-                                     col('matched_norm_sample_uuid'),
-                                     col('variant_caller'),
-                                     lit('masked')))
         return df
 
     def add_genomic_dna_change(self, df):
@@ -408,12 +392,11 @@ class MAFBuilder(BaseInputBuilder):
         df = None
 
         for url in urls:
-            caller = self.get_caller(url)
             try:
                 # TODO: separate data transforms from combining multiple df into one
-                # latter should go as a static method to base class for MAF and Gistic Builders
+                #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
-                new_df = new_df.withColumn('variant_caller', lit(caller))
+
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
 
@@ -424,7 +407,9 @@ class MAFBuilder(BaseInputBuilder):
                     new_df, default_to_none=['normal_bam_uuid',
                                              'tumor_bam_uuid'])
 
-                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                if self.config.debug:
+                    self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                                   url))
                 if df is None:
                     df = new_df
                 else:
@@ -434,39 +419,12 @@ class MAFBuilder(BaseInputBuilder):
 
         assert df is not None
 
-        self.config.nb_mutations = df.count()
-        self.logger.info('Combined {} files for a total of {} rows'
-                         .format(len(urls), self.config.nb_mutations))
+        if self.config.debug:
+            self.config.nb_mutations = df.count()
+            self.logger.info('Combined {} files for a total of {} rows'
+                             .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
-
-    def get_caller(self, url):
-        """
-        Identify variant caller by portion of url name.
-        """
-
-        # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
-        # the addition of dots, so that the code does what it should be
-        # TODO: Find a better way to get this information
-        possible_callers = {
-            '.mutect.': 'mutect2',
-            '.muse.': 'muse',
-            '.varscan.': 'varscan',
-            '.somaticsniper.': 'somaticsniper',
-            'FM-AD_SNV': 'FM Simple Somatic Mutation',
-        }
-
-        try:
-            caller_keys = [c for c in possible_callers if c in url]
-
-            assert len(caller_keys) == 1
-
-            caller = possible_callers[caller_keys[0]]
-
-        except AssertionError:
-            raise Exception("Cannot identify caller for url {}".format(url))
-
-        return caller
 
     def patch_url(self, url):
         """

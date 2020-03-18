@@ -33,7 +33,7 @@ class BaseBuilder(object):
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
-    def build(self):
+    def build(self, *args, **kwargs):
         """
         Contains the ETL logic to construct a spark dataframe of
         the same structure as the required output index.

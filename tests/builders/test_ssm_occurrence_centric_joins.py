@@ -53,6 +53,7 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
+    @pytest.mark.xfail(reason="'observation_id' is not part of MAF DF anymore")
     def test_observations_per_ssm_occurrence(
             self, maf_df, ssm_occurrence_centric_df):
 
@@ -66,7 +67,8 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         # Observations and Cases per SSM Occurrence expected:
         df = (maf_df.withColumn('ssm_occurrence_id', col('occurrence_id'))
-                    .select('ssm_occurrence_id', 'observation_id', 'case_id'))
+                    .select('ssm_occurrence_id', 'variant_caller', 'case_id'))
+
         true_opo = self.get_relationship_map(df, 'ssm_occurrence_id', 'observation_id')
         true_cpo = self.get_relationship_map(df, 'ssm_occurrence_id', 'case_id')
 

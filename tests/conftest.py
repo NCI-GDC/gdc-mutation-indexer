@@ -35,6 +35,7 @@ from exports.builders import (
     SSMOccurrenceCentricBuilder,
 )
 
+# This will load MAFs in old format
 conf = TestConfig()
 
 log = logging.getLogger()
@@ -47,7 +48,8 @@ def setup_test_index():
     Creates graph index with required docs and returns an elasticsearch client
     """
     print '\n\n\tSETTING UP TEST INDEX\n\n'
-    es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+    es = Elasticsearch(conf.source_es_host, port=conf.es_port, retry_on_timeout=True,
+                       timeout=30)
 
     # if index already exists and we don't need to force rebuild,
     # return existing index
@@ -55,6 +57,7 @@ def setup_test_index():
         if not conf.graph_force_build:
             return es
         es.indices.delete(index=conf.graph_index)
+        es.indices.refresh()
 
     # set up test ES index
     create_test_index(es)
