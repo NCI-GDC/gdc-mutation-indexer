@@ -243,7 +243,7 @@ class MAFBuilder(BaseInputBuilder):
                       [] if (x is None and y is not None) else ['ssm'],
                       ArrayType(StringType()))
         return df.withColumn('available_variation_data',
-                             avd_udf(col('Tumor_Sample_Barcode'),
+                             avd_udf(col('tumor_sample_barcode'),
                                      col('case_id')))
 
     def add_mutation_type(self, df):
@@ -274,7 +274,10 @@ class MAFBuilder(BaseInputBuilder):
             subtypes = {
                 'SNP': 'Single base substitution',
                 'DEL': 'Small deletion',
-                'INS': 'Small insertion'
+                'INS': 'Small insertion',
+                'DNP': 'Di-nucleotide polymorphism',
+                'TNP': 'Tri-nucleotide polymorphism',
+                'ONP': 'Oligo-nucleotide polymorphism',
             }
             if variant_type in subtypes:
                 return subtypes[variant_type]
@@ -406,12 +409,13 @@ class MAFBuilder(BaseInputBuilder):
         df = None
 
         for url in urls:
-            caller = self.get_caller(url)
             try:
                 # TODO: separate data transforms from combining multiple df into one
-                # latter should go as a static method to base class for MAF and Gistic Builders
+                #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
-                new_df = new_df.withColumn('variant_caller', lit(caller))
+
+                new_df = self.add_caller(new_df, url)
+
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
 
@@ -437,6 +441,16 @@ class MAFBuilder(BaseInputBuilder):
                          .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
+
+    def add_caller(self, df, url):
+        # If the it exists already, do nothing
+        if 'caller' in df.columns:
+            return df
+
+        caller = self.get_caller(url)
+        new_df = df.withColumn('caller', lit(caller))
+
+        return new_df
 
     def get_caller(self, url):
         """

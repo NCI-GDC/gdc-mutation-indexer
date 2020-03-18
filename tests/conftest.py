@@ -47,7 +47,8 @@ def setup_test_index():
     Creates graph index with required docs and returns an elasticsearch client
     """
     print '\n\n\tSETTING UP TEST INDEX\n\n'
-    es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+    es = Elasticsearch(conf.source_es_host, port=conf.es_port, retry_on_timeout=True,
+                       timeout=30)
 
     # if index already exists and we don't need to force rebuild,
     # return existing index
@@ -55,6 +56,7 @@ def setup_test_index():
         if not conf.graph_force_build:
             return es
         es.indices.delete(index=conf.graph_index)
+        es.indices.refresh()
 
     # set up test ES index
     create_test_index(es)
@@ -129,6 +131,7 @@ def sqlContext(es_client):
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")
+    sqlCont.sql("set spark.sql.caseSensitive=true")
     log4j = sc._jvm.org.apache.log4j
     log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
 

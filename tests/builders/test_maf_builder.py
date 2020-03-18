@@ -117,7 +117,7 @@ class TestMAFBuilder:
         # Bypass combine() so the dataframe isn't already standardized.
         df = (
             builder.file_to_df(conf.maf_urls[0])
-            .withColumn('variant_caller', lit('variant_caller'))
+            .withColumn('caller', lit('variant_caller'))
             .withColumn('acl', lit(None))
         )
         columns = df.columns
@@ -157,7 +157,7 @@ class TestMAFBuilder:
         # If we tell the builder to supply None values for the missing columns,
         # then it should fill in those columns and standardize successfully.
         standardized_df = builder.standardize_schema(
-            df, default_to_none=['variant_caller', 'acl'])
+            df, default_to_none=['caller', 'acl'])
         assert standardized_df.columns == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
