@@ -54,7 +54,7 @@ fi
 
 virtualenv /home/vagrant/venv
 source /home/vagrant/venv/bin/activate
-ssh-keyscan github.com >> ~/.ssh/known_hosts
+ssh-keyscan github.com >> /home/vagrant/.ssh/known_hosts
 pip install -r /vagrant/requirements.txt
 pip install -r /vagrant/dev-requirements.txt
 python /vagrant/setup.py develop
@@ -74,8 +74,13 @@ Vagrant.configure("2") do |config|
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "hashicorp/bionic64"
 
+  # Give some extra RAM juice
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 2048
+    vb.cpus = 2
+  end
+
   # Forward ssh agent
-  config.ssh.insert_key = false
   config.ssh.forward_agent = true
 
   # Enable provisioning with a shell script. Additional provisioners such as
@@ -91,12 +96,12 @@ Vagrant.configure("2") do |config|
   config.vm.provision "install core libs", type: "shell", inline: $core_setup
 
   # Do ES setup
-  config.vm.provision "setup elasticsearch", type: "shell", inline: $es_setup
+  config.vm.provision "setup elasticsearch", type: "shell", inline: $es_setup, privileged: false
 
   # Get Spark
-  config.vm.provision "setup pyspark", type: "shell", inline: $spark_setup
+  config.vm.provision "setup pyspark", type: "shell", inline: $spark_setup, privileged: false
 
   # Virtualenv setup
-  config.vm.provision "setup dev-environment", type: "shell", inline: $setup_dev_environment
+  config.vm.provision "setup dev-environment", type: "shell", inline: $setup_dev_environment, privileged: false
 
 end
