@@ -54,8 +54,6 @@ class MAFBuilder(BaseInputBuilder):
         df = self.add_ssm_id(df)
         # Create occurrence_id
         df = self.add_occurrence_id(df)
-        # Create observation_id
-        df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
@@ -315,27 +313,13 @@ class MAFBuilder(BaseInputBuilder):
 
     def add_occurrence_id(self, df):
         """
-        Adds the observation_id, a uuid hash of:
+        Adds the occurrence_id, a uuid hash of:
         'ssm_occurrence' + ssm_id + case_id
         """
         df = df.withColumn('occurrence_id',
                            uuid5_col(lit('ssm_occurrence'),
                                      col('ssm_id'),
                                      col('case_id')))
-        return df
-
-    def add_observation_id(self, df):
-        """
-        Adds the observation_id, a uuid hash of:
-        occurrence_id+tumor_sample_uuid+matched_norm_sample_uuid+variant_caller+variant_process
-        """
-        df = df.withColumn('observation_id',
-                           uuid5_col(lit('ssm_observation'),
-                                     col('occurrence_id'),
-                                     col('tumor_sample_uuid'),
-                                     col('matched_norm_sample_uuid'),
-                                     col('variant_caller'),
-                                     lit('masked')))
         return df
 
     def add_genomic_dna_change(self, df):
@@ -443,12 +427,12 @@ class MAFBuilder(BaseInputBuilder):
         return df
 
     def add_caller(self, df, url):
-        # If the it exists already, do nothing
-        if 'caller' in df.columns:
+        # If the column exists already, do nothing
+        if 'callers' in df.columns:
             return df
 
         caller = self.get_caller(url)
-        new_df = df.withColumn('caller', lit(caller))
+        new_df = df.withColumn('callers', lit(caller))
 
         return new_df
 
