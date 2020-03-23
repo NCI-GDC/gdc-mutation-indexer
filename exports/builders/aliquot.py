@@ -17,6 +17,9 @@ class AliquotBuilder(BaseInputBuilder):
     -If we read maf from cache, we read aliquots from cache. Etc.
     """
 
+    PRAGMA_N_SAMPLES = '#n.analyzed.samples'
+    PRAGMA_TUMOR_SUB_IDS = '#tumor.aliquots.submitter_id'
+
     def __init__(self, config, sqlContext):
         super(AliquotBuilder, self).__init__(config, sqlContext, 'aliquot')
 
@@ -33,11 +36,23 @@ class AliquotBuilder(BaseInputBuilder):
         aliquot_to_url = {}
         for url in self.config.maf_urls:
             header = self.read_maf_header(url, n_lines=5).collect()
-            header = map(lambda r: r.asDict().values()[0].split(), header)
-            assert header[-2][0] == '#n.analyzed.samples'
-            assert header[-1][0] == '#tumor.aliquots.submitter_id'
-            aliquots = header[-1][1].split(',')
-            n_aliquots = int(header[-2][1])
+
+            n_aliquots = -1
+            aliquots = None
+            for row in header:
+                if row[0].startswith(self.PRAGMA_N_SAMPLES):
+                    n_aliquots = int(row[0].split()[1])
+                    continue
+
+                if row[0].startswith(self.PRAGMA_TUMOR_SUB_IDS):
+                    aliquots = row[0].split()[1].split(',')
+                    break
+
+            if n_aliquots < 0 or aliquots is None:
+                raise RuntimeError(
+                    "Invalid MAF file. Missing required pragma comments: "
+                    "'{}' and '{}'".format(self.PRAGMA_N_SAMPLES, self.PRAGMA_TUMOR_SUB_IDS)
+                )
 
             assert len(aliquots) == n_aliquots, \
                 '{} has inconsistent aliquot data in header'.format(url)

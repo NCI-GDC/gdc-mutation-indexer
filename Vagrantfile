@@ -20,7 +20,7 @@ fi
 
 if [ ! -f /mnt/swap.file ]
 then
-  sudo fallocate -l 5G /mnt/swap.file
+  sudo fallocate -l 1G /mnt/swap.file
   sudo mkswap /mnt/swap.file
   sudo swapon /mnt/swap.file
 fi
