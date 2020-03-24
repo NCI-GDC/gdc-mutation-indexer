@@ -65,13 +65,12 @@ class CaseBuilder(object):
         # Load cases from graph_index
         df = (
             self.sqlContext.read.format("es")
-            .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
-                                               self.config.source_es_port))
+            .option('es.nodes', self.config.es_nodes)
             .option('es.net.http.auth.user', self.config.source_es_user)
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
             .option('es.net.ssl', self.config.es_use_ssl)\
-            .option('es.net.ssl.cert.allow.self.signed', self.config.es_use_ssl)\
+            .option('es.net.ssl.cert.allow.self.signed', not self.config.es_verify_certs)\
             .option('es.nodes.resolve.hostname', 'false')
             .option('es.query', query)
             .option('es.read.field.exclude', ','.join(self.config.exclude_fields))

@@ -40,8 +40,8 @@ class ESArgs(BaseParser):
             },
             'es-verify-certs': {
                 'help': 'Verify the ca certs for Elasticsearch',
-                'action': 'store_true',
-                'default': False,
+                'action': 'store_false',
+                'default': True,
             },
             'es-nodes': {
                 'help': 'Coma-delimited dist of elasticsearch nodes to write to. '

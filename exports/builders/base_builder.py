@@ -71,13 +71,12 @@ class BaseBuilder(object):
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
-            .option('es.nodes', '{}:{}'.format(self.config.source_es_host,
-                                               self.config.source_es_port))\
+            .option('es.nodes', self.config.es_nodes)\
             .option('es.net.http.auth.user', self.config.source_es_user)\
             .option('es.net.http.auth.pass', self.config.es_pass)\
             .option('es.net.ssl', self.config.es_use_ssl)\
-            .option('es.net.ssl.cert.allow.self.signed', self.config.es_use_ssl)\
-            .option('es.nodes.wan.only', self.config.es_use_ssl)\
+            .option('es.net.ssl.cert.allow.self.signed', not self.config.es_verify_certs)\
+            .option('es.nodes.wan.only', 'true')\
             .option('es.nodes.resolve.hostname', 'false')\
             .option('es.resource.write', index_doc)\
             .option('es.http.timeout', '20m')\
