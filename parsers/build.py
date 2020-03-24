@@ -85,5 +85,9 @@ class BuildArgs(BaseParser):
             'skip-normalization': {
                 'help': 'Use mappings without normalizers',
                 'action': 'store_true',
+            },
+            'skip-es-mafs': {
+                'help': 'Do not query elasticsearch for MAFs. Should be used together with --include-maf-urls option',
+                'action': 'store_true',
             }
         }

@@ -487,7 +487,6 @@ def select_nested(index_name, mapping_name, ignore=(), selector=None):
                 if 'properties' in v:
                     cols.extend(flatten_nested(v['properties']))
                 else:
-                    import pdb; pdb.set_trace()
                     cols.extend(flatten_nested(v))
         return cols
 

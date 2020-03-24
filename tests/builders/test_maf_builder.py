@@ -280,16 +280,3 @@ class TestMAFBuilder:
         for schema in annotation_schemas:
             for k in schema.keys():
                 assert k in maf_df.columns
-
-    def test_new_maf_format(self, maf_df, maf_df_from_combined):
-        """
-        Test that MAF dataframe produced using new project level MAFs is the
-        same as the one produced by using per-caller MAFs
-        """
-
-        assert maf_df_from_combined.count() == maf_df.count()
-        assert set(maf_df_from_combined.columns) == set(maf_df.columns)
-
-        m1 = maf_df.orderBy('_id')
-        m2 = maf_df_from_combined.orderBy('_id')
-        assert m1.collect() == m2.collect()

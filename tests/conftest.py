@@ -36,12 +36,7 @@ from exports.builders import (
 )
 
 # This will load MAFs in old format
-conf_v1 = TestConfig()
-conf = conf_v1
-
-# This will load MAFs in new format
-conf_v2 = TestConfig()
-conf_v2.maf_dir_v1 = conf_v2.maf_dir_v2
+conf = TestConfig()
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -185,18 +180,6 @@ def maf_df(sqlContext):
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
     return MAFBuilder(conf, sqlContext).build()
-
-
-@pytest.fixture(scope='session')
-def maf_df_from_combined(sqlContext):
-    """
-    Builds combined maf dataframe given a new project level MAF
-    """
-    log.info('\n\n\tBUILDING MAF_DF V2\n\n')
-
-    assert len(conf.get_maf_urls()) != len(conf_v2.get_maf_urls())
-
-    return MAFBuilder(conf_v2, sqlContext).build()
 
 
 @pytest.fixture(scope="session")

@@ -100,8 +100,9 @@ class GisticBuilder(BaseInputBuilder):
         for url in urls:
             try:
                 new_df = self.file_to_df(url)
-                self.logger.info('Read {} rows from {}'.format(new_df.count(),
-                                                               url))
+                if self.config.debug:
+                    self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                                   url))
                 # prepare to melt
                 new_df = self._trim_gene_symbol(new_df)
 

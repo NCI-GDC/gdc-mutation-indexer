@@ -272,6 +272,9 @@ class BaseConfig(object):
         - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
         - gets corresponding urls from indexd
         """
+        if self.skip_es_mafs:
+            return self.include_maf_urls
+
         query = {
             "_source": ["file_name"],
             "query": {
@@ -294,7 +297,7 @@ class BaseConfig(object):
                 if self.temp_filter_maf_urls(maf_url):
                     maf_urls.append(self.patch_s3_url(maf_url))
 
-        return maf_urls
+        return list(set(maf_urls))
 
     def projects_valid(self):
         """

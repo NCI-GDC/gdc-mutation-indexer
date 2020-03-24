@@ -178,7 +178,7 @@ def get_full_gene_model():
     )
 
     # Gene model file:
-    filename = 'genes.hg38.v2.json'
+    filename = 'genes.hg38.merged_tcga.json'
 
     bucket = conn.get_bucket('test')
     key = bucket.get_key(filename)

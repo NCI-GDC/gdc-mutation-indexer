@@ -210,21 +210,18 @@ class MAFBuilder(BaseInputBuilder):
         acls = self.acls
 
         def acl_inner():
-            try:
-                # trim out leading folders
-                file_name = os.path.basename(url)
+            # trim out leading folders
+            file_name = os.path.basename(url)
 
-                # mafs may be zipped or unzipped
-                # we expect the file_name in the File to be 'xxx.gz'
-                if not file_name.endswith('.gz'):
-                    file_name += '.gz'
+            # mafs may be zipped or unzipped
+            # we expect the file_name in the File to be 'xxx.gz'
+            if not file_name.endswith('.gz'):
+                file_name += '.gz'
 
-                return acls[file_name]
-
-            except KeyError:
-
+            if file_name not in acls:
                 raise Exception("ACL not found for maf with url {}, "
                                 "file_name {}".format(url, file_name))
+            return acls[file_name]
 
         acl_udf = udf(acl_inner, ArrayType(StringType()))
         return df.withColumn('acl', acl_udf())
@@ -398,8 +395,6 @@ class MAFBuilder(BaseInputBuilder):
                 #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
 
-                new_df = self.add_caller(new_df, url)
-
                 # add acl based on individual maf
                 new_df = self.add_acl(new_df, url)
 
@@ -410,7 +405,9 @@ class MAFBuilder(BaseInputBuilder):
                     new_df, default_to_none=['normal_bam_uuid',
                                              'tumor_bam_uuid'])
 
-                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                if self.config.debug:
+                    self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                                   url))
                 if df is None:
                     df = new_df
                 else:
@@ -420,49 +417,12 @@ class MAFBuilder(BaseInputBuilder):
 
         assert df is not None
 
-        self.config.nb_mutations = df.count()
-        self.logger.info('Combined {} files for a total of {} rows'
-                         .format(len(urls), self.config.nb_mutations))
+        if self.config.debug:
+            self.config.nb_mutations = df.count()
+            self.logger.info('Combined {} files for a total of {} rows'
+                             .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
-
-    def add_caller(self, df, url):
-        # If the column exists already, do nothing
-        if 'callers' in df.columns:
-            return df
-
-        caller = self.get_caller(url)
-        new_df = df.withColumn('callers', lit(caller))
-
-        return new_df
-
-    def get_caller(self, url):
-        """
-        Identify variant caller by portion of url name.
-        """
-
-        # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
-        # the addition of dots, so that the code does what it should be
-        # TODO: Find a better way to get this information
-        possible_callers = {
-            '.mutect.': 'mutect2',
-            '.muse.': 'muse',
-            '.varscan.': 'varscan',
-            '.somaticsniper.': 'somaticsniper',
-            'FM-AD_SNV': 'FM Simple Somatic Mutation',
-        }
-
-        try:
-            caller_keys = [c for c in possible_callers if c in url]
-
-            assert len(caller_keys) == 1
-
-            caller = possible_callers[caller_keys[0]]
-
-        except AssertionError:
-            raise Exception("Cannot identify caller for url {}".format(url))
-
-        return caller
 
     def patch_url(self, url):
         """
