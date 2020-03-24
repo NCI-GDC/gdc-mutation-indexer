@@ -243,7 +243,7 @@ class MAFBuilder(BaseInputBuilder):
                       [] if (x is None and y is not None) else ['ssm'],
                       ArrayType(StringType()))
         return df.withColumn('available_variation_data',
-                             avd_udf(col('Tumor_Sample_Barcode'),
+                             avd_udf(col('tumor_sample_barcode'),
                                      col('case_id')))
 
     def add_mutation_type(self, df):

@@ -181,6 +181,8 @@ def get_spark_args(args):
         name = key.replace('-', '.')
         spark_args.extend(['--conf', '{}={}'.format(name, value)])
 
+    spark_args.extend(['--conf', 'spark.sql.caseSensitive=True'])
+
     return spark_args
 
 
