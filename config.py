@@ -160,6 +160,8 @@ class BaseConfig(object):
         self.es = Elasticsearch(
             self.es_host,
             port=self.es_port,
+            use_ssl=self.es_use_ssl,
+            verify_certs=self.es_verify_certs,
             http_auth=(self.es_user, self.es_pass)
         )
         self.indexd = IndexClient(
