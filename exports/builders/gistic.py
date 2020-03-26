@@ -40,6 +40,8 @@ class GisticBuilder(BaseInputBuilder):
         super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
         self.es = Elasticsearch(config.es_host,
                                 port=config.es_port,
+                                use_ssl=config.es_use_ssl,
+                                verify_certs=config.es_verify_certs,
                                 http_auth=(config.es_user,
                                            config.es_pass))
 
@@ -325,4 +327,3 @@ class GisticBuilder(BaseInputBuilder):
         new_df = new_df.na.drop(subset=['cnv_change'])
 
         return new_df
-
