@@ -28,6 +28,8 @@ class BaseBuilder(object):
         self.debug = config.debug
         self.es = Elasticsearch(self.config.es_host,
                                 port=self.config.es_port,
+                                use_ssl=self.config.es_use_ssl,
+                                verify_certs=self.config.es_verify_certs,
                                 http_auth=(self.config.es_user,
                                            self.config.es_pass))
 
@@ -70,8 +72,10 @@ class BaseBuilder(object):
         df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
             .option('es.nodes', self.config.es_nodes)\
-            .option('es.net.http.auth.user', self.config.es_user)\
+            .option('es.net.http.auth.user', self.config.source_es_user)\
             .option('es.net.http.auth.pass', self.config.es_pass)\
+            .option('es.net.ssl', self.config.es_use_ssl)\
+            .option('es.net.ssl.cert.allow.self.signed', not self.config.es_verify_certs)\
             .option('es.nodes.wan.only', 'true')\
             .option('es.nodes.resolve.hostname', 'false')\
             .option('es.resource.write', index_doc)\
