@@ -54,9 +54,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.1.7"
-FORMATTED_MAF_KEYWORDS = 'DR-10.0.somatic.maf.gz'
-PROTECTED_MAF_KEYWORDS = 'protected.maf.gz'
+VERSION = "0.2.0"
 
 
 def get_git_commit(git_dir):
@@ -72,7 +70,18 @@ class BaseConfig(object):
         'Aggregated Somatic Mutation',
         'Masked Somatic Mutation',
     ]
-    gistic_filename_string = 'focal_score_by_genes'  # NOTE: this will be removed when gistics will be read from graph
+
+    # Filename substring for identifying the specific MAFs we should index.
+    # We only want the MAFs formatted for mutation indexer consumption.
+    formatted_maf_keywords = 'DR-10.0.somatic.maf.gz'
+
+    # Filename substring for protected MAFs; i.e., MAFs potentially containing
+    # germline data. We do _not_ want to index these due to privacy concerns.
+    protected_maf_keywords = 'protected.maf.gz'
+
+    # Filename substring for identifying GISTIC files in the GISTIC bucket.
+    # NOTE: This may be removed if we get GISTIC files from the graph instead.
+    gistic_filename_string = 'focal_score_by_genes'
 
     mappings = {
         'ssm': 'ssm.yml',
@@ -151,6 +160,8 @@ class BaseConfig(object):
         self.es = Elasticsearch(
             self.es_host,
             port=self.es_port,
+            use_ssl=self.es_use_ssl,
+            verify_certs=not self.disable_es_verify_certs,
             http_auth=(self.es_user, self.es_pass)
         )
         self.indexd = IndexClient(
@@ -330,8 +341,10 @@ class BaseConfig(object):
         NOTE: this has to be removed once DAVE CA is properly implemented
         TODO: Long-term solution for improperly formatted mafs
         """
-        return PROTECTED_MAF_KEYWORDS not in maf_url \
-            and FORMATTED_MAF_KEYWORDS in maf_url
+        return (
+            self.protected_maf_keywords not in maf_url
+            and self.formatted_maf_keywords in maf_url
+        )
 
     def patch_s3_url(self, url):
         """

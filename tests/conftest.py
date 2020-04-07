@@ -129,6 +129,7 @@ def sqlContext(es_client):
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
     sqlCont.sql("set spark.sql.shuffle.partitions=200")
+    sqlCont.sql("set spark.sql.caseSensitive=true")
     log4j = sc._jvm.org.apache.log4j
     log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
 

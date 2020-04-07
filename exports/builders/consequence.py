@@ -180,7 +180,7 @@ class ConsequenceBuilder(object):
         effects_legend = [
             'do_not_use', 'consequence_type', 'aa_change', 'transcript_id',
             'ref_seq_accession', 'hgvsc', 'vep_impact', 'is_canonical',
-            'SIFT', 'PolyPhen', 'Transcript_Strand',
+            'sift', 'polyphen', 'transcript_strand',
         ]
 
         # Before exploding, let's save the transcript_id of the selected transcript

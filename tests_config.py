@@ -79,7 +79,8 @@ class TestConfig(BaseConfig):
                 self.es.indices.delete(collision)
             self.es.indices.refresh()
 
-    def get_env_dict(self):
+    @classmethod
+    def get_env_dict(cls):
         """
         Simulate environment variables with dictionary
         """
