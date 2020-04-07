@@ -54,7 +54,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.1.7"
+VERSION = "0.2.0"
 
 
 def get_git_commit(git_dir):
@@ -161,7 +161,7 @@ class BaseConfig(object):
             self.es_host,
             port=self.es_port,
             use_ssl=self.es_use_ssl,
-            verify_certs=self.es_verify_certs,
+            verify_certs=not self.disable_es_verify_certs,
             http_auth=(self.es_user, self.es_pass)
         )
         self.indexd = IndexClient(

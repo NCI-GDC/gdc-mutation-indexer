@@ -278,12 +278,12 @@ def extract_score(df, column, res_colname):
 
 def extract_sift_polyphen(df):
     """
-    Extracts '{polyphen|sift}_{impact|score}' from 'PolyPhen' and 'SIFT' columns
+    Extracts '{polyphen|sift}_{impact|score}' from 'polyphen' and 'sift' columns
     """
-    for c in ['PolyPhen', 'SIFT']:
+    for c in ['polyphen', 'sift']:
         df = extract_impact(df, c, '{}_impact'.format(c.lower()))
         df = extract_score(df, c, '{}_score'.format(c.lower()))
-    df = df.drop('PolyPhen').drop('SIFT')
+    df = df.drop('polyphen').drop('sift')
     return df
 
 
