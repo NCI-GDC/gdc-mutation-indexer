@@ -15,7 +15,7 @@ class TestConfig(BaseConfig):
     gistic_dir = os.path.join(input_dir, 'cnv')
 
     # Initialize test directory tree if incomplete
-    for directory in [log_dir, input_dir, maf_dir_v1]:
+    for directory in [log_dir, input_dir, maf_dir]:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -102,8 +102,8 @@ class TestConfig(BaseConfig):
         return env_dict
 
     def get_maf_urls(self):
-        return ['file://' + os.path.join(self.maf_dir_v1, f)
-                for f in os.listdir(self.maf_dir_v1) if f.endswith('maf')]
+        return ['file://' + os.path.join(self.maf_dir, f)
+                for f in os.listdir(self.maf_dir) if f.endswith('maf')]
 
     def get_gistic_urls(self):
         return ['file://' + os.path.join(self.gistic_dir, f)

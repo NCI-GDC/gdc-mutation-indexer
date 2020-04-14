@@ -1,11 +1,8 @@
-import time
 import pytest
 import logging
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType, ArrayType
 
 from cdisutils.dictionary import remove_keys_from_dict
 from elasticsearch import Elasticsearch
@@ -23,7 +20,6 @@ from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
-    AliquotBuilder,
     GisticBuilder,
     CaseBuilder,
     CNVCentricBuilder,
@@ -35,7 +31,7 @@ from exports.builders import (
     SSMOccurrenceCentricBuilder,
 )
 
-# This will load MAFs in old format
+
 conf = TestConfig()
 
 log = logging.getLogger()
@@ -47,7 +43,7 @@ def setup_test_index():
     """
     Creates graph index with required docs and returns an elasticsearch client
     """
-    print '\n\n\tSETTING UP TEST INDEX\n\n'
+    print('\n\n\tSETTING UP TEST INDEX\n\n')
     es = Elasticsearch(conf.source_es_host, port=conf.es_port, retry_on_timeout=True,
                        timeout=30)
 
@@ -180,25 +176,6 @@ def maf_df(sqlContext):
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
     return MAFBuilder(conf, sqlContext).build()
-
-
-@pytest.fixture(scope="session")
-def acl_maf_df(sqlContext, maf_df):
-    """
-    Builds combined maf dataframe
-    Note: alters naturally-occurring acls for testing purposes.
-    """
-    def fake_out_acl(chromosome):
-        if int(chromosome) % 2 == 0:
-            return [u'phs000218']
-        return [u'open']
-
-    acl_udf = udf(fake_out_acl, ArrayType(StringType()))
-    altered_maf = maf_df.drop('acl')
-    altered_maf = altered_maf.withColumn('acl',
-                                         acl_udf('gene_chromosome'))
-
-    return altered_maf
 
 
 @pytest.fixture(scope="session")
@@ -352,3 +329,36 @@ def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
 def maf_stats():
     yield MAFStats(conf.maf_urls)
 
+
+@pytest.fixture(scope='module')
+def raw_variant_caller_counts():
+    """Get the expected number of observations for each caller in the raw MAFs.
+
+    Hardcode based on the test data to minimize the risk of logic bugs in this
+    fixture. Ensemble calls are not exploded when building the MAF DF, so list
+    any ensemble calls verbatim.
+    """
+    return {
+        'muse': 7,
+        'mutect2': 11,
+        'mutect2;muse*;somaticsniper': 1,
+        'pindel': 3,
+        'somaticsniper': 5,
+        'varscan': 3,
+    }
+
+
+@pytest.fixture(scope='module')
+def exploded_variant_caller_counts():
+    """Get the expected number of observations for each caller after processing.
+
+    Assume any ensemble calls have been split into individual observations.
+    To update, ``grep -c`` for the various callers in the test MAFs.
+    """
+    return {
+        'muse': 8,
+        'mutect2': 12,
+        'pindel': 3,
+        'somaticsniper': 6,
+        'varscan': 3,
+    }
