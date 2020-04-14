@@ -1,10 +1,8 @@
 import logging
-import os
 from pkg_resources import resource_filename
 
 import yaml
-from elasticsearch import Elasticsearch
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from pyspark.sql.functions import lit, col, udf, struct
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 
 from config import LOG_FORMAT
@@ -13,9 +11,7 @@ from exports.builders.utils import (
     ssm_label_col,
     extract_sift_polyphen,
 )
-from exports.es_utils import (
-    iterate_es_results,
-)
+
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.clinical_annotations.civic import CivicBuilder
@@ -31,7 +27,6 @@ class MAFBuilder(BaseInputBuilder):
 
     def __init__(self, config, sqlContext):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
-        self.acls = self.get_acls()
         self.schema = self.get_schema()
         self.annotation_builders = [CivicBuilder(config, sqlContext)]
 
@@ -166,67 +161,6 @@ class MAFBuilder(BaseInputBuilder):
         to_array = udf(to_array, ArrayType(StringType()))
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
         return df
-
-    def get_acls(self):
-        """
-        1. Take list of maf file names
-        2. Assume the last part of the url is the file_name
-        3. Look up corresponding files in es
-        4. Parse out those files' acls
-        """
-        es = Elasticsearch(self.config.es_host,
-                           port=self.config.es_port,
-                           use_ssl=self.config.es_use_ssl,
-                           verify_certs=not self.config.disable_es_verify_certs,
-                           http_auth=(self.config.es_user,
-                                      self.config.es_pass))
-
-        file_names = self.config.get_maf_file_names()
-
-        query = {
-            "query": {
-                "terms": {
-                    "file_name": file_names
-                },
-            },
-            "_source": ["file_name", "acl"]
-        }
-
-        # Build up dictionary of file_name to acl
-        filenames_to_acls = {}
-        for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):
-            source = doc['_source']
-            filename = source['file_name']
-            acl = source['acl']
-
-            filenames_to_acls[filename] = acl
-
-        return filenames_to_acls
-
-    def add_acl(self, df, url):
-        """
-        Populates mutation data with acls
-        Have to do a little massaging of the file name to match
-        Mapped on the maf name level
-        """
-        acls = self.acls
-
-        def acl_inner():
-            # trim out leading folders
-            file_name = os.path.basename(url)
-
-            # mafs may be zipped or unzipped
-            # we expect the file_name in the File to be 'xxx.gz'
-            if not file_name.endswith('.gz'):
-                file_name += '.gz'
-
-            if file_name not in acls:
-                raise Exception("ACL not found for maf with url {}, "
-                                "file_name {}".format(url, file_name))
-            return acls[file_name]
-
-        acl_udf = udf(acl_inner, ArrayType(StringType()))
-        return df.withColumn('acl', acl_udf())
 
     def add_available_variation_data(self, df):
         """
@@ -368,18 +302,6 @@ class MAFBuilder(BaseInputBuilder):
                                              IntegerType())(col('cds_position')))
         return df
 
-    def extract_barcode(self, df):
-        """
-        Extracts the case barcode from the sample barcode
-        TODO: Remove this as it only works for TCGA. Should look up case uuid
-              from the sample uuid
-        """
-        maf_df = df.withColumn('_case_submitter_id',
-                               regexp_extract(col('tumor_sample_barcode'),
-                                              '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',
-                                              1))
-        return maf_df
-
     def combine(self, urls=None):
         """
         Combines data frames from a list of urls
@@ -396,9 +318,6 @@ class MAFBuilder(BaseInputBuilder):
                 # TODO: separate data transforms from combining multiple df into one
                 #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
-
-                # add acl based on individual maf
-                new_df = self.add_acl(new_df, url)
 
                 # ensure a consistent schema so that the union works correctly
                 # this will strip out any columns that aren't in the schema,

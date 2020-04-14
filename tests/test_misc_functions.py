@@ -192,11 +192,21 @@ class TestMiscFunctions:
         label = ssm_label('chr3', 'DEL', 41589825, '', 'A', '')
         assert label == 'chr3:g.41589825delA'
 
+        # TODO Other indel cases
         label = ssm_label('chr3', 'INS', 41589825, 41589825, '', 'T')
         assert label == 'chr3:g.41589825_41589825insT'
 
         label = ssm_label('chr4', 'SNP', 112382545, '', 'A', 'T')
         assert label == 'chr4:g.112382545A>T'
+
+        label = ssm_label('chr5', 'DNP', 112382500, 112382501, 'AC', 'TG')
+        assert label == 'chr5:g.112382500_112382501delinsTG'
+
+        label = ssm_label('chr5', 'TNP', 112382500, 112382502, 'ACT', 'TGA')
+        assert label == 'chr5:g.112382500_112382502delinsTGA'
+
+        label = ssm_label('chr5', 'ONP', 112382500, 112382505, 'TCGATC', 'CTAGCT')
+        assert label == 'chr5:g.112382500_112382505delinsCTAGCT'
 
     def test_uuid5(self):
         """

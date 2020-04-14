@@ -109,7 +109,7 @@ class TestBaseConfig(object):
         (['TCGA-KICH'], ['KICH']),
         (['TCGA-KIRC', 'TCGA-KIRP'], ['KIRC', 'KIRP']),
     ])
-    def test_get_maf_urls_filters_by_project(
+    def test_get_maf_urls__filters_by_project(
         self, projects, file_patterns, base_config
     ):
         """Confirm get_maf_urls only returns files in the given projects.
@@ -145,7 +145,7 @@ class TestBaseConfig(object):
         (['TCGA-KICH'], ['KICH']),
         (['TCGA-SKCM', 'TCGA-KIRP'], ['SKCM', 'KIRP']),
     ])
-    def test_get_gistic_urls_filters_by_project(
+    def test_get_gistic_urls__filters_by_project(
         self, projects, file_patterns, base_config
     ):
         """Confirm get_gistic_urls only returns files in the given projects."""
@@ -159,3 +159,57 @@ class TestBaseConfig(object):
         )
 
         assert sorted(urls) == expected_urls
+
+    def test_get_index_names__open(self, base_config):
+        """Test index name formatting for an open-access build.
+
+        Omit the "study label" and confirm index names are formatted as expected.
+        """
+        base_config.build_label = 'open_index'
+        base_config.study_label = ''
+
+        indices = base_config.get_index_names()
+
+        assert indices == {
+            'case_centric': 'open_index__case_centric',
+            'cnv_centric': 'open_index__cnv_centric',
+            'cnv_occurrence_centric': 'open_index__cnv_occurrence_centric',
+            'gene_centric': 'open_index__gene_centric',
+            'ssm_centric': 'open_index__ssm_centric',
+            'ssm_occurrence_centric': 'open_index__ssm_occurrence_centric',
+        }
+
+    def test_get_index_names__controlled(self, base_config):
+        """Test index name formatting for a controlled-access build.
+
+        Provide a "study label" and confirm index names are formatted as expected.
+        """
+        base_config.build_label = 'dr123'
+        base_config.study_label = 'fm'
+
+        indices = base_config.get_index_names()
+
+        assert indices == {
+            'case_centric': 'dr123__case_centric__fm__controlled',
+            'cnv_centric': 'dr123__cnv_centric__fm__controlled',
+            'cnv_occurrence_centric': 'dr123__cnv_occurrence_centric__fm__controlled',
+            'gene_centric': 'dr123__gene_centric__fm__controlled',
+            'ssm_centric': 'dr123__ssm_centric__fm__controlled',
+            'ssm_occurrence_centric': 'dr123__ssm_occurrence_centric__fm__controlled',
+        }
+
+    def test_get_index_names__double_underscore(self, base_config):
+        """Confirm double underscores are disallowed in build and study labels.
+
+        Make sure double underscores are reserved for formatting the final index names,
+        so we can't create name collisions by configuring weird labels.
+        """
+        base_config.build_label = 'open__index'
+        base_config.study_label = ''
+        with pytest.raises(ValueError):
+            base_config.get_index_names()
+
+        base_config.build_label = 'dr123'
+        base_config.study_label = 'fm__controlled'
+        with pytest.raises(ValueError):
+            base_config.get_index_names()

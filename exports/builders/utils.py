@@ -46,12 +46,8 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     """
     Create a label (genomic change) from an ssm based on its variant type:
 
-    SNP: "{chromosome}:g.{start_position}{reference_allele}>{tumor_allele}"
-    DEL: "{chromosome}:g.{start_position}del{reference_allele}"
-    INS: "{chromosome}:g.{start_position}_{end_position}ins{tumor_allele}"
-
     :param chromosome: The chromosome where the mutation occurred
-    :param variant_type: The variant, `SNP`, `DEL`, or `INS`
+    :param variant_type: The variant type (e.g., ``SNP``, ``DNP``, ``DEL``, ``INS``...)
     :param start_pos: The starting position of the mutation
     :param end_pos: The end position of the mutation
     :param ref_allele: The reference allele
@@ -62,6 +58,9 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     if variant_type == 'SNP':
         label = 'chr{}:g.{}{}>{}'.format(chromosome,
                                          start_pos, ref_allele, tumor_allele)
+    elif variant_type in {'DNP', 'TNP', 'ONP'}:
+        label = 'chr{}:g.{}_{}delins{}'.format(chromosome,
+                                               start_pos, end_pos, tumor_allele)
     elif variant_type == 'DEL':
         label = 'chr{}:g.{}del{}'.format(chromosome,
                                          start_pos, ref_allele)
@@ -75,26 +74,19 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
 
 
 def get_case_ids_from_source_es(config, sqlContext):
-    """
-    Queries source es for case_ids and acls that correspond to maf aliquots.
+    """Query source ES for case_ids that correspond to MAF aliquots.
 
-    This function returns the acls associated with the
-    case_id -> aliquot -> maf_url -> maf_filename.
+    TODO: Make this query ES through Spark instead...?
 
-    1) if any of the observations is open then case level is open;
-    2) if all observations are controlled
-    and populated with the same dbgap study code,
-    then case level will be the same dbgap study code;
-    3) if study code in 2) have different values from observation,
-    then there is something wrong.
+    Returns:
+        A dataframe with a single ``case_id`` column listing the case IDs associated
+        with the aliquots identified by `AliquotBuilder`.
     """
 
     # Read unique aliquots from maf headers
     aliquot_to_url = AliquotBuilder(config, sqlContext).build()
-
-    # Convert to dictionary
-    aliquot_to_url = aliquot_to_url.select('aliquot_id', 'url').rdd.collectAsMap()
-    unique_aliquots = aliquot_to_url.keys()
+    aliquot_url_iterator = aliquot_to_url.select('aliquot_id').toLocalIterator()
+    unique_aliquots = list(set(row.aliquot_id for row in aliquot_url_iterator))
 
     musts = [
         {
@@ -102,7 +94,7 @@ def get_case_ids_from_source_es(config, sqlContext):
                 'path': 'samples.portions.analytes.aliquots',
                 'query': {
                     'terms': {
-                        'samples.portions.analytes.aliquots.submitter_id': list(unique_aliquots)
+                        'samples.portions.analytes.aliquots.submitter_id': unique_aliquots
                     }
                 }
             }
@@ -117,7 +109,7 @@ def get_case_ids_from_source_es(config, sqlContext):
         })
 
     query = {
-        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
+        '_source': False,
         'query': {
             'bool': {
                 'must': musts
@@ -132,56 +124,7 @@ def get_case_ids_from_source_es(config, sqlContext):
         query=query
     )
 
-    cases_urls = {}
-    case_ids = set()
-
-    # walk to the aliquot
-    for hit in results:
-        case_id = hit["_id"]
-        case_ids.add(case_id)
-        samples = hit['_source']['samples']
-        aliquots_to_lookup = []
-        for sample in samples:
-            portions = sample['portions']
-            for portion in portions:
-                analytes = portion['analytes']
-                for analyte in analytes:
-                    aliquots = analyte['aliquots']
-                    for aliquot in aliquots:
-                        submitter_id = aliquot['submitter_id']
-                        if submitter_id in unique_aliquots:
-                            aliquots_to_lookup.append(submitter_id)
-
-        # go from aliquots to url to maf_name to acl
-        aliquot_acls = []
-        for aliquot in aliquots_to_lookup:
-            url = aliquot_to_url[aliquot]
-            filename = config.maf_url_to_file_name(url)
-            acl = config.acls[filename]
-            aliquot_acls.append(acl)
-
-        # dedupe (annoying because acls are lists)
-        aliquot_acls = list(set(x for l in aliquot_acls for x in l))
-
-        assert 0 < len(aliquot_acls) <= 2, 'Invalid acls ' \
-            'for case {}, aliquot(s) {}, phsids {}' \
-            ''.format(case_id, aliquots_to_lookup, aliquot_acls)
-
-        # If only one acl across aliquots, use that
-        if len(aliquot_acls) == 1:
-            cases_urls[case_id] = aliquot_acls
-        else:
-            # If we find more than one acl, we must have
-            # the scenario [open, phsid000x]
-            # ([phsid000x, phsid000y] means something is wrong)
-            assert u'open' in aliquot_acls, 'Multiple phsids ' \
-                'found for case {}, aliquots {}, phsids {}' \
-                ''.format(case_id, aliquots_to_lookup, aliquot_acls)
-
-            cases_urls[case_id] = [u'open']
-
-    # We found a url for each case
-    assert len(case_ids) == len(cases_urls)
+    cases = [{'case_id': hit['_id']} for hit in results]
 
     # There may be more than one aliquot per case
     # I.e., the following example is valid:
@@ -196,18 +139,13 @@ def get_case_ids_from_source_es(config, sqlContext):
     #    x    | 1
     #    y    | 1
     #    z    | 2
-    assert len(unique_aliquots) >= len(case_ids)
+    assert len(unique_aliquots) >= len(cases)
 
-    # Create a dataframe with the cases IDs and ACLs corresponding to the
-    # identified aliquots. Give an explicit schema in case we found nothing,
-    # as schema inference doesn't work on empty dataframes.
-    cases_df_schema = StructType([
-        StructField('case_id', StringType()),
-        StructField('case_acl', ArrayType(StringType())),
-    ])
-    cases_df = sqlContext.createDataFrame(
-        cases_urls.items(), schema=cases_df_schema
-    )
+    # Create a dataframe with the case IDs corresponding to the identified aliquots.
+    # Give an explicit schema in case we found nothing, as schema inference doesn't
+    # work on empty dataframes.
+    cases_df_schema = StructType([StructField('case_id', StringType())])
+    cases_df = sqlContext.createDataFrame(cases, schema=cases_df_schema)
 
     return cases_df
 
