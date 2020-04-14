@@ -98,8 +98,6 @@ maf_schema:
       name:  CDS_position
   hgvsp_short:
       name:  HGVSp_Short
-  src_vcf_id:
-      name:  src_vcf_id
   mutation_status:
       name:  Mutation_Status
   center:
