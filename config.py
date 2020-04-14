@@ -24,6 +24,11 @@ from parsers import (
 
 
 def create_factory(host, port=443, timeout=10):
+    """Create an HTTPSConnection factory that doesn't try to verify the server cert.
+
+    Make it possible to connect to Cleversafe even though the Cleversafe cert doesn't
+    match the hostname we likely expect.
+    """
     return (
         httplib.HTTPSConnection(
             host=host,
@@ -34,7 +39,7 @@ def create_factory(host, port=443, timeout=10):
     )
 
 
-py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+py_ver = ".".join(str(sys.version_info[i]) for i in range(3))
 if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
     factory = (create_factory, ())
 else:
@@ -172,7 +177,6 @@ class BaseConfig(object):
         self.maf_urls = self.get_maf_urls()
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
-        self._acls = None
         self._exclude_fields = None
 
         if self.blacklist_fields:
@@ -411,51 +415,6 @@ class BaseConfig(object):
                 gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
-
-    @property
-    def acls(self):
-        if self._acls is None:
-            self._acls = self.get_acls()
-        return self._acls
-
-    def get_acls(self):
-        """
-        1. Take list of maf file names
-        2. Assume the last part of the url is the file_name
-        3. Look up corresponding files in es
-        4. Parse out those files' acls
-        """
-
-        file_names = self.maf_file_names
-
-        query = {
-                "query": {
-                    "bool": {
-                        "must": {
-                            "terms": {
-                                "file_name": file_names
-                                }
-                            }
-                        }
-                    },
-                "_source": ["file_name", "acl"],
-                "size": 10000,
-        }
-
-        docs = self.es.search(index=self.graph_index,
-                              doc_type='file',
-                              body=query)
-
-        # Build up dictionary of file_name to acl
-        filenames_to_acls = {}
-        for doc in docs['hits']['hits']:
-            source = doc['_source']
-            filename = source['file_name']
-            acl = source['acl']
-
-            filenames_to_acls[filename] = acl
-
-        return filenames_to_acls
 
     def get_samples_fields_to_exclude(self):
         """

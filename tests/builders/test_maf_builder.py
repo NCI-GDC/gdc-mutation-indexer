@@ -115,10 +115,11 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         # Bypass combine() so the dataframe isn't already standardized.
+        # Note that this particular input DF is missing a column, which
+        # we need to fix or else standardize_schema will reject it.
         df = (
             builder.file_to_df(conf.maf_urls[0])
             .withColumn('callers', lit('variant_caller'))
-            .withColumn('acl', lit(None))
         )
         columns = df.columns
 
@@ -144,12 +145,13 @@ class TestMAFBuilder:
         '''
         builder = MAFBuilder(conf, sqlContext)
 
-        # The raw dataframe is missing a couple columns, so it should
-        # initially fail standardization.
+        # If we drop some columns, the initial MAF should fail standardization, as there
+        # is no possible way to rearrange those columns into the expected schema.
         df = builder.file_to_df(conf.maf_urls[0])
+        reduced_df = df.drop('Hugo_Symbol', 'IMPACT')
 
         try:
-            builder.standardize_schema(df)
+            builder.standardize_schema(reduced_df)
             assert False, 'Builder accepted df missing required columns'
         except KeyError:
             pass
@@ -157,7 +159,9 @@ class TestMAFBuilder:
         # If we tell the builder to supply None values for the missing columns,
         # then it should fill in those columns and standardize successfully.
         standardized_df = builder.standardize_schema(
-            df, default_to_none=['callers', 'acl'])
+            reduced_df,
+            default_to_none=['callers', 'Hugo_Symbol', 'IMPACT'],
+        )
         assert standardized_df.columns == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
@@ -182,16 +186,34 @@ class TestMAFBuilder:
 
         assert 'genomic_dna_change' in maf_df.columns
 
+        labels = {
+            row.genomic_dna_change
+            for row in maf_df.select('genomic_dna_change').collect()
+        }
+
         # Number of unique labels should be equal to the number of unique ssm
-        assert (maf_df.select('ssm_id').distinct().count() ==
-                maf_df.select('genomic_dna_change').distinct().count())
+        assert maf_df.select('ssm_id').distinct().count() == len(labels)
 
-        labels = [r['genomic_dna_change'] for r
-                  in maf_df.select('genomic_dna_change').collect()]
-
+        # SNPs
         assert 'chr1:g.32180498T>C' in labels
         assert 'chr2:g.182729892G>T' in labels
+        assert 'chr3:g.38112297T>G' in labels
         assert 'chr9:g.2056812T>A' in labels
+
+        # Small insertions
+        assert 'chr17:g.4076894_4076895insT' in labels
+
+        # Small deletions
+        assert 'chr6:g.72307351delAT' in labels
+
+        # DNPs
+        assert 'chr3:g.38112298_38112299delinsCA' in labels
+
+        # TNPs
+        assert 'chr3:g.38112300_38112302delinsGCT' in labels
+
+        # ONPs
+        assert 'chr3:g.38112303_38112306delinsGTGC' in labels
 
     def test_mutation_type(self, maf_df):
         '''

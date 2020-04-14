@@ -14,6 +14,6 @@ xlrd==0.9.3
 gitdb2~=2.0.0
 
 -e git+ssh://git@github.com/NCI-GDC/normalizer.git@1.1.1#egg=normalizer
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.1.0#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/DEV-157-remove-acls#egg=gdcmodels
 -e git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
 -e git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
