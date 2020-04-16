@@ -104,9 +104,9 @@ class BaseConfig(object):
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_file = 's3a://test/genes.hg38.v2.json'
-    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
-    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
+    gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.v2.json'
+    citobands_file = 's3a://gdc-mutation-indexer/genes.cytobands.tsv.gz'
+    census_file = 's3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz'
 
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
