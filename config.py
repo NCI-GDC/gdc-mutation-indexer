@@ -237,20 +237,28 @@ class BaseConfig(object):
                 setattr(self, key, value)
 
     def get_index_names(self):
-        """
-        Returns {index_type: es_index_name} dictionary
-        """
-        if self.build_type == 'release':
-            prefix = 'release-'
-        else:
-            prefix = ''
-
-        version_tag = '_'.join(map(str, self.build_version))
-        indices = {
-            index_type: prefix + '{}-{}-{}'.format(
-                self.build_label, version_tag, index_type,
+        """Create {index_type: es_index_name} dictionary based on build config."""
+        if '__' in self.build_label:
+            raise ValueError(
+                'Double underscores not allowed in build label '
+                '{}'.format(self.build_label)
             )
-            for index_type in self.index_types
+
+        if self.study_label:
+            if '__' in self.study_label:
+                raise ValueError(
+                    'Double underscores not allowed in study label '
+                    '{}'.format(self.study_label)
+                )
+
+            template = '{build}__{{}}__{study}__controlled'.format(
+                build=self.build_label, study=self.study_label
+            )
+        else:
+            template = '{build}__{{}}'.format(build=self.build_label)
+
+        indices = {
+            index_type: template.format(index_type) for index_type in self.index_types
         }
 
         self.validate_indices(indices)

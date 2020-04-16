@@ -72,13 +72,6 @@ def process_args(args):
             value = getattr(args, 'es_{}'.format(key))
             setattr(args, param_name, value)
 
-    # for release build, user may specify label
-    # default behavior: get label and version from DataRelease node
-    if args.build_type == 'release' and not args.build_label:
-        release_name, version = get_release_info()
-        args.build_label = release_name.lower()
-        args.build_version = version
-
     return args
 
 
