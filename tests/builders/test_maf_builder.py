@@ -1,8 +1,6 @@
 import os
 import re
 import json
-from collections import Counter
-from contextlib import contextmanager
 
 import yaml
 import pytest
@@ -15,46 +13,25 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@contextmanager
-def does_not_raise():
-    yield
-
-
-@pytest.mark.parametrize('url, expected, behavior', [
-    ('s3a://varscan-10/bar.somaticsniper.baz', 'somaticsniper', does_not_raise()),
-    ('s3a://varscan-10/bar.mutect.baz', 'mutect2', does_not_raise()),
-    ('s3a://varscan-10/bar.muse.baz', 'muse', does_not_raise()),
-    ('s3a://varscan-10/bar.varscan.baz', 'varscan', does_not_raise()),
-    ('s3a://varscan-10/bar.FM-AD_SNV.baz', 'FM Simple Somatic Mutation', does_not_raise()),
-    ('s3://foo-bar/bar.something.baz', None, pytest.raises(Exception)),
-    ('s3a://varscan-10/bar.FM-AD.baz', None, pytest.raises(Exception)),
-    ('s3a://varscan-10/bar.muse.varscan.baz', None, pytest.raises(Exception)),
-])
-def test_maf_builder_get_caller(sqlContext, maf_df, url, expected, behavior):
-    builder = MAFBuilder(conf, sqlContext)
-
-    with behavior:
-        result = builder.get_caller(url)
-
-        assert result == expected
-
-
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestMAFBuilder:
 
     @pytest.fixture
-    def expected_counts(self, sqlContext):
-        builder = MAFBuilder(conf, sqlContext)
-        expected_counts = {}
-        for maf_file in conf.maf_urls:
-            pipeline = maf_file.split('.')[2]
-            if pipeline == 'mutect':
-                pipeline = 'mutect2'
+    def expected_counts(self):
+        """Get expected number of observations for each caller.
 
-            df = builder.combine([maf_file])
-            expected_counts.setdefault(pipeline, 0)
-            expected_counts[pipeline] += df.count()
-        yield expected_counts
+        Hardcode based on the test data to minimize the risk of logic bugs in this
+        fixture. Ensemble calls are not exploded when building the MAF DF, so list
+        any ensemble calls verbatim.
+        """
+        return {
+            'muse': 7,
+            'mutect2': 11,
+            'mutect2;muse*;somaticsniper': 1,
+            'pindel': 3,
+            'somaticsniper': 5,
+            'varscan': 3,
+        }
 
     @pytest.fixture
     def maf_schema(self):
@@ -83,16 +60,8 @@ class TestMAFBuilder:
 
         combined_df = builder.combine(conf.maf_urls)
 
-        # Test total number of lines
-        assert combined_df.count() == sum(expected_counts.values())
-
-        c = Counter([json.loads(item)['variant_caller']
-                     for item in (combined_df.select('variant_caller')
-                                             .toJSON().collect())])
-
-        # Test number of lines for each pipeline (i.e. 'variant_caller')
-        for pipeline, count in expected_counts.items():
-            assert c[pipeline] == count
+        actual_counts = dict(combined_df.groupBy('variant_caller').count().collect())
+        assert actual_counts == expected_counts
 
     def test_schema(self, sqlContext, maf_schema):
         '''
@@ -232,9 +201,9 @@ class TestMAFBuilder:
         Test that variant caller is created properly
         '''
         assert 'variant_caller' in maf_df.columns
-        for variant_caller, expected_count in expected_counts.items():
-            count = maf_df.where(maf_df.variant_caller == variant_caller).count()
-            assert count == expected_count
+
+        actual_counts = dict(maf_df.groupBy('variant_caller').count().collect())
+        assert actual_counts == expected_counts
 
     def test_variant_process(self, maf_df):
         '''
