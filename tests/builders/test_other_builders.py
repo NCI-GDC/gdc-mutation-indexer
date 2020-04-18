@@ -37,15 +37,23 @@ class TestOtherBase:
             input_df = gistic_df
         return build_function, input_df, id_field
 
-    @staticmethod
-    def params():
+    @classmethod
+    def params(cls):
+        """Get params for all observation test cases.
+
+        All tests are parametrized by 'index_name,build_type'.s
         """
-        All tests are parametrized by 'index_name,build_type'
-        """
-        return (
-            [(index_name, 'ssm') for index_name in conf.ssm_indices] +
-            [(index_name, 'cnv') for index_name in conf.cnv_indices]
-        )
+        return cls.ssm_params() + cls.cnv_params()
+
+    @classmethod
+    def ssm_params(cls):
+        """Get params for SSM observation test cases."""
+        return [(index_name, 'ssm') for index_name in conf.ssm_indices]
+
+    @classmethod
+    def cnv_params(cls):
+        """Get params for CNV observation test cases."""
+        return [(index_name, 'cnv') for index_name in conf.cnv_indices]
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df')
@@ -92,6 +100,28 @@ class TestObservationBuilder(TestOtherBase):
                                      .toJSON().collect()))
 
         assert sorted(obs) == sorted(true_obs)
+
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
+    def test_variant_caller(
+        self,
+        builder,
+        index_name,
+        build_type,
+        get_inputs,
+        exploded_variant_caller_counts,
+    ):
+        """Confirm the expected number of observations is created for each caller."""
+        build_function, input_df, id_field = get_inputs
+        obs_df = getattr(builder, build_function)(input_df, index_name)
+
+        actual_counts = dict(
+            obs_df.select(explode('observation').alias('observation'))
+            .groupBy('observation.variant_calling.variant_caller')
+            .count()
+            .collect()
+        )
+
+        assert actual_counts == exploded_variant_caller_counts
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')

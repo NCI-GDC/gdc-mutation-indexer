@@ -17,23 +17,6 @@ conf = TestConfig()
 class TestMAFBuilder:
 
     @pytest.fixture
-    def expected_counts(self):
-        """Get expected number of observations for each caller.
-
-        Hardcode based on the test data to minimize the risk of logic bugs in this
-        fixture. Ensemble calls are not exploded when building the MAF DF, so list
-        any ensemble calls verbatim.
-        """
-        return {
-            'muse': 7,
-            'mutect2': 11,
-            'mutect2;muse*;somaticsniper': 1,
-            'pindel': 3,
-            'somaticsniper': 5,
-            'varscan': 3,
-        }
-
-    @pytest.fixture
     def maf_schema(self):
         path = os.path.join(conf.schemas_dir, 'maf.yml')
         with open(path) as f:
@@ -52,7 +35,7 @@ class TestMAFBuilder:
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
         assert builder.patch_url(url1).startswith('s3a://')
 
-    def test_combine(self, sqlContext, expected_counts):
+    def test_combine(self, sqlContext, raw_variant_caller_counts):
         '''
         Test that mafs are combined correctly
         '''
@@ -61,7 +44,7 @@ class TestMAFBuilder:
         combined_df = builder.combine(conf.maf_urls)
 
         actual_counts = dict(combined_df.groupBy('variant_caller').count().collect())
-        assert actual_counts == expected_counts
+        assert actual_counts == raw_variant_caller_counts
 
     def test_schema(self, sqlContext, maf_schema):
         '''
@@ -196,14 +179,14 @@ class TestMAFBuilder:
         assert (maf_df.select('mutation_type').collect()[0]['mutation_type'] ==
                 'Simple Somatic Mutation')
 
-    def test_variant_caller(self, maf_df, expected_counts):
+    def test_variant_caller(self, maf_df, raw_variant_caller_counts):
         '''
         Test that variant caller is created properly
         '''
         assert 'variant_caller' in maf_df.columns
 
         actual_counts = dict(maf_df.groupBy('variant_caller').count().collect())
-        assert actual_counts == expected_counts
+        assert actual_counts == raw_variant_caller_counts
 
     def test_variant_process(self, maf_df):
         '''

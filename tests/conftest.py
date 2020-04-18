@@ -328,3 +328,37 @@ def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
 @pytest.fixture(scope='module')
 def maf_stats():
     yield MAFStats(conf.maf_urls)
+
+
+@pytest.fixture(scope='module')
+def raw_variant_caller_counts():
+    """Get the expected number of observations for each caller in the raw MAFs.
+
+    Hardcode based on the test data to minimize the risk of logic bugs in this
+    fixture. Ensemble calls are not exploded when building the MAF DF, so list
+    any ensemble calls verbatim.
+    """
+    return {
+        'muse': 7,
+        'mutect2': 11,
+        'mutect2;muse*;somaticsniper': 1,
+        'pindel': 3,
+        'somaticsniper': 5,
+        'varscan': 3,
+    }
+
+
+@pytest.fixture(scope='module')
+def exploded_variant_caller_counts():
+    """Get the expected number of observations for each caller after processing.
+
+    Assume any ensemble calls have been split into individual observations.
+    To update, ``grep -c`` for the various callers in the test MAFs.
+    """
+    return {
+        'muse': 8,
+        'mutect2': 12,
+        'pindel': 3,
+        'somaticsniper': 6,
+        'varscan': 3,
+    }
