@@ -2,7 +2,7 @@ import logging
 from pkg_resources import resource_filename
 
 import yaml
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from pyspark.sql.functions import lit, col, udf, struct
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 
 from config import LOG_FORMAT
@@ -301,18 +301,6 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('cds_length', udf(length,
                                              IntegerType())(col('cds_position')))
         return df
-
-    def extract_barcode(self, df):
-        """
-        Extracts the case barcode from the sample barcode
-        TODO: Remove this as it only works for TCGA. Should look up case uuid
-              from the sample uuid
-        """
-        maf_df = df.withColumn('_case_submitter_id',
-                               regexp_extract(col('tumor_sample_barcode'),
-                                              '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',
-                                              1))
-        return maf_df
 
     def combine(self, urls=None):
         """

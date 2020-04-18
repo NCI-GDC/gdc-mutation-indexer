@@ -78,8 +78,6 @@ def get_case_ids_from_source_es(config, sqlContext):
 
     TODO: Make this query ES through Spark instead...?
 
-    TODO: Possibly refactor AliquotBuilder more now that we don't need ACLs.
-
     Returns:
         A dataframe with a single ``case_id`` column listing the case IDs associated
         with the aliquots identified by `AliquotBuilder`.

@@ -207,21 +207,6 @@ class TestMAFBuilder:
         assert (maf_df.select('variant_type').distinct().count() ==
                 maf_df.select('mutation_subtype').distinct().count())
 
-    def test_case_barcode(self, sqlContext):
-        '''
-        Test that ssm_id column is created
-        '''
-        builder = MAFBuilder(conf, sqlContext)
-
-        df = builder.combine(conf.maf_urls)
-        df = builder.extract_barcode(df)
-
-        assert '_case_submitter_id' in df.columns
-        assert (df.where(df.tumor_sample_barcode
-                         == 'TCGA-A4-A6HP-01A-11D-A31X-10')
-                .select('_case_submitter_id')
-                .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
-
     def test_maf_field_types(self, maf_df):
         """
         Test that maf_df field types correspond to maf.yml
