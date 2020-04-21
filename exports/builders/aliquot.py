@@ -1,10 +1,24 @@
+import collections
 import logging
+
+from pyspark.sql import types
 
 from exports.builders.base_input_builder import BaseInputBuilder
 
 from config import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
+
+
+# Information on an aliquot that was tested for mutations.
+#
+# Attributes:
+#     submitter_id (str): The submitter ID of the aliquot.
+#     maf_url (str): The URL of the MAF in which the aliquot was referenced.
+#     project_id (optional(str)): The project ID associated with the aliquot, if given.
+TestedAliquot = collections.namedtuple(
+    'TestedAliquot', ['submitter_id', 'maf_url', 'project_id']
+)
 
 
 class AliquotBuilder(BaseInputBuilder):
@@ -18,6 +32,7 @@ class AliquotBuilder(BaseInputBuilder):
     """
 
     PRAGMA_N_SAMPLES = '#n.analyzed.samples'
+    PRAGMA_PROJECT_ID = '#project_id'
     PRAGMA_TUMOR_SUB_IDS = '#tumor.aliquots.submitter_id'
 
     def __init__(self, config, sqlContext):
@@ -27,50 +42,59 @@ class AliquotBuilder(BaseInputBuilder):
         return self.get_aliquots_from_headers()
 
     def get_aliquots_from_headers(self):
-        """
-        Reads a set of tuples of (unique aliquots, maf headers)
+        """Read information on tested aliquots from the configured MAF headers.
+
+        Returns a dataframe of `TestedAliquot`s.
         """
         self.logger.info('Building aliquot df from scratch')
 
-        unique_aliquots = set()
-        aliquot_to_url = {}
+        aliquots = []
         for url in self.config.maf_urls:
-            header = self.read_maf_header(url, n_lines=5).collect()
+            header = self.read_maf_header(url, n_lines=10).collect()
 
             n_aliquots = -1
-            aliquots = None
+            submitter_ids = None
+            project_id = None
             for row in header:
-                if row[0].startswith(self.PRAGMA_N_SAMPLES):
-                    n_aliquots = int(row[0].split()[1])
+                row_text = row[0]
+
+                if row_text.startswith(self.PRAGMA_N_SAMPLES):
+                    n_aliquots = int(row_text.split()[1])
                     continue
 
-                if row[0].startswith(self.PRAGMA_TUMOR_SUB_IDS):
-                    aliquots = row[0].split()[1].split(',')
-                    break
+                if row_text.startswith(self.PRAGMA_TUMOR_SUB_IDS):
+                    submitter_ids = row_text.split()[1].split(',')
+                    continue
 
-            if n_aliquots < 0 or aliquots is None:
+                if row_text.startswith(self.PRAGMA_PROJECT_ID):
+                    project_id = row_text.split()[1].strip()
+                    continue
+
+            if n_aliquots < 0 or submitter_ids is None:
                 raise RuntimeError(
-                    "Invalid MAF file. Missing required pragma comments: "
-                    "'{}' and '{}'".format(self.PRAGMA_N_SAMPLES, self.PRAGMA_TUMOR_SUB_IDS)
+                    "Invalid MAF file. Missing required pragma comments: '{}' and '{}'"
+                    .format(self.PRAGMA_N_SAMPLES, self.PRAGMA_TUMOR_SUB_IDS)
                 )
 
-            assert len(aliquots) == n_aliquots, \
+            assert len(submitter_ids) == n_aliquots, \
                 '{} has inconsistent aliquot data in header'.format(url)
-            unique_aliquots.update(aliquots)
-            for aliquot in aliquots:
-                aliquot_to_url[aliquot] = url
 
-        # Create a dataframe from aliquot_ids set
-        aliquot_df = self.sqlContext.createDataFrame(
-            ((x, y) for x, y in aliquot_to_url.items()), ['aliquot_id', 'url']
-        )
-        return aliquot_df
+            for submitter_id in submitter_ids:
+                aliquot = TestedAliquot(
+                    submitter_id=submitter_id, maf_url=url, project_id=project_id
+                )
+                aliquots.append(aliquot)
 
-    def read_maf_header(self, url, n_lines=5):
+        schema_fields = [
+            types.StructField(field, types.StringType())
+            for field in TestedAliquot._fields
+        ]
+        schema = types.StructType(schema_fields)
+        return self.sqlContext.createDataFrame(aliquots, schema)
+
+    def read_maf_header(self, url, n_lines=10):
         """
         Reads only maf header
         """
         self.logger.debug(url)
-        return self.sqlContext.read.format('com.databricks.spark.csv')\
-                              .options(delimiter='\t')\
-                              .load(url).limit(n_lines)
+        return self.sqlContext.read.text(url).limit(n_lines)

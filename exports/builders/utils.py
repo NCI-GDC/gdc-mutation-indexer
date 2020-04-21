@@ -1,3 +1,4 @@
+import collections
 import pkg_resources
 import re
 import uuid
@@ -73,6 +74,32 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     return label
 
 
+def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
+    """Get an ES query clause for matching cases based on aliquot submitter IDs.
+
+    Optionally add a requirement that the cases be within certain projects.
+    """
+    aliquot_clause = {
+        'nested': {
+            'path': 'samples.portions.analytes.aliquots',
+            'query': {
+                'terms': {
+                    'samples.portions.analytes.aliquots.submitter_id': submitter_ids
+                }
+            },
+        }
+    }
+
+    if project_ids:
+        return {
+            'bool': {
+                'must': [{'terms': {'project.project_id': project_ids}}, aliquot_clause]
+            }
+        }
+
+    return aliquot_clause
+
+
 def get_case_ids_from_source_es(config, sqlContext):
     """Query source ES for case_ids that correspond to MAF aliquots.
 
@@ -83,39 +110,37 @@ def get_case_ids_from_source_es(config, sqlContext):
         with the aliquots identified by `AliquotBuilder`.
     """
 
-    # Read unique aliquots from maf headers
-    aliquot_to_url = AliquotBuilder(config, sqlContext).build()
-    aliquot_url_iterator = aliquot_to_url.select('aliquot_id').toLocalIterator()
-    unique_aliquots = list(set(row.aliquot_id for row in aliquot_url_iterator))
+    project_filter = frozenset(config.projects) if config.projects else None
 
-    musts = [
-        {
-            'nested': {
-                'path': 'samples.portions.analytes.aliquots',
-                'query': {
-                    'terms': {
-                        'samples.portions.analytes.aliquots.submitter_id': unique_aliquots
-                    }
-                }
-            }
-        }
+    # Read unique aliquots from maf headers
+    aliquot_df = AliquotBuilder(config, sqlContext).build()
+
+    # Figure out which aliquots are required to be in certain projects and which
+    # could come from anywhere.
+    floating_submitter_ids = set()
+    submitter_ids_by_project = collections.defaultdict(set)
+    for aliquot in aliquot_df.toLocalIterator():
+        if aliquot.project_id:
+            # If we were configured only to build certain projects, then there's no
+            # point in tracking aliquots from other projects.
+            if (not project_filter) or aliquot.project_id in project_filter:
+                submitter_ids_by_project[aliquot.project_id].add(aliquot.submitter_id)
+        else:
+            floating_submitter_ids.add(aliquot.submitter_id)
+
+    # Build queries for those aliquot IDs with each of the projects we split out.
+    clauses = [
+        _create_aliquot_submitter_id_query(list(submitter_ids), [project_id])
+        for project_id, submitter_ids in submitter_ids_by_project.items()
     ]
 
-    if config.projects:
-        musts.append({
-            'terms': {
-                'project.project_id': config.projects
-            }
-        })
+    if floating_submitter_ids:
+        floating_clause = _create_aliquot_submitter_id_query(
+            list(floating_submitter_ids), config.projects
+        )
+        clauses.append(floating_clause)
 
-    query = {
-        '_source': False,
-        'query': {
-            'bool': {
-                'must': musts
-            }
-        }
-    }
+    query = {'_source': False, 'query': {'bool': {'should': clauses}}}
 
     results = iterate_es_results(
         config.es,
@@ -126,20 +151,15 @@ def get_case_ids_from_source_es(config, sqlContext):
 
     cases = [{'case_id': hit['_id']} for hit in results]
 
-    # There may be more than one aliquot per case
-    # I.e., the following example is valid:
-    #
-    # case 1: aliquot x, aliquot y
-    # case 2: aliquot z
-    #
-    # (or)
-    #
-    # aliquot | case
-    # --------------
-    #    x    | 1
-    #    y    | 1
-    #    z    | 2
-    assert len(unique_aliquots) >= len(cases)
+    # Do a quick sanity check for the possibility of an aliquot matching multiple cases.
+    # TODO Do we want to try harder? What if some cases have multiple aliquots and
+    # that offsets problems with other cases?
+    num_aliquots = len(floating_submitter_ids) + sum(
+        len(ids) for ids in submitter_ids_by_project.values()
+    )
+    num_cases = len(cases)
+    assert num_aliquots >= num_cases, \
+        "Found {} aliquots with {} cases".format(num_aliquots, num_cases)
 
     # Create a dataframe with the case IDs corresponding to the identified aliquots.
     # Give an explicit schema in case we found nothing, as schema inference doesn't

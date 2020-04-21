@@ -1,8 +1,9 @@
-import pytest
 import logging
+import os
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+import pytest
 
 from cdisutils.dictionary import remove_keys_from_dict
 from elasticsearch import Elasticsearch
@@ -87,13 +88,19 @@ def create_test_index(es):
                       body=combined)
 
 
-def load_docs_into_test_index(es, doc_type):
+def load_docs_into_test_index(es, doc_type, input_path=None):
+    """Load documents from gzipped test data into test index.
+
+    Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
+
+    Returns:
+        A set containing the IDs of the documents that were inserted.
     """
-    Load documents from zipped test data into test index.
-    """
+    if not input_path:
+        input_path = conf.doc_files[doc_type]
 
     docs = {'docs': []}
-    for doc in TestDataStats.load_es_graph_dump(conf.doc_files[doc_type]):
+    for doc in TestDataStats.load_es_graph_dump(input_path):
         to_append = {'_id': doc['{}_id'.format(doc_type)],
                      '_index': conf.graph_index,
                      '_type': doc_type,
@@ -116,10 +123,29 @@ def load_docs_into_test_index(es, doc_type):
 
     es.indices.refresh(index=conf.graph_index)
 
+    ids = {doc['_id'] for doc in docs['docs']}
+    return ids
+
 
 @pytest.fixture(scope='session')
 def es_client(setup_test_index):
     return setup_test_index
+
+
+@pytest.fixture
+def index_cases_with_duplicate_aliquots(es_client, request):
+    """Add cases with duplicate aliquot submitter IDs to the index.
+
+    Remove them after the test completes.
+    """
+    input_path = os.path.join(conf.input_dir, 'cases_with_duplicate_aliquots.json')
+    ids = load_docs_into_test_index(es_client, 'case', input_path=input_path)
+
+    def remove_docs():
+        body = {'terms': {'_id': ids}}
+        es_client.delete_by_query(index=conf.graph_index, doc_type='case', body=body)
+
+    return ids
 
 
 @pytest.fixture(scope='session')
