@@ -53,24 +53,35 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
-    def test_observations_per_ssm_occurrence(
-            self, maf_df, ssm_occurrence_centric_df):
+    def test_observations_per_ssm_occurrence(self, maf_df, ssm_occurrence_centric_df):
 
-        # Observations and Cases per SSM Occurrence built:
+        # The observation ID is calculated when the observation dataframe is built,
+        # and is not included in the MAF dataframe, so we can't compute the "true"
+        # occurrence ID -> observation ID mapping based on the MAF dataframe alone.
+        # Use the tumor sample barcode as an approximation of observation ID.
+
+        # Tumor samples and Cases per SSM Occurrence built:
         df = self.unpack_df_list(ssm_occurrence_centric_df,
                                  ['ssm_occurrence_id', 'case.case_id'],
-                                 'case.observation', 'observation_id')
+                                 'case.observation', 'sample.tumor_sample_barcode')
 
-        opo = self.get_relationship_map(df, 'ssm_occurrence_id', 'observation_id')
+        spo = self.get_relationship_map(
+            df, 'ssm_occurrence_id', 'tumor_sample_barcode'
+        )
         cpo = self.get_relationship_map(df, 'ssm_occurrence_id', 'case_id')
 
         # Observations and Cases per SSM Occurrence expected:
-        df = (maf_df.withColumn('ssm_occurrence_id', col('occurrence_id'))
-                    .select('ssm_occurrence_id', 'observation_id', 'case_id'))
-        true_opo = self.get_relationship_map(df, 'ssm_occurrence_id', 'observation_id')
+        df = (
+            maf_df.withColumn('ssm_occurrence_id', col('occurrence_id'))
+            .select('ssm_occurrence_id', 'case_id', 'tumor_sample_barcode')
+        )
+
+        true_spo = self.get_relationship_map(
+            df, 'ssm_occurrence_id', 'tumor_sample_barcode'
+        )
         true_cpo = self.get_relationship_map(df, 'ssm_occurrence_id', 'case_id')
 
-        assert opo == true_opo
+        assert spo == true_spo
         assert cpo == true_cpo
 
     @pytest.mark.ssm_occurrence_centric_ssm_subtree

@@ -24,6 +24,11 @@ from parsers import (
 
 
 def create_factory(host, port=443, timeout=10):
+    """Create an HTTPSConnection factory that doesn't try to verify the server cert.
+
+    Make it possible to connect to Cleversafe even though the Cleversafe cert doesn't
+    match the hostname we likely expect.
+    """
     return (
         httplib.HTTPSConnection(
             host=host,
@@ -34,7 +39,7 @@ def create_factory(host, port=443, timeout=10):
     )
 
 
-py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+py_ver = ".".join(str(sys.version_info[i]) for i in range(3))
 if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
     factory = (create_factory, ())
 else:
@@ -99,9 +104,9 @@ class BaseConfig(object):
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_file = 's3a://test/genes.hg38.v2.json'
-    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
-    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
+    gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.v2.json'
+    citobands_file = 's3a://gdc-mutation-indexer/genes.cytobands.tsv.gz'
+    census_file = 's3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz'
 
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
@@ -172,7 +177,6 @@ class BaseConfig(object):
         self.maf_urls = self.get_maf_urls()
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
-        self._acls = None
         self._exclude_fields = None
 
         if self.blacklist_fields:
@@ -233,20 +237,28 @@ class BaseConfig(object):
                 setattr(self, key, value)
 
     def get_index_names(self):
-        """
-        Returns {index_type: es_index_name} dictionary
-        """
-        if self.build_type == 'release':
-            prefix = 'release-'
-        else:
-            prefix = ''
-
-        version_tag = '_'.join(map(str, self.build_version))
-        indices = {
-            index_type: prefix + '{}-{}-{}'.format(
-                self.build_label, version_tag, index_type,
+        """Create {index_type: es_index_name} dictionary based on build config."""
+        if '__' in self.build_label:
+            raise ValueError(
+                'Double underscores not allowed in build label '
+                '{}'.format(self.build_label)
             )
-            for index_type in self.index_types
+
+        if self.study_label:
+            if '__' in self.study_label:
+                raise ValueError(
+                    'Double underscores not allowed in study label '
+                    '{}'.format(self.study_label)
+                )
+
+            template = '{build}__{{}}__{study}__controlled'.format(
+                build=self.build_label, study=self.study_label
+            )
+        else:
+            template = '{build}__{{}}'.format(build=self.build_label)
+
+        indices = {
+            index_type: template.format(index_type) for index_type in self.index_types
         }
 
         self.validate_indices(indices)
@@ -274,6 +286,9 @@ class BaseConfig(object):
         - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
         - gets corresponding urls from indexd
         """
+        if self.skip_es_mafs:
+            return self.include_maf_urls
+
         query = {
             "_source": ["file_name"],
             "query": {
@@ -296,7 +311,7 @@ class BaseConfig(object):
                 if self.temp_filter_maf_urls(maf_url):
                     maf_urls.append(self.patch_s3_url(maf_url))
 
-        return maf_urls
+        return list(set(maf_urls))
 
     def projects_valid(self):
         """
@@ -408,51 +423,6 @@ class BaseConfig(object):
                 gistic_urls.append(self.s3_gistic_bucket + obj.key)
 
         return gistic_urls
-
-    @property
-    def acls(self):
-        if self._acls is None:
-            self._acls = self.get_acls()
-        return self._acls
-
-    def get_acls(self):
-        """
-        1. Take list of maf file names
-        2. Assume the last part of the url is the file_name
-        3. Look up corresponding files in es
-        4. Parse out those files' acls
-        """
-
-        file_names = self.maf_file_names
-
-        query = {
-                "query": {
-                    "bool": {
-                        "must": {
-                            "terms": {
-                                "file_name": file_names
-                                }
-                            }
-                        }
-                    },
-                "_source": ["file_name", "acl"],
-                "size": 10000,
-        }
-
-        docs = self.es.search(index=self.graph_index,
-                              doc_type='file',
-                              body=query)
-
-        # Build up dictionary of file_name to acl
-        filenames_to_acls = {}
-        for doc in docs['hits']['hits']:
-            source = doc['_source']
-            filename = source['file_name']
-            acl = source['acl']
-
-            filenames_to_acls[filename] = acl
-
-        return filenames_to_acls
 
     def get_samples_fields_to_exclude(self):
         """

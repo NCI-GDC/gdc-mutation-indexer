@@ -1,3 +1,4 @@
+import collections
 import pkg_resources
 import re
 import uuid
@@ -46,12 +47,8 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     """
     Create a label (genomic change) from an ssm based on its variant type:
 
-    SNP: "{chromosome}:g.{start_position}{reference_allele}>{tumor_allele}"
-    DEL: "{chromosome}:g.{start_position}del{reference_allele}"
-    INS: "{chromosome}:g.{start_position}_{end_position}ins{tumor_allele}"
-
     :param chromosome: The chromosome where the mutation occurred
-    :param variant_type: The variant, `SNP`, `DEL`, or `INS`
+    :param variant_type: The variant type (e.g., ``SNP``, ``DNP``, ``DEL``, ``INS``...)
     :param start_pos: The starting position of the mutation
     :param end_pos: The end position of the mutation
     :param ref_allele: The reference allele
@@ -62,6 +59,9 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     if variant_type == 'SNP':
         label = 'chr{}:g.{}{}>{}'.format(chromosome,
                                          start_pos, ref_allele, tumor_allele)
+    elif variant_type in {'DNP', 'TNP', 'ONP'}:
+        label = 'chr{}:g.{}_{}delins{}'.format(chromosome,
+                                               start_pos, end_pos, tumor_allele)
     elif variant_type == 'DEL':
         label = 'chr{}:g.{}del{}'.format(chromosome,
                                          start_pos, ref_allele)
@@ -74,56 +74,73 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele,
     return label
 
 
-def get_case_ids_from_source_es(config, sqlContext):
+def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
+    """Get an ES query clause for matching cases based on aliquot submitter IDs.
+
+    Optionally add a requirement that the cases be within certain projects.
     """
-    Queries source es for case_ids and acls that correspond to maf aliquots.
-
-    This function returns the acls associated with the
-    case_id -> aliquot -> maf_url -> maf_filename.
-
-    1) if any of the observations is open then case level is open;
-    2) if all observations are controlled
-    and populated with the same dbgap study code,
-    then case level will be the same dbgap study code;
-    3) if study code in 2) have different values from observation,
-    then there is something wrong.
-    """
-
-    # Read unique aliquots from maf headers
-    aliquot_to_url = AliquotBuilder(config, sqlContext).build()
-
-    # Convert to dictionary
-    aliquot_to_url = aliquot_to_url.select('aliquot_id', 'url').rdd.collectAsMap()
-    unique_aliquots = aliquot_to_url.keys()
-
-    musts = [
-        {
-            'nested': {
-                'path': 'samples.portions.analytes.aliquots',
-                'query': {
-                    'terms': {
-                        'samples.portions.analytes.aliquots.submitter_id': list(unique_aliquots)
-                    }
+    aliquot_clause = {
+        'nested': {
+            'path': 'samples.portions.analytes.aliquots',
+            'query': {
+                'terms': {
+                    'samples.portions.analytes.aliquots.submitter_id': submitter_ids
                 }
-            }
-        }
-    ]
-
-    if config.projects:
-        musts.append({
-            'terms': {
-                'project.project_id': config.projects
-            }
-        })
-
-    query = {
-        "_source": ["_id", "samples.portions.analytes.aliquots.submitter_id"],
-        'query': {
-            'bool': {
-                'must': musts
-            }
+            },
         }
     }
+
+    if project_ids:
+        return {
+            'bool': {
+                'must': [{'terms': {'project.project_id': project_ids}}, aliquot_clause]
+            }
+        }
+
+    return aliquot_clause
+
+
+def get_case_ids_from_source_es(config, sqlContext):
+    """Query source ES for case_ids that correspond to MAF aliquots.
+
+    TODO: Make this query ES through Spark instead...?
+
+    Returns:
+        A dataframe with a single ``case_id`` column listing the case IDs associated
+        with the aliquots identified by `AliquotBuilder`.
+    """
+
+    project_filter = frozenset(config.projects) if config.projects else None
+
+    # Read unique aliquots from maf headers
+    aliquot_df = AliquotBuilder(config, sqlContext).build()
+
+    # Figure out which aliquots are required to be in certain projects and which
+    # could come from anywhere.
+    floating_submitter_ids = set()
+    submitter_ids_by_project = collections.defaultdict(set)
+    for aliquot in aliquot_df.toLocalIterator():
+        if aliquot.project_id:
+            # If we were configured only to build certain projects, then there's no
+            # point in tracking aliquots from other projects.
+            if (not project_filter) or aliquot.project_id in project_filter:
+                submitter_ids_by_project[aliquot.project_id].add(aliquot.submitter_id)
+        else:
+            floating_submitter_ids.add(aliquot.submitter_id)
+
+    # Build queries for those aliquot IDs with each of the projects we split out.
+    clauses = [
+        _create_aliquot_submitter_id_query(list(submitter_ids), [project_id])
+        for project_id, submitter_ids in submitter_ids_by_project.items()
+    ]
+
+    if floating_submitter_ids:
+        floating_clause = _create_aliquot_submitter_id_query(
+            list(floating_submitter_ids), config.projects
+        )
+        clauses.append(floating_clause)
+
+    query = {'_source': False, 'query': {'bool': {'should': clauses}}}
 
     results = iterate_es_results(
         config.es,
@@ -132,82 +149,23 @@ def get_case_ids_from_source_es(config, sqlContext):
         query=query
     )
 
-    cases_urls = {}
-    case_ids = set()
+    cases = [{'case_id': hit['_id']} for hit in results]
 
-    # walk to the aliquot
-    for hit in results:
-        case_id = hit["_id"]
-        case_ids.add(case_id)
-        samples = hit['_source']['samples']
-        aliquots_to_lookup = []
-        for sample in samples:
-            portions = sample['portions']
-            for portion in portions:
-                analytes = portion['analytes']
-                for analyte in analytes:
-                    aliquots = analyte['aliquots']
-                    for aliquot in aliquots:
-                        submitter_id = aliquot['submitter_id']
-                        if submitter_id in unique_aliquots:
-                            aliquots_to_lookup.append(submitter_id)
-
-        # go from aliquots to url to maf_name to acl
-        aliquot_acls = []
-        for aliquot in aliquots_to_lookup:
-            url = aliquot_to_url[aliquot]
-            filename = config.maf_url_to_file_name(url)
-            acl = config.acls[filename]
-            aliquot_acls.append(acl)
-
-        # dedupe (annoying because acls are lists)
-        aliquot_acls = list(set(x for l in aliquot_acls for x in l))
-
-        assert 0 < len(aliquot_acls) <= 2, 'Invalid acls ' \
-            'for case {}, aliquot(s) {}, phsids {}' \
-            ''.format(case_id, aliquots_to_lookup, aliquot_acls)
-
-        # If only one acl across aliquots, use that
-        if len(aliquot_acls) == 1:
-            cases_urls[case_id] = aliquot_acls
-        else:
-            # If we find more than one acl, we must have
-            # the scenario [open, phsid000x]
-            # ([phsid000x, phsid000y] means something is wrong)
-            assert u'open' in aliquot_acls, 'Multiple phsids ' \
-                'found for case {}, aliquots {}, phsids {}' \
-                ''.format(case_id, aliquots_to_lookup, aliquot_acls)
-
-            cases_urls[case_id] = [u'open']
-
-    # We found a url for each case
-    assert len(case_ids) == len(cases_urls)
-
-    # There may be more than one aliquot per case
-    # I.e., the following example is valid:
-    #
-    # case 1: aliquot x, aliquot y
-    # case 2: aliquot z
-    #
-    # (or)
-    #
-    # aliquot | case
-    # --------------
-    #    x    | 1
-    #    y    | 1
-    #    z    | 2
-    assert len(unique_aliquots) >= len(case_ids)
-
-    # Create a dataframe with the cases IDs and ACLs corresponding to the
-    # identified aliquots. Give an explicit schema in case we found nothing,
-    # as schema inference doesn't work on empty dataframes.
-    cases_df_schema = StructType([
-        StructField('case_id', StringType()),
-        StructField('case_acl', ArrayType(StringType())),
-    ])
-    cases_df = sqlContext.createDataFrame(
-        cases_urls.items(), schema=cases_df_schema
+    # Do a quick sanity check for the possibility of an aliquot matching multiple cases.
+    # TODO Do we want to try harder? What if some cases have multiple aliquots and
+    # that offsets problems with other cases?
+    num_aliquots = len(floating_submitter_ids) + sum(
+        len(ids) for ids in submitter_ids_by_project.values()
     )
+    num_cases = len(cases)
+    assert num_aliquots >= num_cases, \
+        "Found {} aliquots with {} cases".format(num_aliquots, num_cases)
+
+    # Create a dataframe with the case IDs corresponding to the identified aliquots.
+    # Give an explicit schema in case we found nothing, as schema inference doesn't
+    # work on empty dataframes.
+    cases_df_schema = StructType([StructField('case_id', StringType())])
+    cases_df = sqlContext.createDataFrame(cases, schema=cases_df_schema)
 
     return cases_df
 
@@ -391,7 +349,7 @@ def remove_columns(df, *args):
 
 def select_mapping(index_name, mapping_name, selector=None,
                    exclude_fields=None):
-    if not exclude_fields:
+    if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
 
     mapper = ModelMapper(index_name)
@@ -462,6 +420,38 @@ def struct_select(index_name, mapping_name, ignore=(), selector=None):
     mapping = select_mapping(index_name, mapping_name, selector=selector)
 
     return restructure(mapping['properties'])
+
+
+def select_nested(index_name, mapping_name, ignore=(), selector=None):
+    def flatten_nested(doc):
+        if not isinstance(doc, dict):
+            return []
+
+        cols = []
+        for k, v in doc.items():
+            if (k == 'gene_aa_change' or k == 'copy_to' or
+                    '_autocompolete' in k or k == 'clinical_annotations'):
+                continue
+
+            if k in ignore:
+                continue
+
+            if 'type' in v and 'properties' not in v:
+                name = k
+                if 'default' in v:
+                    name = v['default']
+                cols.append(col(name).alias(k))
+            else:
+                if 'properties' in v:
+                    cols.extend(flatten_nested(v['properties']))
+                else:
+                    cols.extend(flatten_nested(v))
+        return cols
+
+    mapping = select_mapping(index_name, mapping_name, selector=selector,
+                             exclude_fields=())
+
+    return flatten_nested(mapping['properties'])
 
 
 def percentile(vector, p):
@@ -543,3 +533,10 @@ def convert_empty_str_to_null_in_col(df, col_name):
 
 def get_column_name(column_name, dataset_key):
     return '{}_{}'.format(column_name, dataset_key)
+
+
+def transform_variant_caller(callers):
+    partitioned = callers.split(';')
+    sanitized = [caller.strip('*') for caller in partitioned]
+
+    return sanitized

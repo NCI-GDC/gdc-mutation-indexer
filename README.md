@@ -32,6 +32,31 @@ If you try to run the tests on a different version, you may need to update
 `bin/run-tests.sh` to refer to the specific Py4J build included with your
 Spark distribution.
 
+## Vagrant
+
+Testing locally can be hard and `vagrant` support has been added to make our lives
+a little bit easier. Make sure to have `vagrant` and `VirtualBox` installed, then
+simply do and start making coffee, it's gonna take a while:
+```
+vagrant up
+```
+
+This will spin up a VM and run necessary setup steps like:
+* installing some core libs like `jdk`, `python-pip` etc
+* downloading and setting up `pyspark`, `elasticsearch` and related plugins
+* setting up development environment
+
+The tests should be ran from within the box:
+
+```
+vagrant ssh
+source venv/bin/activate
+pytest /vagrant/tests
+```
+
+To get a better understanding of how to tweak/customize provisioning steps read
+the docs! Have fun testing.
+
 ## Contributing
 
 Read how to contribute [here](https://github.com/NCI-GDC/gdcapi/blob/master/CONTRIBUTING.md)

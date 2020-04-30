@@ -180,7 +180,7 @@ def get_full_gene_model():
     # Gene model file:
     filename = 'genes.hg38.v2.json'
 
-    bucket = conn.get_bucket('test')
+    bucket = conn.get_bucket('gdc-mutation-indexer')
     key = bucket.get_key(filename)
     gene_model = key.get_contents_as_string()
 

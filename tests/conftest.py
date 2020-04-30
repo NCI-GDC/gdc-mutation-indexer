@@ -1,11 +1,9 @@
-import time
-import pytest
 import logging
+import os
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType, ArrayType
+import pytest
 
 from cdisutils.dictionary import remove_keys_from_dict
 from elasticsearch import Elasticsearch
@@ -23,7 +21,6 @@ from utils.maf_metrics import MAFStats
 from utils.true_stats import TestDataStats
 from exports.builders import (
     MAFBuilder,
-    AliquotBuilder,
     GisticBuilder,
     CaseBuilder,
     CNVCentricBuilder,
@@ -34,6 +31,7 @@ from exports.builders import (
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
 )
+
 
 conf = TestConfig()
 
@@ -46,8 +44,9 @@ def setup_test_index():
     """
     Creates graph index with required docs and returns an elasticsearch client
     """
-    print '\n\n\tSETTING UP TEST INDEX\n\n'
-    es = Elasticsearch(conf.source_es_host, port=conf.es_port)
+    print('\n\n\tSETTING UP TEST INDEX\n\n')
+    es = Elasticsearch(conf.source_es_host, port=conf.es_port, retry_on_timeout=True,
+                       timeout=30)
 
     # if index already exists and we don't need to force rebuild,
     # return existing index
@@ -55,6 +54,7 @@ def setup_test_index():
         if not conf.graph_force_build:
             return es
         es.indices.delete(index=conf.graph_index)
+        es.indices.refresh()
 
     # set up test ES index
     create_test_index(es)
@@ -88,13 +88,19 @@ def create_test_index(es):
                       body=combined)
 
 
-def load_docs_into_test_index(es, doc_type):
+def load_docs_into_test_index(es, doc_type, input_path=None):
+    """Load documents from gzipped test data into test index.
+
+    Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
+
+    Returns:
+        A set containing the IDs of the documents that were inserted.
     """
-    Load documents from zipped test data into test index.
-    """
+    if not input_path:
+        input_path = conf.doc_files[doc_type]
 
     docs = {'docs': []}
-    for doc in TestDataStats.load_es_graph_dump(conf.doc_files[doc_type]):
+    for doc in TestDataStats.load_es_graph_dump(input_path):
         to_append = {'_id': doc['{}_id'.format(doc_type)],
                      '_index': conf.graph_index,
                      '_type': doc_type,
@@ -117,10 +123,29 @@ def load_docs_into_test_index(es, doc_type):
 
     es.indices.refresh(index=conf.graph_index)
 
+    ids = {doc['_id'] for doc in docs['docs']}
+    return ids
+
 
 @pytest.fixture(scope='session')
 def es_client(setup_test_index):
     return setup_test_index
+
+
+@pytest.fixture
+def index_cases_with_duplicate_aliquots(es_client, request):
+    """Add cases with duplicate aliquot submitter IDs to the index.
+
+    Remove them after the test completes.
+    """
+    input_path = os.path.join(conf.input_dir, 'cases_with_duplicate_aliquots.json')
+    ids = load_docs_into_test_index(es_client, 'case', input_path=input_path)
+
+    def remove_docs():
+        body = {'terms': {'_id': ids}}
+        es_client.delete_by_query(index=conf.graph_index, doc_type='case', body=body)
+
+    return ids
 
 
 @pytest.fixture(scope='session')
@@ -177,25 +202,6 @@ def maf_df(sqlContext):
     """
     log.info('\n\n\tBUILDING MAF_DF\n\n')
     return MAFBuilder(conf, sqlContext).build()
-
-
-@pytest.fixture(scope="session")
-def acl_maf_df(sqlContext, maf_df):
-    """
-    Builds combined maf dataframe
-    Note: alters naturally-occurring acls for testing purposes.
-    """
-    def fake_out_acl(chromosome):
-        if int(chromosome) % 2 == 0:
-            return [u'phs000218']
-        return [u'open']
-
-    acl_udf = udf(fake_out_acl, ArrayType(StringType()))
-    altered_maf = maf_df.drop('acl')
-    altered_maf = altered_maf.withColumn('acl',
-                                         acl_udf('gene_chromosome'))
-
-    return altered_maf
 
 
 @pytest.fixture(scope="session")
@@ -349,3 +355,36 @@ def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
 def maf_stats():
     yield MAFStats(conf.maf_urls)
 
+
+@pytest.fixture(scope='module')
+def raw_variant_caller_counts():
+    """Get the expected number of observations for each caller in the raw MAFs.
+
+    Hardcode based on the test data to minimize the risk of logic bugs in this
+    fixture. Ensemble calls are not exploded when building the MAF DF, so list
+    any ensemble calls verbatim.
+    """
+    return {
+        'muse': 7,
+        'mutect2': 11,
+        'mutect2;muse*;somaticsniper': 1,
+        'pindel': 3,
+        'somaticsniper': 5,
+        'varscan': 3,
+    }
+
+
+@pytest.fixture(scope='module')
+def exploded_variant_caller_counts():
+    """Get the expected number of observations for each caller after processing.
+
+    Assume any ensemble calls have been split into individual observations.
+    To update, ``grep -c`` for the various callers in the test MAFs.
+    """
+    return {
+        'muse': 8,
+        'mutect2': 12,
+        'pindel': 3,
+        'somaticsniper': 6,
+        'varscan': 3,
+    }

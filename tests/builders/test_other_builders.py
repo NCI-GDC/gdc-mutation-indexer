@@ -37,15 +37,23 @@ class TestOtherBase:
             input_df = gistic_df
         return build_function, input_df, id_field
 
-    @staticmethod
-    def params():
+    @classmethod
+    def params(cls):
+        """Get params for all observation test cases.
+
+        All tests are parametrized by 'index_name,build_type'.
         """
-        All tests are parametrized by 'index_name,build_type'
-        """
-        return (
-            [(index_name, 'ssm') for index_name in conf.ssm_indices] +
-            [(index_name, 'cnv') for index_name in conf.cnv_indices]
-        )
+        return cls.ssm_params() + cls.cnv_params()
+
+    @classmethod
+    def ssm_params(cls):
+        """Get params for SSM observation test cases."""
+        return [(index_name, 'ssm') for index_name in conf.ssm_indices]
+
+    @classmethod
+    def cnv_params(cls):
+        """Get params for CNV observation test cases."""
+        return [(index_name, 'cnv') for index_name in conf.cnv_indices]
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df')
@@ -92,6 +100,28 @@ class TestObservationBuilder(TestOtherBase):
                                      .toJSON().collect()))
 
         assert sorted(obs) == sorted(true_obs)
+
+    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
+    def test_variant_caller(
+        self,
+        builder,
+        index_name,
+        build_type,
+        get_inputs,
+        exploded_variant_caller_counts,
+    ):
+        """Confirm the expected number of observations is created for each caller."""
+        build_function, input_df, id_field = get_inputs
+        obs_df = getattr(builder, build_function)(input_df, index_name)
+
+        actual_counts = dict(
+            obs_df.select(explode('observation').alias('observation'))
+            .groupBy('observation.variant_calling.variant_caller')
+            .count()
+            .collect()
+        )
+
+        assert actual_counts == exploded_variant_caller_counts
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -278,7 +308,7 @@ class TestConsequenceBuilder(TestOtherBase):
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client', 'all_cases', 'acl_maf_df')
+@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client', 'all_cases')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
@@ -291,7 +321,6 @@ class TestCaseBuilder:
     def test_case_columns(self, sqlContext, case_df):
         """ Test that the right properties were loaded from case docs """
         assert 'case_id' in case_df.columns
-        assert 'ssm_acl' in case_df.columns
         assert 'files' not in case_df.columns
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
@@ -303,31 +332,6 @@ class TestCaseBuilder:
         It should include all cases in the GDC graph
         """
         assert case_df.count() == len(all_cases)
-
-    def test_open_overrides_acl(self, sqlContext, acl_maf_df, gistic_df):
-        """Confirm an open ssm_acl is set on cases with open-access MAFs.
-
-        Confirm the ssm_acl on cases with open-access MAFs is set to 'open',
-        and is not set at all on cases without MAFs.
-
-        To verify that the ssm_acl comes from the ACL on the MAFs themselves,
-        start with a maf_df that already has controlled-access ACL columns.
-        The resulting case_df should override those ACLs with 'open' or None.
-        """
-
-        df = CaseBuilder(conf, sqlContext).build(acl_maf_df, gistic_df)
-
-        # These cases don't have any observations in our test MAFs.
-        expected_none_case_ids = {
-            '00000000-1111-2222-4444-888888888888',
-            '0ff579a1-e295-408d-b194-febbca798e34',
-        }
-
-        for row in df.collect():
-            if row.case_id in expected_none_case_ids:
-                assert row.ssm_acl is None
-            else:
-                assert row.ssm_acl == ['open']
 
     @pytest.mark.parametrize(
         'projects, expected_count',

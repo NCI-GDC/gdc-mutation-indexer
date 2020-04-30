@@ -89,7 +89,7 @@ class BaseInputBuilder(object):
                 self.logger.info('File not found in {}'.format(saved_path))
             except AnalysisException:
                 # TODO: is this the best way to catch this error?
-                # or is checking the path first acceptable?
+                #   or is checking the path first acceptable?
                 self.logger.info('Something went wrong in spark when trying to'
                                  ' get existing df from path '
                                  '{}'.format(saved_path))

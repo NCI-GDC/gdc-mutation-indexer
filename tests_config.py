@@ -11,7 +11,7 @@ class TestConfig(BaseConfig):
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
-    maf_dir = os.path.join(input_dir, 'maf')
+    maf_dir = os.path.join(input_dir, 'maf', 'merged_aliquot')
     gistic_dir = os.path.join(input_dir, 'cnv')
 
     # Initialize test directory tree if incomplete

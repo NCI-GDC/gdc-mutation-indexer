@@ -1,4 +1,5 @@
-import json
+from collections import defaultdict
+
 from pyspark.sql.functions import col, explode
 
 
@@ -15,12 +16,10 @@ class BaseJoinsTest:
         Returns:
             dict(): {parent_value: {child_value_1, ..., child_value_N}
         """
-        relationships = {}
-        for row in dataframe.toJSON().collect():
-            row = json.loads(row)
+        relationships = defaultdict(set)
+        for row in dataframe.collect():
             child_id = row[child_id_field]
             parent_id = row[parent_id_field]
-            relationships.setdefault(parent_id, set())
             relationships[parent_id].update({child_id})
 
         return relationships
