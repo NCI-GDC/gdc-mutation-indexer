@@ -1,11 +1,13 @@
+import abc
+import logging
+
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
-import logging
-
 
 class BaseInputBuilder(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, config, sqlContext, input_type):
         """
@@ -37,21 +39,28 @@ class BaseInputBuilder(object):
         df = self.read()
 
         # if reading not applicable, build from files
-        df = df if df is not None else self.build_from_scratch()
+        if df:
+            df = self.build_from_cache(df)
+        else:
+            df = self.build_from_scratch()
 
         # write
         self.write(df)
 
         return df
 
+    @abc.abstractmethod
+    def build_from_cache(self, df):
+        pass
+
+    @abc.abstractmethod
     def build_from_scratch(self):
-        raise NotImplementedError
+        pass
 
     def get_urls(self):
-        raise NotImplementedError
-
-    def combine(self):
-        raise NotImplementedError
+        # TODO Nothing implements this... should we just make `urls` return whatever's
+        # in the config and fail if it's not there?
+        return []
 
     def write(self, df):
         mode = getattr(self.config, '{}_backup'.format(self.input_type))

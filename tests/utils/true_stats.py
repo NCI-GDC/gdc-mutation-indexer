@@ -61,12 +61,12 @@ class TestDataStats:
         return docs
 
     @classmethod
-    def get_stats(cls, maf_df, gistic_df, test_data, index_name):
+    def get_stats(cls, maf_df, gistic_df, test_data, doc_type):
         """
-        Returns true stats for :index_name
+        Returns true stats for :doc_type
         """
         # Get index-specific stats:
-        function_name = '{}_stats'.format(index_name)
+        function_name = '{}_stats'.format(doc_type)
         stats = getattr(cls, function_name)(maf_df, gistic_df, test_data)
 
         # Add maf and gistic info:

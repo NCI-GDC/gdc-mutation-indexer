@@ -41,6 +41,10 @@ class AliquotBuilder(BaseInputBuilder):
     def build_from_scratch(self):
         return self.get_aliquots_from_headers()
 
+    def build_from_cache(self, df):
+        # We don't currently need to fix anything in old cached aliquot DFs.
+        return df
+
     def get_aliquots_from_headers(self):
         """Read information on tested aliquots from the configured MAF headers.
 

@@ -17,13 +17,13 @@ class ESArgs(BaseParser):
     def arguments(self):
         return {
             # Output Elasticsearch creds
-            'es-host': {
-                'help': 'Elasticsearch host',
-                'default': 'http://localhost',
-            },
-            'es-port': {
-                'help': 'Elasticsearch port',
-                'default': 9200,
+            'es-nodes': {
+                'help': (
+                    'Comma-delimited list of Elasticsearch host:port pairs to write '
+                    'to; e.g., "node1_ip:9200,node2_ip:9200"'
+                ),
+                'type': str,
+                'default': 'localhost:9200',
             },
             'es-user': {
                 'help': 'Elasticsearch user',
@@ -43,38 +43,38 @@ class ESArgs(BaseParser):
                 'action': 'store_true',
                 'default': False,
             },
-            'es-nodes': {
-                'help': 'Coma-delimited dist of elasticsearch nodes to write to. '
-                    'E.g. "node1_ip:9200,node2_ip:9200"',
-                'type': str,
-                'required': True,
-            },
+
             # Input Elasticsearch creds (if not provided, same as output ones)
-            'source-es-host': {
-                'help': 'Elasticsearch with graph index host. '
-                    'Keep empty if same as output elasticsearch.',
-                'default': '',
-            },
-            'source-es-port': {
-                'help': 'Elasticsearch with graph index port. '
-                    'Keep empty if same as output elasticsearch.',
+            'source-es-nodes': {
+                'help': 'host:port pairs for source Elasticsearch with graph indices.',
+                'type': str,
                 'default': '',
             },
             'source-es-user': {
-                'help': 'Elasticsearch with graph index user. '
+                'help': 'Elasticsearch with graph indices user. '
                     'Keep empty if same as output elasticsearch.',
                 'default': '',
             },
             'source-es-pass': {
-                'help': 'Elasticsearch with graph index password. '
+                'help': 'Elasticsearch with graph indices password. '
                     'Keep empty if same as output elasticsearch.',
                 'default': '',
             },
-            # Name of source graph index with case data
-            'graph-index': {
-                'help': 'Name of Elasticsearch graph index',
-                'default': 'gdc_from_graph',
+            'graph-case-index': {
+                'help': 'Name of source Elasticsearch graph index with case data',
+                'default': 'graph_case',
             },
+            'graph-file-index': {
+                'help': 'Name of source Elasticsearch graph index with file data',
+                'default': 'graph_file',
+            },
+            'old-graph-index': {
+                'help': (
+                    'Name of Elasticsearch 5 graph index with case/file data. If set, '
+                    'the individual graph/file indices are ignored.'
+                ),
+                'default': '',
+            }
         }
 
 
@@ -103,7 +103,7 @@ class ESHadoopArgs(BaseParser):
                 'type': int,
             },
             'df-repartition': {
-                'help': 'Number of partitions to distribute the index file accross',
+                'help': 'Number of partitions to distribute the index file across',
                 'default': 2048,
                 'type': int,
             },

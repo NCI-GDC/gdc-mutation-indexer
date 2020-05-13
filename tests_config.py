@@ -70,6 +70,12 @@ class TestConfig(BaseConfig):
         env = self.get_env_dict()
         super(TestConfig, self).__init__(env_dict=env)
 
+        # To make it more convenient to write tests that load in data, put the names
+        # of the graph indices in a dictionary keyed by doc type.
+        self.graph_indices = {
+            'case': self.graph_case_index, 'file': self.graph_file_index
+        }
+
     def validate_indices(self, indices):
         existing_indices = self.es.indices.get_alias().keys()
         name_collisions = [name for name in indices.values()

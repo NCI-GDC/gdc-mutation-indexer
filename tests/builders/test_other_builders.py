@@ -308,15 +308,13 @@ class TestConsequenceBuilder(TestOtherBase):
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'case_df', 'es_client', 'all_cases')
+@pytest.mark.usefixtures('sqlContext', 'case_df', 'source_es_client', 'all_cases')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
-    def test_case_build(self, sqlContext, es_client, case_df):
-        df = case_df
-        assert (df.count() == es_client.search(conf.graph_index,
-                                               conf.graph_document,
-                                               size=0)['hits']['total'])
+    def test_case_build(self, sqlContext, source_es_client, case_df):
+        expected_count = source_es_client.count(index=conf.graph_case_index)['count']
+        assert case_df.count() == expected_count
 
     def test_case_columns(self, sqlContext, case_df):
         """ Test that the right properties were loaded from case docs """

@@ -2,7 +2,7 @@ import logging
 from pkg_resources import resource_filename
 
 import yaml
-from pyspark.sql.functions import lit, col, udf, struct
+from pyspark.sql.functions import col, lit, lower, struct, udf
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 
 from config import LOG_FORMAT
@@ -29,6 +29,11 @@ class MAFBuilder(BaseInputBuilder):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
         self.schema = self.get_schema()
         self.annotation_builders = [CivicBuilder(config, sqlContext)]
+
+    def build_from_cache(self, df):
+        """Fix the format of old cached MAF DFs."""
+        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
+        return df
 
     def build_from_scratch(self):
         """

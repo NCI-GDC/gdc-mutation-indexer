@@ -1,23 +1,24 @@
 import re
 
-from elasticsearch import Elasticsearch
 from elasticsearch.helpers import scan
 from normalizer.mapper import ModelMapper
 
 
-def iterate_es_results(es_client, index_name, doc_type, query=None):
+def iterate_es_results(es_client, index_name, doc_type=None, query=None):
     """
     Returns iterator over elasticsearch query results
     """
     if query is None:
         query = {}
 
-    doc_iterator = scan(es_client,
-                        index=index_name,
-                        doc_type=doc_type,
-                        scroll='2m',
-                        size=100,
-                        query=query)
+    doc_iterator = scan(
+        es_client,
+        index=index_name,
+        doc_type=doc_type,
+        scroll='2m',
+        size=100,
+        query=query,
+    )
     return doc_iterator
 
 
@@ -46,15 +47,11 @@ def get_values_from_path(es_doc, path):
     return values
 
 
-def get_es_doc_count(es_client, index_name, doc_type, query=None):
+def get_es_doc_count(es_client, index_name, query=None):
     if query is None:
         query = {}
     es_client.indices.refresh(index=index_name)
-    return es_client.count(
-        index=index_name,
-        doc_type=doc_type,
-        body=query
-    )['count']
+    return es_client.count(index=index_name, body=query)['count']
 
 
 def get_nested_field_by_value_query(
@@ -107,28 +104,33 @@ def get_non_null_fields(config, blacklist=None):
         # Load default blacklist fields from the config
         blacklist = config.exclude_fields
 
-    es_client = config.es
+    es_client = config.source_es
 
-    # get actual graph index mappings
-    gi_mappings = es_client.indices.get_mapping(config.graph_index,
-                                                config.graph_document)
+    # Get actual graph index mappings. The object returned by get_mapping has the
+    # index name at the top level, but if the index is aliased, it might not match
+    # config.graph_case_index, so take whatever the first value is.
+    gi_name = config.graph_case_index
+    gi_mappings = es_client.indices.get_mapping(gi_name).values()[0]['mappings']
+    if config.graph_case_doc_type:
+        gi_doc_mappings = gi_mappings[config.graph_case_doc_type]
+    else:
+        gi_doc_mappings = gi_mappings
+
     # get actual graph index settings
-    gi_settings = es_client.indices.get_settings(config.graph_index)
-    gi_doc_mappings = gi_mappings.values()[0]['mappings']
+    gi_settings = es_client.indices.get_settings(gi_name).values()[0]['settings']
 
     # Need to create the mappings in gdcmodels format
     gc_mappings = {
-        config.graph_index: {
-            config.graph_document: {
-                '_mapping': gi_doc_mappings[config.graph_document],
+        'gdc_from_graph': {
+            'case': {
+                '_mapping': gi_doc_mappings
             },
-            '_settings': gi_settings.values()[0]['settings'],
+            '_settings': gi_settings,
         }
     }
 
     centric_mapper = ModelMapper('case_centric')
-    graph_mapper = ModelMapper(config.graph_index,
-                               config.graph_document)
+    graph_mapper = ModelMapper('gdc_from_graph', 'case')
 
     graph_mapper.models = gc_mappings
 
@@ -188,8 +190,8 @@ def get_non_null_fields(config, blacklist=None):
             query = exists
 
         if get_es_doc_count(
-                es_client=es_client, index_name=config.graph_index,
-                doc_type=config.graph_document, query={'query': query}) > 0:
+            es_client=es_client, index_name=gi_name, query={'query': query}
+        ) > 0:
             paths_with_data.append(path)
 
     return paths_with_data
