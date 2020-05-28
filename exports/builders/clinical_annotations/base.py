@@ -16,10 +16,6 @@ class ClinicalAnnotationBuilder(BaseInputBuilder):
     def __init__(self, config, sqlContext):
         super(ClinicalAnnotationBuilder, self).__init__(config, sqlContext, 'tsv')
 
-    def build_from_cache(self, df):
-        # Assume cached clinical DFs don't need fixing (unless we're overridden).
-        return df
-
     def build_from_scratch(self):
         """
         Builds a master MAF dataframe by combining individual MAFs and

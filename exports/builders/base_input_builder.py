@@ -49,9 +49,13 @@ class BaseInputBuilder(object):
 
         return df
 
-    @abc.abstractmethod
     def build_from_cache(self, df):
-        pass
+        """Perform additional processing on a built DF read from the cache.
+
+        Subclasses can override this to post-process the cached DF. The base
+        implementation just returns the cached DF as-is.
+        """
+        return df
 
     @abc.abstractmethod
     def build_from_scratch(self):
