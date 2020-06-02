@@ -62,9 +62,12 @@ class BaseInputBuilder(object):
         pass
 
     def get_urls(self):
-        # TODO Nothing implements this... should we just make `urls` return whatever's
-        # in the config and fail if it's not there?
-        return []
+        """Look up the input URLs if not already given in the config.
+
+        By default, return None to indicate that no URLs were configured. Subclasses
+        may override this if appropriate.
+        """
+        return None
 
     def write(self, df):
         mode = getattr(self.config, '{}_backup'.format(self.input_type))
