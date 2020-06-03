@@ -56,22 +56,6 @@ def parse_args():
         description='Mutation Indexer',
     )
     args = parser.parse_args()
-    args = process_args(args)
-    return args
-
-
-def process_args(args):
-    """
-    Process parsed arguments
-    Takes care of all argument dependencies and special treatment
-    """
-    # If source es creds not assigned, set them to ones of output es
-    for key in ['host', 'port', 'user', 'pass']:
-        param_name = 'source_es_{}'.format(key)
-        if getattr(args, param_name) == '':
-            value = getattr(args, 'es_{}'.format(key))
-            setattr(args, param_name, value)
-
     return args
 
 

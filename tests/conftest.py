@@ -1,3 +1,4 @@
+import collections
 import logging
 import os
 
@@ -6,7 +7,6 @@ from pyspark.sql import SQLContext
 import pytest
 
 from cdisutils.dictionary import remove_keys_from_dict
-from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from normalizer.mapper import ModelMapper
 from tests_config import TestConfig
@@ -39,53 +39,45 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 
-@pytest.fixture(scope='session')
-def setup_test_index():
-    """
-    Creates graph index with required docs and returns an elasticsearch client
-    """
-    print('\n\n\tSETTING UP TEST INDEX\n\n')
-    es = Elasticsearch(conf.source_es_host, port=conf.es_port, retry_on_timeout=True,
-                       timeout=30)
+GraphDocType = collections.namedtuple('GraphDocType', ['doc_type', 'model_name'])
 
-    # if index already exists and we don't need to force rebuild,
-    # return existing index
-    if es.indices.exists(conf.graph_index):
+
+GRAPH_INDICES = [GraphDocType('case', 'graph_case'), GraphDocType('file', 'graph_file')]
+
+
+@pytest.fixture(scope='session')
+def setup_graph_indices():
+    """Create graph indices with required docs."""
+    es = conf.es
+    for doc_type, model_name in GRAPH_INDICES:
+        print('\n\n\tSETTING UP {} TEST INDICES\n\n'.format(doc_type.upper()))
+        if create_test_index(es, doc_type=doc_type, model_name=model_name):
+            load_docs_into_test_index(es, doc_type)
+
+
+def create_test_index(es, doc_type, model_name):
+    """Create and configure an Elasticsearch index if needed.
+
+    Skip creation if the index already exists, unless ``graph_force_build`` is set,
+    on the assumption that we already populated the test data.
+
+    Returns:
+        True if the index was created; False if an existing index was reused.
+    """
+    index_name = conf.graph_indices[doc_type]
+    if es.indices.exists(index_name):
         if not conf.graph_force_build:
-            return es
-        es.indices.delete(index=conf.graph_index)
+            print('SKIPPING {} TEST INDEX SETUP'.format(doc_type.upper()))
+            return False
+
+        es.indices.delete(index_name)
         es.indices.refresh()
 
-    # set up test ES index
-    create_test_index(es)
+    # TODO Make sure this is how model mapper is actually gonna work.
+    model_mapper = ModelMapper('gdc_from_graph', doc_type)
+    es.indices.create(index=index_name, body=model_mapper.index_settings)
 
-    # insert documents
-    load_docs_into_test_index(es, 'case')
-    load_docs_into_test_index(es, 'file')
-
-    return es
-
-
-def create_test_index(es):
-    """
-    Creating an index in elasticsearch requires all doc_type mapping
-    and settings upfront.
-    """
-    case_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='case')
-
-    file_model_mapper = ModelMapper(index='gdc_from_graph', doc_type='file')
-
-    combined = {'mappings': {}, 'settings': {}}
-    combined['mappings'].update(case_model_mapper.index_settings['mappings'])
-    combined['mappings'].update(file_model_mapper.index_settings['mappings'])
-
-    combined['settings'].update(case_model_mapper.index_settings['settings'])
-    combined['settings'].update(file_model_mapper.index_settings['settings'])
-
-    # set up index/doc_type
-    es.indices.create(index=conf.graph_index,
-                      ignore=400,
-                      body=combined)
+    return True
 
 
 def load_docs_into_test_index(es, doc_type, input_path=None):
@@ -99,17 +91,18 @@ def load_docs_into_test_index(es, doc_type, input_path=None):
     if not input_path:
         input_path = conf.doc_files[doc_type]
 
-    docs = {'docs': []}
+    index_name = conf.graph_indices[doc_type]
+
+    docs = []
     for doc in TestDataStats.load_es_graph_dump(input_path):
-        to_append = {'_id': doc['{}_id'.format(doc_type)],
-                     '_index': conf.graph_index,
-                     '_type': doc_type,
-                     '_source': doc}
-        docs['docs'].append(to_append)
+        to_append = {
+            '_id': doc['{}_id'.format(doc_type)], '_index': index_name, '_source': doc
+        }
+        docs.append(to_append)
 
     # Remove .cases[] from underneath case.files[]
     if doc_type == 'case':
-        for doc in docs['docs']:
+        for doc in docs:
             for _file in doc['_source']['files']:
                 _file.pop('cases', None)
 
@@ -117,39 +110,48 @@ def load_docs_into_test_index(es, doc_type, input_path=None):
     docs = remove_keys_from_dict(docs, ['file_state'])
 
     log.info('Bulk loading {} docs to the ES...'.format(doc_type))
-    bulk(es, docs['docs'], ignore=409)
+    bulk(es, docs, ignore=409)
 
-    log.info('loaded {} {} docs'.format(len(docs['docs']), doc_type))
+    log.info('loaded {} {} docs'.format(len(docs), doc_type))
 
-    es.indices.refresh(index=conf.graph_index)
+    es.indices.refresh(index_name)
 
-    ids = {doc['_id'] for doc in docs['docs']}
+    ids = {doc['_id'] for doc in docs}
     return ids
 
 
 @pytest.fixture(scope='session')
-def es_client(setup_test_index):
-    return setup_test_index
+def es_client(setup_graph_indices):
+    # The test config already sets up an ES client that we can just reuse.
+    # TODO Probably refactor the way we use the test config so the test modules
+    # don't create new ES clients upon import.
+    return conf.es
+
+
+@pytest.fixture(scope='session')
+def source_es_client(setup_graph_indices):
+    # TODO Again, reorganizing these ES clients would be cooool.
+    return conf.source_es
 
 
 @pytest.fixture
-def index_cases_with_duplicate_aliquots(es_client, request):
+def index_cases_with_duplicate_aliquots(source_es_client, request):
     """Add cases with duplicate aliquot submitter IDs to the index.
 
     Remove them after the test completes.
     """
     input_path = os.path.join(conf.input_dir, 'cases_with_duplicate_aliquots.json')
-    ids = load_docs_into_test_index(es_client, 'case', input_path=input_path)
+    ids = load_docs_into_test_index(source_es_client, 'case', input_path=input_path)
 
     def remove_docs():
         body = {'terms': {'_id': ids}}
-        es_client.delete_by_query(index=conf.graph_index, doc_type='case', body=body)
+        source_es_client.delete_by_query(index=conf.graph_case_index, body=body)
 
     return ids
 
 
 @pytest.fixture(scope='session')
-def sqlContext(es_client):
+def sqlContext(es_client, source_es_client):
     sc = SparkContext('local[1]', 'sqlContextFixture')
     sc._jvm.System.setProperty("spark.ui.showConsoleProgress", "false")
     sqlCont = SQLContext(sc)
@@ -177,15 +179,16 @@ def all_maf_cases(sqlContext, maf_df):
 
 
 @pytest.fixture(scope='session')
-def all_cases(es_client):
+def all_cases(source_es_client):
     """
     Returns the IDs of all cases in the GDC graph, including those with no
     maf or cnv data
     """
-    hits = iterate_es_results(es_client=es_client,
-                              index_name=conf.graph_index,
-                              doc_type=conf.graph_document,
-                              query={'_source': ['case_id']})
+    hits = iterate_es_results(
+        es_client=source_es_client,
+        index_name=conf.graph_case_index,
+        query={'_source': ['case_id']},
+    )
 
     return {hit['_source']['case_id'] for hit in hits}
 

@@ -29,9 +29,7 @@ class TestCentricCounts:
         expected_count = TestDataStats.get_stats(
             maf_df, gistic_df, test_data, doc_type)['count']
 
-        built_count = get_es_doc_count(es_client,
-                                       conf.indices[doc_type],
-                                       doc_type)
+        built_count = get_es_doc_count(es_client, conf.indices[doc_type])
         assert built_count == expected_count
 
 
@@ -47,9 +45,7 @@ class TestCaseCentricData:
         # NOTE: there may be cases without cnvs or ssms,
         # we need to ensure empty cases are counted as well
         # hence why we count cases differently than any other doc
-        built_count = get_es_doc_count(es_client,
-                                       conf.indices[self.doc_type],
-                                       self.doc_type)
+        built_count = get_es_doc_count(es_client, conf.indices[self.doc_type])
 
         assert built_count == len(all_cases)
 
@@ -63,9 +59,8 @@ class TestCaseCentricData:
                                         maf_stats, stat, all_cases):
         docs = es_client.search(
             index=conf.indices[self.doc_type],
-            doc_type=self.doc_type,
             body={"query": {"match_all": {}}},
-            size=1000
+            size=1000,
         )['hits']['hits']
         case_stats = CaseCentricStats(docs)
 
@@ -95,9 +90,8 @@ class TestGeneCentricData:
     def test_gene_centric_summary_stats(self, es_client, maf_stats, stat):
         docs = es_client.search(
             index=conf.indices['gene_centric'],
-            doc_type='gene_centric',
             body={"query": {"match_all": {}}},
-            size=1000
+            size=1000,
         )['hits']['hits']
         gene_stats = GeneCentricStats(docs)
 
@@ -120,9 +114,8 @@ class TestSSMCentricData:
                                        es_client):
         docs = es_client.search(
             index=conf.indices['ssm_centric'],
-            doc_type='ssm_centric',
             body={"query": {"match_all": {}}},
-            size=1000
+            size=1000,
         )['hits']['hits']
         ssm_stats = SSMCentricStats(docs)
 
@@ -145,9 +138,8 @@ class TestSSMOccurrenceCentricData:
                                                   es_client):
         docs = es_client.search(
             index=conf.indices['ssm_occurrence_centric'],
-            doc_type='ssm_occurrence_centric',
             body={"query": {"match_all": {}}},
-            size=1000
+            size=1000,
         )['hits']['hits']
         ssm_occurrence_stats = SSMOccurrenceCentricStats(docs)
         ssm_occ_stat = getattr(ssm_occurrence_stats, stat)

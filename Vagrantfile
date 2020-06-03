@@ -38,7 +38,7 @@ fi
 
 if [ ! -d elasticsearch-hadoop-${ES_VERSION} ]
 then
-  wget --progress=bar:force https://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  wget --progress=bar:force https://artifacts.elastic.co/downloads/elasticsearch-hadoop-${ES_VERSION}.zip
   unzip elasticsearch-hadoop-${ES_VERSION}.zip
 fi
 

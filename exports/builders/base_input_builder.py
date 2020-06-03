@@ -1,11 +1,13 @@
+import abc
+import logging
+
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
-import logging
-
 
 class BaseInputBuilder(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, config, sqlContext, input_type):
         """
@@ -37,21 +39,35 @@ class BaseInputBuilder(object):
         df = self.read()
 
         # if reading not applicable, build from files
-        df = df if df is not None else self.build_from_scratch()
+        if df:
+            df = self.build_from_cache(df)
+        else:
+            df = self.build_from_scratch()
 
         # write
         self.write(df)
 
         return df
 
+    def build_from_cache(self, df):
+        """Perform additional processing on a built DF read from the cache.
+
+        Subclasses can override this to post-process the cached DF. The base
+        implementation just returns the cached DF as-is.
+        """
+        return df
+
+    @abc.abstractmethod
     def build_from_scratch(self):
-        raise NotImplementedError
+        pass
 
     def get_urls(self):
-        raise NotImplementedError
+        """Look up the input URLs if not already given in the config.
 
-    def combine(self):
-        raise NotImplementedError
+        By default, return None to indicate that no URLs were configured. Subclasses
+        may override this if appropriate.
+        """
+        return None
 
     def write(self, df):
         mode = getattr(self.config, '{}_backup'.format(self.input_type))

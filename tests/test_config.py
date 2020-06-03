@@ -22,7 +22,7 @@ class TestBaseConfig(object):
     """
 
     @pytest.fixture
-    def base_config(self, setup_test_index, monkeypatch):
+    def base_config(self, setup_graph_indices, monkeypatch):
         """Create a BaseConfig and configure it for the test environment.
 
         Monkeypatch the config as needed to avoid querying indexd or S3.
