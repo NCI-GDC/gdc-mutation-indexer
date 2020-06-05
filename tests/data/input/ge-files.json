@@ -1,0 +1,4409 @@
+[
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "57baaa83-c55a-4922-a679-be956e165fc1",
+      "submitter_id": "00f010ef-19c8-4230-a0e0-49bd60e02fd5_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T12:35:57.129064-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-26T14:33:45.728410-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.002757502,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 680,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "e943b2fa-2221-473d-bb40-2cea4b5368f3.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 15917919983,
+          "updated_datetime": "2019-09-18T14:58:24.612143+00:00",
+          "md5sum": "c514c4fd908e22fc6ca32fb2b21aacd9",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9465208501817969,
+          "proportion_coverage_30X": null,
+          "file_id": "5f528219-ba34-409c-9f87-96cda41f0313",
+          "submitter_id": "eacdc7de-25cb-4a08-b17c-62cddd2202ac",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 4123,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 110514528,
+          "created_datetime": "2019-04-19T12:09:22.629971-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 22265
+          }
+        ],
+        "project": {
+          "project_id": "CTSP-DLBCL1"
+        },
+        "demographic": {
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:36:12.278625-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL11280_1699104-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:43:42.014950-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "20993577-0467-4c4f-aa5a-aaa6759a3fe5",
+          "days_to_death": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL11280-sample",
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "longest_dimension": null,
+            "composition": null,
+            "portions": [
+              {
+                "portion_id": "70d80072-603f-4ce7-8bde-890afeccad89",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "state": "released",
+                        "amount": null,
+                        "analyte_type": null,
+                        "updated_datetime": "2018-08-30T12:08:29.399103-05:00",
+                        "submitter_id": "DLBCL11280_4196-aliquot",
+                        "aliquot_id": "9bbe952d-c658-4cde-b4f0-e33f1fcbd5d8",
+                        "analyte_type_id": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-20T17:01:07.191329-06:00",
+                        "aliquot_quantity": null,
+                        "concentration": null
+                      }
+                    ],
+                    "analyte_id": "e610e307-52a6-4784-ad0b-96ae7b3ad778"
+                  }
+                ]
+              }
+            ],
+            "sample_type": "Tumor",
+            "tumor_code_id": null,
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "sample_id": "58874df4-f96f-482a-911a-01917edfaae9",
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "days_to_collection": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "freezing_method": null,
+            "sample_type_id": null,
+            "created_datetime": "2018-02-20T16:59:39.295744-06:00"
+          }
+        ],
+        "case_id": "02643d04-0cf6-4920-b7b7-849ee7b2a151"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "bc399dbd-668c-48f8-bb6c-746b9250146f",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "da4c2ee3-b8df-4191-a73a-450c92af2689",
+      "submitter_id": "4bd4264f-edab-423f-b792-f569d5dedae9_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:23:16.951856-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.002870787,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1206,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "9f9c089c-ae9f-44a2-a36c-6e1919d8cfd9.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 10278172633,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "a6d293139aae4d3f2f03282be593f370",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9937420687728739,
+          "proportion_coverage_30X": null,
+          "file_id": "cd104daa-d25a-4a98-a079-48b2fde10036",
+          "submitter_id": "1b1d9721-8a9b-4868-bfed-e5386757e50c",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 149978,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 130682804,
+          "created_datetime": "2019-04-19T12:36:36.238695-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 20440
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10893-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:48:27.006311-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "18b1eb77-3c7e-4dde-95f8-79c454ab3744",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10893-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "aded7210-2725-45f0-8d4a-0728c3f6b59b",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10893_4223-aliquot",
+                        "aliquot_id": "9b242322-272d-4a41-8a05-eebab56f3dca",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "b2e3780e-6aed-439b-b041-b3a929ad5a20"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "6999e4cb-06db-400c-9124-b9db4fa72ff2",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "6a9fd948-0acb-4835-9cbe-d7cd729ae3ce"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "0e499cb2-cb4b-4fcc-a320-fe4012edae00",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "5d8db599-e07c-45bc-8ef9-8388e4534270",
+      "submitter_id": "cdf0aa48-5534-45f7-aba6-b8ffc09229bd_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:13:08.516490-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.003881779,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1376,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "66aa07a7-eba5-44b6-a3d2-749c86898096.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 16890501702,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "2c9f7d705b2f04212f782aa041f474eb",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9774542782586009,
+          "proportion_coverage_30X": null,
+          "file_id": "8161fe10-b7b5-4607-aeca-10aba42f183e",
+          "submitter_id": "2951bacd-6627-415a-bf2f-6cc15f716fdd",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 29084,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 182857974,
+          "created_datetime": "2019-04-19T12:29:04.931513-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 27740
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10455-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:47:53.071697-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "0d721b95-2c03-40b4-b3d8-f2227af701b0",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10455-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "d2e6581f-56e3-4fa1-b725-7226b629e060",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10455_4345-aliquot",
+                        "aliquot_id": "1b0d224a-009e-419d-911b-37c71a3a474d",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "e47c8743-bba9-473b-94bb-cbf56daf8a7a"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "a02e5e31-57b4-4f66-a2a0-a080f4a84547",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "2fb8d13a-34f5-4261-97b7-b1a251157665"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "130e23b2-ced1-4643-8533-bcfac3f8246d",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "99b5ba2c-f766-4dce-a38f-4936362f6bfe",
+      "submitter_id": "1edd9ecb-539c-4d8f-b94a-691d5aaa5d43_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:15:10.819328-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.002557227,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1155,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "31339d2b-ea95-4f77-8591-291d4ff57e68.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 12193311820,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "d703d4d5fd452c9abca87541a63f325d",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9830087091409172,
+          "proportion_coverage_30X": null,
+          "file_id": "8b143484-6d2a-4b7e-878d-6e2382ff4f0e",
+          "submitter_id": "ce544d98-e16b-4105-b445-b670f0b8fb22",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 692920,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 179256716,
+          "created_datetime": "2019-04-19T12:30:07.621458-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 25550
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10852-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:47:53.071697-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "811d9d69-9eaf-4f97-b5ab-f769d9687627",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10852-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "e692e233-9229-4e3c-b10d-ca3e519dbae0",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10852_4124-aliquot",
+                        "aliquot_id": "339be371-3b59-4159-bf83-7a38ead64d71",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "619d1b3d-1732-420a-a973-2f4a4508146c"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "4809dea0-a2f5-48e7-80d0-e4c2ce89a650",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "06c247ca-9cd9-41e4-8d06-3c64a4a20fd3"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "5a23de41-703b-4e13-95b7-4a21b094929f",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "687f7fea-87ff-4ca6-9d7a-8f736b0f03f1",
+      "submitter_id": "e2e3570f-89e4-43e9-8c58-0e866cbeaf5d_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:14:10.351091-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.002309393,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1090,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "77b40002-8fc4-4191-86c4-cad6d4725bef.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 7602277701,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "80f887b91cf141598183ce495bf35a71",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9882468384691108,
+          "proportion_coverage_30X": null,
+          "file_id": "1909ecd1-8cfe-4adf-9072-a1c6cca5a6b3",
+          "submitter_id": "00552964-1f04-4686-b5aa-454869a4b033",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 50928,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 37.0,
+          "total_reads": 116456240,
+          "created_datetime": "2019-04-19T12:29:04.931513-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 23360
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10851-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:49:35.031590-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "637fff8d-3162-413c-9cf2-76eb08913207",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10851-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "40f1f25d-6bc4-4235-8550-ba400cb2aca7",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10851_4172-aliquot",
+                        "aliquot_id": "20caa0f5-c5bd-45bc-b33b-eb6ea7581c80",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "e579c02e-b63f-4f66-8b7d-389225cf93bd"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "c0100e81-16fa-4ff2-9563-931ee107719a",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "ddf554ef-8d54-4ed1-8fbb-960b4afea7c4"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "b54b1b1f-325e-4172-b2ef-41d35b4c3148",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "3c1c4102-89dc-4d8d-9211-d6cd16f54b7c",
+      "submitter_id": "25189c0c-7884-42bc-9849-e5b74110a849_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:16:07.226767-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.003126326,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 970,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "5dc62e23-d9f8-4fb7-9e14-046258d581b0.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 12918767630,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "2c12665565beb7dcbe071949748ef904",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9663733167855848,
+          "proportion_coverage_30X": null,
+          "file_id": "5165c1ac-a2df-42a9-b44c-2f819d5f4fd0",
+          "submitter_id": "3abf9478-6575-4a67-9ccb-b3a13d1ec556",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 10875,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 35.0,
+          "total_reads": 132561840,
+          "created_datetime": "2019-04-19T12:31:06.452383-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 21535
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL11530-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:49:35.031590-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "92cca2af-eb57-4808-88db-737f8cf359d6",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL11530-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "74f10fa8-5099-4ccd-93ff-232aa1366e0b",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL11530_5021-aliquot",
+                        "aliquot_id": "424b562d-a9e1-4d47-b94e-e8c7eaca8932",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "27453869-91b8-4511-b1c1-b8615207114a"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "8d8d4219-4926-44b8-bb51-5161becc7be1",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "eadc2019-814a-435e-8391-d58dbd4a9da6"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "7ace822f-2c93-4690-803e-5369b4f6960e",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "212444f1-49be-4035-b24e-85075ca2c2d7",
+      "submitter_id": "af5f9a1c-9904-4d03-9e21-b778cfc19f1d_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:15:10.819328-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.0026322,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1181,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "13d8fb6c-ea2d-4738-842b-9a9834c70062.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 12103994921,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "b75080c6f0af7ceb44fd93340f5504a1",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9875567541281057,
+          "proportion_coverage_30X": null,
+          "file_id": "d2b71fbb-4327-40ba-b624-3d1ac5e03466",
+          "submitter_id": "1b179d11-a788-4357-b076-57ae1994a162",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 8360,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 116191548,
+          "created_datetime": "2019-04-19T12:30:07.621458-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 27010
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10515-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:47:53.071697-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Dead",
+          "state": "released",
+          "demographic_id": "1bc89485-48ed-4112-bb5b-5a4ec56eb0b6",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10515-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "af0f5609-a39c-484f-8d59-91172015104a",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10515_4290-aliquot",
+                        "aliquot_id": "3a9401d5-610e-453b-a01b-ff1542d12d9b",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "65ecf5f6-73ea-4a2c-a991-8dc475a4795f"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "62ad1282-fd0a-4e1a-851f-879dda308e5d",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "0e98047b-dac6-456e-85ba-8593ad55e1f4"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "36ef06f8-021e-4016-8521-8f88c0255f16",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "4fb762ba-4ff7-42fe-a35f-a33faaf7a9c5",
+      "submitter_id": "7b99f5f3-7862-479b-8000-f4567d1cd82a_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:26:19.524384-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.00500417,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 950,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "1236f16e-57a0-421a-8db9-155a80f065d0.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 12062323635,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "474863391c4b7b0af8feabfbeac9659a",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9934165078072373,
+          "proportion_coverage_30X": null,
+          "file_id": "7edd25b0-632c-4fbf-8446-7a4ee2dc7c58",
+          "submitter_id": "9ca6d626-ee61-49b7-a70f-e4dd763efd34",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 37955,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 33.0,
+          "total_reads": 137533542,
+          "created_datetime": "2019-04-19T12:38:47.551891-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 25915
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL11481-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:49:01.522901-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "18ee3a89-684c-4866-813b-70d993b6b0a8",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL11481-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "d6de29f6-bcd5-458d-9aef-c33a6f475d2c",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL11481_4925-aliquot",
+                        "aliquot_id": "bf84f8aa-fe32-4be4-b8de-ba63d960796c",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "00064c89-bf2a-456e-9158-0db59e183b0a"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "d8aba97d-38f2-4ebc-940c-678df34928ba",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "9a91e018-4881-4fc8-a8b3-aa44e30f5082"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "c95301a0-4032-4855-ab40-45f5d3efeb22",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "0c7a656e-ff84-40d3-a926-d2e24c22b2f1",
+      "submitter_id": "31ae5db7-b0e9-4211-b800-52ceaf48c62c_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:30:25.274773-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.01182137,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1441,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "c90d6a29-d51c-4a44-a0dc-321104ce0e79.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 107,
+          "access": "controlled",
+          "file_size": 3001717565,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "802ecdf1f21d0b60e12cd3abe09e16d3",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.8454140095632425,
+          "proportion_coverage_30X": null,
+          "file_id": "992640e9-11e7-41bc-8b0e-e37e721f859b",
+          "submitter_id": "e395cb9d-372b-49b4-af15-8a06bd995b2e",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 5733,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 32.0,
+          "total_reads": 34338144,
+          "created_datetime": "2019-04-19T12:43:16.421561-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 11315
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10494-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:48:27.006311-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "7cf4f1a8-7f92-4a70-907b-2e8cfc181205",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10494-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "f3482a0b-d014-4e3f-b884-94d9d16282c8",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10494_1530-aliquot",
+                        "aliquot_id": "f8050176-2a40-4d5b-a00d-63c0e77fd5f5",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "09be6f46-1ffb-472e-a582-bb1267d5b782"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "bcb28b64-f4fc-4d5c-8343-d561cadf547e",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "6f9e0f3f-ad40-4d9f-a640-69623b87ac1b"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "cec0283f-593b-4387-bac7-04b8d7a38655",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "TXT",
+    "analysis": {
+      "analysis_id": "930d1605-4f41-4528-be48-ec8b591eb34e",
+      "submitter_id": "321236a9-2c93-40f4-a348-a806c526bab2_htseq_-_fpkm-uq",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "45c2674d4ff1f988d4e148aaa4b170ada80a4ea1",
+      "created_datetime": "2019-04-19T14:17:06.322384-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/htseq-cwl/blob/45c2674d4ff1f988d4e148aaa4b170ada80a4ea1/workflows/htseq_count_workflow.cwl",
+      "updated_datetime": "2019-04-29T12:54:32.707359-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "proportion_base_mismatch": 0.002583116,
+          "platform": "Illumina",
+          "mean_coverage": null,
+          "average_insert_size": 1144,
+          "proportion_targets_no_coverage": null,
+          "error_type": null,
+          "experimental_strategy": "RNA-Seq",
+          "file_name": "ba786f99-b577-494c-89fe-8725a93942b7.rna_seq.genomic.gdc_realn.bam",
+          "proportion_coverage_10X": null,
+          "average_read_length": 101,
+          "access": "controlled",
+          "file_size": 11556191154,
+          "updated_datetime": "2019-09-18T09:30:42.803570+00:00",
+          "md5sum": "e86918bd34b141b58016dda59c29329c",
+          "data_format": "BAM",
+          "state": "released",
+          "contamination": null,
+          "proportion_reads_mapped": 0.9945847343516634,
+          "proportion_coverage_30X": null,
+          "file_id": "01fe3f4e-1d1e-49e0-919c-bd80c8b05e33",
+          "submitter_id": "f67d5e89-331a-40f9-8d42-8ab3a747aea8",
+          "state_comment": null,
+          "proportion_reads_duplicated": 0.0,
+          "contamination_error": null,
+          "pairs_on_diff_chr": 155981,
+          "data_category": "Sequencing Reads",
+          "average_base_quality": 36.0,
+          "total_reads": 148611546,
+          "created_datetime": "2019-04-19T12:32:12.136428-05:00",
+          "data_type": "Aligned Reads"
+        }
+      ],
+      "workflow_type": "HTSeq - FPKM-UQ"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 30295
+          }
+        ],
+        "project": {
+          "project_id": "NCICCR-DLBCL"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "not reported",
+          "created_datetime": "2018-02-23T13:16:31.092217-06:00",
+          "cause_of_death": null,
+          "submitter_id": "DLBCL10881-demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-04-29T10:50:06.800916-05:00",
+          "year_of_birth": null,
+          "days_to_birth": null,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "8d064a5b-9986-4c09-abbb-fb351909e34d",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "not reported",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "DLBCL10881-sample",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "6c494094-9a62-4f14-adb0-874633eff404",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2018-08-31T15:09:50.998511-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "DLBCL10881_4271-aliquot",
+                        "aliquot_id": "4efc8a41-b5c9-46c4-990b-4213048c1cb7",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": null,
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-02-14T21:05:41.871623-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": null
+                      }
+                    ],
+                    "analyte_id": "83f82a40-8328-43f7-a6ef-d4626c492afb"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Tumor",
+            "updated_datetime": "2018-11-15T21:38:54.195821-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "060042fc-bd78-4f3c-8c6d-6e7256c2834c",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Not Reported",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": null,
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": null,
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-02-14T13:37:24.709292-06:00"
+          }
+        ],
+        "case_id": "17035c57-7b01-4e71-8c6b-dc0952113401"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "RNA-Seq",
+    "file_id": "cd0b31fb-d870-4a5d-8e61-ca74989b736d",
+    "data_type": "Gene Expression Quantification"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "ccd16a8a-c0be-4152-a3b7-c834edf35437",
+      "submitter_id": "5cc82db9-88f8-4b6f-a7a1-dc1ac21daf67",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "9d09ecce-7f69-4c00-b813-5eae1314c0d5.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "432c101c-bf06-4ccc-a23c-b23a76aabef5",
+          "file_id": "1ee4ed89-612a-40a5-b1ce-eb0e1a66eae2",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1174589,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "ddbe9ea9242568b802580ff6cfc00fd7",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "18de8ef3-d3c2-4d99-88cc-9de6ce7fed46.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c52c7adc-b3e1-438b-9b58-c86030d1ecba",
+          "file_id": "a7f04795-13e3-4885-a97d-ecdb71b9a7de",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 2920723,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "9f383f5acd5503bbeb7417b7e731b33b",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "2e1fcf89-a306-4d05-9719-5f32d98ecf4d.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "4922e719-2d89-4776-bb6c-0156c29b5143",
+          "file_id": "aaef15a0-9926-435c-87be-376adc572fc6",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 297632,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "28056b8de7f71e3c44794eacb72fcec9",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "eb3370e2-3b29-4d5a-a334-193c8d310eb9.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c9d5050d-7299-481b-83c4-b8c9992424c0",
+          "file_id": "6b197c47-6085-4ab3-8928-3dbca7d30800",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 168772,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "ad61ac5fe471bdcf5f6a0f90550c35ec",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 1001
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL012420_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -1001,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "c6ec31af-de34-4da1-9761-dbf435c97ee8",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL012420-09A.2",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "1305311e-87d4-516c-8c4c-59d53e8af45d",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-07-16T12:30:09.069831-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012420-09A.2-01D",
+                        "aliquot_id": "a008c6d7-1e34-4c12-ae3f-65d97c686f10",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "5665d251-fcd2-5725-a2f6-59ed49c4203b"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "f80bee3e-2adc-4bad-80d1-30d71e17b4f0",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL012420-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "59080f5e-1ebd-5010-a36f-45e23c67b084",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012420-14A-01D",
+                        "aliquot_id": "c5c1bbd3-3cd3-4f41-aebb-76810cc7c641",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "5f62ce8f-0dce-5dcd-9e57-331d1910f3d6"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "0d0e3891-62fc-4e43-bc1b-a2e446d4cd1e",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "da3d2ca6-287d-4f18-b489-b96b15b4b5cc"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "bb934fdd-b4f1-4844-89cf-aa2af66e4cd4",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "cdc0b1e3-88fc-457e-b09a-eb795931c096",
+      "submitter_id": "64f0eca0-8c94-49f8-b7ef-ed302ef11d44",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "7fdfccc5-2db8-4a3c-910a-e4f815a0f672.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "a56fc431-2901-43c4-9b71-028816948aa8",
+          "file_id": "ddc3b83b-781a-4ef1-9ca7-16b745e6f672",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 993402,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "15fb16583236ed5a748a860d3bf28021",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "ca1ef453-5f98-4df1-82c7-a9bab895708b.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "05a71d44-8d91-4be8-8749-ba04765ba5e1",
+          "file_id": "85037062-b654-410c-9879-c797a395e75e",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 178714,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "29c6b0709b5cd75839b7894e5451d46a",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "f7a94b8f-13f3-4882-b950-31d1f9263e13.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "1c71f132-4220-4118-bc23-5683196fa821",
+          "file_id": "ba337b71-e89c-4534-935a-ed784dbe6bdc",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 255833,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "c1259f2188ad22fa422a3488afcdcaee",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "92e7f12a-eeb8-4ae3-b003-d296b51097d6.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "6e00a090-0ebf-4fa2-ab27-d8301200b100",
+          "file_id": "66031972-72f5-4167-8bf1-1f40b09aeb44",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 3479104,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "0b8309a0f7bacb284684894c73c23979",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "47a78390-bb93-4047-ba91-1d2c32373f02.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "3d0157d2-0569-4b7e-8dee-fa2eb3fae7d3",
+          "file_id": "9f231afe-a6bc-48dc-8f63-4cdbd3330863",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 309136,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "a4e483c3342636903ae34fcd998a93d3",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 1105
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2017-05-16T12:09:06.872701-05:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL041119_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -1105,
+          "vital_status": "Dead",
+          "state": "released",
+          "demographic_id": "7c036c91-2746-49f3-812b-e00e71051fb5",
+          "days_to_death": 469,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL041119-09A.2",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "cc9f3f5f-3363-5f0a-9ec9-3ff1ef8cc1f8",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL041119-09A.2-01D",
+                        "aliquot_id": "3cc92869-c952-4476-8bb5-3f12cd8e416d",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "bf519fb7-1b43-5f6b-80cf-136a9c996ba2"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "f979d20c-4636-4e8a-8f57-cdea9766fe5a",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL041119-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "921239a9-6fc8-50a2-ac28-1483af19a646",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL041119-14A-01D",
+                        "aliquot_id": "da644419-bad8-459a-bb40-cf36f8d9d201",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2017-05-16T12:02:59.635508-05:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "02e1fe6e-b202-5716-967a-613df2a354fc"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "cd5dec24-b39a-4b97-9ede-70dcfaf33fae",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2017-05-16T11:56:33.675888-05:00"
+          }
+        ],
+        "case_id": "28051391-0eee-4868-9285-c885c256f9b3"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "4f7a6e19-4290-477a-8399-9538f274997a",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "9b8e77f1-3c7f-49d4-8746-4579284b9018",
+      "submitter_id": "57a9b116-7d6e-44b2-9795-80ab2a850c82",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "eff26008-d1fa-4d13-8e15-b06d5859e14d.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "d158a6dc-f730-42cf-b9d8-9c7c62ae92d1",
+          "file_id": "8b1d3160-c341-447d-a7d8-e6dbe9020bbb",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 51921,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "4b7b2b3a13c9ac5ec1873b3eab95ce46",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "0f5c0072-8c32-4eb0-8818-281a08a2a7bf.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "ab7fa110-cfb1-421b-8239-b1386c92386e",
+          "file_id": "11c2e170-21d0-415f-9190-eb918fb6f182",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 719505,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "9ce7ea9ac53c8c189939b8ae10259c1b",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "5602f844-9ae2-4e58-801b-fcdb93a456e0.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "b81bf507-5388-4631-a75a-bfe157cb14d6",
+          "file_id": "6a20494a-7757-4263-8eaa-1815a8c45cfb",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 118554,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "6d301d5a915559cc96396d8a94cc7ef3",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "d4a64419-5c3b-47b2-9caa-58686567c36a.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "36051554-b5b0-413e-a820-d9019eb8862f",
+          "file_id": "155e6c62-1044-4d75-8821-705385cc6681",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 150782,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "4a6b594a7967b221822cb8d8abb009ad",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "93db7d8d-a653-47e4-94dc-dde3e553b428.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "629d1e06-70ca-4ca3-b863-640841b5ada0",
+          "file_id": "a8c31a3a-9749-4c93-992c-b04eb97eed85",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 2562670,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "1a60a62c1cb30558165b7c0aa41f8c00",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 2552
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL012422_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -2552,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "f03c33e4-bcaa-48c0-9218-2405846aa6b8",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL012422-09A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "75579872-b3d8-5de4-91f4-c25c68b0e91d",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012422-09A.1-01D",
+                        "aliquot_id": "a23ef3d4-7ff2-4189-a9d3-66aea28e4dce",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "58494adb-178a-5958-9329-55a71dd0c656"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "d2539add-eed0-45ae-9e61-4245586e0554",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL012422-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "e4d532a6-5621-543f-b49d-f0b086aed021",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012422-14A-01D",
+                        "aliquot_id": "56481cbd-300a-41b3-bd30-973436ed2d96",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "36d7be03-acaf-5cbd-8b40-531c5e7f85cc"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "0454ea18-73a4-4fa4-ae32-1f9524495352",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "392a3476-0cb0-4133-b145-d72662e295b3"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "d6d5b34f-7b77-4130-b422-9a97f143f4c4",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "ab568dfe-0c8a-4d8f-980c-3b4ad7317e4d",
+      "submitter_id": "b65ac74b-5ff7-4944-acd9-caadd493066d",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "7916f414-24f1-4f07-aa0b-b83519c7f0f6.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "dbd555a3-5987-4bb8-b485-9c3a0ae1ceef",
+          "file_id": "4bfc483b-8496-4ab5-9494-bd68d2d4a51a",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 2215936,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "924e424c298dddfffa4ab432e2c3cf59",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "b2083f02-df57-4e95-a874-a9f770d143e4.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "2a6bd0b0-f56d-43f7-8b62-7771a0686e22",
+          "file_id": "4c36d4ef-472d-41ec-af12-ef66a830abad",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1306292,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "b5a2e2c100128797e4f941e6a8dec1fe",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "d8b420a1-b4a3-461a-b0cb-ec9805db44b2.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "3d8b28fd-3812-444d-9f13-49c53ee5e6a9",
+          "file_id": "b546e27a-dd20-4667-88e6-be0b7c391e02",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 835428,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "c54d3dea2a96e78e4fa454d9fdb150c9",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "b9637b9d-b45f-4b5e-9256-246a996cf263.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "ad0fef5c-d69f-45c8-8018-09185ad8981e",
+          "file_id": "95cc3d2f-98ec-4441-9551-e11d97847866",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 89201,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "01056923b5db08df54242771a03f14ff",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "0eec336b-9c6a-4dd8-a844-f893820b71c9.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "5c38e2e5-ee99-45af-b944-bcbb92bd263b",
+          "file_id": "aeaec78a-c699-4e93-9e52-bd8074f99ee4",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 198238,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "c54ede8ab370ddd04af68f06df3b80ff",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 3089
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2017-05-16T12:09:06.872701-05:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL040039_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -3089,
+          "vital_status": "Unknown",
+          "state": "released",
+          "demographic_id": "bbc8a11e-944e-4383-97b5-fe005e0b63c8",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL040039-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": null,
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "38e3422a-4d76-569c-8ba3-896856f16fac",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL040039-14A-01D",
+                        "aliquot_id": "feb3174f-0374-4595-a977-521ad100d0f2",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2017-05-16T12:02:59.635508-05:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "ec15b40f-1e90-543a-ba79-0e3bf280c866"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": null,
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "1b6c5b0d-1b4a-4def-a186-cee3eb6a3f93",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2017-05-16T11:56:33.675888-05:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL040039-09A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "02814a99-9045-5daf-9478-92abc91f0a6a",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL040039-09A.1-01D",
+                        "aliquot_id": "31094354-45e4-45f8-a982-a926ac7fe4ef",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "6015b8f3-c46c-5b7e-a095-3ba521994fed"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "3ff98258-468f-47ea-bce9-96478da4a870",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "9acd3894-33ac-4e15-a42a-0293ba752540"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "03a3a40f-46e4-467c-92b5-92fa0319e12a",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "39fa5bde-b5eb-4e3e-9fd9-3f7dc16e10a6",
+      "submitter_id": "8734394d-1a1b-4cc0-a138-c13bdf9987af",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "3a23f714-6894-4545-859d-08063d2e9c2a.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "5f3d6618-bc6b-4284-8269-232c46f72560",
+          "file_id": "03a097c7-e8e0-4453-8ec6-f596acbe4629",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 371908,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "81f4c8edc283253dfd108a0212646721",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "a55a3c1a-f97b-4189-8a5f-3aa09314c7f4.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "66342fec-e1c8-4ed9-97ef-6c1079f7faa4",
+          "file_id": "ad0f7a34-2994-4dfa-8a94-e8ecdeffb271",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 135066,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "654b10eb7eb278577e7cb41596ac9470",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "07bf89e3-6941-485b-8340-b36e3d5cb72f.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "094717c5-48aa-4407-a9af-2a53cd9a489b",
+          "file_id": "1e6db153-766b-4427-9567-ea3417fd3df0",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 137022,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "ebeada3c5d0c836fd1c432342d99c563",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "132c2237-104d-4ab8-a277-48a6d186226c.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "b1f02fb1-8d59-4bf6-866a-072008034107",
+          "file_id": "a9bb708e-96e4-43f0-a83d-4d97d4c8533a",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 3470757,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "2960ad83c1bfb13213a8ce2149484c59",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "8c034ea4-18e9-444e-aaeb-2fef9ab53f2a.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "d5227453-3dac-4ddb-ae4a-f1762780c2e8",
+          "file_id": "abf8f6ea-b50b-441c-a291-82508f90b9c2",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 844981,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "2c61a7b5e30121a9ec0f4199a8775206",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 1527
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL042792_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -1527,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "40b98365-7094-4df6-b083-fbb46177257a",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL042792-09A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "7d317eae-dbc5-5ea1-b0aa-852c7015cdd7",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL042792-09A.1-01D",
+                        "aliquot_id": "51b0bb2b-ba87-4006-b7ed-a69219940b9c",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "ef29a896-2c1e-581d-b5e9-aab964032992"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "ab1b008d-3b1a-495e-9271-a69a548c176b",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL042792-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "561d5472-8ef2-5ef6-a223-3bd346b1a5b3",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL042792-14A-01D",
+                        "aliquot_id": "5a5e2cdc-1bcb-42b1-a5df-ce72c9d0d4ef",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "3e0144a6-3796-56b2-b639-7e2633168fa9"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "bafc66b4-ef90-4f99-ac3a-15924ad44ac2",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "be48964b-40b4-4206-b0d0-9734b09ba9d2"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "1ce82629-275b-4f2c-ac99-5619f63b85bc",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "8105dbe7-3087-4e2f-96f8-e937ab240cb9",
+      "submitter_id": "1af3e6be-c154-4883-a8cd-76ee5047e227",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "5503c6f7-8334-4565-b4b1-1cfae6b22a27.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "74918cac-0c84-408f-85f1-cf64d3a3712b",
+          "file_id": "3e11c7c3-c54a-4dbd-87a4-95de2bc17e12",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 158376,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "bcb652f378f176f8a3085049b497f688",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "adfb8316-39b9-4799-9538-fceef8a7b134.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "d05b113e-9e61-4a72-97a3-725e9fbfa027",
+          "file_id": "5065f539-6051-442f-b290-9654341b3eda",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1095473,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "a660986aefc38320ef4492b9c0301a7e",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "70ad6723-b8f9-49b5-96d7-7d3d6160caa7.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "f3da6fc6-83db-4495-867b-aa561cf497d3",
+          "file_id": "7b29b765-4dca-4bcb-831c-f9a4a439be85",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 72632,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "f0899bc9d7c12ba6ee790779b70c764b",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "fce4ad2c-3c49-49db-828f-821e1809a444.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "a10b7810-63b8-4623-9c9a-2b7858e6b409",
+          "file_id": "5c912019-af55-4eb1-830c-1571c99c3007",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 3777610,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "1ee79f2e385c6d24026134dc4110fddc",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "42c8b374-9187-4226-90bb-d255552dcce4.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "1b72eb70-8872-45a0-9ec6-6abdafb9e214",
+          "file_id": "473e4f0d-2559-43ab-a6e2-2dc32748f6d9",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 177750,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "5ce627eb271541bced1e67bf35c76622",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 730
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL046471_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -730,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "0623664e-06cd-43b2-a9fc-d880792c052a",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL046471-14A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "580f4556-944e-5611-97ef-24d9f8c8e830",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL046471-14A.1-01D",
+                        "aliquot_id": "98797c95-a369-4472-a840-6b6b1f592d37",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "62ee59b2-9b15-59f3-88cf-d1967822869d"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "fe60e4ac-c92b-4f63-bab4-9132c04a43e2",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL046471-09A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "2c4175a3-6a55-59bd-b776-7d38c6d57a04",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-07-16T12:30:09.069831-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL046471-09A.1-01D",
+                        "aliquot_id": "2ced5831-d41f-4aa8-a2f9-28fd93b6f3ec",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "a0b9cdb2-4178-5da5-968b-89ceac73c8e5"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "7e65226a-8693-4b41-afee-824d029f4962",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "6a39937a-0e74-4637-b77c-c3fa4161b47c"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "00651c18-1e4e-4942-bca8-f03b29506516",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "0c1c1d98-f917-4547-902d-5eb115d35e31",
+      "submitter_id": "b15f840a-7f19-4f90-8b7d-b70fedfad8aa",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "0aa24b7c-57aa-4cf9-a7d8-839f6003d775.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "deb101a8-30a3-474c-8b63-949b93ca5374",
+          "file_id": "0e28aa70-fd48-4700-bb28-cb59d78d33bb",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 108380,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "4b8aad5bb1ef3d7511842b634a1f1994",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "3acc3be2-75eb-45f2-9655-d45bd2c19a32.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "2e5a2514-6ab9-435d-9b06-74cff791cd20",
+          "file_id": "92ff66ba-1758-4039-ad9f-11c0529a7dc9",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 916278,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "375b1ae1d8c912c72c855e6d01226f4d",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "9970e59a-3746-46af-b7c6-003b2c55961e.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c066220c-3d6d-414a-a9d8-4151e6588601",
+          "file_id": "20fa47ac-ea6b-4899-bff8-7c88515dc3a3",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 167864,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "258f56834d6f02a1c0a9575e0e334730",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "bec1008a-0738-4fb9-a901-9682be4ed996.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "292a085f-30b9-4750-9db9-420bd7d421d8",
+          "file_id": "758bc9b9-9528-44bd-82b9-618c505314b3",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 322017,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "a4ff389f2dd02eea4375e7fe6ae50141",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "ad8ee526-9381-468d-bab2-fcb70c4241a2.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "3860e39b-d330-45da-ad0d-63bb38a39100",
+          "file_id": "051d8137-b2b9-4b4b-922f-1e63779a09db",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 3147785,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "2ca0b74275f2be4344cde35ae7122536",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 3295
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL041118_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -3295,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "5cd8cfa1-9fa4-43bb-9158-9fb5be083837",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "male"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL041118-09A.3",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "a1e02642-821e-5e93-a9d0-14c1cf057e79",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL041118-09A.3-01D",
+                        "aliquot_id": "61de9df2-0641-4dca-b639-bb6bedde1132",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "abc91b59-7f5b-5dc9-9f3d-7fb6e91baeb2"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "21aa0b2e-a44f-4806-a721-2749d88e77c2",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL041118-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "d23c5243-fd84-580a-a920-7d0fe9c5c7ef",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL041118-14A-01D",
+                        "aliquot_id": "5f07f78f-b767-4bfa-8a85-d1bbb6d8d4c5",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "3c5daa10-1f6b-5040-832d-1ba48260cff4"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "9a5b1a67-d686-436b-97df-64e323573285",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "420fdc61-f484-40d4-aed5-65a1c93efbed"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "02fe2954-aff2-45c2-a1d7-ddf85c7f52fa",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "c6a0757f-5996-4735-8e4f-c5ec12c9fac8",
+      "submitter_id": "777aa817-ba1f-4631-a711-3df08c32e852",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "207ac54d-af1f-4295-a972-de2cdde85806.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "76b80fd9-ee58-4cc3-8825-6d4284c8f71a",
+          "file_id": "52aa3fb7-c797-43ca-a585-93d56fa6fd52",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 145967,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "c9d866e2456e411f33a97ae0635a59b5",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "2e85d2dd-32f9-4128-9b5a-0dd18337e4bb.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "f9a2174a-fe44-4c8c-a73f-87fbb012baad",
+          "file_id": "eaaabba1-a4a9-4762-a5fe-f6a96f69a4e7",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1106099,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "21cce0bbca7668bc0b43f823e3e60d9e",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "d8a1df85-d1a1-4788-be75-ec1929888d49.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "66697307-f43d-45b0-8d9d-caa1abb1a50d",
+          "file_id": "864c5cdc-a96a-4af8-b9c4-6873b7889789",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 108601,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "c45da09e612960ec69bd0ba8f0ecbabd",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "7bbe49ea-d649-4953-a834-16c90e2cefb6.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "2721a1eb-8b9f-4572-a6c5-4f741c9ba02a",
+          "file_id": "fbf2a5ce-245f-4c26-ae49-59a1a0202ba7",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 427833,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "1f0ef6df37cf7f10d5f22c17100e1f53",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "67b4c807-8471-43dc-8c7b-ecc04a679b13.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "be902de1-3a83-4999-a9bc-78a338626c03",
+          "file_id": "c87fa9e3-ef7f-44a8-a22b-8ec8f26c54dc",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1730600,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "45ee3c5f114dfb5cc7cc681b68daac0d",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 5103
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL012425_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -5103,
+          "vital_status": "Dead",
+          "state": "released",
+          "demographic_id": "4db25c58-f230-4f66-9bd5-be443dd51a57",
+          "days_to_death": 591,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL012425-14A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "910e2905-5157-5928-8bd0-14433fc59a18",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012425-14A.1-01D",
+                        "aliquot_id": "f2f757bf-50ce-496f-bfa8-e2aa365775ae",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "1b34c06b-442d-52f8-94b6-7b3fd3fb62ef"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "f61855bd-5cf0-489b-b940-b690d06c3161",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL012425-09A.2",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "135c8c14-f9ef-5052-8495-17672eaf567a",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-07-16T12:30:09.069831-05:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL012425-09A.2-01D",
+                        "aliquot_id": "9da7753f-8b70-4951-badc-a2158c26911d",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "8a15687a-e911-568a-a573-f7a361699ad8"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "afca3531-33b5-410f-8701-b697baf6ae73",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "56cd353a-4402-43a6-a5b5-95b90dbfef50"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "16b3ad3e-c707-47a6-825d-2c6590b72c8b",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "2069fee6-e0a2-4ecc-a7e8-ae6e75597bac",
+      "submitter_id": "f3b56471-df48-43e3-8e6b-397076fd5a3d",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "6d3e4e1a-8c0a-4c56-a2cd-e5afc20e7818.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "cd19f875-650e-4f90-9390-d850cbb15d0d",
+          "file_id": "435137ed-1686-431f-8b4d-d5a930d8c48b",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 46761,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "3a5adb3c7eb048f3e84a6eda4062f4e7",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "81605e75-6d11-4bb5-ae78-734ab0390759.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "a6e2d3a7-ead0-4581-ae34-e3eba47ead13",
+          "file_id": "fc372fd4-df8b-40ab-a135-224a50073a0f",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 210219,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "bc18a7259dfb78babb312c80ef56b944",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "0968153a-fee0-4df8-b9c3-cc78c133e14a.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c2086f37-c3b6-4c11-990b-7dc389dd7402",
+          "file_id": "c08e58e0-c830-4472-a50d-064ec98bce21",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 1121525,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "54b5748e086da3abb2c0abb17dea71dd",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "8df8f19b-a869-4560-9cbb-846a53ab5a63.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "f902115e-c56f-4e00-97cd-bec77acd94c2",
+          "file_id": "9268346d-509b-4cfe-b0e0-0c4ec5140187",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 219936,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "352f680be031e53af578061cc3c446d3",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "5b65e287-1dc2-419a-819a-ba6277e02cfb.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c82e348c-a1d1-4c3d-af49-6bbdc44d0316",
+          "file_id": "a6b8d3a1-9d4b-4f4e-83a7-dddd6f3e3deb",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 3037622,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "831ccd98e1a86653aeedf3e07aa0eb99",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 851
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL046466_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -851,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "0082d6f0-f1be-4218-a4bb-d775800e519a",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL046466-14A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "4881757b-fd3b-5464-8c62-05eb74cd95e0",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL046466-14A.1-01D",
+                        "aliquot_id": "992cb51d-a962-4a52-9053-7e2913d420f4",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "f553145e-47d6-59e4-a476-803d44fab10e"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "421b7d54-a03f-4ad1-9462-2efc75fa3212",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL046466-09A.2",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "0ac65447-0b1e-5cf5-81b8-a75b33b49a43",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL046466-09A.2-01D",
+                        "aliquot_id": "7742a8f8-eff2-49e0-8e3c-a5d482d89d04",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "52673388-dd4e-598a-9792-b7d81413d7af"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "352c14d3-1427-49c3-81e7-08f3c2152ea8",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "fde8ad74-7071-42b7-b47a-8227fe049f1f"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "b44714b2-2058-42cd-bf3f-b47bbe9c3af0",
+    "data_type": "Masked Somatic Mutation"
+  },
+  {
+    "data_format": "MAF",
+    "analysis": {
+      "analysis_id": "4fa96059-1faf-4a6d-ace9-f5f07c50ada8",
+      "submitter_id": "ed5ef533-4f44-4ac8-9622-fcbdca72e85d",
+      "workflow_end_datetime": null,
+      "state": "released",
+      "workflow_version": "b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce",
+      "created_datetime": "2020-03-17T21:02:57.990730-05:00",
+      "workflow_link": "https://github.com/NCI-GDC/aliquot-maf-cwl/blob/b54a1e3179120dd53d4ef723d0a63c8a01e1d7ce/workflows/ensemble_aliquot_maf_wf.cwl",
+      "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+      "workflow_start_datetime": null,
+      "input_files": [
+        {
+          "data_format": "MAF",
+          "file_name": "1a8b5885-c4a5-41c8-aca4-4e495ec91a29.wxs.Pindel.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "c4c35573-59a1-43d3-9770-a29812c09163",
+          "file_id": "0dcac6c1-3690-413d-9ff2-0cd06bfb6c29",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 69351,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "22ca9e11cfe742b9833b401bcba90fb0",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "c379437b-c3f6-4397-89db-471e6fce8da2.wxs.VarScan2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "806b8873-0a3c-48ae-81cd-568792966abe",
+          "file_id": "13d048d1-e4d0-4224-8f4c-ce38780245ee",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 558082,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "69b5ab0703fb359fd4889421417e1654",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "b08c0204-0260-4299-b7e6-b7a7f6014c2e.wxs.MuSE.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "4bb5acbc-d908-4f9f-b6e2-04212f6bf035",
+          "file_id": "f9e4ca06-74b4-404a-8874-d5f7a8daa773",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 142817,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "8b0eb705e4c203ba3a08f3c3513bcbb6",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "b6d4636a-a5e8-4bf7-a0b0-dd7354e26633.wxs.MuTect2.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "08d82a4f-75bb-4ae0-bdf8-3f747cb57755",
+          "file_id": "c0ed3ca8-82e2-4886-aac7-597dbe864fd5",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 2753065,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "5574037894a386e6511b93ec1892a66b",
+          "data_type": "Annotated Somatic Mutation"
+        },
+        {
+          "data_format": "MAF",
+          "file_name": "a8c7de13-21b9-496e-bcce-87b01fb9f65f.wxs.SomaticSniper.aliquot.maf.gz",
+          "state": "released",
+          "error_type": null,
+          "created_datetime": "2020-03-17T20:33:23.595268-05:00",
+          "submitter_id": "f8f1625c-743b-411a-b282-71fbaafbbcdf",
+          "file_id": "81230b80-7177-4861-8d21-f3cd1654c6b2",
+          "state_comment": null,
+          "experimental_strategy": "WXS",
+          "data_category": "Simple Nucleotide Variation",
+          "access": "controlled",
+          "file_size": 702824,
+          "updated_datetime": "2020-03-26T16:47:15.084906-05:00",
+          "md5sum": "aff390974a351ab9e7db1eb4502f5717",
+          "data_type": "Annotated Somatic Mutation"
+        }
+      ],
+      "workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+    },
+    "cases": [
+      {
+        "diagnoses": [
+          {
+            "age_at_diagnosis": 730
+          }
+        ],
+        "project": {
+          "project_id": "TARGET-ALL-P3"
+        },
+        "demographic": {
+          "weeks_gestation_at_birth": null,
+          "year_of_death": null,
+          "ethnicity": "Unknown",
+          "created_datetime": "2018-01-24T12:15:15.057833-06:00",
+          "cause_of_death": null,
+          "submitter_id": "TARGET-15-SJMPAL017978_demographic",
+          "age_at_index": null,
+          "updated_datetime": "2019-06-03T09:03:07.038607-05:00",
+          "year_of_birth": null,
+          "days_to_birth": -730,
+          "vital_status": "Alive",
+          "state": "released",
+          "demographic_id": "57b67f05-0e43-4233-8be7-0778956d59c4",
+          "days_to_death": null,
+          "premature_at_birth": null,
+          "race": "Unknown",
+          "gender": "female"
+        },
+        "samples": [
+          {
+            "submitter_id": "TARGET-15-SJMPAL017978-14A",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "44ce5cfb-ed0b-5306-abb3-20f73762606f",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL017978-14A-01D",
+                        "aliquot_id": "7c92f90c-5e1f-4c04-9635-6b6f3a9ae44d",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "4701499b-9507-5d14-af1c-8bed11197d43"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Bone Marrow Normal",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "a061beab-a215-4300-8940-d6a44860b72c",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Normal",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Not Applicable",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "14",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          },
+          {
+            "submitter_id": "TARGET-15-SJMPAL017978-09A.1",
+            "growth_rate": null,
+            "days_to_sample_procurement": null,
+            "tumor_code": "Acute Leukemia of Ambiguous Lineage (ALAL)",
+            "diagnosis_pathologically_confirmed": null,
+            "current_weight": null,
+            "time_between_excision_and_freezing": null,
+            "distributor_reference": null,
+            "freezing_method": null,
+            "days_to_collection": null,
+            "portions": [
+              {
+                "portion_id": "9eac3d8e-2e31-5851-887f-50cf533b5fe6",
+                "analytes": [
+                  {
+                    "aliquots": [
+                      {
+                        "source_center": null,
+                        "selected_normal_targeted_sequencing": null,
+                        "state": "released",
+                        "concentration": null,
+                        "amount": null,
+                        "no_matched_normal_targeted_sequencing": null,
+                        "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+                        "no_matched_normal_wgs": null,
+                        "submitter_id": "TARGET-15-SJMPAL017978-09A.1-01D",
+                        "aliquot_id": "682e5cb4-ac27-406f-ba06-65ab7c0b57c5",
+                        "no_matched_normal_wxs": null,
+                        "selected_normal_low_pass_wgs": null,
+                        "no_matched_normal_low_pass_wgs": null,
+                        "analyte_type": "DNA",
+                        "selected_normal_wxs": null,
+                        "selected_normal_wgs": null,
+                        "aliquot_volume": null,
+                        "created_datetime": "2018-01-24T12:14:14.497410-06:00",
+                        "aliquot_quantity": null,
+                        "analyte_type_id": "D"
+                      }
+                    ],
+                    "analyte_id": "fb559f8f-f3d2-5396-bac8-53592276bfb8"
+                  }
+                ]
+              }
+            ],
+            "tumor_code_id": "15",
+            "sample_type": "Primary Blood Derived Cancer - Bone Marrow",
+            "updated_datetime": "2019-01-14T11:40:38.944262-06:00",
+            "is_ffpe": null,
+            "longest_dimension": null,
+            "sample_id": "51231694-2dd8-436c-8f4d-4c3133685edb",
+            "biospecimen_laterality": null,
+            "time_between_clamping_and_freezing": null,
+            "state": "released",
+            "biospecimen_anatomic_site": null,
+            "tissue_type": "Tumor",
+            "shortest_dimension": null,
+            "method_of_sample_procurement": null,
+            "tumor_descriptor": "Primary",
+            "initial_weight": null,
+            "distance_normal_to_tumor": null,
+            "pathology_report_uuid": null,
+            "intermediate_dimension": null,
+            "oct_embedded": null,
+            "preservation_method": null,
+            "composition": null,
+            "sample_type_id": "09",
+            "catalog_reference": null,
+            "passage_count": null,
+            "created_datetime": "2018-01-24T12:10:35.899233-06:00"
+          }
+        ],
+        "case_id": "7363a835-5ab3-4173-b534-46b242709b7c"
+      }
+    ],
+    "acl": [
+      "open"
+    ],
+    "experimental_strategy": "WXS",
+    "file_id": "35e0fb1a-8d94-4e3b-95ff-8cf820724a1f",
+    "data_type": "Masked Somatic Mutation"
+  }
+]

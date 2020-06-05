@@ -3,6 +3,7 @@ import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
 
+from exports.builders import ExpressionCountsBuilder, GeneExpressionBuilder
 from exports.gdc_mutation_export import GDCMutationExport
 from config import BaseConfig as Config
 
@@ -19,6 +20,12 @@ def main():
     sc, sqlContext = make_spark_context(config)
 
     exporter = GDCMutationExport(sc, sqlContext, config)
+
+    if "gene_expression" in config.indices:
+        ec_builder = ExpressionCountsBuilder(config, sqlContext, "gene_expression")
+        ge_builder = GeneExpressionBuilder(config, sqlContext)
+        ge_df = ec_builder.build()
+        ge_builder.build(ge_df).load()
 
     exporter.run_export()
 

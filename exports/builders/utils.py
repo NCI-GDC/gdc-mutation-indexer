@@ -170,6 +170,83 @@ def get_case_ids_from_source_es(config, sqlContext):
     return cases_df
 
 
+def _create_gene_expression_files_query(
+    sample_types,
+    acl=("open",),
+    workflow_types=None,
+    projects=None,
+):
+    if workflow_types is None:
+        workflow_types = ["HTSeq - FPKM-UQ"]
+
+    data_type_clause = {"terms": {"data_type": ["Gene Expression Quantification"]}}
+    acl_clause = {"terms": {"acl": acl}}
+    sample_type_clause = {
+        "nested": {
+            "path": "cases.samples",
+            "query": {"terms": {"cases.samples.sample_type": sample_types}}
+        }
+    }
+    analysis_type_clause = {"terms": {"analysis.workflow_type": workflow_types}}
+
+    musts = [data_type_clause, acl_clause, sample_type_clause, analysis_type_clause]
+
+    if projects:
+        projects_clause = {
+            "nested": {
+                "path": "cases",
+                "query": {"terms": {"cases.project.project_id": projects}},
+            }
+        }
+        musts.append(projects_clause)
+
+    return {"bool": {"must": musts}}
+
+
+def _select_random_gene_expressions(es_hits):
+    case_map = {}
+
+    for hit in es_hits:
+        file_id = hit["_id"]
+        case = hit["_source"]["cases"][0]
+        case_id = case["case_id"]
+
+        # we select the first expression we see for a given case
+        if case_id not in case_map:
+            case_map[case_id] = case
+            case_map[case_id]["file_id"] = file_id
+
+    return case_map.values()
+
+
+def get_gene_expression_metadata(
+    config,
+    sample_types,
+    source=None,
+    gene_expression_selector=_select_random_gene_expressions,
+):
+    query = _create_gene_expression_files_query(sample_types, projects=config.projects)
+
+    if source is None:
+        source = ["cases.case_id", "cases.samples.sample_type"]
+
+    body = {
+        "_source": source,
+        "query": query,
+    }
+
+    results = iterate_es_results(
+        config.source_es,
+        index_name=config.graph_file_index,
+        doc_type=config.graph_file_doc_type,
+        query=body,
+    )
+
+    case_docs = gene_expression_selector(results)
+
+    return case_docs
+
+
 def ssm_label_col(chromosome,
                   variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     return udf(ssm_label, StringType())(chromosome, variant_type, start_pos,
