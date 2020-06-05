@@ -177,6 +177,7 @@ class BaseConfig(object):
 
         # aliquot should be synced with maf, don't allow users to deviate
         self.aliquot_backup = self.maf_backup
+        self.gene_expression_backup = "neither"
 
         self.es = Elasticsearch(
             self.es_nodes.split(','),
@@ -285,7 +286,8 @@ class BaseConfig(object):
             index_type: template.format(index_type) for index_type in self.index_types
         }
 
-        self.validate_indices(indices)
+        if "gene_expression" not in indices or len(indices) > 1:
+            self.validate_indices(indices)
 
         return indices
 

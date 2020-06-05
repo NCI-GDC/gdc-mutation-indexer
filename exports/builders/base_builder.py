@@ -80,6 +80,8 @@ class BaseBuilder(object):
             .option('es.mapping.id', self.id_field)\
             .save(index)
 
+        self.log("Finished exporting {} index to {}".format(self.index_name, index))
+
         df.unpersist()
 
     def truncate_df_at_percentile(self,
