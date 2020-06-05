@@ -124,6 +124,7 @@ class GeneExpressionBuilder(BaseBuilder):
         super(GeneExpressionBuilder, self).__init__(*args, **kwargs)
 
         self.gene_expression = None
+        self.gene_expression_backup = "neither"
 
     def build(self, ge_df):
         self.gene_expression = ge_df
