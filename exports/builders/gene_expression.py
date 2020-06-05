@@ -16,7 +16,7 @@ def get_indexd_url(indexd_client, file_id):
 
     for url, meta in doc.urls_metadata.items():
         if meta.get("type") in primary_types and meta.get("state") == "validated":
-            url = url.replace("s3://", "s3a://")
+            url = url.replace("s3://", "s3a://").replace("cleversafe.service.consul/", "")
             return url
 
     return None
