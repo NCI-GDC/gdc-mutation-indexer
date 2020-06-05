@@ -26,8 +26,8 @@ def main():
         ge_builder = GeneExpressionBuilder(config, sqlContext)
         ge_df = ec_builder.build()
         ge_builder.build(ge_df).load()
-
-    exporter.run_export()
+    else:
+        exporter.run_export()
 
     # Tear down actions
     sc.stop()
