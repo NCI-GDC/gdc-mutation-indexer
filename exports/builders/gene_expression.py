@@ -76,7 +76,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
         return final_df
 
-    def _load_gene_expression_files(self, file_urls, batch_size=2):
+    def _load_gene_expression_files(self, file_urls, batch_size=500):
         file_batches = []
         batch_n = 0
 
