@@ -1,25 +1,31 @@
-from pyspark.sql.functions import collect_list, explode, lit, struct
-from pyspark.sql.types import FloatType, StringType, StructField, StructType
+from functools import partial
+
+from pyspark.sql.functions import col, collect_list, explode, lit, struct, udf
+from pyspark.sql.types import (
+    ArrayType,
+    FloatType,
+    StringType,
+    StructField,
+    StructType,
+)
 
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import get_gene_expression_metadata
 
+GeneExpression = StructType([
+    StructField("gene_id", StringType()),
+    StructField("expression_value", FloatType()),
+])
 
-def get_indexd_url(indexd_client, file_id):
-    doc = indexd_client.get(file_id)
 
-    if not doc:
-        return None
+def parse_gene_expressions(file_content):
+    stripped = file_content.strip()
 
-    primary_types = ["cleversafe"]
+    def make_row(gene_id, raw_value):
+        return gene_id, float(raw_value)
 
-    for url, meta in doc.urls_metadata.items():
-        if meta.get("type") in primary_types and meta.get("state") == "validated":
-            url = url.replace("s3://", "s3a://").replace("cleversafe.service.consul/", "")
-            return url
-
-    return None
+    return [make_row(*row.split("\t")) for row in stripped.split("\n")]
 
 
 class ExpressionCountsBuilder(BaseInputBuilder):
@@ -38,7 +44,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
             "samples.sample_type"
         ]
 
-        file_source = ["cases." + col for col in case_fields + case_nested_fields]
+        file_source = ["cases." + field for field in case_fields + case_nested_fields]
 
         ge_metadata = get_gene_expression_metadata(
             self.config,
@@ -46,72 +52,59 @@ class ExpressionCountsBuilder(BaseInputBuilder):
             source=file_source,
         )
 
-        ge_counts_df = None
+        initial_df = self.sqlContext.createDataFrame(ge_metadata)
 
-        # FIXME: create RDD via `parallelize` and do map/union instead?
-        for meta in ge_metadata:
-            new_df = self._load_gene_expression_df(meta["case_id"], meta["file_id"])
-
-            if not new_df:
-                continue
-
-            if ge_counts_df is None:
-                ge_counts_df = new_df
-                continue
-
-            ge_counts_df = ge_counts_df.union(new_df)
-
-        case_ge_df = self.sqlContext.createDataFrame(ge_metadata)
-
-        array_dfs = None
-        # TODO: For now we just aggregate the nested fields into an array.
-        #   Should we change the gene_expression ES mappings and make these values
-        #   nested and potentially add more fields to them?
-        for nested, alias, field in [
-            ("diagnoses", "diagnosis", "age_at_diagnosis"),
-        ]:
-            nested_df = case_ge_df.\
-                select("case_id", explode(nested).alias(alias)).\
-                select("case_id", "{}.{}".format(alias, field)).\
-                groupby("case_id").\
-                agg(collect_list(field).alias(field))
-
-            if not array_dfs:
-                array_dfs = nested_df
-                continue
-
-            array_dfs = array_dfs.join(nested_df, "case_id")
-
-        case_df = case_ge_df.select(*case_fields).join(array_dfs, "case_id")
-
-        ge_df = ge_counts_df.\
+        # FIXME: should we handle this in `get_gene_expression_metadata` instead?
+        flat_diagnosis_df = initial_df.\
+            select("case_id", explode("diagnoses").alias("diagnosis")).\
+            select("case_id", "diagnosis.age_at_diagnosis").\
             groupby("case_id").\
-            agg(collect_list("expression_data").alias("genes"))
+            agg(collect_list("age_at_diagnosis").alias("age_at_diagnosis"))
 
-        final_df = case_df.join(ge_df, "case_id")
+        case_df = initial_df.select(*(case_fields+["file_url"])).join(flat_diagnosis_df, "case_id")
+
+        ge_df = self._load_gene_expression_files([meta["file_url"] for meta in ge_metadata])
+
+        case_ge_df = case_df.join(ge_df, "file_url")
+
+        gene_expressions = udf(parse_gene_expressions, ArrayType(GeneExpression))
+
+        final_df = case_ge_df.\
+            withColumn("genes", gene_expressions(col("file_content"))).\
+            drop("file_url").\
+            drop("file_content")
 
         return final_df
 
-    def _load_gene_expression_df(self, case_id, file_id):
-        url = get_indexd_url(self.config.indexd, file_id)
+    def _load_gene_expression_files(self, file_urls, batch_size=2):
+        file_batches = []
+        batch_n = 0
 
-        if url is None:
-            self.logger.warning("No url found for file: {}".format(file_id))
-            return None
+        # make batches
+        while batch_n * batch_size < len(file_urls):
+            file_batches.append(file_urls[batch_n * batch_size:(batch_n + 1) * batch_size])
+            batch_n += 1
 
-        ge_schema = StructType(
-            [
-                StructField("gene_id", StringType(), nullable=False),
-                StructField("expression_value", FloatType(), nullable=False),
-            ]
-        )
+        ge_df = None
+        # load GE file content into a single row for further processing
+        for file_batch in file_batches:
+            # Is it too hacky to access a "private" variable here? Should we just
+            # make this DF outside of this builder, where the Spark Context is
+            # available?
+            rdd = self.sqlContext._sc.wholeTextFiles(",".join(file_batch))
+            df_from_rdd = self.sqlContext.createDataFrame(
+                rdd,
+                schema=StructType([
+                    StructField("file_url", StringType()),
+                    StructField("file_content", StringType()),
+                ])
+            )
 
-        ge_df = self.file_to_df(url, header=False, schema=ge_schema)
+            if ge_df is None:
+                ge_df = df_from_rdd
+                continue
 
-        # make an explicit struct, rather than columns
-        ge_df = ge_df.select(struct("gene_id", "expression_value").alias("expression_data"))
-        # add corresponding case_id
-        ge_df = ge_df.withColumn("case_id", lit(case_id))
+            ge_df = ge_df.union(df_from_rdd)
 
         return ge_df
 
