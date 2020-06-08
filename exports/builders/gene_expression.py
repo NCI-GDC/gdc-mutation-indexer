@@ -77,6 +77,8 @@ class ExpressionCountsBuilder(BaseInputBuilder):
         return final_df
 
     def _load_gene_expression_files(self, file_urls, batch_size=500):
+        self.logger.info("Loading gene expression files")
+
         file_batches = []
         batch_n = 0
 
@@ -86,10 +88,12 @@ class ExpressionCountsBuilder(BaseInputBuilder):
             batch_n += 1
 
         ge_df = None
-        # load GE file content into a single row for further processing
-        for file_batch in file_batches:
-            # Is it too hacky to access a "private" variable here? Should we just
-            # make this DF outside of this builder, where the Spark Context is
+        # load gene expression file contents into a single row for further processing
+        for i, file_batch in enumerate(file_batches):
+            self.logger.info("Loading batch {}/{}".format(i+1, len(file_batches)))
+
+            # Is it too hacky to access a "private" property here? Should we just
+            # make this DF outside of this builder, where the Spark context is
             # available?
             rdd = self.sqlContext._sc.wholeTextFiles(",".join(file_batch))
             df_from_rdd = self.sqlContext.createDataFrame(
