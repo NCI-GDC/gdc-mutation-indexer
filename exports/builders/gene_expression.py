@@ -29,7 +29,7 @@ def parse_gene_expressions(include_protein_coding_genes_only, file_content):
     gene_expressions = []
     for row in stripped.split("\n"):
         gene_id, raw_value = row.split("\t")
-        if include_protein_coding_genes_only and genes.is_protein_coding(gene_id):
+        if not include_protein_coding_genes_only or genes.is_protein_coding(gene_id):
             gene_expressions.append(make_row(gene_id, raw_value))
     return gene_expressions
 
