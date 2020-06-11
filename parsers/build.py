@@ -93,5 +93,9 @@ class BuildArgs(BaseParser):
             'skip-es-mafs': {
                 'help': 'Do not query elasticsearch for MAFs. Should be used together with --include-maf-urls option',
                 'action': 'store_true',
+            },
+            'include-protein-coding-genes-only': {
+                'help': 'When processing gene expression data, include only protein-coding genes',
+                'action': 'store_true',
             }
         }

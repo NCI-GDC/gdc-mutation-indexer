@@ -9,6 +9,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
+from exports.builders import genes
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import get_gene_expression_metadata
@@ -19,13 +20,18 @@ GeneExpression = StructType([
 ])
 
 
-def parse_gene_expressions(file_content):
+def parse_gene_expressions(include_protein_coding_genes_only, file_content):
     stripped = file_content.strip()
 
     def make_row(gene_id, raw_value):
         return gene_id, float(raw_value)
 
-    return [make_row(*row.split("\t")) for row in stripped.split("\n")]
+    gene_expressions = []
+    for row in stripped.split("\n"):
+        gene_id, raw_value = row.split("\t")
+        if include_protein_coding_genes_only and genes.is_protein_coding(gene_id):
+            gene_expressions.append(make_row(gene_id, raw_value))
+    return gene_expressions
 
 
 class ExpressionCountsBuilder(BaseInputBuilder):
@@ -67,7 +73,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
         case_ge_df = case_df.join(ge_df, "file_url")
 
-        gene_expressions = udf(parse_gene_expressions, ArrayType(GeneExpression))
+        gene_expressions = udf(partial(parse_gene_expressions, self.config.include_protein_coding_genes_only), ArrayType(GeneExpression))
 
         final_df = case_ge_df.\
             withColumn("genes", gene_expressions(col("file_content"))).\
