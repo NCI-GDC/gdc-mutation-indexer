@@ -98,7 +98,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
     # TODO See if there's any performance difference if we make this return a function
     # so it doesn't have to examine self.
-    @udf(returnType=BooleanType)
+    @udf(returnType=BooleanType())
     def _is_gene_included(self, gene_id):
         return (
             not self.config.include_protein_coding_genes_only
