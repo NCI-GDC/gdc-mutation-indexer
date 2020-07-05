@@ -1,4 +1,12 @@
-from pyspark.sql.functions import collect_list, explode, input_file_name, udf
+from pyspark.sql.functions import (
+    col,
+    collect_list,
+    explode,
+    input_file_name,
+    lit,
+    struct,
+    udf,
+)
 from pyspark.sql.types import (
     BooleanType,
     DoubleType,
@@ -10,7 +18,7 @@ from pyspark.sql.types import (
 from exports.builders import genes
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
-from exports.builders.utils import get_gene_expression_metadata
+from exports.builders.utils import get_gene_expression_metadata, uuid5_col
 
 GeneExpression = StructType([
     StructField("gene_id", StringType()),
@@ -61,6 +69,10 @@ class ExpressionCountsBuilder(BaseInputBuilder):
         ge_df = self._load_gene_expression_files([meta["file_url"] for meta in ge_metadata])
 
         case_ge_df = case_df.join(ge_df, "file_url").drop("file_url")
+        case_ge_df = case_ge_df.withColumn(
+            "gene_expression_id",
+            uuid5_col(lit("gene_expression"), col("case_id"), col("gene.gene_id")),
+        )
 
         return case_ge_df
 
@@ -98,12 +110,16 @@ class ExpressionCountsBuilder(BaseInputBuilder):
             else:
                 ge_df = ge_df.union(batch_df)
 
+        ge_df = ge_df.select(
+            "file_url", struct(GeneExpression.fieldNames()).alias("gene")
+        )
+
         return ge_df
 
 
 class GeneExpressionBuilder(BaseBuilder):
     index_name = "gene_expression"
-    id_field = "case_id"
+    id_field = "gene_expression_id"
 
     def __init__(self, *args, **kwargs):
         super(GeneExpressionBuilder, self).__init__(*args, **kwargs)
