@@ -82,7 +82,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
                 enforceSchema=True,
                 mode="FAILFAST",
             )
-            batch_df = batch_df.filter(self._is_gene_included(batch_df.gene_id))
+            batch_df = batch_df.filter(self._gene_filter_udf()("gene_id"))
             batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if ge_df is None:
@@ -96,14 +96,16 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
         return ge_df
 
-    # TODO See if there's any performance difference if we make this return a function
-    # so it doesn't have to examine self.
-    @udf(returnType=BooleanType())
-    def _is_gene_included(self, gene_id):
-        return (
-            not self.config.include_protein_coding_genes_only
-            or genes.is_protein_coding(gene_id)
-        )
+    def _gene_filter_udf(self):
+        # TODO Someday see if it matters perf-wise if we reference self from in here.
+        @udf(returnType=BooleanType())
+        def _is_gene_included(gene_id):
+            return (
+                not self.config.include_protein_coding_genes_only
+                or genes.is_protein_coding(gene_id)
+            )
+
+        return _is_gene_included
 
 
 class GeneExpressionBuilder(BaseBuilder):
