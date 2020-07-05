@@ -82,7 +82,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
                 enforceSchema=True,
                 mode="FAILFAST",
             )
-            batch_df = batch_df.filter(self._is_gene_included("gene_id"))
+            batch_df = batch_df.filter(self._is_gene_included(batch_df.gene_id))
             batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if ge_df is None:
