@@ -1,9 +1,7 @@
-from functools import partial
-
-from pyspark.sql.functions import col, collect_list, explode, lit, struct, udf
+from pyspark.sql.functions import collect_list, explode, input_file_name, struct, udf
 from pyspark.sql.types import (
-    ArrayType,
-    FloatType,
+    BooleanType,
+    DoubleType,
     StringType,
     StructField,
     StructType,
@@ -16,22 +14,8 @@ from exports.builders.utils import get_gene_expression_metadata
 
 GeneExpression = StructType([
     StructField("gene_id", StringType()),
-    StructField("expression_value", FloatType()),
+    StructField("expression_value", DoubleType()),
 ])
-
-
-def parse_gene_expressions(include_protein_coding_genes_only, file_content):
-    stripped = file_content.strip()
-
-    def make_row(gene_id, raw_value):
-        return gene_id, float(raw_value)
-
-    gene_expressions = []
-    for row in stripped.split("\n"):
-        gene_id, raw_value = row.split("\t")
-        if not include_protein_coding_genes_only or genes.is_protein_coding(gene_id):
-            gene_expressions.append(make_row(gene_id, raw_value))
-    return gene_expressions
 
 
 class ExpressionCountsBuilder(BaseInputBuilder):
@@ -71,52 +55,55 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
         ge_df = self._load_gene_expression_files([meta["file_url"] for meta in ge_metadata])
 
-        case_ge_df = case_df.join(ge_df, "file_url")
+        case_ge_df = case_df.join(ge_df, "file_url").drop("file_url")
 
-        gene_expressions = udf(partial(parse_gene_expressions, self.config.include_protein_coding_genes_only), ArrayType(GeneExpression))
-
-        final_df = case_ge_df.\
-            withColumn("genes", gene_expressions(col("file_content"))).\
-            drop("file_url").\
-            drop("file_content")
-
-        return final_df
+        return case_ge_df
 
     def _load_gene_expression_files(self, file_urls, batch_size=500):
         self.logger.info("Loading gene expression files")
 
-        file_batches = []
-        batch_n = 0
-
-        # make batches
-        while batch_n * batch_size < len(file_urls):
-            file_batches.append(file_urls[batch_n * batch_size:(batch_n + 1) * batch_size])
-            batch_n += 1
-
+        # Batch the URLs so we don't pass 10000+ URLs to Spark all at once.
+        # TODO: Is Spark actually cool with getting 10000+ URLs all at once?
+        file_batches = [
+            file_urls[offset : offset + batch_size]
+            for offset in range(0, len(file_urls), batch_size)
+        ]
+        # Load gene expression file contents, one row per line.
+        # Include the file URL on each line so we can join with the case DF later.
         ge_df = None
-        # load gene expression file contents into a single row for further processing
         for i, file_batch in enumerate(file_batches):
             self.logger.info("Loading batch {}/{}".format(i+1, len(file_batches)))
 
-            # Is it too hacky to access a "private" property here? Should we just
-            # make this DF outside of this builder, where the Spark context is
-            # available?
-            rdd = self.sqlContext._sc.wholeTextFiles(",".join(file_batch))
-            df_from_rdd = self.sqlContext.createDataFrame(
-                rdd,
-                schema=StructType([
-                    StructField("file_url", StringType()),
-                    StructField("file_content", StringType()),
-                ])
+            batch_df = self.sqlContext.read.csv(
+                file_batch,
+                schema=GeneExpression,
+                sep="\t",
+                header=False,
+                enforceSchema=True,
+                mode="FAILFAST",
             )
+            batch_df = batch_df.filter(self._is_gene_included("gene_id"))
+            batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if ge_df is None:
-                ge_df = df_from_rdd
-                continue
+                ge_df = batch_df
+            else:
+                ge_df = ge_df.union(batch_df)
 
-            ge_df = ge_df.union(df_from_rdd)
+        ge_df = ge_df.select(
+            "file_url", struct(GeneExpression.fieldNames()).alias("gene")
+        )
 
         return ge_df
+
+    # TODO See if there's any performance difference if we make this return a function
+    # so it doesn't have to examine self.
+    @udf(returnType=BooleanType)
+    def _is_gene_included(self, gene_id):
+        return (
+            not self.config.include_protein_coding_genes_only
+            or genes.is_protein_coding(gene_id)
+        )
 
 
 class GeneExpressionBuilder(BaseBuilder):
