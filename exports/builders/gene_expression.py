@@ -1,4 +1,4 @@
-from pyspark.sql.functions import collect_list, explode, input_file_name, struct, udf
+from pyspark.sql.functions import collect_list, explode, input_file_name, udf
 from pyspark.sql.types import (
     BooleanType,
     DoubleType,
@@ -97,10 +97,6 @@ class ExpressionCountsBuilder(BaseInputBuilder):
                 ge_df = batch_df
             else:
                 ge_df = ge_df.union(batch_df)
-
-        ge_df = ge_df.select(
-            "file_url", struct(GeneExpression.fieldNames()).alias("gene")
-        )
 
         return ge_df
 
