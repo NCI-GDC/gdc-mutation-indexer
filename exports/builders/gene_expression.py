@@ -87,11 +87,11 @@ class ExpressionCountsBuilder(BaseInputBuilder):
                 enforceSchema=True,
                 mode="FAILFAST",
             )
+            # NOTE: input_file_name gets messed up if not right after the read.
+            batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if self.config.include_protein_coding_genes_only:
                 batch_df = batch_df.filter(is_protein_coding("gene_id"))
-
-            batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if ge_df is None:
                 ge_df = batch_df
