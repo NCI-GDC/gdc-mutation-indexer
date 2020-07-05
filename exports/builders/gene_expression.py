@@ -18,6 +18,11 @@ GeneExpression = StructType([
 ])
 
 
+@udf(returnType=BooleanType())
+def is_protein_coding(gene_id):
+    return genes.is_protein_coding(gene_id)
+
+
 class ExpressionCountsBuilder(BaseInputBuilder):
     def build_from_scratch(self):
         case_fields = [
@@ -82,7 +87,10 @@ class ExpressionCountsBuilder(BaseInputBuilder):
                 enforceSchema=True,
                 mode="FAILFAST",
             )
-            batch_df = batch_df.filter(self._gene_filter_udf()("gene_id"))
+
+            if self.config.include_protein_coding_genes_only:
+                batch_df = batch_df.filter(is_protein_coding("gene_id"))
+
             batch_df = batch_df.withColumn("file_url", input_file_name())
 
             if ge_df is None:
@@ -95,17 +103,6 @@ class ExpressionCountsBuilder(BaseInputBuilder):
         )
 
         return ge_df
-
-    def _gene_filter_udf(self):
-        # TODO Someday see if it matters perf-wise if we reference self from in here.
-        @udf(returnType=BooleanType())
-        def _is_gene_included(gene_id):
-            return (
-                not self.config.include_protein_coding_genes_only
-                or genes.is_protein_coding(gene_id)
-            )
-
-        return _is_gene_included
 
 
 class GeneExpressionBuilder(BaseBuilder):
