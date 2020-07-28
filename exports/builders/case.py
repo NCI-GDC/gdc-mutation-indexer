@@ -47,25 +47,29 @@ class CaseBuilder(object):
             query = json.dumps({'query': {'match_all': {}}})
 
         # Only retrieve the fields we want
-        source = '{}/{}'.format(self.config.graph_index,
-                                self.config.graph_document)
-
         self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
 
-        # Load cases from graph_index
+        # Load cases from graph index
+        if self.config.graph_case_doc_type:
+            es_source = '{}/{}'.format(
+                self.config.graph_case_index, self.config.graph_case_doc_type
+            )
+        else:
+            es_source = self.config.graph_case_index
+
         df = (
             self.sqlContext.read.format("es")
-            .option('es.nodes', self.config.es_nodes)
+            .option('es.nodes', self.config.source_es_nodes)
             .option('es.net.http.auth.user', self.config.source_es_user)
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
-            .option('es.net.ssl', self.config.es_use_ssl)\
-            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)\
+            .option('es.net.ssl', self.config.es_use_ssl)
+            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)
             .option('es.nodes.resolve.hostname', 'false')
             .option('es.query', query)
             .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
-            .option('es.resource.read', source)
-            .load(source)
+            .option('es.resource.read', es_source)
+            .load(es_source)
         )
 
         # Get all the cases that have been tested for ssm

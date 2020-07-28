@@ -143,10 +143,10 @@ def get_case_ids_from_source_es(config, sqlContext):
     query = {'_source': False, 'query': {'bool': {'should': clauses}}}
 
     results = iterate_es_results(
-        config.es,
-        config.graph_index,
-        config.graph_document,
-        query=query
+        config.source_es,
+        index_name=config.graph_case_index,
+        doc_type=config.graph_case_doc_type,
+        query=query,
     )
 
     cases = [{'case_id': hit['_id']} for hit in results]

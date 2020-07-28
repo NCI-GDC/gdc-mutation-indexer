@@ -96,10 +96,6 @@ class BaseConfig(object):
         'observation': 'observation.yml',
     }
 
-    # Used for loading case/graph documents from a different es cluster
-    # The graph_index name is set by the environment/command line parser.
-    graph_document = 'case'
-
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
@@ -160,19 +156,47 @@ class BaseConfig(object):
         :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
         """
         self.assign_all_parameters(env_dict=env_dict)
+
+        # If we're configured to read from ES 5, configure the old doc types.
+        # For ES 7, assume doc types don't exist.
+        if self.old_graph_index:
+            self.graph_case_index = self.old_graph_index
+            self.graph_file_index = self.old_graph_index
+            self.graph_case_doc_type = 'case'
+            self.graph_file_doc_type = 'file'
+        else:
+            self.graph_case_doc_type = None
+            self.graph_file_doc_type = None
+
+        # If source es creds not assigned, set them to ones of output es
+        for key in ['nodes', 'user', 'pass']:
+            param_name = 'source_es_{}'.format(key)
+            if getattr(self, param_name) == '':
+                value = getattr(self, 'es_{}'.format(key))
+                setattr(self, param_name, value)
+
         # aliquot should be synced with maf, don't allow users to deviate
         self.aliquot_backup = self.maf_backup
+
         self.es = Elasticsearch(
-            self.es_host,
-            port=self.es_port,
+            self.es_nodes.split(','),
             use_ssl=self.es_use_ssl,
             verify_certs=not self.disable_es_verify_certs,
             http_auth=(self.es_user, self.es_pass)
         )
+
+        self.source_es = Elasticsearch(
+            self.source_es_nodes.split(','),
+            use_ssl=self.es_use_ssl,
+            verify_certs=not self.disable_es_verify_certs,
+            http_auth=(self.source_es_user, self.source_es_pass)
+        )
+
         self.indexd = IndexClient(
             baseurl='{}:{}'.format(self.indexd_host, self.indexd_port),
             auth=(self.indexd_user, self.indexd_pass)
         )
+
         self.indices = self.get_index_names()
         self.maf_urls = self.get_maf_urls()
         self.maf_file_names = self.get_maf_file_names()
@@ -283,7 +307,7 @@ class BaseConfig(object):
     def get_maf_urls(self):
         """
         Returns list of relevant maf_urls
-        - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
+        - gets maf file_id-s from elasticsearch "{self.graph_file_index}" index
         - gets corresponding urls from indexd
         """
         if self.skip_es_mafs:
@@ -298,9 +322,16 @@ class BaseConfig(object):
             }
         }
 
-        file_id_to_name = {}
-        for doc in iterate_es_results(self.es, self.graph_index, 'file', query=query):
-            file_id_to_name[doc['_id']] = doc['_source']['file_name']
+        es_result_iterator = iterate_es_results(
+            self.source_es,
+            index_name=self.graph_file_index,
+            doc_type=self.graph_file_doc_type,
+            query=query,
+        )
+
+        file_id_to_name = {
+            doc['_id']: doc['_source']['file_name'] for doc in es_result_iterator
+        }
 
         # Get urls from indexd for relevant files
         maf_urls = self.include_maf_urls + []
@@ -431,13 +462,21 @@ class BaseConfig(object):
         would become `samples.portions`) so they can be excluded. It will
         keep any field in `samples_include_fields`
         """
-        samples_mapping = self.es.indices.get_field_mapping(
-            index=self.graph_index,
-            doc_type=self.graph_document,
-            fields='samples.*')
+        samples_mapping = self.source_es.indices.get_field_mapping(
+            index=self.graph_case_index,
+            doc_type=self.graph_case_doc_type,
+            fields='samples.*'
+        )
+
         index_name = samples_mapping.keys()[0]
-        fields = samples_mapping[index_name]['mappings']['case'].keys()
+        if self.graph_case_doc_type:
+            mapping = samples_mapping[index_name]['mappings'][self.graph_case_doc_type]
+        else:
+            mapping = samples_mapping[index_name]['mappings']
+
+        fields = mapping.keys()
         fields_to_exclude = {'.'.join(x.split('.', 2)[:2]) for x in fields}
+
         return list(fields_to_exclude - set(self.samples_include_fields))
 
     def list_bucket(self, bucket_name):
