@@ -12,7 +12,7 @@ SCRIPT
 $es_setup = <<-SCRIPT
 if [ ! -f elasticsearch-${ES_VERSION}.deb ]
 then
-  curl -O -s https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
+  curl -O -s https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
   sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
@@ -20,7 +20,7 @@ fi
 
 if [ ! -f /mnt/swap.file ]
 then
-  sudo fallocate -l 1G /mnt/swap.file
+  sudo fallocate -l 5G /mnt/swap.file
   sudo mkswap /mnt/swap.file
   sudo swapon /mnt/swap.file
 fi
@@ -38,7 +38,7 @@ fi
 
 if [ ! -d elasticsearch-hadoop-${ES_VERSION} ]
 then
-  wget --progress=bar:force https://artifacts.elastic.co/downloads/elasticsearch-hadoop-${ES_VERSION}.zip
+  wget --progress=bar:force  http://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   unzip elasticsearch-hadoop-${ES_VERSION}.zip
 fi
 
@@ -55,9 +55,10 @@ fi
 virtualenv /home/vagrant/venv
 source /home/vagrant/venv/bin/activate
 ssh-keyscan github.com >> /home/vagrant/.ssh/known_hosts
-pip install -r /vagrant/requirements.txt
-pip install -r /vagrant/dev-requirements.txt
-python /vagrant/setup.py develop
+cd /vagrant
+pip install -r requirements.txt
+pip install -r dev-requirements.txt
+python setup.py develop
 SCRIPT
 
 

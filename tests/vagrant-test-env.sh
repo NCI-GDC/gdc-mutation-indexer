@@ -1,5 +1,5 @@
 export SPARK_VERSION=2.4.5
-export ES_VERSION=5.6.14
+export ES_VERSION=7.6.2
 export BOTO_CONFIG=/dev/null
 export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 export PATH="${JAVA_HOME}/bin:${PATH}"
