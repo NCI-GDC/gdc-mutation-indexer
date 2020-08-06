@@ -167,6 +167,7 @@ class TestBaseConfig(object):
         """
         base_config.build_label = 'open_index'
         base_config.study_label = ''
+        base_config.index_types += ["gene_expression"]
 
         indices = base_config.get_index_names()
 
@@ -177,6 +178,7 @@ class TestBaseConfig(object):
             'gene_centric': 'open_index__gene_centric',
             'ssm_centric': 'open_index__ssm_centric',
             'ssm_occurrence_centric': 'open_index__ssm_occurrence_centric',
+            "gene_expression": "open_index__gene_expression",
         }
 
     def test_get_index_names__controlled(self, base_config):
@@ -197,6 +199,15 @@ class TestBaseConfig(object):
             'ssm_centric': 'dr123__ssm_centric__fm__controlled',
             'ssm_occurrence_centric': 'dr123__ssm_occurrence_centric__fm__controlled',
         }
+
+    def test_get_index_names__gene_expression__controlled__throws_errror(self, base_config):
+        """Test unsupported controlled indices"""
+        base_config.build_label = "dr123"
+        base_config.study_label = "fm"
+        base_config.index_types += ["gene_expression"]
+
+        with pytest.raises(ValueError):
+            base_config.get_index_names()
 
     def test_get_index_names__double_underscore(self, base_config):
         """Confirm double underscores are disallowed in build and study labels.

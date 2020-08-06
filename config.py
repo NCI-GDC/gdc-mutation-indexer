@@ -270,6 +270,9 @@ class BaseConfig(object):
             )
 
         if self.study_label:
+            if "gene_expression" in self.index_types:
+                raise ValueError("gene_expression does not support study")
+
             if '__' in self.study_label:
                 raise ValueError(
                     'Double underscores not allowed in study label '
@@ -286,8 +289,7 @@ class BaseConfig(object):
             index_type: template.format(index_type) for index_type in self.index_types
         }
 
-        if "gene_expression" not in indices or len(indices) > 1:
-            self.validate_indices(indices)
+        self.validate_indices(indices)
 
         return indices
 

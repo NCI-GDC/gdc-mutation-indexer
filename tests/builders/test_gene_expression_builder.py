@@ -1,3 +1,5 @@
+from collections import Counter
+import csv
 import json
 import os
 
@@ -10,26 +12,48 @@ from exports.builders.gene_expression import (
 )
 from tests_config import TestConfig
 
-conf = TestConfig()
+
+@pytest.fixture(scope="module")
+def ge_conf():
+    conf = TestConfig()
+    conf.index_types = ["gene_expression"]
+    conf.indices = conf.get_index_names()
+
+    return conf
+
+
+@pytest.fixture(scope="module")
+def expected_genes(ge_conf):
+    path = os.path.join(ge_conf.input_dir, "ge")
+
+    gene_counts = Counter()
+    for p in os.listdir(path):
+        fpath = os.path.join(path, p)
+        print(fpath)
+        with open(fpath) as f:
+            reader = csv.reader(f, delimiter="\t")
+            gene_counts.update([row[0] for row in reader])
+
+    return gene_counts
 
 
 @pytest.fixture
-def ge_builder(sqlContext):
-    builder = GeneExpressionBuilder(conf, sqlContext)
+def ge_builder(sqlContext, ge_conf):
+    builder = GeneExpressionBuilder(ge_conf, sqlContext)
 
     return builder
 
 
 @pytest.fixture
-def expression_counts_builder(sqlContext):
-    builder = ExpressionCountsBuilder(conf, sqlContext, "gene_expression")
+def expression_counts_builder(sqlContext, ge_conf):
+    builder = ExpressionCountsBuilder(ge_conf, sqlContext, "gene_expression")
 
     return builder
 
 
 @pytest.fixture
-def mock_indexd_requests(monkeypatch):
-    path = os.path.join(conf.input_dir, "ge")
+def mock_indexd_requests(monkeypatch, ge_conf):
+    path = os.path.join(ge_conf.input_dir, "ge")
 
     existing_files = os.listdir(path)
 
@@ -66,43 +90,61 @@ def mock_indexd_requests(monkeypatch):
 
 
 @pytest.fixture
-def ge_file_docs(source_es_client):
-    path = os.path.join(conf.input_dir, "ge-files.json")
+def ge_file_docs(source_es_client, ge_conf):
+    path = os.path.join(ge_conf.input_dir, "ge-files.json")
     with open(path) as f:
         docs = json.load(f)
 
     for doc in docs:
         source_es_client.index(
-            index=conf.graph_file_index,
-            doc_type=conf.graph_file_doc_type,
+            index=ge_conf.graph_file_index,
+            doc_type=ge_conf.graph_file_doc_type,
             id=doc["file_id"],
             body=doc,
         )
 
-    source_es_client.indices.refresh(conf.graph_file_index)
+    source_es_client.indices.refresh(ge_conf.graph_file_index)
 
     yield docs
 
     for doc in docs:
         source_es_client.delete(
-            index=conf.graph_file_index,
-            doc_type=conf.graph_file_doc_type,
+            index=ge_conf.graph_file_index,
+            doc_type=ge_conf.graph_file_doc_type,
             id=doc["file_id"],
         )
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
-def test_gene_expression_builder(ge_builder, es_client, expression_counts_builder):
+def test_gene_expression_builder(ge_builder, es_client, expression_counts_builder,
+                                 ge_conf, expected_genes):
     counts_df = expression_counts_builder.build_from_scratch()
     ge_builder.build(counts_df).load()
 
     es_client.indices.refresh()
 
-    response = es_client.search(index=conf.indices["gene_expression"])
+    response = es_client.search(index=ge_conf.indices["gene_expression"])
     hits = response["hits"]
 
     assert hits["total"] == {"relation": "eq", "value": 5}
+
+    # Make sure that "genes" field is excluded from source
     for hit in hits["hits"]:
-        for gene in hit["_source"]["genes"]:
-            assert "gene_id" in gene
-            assert "expression_value" in gene
+        assert "genes" not in hit
+
+    # Make sure that correct values have been indexed
+    aggs = {
+        "genes": {
+            "nested": {"path": "genes"},
+            "aggs": {
+                "gene_counts": {"terms": {"field": "genes.gene_id", "size": 200}},
+            }
+        }
+    }
+
+    agg_response = es_client.search(index=ge_conf.indices["gene_expression"],
+                                    body={"size": 0, "aggs": aggs})
+    gene_counts = agg_response["aggregations"]["genes"]
+
+    assert gene_counts["doc_count"] == sum(expected_genes.values())
+    assert len(gene_counts["gene_counts"]["buckets"]) == len(expected_genes)

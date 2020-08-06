@@ -54,7 +54,6 @@ class BuildArgs(BaseParser):
                     'case_centric', 'gene_centric',
                     'ssm_centric', 'ssm_occurrence_centric',
                     'cnv_centric', 'cnv_occurrence_centric',
-                    "gene_expression",
                 ],
             },
             'maf-backup': {
