@@ -11,7 +11,7 @@ class BaseInputBuilder(object):
 
     def __init__(self, config, sqlContext, input_type):
         """
-        :input_type in ['gistic', 'maf', 'aliquot']
+        :input_type in ['gistic', 'maf', 'aliquot', 'gene_expression']
         """
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -117,18 +117,17 @@ class BaseInputBuilder(object):
 
         return df
 
-    def file_to_df(self, url, data_format='tsv'):
+    def file_to_df(self, url, data_format='tsv', header=True, schema=None):
         """
         Read a single file from the given s3 url and return as dataframe
         """
         if data_format in ['csv', 'tsv']:
             delimiter = '\t' if data_format == 'tsv' else ','
             return self.sqlContext.read.format('com.databricks.spark.csv')\
-                       .options(header='true')\
                        .options(comment="#")\
                        .options(delimiter=delimiter)\
                        .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                       .load(url)
+                       .load(url, header=header, schema=schema)
         elif data_format == 'parquet':
             return self.sqlContext.read.parquet(url)
         else:

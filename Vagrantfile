@@ -10,9 +10,9 @@ SCRIPT
 
 
 $es_setup = <<-SCRIPT
-if [ ! -f elasticsearch-${ES_VERSION}.deb ]
+if [ ! -f elasticsearch-${ES_VERSION}-amd64.deb ]
 then
-  curl -O -s https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
+  curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
   sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
@@ -25,6 +25,7 @@ then
   sudo swapon /mnt/swap.file
 fi
 
+sudo chown elasticsearch /etc/default/elasticsearch
 sudo service elasticsearch restart
 SCRIPT
 
@@ -38,7 +39,7 @@ fi
 
 if [ ! -d elasticsearch-hadoop-${ES_VERSION} ]
 then
-  wget --progress=bar:force https://artifacts.elastic.co/downloads/elasticsearch-hadoop-${ES_VERSION}.zip
+  wget --progress=bar:force https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   unzip elasticsearch-hadoop-${ES_VERSION}.zip
 fi
 
@@ -76,7 +77,7 @@ Vagrant.configure("2") do |config|
 
   # Give some extra RAM juice
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 2048
+    vb.memory = 4096
     vb.cpus = 2
   end
 
