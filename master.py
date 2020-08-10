@@ -5,14 +5,12 @@ import os
 import pprint
 import subprocess
 from functools import partial
-from itertools import cycle
-from time import sleep, time
 
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import ConnectionTimeout
 
 from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
+from gdcmodels.esutils import force_merge_elasticsearch_indices
 
 from parsers import (
     ParserBuilder,
@@ -135,7 +133,7 @@ def confirm_args(args):
         on_decline=no_op,
     )
 
-    return
+    return config
 
 
 def get_spark_args(args):
@@ -211,43 +209,26 @@ def get_submit_command(args):
     return command
 
 
-def force_merge_elasticsearch_segments(args):
-    es = Elasticsearch(
+def get_elasticsearch(args):
+    return Elasticsearch(
         args.es_nodes.split(","),
         use_ssl=args.es_use_ssl,
         verify_certs=not args.disable_es_verify_certs,
         http_auth=(args.es_user, args.es_pass),
     )
 
-    spinning_cursor = iter(cycle("|/-\\"))
-    start = time()
-    try:
-        print("Starting merging segments.")
-        res = es.indices.forcemerge(max_num_segments=1)
-        print(res)
-    except ConnectionTimeout:
-        while True:
-            res = es.nodes.stats(metric="thread_pool")
-            active_count = sum(
-                stat["thread_pool"]["force_merge"]["active"]
-                for stat in res["nodes"].values()
-            )
-            if active_count == 0:
-                break
-            print(
-                "\r{} still merging.".format(next(spinning_cursor), active_count),
-                end="",
-            )
-            sleep(1)
-    finally:
-        print("{}: Finished merging.".format(time() - start))
+
+def get_created_indices(es, indices):
+    return [index for index in indices if es.indices.exists(index)]
 
 
 if __name__ == "__main__":
     # Parse and confirm arguments
     args = parse_args()
-    confirm_args(args)
+    config = confirm_args(args)
     # Assemble and run the command
     command = get_submit_command(args)
     subprocess.call(command)
-    force_merge_elasticsearch_segments(args)
+    es = get_elasticsearch(args)
+    indices = get_created_indices(es, config.indices.values())
+    force_merge_elasticsearch_indices(es, indices)
