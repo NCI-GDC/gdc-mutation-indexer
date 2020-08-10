@@ -170,6 +170,169 @@ def get_case_ids_from_source_es(config, sqlContext):
     return cases_df
 
 
+def _create_gene_expression_files_query(
+    sample_types,
+    acl=("open",),
+    workflow_types=None,
+    projects=None,
+):
+    if workflow_types is None:
+        workflow_types = ["HTSeq - FPKM-UQ"]
+
+    data_type_clause = {"terms": {"data_type": ["Gene Expression Quantification"]}}
+    acl_clause = {"terms": {"acl": acl}}
+    sample_type_clause = {
+        "nested": {
+            "path": "cases.samples",
+            "query": {"terms": {"cases.samples.sample_type": sample_types}}
+        }
+    }
+    analysis_type_clause = {"terms": {"analysis.workflow_type": workflow_types}}
+
+    musts = [data_type_clause, acl_clause, sample_type_clause, analysis_type_clause]
+
+    if projects:
+        projects_clause = {
+            "nested": {
+                "path": "cases",
+                "query": {"terms": {"cases.project.project_id": projects}},
+            }
+        }
+        musts.append(projects_clause)
+
+    return {"bool": {"must": musts}}
+
+
+def _select_random_gene_expressions(es_hits):
+    """
+    Pick first gene expression file for a case and ignore the others, return
+    a file_id to case metadata mapping
+    """
+    marked_cases = set()
+    file_map = {}
+
+    for hit in es_hits:
+        file_id = hit["_id"]
+        case = hit["_source"]["cases"][0]
+        case_id = case["case_id"]
+
+        if case_id in marked_cases:
+            continue
+
+        # we select the first expression we see for a given case
+        marked_cases.add(case_id)
+        case["file_id"] = file_id
+        file_map[file_id] = case
+
+    return file_map
+
+
+def is_main_url(metadata):
+    """
+    Check if given metadata corresponds to main IndexD URL:
+        * type == cleversafe
+        * state == validated
+
+    Returns:
+        bool: True if main URL, False otherwise
+    """
+    return (
+        metadata.get("type") in ["cleversafe"] and
+        metadata.get("state") == "validated"
+    )
+
+
+def get_and_format_url(doc):
+    """
+    Select main IndexD url if one exist and format it to something that Spark
+    understands
+
+    Args:
+        doc (indexclient.client.Document): IndexD document to extract URL from
+
+    Returns:
+        str: formatted main URL
+    """
+    for url, meta in doc.urls_metadata.items():
+        if is_main_url(meta):
+            url = url.replace("s3://", "s3a://").replace("cleversafe.service.consul/", "")
+            return url
+    return None
+
+
+def _get_main_urls(indexd_client, file_ids):
+    """
+    Construct a {file_id -> url} mapping, where url is a main URL for each file_id
+
+    Args:
+        indexd_client (indexclient.client.IndexClient): indexd client
+        file_ids (list): a list of file_ids
+
+    Returns:
+        dict: file_id to main url mapping
+    """
+    urls_map = {}
+
+    batch_n = 0
+    batch_size = 1000
+
+    batches = []
+    while batch_n * batch_size < len(file_ids):
+        batches.append(file_ids[batch_n*batch_size:(batch_n+1)*batch_size])
+        batch_n += 1
+
+    for batch_ids in batches:
+        docs = indexd_client.bulk_request(batch_ids)
+
+        for doc in docs:
+            urls_map[doc.did] = get_and_format_url(doc)
+
+    return urls_map
+
+
+def get_gene_expression_metadata(
+    config,
+    sample_types,
+    source=None,
+    gene_expression_selector=_select_random_gene_expressions,
+):
+    """
+    Query ES graph file index to extract case and gene expression metadata,
+    return the results in a list
+    """
+    query = _create_gene_expression_files_query(sample_types, projects=config.projects)
+
+    if source is None:
+        source = ["cases.case_id", "cases.samples.sample_type"]
+
+    body = {
+        "_source": source,
+        "query": query,
+    }
+
+    results = iterate_es_results(
+        config.source_es,
+        index_name=config.graph_file_index,
+        doc_type=config.graph_file_doc_type,
+        query=body,
+    )
+
+    file_map = gene_expression_selector(results)
+
+    urls_map = _get_main_urls(config.indexd, list(file_map))
+
+    files = []
+    for file_id, url in urls_map.items():
+        if url is None:
+            logger.warning("File is missing: '{}'".format(file_id))
+        else:
+            meta = file_map[file_id]
+            meta["file_url"] = url
+            files.append(meta)
+
+    return files
+
+
 def ssm_label_col(chromosome,
                   variant_type, start_pos, end_pos, ref_allele, tumor_allele):
     return udf(ssm_label, StringType())(chromosome, variant_type, start_pos,

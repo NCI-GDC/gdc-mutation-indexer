@@ -115,6 +115,9 @@ def confirm_args(args):
 
     logger.info("Validating differences in mappings...")
 
+    if "gene_expression" in config.indices and len(config.indices) == 1:
+        return
+
     non_null_fields = get_non_null_fields(config)
 
     if not non_null_fields:
