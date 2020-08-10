@@ -58,7 +58,7 @@ def mock_indexd_requests(monkeypatch, ge_conf):
     existing_files = os.listdir(path)
 
     def make_document(file_id, filename):
-        url = "file:" + os.path.join(path, filename)
+        url = "file://" + os.path.join(path, filename)
         urls = [url]
         urls_metadata = {url: {"type": "cleversafe", "state": "validated"}}
         return Document(
