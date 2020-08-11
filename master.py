@@ -213,7 +213,7 @@ def get_submit_command(args):
 
 
 def get_created_indices(es, indices):
-    return [index for index in indices if es.indices.exists(index)]
+    return ','.join(index for index in indices if es.indices.exists(index))
 
 
 if __name__ == "__main__":
