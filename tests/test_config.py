@@ -200,7 +200,7 @@ class TestBaseConfig(object):
             'ssm_occurrence_centric': 'dr123__ssm_occurrence_centric__fm__controlled',
         }
 
-    def test_get_index_names__gene_expression__controlled__throws_errror(self, base_config):
+    def test_get_index_names__gene_expression__controlled__throws_error(self, base_config):
         """Test unsupported controlled indices"""
         base_config.build_label = "dr123"
         base_config.study_label = "fm"

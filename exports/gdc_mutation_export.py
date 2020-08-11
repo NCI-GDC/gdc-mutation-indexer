@@ -12,6 +12,7 @@ from builders import (
     CaseBuilder,
     CaseCentricBuilder,
     GeneCentricBuilder,
+    GeneExpressionBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
@@ -34,6 +35,7 @@ class GDCMutationExport(object):
         self.builders = [
             CaseCentricBuilder,
             GeneCentricBuilder,
+            GeneExpressionBuilder,
             SSMCentricBuilder,
             SSMOccurrenceCentricBuilder,
             CNVCentricBuilder,
@@ -58,18 +60,23 @@ class GDCMutationExport(object):
 
         for builder in self.builders:
             index_name = builder.index_name
-            if index_name in self.config.index_types:
-                self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
-                if index_name == 'case_centric':
-                    builder(self.config, self.sqlContext).build(maf_df, gistic_df, case_df).load()
-                elif index_name in ['ssm_centric', 'ssm_occurrence_centric']:
-                    # these builders do not yet depend on gistic_df
-                    builder(self.config, self.sqlContext).build(maf_df, sub_case_df).load()
-                elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
-                    # these builders do not depend on maf_df
-                    builder(self.config, self.sqlContext).build(gistic_df, sub_case_df).load()
-                else:
-                    builder(self.config,
-                            self.sqlContext).build(maf_df, gistic_df, sub_case_df).load()
+
+            if index_name not in self.config.index_types:
+                continue
+
+            self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
+            if index_name == 'case_centric':
+                builder(self.config, self.sqlContext).build(maf_df, gistic_df, case_df).load()
+            elif index_name == "gene_expression":
+                builder(self.config, self.sqlContext).build().load()
+            elif index_name in ['ssm_centric', 'ssm_occurrence_centric']:
+                # these builders do not yet depend on gistic_df
+                builder(self.config, self.sqlContext).build(maf_df, sub_case_df).load()
+            elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
+                # these builders do not depend on maf_df
+                builder(self.config, self.sqlContext).build(gistic_df, sub_case_df).load()
+            else:
+                builder(self.config,
+                        self.sqlContext).build(maf_df, gistic_df, sub_case_df).load()
 
         self.logger.info('Mutation Indexer finished successfully')

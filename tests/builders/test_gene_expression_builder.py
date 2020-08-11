@@ -8,7 +8,6 @@ import pytest
 
 from exports.builders.gene_expression import (
     GeneExpressionBuilder,
-    ExpressionCountsBuilder,
 )
 from tests_config import TestConfig
 
@@ -22,31 +21,9 @@ def ge_conf():
     return conf
 
 
-@pytest.fixture(scope="module")
-def expected_genes(ge_conf):
-    path = os.path.join(ge_conf.input_dir, "ge")
-
-    gene_counts = Counter()
-    for p in os.listdir(path):
-        fpath = os.path.join(path, p)
-        print(fpath)
-        with open(fpath) as f:
-            reader = csv.reader(f, delimiter="\t")
-            gene_counts.update([row[0] for row in reader])
-
-    return gene_counts
-
-
 @pytest.fixture
 def ge_builder(sqlContext, ge_conf):
     builder = GeneExpressionBuilder(ge_conf, sqlContext)
-
-    return builder
-
-
-@pytest.fixture
-def expression_counts_builder(sqlContext, ge_conf):
-    builder = ExpressionCountsBuilder(ge_conf, sqlContext, "gene_expression")
 
     return builder
 
@@ -116,10 +93,8 @@ def ge_file_docs(source_es_client, ge_conf):
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
-def test_gene_expression_builder(ge_builder, es_client, expression_counts_builder,
-                                 ge_conf, expected_genes):
-    counts_df = expression_counts_builder.build_from_scratch()
-    ge_builder.build(counts_df).load()
+def test_gene_expression_builder(ge_builder, es_client, ge_conf):
+    ge_builder.build().load()
 
     es_client.indices.refresh()
 
@@ -146,5 +121,6 @@ def test_gene_expression_builder(ge_builder, es_client, expression_counts_builde
                                     body={"size": 0, "aggs": aggs})
     gene_counts = agg_response["aggregations"]["genes"]
 
-    assert gene_counts["doc_count"] == sum(expected_genes.values())
-    assert len(gene_counts["gene_counts"]["buckets"]) == len(expected_genes)
+    # Make sure that only protein_coding genes have been selected (mock data contains only 10)
+    assert gene_counts["doc_count"] == 50
+    assert len(gene_counts["gene_counts"]["buckets"]) == 10
