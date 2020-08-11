@@ -1,5 +1,3 @@
-from functools import partial
-
 from pyspark.sql.functions import (
     col,
     collect_list,
@@ -18,7 +16,6 @@ from pyspark.sql.types import (
 )
 
 from exports.builders.base_builder import BaseBuilder
-from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import get_gene_expression_metadata
 
 
@@ -48,15 +45,6 @@ GeneExpression = StructType([
 @udf(returnType=StringType())
 def trim_gene_id(raw_gene_id):
     return raw_gene_id.split(".")[0]
-
-
-def parse_gene_expressions(file_content):
-    stripped = file_content.strip()
-
-    def make_row(gene_id, raw_value):
-        return gene_id, float(raw_value)
-
-    return [make_row(*row.split("\t")) for row in stripped.split("\n")]
 
 
 class GeneExpressionBuilder(BaseBuilder):

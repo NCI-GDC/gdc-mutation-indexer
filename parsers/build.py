@@ -51,9 +51,13 @@ class BuildArgs(BaseParser):
                 'help': 'List of pipelines to build',
                 'nargs': '*',
                 'default': [
-                    'case_centric', 'gene_centric',
-                    'ssm_centric', 'ssm_occurrence_centric',
-                    'cnv_centric', 'cnv_occurrence_centric',
+                    "case_centric",
+                    "gene_centric",
+                    "ssm_centric",
+                    "ssm_occurrence_centric",
+                    "cnv_centric",
+                    "cnv_occurrence_centric",
+                    "gene_expression",
                 ],
             },
             'maf-backup': {

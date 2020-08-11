@@ -270,9 +270,6 @@ class BaseConfig(object):
             )
 
         if self.study_label:
-            if "gene_expression" in self.index_types:
-                raise ValueError("gene_expression does not support study")
-
             if '__' in self.study_label:
                 raise ValueError(
                     'Double underscores not allowed in study label '

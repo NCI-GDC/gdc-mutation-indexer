@@ -5,9 +5,11 @@ import os
 
 from indexclient.client import IndexClient, Document
 import pytest
+from pyspark.sql.functions import col
 
 from exports.builders.gene_expression import (
     GeneExpressionBuilder,
+    trim_gene_id,
 )
 from tests_config import TestConfig
 
@@ -90,6 +92,16 @@ def ge_file_docs(source_es_client, ge_conf):
             doc_type=ge_conf.graph_file_doc_type,
             id=doc["file_id"],
         )
+
+
+def test_trim_gene_version(sqlContext):
+    df = sqlContext.createDataFrame(
+        [{"raw_gene_id": "ENS001.1"}, {"raw_gene_id": "ENS002.2"}]
+    )
+
+    new_df = df.withColumn("gene_id", trim_gene_id(col("raw_gene_id")))
+
+    assert {row["gene_id"] for row in new_df.collect()} == {"ENS001", "ENS002"}
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")

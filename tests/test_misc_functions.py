@@ -236,4 +236,8 @@ class TestMiscFunctions:
         """
         data = TestDataStats.load_test_data(conf.input_dir)
         stats = TestDataStats.get_stats(maf_df, gistic_df, data, index)
-        assert stats is not None
+
+        if index in ["gene_expression"]:
+            assert stats is None
+        else:
+            assert stats is not None
