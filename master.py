@@ -1,12 +1,8 @@
-from __future__ import print_function
-
 import logging
 import os
 import pprint
 import subprocess
 from functools import partial
-
-from elasticsearch import Elasticsearch
 
 from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
@@ -213,7 +209,7 @@ def get_submit_command(args):
 
 
 def get_created_indices(es, indices):
-    return ','.join(index for index in indices if es.indices.exists(index))
+    return [index for index in indices if es.indices.exists(index)]
 
 
 if __name__ == "__main__":
