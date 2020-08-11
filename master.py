@@ -10,7 +10,7 @@ from elasticsearch import Elasticsearch
 
 from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
-from gdcmodels.esutils import force_merge_elasticsearch_indices
+from gdcmodels import esutils
 
 from parsers import (
     ParserBuilder,
@@ -212,15 +212,6 @@ def get_submit_command(args):
     return command
 
 
-def get_elasticsearch(args):
-    return Elasticsearch(
-        args.es_nodes.split(","),
-        use_ssl=args.es_use_ssl,
-        verify_certs=not args.disable_es_verify_certs,
-        http_auth=(args.es_user, args.es_pass),
-    )
-
-
 def get_created_indices(es, indices):
     return [index for index in indices if es.indices.exists(index)]
 
@@ -232,6 +223,9 @@ if __name__ == "__main__":
     # Assemble and run the command
     command = get_submit_command(args)
     subprocess.call(command)
-    es = get_elasticsearch(args)
+    es = config.es
+    # mutation indexer might have failed after building a subset of the indices
+    # but the ones that were built might still be good, so we want to force-merge
+    # whatever we have, force merge will fail if non exist index name in the list
     indices = get_created_indices(es, config.indices.values())
-    force_merge_elasticsearch_indices(es, indices)
+    esutils.force_merge_elasticsearch_indices(es, indices)
