@@ -1,11 +1,12 @@
-import subprocess
 import logging
-import pprint
 import os
+import pprint
+import subprocess
 from functools import partial
 
 from psqlgraph import PsqlGraphDriver
 from gdcdatamodel import models as md
+from gdcmodels import esutils
 
 from parsers import (
     ParserBuilder,
@@ -40,8 +41,9 @@ def get_release_info():
         os.environ["PG_NAME"],
     )
     with postgres_driver.session_scope():
-        release_node = (postgres_driver.nodes(md.DataRelease)
-                                       .props(released=False).first())
+        release_node = (
+            postgres_driver.nodes(md.DataRelease).props(released=False).first()
+        )
     release_name = release_node.name
     version = [release_node.major_version, release_node.minor_version]
     return release_name, version
@@ -51,10 +53,7 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
-    parser = ParserBuilder.build(
-        ALL_PARSERS,
-        description='Mutation Indexer',
-    )
+    parser = ParserBuilder.build(ALL_PARSERS, description="Mutation Indexer",)
     args = parser.parse_args()
     return args
 
@@ -70,11 +69,10 @@ def raise_on_decline():
     """
     Raise a generic exception
     """
-    raise Exception('User refused to continue')
+    raise Exception("User refused to continue")
 
 
-def user_confirm(prompt_string, log, on_confirm=no_op,
-                 on_decline=raise_on_decline):
+def user_confirm(prompt_string, log, on_confirm=no_op, on_decline=raise_on_decline):
     """
     Prompt user confirmation to proceed
 
@@ -86,12 +84,12 @@ def user_confirm(prompt_string, log, on_confirm=no_op,
     while True:
         log.info(prompt_string)
         ans = raw_input().lower()
-        if ans in ['y', 'yes']:
+        if ans in ["y", "yes"]:
             return on_confirm()
-        elif ans in ['n', 'no']:
+        elif ans in ["n", "no"]:
             return on_decline()
         else:
-            log.error('Invalid answer: {}'.format(ans))
+            log.error("Invalid answer: {}".format(ans))
 
 
 def confirm_args(args):
@@ -107,9 +105,8 @@ def confirm_args(args):
 
     # Confirm with user
     user_confirm(
-        "Will build indices:\n{}\nContinue?".format(
-            pprint.pformat(config.indices)),
-        logger
+        "Will build indices:\n{}\nContinue?".format(pprint.pformat(config.indices)),
+        logger,
     )
 
     logger.info("Validating differences in mappings...")
@@ -135,7 +132,7 @@ def confirm_args(args):
         on_decline=no_op,
     )
 
-    return
+    return config
 
 
 def get_spark_args(args):
@@ -143,25 +140,26 @@ def get_spark_args(args):
     Returns list of spark related command line arguments and values for `spark-submit`
     """
     # Get list of eggs and jars to upload
-    jars_dir = os.path.join(ROOT_DIR, 'artifacts', 'jars')
-    eggs_dir = os.path.join(ROOT_DIR, 'artifacts', 'eggs')
+    jars_dir = os.path.join(ROOT_DIR, "artifacts", "jars")
+    eggs_dir = os.path.join(ROOT_DIR, "artifacts", "eggs")
     jars = [os.path.join(jars_dir, j) for j in os.listdir(jars_dir)]
     eggs = [os.path.join(eggs_dir, e) for e in os.listdir(eggs_dir)]
-    app_egg = 'gdc_mutation_indexer-{}_rev_{}-py2.7.egg'.format(VERSION,
-                                                                get_git_commit(ROOT_DIR))
-    eggs.append(os.path.join(ROOT_DIR, 'dist', app_egg))
-    spark_args = ['--py-files', ','.join(eggs), '--jars', ','.join(jars)]
+    app_egg = "gdc_mutation_indexer-{}_rev_{}-py2.7.egg".format(
+        VERSION, get_git_commit(ROOT_DIR)
+    )
+    eggs.append(os.path.join(ROOT_DIR, "dist", app_egg))
+    spark_args = ["--py-files", ",".join(eggs), "--jars", ",".join(jars)]
 
     # Add other spark arguments
     for key, value in SparkArgs().iter_args(args):
-        name = '--{}'.format(key)
+        name = "--{}".format(key)
         spark_args.extend([name, str(value)])
 
     for key, value in SparkConfArgs().iter_args(args):
-        name = key.replace('-', '.')
-        spark_args.extend(['--conf', '{}={}'.format(name, value)])
+        name = key.replace("-", ".")
+        spark_args.extend(["--conf", "{}={}".format(name, value)])
 
-    spark_args.extend(['--conf', 'spark.sql.caseSensitive=True'])
+    spark_args.extend(["--conf", "spark.sql.caseSensitive=True"])
 
     return spark_args
 
@@ -176,20 +174,24 @@ def get_config_args(args):
         for key, value in parser.iter_args(args):
             info = parser.arguments[key]
 
-            varname = key.upper().replace('-', '_')
+            varname = key.upper().replace("-", "_")
             if isinstance(value, list):
-                value = ','.join(map(str, value))
+                value = ",".join(map(str, value))
 
-            arg_action = info.get('action')
+            arg_action = info.get("action")
             # Do not pass bool flags if not needed
             # If default is True and value is True
-            if arg_action == 'store_false' and value == 'True':
+            if arg_action == "store_false" and value == "True":
                 continue
             # If default is False and value is False
-            if arg_action == 'store_true' and value == 'False':
+            if arg_action == "store_true" and value == "False":
                 continue
-            config_args.extend(['--conf', 'spark.yarn.appMasterEnv.{}="{}"'.format(varname, value)])
-            config_args.extend(['--conf', 'spark.executorEnv.{}="{}"'.format(varname, value)])
+            config_args.extend(
+                ["--conf", 'spark.yarn.appMasterEnv.{}="{}"'.format(varname, value)]
+            )
+            config_args.extend(
+                ["--conf", 'spark.executorEnv.{}="{}"'.format(varname, value)]
+            )
 
     return config_args
 
@@ -198,18 +200,28 @@ def get_submit_command(args):
     """
     Builds command to run to submit spark job
     """
-    SPARK_HOME = os.getenv('SPARK_HOME')
-    command = ['{}/bin/spark-submit'.format(SPARK_HOME)]
+    SPARK_HOME = os.getenv("SPARK_HOME")
+    command = ["{}/bin/spark-submit".format(SPARK_HOME)]
     command.extend(get_spark_args(args))
     command.extend(get_config_args(args))
-    command.append(os.path.join(ROOT_DIR, 'bin/export.py'))
+    command.append(os.path.join(ROOT_DIR, "bin/export.py"))
     return command
+
+
+def get_created_indices(es, indices):
+    return [index for index in indices if es.indices.exists(index)]
 
 
 if __name__ == "__main__":
     # Parse and confirm arguments
     args = parse_args()
-    confirm_args(args)
+    config = confirm_args(args)
     # Assemble and run the command
     command = get_submit_command(args)
     subprocess.call(command)
+    es = config.es
+    # mutation indexer might have failed after building a subset of the indices
+    # but the ones that were built might still be good, so we want to force-merge
+    # whatever we have, force merge will fail if non exist index name in the list
+    indices = get_created_indices(es, config.indices.values())
+    esutils.force_merge_elasticsearch_indices(es, indices)

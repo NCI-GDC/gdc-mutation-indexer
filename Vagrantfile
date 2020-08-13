@@ -20,7 +20,7 @@ fi
 
 if [ ! -f /mnt/swap.file ]
 then
-  sudo fallocate -l 1G /mnt/swap.file
+  sudo fallocate -l 5G /mnt/swap.file
   sudo mkswap /mnt/swap.file
   sudo swapon /mnt/swap.file
 fi
@@ -56,9 +56,10 @@ fi
 virtualenv /home/vagrant/venv
 source /home/vagrant/venv/bin/activate
 ssh-keyscan github.com >> /home/vagrant/.ssh/known_hosts
-pip install -r /vagrant/requirements.txt
-pip install -r /vagrant/dev-requirements.txt
-python /vagrant/setup.py develop
+cd /vagrant
+pip install -r requirements.txt
+pip install -r dev-requirements.txt
+python setup.py develop
 SCRIPT
 
 

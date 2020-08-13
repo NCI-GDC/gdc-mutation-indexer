@@ -1,5 +1,4 @@
 import logging
-import argparse
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
 
