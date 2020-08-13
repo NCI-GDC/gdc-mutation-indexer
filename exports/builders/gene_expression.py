@@ -64,11 +64,10 @@ class GeneExpressionInputBuilder(object):
 
         file_source = [
             "cases." + field for field in CASE_METADATA + CASE_NESTED_METADATA
-        ]
+        ] + ["file_id", "created_datetime"]
 
         self.gene_expression_files_metadata = get_gene_expression_metadata(
             self.config,
-            sample_types=["Primary Tumor", "Tumor"],
             source=file_source,
             workflow_types=self.supported_workflow_types,
         )
