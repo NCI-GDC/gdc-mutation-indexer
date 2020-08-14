@@ -70,6 +70,18 @@ class BuildArgs(BaseParser):
                 'choices': ['read', 'write', 'neither'],
                 'default': 'read',
             },
+            "gene-expression-cases-backup": {
+                "help": "Whether to read gene_expression_cases_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
+            "gene-expression-values-backup": {
+                "help": "Whether to read gene_expression_values_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
             'output-raw': {
                 'help': 'Whether to read raw output indices from backup or rebuild and write or do nothing',
                 'choices': ['read', 'write', 'neither'],

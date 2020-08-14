@@ -13,6 +13,8 @@ from builders import (
     CaseCentricBuilder,
     GeneCentricBuilder,
     GeneExpressionBuilder,
+    GeneExpressionCaseInputBuilder,
+    GeneExpressionValueInputBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
@@ -58,6 +60,18 @@ class GDCMutationExport(object):
         sub_case_df = case_df.drop('summary')
         sub_case_df.persist()
 
+        ge_case_df = GeneExpressionCaseInputBuilder(
+            self.config,
+            self.sqlContext,
+            "gene_expression_cases",
+        ).build()
+
+        ge_values_df = GeneExpressionValueInputBuilder(
+            self.config,
+            self.sqlContext,
+            "gene_expression_values",
+        ).build()
+
         for builder in self.builders:
             index_name = builder.index_name
 
@@ -68,7 +82,7 @@ class GDCMutationExport(object):
             if index_name == 'case_centric':
                 builder(self.config, self.sqlContext).build(maf_df, gistic_df, case_df).load()
             elif index_name == "gene_expression":
-                builder(self.config, self.sqlContext).build().load()
+                builder(self.config, self.sqlContext).build(ge_case_df, ge_values_df).load()
             elif index_name in ['ssm_centric', 'ssm_occurrence_centric']:
                 # these builders do not yet depend on gistic_df
                 builder(self.config, self.sqlContext).build(maf_df, sub_case_df).load()

@@ -295,12 +295,17 @@ def get_gene_expression_metadata(
     sample_types,
     source=None,
     gene_expression_selector=_select_random_gene_expressions,
+    workflow_types=None,
 ):
     """
     Query ES graph file index to extract case and gene expression metadata,
     return the results in a list
     """
-    query = _create_gene_expression_files_query(sample_types, projects=config.projects)
+    query = _create_gene_expression_files_query(
+        sample_types,
+        projects=config.projects,
+        workflow_types=workflow_types,
+    )
 
     if source is None:
         source = ["cases.case_id", "cases.samples.sample_type"]

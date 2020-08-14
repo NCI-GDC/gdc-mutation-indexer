@@ -16,4 +16,8 @@ from ssm_occurrence_centric import SSMOccurrenceCentricBuilder
 from cnv_centric import CNVCentricBuilder
 from cnv_occurrence_centric import CNVOccurrenceCentricBuilder
 # Gene expression builder
-from gene_expression import GeneExpressionBuilder
+from gene_expression import (
+    GeneExpressionBuilder,
+    GeneExpressionCaseInputBuilder,
+    GeneExpressionValueInputBuilder
+)

@@ -1,5 +1,3 @@
-from collections import Counter
-import csv
 import json
 import os
 
@@ -9,6 +7,8 @@ from pyspark.sql.functions import col
 
 from exports.builders.gene_expression import (
     GeneExpressionBuilder,
+    GeneExpressionCaseInputBuilder,
+    GeneExpressionValueInputBuilder,
     trim_gene_id,
 )
 from tests_config import TestConfig
@@ -28,6 +28,24 @@ def ge_builder(sqlContext, ge_conf):
     builder = GeneExpressionBuilder(ge_conf, sqlContext)
 
     return builder
+
+
+@pytest.fixture
+def ge_cases_df(sqlContext, ge_conf):
+    return GeneExpressionCaseInputBuilder(
+        ge_conf,
+        sqlContext,
+        "gene_expression_cases",
+    ).build()
+
+
+@pytest.fixture
+def ge_values_df(sqlContext, ge_conf):
+    return GeneExpressionValueInputBuilder(
+        ge_conf,
+        sqlContext,
+        "gene_expression_values",
+    ).build()
 
 
 @pytest.fixture
@@ -105,8 +123,8 @@ def test_trim_gene_version(sqlContext):
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
-def test_gene_expression_builder(ge_builder, es_client, ge_conf):
-    ge_builder.build().load()
+def test_gene_expression_builder(ge_builder, es_client, ge_conf, ge_cases_df, ge_values_df):
+    ge_builder.build(ge_cases_df, ge_values_df).load()
 
     es_client.indices.refresh()
 
