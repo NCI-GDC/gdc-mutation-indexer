@@ -108,6 +108,8 @@ class BaseConfig(object):
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
     aliquot_path = 'aliquot_df.parquet'
+    gene_expression_values_path = "gene_expression_values_df.parquet"
+    gene_expression_cases_path = "gene_expression_cases_df.parquet"
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -177,7 +179,6 @@ class BaseConfig(object):
 
         # aliquot should be synced with maf, don't allow users to deviate
         self.aliquot_backup = self.maf_backup
-        self.gene_expression_backup = "neither"
 
         self.es = Elasticsearch(
             self.es_nodes.split(','),
@@ -270,9 +271,6 @@ class BaseConfig(object):
             )
 
         if self.study_label:
-            if "gene_expression" in self.index_types:
-                raise ValueError("gene_expression does not support study")
-
             if '__' in self.study_label:
                 raise ValueError(
                     'Double underscores not allowed in study label '

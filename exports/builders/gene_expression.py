@@ -1,5 +1,3 @@
-from functools import partial
-
 from pyspark.sql.functions import (
     col,
     collect_list,
@@ -19,9 +17,28 @@ from pyspark.sql.types import (
 
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
+from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.utils import get_gene_expression_metadata
 
-GeneExpression = StructType([
+
+CASE_METADATA = [
+    "case_id",
+    "demographic.days_to_death",
+    "demographic.ethnicity",
+    "demographic.gender",
+    "demographic.race",
+    "demographic.vital_status",
+    "submitter_id",
+    "project.project_id",
+]
+
+CASE_NESTED_METADATA = [
+    "diagnoses.age_at_diagnosis",
+    "samples.sample_type"
+]
+
+
+RawGeneExpression = StructType([
     StructField("raw_gene_id", StringType()),
     StructField("expression_value", DoubleType()),
 ])
@@ -32,65 +49,61 @@ def trim_gene_id(raw_gene_id):
     return raw_gene_id.split(".")[0]
 
 
-def parse_gene_expressions(file_content):
-    stripped = file_content.strip()
+class GeneExpressionInputBuilder(object):
+    supported_workflow_types = ["HTSeq - FPKM-UQ"]
 
-    def make_row(gene_id, raw_value):
-        return gene_id, float(raw_value)
+    def __init__(self, config, *args, **kwargs):
+        super(GeneExpressionInputBuilder, self).__init__(config, *args, **kwargs)
 
-    return [make_row(*row.split("\t")) for row in stripped.split("\n")]
+        self.config = config
+        self.gene_expression_files_metadata = None
 
+    def _load_metadata(self):
+        if self.gene_expression_files_metadata is not None:
+            return self.gene_expression_files_metadata
 
-class ExpressionCountsBuilder(BaseInputBuilder):
-    def build_from_scratch(self):
-        case_fields = [
-            "case_id",
-            "demographic.days_to_death",
-            "demographic.ethnicity",
-            "demographic.gender",
-            "demographic.race",
-            "demographic.vital_status",
-            "submitter_id",
-            "project.project_id",
-        ]
-        case_nested_fields = [
-            "diagnoses.age_at_diagnosis",
-            "samples.sample_type"
+        file_source = [
+            "cases." + field for field in CASE_METADATA + CASE_NESTED_METADATA
         ]
 
-        file_source = ["cases." + field for field in case_fields + case_nested_fields]
-
-        ge_metadata = get_gene_expression_metadata(
+        self.gene_expression_files_metadata = get_gene_expression_metadata(
             self.config,
             sample_types=["Primary Tumor", "Tumor"],
             source=file_source,
+            workflow_types=self.supported_workflow_types,
         )
 
-        initial_df = self.sqlContext.createDataFrame(ge_metadata)
+        return self.gene_expression_files_metadata
 
-        # FIXME: should we handle this in `get_gene_expression_metadata` instead?
-        flat_diagnosis_df = initial_df.\
-            select("case_id", explode("diagnoses").alias("diagnosis")).\
-            select("case_id", "diagnosis.age_at_diagnosis").\
-            groupby("case_id").\
-            agg(collect_list("age_at_diagnosis").alias("age_at_diagnosis"))
 
-        case_df = initial_df.select(*(case_fields+["file_url"])).join(flat_diagnosis_df, "case_id")
+class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuilder):
 
-        ge_df = self._load_gene_expression_files([meta["file_url"] for meta in ge_metadata])
+    def build_from_scratch(self):
+        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
-        ge_df = ge_df.\
-            withColumn("genes", struct("gene_id", "expression_value")).\
-            drop("gene_id", "expression_value").\
-            groupby("file_url").\
+        pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select("_gene_id", "symbol")
+
+        ge_values_df = self.load_gene_expression_files_into_df()
+
+        ge_values_df = ge_values_df.\
+            join(pc_genes_df, ge_values_df.gene_id == pc_genes_df._gene_id).\
+            drop("_gene_id").\
+            withColumn("genes", struct("gene_id", "expression_value", "symbol")).\
+            drop("gene_id", "expression_value", "symbol").\
+            groupBy("file_url").\
             agg(collect_list("genes").alias("genes"))
 
-        final_df = case_df.join(ge_df, "file_url").drop("file_url")
+        return ge_values_df
 
-        return final_df
+    def get_urls(self):
+        files_metadata = self._load_metadata()
 
-    def _load_gene_expression_files(self, file_urls, batch_size=500):
+        return [file_meta["file_url"] for file_meta in files_metadata]
+
+    def load_gene_expression_files_into_df(self, batch_size=500):
         self.logger.info("Loading gene expression files")
+
+        file_urls = self.get_urls()
 
         # make batches
         file_batches = [
@@ -105,7 +118,7 @@ class ExpressionCountsBuilder(BaseInputBuilder):
 
             batch_df = self.sqlContext.read.csv(
                 file_batch,
-                schema=GeneExpression,
+                schema=RawGeneExpression,
                 sep="\t",
                 header=False,
                 enforceSchema=True,
@@ -126,8 +139,32 @@ class ExpressionCountsBuilder(BaseInputBuilder):
         return ge_df
 
 
+class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder, BaseInputBuilder):
+
+    def build_from_scratch(self):
+        files_metadata = self._load_metadata()
+
+        initial_df = self.sqlContext.createDataFrame(files_metadata)
+
+        # NOTE: diagnoses is a nested document, so we are flattening it by
+        #   simply aggregating age_at_diagnosis values into an array
+        flat_diagnosis_df = initial_df.\
+            select("case_id", explode("diagnoses").alias("diagnosis")).\
+            select("case_id", "diagnosis.age_at_diagnosis").\
+            groupby("case_id").\
+            agg(collect_list("age_at_diagnosis").alias("age_at_diagnosis"))
+
+        case_ge_df = initial_df.\
+            select(*(CASE_METADATA + ["file_url"])).\
+            join(flat_diagnosis_df, "case_id")
+
+        return case_ge_df
+
+
 class GeneExpressionBuilder(BaseBuilder):
     index_name = "gene_expression"
+    # NOTE: We might need a synthetic ID here, when we add support for Aliquot
+    #   level gene expressions
     id_field = "case_id"
 
     def __init__(self, *args, **kwargs):
@@ -136,6 +173,17 @@ class GeneExpressionBuilder(BaseBuilder):
         self.gene_expression = None
         self.gene_expression_backup = "neither"
 
-    def build(self, ge_df):
-        self.gene_expression = ge_df
+    def build(self, case_df, ge_values_df):
+        """
+        Combine two input data frames into a final gene_expression data frame
+
+        Args:
+            case_df: expected to be a gene_expression case DF
+            ge_values_df: expected to be a gene_expression values DF
+        """
+
+        # NOTE: the default join strategy is 'inner', so any extra cases/expression
+        #   values will be dropped, which is expected
+        self.gene_expression = case_df.join(ge_values_df, "file_url").drop("file_url")
+
         return self

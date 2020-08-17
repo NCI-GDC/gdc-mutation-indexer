@@ -51,9 +51,13 @@ class BuildArgs(BaseParser):
                 'help': 'List of pipelines to build',
                 'nargs': '*',
                 'default': [
-                    'case_centric', 'gene_centric',
-                    'ssm_centric', 'ssm_occurrence_centric',
-                    'cnv_centric', 'cnv_occurrence_centric',
+                    "case_centric",
+                    "gene_centric",
+                    "ssm_centric",
+                    "ssm_occurrence_centric",
+                    "cnv_centric",
+                    "cnv_occurrence_centric",
+                    "gene_expression",
                 ],
             },
             'maf-backup': {
@@ -65,6 +69,18 @@ class BuildArgs(BaseParser):
                 'help': 'Whether to read gistic_df from backup or rebuild and write or do nothing',
                 'choices': ['read', 'write', 'neither'],
                 'default': 'read',
+            },
+            "gene-expression-cases-backup": {
+                "help": "Whether to read gene_expression_cases_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
+            "gene-expression-values-backup": {
+                "help": "Whether to read gene_expression_values_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
             },
             'output-raw': {
                 'help': 'Whether to read raw output indices from backup or rebuild and write or do nothing',

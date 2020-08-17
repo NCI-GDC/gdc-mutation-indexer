@@ -11,7 +11,18 @@ class BaseInputBuilder(object):
 
     def __init__(self, config, sqlContext, input_type):
         """
-        :input_type in ['gistic', 'maf', 'aliquot', 'gene_expression']
+
+        Args:
+            config(BaseConfig): a config instance
+            sqlContext: spark sql context instance
+            input_type(str): a string that uniquely represents an output data
+                frame type. Can be one of: (
+                    'gistic',
+                    'maf',
+                    'aliquot',
+                    'gene_expression_values',
+                    'gene_expression_cases',
+                )
         """
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -20,7 +31,7 @@ class BaseInputBuilder(object):
 
     @property
     def urls(self):
-        config_urls = getattr(self.config, '{}_urls'.format(self.input_type))
+        config_urls = getattr(self.config, '{}_urls'.format(self.input_type), None)
         if config_urls is not None:
             return config_urls
         return self.get_urls()
