@@ -60,12 +60,14 @@ class GDCMutationExport(object):
         sub_case_df = case_df.drop('summary')
         sub_case_df.persist()
 
+        self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = GeneExpressionCaseInputBuilder(
             self.config,
             self.sqlContext,
             "gene_expression_cases",
         ).build()
 
+        self.sc.setJobGroup("GeneExpressionValueInputBuilder", "Build GE ValueInput df")
         ge_values_df = GeneExpressionValueInputBuilder(
             self.config,
             self.sqlContext,

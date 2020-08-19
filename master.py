@@ -112,13 +112,13 @@ def confirm_args(args):
     logger.info("Validating differences in mappings...")
 
     if "gene_expression" in config.indices and len(config.indices) == 1:
-        return
+        return config
 
     non_null_fields = get_non_null_fields(config)
 
     if not non_null_fields:
         logger.info("No new breaking differences were found.")
-        return
+        return config
 
     user_confirm(
         (
@@ -224,4 +224,9 @@ if __name__ == "__main__":
     # but the ones that were built might still be good, so we want to force-merge
     # whatever we have, force merge will fail if non exist index name in the list
     indices = get_created_indices(es, config.indices.values())
+
+    if not indices:
+        logger.info("No indices were built. Nothing to force merge")
+        exit(0)
+
     esutils.force_merge_elasticsearch_indices(es, indices)
