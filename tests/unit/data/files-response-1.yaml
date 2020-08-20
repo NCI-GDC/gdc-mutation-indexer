@@ -1,42 +1,42 @@
 hits:
   - _id: file-1
     file_id: file-1
-    created_datetime: "2020-01-02"
+    created_datetime: "2020-01-02T10:28:47.799242-05:00"
     cases:
       - case_id: case-1
         samples:
           - sample_type: "Normal"
   - _id: file-2
     file_id: file-2
-    created_datetime: "2020-01-02"
+    created_datetime: "2020-01-02T10:28:47.799242-05:00"
     cases:
       - case_id: case-1
         samples:
           - sample_type: "Primary Tumor"
   - _id: file-3
     file_id: file-3
-    created_datetime: "2020-01-02"
+    created_datetime: "2020-01-02T10:28:47.799242-05:00"
     cases:
       - case_id: case-1
         samples:
           - sample_type: "Primary Tumor"
   - _id: file-4
     file_id: file-4
-    created_datetime: "2020-01-02"
+    created_datetime: "2020-01-02T10:28:47.799242-05:00"
     cases:
       - case_id: case-2
         samples:
           - sample_type: "Normal"
   - _id: file-5
     file_id: file-5
-    created_datetime: "2020-01-02"
+    created_datetime: "2020-01-02T10:28:47.799242-05:00"
     cases:
       - case_id: case-3
         samples:
           - sample_type: "Primary Tumor"
   - _id: file-6
     file_id: file-6
-    created_datetime: "2018-10-30"
+    created_datetime: "2020-01-02T10:28:47.799242-04:00"
     cases:
       - case_id: case-3
         samples:

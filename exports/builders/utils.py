@@ -5,6 +5,7 @@ import uuid
 import logging
 from functools import partial
 
+import dateutil.parser
 import yaml
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import (
@@ -255,7 +256,7 @@ def _select_primary_aliquot_gene_expressions(es_hits):
     for hit in es_hits:
         source = hit["_source"]
         file_id = source["file_id"]
-        created_time = source["created_datetime"]
+        created_time = dateutil.parser.parse(source["created_datetime"])
 
         # If no cases were returned, there's nothing to do, since we cannot map
         # files back
@@ -266,6 +267,9 @@ def _select_primary_aliquot_gene_expressions(es_hits):
 
         case_id = case["case_id"]
         metadata[file_id] = case
+
+        # NOTE: We might encounter a use-case in the future, where we can have
+        #   multiple samples associated with a single gene expression file
         sample_type = case["samples"][0]["sample_type"]
 
         sample_weight = sample_weights.get(sample_type, 10)
