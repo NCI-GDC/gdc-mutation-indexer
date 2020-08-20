@@ -102,7 +102,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuild
     def load_gene_expression_files_into_df(self, batch_size=500):
         self.logger.info("Loading gene expression files")
 
-        file_urls = self.get_urls()
+        file_urls = self.urls
 
         # make batches
         file_batches = [
