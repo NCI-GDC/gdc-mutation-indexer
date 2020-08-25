@@ -64,11 +64,10 @@ class GeneExpressionInputBuilder(object):
 
         file_source = [
             "cases." + field for field in CASE_METADATA + CASE_NESTED_METADATA
-        ]
+        ] + ["file_id", "created_datetime"]
 
         self.gene_expression_files_metadata = get_gene_expression_metadata(
             self.config,
-            sample_types=["Primary Tumor", "Tumor"],
             source=file_source,
             workflow_types=self.supported_workflow_types,
         )
@@ -103,7 +102,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuild
     def load_gene_expression_files_into_df(self, batch_size=500):
         self.logger.info("Loading gene expression files")
 
-        file_urls = self.get_urls()
+        file_urls = self.urls
 
         # make batches
         file_batches = [

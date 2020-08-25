@@ -5,6 +5,7 @@ import uuid
 import logging
 from functools import partial
 
+import dateutil.parser
 import yaml
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import (
@@ -171,25 +172,25 @@ def get_case_ids_from_source_es(config, sqlContext):
 
 
 def _create_gene_expression_files_query(
-    sample_types,
+    workflow_types,
     acl=("open",),
-    workflow_types=None,
     projects=None,
 ):
-    if workflow_types is None:
-        workflow_types = ["HTSeq - FPKM-UQ"]
+    """
+    Create gene expression files query given target ``workflow_types`` and
+    optional ``acl`` and ``projects``
+
+    Args:
+        workflow_types(list): list of workflow types to query
+        acl(list): file acl list (defaults to open files only)
+        projects(list): list of project_id's to limit the query to
+    """
 
     data_type_clause = {"terms": {"data_type": ["Gene Expression Quantification"]}}
     acl_clause = {"terms": {"acl": acl}}
-    sample_type_clause = {
-        "nested": {
-            "path": "cases.samples",
-            "query": {"terms": {"cases.samples.sample_type": sample_types}}
-        }
-    }
     analysis_type_clause = {"terms": {"analysis.workflow_type": workflow_types}}
 
-    musts = [data_type_clause, acl_clause, sample_type_clause, analysis_type_clause]
+    musts = [data_type_clause, acl_clause, analysis_type_clause]
 
     if projects:
         projects_clause = {
@@ -203,26 +204,89 @@ def _create_gene_expression_files_query(
     return {"bool": {"must": musts}}
 
 
-def _select_random_gene_expressions(es_hits):
+def _select_primary_aliquot_gene_expressions(es_hits):
     """
-    Pick first gene expression file for a case and ignore the others, return
-    a file_id to case metadata mapping
+    Select gene expression files that correspond to primary aliquots. The details
+    can be found in DEV-219.
+
+    In short, the gene expression files should be prioritized by sample type
+    the expression values were generated from (highest to lowest):
+         1. "Primary Tumor"
+         2. "Primary Blood Derived Cancer - Bone Marrow"
+         3. "Primary Blood Derived Cancer - Peripheral Blood"
+         4. "Metastatic"
+         5. "Additional Metastatic"
+         6. "Recurrent Tumor"
+         7. "Recurrent Blood Derived Cancer - Bone Marrow"
+         8. "Recurrent Blood Derived Cancer - Peripheral Blood"
+         9. "Additional - New Primary"
+         10. Any other `sample_type` sorted alphabetically
+         11. If there are ties, then sort by `created_datetime`
+         12. If there are ties, then sort by `file_id`
+
+    Args:
+        iterable(dict): an iterable object that yield file metadata in as a `dict`
+
+    Returns:
+        dict: file_id to case_metadata mapping
+
     """
-    marked_cases = set()
+
+    GeneExpressionFile = collections.namedtuple(
+        "GeneExpressionFile",
+        field_names=["file_id", "created_datetime", "sample_weight"],
+    )
+
     file_map = {}
+    case_files = collections.defaultdict(list)
+    metadata = {}
+
+    sample_weights = {
+        "Primary Tumor": 1,
+        "Primary Blood Derived Cancer - Bone Marrow": 2,
+        "Primary Blood Derived Cancer - Peripheral Blood": 3,
+        "Metastatic": 4,
+        "Additional Metastatic": 5,
+        "Recurrent Tumor": 6,
+        "Recurrent Blood Derived Cancer - Bone Marrow": 7,
+        "Recurrent Blood Derived Cancer - Peripheral Blood": 8,
+        "Additional - New Primary": 9,
+    }
 
     for hit in es_hits:
-        file_id = hit["_id"]
-        case = hit["_source"]["cases"][0]
-        case_id = case["case_id"]
+        source = hit["_source"]
+        file_id = source["file_id"]
+        created_time = dateutil.parser.parse(source["created_datetime"])
 
-        if case_id in marked_cases:
+        # If no cases were returned, there's nothing to do, since we cannot map
+        # files back
+        if "cases" not in source:
             continue
 
-        # we select the first expression we see for a given case
-        marked_cases.add(case_id)
-        case["file_id"] = file_id
-        file_map[file_id] = case
+        case = source["cases"][0]
+
+        case_id = case["case_id"]
+        metadata[file_id] = case
+
+        # NOTE: We might encounter a use-case in the future, where we can have
+        #   multiple samples associated with a single gene expression file
+        sample_type = case["samples"][0]["sample_type"]
+
+        sample_weight = sample_weights.get(sample_type, 10)
+
+        gef = GeneExpressionFile(file_id, created_time, sample_weight)
+
+        case_files[case_id].append(gef)
+
+    for case_id, ge_files in case_files.items():
+        ge_files = sorted(
+            ge_files,
+            key=lambda x: (x.sample_weight, x.created_datetime, x.file_id),
+        )
+        file_id = ge_files[0].file_id
+
+        file_map[file_id] = metadata[file_id]
+        file_map[file_id]["file_id"] = file_id
 
     return file_map
 
@@ -292,17 +356,15 @@ def _get_main_urls(indexd_client, file_ids):
 
 def get_gene_expression_metadata(
     config,
-    sample_types,
     source=None,
-    gene_expression_selector=_select_random_gene_expressions,
     workflow_types=None,
+    gene_expression_selector=_select_primary_aliquot_gene_expressions,
 ):
     """
     Query ES graph file index to extract case and gene expression metadata,
     return the results in a list
     """
     query = _create_gene_expression_files_query(
-        sample_types,
         projects=config.projects,
         workflow_types=workflow_types,
     )
