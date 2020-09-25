@@ -34,8 +34,8 @@ class TestDFBuildersBase:
     def get_inputs(self, maf_df, gistic_df, request):
 
         # get parameter values from the test using this fixture:
-        index_type = request.getfuncargvalue('index_type')
-        df_type = request.getfuncargvalue('df_type')
+        index_type = request.getfixturevalue('index_type')
+        df_type = request.getfixturevalue('df_type')
 
         # return corresponding get_function, input_df and id_field
         get_function = globals()['get_{}_df'.format(df_type)]
