@@ -43,5 +43,3 @@ RUN wget --progress=bar:force https://artifacts.elastic.co/downloads/elasticsear
 RUN unzip elasticsearch-hadoop-${ES_VERSION}.zip
 
 RUN cp /root/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
-
-CMD pytest /app/tests

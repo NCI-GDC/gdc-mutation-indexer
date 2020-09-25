@@ -1,0 +1,38 @@
+FROM openjdk:8u265-jdk
+
+# environment
+ENV ES_NODES elasticsearch
+ENV ES_HOST elasticsearch
+ENV SOURCE_ES_HOST elasticsearch
+ENV SPARK_VERSION 2.4.5
+ENV ES_VERSION 7.6.2
+ENV BOTO_CONFIG /dev/null
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+ENV PATH "${JAVA_HOME}/bin:${PATH}"
+ENV SPARK_HOME /root/spark-${SPARK_VERSION}-bin-hadoop2.7
+ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
+ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
+
+COPY . /app
+RUN mkdir /root/.ssh
+RUN mv /app/id_rsa /root/.ssh/id_rsa
+RUN chmod 600 /root/.ssh/id_rsa
+WORKDIR /app
+
+# core setup
+RUN apt-get update && apt-get install -y python-pip unzip git ssh socat
+RUN ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+RUN pip install -r requirements.txt
+RUN pip install -r dev-requirements.txt
+RUN python setup.py develop
+
+# spark setup
+RUN wget --progress=bar:force -nc https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+RUN wget --progress=bar:force -nc https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+RUN tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz -C /root
+RUN unzip elasticsearch-hadoop-${ES_VERSION}.zip -d /root
+
+RUN cp /root/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
+
+CMD ["socat","tcp-l:9200,fork,reuseaddr","tcp:elasticsearch:9200"]
+
