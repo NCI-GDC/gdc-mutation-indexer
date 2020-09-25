@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  elasticsearch:
+    build:
+      context: ./docker
+      dockerfile: es
+    ports:
+      - 9200
+    healthcheck:
+      test: curl http://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 3s
+      retries: 15
+      timeout: 10s
+
+  gdc-mutation-indexer:
+    build:
+      context: .
+      dockerfile: docker/mutation-indexer
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    depends_on:
+      - elasticsearch

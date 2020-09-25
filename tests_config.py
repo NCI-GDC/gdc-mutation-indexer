@@ -92,10 +92,10 @@ class TestConfig(BaseConfig):
         """
         env_dict = {
             'BUILD_TYPE': 'develop',
-            'ES_NODES': 'http://localhost',
-            'ES_HOST': 'http://localhost',
+            'ES_NODES': os.getenv('ES_NODES') or 'http://localhost',
+            'ES_HOST': os.getenv('ES_NODES') or 'http://localhost',
             'ES_PORT': '9200',
-            'SOURCE_ES_HOST': 'http://localhost',
+            'SOURCE_ES_HOST': os.getenv('ES_NODES') or 'http://localhost',
             'SOURCE_ES_PORT': '9200',
             'S3_HOST': 'fake_s3',
             'S3_ACCESS_KEY': 'fake_s3_access',
