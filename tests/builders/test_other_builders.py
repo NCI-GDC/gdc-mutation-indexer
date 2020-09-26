@@ -28,7 +28,7 @@ class TestOtherBase:
         this fixture is used
 
         """
-        build_type = request.getfuncargvalue('build_type')
+        build_type = request.getfixturevalue('build_type')
         id_field = '{}_id'.format(build_type)
         build_function = 'build_for_{}'.format(build_type)
         if build_type == 'ssm':

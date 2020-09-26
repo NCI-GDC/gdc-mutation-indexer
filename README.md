@@ -68,6 +68,66 @@ pytest /vagrant/tests
 To get a better understanding of how to tweak/customize provisioning steps read
 the docs! Have fun testing.
 
+### Use Pycharm debug in Vagrant.
+
+You can use Pycharm debug tool with vagrant, but you need the professional version of 
+Pycharm.
+
+1. Set the Vagrant Interpreter
+
+    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
+        Interpreter, select Vagrant, set 'Python interpreter path' to 
+        '/home/vagrant/venv/bin/python', Click 'OK'
+       
+    * Set Path mappings: 'Local Path' -> <your project folder>, 'Remote Path' -> 
+        '/vagrant'
+
+2. Add new Run/Debug configurations
+
+    * Add new pytest configuration
+    * Set script path to <project>/tests (or any test file you want)
+    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
+        Vagrant VM ...'
+    * Set working directory to your project folder
+    * Set the following environment variables
+```
+SPARK_HOME=/home/vagrant/spark-2.4.5-bin-hadoop2.7
+PYTHONPATH=/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/
+PYSPARK_PYTHON=/home/vagrant/venv/bin/python
+```
+
+## Docker compose
+
+You can also use docker to run the pytest. If you are on a mac, make sure you locate 
+about 4G of mem, 4G of swap, and 2 CPUs to docker machine(you can change it in the 
+preference of docker desktop software).
+Then run
+```
+docker-compose up -d
+```
+and wait for the build to finish.
+
+when it is done, you can run the tests in the docker container:
+```
+docker exec -it gdc-mutation-indexer_gdc-mutation-indexer_1 /bin/bash
+cd /app
+pytest tests
+```
+The test should start. 
+
+### Use Pycharm to debug with Docker
+
+The above debug method with Vagrant should also work with Docker Compose, make changes 
+accordingly.
+
+### Known Issue
+
+1. The first time you run pytest, the elasticsearch might timeout. If you saw the 
+timeout error, run the tests again. The error should disappear.
+
+2. tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail
+with docker.
+
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
