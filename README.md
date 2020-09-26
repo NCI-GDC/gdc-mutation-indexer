@@ -94,10 +94,6 @@ Pycharm.
         PYSPARK_PYTHON=/home/vagrant/venv/bin/python
         ```
 
-After the above steps, you can save your changes and click the run button to start your 
-tests.
-
-
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
