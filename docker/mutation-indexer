@@ -1,14 +1,12 @@
 FROM openjdk:8u265-jdk
 
 # environment
-ENV ES_NODES elasticsearch
-ENV ES_HOST elasticsearch
-ENV SOURCE_ES_HOST elasticsearch
+ENV ES_NODES_TEST elasticsearch
+ENV ES_HOST_TEST elasticsearch
+ENV SOURCE_ES_HOST_TEST elasticsearch
 ENV SPARK_VERSION 2.4.5
 ENV ES_VERSION 7.6.2
 ENV BOTO_CONFIG /dev/null
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
-ENV PATH "${JAVA_HOME}/bin:${PATH}"
 ENV SPARK_HOME /root/spark-${SPARK_VERSION}-bin-hadoop2.7
 ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
 ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
@@ -21,7 +19,7 @@ WORKDIR /app
 
 # core setup
 RUN apt-get update && apt-get install -y python-pip unzip git ssh socat
-RUN ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
 RUN pip install -r requirements.txt
 RUN pip install -r dev-requirements.txt
 RUN python setup.py develop

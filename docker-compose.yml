@@ -23,3 +23,4 @@ services:
         target: /app
     depends_on:
       - elasticsearch
+    command: ['tail', '-f', '/dev/null']
