@@ -1,36 +1,33 @@
-FROM openjdk:8u265-jdk
+FROM bitnami/spark:2.4.5
 
 # environment
-ENV ES_NODES_TEST elasticsearch
-ENV ES_HOST_TEST elasticsearch
-ENV SOURCE_ES_HOST_TEST elasticsearch
-ENV SPARK_VERSION 2.4.5
-ENV ES_VERSION 7.6.2
-ENV BOTO_CONFIG /dev/null
-ENV SPARK_HOME /root/spark-${SPARK_VERSION}-bin-hadoop2.7
-ENV PYTHONPATH $SPARK_HOME/python/:$PYTHONPATH
-ENV PYTHONPATH $SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
+ENV ES_NODES_TEST="elasticsearch" \
+    ES_HOST_TEST="elasticsearch" \
+    SOURCE_ES_HOST_TEST="elasticsearch" \
+    ES_VERSION="7.6.2" \
+    BOTO_CONFIG=/dev/null \
+    PYTHONPATH="$SPARK_HOME/python/:$PYTHONPATH" \
+    PYTHONPATH="$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH"
+
+USER root
 
 COPY . /app
-RUN mkdir /root/.ssh
-RUN mv /app/id_rsa /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa
 WORKDIR /app
+RUN mkdir /root/.ssh && \
+    mv id_rsa /root/.ssh/id_rsa && \
+    chmod 600 /root/.ssh/id_rsa
 
 # core setup
-RUN apt-get update && apt-get install -y python-pip unzip git ssh socat
+RUN apt-get update && \
+    apt-get install -y python-pip unzip git ssh wget
+
 RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-RUN pip install -r requirements.txt
-RUN pip install -r dev-requirements.txt
-RUN python setup.py develop
+RUN pip2 install -r requirements.txt
+RUN pip2 install -r dev-requirements.txt
+RUN python2 setup.py develop
 
 # spark setup
-RUN wget --progress=bar:force -nc https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
 RUN wget --progress=bar:force -nc https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
-RUN tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz -C /root
 RUN unzip elasticsearch-hadoop-${ES_VERSION}.zip -d /root
 
 RUN cp /root/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
-
-CMD ["socat","tcp-l:9200,fork,reuseaddr","tcp:elasticsearch:9200"]
-
