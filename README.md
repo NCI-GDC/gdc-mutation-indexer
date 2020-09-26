@@ -79,8 +79,7 @@ Pycharm.
         Interpreter, select Vagrant, set 'Python interpreter path' to 
         '/home/vagrant/venv/bin/python', Click 'OK'
        
-    * Set Path mappings: 'Local Path' -> <your project folder>, 'Remote Path' -> 
-        '/vagrant'
+    * Set Path mappings: <project root> -> '/vagrant'
 
 2. Add new Run/Debug configurations
 
@@ -90,17 +89,20 @@ Pycharm.
         Vagrant VM ...'
     * Set working directory to your project folder
     * Set the following environment variables
-```
-SPARK_HOME=/home/vagrant/spark-2.4.5-bin-hadoop2.7
-PYTHONPATH=/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/
-PYSPARK_PYTHON=/home/vagrant/venv/bin/python
-```
+        ```
+        SPARK_HOME=/home/vagrant/spark-2.4.5-bin-hadoop2.7
+        PYTHONPATH=/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/
+        PYSPARK_PYTHON=/home/vagrant/venv/bin/python
+        ```
+
+After the above steps, you can save your changes and click the run button to start your 
+tests.
 
 ## Docker compose
 
 You can also use docker to run the pytest. If you are on a mac, make sure you locate 
-about 4G of mem, 4G of swap, and 2 CPUs to docker machine(you can change it in the 
-preference of docker desktop software).
+about 4G of mem, 4G of swap, and 2 CPUs to docker machine. You can change it in the 
+preference of docker desktop software. 
 Then run
 ```
 docker-compose up -d
@@ -115,18 +117,59 @@ pytest tests
 ```
 The test should start. 
 
-### Use Pycharm to debug with Docker
+### Use Pycharm to debug with Docker Compose
 
-The above debug method with Vagrant should also work with Docker Compose, make changes 
-accordingly.
+1. Set the Docker Compose Interpreter
 
-### Known Issue
+    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
+        Interpreter, select Docker Compose, For services, select gdc-mutation-indexer. 
+        Click 'OK'
+       
+    * Set Path mappings: <project root> -> '/app'
+
+2. Add new Run/Debug configurations
+
+    * Add new pytest configuration
+    * Set script path to <project>/tests (or any test file you want)
+    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
+        Docker Compose ...'
+    * Set working directory to your project folder
+    * Set the following environment variables
+        ```
+        SPARK_HOME=/root/spark-2.4.5-bin-hadoop2.7
+        PYTHONPATH=/root/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/root/spark-2.4.5-bin-hadoop2.7/python/:$PYTHONPATH
+        ```
+
+3. (optional) You can configure the gdc-mutation-indexer docker to use the 
+    elasticsearch on your host. Which should have better performance than the one in
+    your docker container.
+    
+    * Configure elasticsearch to listen on local ips.
+        * In the elasticsearch.yml (/usr/local/etc/elasticsearch/elasticsearch.yml), 
+            add the following lines:
+            ```
+            network.bind_host: [_local_, _site_]
+            discovery.type: single-node
+            ```
+        * Restart elasticsearch with `brew services restart elasticsearch`
+    * Add the following environment variables in you Run/Debug configurations
+    
+        ```
+        ES_NODES_TEST=host.docker.internal
+        ES_HOST_TEST=host.docker.internal
+        SOURCE_ES_HOST_TEST=host.docker.internal
+        ```
+
+After the above steps, you can save your changes and click the run button to start your 
+tests.
+
+### Known Issues
 
 1. The first time you run pytest, the elasticsearch might timeout. If you saw the 
 timeout error, run the tests again. The error should disappear.
 
 2. tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail
-with docker.
+when run in docker.
 
 ## Setup pre-commit hook to check for secrets
 
