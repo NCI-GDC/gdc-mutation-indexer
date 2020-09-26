@@ -102,7 +102,8 @@ tests.
 
 You can also use docker to run the pytest. If you are on a mac, make sure you locate 
 about 4G of mem, 4G of swap, and 2 CPUs to docker machine. You can change it in the 
-preference of docker desktop software. 
+preference of docker desktop software. Then copy your id_rsa file to the project root.
+It is required to download and install private python packages from github.
 Then run
 ```
 docker-compose up -d
@@ -136,8 +137,9 @@ The test should start.
     * Set working directory to your project folder
     * Set the following environment variables
         ```
-        SPARK_HOME=/root/spark-2.4.5-bin-hadoop2.7
-        PYTHONPATH=/root/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/root/spark-2.4.5-bin-hadoop2.7/python/:$PYTHONPATH
+        PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.7-src.zip:/opt/bitnami/spark/python/:$PYTHONPATH
+        SPARK_HOME=/opt/bitnami/spark
+        PYSPARK_PYTHON=/usr/bin/python2
         ```
 
 3. (optional) You can configure the gdc-mutation-indexer docker to use the 
