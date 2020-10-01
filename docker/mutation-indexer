@@ -6,28 +6,31 @@ ENV ES_NODES_TEST="elasticsearch" \
     SOURCE_ES_HOST_TEST="elasticsearch" \
     ES_VERSION="7.6.2" \
     BOTO_CONFIG=/dev/null \
-    PYTHONPATH="$SPARK_HOME/python/:$PYTHONPATH" \
-    PYTHONPATH="$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH"
+    PYTHONPATH="$SPARK_HOME/python/:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH" \
+    PYSPARK_PYTHON=/usr/bin/python2
 
 USER root
 
-COPY . /app
-WORKDIR /app
+# core setup
+COPY id_rsa requirements.txt dev-requirements.txt /root/
 RUN mkdir /root/.ssh && \
-    mv id_rsa /root/.ssh/id_rsa && \
+    mv /root/id_rsa /root/.ssh/ && \
     chmod 600 /root/.ssh/id_rsa
 
-# core setup
 RUN apt-get update && \
-    apt-get install -y python-pip unzip git ssh wget
+    apt-get install -y python-pip unzip git ssh && \
+    apt-get clean && rm -rf /var/lib/apt
 
-RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-RUN pip2 install -r requirements.txt
-RUN pip2 install -r dev-requirements.txt
-RUN python2 setup.py develop
+RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts && \
+    pip2 install -r /root/requirements.txt && \
+    pip2 install -r /root/dev-requirements.txt
+
+COPY . /app
+RUN python2 /app/setup.py develop
 
 # spark setup
-RUN wget --progress=bar:force -nc https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
-RUN unzip elasticsearch-hadoop-${ES_VERSION}.zip -d /root
-
-RUN cp /root/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
+ADD https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip \
+    /root/
+RUN unzip -j /root/elasticsearch-hadoop-${ES_VERSION}.zip \
+            "elasticsearch-hadoop-7.6.2/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar" \
+            -d $SPARK_HOME/jars
