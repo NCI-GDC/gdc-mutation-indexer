@@ -36,12 +36,20 @@ python modules. Make sure the paths are correct in `bin/run-tests.sh`.
 bin/run-tests.sh
 ```
 
-The mutation indexer is currently deployed with Spark 2.4.3.
+The mutation indexer is currently deployed with Spark 2.4.5.
 If you try to run the tests on a different version, you may need to update
 `bin/run-tests.sh` to refer to the specific Py4J build included with your
 Spark distribution.
 
 
+## Tests the easy way
+
+After PySpark is installed via pip, download `elasticsearch-hadoop-7.6.2.zip` and 
+extract the content. Copy the file `dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
+`venv/lib/python2.7/site-packages/pyspark/jars/`. 
+
+Make sure your elasticsearch server is running at port 9200 and start the tests. If you
+see timeout error for es, restart the tests.
 
 ## Vagrant
 
