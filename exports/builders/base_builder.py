@@ -55,6 +55,7 @@ class BaseBuilder(object):
         pass
 
     def check_and_cast_booleans(self, df, mapping):
+        print(mapping)
         paths = get_all_boolean_paths(mapping)
         schema_json = df.schema.jsonValue()
         modified = any(self.cast_path(path, schema_json) for path in paths)
@@ -131,6 +132,7 @@ class BaseBuilder(object):
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()
+        return df
 
     def truncate_df_at_percentile(self,
                                   df_to_truncate,
