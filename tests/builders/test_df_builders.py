@@ -61,18 +61,18 @@ class TestDFBuildersBase:
     @staticmethod
     def params():
         return itertools.chain(
-            itertools.product(
-                conf.main_indices,
-                ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
-            ),
+            # itertools.product(
+            #     conf.main_indices,
+            #     ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
+            # ),
             itertools.product(
                 conf.ssm_indices,
                 ['transcript', 'ssm', 'gene', 'annotation']
             ),
-            itertools.product(
-                conf.cnv_indices,
-                ['cnv', 'gene']
-            )
+            # itertools.product(
+            #     conf.cnv_indices,
+            #     ['cnv', 'gene']
+            # )
         )
 
     @classmethod
@@ -113,6 +113,9 @@ class TestDFBuilders(TestDFBuildersBase):
         """
         get_function, input_df, extra_inputs = get_inputs
         id_field = extra_inputs['id_field']
+
+        # the input_df has entries with duplicated id but different values
+        input_df = input_df.drop_duplicates(subset=[id_field])
 
         df = get_function(input_df, index_type)
         mapping = select_mapping(index_type, df_type)['properties']
