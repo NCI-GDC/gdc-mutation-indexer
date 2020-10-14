@@ -61,18 +61,18 @@ class TestDFBuildersBase:
     @staticmethod
     def params():
         return itertools.chain(
-            itertools.product(
-                conf.main_indices,
-                ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
-            ),
+            # itertools.product(
+            #     conf.main_indices,
+            #     ['transcript', 'cnv', 'ssm', 'gene', 'annotation']
+            # ),
             itertools.product(
                 conf.ssm_indices,
                 ['transcript', 'ssm', 'gene', 'annotation']
             ),
-            itertools.product(
-                conf.cnv_indices,
-                ['cnv', 'gene']
-            )
+            # itertools.product(
+            #     conf.cnv_indices,
+            #     ['cnv', 'gene']
+            # )
         )
 
     @classmethod
