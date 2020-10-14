@@ -31,8 +31,6 @@ class MAFBuilder(BaseInputBuilder):
         self.annotation_builders = [CivicBuilder(config, sqlContext)]
 
     def build_from_cache(self, df):
-        """Fix the format of old cached MAF DFs."""
-        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
         return df
 
     def build_from_scratch(self):

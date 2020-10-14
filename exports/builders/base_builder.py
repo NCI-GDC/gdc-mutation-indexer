@@ -4,12 +4,30 @@ import logging
 
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import col, size
+from pyspark.sql.types import StructType
 
 from config import LOG_FORMAT
 from exports.builders.utils import percentile
 
 
 logging.basicConfig(format=LOG_FORMAT)
+
+
+def get_all_boolean_paths(mapping):
+    res = []
+
+    def helper(node, path=None):
+        if path is None:
+            path = []
+
+        for key, value in node['properties'].items():
+            if value.get('type') == 'boolean':
+                res.append(path + [key])
+            elif 'properties' in value:
+                helper(value, path + [key])
+
+    helper(mapping)
+    return res
 
 
 class BaseBuilder(object):
@@ -36,6 +54,36 @@ class BaseBuilder(object):
         """
         pass
 
+    def check_and_cast_booleans(self, df, mapping):
+        paths = get_all_boolean_paths(mapping)
+        schema_json = df.schema.jsonValue()
+        modified = any(self.cast_path(path, schema_json) for path in paths)
+        if modified:
+            schema = StructType.fromJson(schema_json)
+            select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
+            df = df.select(*select_expr)
+
+        return df
+
+    def cast_path(self, path, cur):
+        field = {}
+        for node in path:
+            for field in cur['fields']:
+                if field['name'] == node:
+                    cur = field['type']
+                    if 'elementType' in cur:
+                        cur = cur['elementType']
+                    break
+            else:
+                self.log("{} not found in {}".format(path, self.index_name))
+                break
+        else:
+            if cur != 'boolean' and 'type' in field:
+                self.log("cast {} to boolean in {}".format(path, self.index_name))
+                field['type'] = 'boolean'
+                return True
+        return False
+
     def load(self):
         """
         Responsible for loading the dataframe resulting from :func:`build`
@@ -59,6 +107,7 @@ class BaseBuilder(object):
                      self.index_name).repartition(self.config.df_repartition,
                                                   self.id_field)
 
+        df = self.check_and_cast_booleans(df, index_mapper.mapping)
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
@@ -79,7 +128,6 @@ class BaseBuilder(object):
             .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
             .save(index)
-
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()
