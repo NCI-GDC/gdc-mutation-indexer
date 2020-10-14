@@ -14,6 +14,14 @@ logging.basicConfig(format=LOG_FORMAT)
 
 
 def get_all_boolean_paths(mapping):
+    """ Find all the boolean field in mapping and return the paths
+
+    Args:
+        mapping: dict of mapping types
+
+    Returns:
+        list of path, each path is a list of field names
+    """
     res = []
 
     def helper(node, path=None):
@@ -55,7 +63,15 @@ class BaseBuilder(object):
         pass
 
     def check_and_cast_booleans(self, df, mapping):
-        print(mapping)
+        """Ensure all the boolean fields in data frame are booleans before save to ES
+
+        Args:
+            df: pyspark dataframe to cast boolean
+            mapping: Dict of mapping types
+
+        Returns:
+            pyspark dataframe with boolean field casted
+        """
         paths = get_all_boolean_paths(mapping)
         schema_json = df.schema.jsonValue()
         modified = any(self.cast_path(path, schema_json) for path in paths)
@@ -66,20 +82,29 @@ class BaseBuilder(object):
 
         return df
 
-    def cast_path(self, path, cur):
+    def cast_path(self, path, schema):
+        """Find the field in the schema indicated by path and change it to boolean.
+
+        Args:
+            path: List[str] a path to the boolean field
+            schema: pyspark dataframe schema to cast boolean
+
+        Returns:
+
+        """
         field = {}
         for node in path:
-            for field in cur['fields']:
+            for field in schema['fields']:
                 if field['name'] == node:
-                    cur = field['type']
-                    if 'elementType' in cur:
-                        cur = cur['elementType']
+                    schema = field['type']
+                    if 'elementType' in schema:
+                        schema = schema['elementType']
                     break
             else:
                 self.log("{} not found in {}".format(path, self.index_name))
                 break
         else:
-            if cur != 'boolean' and 'type' in field:
+            if schema != 'boolean' and 'type' in field:
                 self.log("cast {} to boolean in {}".format(path, self.index_name))
                 field['type'] = 'boolean'
                 return True
@@ -132,7 +157,6 @@ class BaseBuilder(object):
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()
-        return df
 
     def truncate_df_at_percentile(self,
                                   df_to_truncate,
