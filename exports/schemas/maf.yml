@@ -48,6 +48,7 @@ maf_schema:
       pattern: chr{}
   is_canonical:
       name:  CANONICAL
+      type: boolean
   consequence_type:
       name:  Consequence
   ref_seq_accession:
