@@ -103,6 +103,88 @@ Pycharm.
         PYSPARK_PYTHON=/home/vagrant/venv/bin/python
         ```
 
+<<<<<<< HEAD
+=======
+After the above steps, you can save your changes and click the run button to start your 
+tests.
+
+## Docker compose
+
+You can also use docker to run the pytest. If you are on a mac, make sure you locate 
+about 4G of mem, 4G of swap, and 2 CPUs to docker machine. You can change it in the 
+preference of docker desktop software. Then copy your id_rsa file to the project root.
+It is required to download and install private python packages from github.
+Then run
+```
+docker-compose up -d
+```
+and wait for the build to finish.
+
+when it is done, you can run the tests in the docker container:
+```
+docker exec -it gdc-mutation-indexer_gdc-mutation-indexer_1 /bin/bash
+cd /app
+pytest tests
+```
+The test should start. 
+
+### Use Pycharm to debug with Docker Compose
+
+1. Set the Docker Compose Interpreter
+
+    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
+        Interpreter, select Docker Compose, For services, select gdc-mutation-indexer. 
+        Click 'OK'
+       
+    * Set Path mappings: <project root> -> '/app'
+
+2. Add new Run/Debug configurations
+
+    * Add new pytest configuration
+    * Set script path to <project>/tests (or any test file you want)
+    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
+        Docker Compose ...'
+    * Set working directory to your project folder
+    * Set the following environment variables
+        ```
+        PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.7-src.zip:/opt/bitnami/spark/python/:$PYTHONPATH
+        SPARK_HOME=/opt/bitnami/spark
+        PYSPARK_PYTHON=/usr/bin/python2
+        ```
+
+3. (optional) You can configure the gdc-mutation-indexer docker to use the 
+    elasticsearch on your host. Which should have better performance than the one in
+    your docker container.
+    
+    * Configure elasticsearch to listen on local ips.
+        * In the elasticsearch.yml (/usr/local/etc/elasticsearch/elasticsearch.yml), 
+            add the following lines:
+            ```
+            network.bind_host: [_local_, _site_]
+            discovery.type: single-node
+            ```
+        * Restart elasticsearch with `brew services restart elasticsearch`
+    * Add the following environment variables in you Run/Debug configurations
+    
+        ```
+        ES_NODES_TEST=host.docker.internal
+        ES_HOST_TEST=host.docker.internal
+        SOURCE_ES_HOST_TEST=host.docker.internal
+        ```
+
+After the above steps, you can save your changes and click the run button to start your 
+tests.
+
+### Known Issues
+
+1. The first time you run pytest, the elasticsearch might timeout. If you saw the 
+timeout error, run the tests again. The error should disappear.
+
+2. tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail.
+
+3. The breakpoint in Pycharm seems not working. 
+
+>>>>>>> DEV-217 add more info on README
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
