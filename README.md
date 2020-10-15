@@ -51,6 +51,10 @@ extract the content. Copy the file `dist/elasticsearch-spark-20_2.11-7.6.2.jar` 
 Make sure your elasticsearch server is running at port 9200 and start the tests. If you
 see timeout error for es, restart the tests.
 
+### Know Issues
+
+tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail.
+
 ## Vagrant
 
 Testing locally can be hard and `vagrant` support has been added to make our lives
@@ -178,8 +182,9 @@ tests.
 1. The first time you run pytest, the elasticsearch might timeout. If you saw the 
 timeout error, run the tests again. The error should disappear.
 
-2. tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail
-when run in docker.
+2. tests/builders/test_gene_expression_builder.py:test_gene_expression_builder will fail.
+
+3. The breakpoint in Pycharm seems not working. 
 
 ## Setup pre-commit hook to check for secrets
 
