@@ -76,17 +76,18 @@ class TestMAFBuilder:
         columns = df.columns
 
         sort_df = builder.standardize_schema(df.select(*sorted(columns)))
-        assert sort_df.columns == maf_schema.keys()
+        assert len(sort_df.columns) == len(maf_schema.keys())
+        assert set(sort_df.columns) == maf_schema.keys()
 
         reverse_df = builder.standardize_schema(df.select(*reversed(columns)))
-        assert reverse_df.columns == maf_schema.keys()
+        assert reverse_df.columns == sort_df.columns
 
         extra_columns = columns[:]
         extra_columns.insert(0, lit('asdf').alias('extra'))
         extra_columns.insert(4, lit(300).alias('extraneous'))
         extra_columns.append(lit(None).alias('superfluous'))
         extra_df = builder.standardize_schema(df.select(*extra_columns))
-        assert extra_df.columns == maf_schema.keys()
+        assert extra_df.columns == sort_df.columns
 
     def test_standardize_schema_missing_field(self, sqlContext, maf_schema):
         '''
@@ -114,7 +115,7 @@ class TestMAFBuilder:
             reduced_df,
             default_to_none=['callers', 'Hugo_Symbol', 'IMPACT'],
         )
-        assert standardized_df.columns == maf_schema.keys()
+        assert set(standardized_df.columns) == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
         '''

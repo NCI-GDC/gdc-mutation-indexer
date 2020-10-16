@@ -1,6 +1,4 @@
-from pyspark.sql.functions import (
-    struct, col,
-)
+from pyspark.sql.functions import struct, col
 from exports.builders.utils import select_mapping
 
 import logging
@@ -57,4 +55,4 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fiel
 
     df = input_df.select(*cols)
     df = df.drop_duplicates(subset=unique_fields)
-    return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
+    return df.select([column for column in df.columns if column not in drop_fields])

@@ -1,4 +1,6 @@
-import httplib
+from future import standard_library
+standard_library.install_aliases()
+import http.client
 import os
 import shlex
 import ssl
@@ -30,7 +32,7 @@ def create_factory(host, port=443, timeout=10):
     match the hostname we likely expect.
     """
     return (
-        httplib.HTTPSConnection(
+        http.client.HTTPSConnection(
             host=host,
             port=port,
             timeout=timeout,
@@ -292,9 +294,7 @@ class BaseConfig(object):
         return indices
 
     def validate_indices(self, indices):
-        existing_indices = self.es.indices.get_alias().keys()
-        name_collisions = [name for name in indices.values()
-                           if name in existing_indices]
+        name_collisions = list(self.es.indices.get_alias().keys() & indices.values())
 
         if name_collisions:
             raise Exception(
@@ -411,7 +411,7 @@ class BaseConfig(object):
 
         valid_metadata = {'type': 'cleversafe', 'state': 'validated'}
         for url, metadata in indexd_doc.urls_metadata.items():
-            if all([metadata.get(k) == v for k, v in valid_metadata.items()]):
+            if all(metadata.get(k) == v for k, v in valid_metadata.items()):
                 return url
 
         raise Exception(
@@ -470,7 +470,7 @@ class BaseConfig(object):
             fields='samples.*'
         )
 
-        index_name = samples_mapping.keys()[0]
+        index_name = list(samples_mapping.keys())[0]
         if self.graph_case_doc_type:
             mapping = samples_mapping[index_name]['mappings'][self.graph_case_doc_type]
         else:

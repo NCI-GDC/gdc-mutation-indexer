@@ -110,14 +110,14 @@ def get_non_null_fields(config, blacklist=None):
     # index name at the top level, but if the index is aliased, it might not match
     # config.graph_case_index, so take whatever the first value is.
     gi_name = config.graph_case_index
-    gi_mappings = es_client.indices.get_mapping(gi_name).values()[0]['mappings']
+    gi_mappings = list(es_client.indices.get_mapping(gi_name).values())[0]['mappings']
     if config.graph_case_doc_type:
         gi_doc_mappings = gi_mappings[config.graph_case_doc_type]
     else:
         gi_doc_mappings = gi_mappings
 
     # get actual graph index settings
-    gi_settings = es_client.indices.get_settings(gi_name).values()[0]['settings']
+    gi_settings = list(es_client.indices.get_settings(gi_name).values())[0]['settings']
 
     # Need to create the mappings in gdcmodels format
     gc_mappings = {

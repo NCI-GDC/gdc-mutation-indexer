@@ -1,4 +1,4 @@
-from base import BaseParser
+from .base import BaseParser
 
 
 class S3Args(BaseParser):

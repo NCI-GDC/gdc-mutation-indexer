@@ -99,7 +99,7 @@ class TestObservationBuilder(TestOtherBase):
         obs = map(json.loads, (obs_df.select('case_id', id_field)
                                      .toJSON().collect()))
 
-        assert sorted(obs) == sorted(true_obs)
+        assert obs == true_obs
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
     def test_variant_caller(
