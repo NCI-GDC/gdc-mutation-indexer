@@ -22,7 +22,7 @@ def test_get_all_boolean_paths():
     with open("tests/data/input/mapping.json") as mapping_fp:
         data = json.load(mapping_fp)
         paths = get_all_boolean_paths(data)
-        assert paths == [
+        assert sorted(paths) == [
             [u"gene", u"cnv", u"gene_level_cn"],
             [u"gene", u"is_cancer_gene_census"],
         ]
