@@ -77,7 +77,7 @@ class TestMAFBuilder:
 
         sort_df = builder.standardize_schema(df.select(*sorted(columns)))
         assert len(sort_df.columns) == len(maf_schema.keys())
-        assert set(sort_df.columns) == maf_schema.keys()
+        assert set(sort_df.columns) == set(maf_schema.keys())
 
         reverse_df = builder.standardize_schema(df.select(*reversed(columns)))
         assert reverse_df.columns == sort_df.columns
@@ -115,7 +115,7 @@ class TestMAFBuilder:
             reduced_df,
             default_to_none=['callers', 'Hugo_Symbol', 'IMPACT'],
         )
-        assert set(standardized_df.columns) == maf_schema.keys()
+        assert set(standardized_df.columns) == set(maf_schema.keys())
 
     def test_ssm_id(self, maf_df):
         '''
