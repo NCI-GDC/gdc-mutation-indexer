@@ -44,8 +44,9 @@ Spark distribution.
 
 ## Tests the easy way
 
-After PySpark is installed via pip, download `elasticsearch-hadoop-7.6.2.zip` and 
-extract the content. Copy the file `dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
+After PySpark(current version 2.4.5) is installed via pip, download 
+`elasticsearch-hadoop-7.6.2.zip` and extract the content. Copy the file 
+`dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
 `venv/lib/python2.7/site-packages/pyspark/jars/`. 
 
 Make sure your elasticsearch server is running at port 9200 and start the tests. If you
