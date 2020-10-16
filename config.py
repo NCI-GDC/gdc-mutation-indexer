@@ -294,7 +294,7 @@ class BaseConfig(object):
         return indices
 
     def validate_indices(self, indices):
-        name_collisions = list(self.es.indices.get_alias().keys() & indices.values())
+        name_collisions = set(self.es.indices.get_alias().keys()) & set(indices.values())
 
         if name_collisions:
             raise Exception(

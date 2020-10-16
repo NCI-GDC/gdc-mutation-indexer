@@ -46,9 +46,9 @@ class TestDataStats:
     @staticmethod
     def load_es_graph_dump(filename):
         if filename.endswith('.gz'):
-            f = gzip.open(filename, 'rb')
+            f = gzip.open(filename, 'r')
         else:
-            f = open(filename, 'rb')
+            f = open(filename, 'r')
 
         try:
             docs = json.load(f)
@@ -57,7 +57,13 @@ class TestDataStats:
             # If instead the file is a case doc per line
             docs = []
             for line in f.readlines():
+                try:
+                    line = line.decode()
+                except (UnicodeDecodeError, AttributeError):
+                    pass
                 docs.append(json.loads(line))
+
+        f.close()
         return docs
 
     @classmethod

@@ -18,5 +18,5 @@ setup(
     packages=PACKAGES,
     py_modules=["config"],
     include_package_data=True,
-    options=dict(egg_info=dict(tag_build=('_rev_' + get_git_commit(ROOT_DIR)))),
+    options=dict(egg_info=dict(tag_build=('_rev_' + get_git_commit(ROOT_DIR).decode('UTF-8')))),
 )
