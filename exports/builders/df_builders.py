@@ -62,7 +62,7 @@ def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
     df = get_single_df(input_df, index_name, 'ssm',
                        add_fields,  [], unique_fields, ignore)
     df = df.join(clinical_anno_df, on='ssm_id', how='left')
-    return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
+    return df.select([column for column in df.columns if column not in drop_fields])
 
 
 def get_cnv_df(input_df, index_name, add_fields=[], drop_fields=[],
@@ -83,4 +83,4 @@ def get_single_df(input_df, index_name, mapping_name,
         *(add_fields + struct_select(index_name, mapping_name, ignore=ignore)))
 
     df = df.drop_duplicates(subset=unique_fields)
-    return reduce(lambda cur_df, col: cur_df.drop(col), drop_fields, df)
+    return df.select([column for column in df.columns if column not in drop_fields])

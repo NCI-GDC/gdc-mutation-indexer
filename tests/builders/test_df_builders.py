@@ -86,10 +86,10 @@ class TestDFBuildersBase:
                 if key in mapping and val is not None:
                     if (mapping[key].get('default'), val) in superset:
                         continue
-                    print 'item not in superset:', item
+                    print('item not in superset:', item)
                     result = False
                 else:
-                    print 'item not mapped', item
+                    print('item not mapped', item)
 
         return result
 

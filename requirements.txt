@@ -13,6 +13,7 @@ xlrd==0.9.3
 
 # TODO: below can be removed once migrated to Python3
 gitdb2~=2.0.0
+future==0.18.2
 
 -e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.6.0-alpha3#egg=gdcmodels
 -e git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.1#egg=normalizer
