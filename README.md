@@ -127,6 +127,8 @@ when it is done, you can run the tests in the docker container:
 ```
 docker exec -it gdc-mutation-indexer_gdc-mutation-indexer_1 /bin/bash
 cd /app
+# if you have run pytest in other environments
+find tests -name __pycache__  -exec rm -rf {} \;
 pytest tests
 ```
 The test should start. 
