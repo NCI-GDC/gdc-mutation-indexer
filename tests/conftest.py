@@ -54,6 +54,8 @@ def setup_graph_indices():
         if create_test_index(es, doc_type=doc_type, model_name=model_name):
             load_docs_into_test_index(es, doc_type)
 
+        # TODO: clean up indices
+
 
 def create_test_index(es, doc_type, model_name):
     """Create and configure an Elasticsearch index if needed.

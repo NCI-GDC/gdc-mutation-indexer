@@ -8,7 +8,7 @@ from pyspark.sql.functions import (
     udf,
 )
 from pyspark.sql.types import (
-    ArrayType,
+    _parse_datatype_json_value,
     DoubleType,
     StringType,
     StructField,
@@ -42,6 +42,30 @@ RawGeneExpression = StructType([
     StructField("raw_gene_id", StringType()),
     StructField("expression_value", DoubleType()),
 ])
+
+GENE_EXPRESSION_SCHEMA = {
+    'type': 'struct',
+    'fields': [
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'case_id'},
+        {'metadata': {}, 'nullable': True,
+         'type': {'valueContainsNull': True, 'valueType': 'string', 'type': 'map',
+                  'keyType': 'string'}, 'name': 'demographic'},
+        {'metadata': {}, 'nullable': True, 'type': {
+            'elementType': {'valueContainsNull': True, 'valueType': 'long', 'type': 'map',
+                            'keyType': 'string'}, 'containsNull': True, 'type': 'array'},
+         'name': 'diagnoses'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'file_id'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'file_url'},
+        {'metadata': {}, 'nullable': True,
+         'type': {'valueContainsNull': True, 'valueType': 'string', 'type': 'map',
+                  'keyType': 'string'}, 'name': 'project'},
+        {'metadata': {}, 'nullable': True, 'type': {
+            'elementType': {'valueContainsNull': True, 'valueType': 'string',
+                            'type': 'map', 'keyType': 'string'}, 'containsNull': True,
+            'type': 'array'}, 'name': 'samples'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'submitter_id'}
+    ]
+}
 
 
 @udf(returnType=StringType())
@@ -142,8 +166,9 @@ class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder, BaseInputBuilde
 
     def build_from_scratch(self):
         files_metadata = self._load_metadata()
-
-        initial_df = self.sqlContext.createDataFrame(files_metadata)
+        # occasionally there would be TypeError
+        schema = _parse_datatype_json_value(GENE_EXPRESSION_SCHEMA)
+        initial_df = self.sqlContext.createDataFrame(files_metadata, schema=schema)
 
         # NOTE: diagnoses is a nested document, so we are flattening it by
         #   simply aggregating age_at_diagnosis values into an array
