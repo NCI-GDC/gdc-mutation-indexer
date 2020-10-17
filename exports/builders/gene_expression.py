@@ -166,7 +166,8 @@ class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder, BaseInputBuilde
 
     def build_from_scratch(self):
         files_metadata = self._load_metadata()
-        # occasionally there would be TypeError
+        # provide schema to avoid occasional TypeError, the schema here is not correct
+        # the data types will be casted to correct types in BaseBuilder
         schema = _parse_datatype_json_value(GENE_EXPRESSION_SCHEMA)
         initial_df = self.sqlContext.createDataFrame(files_metadata, schema=schema)
 
