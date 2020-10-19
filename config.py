@@ -470,7 +470,7 @@ class BaseConfig(object):
             fields='samples.*'
         )
 
-        index_name = list(samples_mapping.keys())[0]
+        index_name = tuple(samples_mapping.keys())[0]
         if self.graph_case_doc_type:
             mapping = samples_mapping[index_name]['mappings'][self.graph_case_doc_type]
         else:

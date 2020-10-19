@@ -83,7 +83,7 @@ def user_confirm(prompt_string, log, on_confirm=no_op, on_decline=raise_on_decli
     """
     while True:
         log.info(prompt_string)
-        ans = raw_input().lower()
+        ans = input().lower()
         if ans in ["y", "yes"]:
             return on_confirm()
         elif ans in ["n", "no"]:
