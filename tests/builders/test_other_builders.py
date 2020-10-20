@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from deepdiff import DeepDiff
 from pyspark.sql.functions import explode
 
 from exports.builders import (
@@ -99,10 +100,7 @@ class TestObservationBuilder(TestOtherBase):
         obs = map(json.loads, (obs_df.select('case_id', id_field)
                                      .toJSON().collect()))
 
-        def compare_entry(entry):
-            return sorted(entry.items())
-
-        assert sorted(obs, key=compare_entry) == sorted(true_obs, key=compare_entry)
+        assert DeepDiff(true_obs, obs, ignore_order=True) == {}
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
     def test_variant_caller(
