@@ -111,11 +111,21 @@ tests.
 
 ## Docker compose
 
-You can also use docker to run the pytest. If you are on a mac, make sure you locate 
-about 4G of mem, 4G of swap, and 2 CPUs to docker machine. You can change it in the 
-preference of docker desktop software. Then copy your id_rsa file to the project root.
-It is required to download and install private python packages from github.
-Then run
+You can also use docker to run the pytest. 
+
+1. If you are on a mac, make sure you locate about 4G of mem, 4G of swap, and 2 CPUs to 
+docker machine. You can change it in the preference of docker desktop software. 
+
+2. We use buildkit for ssh forwarding to access private git repos.
+Make sure your docker version is 18.09+, which is required for buildkit. 
+docker-compose does not support --ssh flag yet so you have to build the image first:
+
+```
+DOCKER_BUILDKIT=1 docker build --ssh default -f docker/mutation-indexer -t gdc-mutation-indexer_gdc-mutation-indexer  .
+```
+
+3. Start the docker compose environment
+
 ```
 docker-compose up -d
 ```

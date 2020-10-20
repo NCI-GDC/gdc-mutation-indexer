@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:experimental
 FROM bitnami/spark:2.4.5
 
 # environment
@@ -12,16 +13,14 @@ ENV ES_NODES_TEST="elasticsearch" \
 USER root
 
 # core setup
-COPY id_rsa requirements.txt dev-requirements.txt /root/
-RUN mkdir /root/.ssh && \
-    mv /root/id_rsa /root/.ssh/ && \
-    chmod 600 /root/.ssh/id_rsa
+COPY requirements.txt dev-requirements.txt /root/
 
 RUN apt-get update && \
     apt-get install -y python-pip unzip git ssh && \
     apt-get clean && rm -rf /var/lib/apt
 
-RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts && \
+RUN --mount=type=ssh mkdir /root/.ssh && \
+    ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts && \
     pip2 install -r /root/requirements.txt && \
     pip2 install -r /root/dev-requirements.txt
 
