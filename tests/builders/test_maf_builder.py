@@ -115,6 +115,7 @@ class TestMAFBuilder:
             reduced_df,
             default_to_none=['callers', 'Hugo_Symbol', 'IMPACT'],
         )
+        assert len(standardized_df.columns) == len(maf_schema.keys())
         assert set(standardized_df.columns) == set(maf_schema.keys())
 
     def test_ssm_id(self, maf_df):
