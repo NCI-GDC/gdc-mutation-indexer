@@ -121,7 +121,7 @@ Make sure your docker version is 18.09+, which is required for buildkit.
 docker-compose does not support --ssh flag yet so you have to build the image first:
 
 ```
-DOCKER_BUILDKIT=1 docker build --ssh default -f docker/mutation-indexer -t gdc-mutation-indexer_gdc-mutation-indexer  .
+DOCKER_BUILDKIT=1 docker build --ssh default -t gdc-mutation-indexer_gdc-mutation-indexer  .
 ```
 
 3. Start the docker compose environment

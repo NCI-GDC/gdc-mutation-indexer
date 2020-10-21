@@ -16,7 +16,6 @@ services:
   gdc-mutation-indexer:
     build:
       context: .
-      dockerfile: docker/mutation-indexer
     volumes:
       - type: bind
         source: .

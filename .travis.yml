@@ -5,6 +5,9 @@ language: python
 python:
   - "3.5"
 
+services:
+  - docker
+
 jdk:
   - openjdk8
 
@@ -55,3 +58,9 @@ script:
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
   - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
+
+after_success:
+  - echo "$QUAY_PASSWORD" | docker login -u "$QUAY_USERNAME" --password-stdin quay.io
+  - docker pull docker/dockerfile:1.0-experimental
+  - docker pull docker.io/docker/dockerfile-copy:v0.1.9
+  - bash docker/docker_push.sh --push
