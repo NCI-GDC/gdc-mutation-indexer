@@ -13,8 +13,11 @@ jdk:
 
 addons:
   apt:
+    sources:
+      - docker-xenial
     packages:
       - libyaml-dev
+      - docker-ce
 
 cache: pip
 
@@ -28,6 +31,7 @@ before_install:
   # Work around a bug in the Travis Xenial image where the environment is
   # always configured for OpenJDK 11 unless you set language: java.
   # The official Spark builds are compiled on Java 8.
+  - docker --version
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
   - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
