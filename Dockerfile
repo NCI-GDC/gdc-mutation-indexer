@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:experimental
+# syntax=docker/dockerfile:1.0-experimental
 FROM bitnami/spark:2.4.5
 
 # environment
