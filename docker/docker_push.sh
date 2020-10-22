@@ -22,6 +22,9 @@ GIT_BRANCH=${GIT_BRANCH/\//_}
 # keep track of tags for pushing
 TAGS=("$IMAGE_NAME:$GIT_BRANCH")
 
+# pull base image
+docker pull docker.io/bitnami/spark:2.4.5
+
 # initial build command
 BUILD_COMMAND=(build --ssh default -t "$IMAGE_NAME:$GIT_BRANCH")
 
