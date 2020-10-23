@@ -66,7 +66,4 @@ script:
   - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
 
 after_success:
-  - echo "$QUAY_PASSWORD" | docker login -u "$QUAY_USERNAME" --password-stdin quay.io
-  - docker pull docker/dockerfile:1.0-experimental
-  - docker pull docker.io/docker/dockerfile-copy:v0.1.9
-  - bash -e docker/docker_push.sh --push
+  - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -e docker/docker_deploy.sh; fi
