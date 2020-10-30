@@ -1,10 +1,8 @@
 import logging
-import os
 from pkg_resources import resource_filename
 
 import yaml
-from elasticsearch import Elasticsearch
-from pyspark.sql.functions import lit, col, regexp_extract, udf, struct
+from pyspark.sql.functions import col, lit, lower, struct, udf
 from pyspark.sql.types import StringType, IntegerType, ArrayType
 
 from config import LOG_FORMAT
@@ -13,9 +11,7 @@ from exports.builders.utils import (
     ssm_label_col,
     extract_sift_polyphen,
 )
-from exports.es_utils import (
-    iterate_es_results,
-)
+
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.clinical_annotations.civic import CivicBuilder
@@ -31,9 +27,13 @@ class MAFBuilder(BaseInputBuilder):
 
     def __init__(self, config, sqlContext):
         super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
-        self.acls = self.get_acls()
         self.schema = self.get_schema()
         self.annotation_builders = [CivicBuilder(config, sqlContext)]
+
+    def build_from_cache(self, df):
+        """Fix the format of old cached MAF DFs."""
+        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
+        return df
 
     def build_from_scratch(self):
         """
@@ -54,8 +54,6 @@ class MAFBuilder(BaseInputBuilder):
         df = self.add_ssm_id(df)
         # Create occurrence_id
         df = self.add_occurrence_id(df)
-        # Create observation_id
-        df = self.add_observation_id(df)
         # Get cds columns from cds_position
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
@@ -169,70 +167,6 @@ class MAFBuilder(BaseInputBuilder):
         df = df.withColumn('cosmic_id', to_array(df['cosmic_id']))
         return df
 
-    def get_acls(self):
-        """
-        1. Take list of maf file names
-        2. Assume the last part of the url is the file_name
-        3. Look up corresponding files in es
-        4. Parse out those files' acls
-        """
-        es = Elasticsearch(self.config.es_host,
-                           port=self.config.es_port,
-                           use_ssl=self.config.es_use_ssl,
-                           verify_certs=not self.config.disable_es_verify_certs,
-                           http_auth=(self.config.es_user,
-                                      self.config.es_pass))
-
-        file_names = self.config.get_maf_file_names()
-
-        query = {
-            "query": {
-                "terms": {
-                    "file_name": file_names
-                },
-            },
-            "_source": ["file_name", "acl"]
-        }
-
-        # Build up dictionary of file_name to acl
-        filenames_to_acls = {}
-        for doc in iterate_es_results(es, self.config.graph_index, 'file', query=query):
-            source = doc['_source']
-            filename = source['file_name']
-            acl = source['acl']
-
-            filenames_to_acls[filename] = acl
-
-        return filenames_to_acls
-
-    def add_acl(self, df, url):
-        """
-        Populates mutation data with acls
-        Have to do a little massaging of the file name to match
-        Mapped on the maf name level
-        """
-        acls = self.acls
-
-        def acl_inner():
-            try:
-                # trim out leading folders
-                file_name = os.path.basename(url)
-
-                # mafs may be zipped or unzipped
-                # we expect the file_name in the File to be 'xxx.gz'
-                if not file_name.endswith('.gz'):
-                    file_name += '.gz'
-
-                return acls[file_name]
-
-            except KeyError:
-
-                raise Exception("ACL not found for maf with url {}, "
-                                "file_name {}".format(url, file_name))
-
-        acl_udf = udf(acl_inner, ArrayType(StringType()))
-        return df.withColumn('acl', acl_udf())
-
     def add_available_variation_data(self, df):
         """
         Populates available_variation_data with ['ssm']
@@ -276,7 +210,10 @@ class MAFBuilder(BaseInputBuilder):
             subtypes = {
                 'SNP': 'Single base substitution',
                 'DEL': 'Small deletion',
-                'INS': 'Small insertion'
+                'INS': 'Small insertion',
+                'DNP': 'Di-nucleotide polymorphism',
+                'TNP': 'Tri-nucleotide polymorphism',
+                'ONP': 'Oligo-nucleotide polymorphism',
             }
             if variant_type in subtypes:
                 return subtypes[variant_type]
@@ -314,27 +251,13 @@ class MAFBuilder(BaseInputBuilder):
 
     def add_occurrence_id(self, df):
         """
-        Adds the observation_id, a uuid hash of:
+        Adds the occurrence_id, a uuid hash of:
         'ssm_occurrence' + ssm_id + case_id
         """
         df = df.withColumn('occurrence_id',
                            uuid5_col(lit('ssm_occurrence'),
                                      col('ssm_id'),
                                      col('case_id')))
-        return df
-
-    def add_observation_id(self, df):
-        """
-        Adds the observation_id, a uuid hash of:
-        occurrence_id+tumor_sample_uuid+matched_norm_sample_uuid+variant_caller+variant_process
-        """
-        df = df.withColumn('observation_id',
-                           uuid5_col(lit('ssm_observation'),
-                                     col('occurrence_id'),
-                                     col('tumor_sample_uuid'),
-                                     col('matched_norm_sample_uuid'),
-                                     col('variant_caller'),
-                                     lit('masked')))
         return df
 
     def add_genomic_dna_change(self, df):
@@ -384,18 +307,6 @@ class MAFBuilder(BaseInputBuilder):
                                              IntegerType())(col('cds_position')))
         return df
 
-    def extract_barcode(self, df):
-        """
-        Extracts the case barcode from the sample barcode
-        TODO: Remove this as it only works for TCGA. Should look up case uuid
-              from the sample uuid
-        """
-        maf_df = df.withColumn('_case_submitter_id',
-                               regexp_extract(col('tumor_sample_barcode'),
-                                              '([A-Z]{4}-[A-Z0-9]{2}-[A-Z0-9]{4})',
-                                              1))
-        return maf_df
-
     def combine(self, urls=None):
         """
         Combines data frames from a list of urls
@@ -408,14 +319,10 @@ class MAFBuilder(BaseInputBuilder):
         df = None
 
         for url in urls:
-            caller = self.get_caller(url)
             try:
                 # TODO: separate data transforms from combining multiple df into one
-                # latter should go as a static method to base class for MAF and Gistic Builders
+                #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
-                new_df = new_df.withColumn('variant_caller', lit(caller))
-                # add acl based on individual maf
-                new_df = self.add_acl(new_df, url)
 
                 # ensure a consistent schema so that the union works correctly
                 # this will strip out any columns that aren't in the schema,
@@ -424,7 +331,9 @@ class MAFBuilder(BaseInputBuilder):
                     new_df, default_to_none=['normal_bam_uuid',
                                              'tumor_bam_uuid'])
 
-                self.logger.info('Read {} rows from {}'.format(new_df.count(), url))
+                if self.config.debug:
+                    self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                                   url))
                 if df is None:
                     df = new_df
                 else:
@@ -434,39 +343,12 @@ class MAFBuilder(BaseInputBuilder):
 
         assert df is not None
 
-        self.config.nb_mutations = df.count()
-        self.logger.info('Combined {} files for a total of {} rows'
-                         .format(len(urls), self.config.nb_mutations))
+        if self.config.debug:
+            self.config.nb_mutations = df.count()
+            self.logger.info('Combined {} files for a total of {} rows'
+                             .format(len(urls), self.config.nb_mutations))
         self.df = df
         return df
-
-    def get_caller(self, url):
-        """
-        Identify variant caller by portion of url name.
-        """
-
-        # As of 10/09/2019 the bucket name is 'varscan-maf-dr-10', which forced
-        # the addition of dots, so that the code does what it should be
-        # TODO: Find a better way to get this information
-        possible_callers = {
-            '.mutect.': 'mutect2',
-            '.muse.': 'muse',
-            '.varscan.': 'varscan',
-            '.somaticsniper.': 'somaticsniper',
-            'FM-AD_SNV': 'FM Simple Somatic Mutation',
-        }
-
-        try:
-            caller_keys = [c for c in possible_callers if c in url]
-
-            assert len(caller_keys) == 1
-
-            caller = possible_callers[caller_keys[0]]
-
-        except AssertionError:
-            raise Exception("Cannot identify caller for url {}".format(url))
-
-        return caller
 
     def patch_url(self, url):
         """

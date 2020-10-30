@@ -68,7 +68,7 @@ def test_struct_select_with_selector(sqlContext, index, selector):
         assert stmt
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'es_client')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'source_es_client')
 class TestMiscFunctions:
 
     def test_es_adapter(self, sqlContext):
@@ -77,41 +77,47 @@ class TestMiscFunctions:
         """
         # Fails if org.elasticsearch.hadoop.mr.LinkedMapWritable isnt in the path
         return (sqlContext.read.format("es")
-                          .option('es.nodes', conf.source_es_host)
+                          .option('es.nodes', conf.source_es_nodes)
                           .option('es.nodes.resolve.hostname', 'false')
-                          .option('es.resource.read', conf.graph_index)
-                          .load(conf.graph_index))
+                          .option('es.resource.read', conf.graph_case_index)
+                          .load(conf.graph_case_index))
 
     def test_percentile(self):
         """
         Test the percentile util function
         """
-        l = randint(0, 100)
-        if l % 2:
-            l += 1
-        v = [randint(0, 100) for i in range(l + 1)]
+        length = randint(0, 100)
+        if length % 2:
+            length += 1
+        v = [randint(0, 100) for i in range(length + 1)]
         sorted_v = sorted(v)
         assert percentile(v, 0) == sorted_v[0]
-        assert percentile(v, 50) == sorted_v[l/2]
+        assert percentile(v, 50) == sorted_v[length/2]
         assert percentile(v, 100) == sorted_v[-1]
 
-    def test_graph_index(self, es_client):
+    def test_graph_index(self, source_es_client):
         """
-        Test the test graph index fixture
+        Test the test graph index fixtures
         """
-        assert es_client is not None
-        assert conf.graph_index is not None
-        assert es_client.count()['count'] > 0
-        assert (es_client.get(index=conf.graph_index, doc_type='case',
-                              id='d2748e35-4719-43c1-a533-b6b0cd9688c3')['_id']
-                == 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
+        assert source_es_client is not None
+        assert conf.graph_case_index is not None
+        assert conf.graph_file_index is not None
+        assert source_es_client.count()['count'] > 0
+
+        def assert_existence(index_name, doc_id):
+            doc = source_es_client.get(index=index_name, id=doc_id)
+            assert doc is not None, 'Could not find {} in {}'.format(doc_id, index_name)
+            assert doc['_id'] == doc_id
+
+        assert_existence(conf.graph_case_index, 'd2748e35-4719-43c1-a533-b6b0cd9688c3')
+        assert_existence(conf.graph_file_index, '2a8f2c83-8b5e-4987-8dbf-01f7ee24dc26')
 
     def test_properties(self):
         """
         Test that configuration properties are present
         """
         assert 's3_host' in dir(conf)
-        assert 'es_host' in dir(conf)
+        assert 'es_nodes' in dir(conf)
 
     def test_sanitize_aa_change(self, sqlContext):
         # Fake input and expected output
@@ -192,11 +198,21 @@ class TestMiscFunctions:
         label = ssm_label('chr3', 'DEL', 41589825, '', 'A', '')
         assert label == 'chr3:g.41589825delA'
 
+        # TODO Other indel cases
         label = ssm_label('chr3', 'INS', 41589825, 41589825, '', 'T')
         assert label == 'chr3:g.41589825_41589825insT'
 
         label = ssm_label('chr4', 'SNP', 112382545, '', 'A', 'T')
         assert label == 'chr4:g.112382545A>T'
+
+        label = ssm_label('chr5', 'DNP', 112382500, 112382501, 'AC', 'TG')
+        assert label == 'chr5:g.112382500_112382501delinsTG'
+
+        label = ssm_label('chr5', 'TNP', 112382500, 112382502, 'ACT', 'TGA')
+        assert label == 'chr5:g.112382500_112382502delinsTGA'
+
+        label = ssm_label('chr5', 'ONP', 112382500, 112382505, 'TCGATC', 'CTAGCT')
+        assert label == 'chr5:g.112382500_112382505delinsCTAGCT'
 
     def test_uuid5(self):
         """
@@ -221,3 +237,7 @@ class TestMiscFunctions:
         data = TestDataStats.load_test_data(conf.input_dir)
         stats = TestDataStats.get_stats(maf_df, gistic_df, data, index)
 
+        if index in ["gene_expression"]:
+            assert stats is None
+        else:
+            assert stats is not None

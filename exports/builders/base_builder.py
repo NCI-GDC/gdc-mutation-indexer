@@ -1,8 +1,7 @@
+import abc
 import json
 import logging
-import os
 
-from elasticsearch import Elasticsearch
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import col, size
 
@@ -17,6 +16,8 @@ class BaseBuilder(object):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
+    __metaclass__ = abc.ABCMeta
+
     index_name = None
     id_field = None
     settings = None
@@ -26,19 +27,14 @@ class BaseBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
         self.debug = config.debug
-        self.es = Elasticsearch(self.config.es_host,
-                                port=self.config.es_port,
-                                use_ssl=self.config.es_use_ssl,
-                                verify_certs=not self.config.disable_es_verify_certs,
-                                http_auth=(self.config.es_user,
-                                           self.config.es_pass))
 
-    def build(self):
+    @abc.abstractmethod
+    def build(self, *args, **kwargs):
         """
         Contains the ETL logic to construct a spark dataframe of
         the same structure as the required output index.
         """
-        raise NotImplementedError
+        pass
 
     def load(self):
         """
@@ -46,7 +42,6 @@ class BaseBuilder(object):
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-        index_doc = '{}/{}'.format(index, self.index_name)
 
         index_mapper = ModelMapper(self.index_name)
         if self.config.skip_normalization:
@@ -56,12 +51,8 @@ class BaseBuilder(object):
         index_body = json.dumps(index_body)
 
         self.log('Creating {} index'.format(index))
-        response = self.es.indices.create(index=index,
-                                          ignore=400,
-                                          body=index_body)
+        response = self.config.es.indices.create(index=index, body=index_body)
         self.log(response)
-
-        self.save_build_metadata()
 
         self.log('Repartitioning {}'.format(self.index_name))
         df = getattr(self,
@@ -78,7 +69,7 @@ class BaseBuilder(object):
             .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)\
             .option('es.nodes.wan.only', 'true')\
             .option('es.nodes.resolve.hostname', 'false')\
-            .option('es.resource.write', index_doc)\
+            .option('es.resource.write', index)\
             .option('es.http.timeout', '20m')\
             .option('es.http.retries', '-1')\
             .option('es.batch.write.retry.count', '-1')\
@@ -87,7 +78,9 @@ class BaseBuilder(object):
             .option('es.batch.size.entries', self.config.batch_size_entries)\
             .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
-            .save(index_doc)
+            .save(index)
+
+        self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()
 
@@ -169,58 +162,6 @@ class BaseBuilder(object):
             df = df.mode('overwrite')
         self.logger.info('Saving {} to {}'.format(self.index_name, path))
         df.json(path)
-
-    def save_build_metadata(self):
-        """
-        Saves metadata about the build in a 'build_metadata' document in the
-        elasticsearch index
-        """
-
-        index = self.config.indices[self.index_name]
-        nb_mutations = -1
-
-        if hasattr(self.config, 'nb_mutations'):
-            nb_mutations = self.config.nb_mutations
-
-        if '_rev_' in __file__:
-            # The egg name is gdc_mutation_indexer-VERSION_rev_COMMITHASH-py2.7.egg
-            commit_hash = __file__.split('_rev_')[1].split('-')[0]
-        else:
-            if os.system('git rev-parse 2> /dev/null > /dev/null') == 0:
-                commit_hash = os.system('git rev-parse HEAD')
-            else:
-                self.logger.error("Can't get commit hash. "
-                                  "Either git is not installed or we are not "
-                                  "in a git repo. If running on a spark "
-                                  "cluster, make sure the egg name is "
-                                  "gdc_mutation_indexer-X.Y.Z_rev_COMMITHASH-py2.7.egg")
-                commit_hash = 'not found'
-
-        # Set of index names aliased to self.config.graph_index
-        graph_indices = self.es.indices.get_alias(self.config.graph_index).keys()
-        metadata_doc = {
-            'commit_hash': commit_hash,
-            'graph_indices': graph_indices,
-            'indices_built': [k for k in self.config.index_types],
-            'number_of_mutations': nb_mutations,
-            'number_of_projects': len(self.config.maf_urls),
-            'debug': self.config.debug,
-            'maf_urls': self.config.maf_urls,
-            'percentile_threshold': [{'name': k, 'value': v}
-                                     for k, v in (self.config
-                                                      .percentile_threshold
-                                                      .iteritems())],
-            'coalesce': self.config.df_coalesce,
-            'repartition': self.config.df_repartition,
-            'batch_size_bytes': self.config.batch_size_bytes,
-            'batch_size_entries': int(self.config.batch_size_entries)
-        }
-
-        self.log('Saving build metadata')
-
-        response = self.es.create(index=index, doc_type='build_metadata',
-                                  id=0, body=metadata_doc)
-        self.log(response)
 
     def log(self, string):
         """

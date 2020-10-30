@@ -17,22 +17,25 @@ class BuildArgs(BaseParser):
     def arguments(self):
         return {
             'build-type': {
-                'help': 'Indicates if the build meant for the release. '
-                    'If release, --label and --version are taken from DataRelease node.',
+                'help': 'Not currently supported.',
                 'choices': ['release', 'develop'],
-                'required': True,
+                'default': 'develop',
             },
             'build-label': {
-                'help': 'Label for the index (will be automatically assigned to the value in '
-                    'DataRelease.name for release candidate node if --build-type == "release")',
+                'help': 'Label for the index',
                 'default': 'mutation_indexer',
             },
             'build-version': {
-                'help': 'Version number (will be automatically assigned to the value in '
-                    'DataRelease node for release candidate if --build-type == "release")',
+                'help': 'Not currently supported.',
                 'nargs': '*',
                 'type': int,
                 'default': [0],
+            },
+            'study-label': {
+                'help':
+                    'Label for the controlled-access study associated with the new '
+                    'indices. Omit if the indices will be open-access.',
+                'default': '',
             },
             'projects': {
                 'help': 'Subset of projects to build. If not provided, builds all',
@@ -48,9 +51,13 @@ class BuildArgs(BaseParser):
                 'help': 'List of pipelines to build',
                 'nargs': '*',
                 'default': [
-                    'case_centric', 'gene_centric',
-                    'ssm_centric', 'ssm_occurrence_centric',
-                    'cnv_centric', 'cnv_occurrence_centric',
+                    "case_centric",
+                    "gene_centric",
+                    "ssm_centric",
+                    "ssm_occurrence_centric",
+                    "cnv_centric",
+                    "cnv_occurrence_centric",
+                    "gene_expression",
                 ],
             },
             'maf-backup': {
@@ -62,6 +69,18 @@ class BuildArgs(BaseParser):
                 'help': 'Whether to read gistic_df from backup or rebuild and write or do nothing',
                 'choices': ['read', 'write', 'neither'],
                 'default': 'read',
+            },
+            "gene-expression-cases-backup": {
+                "help": "Whether to read gene_expression_cases_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
+            "gene-expression-values-backup": {
+                "help": "Whether to read gene_expression_values_df from backup or rebuild and write"
+                        " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
             },
             'output-raw': {
                 'help': 'Whether to read raw output indices from backup or rebuild and write or do nothing',
@@ -84,6 +103,10 @@ class BuildArgs(BaseParser):
             },
             'skip-normalization': {
                 'help': 'Use mappings without normalizers',
+                'action': 'store_true',
+            },
+            'skip-es-mafs': {
+                'help': 'Do not query elasticsearch for MAFs. Should be used together with --include-maf-urls option',
                 'action': 'store_true',
             }
         }

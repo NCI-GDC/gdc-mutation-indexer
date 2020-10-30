@@ -8,8 +8,7 @@ config = TestConfig()
 
 
 @pytest.fixture
-def diagnoses_missing_field(setup_test_index):
-    es = setup_test_index
+def diagnoses_missing_field(source_es_client):
     graph_mapper = ModelMapper('gdc_from_graph', 'case')
     centric_mapper = ModelMapper('case_centric')
 
@@ -41,20 +40,20 @@ def diagnoses_missing_field(setup_test_index):
         }
     }
 
-    result = es.index(index=config.graph_index, doc_type=config.graph_document,
-                      body=dummy_document)
-    es.indices.refresh(index=config.graph_index)
+    index_name = config.graph_case_index
+    result = source_es_client.index(index=index_name, body=dummy_document)
+    source_es_client.indices.refresh(index_name)
 
-    assert result['created'] is True
+    assert result['result'] == 'created'
 
     yield dummy_document
 
-    es.delete(index=config.graph_index, doc_type=config.graph_document,
-              id=result['_id'])
-    es.indices.refresh(config.graph_index)
+    source_es_client.delete(index=index_name, id=result['_id'])
+    source_es_client.indices.refresh(index_name)
 
 
-def test_missing_fields(diagnoses_missing_field, setup_test_index):
+@pytest.mark.usefixtures('setup_graph_indices')
+def test_missing_fields(diagnoses_missing_field):
     result = get_non_null_fields(config)
 
     field, _ = diagnoses_missing_field['diagnoses'].popitem()

@@ -1,19 +1,9 @@
 import json
 import logging
 
-from pyspark.sql.functions import (
-    col,
-    collect_set,
-    lit,
-    udf,
-)
-from pyspark.sql.types import StringType, ArrayType
+from pyspark.sql.functions import collect_set, lit
 
-from utils import (
-    get_case_ids_from_source_es,
-    remove_columns,
-    standardize_schema,
-)
+from utils import get_case_ids_from_source_es, standardize_schema
 
 from config import LOG_FORMAT
 
@@ -57,25 +47,29 @@ class CaseBuilder(object):
             query = json.dumps({'query': {'match_all': {}}})
 
         # Only retrieve the fields we want
-        source = '{}/{}'.format(self.config.graph_index,
-                                self.config.graph_document)
-
         self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
 
-        # Load cases from graph_index
+        # Load cases from graph index
+        if self.config.graph_case_doc_type:
+            es_source = '{}/{}'.format(
+                self.config.graph_case_index, self.config.graph_case_doc_type
+            )
+        else:
+            es_source = self.config.graph_case_index
+
         df = (
             self.sqlContext.read.format("es")
-            .option('es.nodes', self.config.es_nodes)
+            .option('es.nodes', self.config.source_es_nodes)
             .option('es.net.http.auth.user', self.config.source_es_user)
             .option('es.net.http.auth.pass', self.config.source_es_pass)
             .option('es.nodes.wan.only', 'true')
-            .option('es.net.ssl', self.config.es_use_ssl)\
-            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)\
+            .option('es.net.ssl', self.config.es_use_ssl)
+            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)
             .option('es.nodes.resolve.hostname', 'false')
             .option('es.query', query)
             .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
-            .option('es.resource.read', source)
-            .load(source)
+            .option('es.resource.read', es_source)
+            .load(es_source)
         )
 
         # Get all the cases that have been tested for ssm
@@ -88,10 +82,6 @@ class CaseBuilder(object):
                                                                    gistic_df)
 
         df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
-
-        acl_df = self.populate_ssm_acl(maf_df, all_maf_cases)
-
-        df = df.join(acl_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.df_repartition, 'case_id')
@@ -123,9 +113,7 @@ class CaseBuilder(object):
                                       avd]))
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = (all_maf_cases.join(maf_data,
-                                       on=['case_id'],
-                                       how='left')).drop('case_acl')
+        maf_data = all_maf_cases.join(maf_data, on=['case_id'], how='left')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data = maf_data.drop(avd)
@@ -143,32 +131,3 @@ class CaseBuilder(object):
                                .agg(collect_set(avd).alias(avd)))
 
         return maf_and_gistic_data
-
-    def populate_ssm_acl(self, maf_df, all_maf_cases):
-        """
-        We use the observation level case_acl calculated in all_maf_cases.
-        If no observation level ssm acl exists,
-            case level ssm_acl will be populated according to SSM access policy
-            assuming the case had ssm data.
-        """
-        # Get set of "tested cases" from maf_df
-        maf_data = (maf_df.select('case_id', 'acl')
-                          .dropDuplicates(subset=['case_id']))
-
-        # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = all_maf_cases.join(maf_data,
-                                      on=['case_id'], how='left')
-
-        # Merge maf-level 'acl' with case-level acl
-        # I.e., use case-level acl where it exists, otherwise ssm-level
-        ssm_acl_udf = udf(lambda x, y:
-                          x if x is not None else y,
-                          ArrayType(StringType()))
-
-        ssm_acl_df = maf_data.withColumn('ssm_acl',
-                                         ssm_acl_udf(col('case_acl'),
-                                                     col('acl')))
-        # drop the input acl columns
-        ssm_acl_df = remove_columns(ssm_acl_df, 'acl', 'case_acl')
-
-        return ssm_acl_df

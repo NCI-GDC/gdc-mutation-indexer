@@ -17,8 +17,8 @@ cache: pip
 
 env:
   global:
-    - SPARK_VERSION="2.4.4"
-    - ES_VERSION="5.6.14"
+    - SPARK_VERSION="2.4.5"
+    - ES_VERSION="7.6.2"
     - BOTO_CONFIG=/dev/null
 
 before_install:
@@ -28,20 +28,21 @@ before_install:
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
   - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - wget https://download.elastic.co/hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}.deb
+  - wget https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
   - sudo mkswap /mnt/swap.file
   - sudo swapon /mnt/swap.file
   - sudo sed -i 's/^-Xms.*/-Xms2g/' /etc/elasticsearch/jvm.options
   - sudo sed -i 's/^-Xmx.*/-Xmx2g/' /etc/elasticsearch/jvm.options
+  - sudo chown elasticsearch /etc/default/elasticsearch
   - sudo service elasticsearch restart
 
 install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
-  - python setup.py install 
+  - python setup.py install
   - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
   - unzip elasticsearch-hadoop-${ES_VERSION}.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;

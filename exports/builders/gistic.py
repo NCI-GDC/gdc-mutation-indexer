@@ -1,13 +1,7 @@
 import logging
 
-from elasticsearch import Elasticsearch
-
+from pyspark.sql.functions import col, lit, lower, udf
 from pyspark.sql.types import StringType
-from pyspark.sql.functions import (
-    col,
-    lit,
-    udf,
-)
 
 from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
@@ -38,12 +32,11 @@ class GisticBuilder(BaseInputBuilder):
 
     def __init__(self, config, sqlContext):
         super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
-        self.es = Elasticsearch(config.es_host,
-                                port=config.es_port,
-                                use_ssl=config.es_use_ssl,
-                                verify_certs=not self.config.disable_es_verify_certs,
-                                http_auth=(config.es_user,
-                                           config.es_pass))
+
+    def build_from_cache(self, df):
+        """Fix the format of old cached GISTIC DFs."""
+        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
+        return df
 
     def build_from_scratch(self):
         """
@@ -102,8 +95,9 @@ class GisticBuilder(BaseInputBuilder):
         for url in urls:
             try:
                 new_df = self.file_to_df(url)
-                self.logger.info('Read {} rows from {}'.format(new_df.count(),
-                                                               url))
+                if self.config.debug:
+                    self.logger.info('Read {} rows from {}'.format(new_df.count(),
+                                                                   url))
                 # prepare to melt
                 new_df = self._trim_gene_symbol(new_df)
 
@@ -280,7 +274,12 @@ class GisticBuilder(BaseInputBuilder):
             '_source': ['aliquot_ids']
         }
 
-        relevant_cases = iterate_es_results(self.es, self.config.graph_index, 'case', query=query)
+        relevant_cases = iterate_es_results(
+            self.config.source_es,
+            index_name=self.config.graph_case_index,
+            doc_type=self.config.graph_case_doc_type,
+            query=query,
+        )
 
         # build aliquot to case mapping
         aliquot_to_case_map = {}

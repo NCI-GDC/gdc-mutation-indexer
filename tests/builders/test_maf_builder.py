@@ -1,8 +1,6 @@
 import os
 import re
 import json
-from collections import Counter
-from contextlib import contextmanager
 
 import yaml
 import pytest
@@ -15,46 +13,8 @@ from tests_config import TestConfig
 conf = TestConfig()
 
 
-@contextmanager
-def does_not_raise():
-    yield
-
-
-@pytest.mark.parametrize('url, expected, behavior', [
-    ('s3a://varscan-10/bar.somaticsniper.baz', 'somaticsniper', does_not_raise()),
-    ('s3a://varscan-10/bar.mutect.baz', 'mutect2', does_not_raise()),
-    ('s3a://varscan-10/bar.muse.baz', 'muse', does_not_raise()),
-    ('s3a://varscan-10/bar.varscan.baz', 'varscan', does_not_raise()),
-    ('s3a://varscan-10/bar.FM-AD_SNV.baz', 'FM Simple Somatic Mutation', does_not_raise()),
-    ('s3://foo-bar/bar.something.baz', None, pytest.raises(Exception)),
-    ('s3a://varscan-10/bar.FM-AD.baz', None, pytest.raises(Exception)),
-    ('s3a://varscan-10/bar.muse.varscan.baz', None, pytest.raises(Exception)),
-])
-def test_maf_builder_get_caller(sqlContext, maf_df, url, expected, behavior):
-    builder = MAFBuilder(conf, sqlContext)
-
-    with behavior:
-        result = builder.get_caller(url)
-
-        assert result == expected
-
-
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
 class TestMAFBuilder:
-
-    @pytest.fixture
-    def expected_counts(self, sqlContext):
-        builder = MAFBuilder(conf, sqlContext)
-        expected_counts = {}
-        for maf_file in conf.maf_urls:
-            pipeline = maf_file.split('.')[2]
-            if pipeline == 'mutect':
-                pipeline = 'mutect2'
-
-            df = builder.combine([maf_file])
-            expected_counts.setdefault(pipeline, 0)
-            expected_counts[pipeline] += df.count()
-        yield expected_counts
 
     @pytest.fixture
     def maf_schema(self):
@@ -75,7 +35,7 @@ class TestMAFBuilder:
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
         assert builder.patch_url(url1).startswith('s3a://')
 
-    def test_combine(self, sqlContext, expected_counts):
+    def test_combine(self, sqlContext, raw_variant_caller_counts):
         '''
         Test that mafs are combined correctly
         '''
@@ -83,16 +43,8 @@ class TestMAFBuilder:
 
         combined_df = builder.combine(conf.maf_urls)
 
-        # Test total number of lines
-        assert combined_df.count() == sum(expected_counts.values())
-
-        c = Counter([json.loads(item)['variant_caller']
-                     for item in (combined_df.select('variant_caller')
-                                             .toJSON().collect())])
-
-        # Test number of lines for each pipeline (i.e. 'variant_caller')
-        for pipeline, count in expected_counts.items():
-            assert c[pipeline] == count
+        actual_counts = dict(combined_df.groupBy('variant_caller').count().collect())
+        assert actual_counts == raw_variant_caller_counts
 
     def test_schema(self, sqlContext, maf_schema):
         '''
@@ -115,10 +67,11 @@ class TestMAFBuilder:
         builder = MAFBuilder(conf, sqlContext)
 
         # Bypass combine() so the dataframe isn't already standardized.
+        # Note that this particular input DF is missing a column, which
+        # we need to fix or else standardize_schema will reject it.
         df = (
             builder.file_to_df(conf.maf_urls[0])
-            .withColumn('variant_caller', lit('variant_caller'))
-            .withColumn('acl', lit(None))
+            .withColumn('callers', lit('variant_caller'))
         )
         columns = df.columns
 
@@ -144,12 +97,13 @@ class TestMAFBuilder:
         '''
         builder = MAFBuilder(conf, sqlContext)
 
-        # The raw dataframe is missing a couple columns, so it should
-        # initially fail standardization.
+        # If we drop some columns, the initial MAF should fail standardization, as there
+        # is no possible way to rearrange those columns into the expected schema.
         df = builder.file_to_df(conf.maf_urls[0])
+        reduced_df = df.drop('Hugo_Symbol', 'IMPACT')
 
         try:
-            builder.standardize_schema(df)
+            builder.standardize_schema(reduced_df)
             assert False, 'Builder accepted df missing required columns'
         except KeyError:
             pass
@@ -157,7 +111,9 @@ class TestMAFBuilder:
         # If we tell the builder to supply None values for the missing columns,
         # then it should fill in those columns and standardize successfully.
         standardized_df = builder.standardize_schema(
-            df, default_to_none=['variant_caller', 'acl'])
+            reduced_df,
+            default_to_none=['callers', 'Hugo_Symbol', 'IMPACT'],
+        )
         assert standardized_df.columns == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
@@ -182,16 +138,34 @@ class TestMAFBuilder:
 
         assert 'genomic_dna_change' in maf_df.columns
 
+        labels = {
+            row.genomic_dna_change
+            for row in maf_df.select('genomic_dna_change').collect()
+        }
+
         # Number of unique labels should be equal to the number of unique ssm
-        assert (maf_df.select('ssm_id').distinct().count() ==
-                maf_df.select('genomic_dna_change').distinct().count())
+        assert maf_df.select('ssm_id').distinct().count() == len(labels)
 
-        labels = [r['genomic_dna_change'] for r
-                  in maf_df.select('genomic_dna_change').collect()]
-
+        # SNPs
         assert 'chr1:g.32180498T>C' in labels
         assert 'chr2:g.182729892G>T' in labels
+        assert 'chr3:g.38112297T>G' in labels
         assert 'chr9:g.2056812T>A' in labels
+
+        # Small insertions
+        assert 'chr17:g.4076894_4076895insT' in labels
+
+        # Small deletions
+        assert 'chr6:g.72307351delAT' in labels
+
+        # DNPs
+        assert 'chr3:g.38112298_38112299delinsCA' in labels
+
+        # TNPs
+        assert 'chr3:g.38112300_38112302delinsGCT' in labels
+
+        # ONPs
+        assert 'chr3:g.38112303_38112306delinsGTGC' in labels
 
     def test_mutation_type(self, maf_df):
         '''
@@ -205,14 +179,14 @@ class TestMAFBuilder:
         assert (maf_df.select('mutation_type').collect()[0]['mutation_type'] ==
                 'Simple Somatic Mutation')
 
-    def test_variant_caller(self, maf_df, expected_counts):
+    def test_variant_caller(self, maf_df, raw_variant_caller_counts):
         '''
         Test that variant caller is created properly
         '''
         assert 'variant_caller' in maf_df.columns
-        for variant_caller, expected_count in expected_counts.items():
-            count = maf_df.where(maf_df.variant_caller == variant_caller).count()
-            assert count == expected_count
+
+        actual_counts = dict(maf_df.groupBy('variant_caller').count().collect())
+        assert actual_counts == raw_variant_caller_counts
 
     def test_variant_process(self, maf_df):
         '''
@@ -232,21 +206,6 @@ class TestMAFBuilder:
         # Should have as many distinct variants as subtypes
         assert (maf_df.select('variant_type').distinct().count() ==
                 maf_df.select('mutation_subtype').distinct().count())
-
-    def test_case_barcode(self, sqlContext):
-        '''
-        Test that ssm_id column is created
-        '''
-        builder = MAFBuilder(conf, sqlContext)
-
-        df = builder.combine(conf.maf_urls)
-        df = builder.extract_barcode(df)
-
-        assert '_case_submitter_id' in df.columns
-        assert (df.where(df.tumor_sample_barcode
-                         == 'TCGA-A4-A6HP-01A-11D-A31X-10')
-                .select('_case_submitter_id')
-                .limit(1).collect()[0]._case_submitter_id == 'TCGA-A4-A6HP')
 
     def test_maf_field_types(self, maf_df):
         """

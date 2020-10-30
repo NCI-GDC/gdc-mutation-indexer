@@ -34,17 +34,17 @@ def update_genes():
     - Save resulting gene model to tests/data/input/genes.json.gz
 
     """
-    print '- Downloading full gene model'
+    print('- Downloading full gene model')
     gene_model = get_full_gene_model()
 
-    print '- Extracting set of genes from test mafs'
+    print('- Extracting set of genes from test mafs')
     genes_to_keep = get_unique_from_mafs('Gene')
 
-    print '- Dropping extra genes from gene model'
+    print('- Dropping extra genes from gene model')
     gene_model = [gene for gene in gene_model if gene['_gene_id'] in genes_to_keep]
 
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'genes.json')
-    print '- Writing gene model to {}'.format(filepath + '.gz')
+    print('- Writing gene model to {}'.format(filepath + '.gz'))
     write_to_file(gene_model, filepath)
 
 
@@ -58,7 +58,7 @@ def update_cases(es):
 
     """
 
-    print '- Extracting aliquots from headers'
+    print('- Extracting aliquots from headers')
     aliquots_in_headers = get_all_aliquots_from_mafs()
     aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
 
@@ -68,22 +68,22 @@ def update_cases(es):
     if aliquots_in_headers - aliquots_in_data == set():
         raise Exception('No empty aliquots in test data')
 
-    print '\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data)
+    print('\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data))
 
-    print '- Getting case_ids for aliquots in maf headers'
+    print('- Getting case_ids for aliquots in maf headers')
     case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
 
-    print '- Getting cases data for case_ids'
+    print('- Getting cases data for case_ids')
     cases = get_cases(es, case_ids)
 
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.json')
-    print '- Writing cases to {}'.format(filepath + '.gz')
+    print('- Writing cases to {}'.format(filepath + '.gz'))
     write_to_file(cases, filepath)
 
 
 def update_files(es):
 
-    print '- Extracting aliquots from headers'
+    print('- Extracting aliquots from headers')
     aliquots_in_headers = get_all_aliquots_from_mafs()
     aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
 
@@ -93,25 +93,25 @@ def update_files(es):
     if aliquots_in_headers - aliquots_in_data == set():
         raise Exception('No empty aliquots in test data')
 
-    print '\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data)
+    print('\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data))
 
-    print '- Getting case_ids for aliquots in maf headers'
+    print('- Getting case_ids for aliquots in maf headers')
     case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
 
-    print '- Getting files data for case_ids'
+    print('- Getting files data for case_ids')
     files = get_files(es, case_ids)
 
     filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'files.json')
-    print '- Writing files to {}'.format(filepath + '.gz')
+    print('- Writing files to {}'.format(filepath + '.gz'))
     write_to_file(files, filepath)
 
 
 def get_case_ids_from_aliquots(es, aliquot_ids):
     """
-    Get case_ids corresponding to aliquot_ids from gdc_from_graph
+    Get case_ids corresponding to aliquot_ids from graph_case
     """
 
-    print "make it use the data from gdc_from_graph instead"
+    print("make it use the data from graph_case instead")
 
     cases = []
     for aliquot_id in aliquot_ids:
@@ -129,7 +129,7 @@ def get_case_ids_from_aliquots(es, aliquot_ids):
                 }
             }
         }
-        res = es.search(index='gdc_from_graph', doc_type='case', body=query)
+        res = es.search(index='graph_case', body=query)
         assert len(res['hits']['hits']) == 1, 'Unexpected number of cases found'
 
         cases.append(res['hits']['hits'][0]['_source'])
@@ -139,24 +139,22 @@ def get_case_ids_from_aliquots(es, aliquot_ids):
 
 def get_cases(es, case_ids):
     """
-    Get case documents from gdc_from_graph
+    Get case documents from graph_case
     """
     docs = []
     for case_id in case_ids:
-        doc = es.get(index='gdc_from_graph', doc_type='case', id=case_id)['_source']
+        doc = es.get(index='graph_case', id=case_id)['_source']
         docs.append(doc)
     return docs
 
 
 def get_files(es, case_ids):
     """
-    Get file documents from gdc_from_graph
+    Get file documents from graph_file
     """
     docs = []
     for case_id in case_ids:
-        case_doc = es.get(index='gdc_from_graph',
-                          doc_type='case',
-                          id=case_id)['_source']
+        case_doc = es.get(index='graph_file', id=case_id)['_source']
         file_docs = case_doc['files'][:2]
         docs.extend(file_docs)
     return docs
@@ -180,7 +178,7 @@ def get_full_gene_model():
     # Gene model file:
     filename = 'genes.hg38.v2.json'
 
-    bucket = conn.get_bucket('test')
+    bucket = conn.get_bucket('gdc-mutation-indexer')
     key = bucket.get_key(filename)
     gene_model = key.get_contents_as_string()
 
@@ -238,9 +236,9 @@ def write_to_file(data, filepath):
 
 
 if __name__ == '__main__':
-    print '\n\tUpdating cases.json.gz:'
+    print('\n\tUpdating cases.json.gz:')
     update_cases(es)
-    print '\n\tUpdating genes.json.gz:'
+    print('\n\tUpdating genes.json.gz:')
     update_genes()
-    print '\n\tUpdating files.json.gz'
+    print('\n\tUpdating files.json.gz')
     update_files(es)

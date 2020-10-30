@@ -11,7 +11,7 @@ class TestConfig(BaseConfig):
     data_dir = os.path.join(test_dir, 'data')
     log_dir = os.path.join(data_dir, 'log')
     input_dir = os.path.join(data_dir, 'input')
-    maf_dir = os.path.join(input_dir, 'maf')
+    maf_dir = os.path.join(input_dir, 'maf', 'merged_aliquot')
     gistic_dir = os.path.join(input_dir, 'cnv')
 
     # Initialize test directory tree if incomplete
@@ -69,6 +69,12 @@ class TestConfig(BaseConfig):
     def __init__(self):
         env = self.get_env_dict()
         super(TestConfig, self).__init__(env_dict=env)
+
+        # To make it more convenient to write tests that load in data, put the names
+        # of the graph indices in a dictionary keyed by doc type.
+        self.graph_indices = {
+            'case': self.graph_case_index, 'file': self.graph_file_index
+        }
 
     def validate_indices(self, indices):
         existing_indices = self.es.indices.get_alias().keys()

@@ -17,7 +17,7 @@ MAPPING = {
         "case": {'name': '', 'id': ['case_id']},
         "diagnoses": {'name': '', 'id': ['diagnosis_id']},
         "data_categories": {'name': '', 'id': ['data_category', 'file_count']},
-        "observation": {'name': '', 'id': ['src_vcf_id']},
+        "observation": {'name': '', 'id': ['tumor_sample_uuid']},
         "gene": {'name': '', 'id': ['gene_id']},
         "ssm": {'name': '', 'id': ['ssm_id']},
         "transcripts": {'name': '', 'id': ['transcript_id']},

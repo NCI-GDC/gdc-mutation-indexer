@@ -1,15 +1,28 @@
+import abc
+import logging
+
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
-import logging
-
 
 class BaseInputBuilder(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, config, sqlContext, input_type):
         """
-        :input_type in ['gistic', 'maf', 'aliquot']
+
+        Args:
+            config(BaseConfig): a config instance
+            sqlContext: spark sql context instance
+            input_type(str): a string that uniquely represents an output data
+                frame type. Can be one of: (
+                    'gistic',
+                    'maf',
+                    'aliquot',
+                    'gene_expression_values',
+                    'gene_expression_cases',
+                )
         """
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -18,7 +31,7 @@ class BaseInputBuilder(object):
 
     @property
     def urls(self):
-        config_urls = getattr(self.config, '{}_urls'.format(self.input_type))
+        config_urls = getattr(self.config, '{}_urls'.format(self.input_type), None)
         if config_urls is not None:
             return config_urls
         return self.get_urls()
@@ -37,21 +50,35 @@ class BaseInputBuilder(object):
         df = self.read()
 
         # if reading not applicable, build from files
-        df = df if df is not None else self.build_from_scratch()
+        if df:
+            df = self.build_from_cache(df)
+        else:
+            df = self.build_from_scratch()
 
         # write
         self.write(df)
 
         return df
 
+    def build_from_cache(self, df):
+        """Perform additional processing on a built DF read from the cache.
+
+        Subclasses can override this to post-process the cached DF. The base
+        implementation just returns the cached DF as-is.
+        """
+        return df
+
+    @abc.abstractmethod
     def build_from_scratch(self):
-        raise NotImplementedError
+        pass
 
     def get_urls(self):
-        raise NotImplementedError
+        """Look up the input URLs if not already given in the config.
 
-    def combine(self):
-        raise NotImplementedError
+        By default, return None to indicate that no URLs were configured. Subclasses
+        may override this if appropriate.
+        """
+        return None
 
     def write(self, df):
         mode = getattr(self.config, '{}_backup'.format(self.input_type))
@@ -89,7 +116,7 @@ class BaseInputBuilder(object):
                 self.logger.info('File not found in {}'.format(saved_path))
             except AnalysisException:
                 # TODO: is this the best way to catch this error?
-                # or is checking the path first acceptable?
+                #   or is checking the path first acceptable?
                 self.logger.info('Something went wrong in spark when trying to'
                                  ' get existing df from path '
                                  '{}'.format(saved_path))
@@ -101,18 +128,17 @@ class BaseInputBuilder(object):
 
         return df
 
-    def file_to_df(self, url, data_format='tsv'):
+    def file_to_df(self, url, data_format='tsv', header=True, schema=None):
         """
         Read a single file from the given s3 url and return as dataframe
         """
         if data_format in ['csv', 'tsv']:
             delimiter = '\t' if data_format == 'tsv' else ','
             return self.sqlContext.read.format('com.databricks.spark.csv')\
-                       .options(header='true')\
                        .options(comment="#")\
                        .options(delimiter=delimiter)\
                        .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
-                       .load(url)
+                       .load(url, header=header, schema=schema)
         elif data_format == 'parquet':
             return self.sqlContext.read.parquet(url)
         else:

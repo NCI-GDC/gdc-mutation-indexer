@@ -24,6 +24,11 @@ from parsers import (
 
 
 def create_factory(host, port=443, timeout=10):
+    """Create an HTTPSConnection factory that doesn't try to verify the server cert.
+
+    Make it possible to connect to Cleversafe even though the Cleversafe cert doesn't
+    match the hostname we likely expect.
+    """
     return (
         httplib.HTTPSConnection(
             host=host,
@@ -34,7 +39,7 @@ def create_factory(host, port=443, timeout=10):
     )
 
 
-py_ver = ".".join(str(sys.version_info[i]) for i in xrange(3))
+py_ver = ".".join(str(sys.version_info[i]) for i in range(3))
 if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
     factory = (create_factory, ())
 else:
@@ -91,22 +96,20 @@ class BaseConfig(object):
         'observation': 'observation.yml',
     }
 
-    # Used for loading case/graph documents from a different es cluster
-    # The graph_index name is set by the environment/command line parser.
-    graph_document = 'case'
-
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
     # The location of the gene model json
-    gene_model_file = 's3a://test/genes.hg38.v2.json'
-    citobands_file = 's3a://test/genes.cytobands.tsv.gz'
-    census_file = 's3a://test/cancer_gene_census_set.tsv.gz'
+    gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.v2.json'
+    citobands_file = 's3a://gdc-mutation-indexer/genes.cytobands.tsv.gz'
+    census_file = 's3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz'
 
     # The location to save the combined maf and gistic dataframes
     maf_path = 'maf_df.parquet'
     gistic_path = 'gistic_df.parquet'
     aliquot_path = 'aliquot_df.parquet'
+    gene_expression_values_path = "gene_expression_values_df.parquet"
+    gene_expression_cases_path = "gene_expression_cases_df.parquet"
 
     percentile_threshold = {
         'genes_per_case': 100,
@@ -155,24 +158,51 @@ class BaseConfig(object):
         :env_dict<dict> - if set, will assign parameters from this dict instead of environment variables
         """
         self.assign_all_parameters(env_dict=env_dict)
+
+        # If we're configured to read from ES 5, configure the old doc types.
+        # For ES 7, assume doc types don't exist.
+        if self.old_graph_index:
+            self.graph_case_index = self.old_graph_index
+            self.graph_file_index = self.old_graph_index
+            self.graph_case_doc_type = 'case'
+            self.graph_file_doc_type = 'file'
+        else:
+            self.graph_case_doc_type = None
+            self.graph_file_doc_type = None
+
+        # If source es creds not assigned, set them to ones of output es
+        for key in ['nodes', 'user', 'pass']:
+            param_name = 'source_es_{}'.format(key)
+            if getattr(self, param_name) == '':
+                value = getattr(self, 'es_{}'.format(key))
+                setattr(self, param_name, value)
+
         # aliquot should be synced with maf, don't allow users to deviate
         self.aliquot_backup = self.maf_backup
+
         self.es = Elasticsearch(
-            self.es_host,
-            port=self.es_port,
+            self.es_nodes.split(','),
             use_ssl=self.es_use_ssl,
             verify_certs=not self.disable_es_verify_certs,
             http_auth=(self.es_user, self.es_pass)
         )
+
+        self.source_es = Elasticsearch(
+            self.source_es_nodes.split(','),
+            use_ssl=self.es_use_ssl,
+            verify_certs=not self.disable_es_verify_certs,
+            http_auth=(self.source_es_user, self.source_es_pass)
+        )
+
         self.indexd = IndexClient(
             baseurl='{}:{}'.format(self.indexd_host, self.indexd_port),
             auth=(self.indexd_user, self.indexd_pass)
         )
+
         self.indices = self.get_index_names()
         self.maf_urls = self.get_maf_urls()
         self.maf_file_names = self.get_maf_file_names()
         self.gistic_urls = self.get_gistic_urls()
-        self._acls = None
         self._exclude_fields = None
 
         if self.blacklist_fields:
@@ -233,20 +263,28 @@ class BaseConfig(object):
                 setattr(self, key, value)
 
     def get_index_names(self):
-        """
-        Returns {index_type: es_index_name} dictionary
-        """
-        if self.build_type == 'release':
-            prefix = 'release-'
-        else:
-            prefix = ''
-
-        version_tag = '_'.join(map(str, self.build_version))
-        indices = {
-            index_type: prefix + '{}-{}-{}'.format(
-                self.build_label, version_tag, index_type,
+        """Create {index_type: es_index_name} dictionary based on build config."""
+        if '__' in self.build_label:
+            raise ValueError(
+                'Double underscores not allowed in build label '
+                '{}'.format(self.build_label)
             )
-            for index_type in self.index_types
+
+        if self.study_label:
+            if '__' in self.study_label:
+                raise ValueError(
+                    'Double underscores not allowed in study label '
+                    '{}'.format(self.study_label)
+                )
+
+            template = '{build}__{{}}__{study}__controlled'.format(
+                build=self.build_label, study=self.study_label
+            )
+        else:
+            template = '{build}__{{}}'.format(build=self.build_label)
+
+        indices = {
+            index_type: template.format(index_type) for index_type in self.index_types
         }
 
         self.validate_indices(indices)
@@ -271,9 +309,12 @@ class BaseConfig(object):
     def get_maf_urls(self):
         """
         Returns list of relevant maf_urls
-        - gets maf file_id-s from elasticsearch "{self.graph_index}/file" index
+        - gets maf file_id-s from elasticsearch "{self.graph_file_index}" index
         - gets corresponding urls from indexd
         """
+        if self.skip_es_mafs:
+            return self.include_maf_urls
+
         query = {
             "_source": ["file_name"],
             "query": {
@@ -283,9 +324,16 @@ class BaseConfig(object):
             }
         }
 
-        file_id_to_name = {}
-        for doc in iterate_es_results(self.es, self.graph_index, 'file', query=query):
-            file_id_to_name[doc['_id']] = doc['_source']['file_name']
+        es_result_iterator = iterate_es_results(
+            self.source_es,
+            index_name=self.graph_file_index,
+            doc_type=self.graph_file_doc_type,
+            query=query,
+        )
+
+        file_id_to_name = {
+            doc['_id']: doc['_source']['file_name'] for doc in es_result_iterator
+        }
 
         # Get urls from indexd for relevant files
         maf_urls = self.include_maf_urls + []
@@ -296,7 +344,7 @@ class BaseConfig(object):
                 if self.temp_filter_maf_urls(maf_url):
                     maf_urls.append(self.patch_s3_url(maf_url))
 
-        return maf_urls
+        return list(set(maf_urls))
 
     def projects_valid(self):
         """
@@ -409,51 +457,6 @@ class BaseConfig(object):
 
         return gistic_urls
 
-    @property
-    def acls(self):
-        if self._acls is None:
-            self._acls = self.get_acls()
-        return self._acls
-
-    def get_acls(self):
-        """
-        1. Take list of maf file names
-        2. Assume the last part of the url is the file_name
-        3. Look up corresponding files in es
-        4. Parse out those files' acls
-        """
-
-        file_names = self.maf_file_names
-
-        query = {
-                "query": {
-                    "bool": {
-                        "must": {
-                            "terms": {
-                                "file_name": file_names
-                                }
-                            }
-                        }
-                    },
-                "_source": ["file_name", "acl"],
-                "size": 10000,
-        }
-
-        docs = self.es.search(index=self.graph_index,
-                              doc_type='file',
-                              body=query)
-
-        # Build up dictionary of file_name to acl
-        filenames_to_acls = {}
-        for doc in docs['hits']['hits']:
-            source = doc['_source']
-            filename = source['file_name']
-            acl = source['acl']
-
-            filenames_to_acls[filename] = acl
-
-        return filenames_to_acls
-
     def get_samples_fields_to_exclude(self):
         """
         Gets the case.samples mapping from es and list all the first degree
@@ -461,13 +464,21 @@ class BaseConfig(object):
         would become `samples.portions`) so they can be excluded. It will
         keep any field in `samples_include_fields`
         """
-        samples_mapping = self.es.indices.get_field_mapping(
-            index=self.graph_index,
-            doc_type=self.graph_document,
-            fields='samples.*')
+        samples_mapping = self.source_es.indices.get_field_mapping(
+            index=self.graph_case_index,
+            doc_type=self.graph_case_doc_type,
+            fields='samples.*'
+        )
+
         index_name = samples_mapping.keys()[0]
-        fields = samples_mapping[index_name]['mappings']['case'].keys()
+        if self.graph_case_doc_type:
+            mapping = samples_mapping[index_name]['mappings'][self.graph_case_doc_type]
+        else:
+            mapping = samples_mapping[index_name]['mappings']
+
+        fields = mapping.keys()
         fields_to_exclude = {'.'.join(x.split('.', 2)[:2]) for x in fields}
+
         return list(fields_to_exclude - set(self.samples_include_fields))
 
     def list_bucket(self, bucket_name):
