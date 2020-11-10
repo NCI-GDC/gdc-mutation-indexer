@@ -1,39 +1,36 @@
-FROM bitnami/spark:2.4.5
+# syntax=docker/dockerfile:1.0-experimental
 
-# environment
-ENV ES_NODES_TEST="elasticsearch" \
-    ES_HOST_TEST="elasticsearch" \
-    SOURCE_ES_HOST_TEST="elasticsearch" \
-    ES_VERSION="7.6.2" \
-    BOTO_CONFIG=/dev/null \
-    PYTHONPATH="$SPARK_HOME/python/:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH"
+ARG base_version=1.0.1
+ARG registry=quay.io
 
-USER root
+FROM ${registry}/ncigdc/python36-builder:${base_version} as build
 
-# core setup
-COPY id_rsa requirements.txt dev-requirements.txt /root/
-RUN mkdir /root/.ssh && \
-    mv /root/id_rsa /root/.ssh/ && \
-    chmod 600 /root/.ssh/id_rsa
+COPY requirements.txt dev-requirements.txt /root/
 
-RUN apt-get update && \
-    apt-get install -y unzip git ssh && \
-    apt-get clean && rm -rf /var/lib/apt
-
-# this will fail with FileNotFoundError with existing file
-RUN pip install -U setuptools ; exit 0
-
-RUN ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts && \
-    pip install wheel && \
+RUN --mount=type=ssh mkdir /root/.ssh && \
+    ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts && \
     pip install -r /root/requirements.txt && \
     pip install -r /root/dev-requirements.txt
 
 COPY . /app
+WORKDIR /app
 RUN python /app/setup.py develop
 
 # spark setup
+ARG ES_VERSION=7.6.2
 ADD https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip \
     /root/
 RUN unzip -j /root/elasticsearch-hadoop-${ES_VERSION}.zip \
             "elasticsearch-hadoop-7.6.2/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar" \
-            -d $SPARK_HOME/jars
+            -d /usr/local/lib/python3.6/dist-packages/pyspark/jars
+
+ENV ES_NODES_TEST="elasticsearch" \
+    ES_HOST_TEST="elasticsearch" \
+    SOURCE_ES_HOST_TEST="elasticsearch" \
+    BOTO_CONFIG=/dev/null
+
+# install java
+RUN mkdir -p /usr/share/man/man1 && \
+    apt-get update -y && \
+    apt-get install -y openjdk-8-jdk && \
+    rm -rf /var/lib/apt/lists/*
