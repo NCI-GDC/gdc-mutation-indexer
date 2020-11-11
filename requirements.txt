@@ -1,7 +1,7 @@
 addict==0.2.7
 boto==2.46.1
 consulate==0.4
-cryptography<3.2
+cryptography==3.1.1
 elasticsearch==7.6.0
 filechunkio==1.6
 networkx==1.10
