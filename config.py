@@ -1,5 +1,3 @@
-from future import standard_library
-standard_library.install_aliases()
 import http.client
 import os
 import shlex
@@ -294,7 +292,7 @@ class BaseConfig(object):
         return indices
 
     def validate_indices(self, indices):
-        name_collisions = set(self.es.indices.get_alias().keys()) & set(indices.values())
+        name_collisions = self.es.indices.get_alias().keys() & indices.values()
 
         if name_collisions:
             raise Exception(
