@@ -64,8 +64,7 @@ VERSION = "0.2.0"
 
 def get_git_commit(git_dir):
     return subprocess.check_output(
-        shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir)),
-        universal_newlines=True,
+        shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
     ).strip()
 
 

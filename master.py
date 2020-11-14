@@ -145,7 +145,7 @@ def get_spark_args(args):
     jars = [os.path.join(jars_dir, j) for j in os.listdir(jars_dir)]
     eggs = [os.path.join(eggs_dir, e) for e in os.listdir(eggs_dir)]
     app_egg = "gdc_mutation_indexer-{}_rev_{}-py3.5.egg".format(
-        VERSION, get_git_commit(ROOT_DIR)
+        VERSION, get_git_commit(ROOT_DIR).decode('UTF-8')
     )
     eggs.append(os.path.join(ROOT_DIR, "dist", app_egg))
     spark_args = ["--py-files", ",".join(eggs), "--jars", ",".join(jars)]
