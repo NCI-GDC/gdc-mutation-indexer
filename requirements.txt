@@ -10,7 +10,6 @@ PyYAML==3.11
 requests==2.6.0
 boto==2.46.1
 xlrd==0.9.3
-
 urllib3==1.25.10
 
 # TODO: below can be removed once migrated to Python3
