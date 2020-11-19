@@ -16,7 +16,7 @@ urllib3==1.25.10
 # TODO: below can be removed once migrated to Python3
 gitdb2~=2.0.0
 
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@c338d93c135aa5146447ab618966909e370a034d#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.7.0#egg=gdcmodels
 -e git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.1#egg=normalizer
 -e git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
 -e git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
