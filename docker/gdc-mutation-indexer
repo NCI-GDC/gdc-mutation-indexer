@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1.0-experimental
+
+ARG base_version=1.0.1
+ARG registry=quay.io
+
+# FROM ${registry}/ncigdc/python27-builder:${base_version} as build
+FROM python:2.7.18-stretch AS builder
+SHELL ["/bin/bash", "-c"]
+
+RUN mkdir -p /app/artifacts/jars /app/artifacts/python_modules /app/artifacts/eggs 
+
+RUN apt-get update && \
+    apt-get install -y maven
+
+COPY mutation_indexer_deps.pom.xml requirements.txt master-requirements.txt /app/
+
+RUN mvn process-sources \
+    -f /app/mutation_indexer_deps.pom.xml \
+    -Dgdc.mutationIndexer.artifactDir="/app/artifacts/jars" \
+    -Dgdc.mutationIndexer.scalaVersion=2.11
+
+RUN mkdir /root/.ssh && \
+    ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
+
+RUN --mount=type=ssh pip download -r /app/requirements.txt \
+                 --dest /app/artifacts/python_modules \
+                 --src /app/artifacts/python_modules \
+                 --no-binary :all:
+
+RUN --mount=type=ssh pip install -r /app/requirements.txt && \
+                     pip install -r /app/master-requirements.txt && \
+                     pip install pyspark==2.4.5
+
+WORKDIR /app/artifacts/python_modules
+RUN for ARCHIVE in *; do \
+    if [ -f "$ARCHIVE" ] && [ "${ARCHIVE: -4}" == ".zip" ]; then \
+        unzip -o "$ARCHIVE"; \
+        rm "$ARCHIVE"; \
+    elif [ -f "$ARCHIVE" ] && [ "${ARCHIVE: -7}" == ".tar.gz" ]; then \
+        tar -xzf "$ARCHIVE"; \
+        rm "$ARCHIVE"; \
+    fi ;\
+done
+
+RUN for DIR in *; do \
+    pushd "$DIR"; \
+    # Building the egg works differently depending on if the package uses distutils or setuptools
+    python setup.py bdist_egg || python -c "import setuptools; execfile('setup.py')" bdist_egg; \
+    mv dist/*.egg ../../eggs/; \
+    popd; \
+done
+
+COPY . /app
+WORKDIR /app
+RUN python setup.py bdist_egg || python -c "import setuptools; execfile('setup.py')" bdist_egg
