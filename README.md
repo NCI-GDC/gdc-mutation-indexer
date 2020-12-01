@@ -109,6 +109,7 @@ Pycharm.
 After the above steps, you can save your changes and click the run button to start your 
 tests.
 
+<<<<<<< HEAD
 ## Docker compose
 
 You can also use docker to run the pytest. 
@@ -195,7 +196,6 @@ timeout error, run the tests again. The error should disappear.
 
 3. The breakpoint in Pycharm seems not working. 
 
->>>>>>> DEV-217 add more info on README
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
