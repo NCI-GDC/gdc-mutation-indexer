@@ -88,4 +88,47 @@ class SparkConfArgs(BaseParser):
                 'default': 1024,
                 'type': int,
             },
+            'spark-executor-extraJavaOptions': {
+                'help': 'A string of extra JVM options to pass to executors',
+                'type': str,
+            },
+            'spark-network-timeout': {
+                'help': 'Default timeout for all network interactions',
+                'type': str,
+            },
+            'spark-executor-heartbeatInterval': {
+                'help': "Interval between each executor's heartbeats to the driver",
+                'type': str,
+            },
+            'spark-task-maxFailures': {
+                'help': 'Number of failures of any particular task before giving up on the job',
+                'type': str,
+            },
+            'spark-yarn-appMasterEnv-PYTHON-EGG-DIR': {
+                'type': str,
+            },
+            'spark-yarn-appMasterEnv-PYTHON-EGG-CACHE': {
+                'type': str,
+            },
+            'spark-executorEnv-PYTHON-EGG-DIR': {
+                'type': str,
+            },
+            'spark-executorEnv-PYTHON-EGG-CACHE': {
+                'type': str,
+            },
+            'spark-hadoop-fs-s3a-impl': {
+                'type': str,
+            },
+            'spark-hadoop-fs-s3a-access-key': {
+                'type': str,
+            },
+            'spark-hadoop-fs-s3a-secret-key': {
+                'type': str,
+            },
+            'spark-hadoop-fs-s3a-endpoint': {
+                'type': str,
+            },
+            'spark-hadoop-fs-s3a-connection-ssl-enabled': {
+                'type': str,
+            },
         }
