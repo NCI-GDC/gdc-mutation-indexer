@@ -5,6 +5,9 @@ ARG registry=quay.io
 
 # FROM ${registry}/ncigdc/python27-builder:${base_version} as build
 FROM python:2.7.18-stretch AS builder
+
+ARG VIRTUAL_ENV=/opt/venv
+
 SHELL ["/bin/bash", "-c"]
 
 ADD https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz /root/
@@ -31,8 +34,7 @@ RUN --mount=type=ssh git clone --depth 1 --branch 1.12.0 git@github.com:NCI-GDC/
                            /etc/hadoop/conf/ 
 
 WORKDIR /root 
-ENV VIRTUAL_ENV=/opt/venv
-RUN virtualenv ${VIRTUAL_ENV}
+RUN virtualenv $VIRTUAL_ENV
 ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 RUN --mount=type=ssh pip download -r /app/requirements.txt \
                                   --dest /app/artifacts/python_modules \
