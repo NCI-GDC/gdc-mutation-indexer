@@ -1,5 +1,9 @@
+import os
+import tempfile
+
 import pytest
 
+import master
 from master import get_spark_args, get_config_args
 from parsers import ParserBuilder
 from config import ALL_PARSERS
@@ -145,26 +149,36 @@ EXPECTED_PARTIAL_CONFIG_ARGS = {
 
 
 @pytest.fixture()
-def get_args():
+def build_args():
     parser = ParserBuilder.build(
         ALL_PARSERS,
         description="Mutation Indexer",
     )
-    return parser.parse_args(REQUIRED_ARGUMENTS)
-
-
-def test_parser_builder(get_args):
-    args = get_args
+    args = parser.parse_args(REQUIRED_ARGUMENTS)
     assert len(vars(args)) >= 52
+    return args
 
 
-def test_get_spark_args(get_args):
-    args = get_args
+def test_get_spark_args(build_args, monkeypatch):
+    args = build_args
+    tmp_dir = tempfile.mkdtemp()
+    monkeypatch.setattr(master, 'ROOT_DIR', tmp_dir)
+
+    def mock_git_commit(dir):
+        return 'fffffff'
+    monkeypatch.setattr(master, 'get_git_commit', mock_git_commit)
+
+    artifacts_dir = os.path.join(tmp_dir, 'artifacts')
+    jars_dir = os.path.join(artifacts_dir, 'jars')
+    eggs_dir = os.path.join(artifacts_dir, 'eggs')
+    os.mkdir(artifacts_dir)
+    os.mkdir(jars_dir)
+    os.mkdir(eggs_dir)
     spark_args = get_spark_args(args)
     assert EXPECTED_PARTIAL_SPARK_ARGS < set(spark_args)
 
 
-def test_get_config_args(get_args):
-    args = get_args
+def test_get_config_args(build_args):
+    args = build_args
     config_args = get_config_args(args)
     assert EXPECTED_PARTIAL_CONFIG_ARGS <= {arg.split('=')[0] for arg in set(config_args)}
