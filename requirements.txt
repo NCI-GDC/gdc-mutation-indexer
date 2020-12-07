@@ -9,3 +9,5 @@ requests==2.6.0
 -e git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.1#egg=normalizer
 -e git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
 -e git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
+-e git+ssh://git@github.com/NCI-GDC/psqlgraph.git@3.0.2#egg=psqlgraph
+-e git+ssh://git@github.com/NCI-GDC/gdcdatamodel.git@3.0.3#egg=gdcdatamodel
