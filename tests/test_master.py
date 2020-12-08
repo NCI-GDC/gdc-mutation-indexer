@@ -149,7 +149,7 @@ EXPECTED_PARTIAL_CONFIG_ARGS = {
 
 
 @pytest.fixture()
-def build_args():
+def get_args():
     parser = ParserBuilder.build(
         ALL_PARSERS,
         description="Mutation Indexer",
@@ -158,8 +158,7 @@ def build_args():
     return args
 
 
-def test_get_spark_args(build_args, monkeypatch):
-    args = build_args
+def test_get_spark_args(get_args, monkeypatch):
     tmp_dir = tempfile.mkdtemp()
     monkeypatch.setattr(master, 'ROOT_DIR', tmp_dir)
 
@@ -173,11 +172,10 @@ def test_get_spark_args(build_args, monkeypatch):
     os.mkdir(artifacts_dir)
     os.mkdir(jars_dir)
     os.mkdir(eggs_dir)
-    spark_args = get_spark_args(args)
+    spark_args = get_spark_args(get_args)
     assert EXPECTED_PARTIAL_SPARK_ARGS < set(spark_args)
 
 
-def test_get_config_args(build_args):
-    args = build_args
-    config_args = get_config_args(args)
+def test_get_config_args(get_args):
+    config_args = get_config_args(get_args)
     assert EXPECTED_PARTIAL_CONFIG_ARGS <= {arg.split('=')[0] for arg in set(config_args)}
