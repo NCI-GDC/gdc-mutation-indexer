@@ -155,7 +155,6 @@ def build_args():
         description="Mutation Indexer",
     )
     args = parser.parse_args(REQUIRED_ARGUMENTS)
-    assert len(vars(args)) >= 52
     return args
 
 

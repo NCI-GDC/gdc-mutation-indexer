@@ -52,7 +52,7 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
-    parser = ParserBuilder.build(ALL_PARSERS, description="Mutation Indexer", )
+    parser = ParserBuilder.build(ALL_PARSERS, description="Mutation Indexer")
     args = parser.parse_args()
     return args
 
