@@ -74,8 +74,8 @@ class BaseBuilder(object):
         """
         paths = get_all_boolean_paths(mapping)
         schema_json = df.schema.jsonValue()
-        modified = any(self.cast_path(path, schema_json) for path in paths)
-        if modified:
+        modified = [self.cast_path(path, schema_json) for path in paths]
+        if any(modified):
             schema = StructType.fromJson(schema_json)
             select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
             df = df.select(*select_expr)
