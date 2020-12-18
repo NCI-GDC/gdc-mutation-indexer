@@ -1,4 +1,5 @@
 import abc
+import copy
 import json
 import logging
 
@@ -49,7 +50,7 @@ def cast_booleans(df, mapping):
         pyspark dataframe with boolean field casted
     """
     paths = get_all_boolean_paths(mapping)
-    schema = df.schema
+    schema = copy.deepcopy(df.schema)
     for path in paths:
         schema_partial = schema
         for node in path:
