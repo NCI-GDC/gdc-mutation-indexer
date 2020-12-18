@@ -4,7 +4,7 @@ import logging
 
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import col, size
-from pyspark.sql.types import StructType
+from pyspark.sql.types import StructType, ArrayType, MapType, BooleanType
 
 from config import LOG_FORMAT
 from exports.builders.utils import percentile
@@ -38,6 +38,35 @@ def get_all_boolean_paths(mapping):
     return res
 
 
+def cast_booleans(df, mapping):
+    """Ensure all the boolean fields in data frame are booleans before save to ES
+
+    Args:
+        df: pyspark dataframe to cast boolean
+        mapping: Dict of mapping types
+
+    Returns:
+        pyspark dataframe with boolean field casted
+    """
+    paths = get_all_boolean_paths(mapping)
+    schema = df.schema
+    for path in paths:
+        schema_partial = schema
+        for node in path:
+            field = schema_partial[node.encode('utf-8')]
+            if isinstance(field.dataType, StructType):
+                schema_partial = field.dataType
+            elif isinstance(field.dataType, ArrayType):
+                schema_partial = field.dataType.elementType
+            elif isinstance(field.dataType, MapType):
+                raise ValueError("Unsupported Property Type")
+            else:
+                field.dataType = BooleanType()
+
+    select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
+    return df.select(*select_expr)
+
+
 class BaseBuilder(object):
     """
     BaseBuilder contains the structure necessary for a Builder object.
@@ -62,54 +91,6 @@ class BaseBuilder(object):
         """
         pass
 
-    def check_and_cast_booleans(self, df, mapping):
-        """Ensure all the boolean fields in data frame are booleans before save to ES
-
-        Args:
-            df: pyspark dataframe to cast boolean
-            mapping: Dict of mapping types
-
-        Returns:
-            pyspark dataframe with boolean field casted
-        """
-        paths = get_all_boolean_paths(mapping)
-        schema_json = df.schema.jsonValue()
-        modified = [self.cast_path(path, schema_json) for path in paths]
-        if any(modified):
-            schema = StructType.fromJson(schema_json)
-            select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
-            df = df.select(*select_expr)
-
-        return df
-
-    def cast_path(self, path, schema):
-        """Find the field in the schema indicated by path and change it to boolean.
-
-        Args:
-            path: List[str] a path to the boolean field
-            schema: pyspark dataframe schema to cast boolean
-
-        Returns:
-
-        """
-        field = {}
-        for node in path:
-            for field in schema['fields']:
-                if field['name'] == node:
-                    schema = field['type']
-                    if 'elementType' in schema:
-                        schema = schema['elementType']
-                    break
-            else:
-                self.log("{} not found in {}".format(path, self.index_name))
-                break
-        else:
-            if schema != 'boolean' and 'type' in field:
-                self.log("cast {} to boolean in {}".format(path, self.index_name))
-                field['type'] = 'boolean'
-                return True
-        return False
-
     def load(self):
         """
         Responsible for loading the dataframe resulting from :func:`build`
@@ -133,7 +114,7 @@ class BaseBuilder(object):
                      self.index_name).repartition(self.config.df_repartition,
                                                   self.id_field)
 
-        df = self.check_and_cast_booleans(df, index_mapper.mapping)
+        df = cast_booleans(df, index_mapper.mapping)
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\

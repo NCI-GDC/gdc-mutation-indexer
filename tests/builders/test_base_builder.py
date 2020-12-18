@@ -1,20 +1,12 @@
 import json
 from collections import Counter
-from pyspark.sql import SQLContext, DataFrameReader, SparkSession
-from pyspark.sql.functions import split, explode
 
 import pytest
 from normalizer.mapper import ModelMapper
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import explode
 
-from exports.builders import (
-    CaseCentricBuilder,
-    GeneCentricBuilder,
-    SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder,
-    CNVCentricBuilder,
-    CNVOccurrenceCentricBuilder,
-)
-from exports.builders.base_builder import get_all_boolean_paths
+from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
 from tests_config import TestConfig
 
 conf = TestConfig()
@@ -35,43 +27,41 @@ def test_get_all_boolean_paths(get_mapping_data):
     ]
 
 
-def test_sample_data_cast_boolean(sqlContext, get_mapping_data):
+def test_sample_data_cast_boolean(get_mapping_data):
     spark = SparkSession.builder.appName("test").getOrCreate()
     df = spark.read.parquet("tests/data/input/sample.parquet")
-    dtypes = dict(df.select("gene.is_cancer_gene_census").dtypes)
-    assert dtypes["is_cancer_gene_census"] == "array<string>"
-    gene_level_cn_df = df.select(explode(df.gene.cnv)).select("col.gene_level_cn")
-    dtypes = dict(gene_level_cn_df.dtypes)
-    assert dtypes["gene_level_cn"] == "array<string>"
-    assert gene_level_cn_df.first().gene_level_cn[0] == "true"
-    builder = CaseCentricBuilder(conf, sqlContext)
-    new_df = builder.check_and_cast_booleans(df, get_mapping_data)
-    dtypes = dict(new_df.select("gene.is_cancer_gene_census").dtypes)
-    assert dtypes["is_cancer_gene_census"] == "array<boolean>"
-    gene_level_cn_df = new_df.select(explode(new_df.gene.cnv)).select(
-        "col.gene_level_cn"
-    )
-    dtypes = dict(gene_level_cn_df.dtypes)
-    assert dtypes["gene_level_cn"] == "array<boolean>"
-    assert gene_level_cn_df.first().gene_level_cn[0] is True
+    gene_df = df.select(explode("gene")).select("col.*")
+    gene_dtypes = dict(gene_df.dtypes)
+    assert gene_dtypes["is_cancer_gene_census"] == "string"
+    cnv_df = gene_df.select(explode("cnv")).select("col.*")
+    cnv_dtypes = dict(cnv_df.dtypes)
+    assert cnv_dtypes["gene_level_cn"] == "string"
+    assert cnv_df.first().gene_level_cn == "true"
+    new_df = cast_booleans(df, get_mapping_data)
+    new_gene_df = new_df.select(explode("gene")).select("col.*")
+    new_gene_dtypes = dict(new_gene_df.dtypes)
+    assert new_gene_dtypes["is_cancer_gene_census"] == "boolean"
+    new_cnv_df = new_gene_df.select(explode("cnv")).select("col.*")
+    new_cnv_dtypes = dict(new_cnv_df.dtypes)
+    assert new_cnv_dtypes["gene_level_cn"] == "boolean"
+    assert new_cnv_df.first().gene_level_cn is True
 
 
 @pytest.mark.parametrize(
-    "builder_class,index",
+    "index",
     (
-        (CaseCentricBuilder, "case_centric"),
-        (GeneCentricBuilder, "gene_centric"),
-        (SSMCentricBuilder, "ssm_centric"),
-        (SSMOccurrenceCentricBuilder, "ssm_occurrence_centric"),
-        (CNVCentricBuilder, "cnv_centric"),
-        (CNVOccurrenceCentricBuilder, "cnv_occurrence_centric"),
+        "case_centric",
+        "gene_centric",
+        "ssm_centric",
+        "ssm_occurrence_centric",
+        "cnv_centric",
+        "cnv_occurrence_centric",
     ),
 )
-def test_base_builder_cast_boolean(sqlContext, builder_class, index, request):
-    builder = builder_class(conf, sqlContext)
+def test_base_builder_cast_boolean(index, request):
     df = request.getfixturevalue("{}_df".format(index))
     index_mapper = ModelMapper(index)
-    df = builder.check_and_cast_booleans(df, index_mapper.mapping)
+    df = cast_booleans(df, index_mapper.mapping)
     paths = get_all_boolean_paths(index_mapper.mapping)
     boolean_counts = Counter(path[-1] for path in paths)
     simple_string = df.schema.simpleString()
