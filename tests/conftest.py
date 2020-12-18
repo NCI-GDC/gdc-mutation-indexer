@@ -149,6 +149,7 @@ def index_cases_with_duplicate_aliquots(source_es_client, request):
     source_es_client.delete_by_query(index=conf.graph_case_index, body=body)
 
 
+@pytest.fixture
 def files_with_linked_cases(source_es_client, request):
     input_path = os.path.join(conf.input_dir, 'files_with_linked_cases.ndjson')
     ids = load_docs_into_test_index(source_es_client, 'file', input_path=input_path)
