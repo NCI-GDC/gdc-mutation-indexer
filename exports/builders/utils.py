@@ -10,11 +10,12 @@ import yaml
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import (
     lit, udf, struct, col, explode, array, when, regexp_extract,
-    UserDefinedFunction,
+    UserDefinedFunction, row_number
 )
 from pyspark.sql.types import (
     ArrayType, DoubleType, IntegerType, StringType, StructField, StructType
 )
+from pyspark.sql import Window
 
 from exports.es_utils import iterate_es_results
 from exports.builders.aliquot import AliquotBuilder
@@ -25,6 +26,17 @@ logger = logging.getLogger("BaseBuilder")
 
 
 DEFAULT_EXCLUDE_FIELDS = {}
+SAMPLE_WEIGHTS = {
+    "Primary Tumor": 1,
+    "Primary Blood Derived Cancer - Bone Marrow": 2,
+    "Primary Blood Derived Cancer - Peripheral Blood": 3,
+    "Metastatic": 4,
+    "Additional Metastatic": 5,
+    "Recurrent Tumor": 6,
+    "Recurrent Blood Derived Cancer - Bone Marrow": 7,
+    "Recurrent Blood Derived Cancer - Peripheral Blood": 8,
+    "Additional - New Primary": 9,
+}
 
 
 def get_default_excludes(index, mapping):
@@ -204,6 +216,93 @@ def _create_gene_expression_files_query(
     return {"bool": {"must": musts}}
 
 
+WeightedCaseFileMetadata = collections.namedtuple("CaseFileMetadata", [
+    "case_id", 
+    "file_id", 
+    "created_datetime", 
+    "experimental_strategy", 
+    "sample_weight",
+])
+
+
+def get_case_file_metadata(sql_context, config):
+    """
+    Gets the file metadata associated with each case's best matched sample.
+
+    Args:
+        sql_context(SparkSession): The spark session
+        config: The config for the current project(s) being built
+
+    Return:
+        A data frame of Row(case_id, file_id, experimental_strategy)
+    """
+    weighted_metadata = _get_weighted_case_file_metadata(config)
+    weighted_metadata_df = sql_context.createDataFrame(list(weighted_metadata))
+    case_window = Window().partitionBy("case_id").orderBy(
+        col("sample_weight"),
+        col("created_datetime"),
+        col("file_id")
+    )
+
+    return weighted_metadata_df.withColumn(
+        "row_number", row_number().over(case_window)
+    ).where(
+        col("row_number") == 1
+    ).select(
+        "case_id",
+        "file_id",
+        "experimental_strategy"
+    )
+
+
+def _get_weighted_case_file_metadata(config, filters=None):
+    filters = filters or []
+    body = {
+        "_source": [
+            "file_id",
+            "created_datetime",
+            "experimental_strategy",
+            "cases.case_id",
+            "cases.samples.sample_type"
+        ],
+        "query": {
+            "bool":{
+                "must": [
+                    {
+                        "nested": {
+                            "path": "cases",
+                            "query": {"terms": {"cases.project.project_id": config.projects}},
+                        }
+                    },
+                ] + filters
+            }
+            
+        }
+    }
+    hits = iterate_es_results(
+        config.source_es,
+        index_name=config.graph_file_index,
+        doc_type=config.graph_file_doc_type,
+        query=body,
+    )
+
+    for hit in hits:
+        source = hit["_source"]
+        created_datetime = dateutil.parser.parse(source["created_datetime"])
+        
+        for case in source.get("cases", []):
+            for sample in case.get("samples", []):
+                sample_type = sample["sample_type"]
+                sample_weight = SAMPLE_WEIGHTS.get(sample_type, 10)
+
+                yield WeightedCaseFileMetadata(
+                    file_id=source["file_id"],
+                    case_id=case["case_id"],
+                    created_datetime=created_datetime,
+                    experimental_strategy=source.get("experimental_strategy", "Unknown"),
+                    sample_weight=sample_weight,
+                )
+
 def _select_primary_aliquot_gene_expressions(es_hits):
     """
     Select gene expression files that correspond to primary aliquots. The details
@@ -241,18 +340,6 @@ def _select_primary_aliquot_gene_expressions(es_hits):
     case_files = collections.defaultdict(list)
     metadata = {}
 
-    sample_weights = {
-        "Primary Tumor": 1,
-        "Primary Blood Derived Cancer - Bone Marrow": 2,
-        "Primary Blood Derived Cancer - Peripheral Blood": 3,
-        "Metastatic": 4,
-        "Additional Metastatic": 5,
-        "Recurrent Tumor": 6,
-        "Recurrent Blood Derived Cancer - Bone Marrow": 7,
-        "Recurrent Blood Derived Cancer - Peripheral Blood": 8,
-        "Additional - New Primary": 9,
-    }
-
     for hit in es_hits:
         source = hit["_source"]
         file_id = source["file_id"]
@@ -272,7 +359,7 @@ def _select_primary_aliquot_gene_expressions(es_hits):
         #   multiple samples associated with a single gene expression file
         sample_type = case["samples"][0]["sample_type"]
 
-        sample_weight = sample_weights.get(sample_type, 10)
+        sample_weight = SAMPLE_WEIGHTS.get(sample_type, 10)
 
         gef = GeneExpressionFile(file_id, created_time, sample_weight)
 

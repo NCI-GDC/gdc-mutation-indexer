@@ -140,3 +140,15 @@ class TestUtils(object):
         conf.projects = ["BAD-GRAPH-A", "BAD-GRAPH-C"]
         bad_graph_other_df = utils.get_case_ids_from_source_es(conf, sqlContext)
         assert _case_ids_from_df(bad_graph_other_df) == set()
+
+    @pytest.mark.usefixtures("files_with_linked_cases")
+    def test__get_case_file_metadata__tcg_kich(self, sqlContext):
+        config = tests_config.TestConfig()
+        config.projects = ["TCGA-KICH"]
+
+        df = utils.get_case_file_metadata(sqlContext, config)
+
+        files = {r.case_id: r.file_id for r in df.collect()}
+
+        assert files.get("452135f2-6de6-4593-a091-ddf6344ee431") == "acc6c688-a233-46bf-b2d9-7bfec28241ed"
+        assert files.get("872092b3-d31e-44d7-bd03-e29f52f8ab5a") == "cf3708a2-28e1-49cc-9e67-4416b3bf5b1a"

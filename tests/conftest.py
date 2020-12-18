@@ -140,14 +140,23 @@ def index_cases_with_duplicate_aliquots(source_es_client, request):
 
     Remove them after the test completes.
     """
-    input_path = os.path.join(conf.input_dir, 'cases_with_duplicate_aliquots.json')
+    input_path = os.path.join(conf.input_dir, 'cases_with_duplicate_aliquots.ndjson')
     ids = load_docs_into_test_index(source_es_client, 'case', input_path=input_path)
 
-    def remove_docs():
-        body = {'terms': {'_id': ids}}
-        source_es_client.delete_by_query(index=conf.graph_case_index, body=body)
+    yield ids
 
-    return ids
+    body = {"query": {"terms": {'file_id': list(ids)}}}
+    source_es_client.delete_by_query(index=conf.graph_case_index, body=body)
+
+
+def files_with_linked_cases(source_es_client, request):
+    input_path = os.path.join(conf.input_dir, 'files_with_linked_cases.ndjson')
+    ids = load_docs_into_test_index(source_es_client, 'file', input_path=input_path)
+
+    yield ids
+
+    body = {"query": {"terms": {'file_id': list(ids)}}}
+    source_es_client.delete_by_query(index=conf.graph_file_index, body=body)
 
 
 @pytest.fixture(scope='session')
