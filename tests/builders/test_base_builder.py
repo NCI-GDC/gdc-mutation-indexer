@@ -7,9 +7,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import explode
 
 from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
-from tests_config import TestConfig
 
-conf = TestConfig()
 
 
 @pytest.fixture
@@ -58,15 +56,13 @@ def test_sample_data_cast_boolean(get_mapping_data):
         "cnv_occurrence_centric",
     ),
 )
-def test_base_builder_cast_boolean(index, request):
+def test_base_builder_cast_boolean(sqlContext, index, request):
     df = request.getfixturevalue("{}_df".format(index))
     index_mapper = ModelMapper(index)
     df = cast_booleans(df, index_mapper.mapping)
     paths = get_all_boolean_paths(index_mapper.mapping)
     boolean_counts = Counter(path[-1] for path in paths)
     simple_string = df.schema.simpleString()
-    print(boolean_counts)
-    print(simple_string)
     for field, count in boolean_counts.items():
         s = "{}:boolean".format(field)
         assert simple_string.count(s) == count, "{} boolean not match".format(field)

@@ -52,17 +52,18 @@ def cast_booleans(df, mapping):
     paths = get_all_boolean_paths(mapping)
     schema = copy.deepcopy(df.schema)
     for path in paths:
-        schema_partial = schema
+        field = None
         for node in path:
-            field = schema_partial[node.encode('utf-8')]
-            if isinstance(field.dataType, StructType):
-                schema_partial = field.dataType
+            node = node.encode('utf-8')
+            if field is None:
+                field = schema[node]
+            elif isinstance(field.dataType, StructType):
+                field = field.dataType[node]
             elif isinstance(field.dataType, ArrayType):
-                schema_partial = field.dataType.elementType
+                field = field.dataType.elementType[node]
             elif isinstance(field.dataType, MapType):
                 raise ValueError("Unsupported Property Type")
-            else:
-                field.dataType = BooleanType()
+        field.dataType = BooleanType()
 
     select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
     return df.select(*select_expr)
