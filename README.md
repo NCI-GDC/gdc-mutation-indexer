@@ -98,13 +98,6 @@ After the above steps, you can save your changes and click the run button to sta
 tests.
 
 
-### Known Issues
-
-1. The first time you run pytest, the elasticsearch might timeout. If you saw the 
-timeout error, run the tests again. The error should disappear.
-
-2. The breakpoint in Pycharm seems not working. 
-
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
