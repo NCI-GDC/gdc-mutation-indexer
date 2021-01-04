@@ -1,4 +1,5 @@
 import re
+import json
 
 from elasticsearch.helpers import scan
 from normalizer.mapper import ModelMapper
@@ -195,3 +196,25 @@ def get_non_null_fields(config, blacklist=None):
             paths_with_data.append(path)
 
     return paths_with_data
+
+
+def get_dataframe_from_es(sql_context, config, index, include_fields=None, include_as_arrays=None, query=None):
+    reader = (
+        sql_context.read.format("org.elasticsearch.spark.sql")
+        .option("es.read.metadata", "true")
+        .option("es.nodes", config.source_es_nodes)
+        .option('es.net.ssl', config.es_use_ssl)
+        .option('es.net.ssl.cert.allow.self.signed', config.disable_es_verify_certs)
+        .option('es.nodes.resolve.hostname', 'false')
+    )
+
+    if query:
+        reader = reader.option("es.query", json.dumps(query))
+
+    if include_fields:
+        reader = reader.option("es.read.field.include", ",".join(include_fields))
+    
+    if include_as_arrays:
+        reader = reader.option("es.read.field.as.array.include", ",".join(include_as_arrays))
+        
+    return reader.load("{}".format(index))
