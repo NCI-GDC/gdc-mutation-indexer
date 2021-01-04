@@ -146,7 +146,7 @@ class TestUtils(object):
         config = tests_config.TestConfig()
         config.projects = ["TCGA-KICH"]
 
-        df = utils.get_case_file_metadata(sqlContext, config)
+        df = utils.get_case_files(sqlContext, config)
 
         files = {r.case_id: r.file_id for r in df.collect()}
 
