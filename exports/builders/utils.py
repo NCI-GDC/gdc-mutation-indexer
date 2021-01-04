@@ -17,7 +17,7 @@ from pyspark.sql.types import (
 )
 from pyspark.sql import Window
 
-from exports.es_utils import iterate_es_results
+from exports.es_utils import iterate_es_results, get_dataframe_from_es
 from exports.builders.aliquot import AliquotBuilder
 from config import LOG_FORMAT
 
@@ -216,16 +216,7 @@ def _create_gene_expression_files_query(
     return {"bool": {"must": musts}}
 
 
-WeightedCaseFileMetadata = collections.namedtuple("CaseFileMetadata", [
-    "case_id", 
-    "file_id", 
-    "created_datetime", 
-    "experimental_strategy", 
-    "sample_weight",
-])
-
-
-def get_case_file_metadata(sql_context, config):
+def get_case_files(sql_context, config):
     """
     Gets the file metadata associated with each case's best matched sample.
 
@@ -236,15 +227,14 @@ def get_case_file_metadata(sql_context, config):
     Return:
         A data frame of Row(case_id, file_id, experimental_strategy)
     """
-    weighted_metadata = _get_weighted_case_file_metadata(config)
-    weighted_metadata_df = sql_context.createDataFrame(list(weighted_metadata))
+    weighted_files_df = _get_weighted_files(sql_context, config)
     case_window = Window().partitionBy("case_id").orderBy(
         col("sample_weight"),
         col("created_datetime"),
         col("file_id")
     )
 
-    return weighted_metadata_df.withColumn(
+    return weighted_files_df.withColumn(
         "row_number", row_number().over(case_window)
     ).where(
         col("row_number") == 1
@@ -255,16 +245,9 @@ def get_case_file_metadata(sql_context, config):
     )
 
 
-def _get_weighted_case_file_metadata(config, filters=None):
+def _get_weighted_files(sql_context, config, filters=None):
     filters = filters or []
-    body = {
-        "_source": [
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            "cases.case_id",
-            "cases.samples.sample_type"
-        ],
+    query = {
         "query": {
             "bool":{
                 "must": [
@@ -279,29 +262,70 @@ def _get_weighted_case_file_metadata(config, filters=None):
             
         }
     }
-    hits = iterate_es_results(
-        config.source_es,
-        index_name=config.graph_file_index,
-        doc_type=config.graph_file_doc_type,
-        query=body,
+    include_fields = [
+        "file_id",
+        "created_datetime",
+        "experimental_strategy",
+        "cases.case_id",
+        "cases.samples.sample_type"
+    ]
+    files_df = get_dataframe_from_es(
+        sql_context, config,
+        config.graph_file_index,
+        include_fields=include_fields,
+        query=query
     )
 
-    for hit in hits:
-        source = hit["_source"]
-        created_datetime = dateutil.parser.parse(source["created_datetime"])
-        
-        for case in source.get("cases", []):
-            for sample in case.get("samples", []):
-                sample_type = sample["sample_type"]
-                sample_weight = SAMPLE_WEIGHTS.get(sample_type, 10)
+    weighted_files_df = files_df.select(
+        "file_id",
+        "created_datetime",
+        "experimental_strategy",
+        explode("cases").alias("case")
+    ).select(
+        "file_id",
+        "created_datetime",
+        "experimental_strategy",
+        col("case").getItem("case_id").alias("case_id"),
+        explode(col("case").getItem("samples")).alias("sample")
+    ).select(
+        "file_id",
+        "created_datetime",
+        "experimental_strategy",
+        "case_id",
+        col("sample").getItem("sample_type").alias("sample_type")
+    )
+    
+    print(weighted_files_df.dtypes)
+    weighted_files_df.where(col("case_id") == "452135f2-6de6-4593-a091-ddf6344ee431").where(col("sample_type") == 'Primary Tumor').orderBy(col("created_datetime")).select("file_id", "created_datetime").show(50, False)
 
-                yield WeightedCaseFileMetadata(
-                    file_id=source["file_id"],
-                    case_id=case["case_id"],
-                    created_datetime=created_datetime,
-                    experimental_strategy=source.get("experimental_strategy", "Unknown"),
-                    sample_weight=sample_weight,
-                )
+    weighted_files_df = weighted_files_df.select(
+        "file_id",
+        "created_datetime", 
+        "experimental_strategy",
+        "case_id",
+        when(
+            col("sample_type") == "Primary Tumor", 1
+        ).when(
+            col("sample_type") == "Primary Blood Derived Cancer - Bone Marrow", 2
+        ).when(
+            col("sample_type") == "Primary Blood Derived Cancer - Peripheral Blood", 3
+        ).when(
+            col("sample_type") == "Metastatic", 4
+        ).when(
+            col("sample_type") == "Additional Metastatic", 5
+        ).when(
+            col("sample_type") == "Recurrent Tumor", 6
+        ).when(
+            col("sample_type") == "Recurrent Blood Derived Cancer - Bone Marrow", 7
+        ).when(
+            col("sample_type") == "Recurrent Blood Derived Cancer - Peripheral Blood", 8
+        ).when(
+            col("sample_type") == "Additional - New Primary", 9
+        ).otherwise(10).alias("sample_weight")
+    )
+
+    return weighted_files_df
+
 
 def _select_primary_aliquot_gene_expressions(es_hits):
     """
