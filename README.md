@@ -42,16 +42,6 @@ If you try to run the tests on a different version, you may need to update
 Spark distribution.
 
 
-## Tests the easy way
-
-After PySpark(current version 2.4.5) is installed via pip, download 
-`elasticsearch-hadoop-7.6.2.zip` and extract the content. Copy the file 
-`dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
-`venv/lib/python2.7/site-packages/pyspark/jars/`. 
-
-Make sure your elasticsearch server is running at port 9200 and start the tests. If you
-see timeout error for es, restart the tests.
-
 ## Vagrant
 
 Testing locally can be hard and `vagrant` support has been added to make our lives
@@ -107,74 +97,6 @@ Pycharm.
 After the above steps, you can save your changes and click the run button to start your 
 tests.
 
-## Docker compose
-
-You can also use docker to run the pytest. If you are on a mac, make sure you locate 
-about 4G of mem, 4G of swap, and 2 CPUs to docker machine. You can change it in the 
-preference of docker desktop software. Then copy your id_rsa file to the project root.
-It is required to download and install private python packages from github.
-Then run
-```
-docker-compose up -d
-```
-and wait for the build to finish.
-
-when it is done, you can run the tests in the docker container:
-```
-docker exec -it gdc-mutation-indexer_gdc-mutation-indexer_1 /bin/bash
-cd /app
-# if you have run pytest in other environments
-find tests -name __pycache__  -exec rm -rf {} \;
-pytest tests
-```
-The test should start. 
-
-### Use Pycharm to debug with Docker Compose
-
-1. Set the Docker Compose Interpreter
-
-    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
-        Interpreter, select Docker Compose, For services, select gdc-mutation-indexer. 
-        Click 'OK'
-       
-    * Set Path mappings: <project root> -> '/app'
-
-2. Add new Run/Debug configurations
-
-    * Add new pytest configuration
-    * Set script path to <project>/tests (or any test file you want)
-    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
-        Docker Compose ...'
-    * Set working directory to your project folder
-    * Set the following environment variables
-        ```
-        PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.7-src.zip:/opt/bitnami/spark/python/:$PYTHONPATH
-        SPARK_HOME=/opt/bitnami/spark
-        PYSPARK_PYTHON=/usr/bin/python2
-        ```
-
-3. (optional) You can configure the gdc-mutation-indexer docker to use the 
-    elasticsearch on your host. Which should have better performance than the one in
-    your docker container.
-    
-    * Configure elasticsearch to listen on local ips.
-        * In the elasticsearch.yml (/usr/local/etc/elasticsearch/elasticsearch.yml), 
-            add the following lines:
-            ```
-            network.bind_host: [_local_, _site_]
-            discovery.type: single-node
-            ```
-        * Restart elasticsearch with `brew services restart elasticsearch`
-    * Add the following environment variables in you Run/Debug configurations
-    
-        ```
-        ES_NODES_TEST=host.docker.internal
-        ES_HOST_TEST=host.docker.internal
-        SOURCE_ES_HOST_TEST=host.docker.internal
-        ```
-
-After the above steps, you can save your changes and click the run button to start your 
-tests.
 
 ### Known Issues
 
