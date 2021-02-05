@@ -1,8 +1,10 @@
 import pytest
 from normalizer.mapper import ModelMapper
 
-from exports.es_utils import get_non_null_fields
+from exports.es_utils import get_non_null_fields, get_dataframe_from_es
+
 from tests_config import TestConfig
+from utils.schema_validation import PysaprkSchemaValidator, Schema
 
 config = TestConfig()
 
@@ -61,3 +63,46 @@ def test_missing_fields(diagnoses_missing_field):
 
     assert result
     assert set(result) == {expected_field}
+
+
+
+@pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
+@pytest.mark.parametrize(
+    ["input_file", "output_file"],
+    (
+        ("input/es_utils/test_get_dataframe_from_es_base.yaml", "output/es_utils/test_get_dataframe_from_es_base.yaml"),
+        ("input/es_utils/test_get_dataframe_from_es_complex.yaml", "output/es_utils/test_get_dataframe_from_es_complex.yaml"),
+    )
+)
+def test_get_dataframe_from_es(sqlContext, input_file, output_file, load_data_from_file):
+    # Arrange
+    config = TestConfig()
+    indexes = {
+        "files": config.graph_file_index,
+        "cases": config.graph_case_index,
+    }
+    validator = PysaprkSchemaValidator()
+
+    inputs = load_data_from_file(input_file)
+    index = inputs["index"]
+    doc_id = inputs["document_id"]
+    kwargs = inputs["kwargs"]
+
+    expected = load_data_from_file(output_file)
+    expected_schema = Schema(expected["expected_schema"])
+    expected_data = expected["expected_data"]
+
+    # Act
+    result_df = get_dataframe_from_es(
+        sqlContext,
+        config,
+        indexes[index],
+        **kwargs
+    )
+
+    # Assert
+    validator.validate_schema(result_df.schema, expected_schema)
+
+    result_data = {row[doc_id]: row.asDict(True) for row in result_df.collect()}
+
+    assert result_data == expected_data

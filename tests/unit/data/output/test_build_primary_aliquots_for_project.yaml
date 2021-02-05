@@ -1,0 +1,34 @@
+string_type: &string_type
+  class_name: StringType
+
+expected_data:
+  - ["case-1", "file-2", "WXG"] # selected based on file_id, since the date and sample_type match
+  - ["case-2", "file-4", "WSG"] # the only file for "case-2"
+  - ["case-3", "file-6", "Targeted Sequencing"] # has an earlier creation date compared to "file-5"
+  - ["case-4", "file-8", "WXG"] # older by one nano second.
+
+expected_es_include_fields:
+  - file_id
+  - created_datetime
+  - experimental_strategy
+  - cases.case_id
+  - cases.samples.sample_type
+
+expected_es_query:
+  query:
+    bool:
+      must: 
+        - nested: 
+            path: cases
+            query: 
+              terms:
+                cases.project.project_id: 
+                  - TEST0
+
+expected_schema:
+  - name: file_id
+    dataType: *string_type
+  - name: experimental_strategy
+    dataType: *string_type
+  - name: case_id
+    dataType: *string_type

@@ -1,4 +1,5 @@
 import re
+import json
 
 from elasticsearch.helpers import scan
 from normalizer.mapper import ModelMapper
@@ -195,3 +196,44 @@ def get_non_null_fields(config, blacklist=None):
             paths_with_data.append(path)
 
     return paths_with_data
+
+
+def get_dataframe_from_es(
+    sql_context,
+    config, index,
+    include_fields=None,
+    include_as_arrays=None,
+    query=None, read_metadata=False,
+):
+    """
+    A utility for loading data from ES natively into spark. 
+
+    Args:
+        sql_context (pyspark.sql.SQLContext): The spark sql context
+        config: The configuration for the current process
+        index: The index from which the data will be loaded
+        include_fields: The fields which will be included when read
+        include_as_arrays: The fields which need to be read as arrays and not 
+            simple types (e.g. field: ["this", "is", "example"])
+            NOTE: This does NOT apply to arrays of objects
+        query: The query to use in ES to limit the records returned
+    """
+    reader = (
+        sql_context.read.format("org.elasticsearch.spark.sql")
+        .option("es.read.metadata", read_metadata)
+        .option("es.nodes", config.source_es_nodes)
+        .option('es.net.ssl', config.es_use_ssl)
+        .option('es.net.ssl.cert.allow.self.signed', config.disable_es_verify_certs)
+        .option('es.nodes.resolve.hostname', False)
+    )
+
+    if query:
+        reader = reader.option("es.query", json.dumps(query))
+
+    if include_fields and hasattr(include_fields, "__iter__"):
+        reader = reader.option("es.read.field.include", ",".join(include_fields))
+    
+    if include_as_arrays and hasattr(include_as_arrays, "__iter__"):
+        reader = reader.option("es.read.field.as.array.include", ",".join(include_as_arrays))
+        
+    return reader.load("{}".format(index))

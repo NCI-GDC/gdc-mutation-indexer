@@ -50,11 +50,11 @@ def update_genes():
 
 def update_cases(es):
     """
-    Updates cases.json.gz file according to cases that are present in test mafs
+    Updates cases.ndjson.gz file according to cases that are present in test mafs
 
     - Get a set of cases that appear in test mafs
     - Get corresponding case documents from gdc_from_graph
-    - Save results to tests/data/input/cases.json.gz
+    - Save results to tests/data/input/cases.ndjson.gz
 
     """
 
@@ -76,7 +76,7 @@ def update_cases(es):
     print('- Getting cases data for case_ids')
     cases = get_cases(es, case_ids)
 
-    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.json')
+    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.ndjson')
     print('- Writing cases to {}'.format(filepath + '.gz'))
     write_to_file(cases, filepath)
 
@@ -101,7 +101,7 @@ def update_files(es):
     print('- Getting files data for case_ids')
     files = get_files(es, case_ids)
 
-    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'files.json')
+    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'files.ndjson')
     print('- Writing files to {}'.format(filepath + '.gz'))
     write_to_file(files, filepath)
 
@@ -236,9 +236,9 @@ def write_to_file(data, filepath):
 
 
 if __name__ == '__main__':
-    print('\n\tUpdating cases.json.gz:')
+    print('\n\tUpdating cases.ndjson.gz:')
     update_cases(es)
     print('\n\tUpdating genes.json.gz:')
     update_genes()
-    print('\n\tUpdating files.json.gz')
+    print('\n\tUpdating files.ndjson.gz')
     update_files(es)
