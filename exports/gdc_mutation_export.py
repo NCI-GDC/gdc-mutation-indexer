@@ -6,7 +6,7 @@ from parsers import (
     ESArgs,
 )
 from config import LOG_FORMAT
-from builders import (
+from .builders import (
     MAFBuilder,
     GisticBuilder,
     CaseBuilder,
