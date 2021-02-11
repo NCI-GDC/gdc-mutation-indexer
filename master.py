@@ -192,6 +192,9 @@ def get_config_args(args):
             config_args.extend(
                 ["--conf", 'spark.executorEnv.{}="{}"'.format(varname, value)]
             )
+            config_args.extend(
+                ["--conf", "spark.pyspark.python=python3.5"]
+            )
 
     return config_args
 
