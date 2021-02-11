@@ -8,7 +8,7 @@ from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 from tests_config import TestConfig
 
 
-class TestPimaryAliquotBuilder(TestCase):
+class TestPrimaryAliquotBuilder(TestCase):
     @pytest.fixture(autouse=True)
     def import_fixtures(self, sqlContext, files_with_linked_cases):
         self.sql_context = sqlContext

@@ -11,14 +11,14 @@ from pyspark.sql.types import StringType, StructType, StructField, ArrayType, In
 from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 
 from tests_config import TestConfig
-from utils.schema_validation import Schema, PysaprkSchemaValidator
+from utils.schema_validation import Schema, PysparkSchemaValidator
 
 
-class TestPimaryAliquotBuilder(TestCase):
+class TestPrimaryAliquotBuilder(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.schema_validator = PysaprkSchemaValidator()
+        cls.schema_validator = PysparkSchemaValidator()
 
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):

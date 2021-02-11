@@ -200,7 +200,8 @@ def get_non_null_fields(config, blacklist=None):
 
 def get_dataframe_from_es(
     sql_context,
-    config, index,
+    config, 
+    index,
     include_fields=None,
     include_as_arrays=None,
     query=None, read_metadata=False,

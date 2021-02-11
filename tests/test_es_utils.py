@@ -4,7 +4,7 @@ from normalizer.mapper import ModelMapper
 from exports.es_utils import get_non_null_fields, get_dataframe_from_es
 
 from tests_config import TestConfig
-from utils.schema_validation import PysaprkSchemaValidator, Schema
+from utils.schema_validation import PysparkSchemaValidator, Schema
 
 config = TestConfig()
 
@@ -81,7 +81,7 @@ def test_get_dataframe_from_es(sqlContext, input_file, output_file, load_data_fr
         "files": config.graph_file_index,
         "cases": config.graph_case_index,
     }
-    validator = PysaprkSchemaValidator()
+    validator = PysparkSchemaValidator()
 
     inputs = load_data_from_file(input_file)
     index = inputs["index"]

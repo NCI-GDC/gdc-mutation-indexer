@@ -62,9 +62,10 @@ class GeneExpressionInputBuilder(object):
 
     def get_primary_aliquot_data(self):
         """
-        Gets the primary aliquot data from ES or into memory. This data includes a data frame
-        with the each file containing the primary aliquot for a case and the associated case data.
-        The primary aliquot data also has a list of the file urls.
+        Gets the primary aliquot data originating from ES from memory or loads it into memory if
+        not there. This data includes a data frame with each file containing the primary aliquot 
+        for a case and the associated case data. The primary aliquot data also has a list of the 
+        file urls containing the primary aliquots.
 
         Returns:
             GeneExpressionPrimaryAliquotData: the primary aliquot data for the project

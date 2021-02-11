@@ -30,7 +30,7 @@ class Schema(object):
         )
 
 
-class PysaprkSchemaValidator(object):
+class PysparkSchemaValidator(object):
     STRUCT_TYPE = "StructType"
     ARRAY_TYPE = "ArrayType"
     MAP_TYPE = "MapType"
