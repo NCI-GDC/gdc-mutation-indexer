@@ -303,7 +303,7 @@ class PrimaryAliquotBuilder(object):
             "case.samples",
         )
         primary_aliquot_df = primary_aliquot_df.join(urls_df, ["file_id"], how="left")
-        file_urls = tuple(u["file_url"] for u in urls)
+        file_urls = list(u["file_url"] for u in urls)
 
         return GeneExpressionPrimaryAliquotData(
             primary_aliquot_df=primary_aliquot_df, 
