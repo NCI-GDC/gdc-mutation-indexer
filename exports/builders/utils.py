@@ -5,18 +5,29 @@ import uuid
 import logging
 from functools import partial
 
-import dateutil.parser
 import yaml
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import (
-    lit, udf, struct, col, explode, array, when, regexp_extract,
+    array,
+    col,
+    explode,
+    lit, 
+    regexp_extract,
+    struct,
+    udf,
     UserDefinedFunction,
+    when,
 )
 from pyspark.sql.types import (
-    ArrayType, DoubleType, IntegerType, StringType, StructField, StructType
+    ArrayType,
+    DoubleType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType
 )
 
-from exports.es_utils import iterate_es_results
+from exports import es_utils
 from exports.builders.aliquot import AliquotBuilder
 from config import LOG_FORMAT
 
@@ -143,7 +154,7 @@ def get_case_ids_from_source_es(config, sqlContext):
 
     query = {'_source': False, 'query': {'bool': {'should': clauses}}}
 
-    results = iterate_es_results(
+    results = es_utils.iterate_es_results(
         config.source_es,
         index_name=config.graph_case_index,
         doc_type=config.graph_case_doc_type,
@@ -169,235 +180,6 @@ def get_case_ids_from_source_es(config, sqlContext):
     cases_df = sqlContext.createDataFrame(cases, schema=cases_df_schema)
 
     return cases_df
-
-
-def _create_gene_expression_files_query(
-    workflow_types,
-    acl=("open",),
-    projects=None,
-):
-    """
-    Create gene expression files query given target ``workflow_types`` and
-    optional ``acl`` and ``projects``
-
-    Args:
-        workflow_types(list): list of workflow types to query
-        acl(list): file acl list (defaults to open files only)
-        projects(list): list of project_id's to limit the query to
-    """
-
-    data_type_clause = {"terms": {"data_type": ["Gene Expression Quantification"]}}
-    acl_clause = {"terms": {"acl": acl}}
-    analysis_type_clause = {"terms": {"analysis.workflow_type": workflow_types}}
-
-    musts = [data_type_clause, acl_clause, analysis_type_clause]
-
-    if projects:
-        projects_clause = {
-            "nested": {
-                "path": "cases",
-                "query": {"terms": {"cases.project.project_id": projects}},
-            }
-        }
-        musts.append(projects_clause)
-
-    return {"bool": {"must": musts}}
-
-
-def _select_primary_aliquot_gene_expressions(es_hits):
-    """
-    Select gene expression files that correspond to primary aliquots. The details
-    can be found in DEV-219.
-
-    In short, the gene expression files should be prioritized by sample type
-    the expression values were generated from (highest to lowest):
-         1. "Primary Tumor"
-         2. "Primary Blood Derived Cancer - Bone Marrow"
-         3. "Primary Blood Derived Cancer - Peripheral Blood"
-         4. "Metastatic"
-         5. "Additional Metastatic"
-         6. "Recurrent Tumor"
-         7. "Recurrent Blood Derived Cancer - Bone Marrow"
-         8. "Recurrent Blood Derived Cancer - Peripheral Blood"
-         9. "Additional - New Primary"
-         10. Any other `sample_type` sorted alphabetically
-         11. If there are ties, then sort by `created_datetime`
-         12. If there are ties, then sort by `file_id`
-
-    Args:
-        iterable(dict): an iterable object that yield file metadata in as a `dict`
-
-    Returns:
-        dict: file_id to case_metadata mapping
-
-    """
-
-    GeneExpressionFile = collections.namedtuple(
-        "GeneExpressionFile",
-        field_names=["file_id", "created_datetime", "sample_weight"],
-    )
-
-    file_map = {}
-    case_files = collections.defaultdict(list)
-    metadata = {}
-
-    sample_weights = {
-        "Primary Tumor": 1,
-        "Primary Blood Derived Cancer - Bone Marrow": 2,
-        "Primary Blood Derived Cancer - Peripheral Blood": 3,
-        "Metastatic": 4,
-        "Additional Metastatic": 5,
-        "Recurrent Tumor": 6,
-        "Recurrent Blood Derived Cancer - Bone Marrow": 7,
-        "Recurrent Blood Derived Cancer - Peripheral Blood": 8,
-        "Additional - New Primary": 9,
-    }
-
-    for hit in es_hits:
-        source = hit["_source"]
-        file_id = source["file_id"]
-        created_time = dateutil.parser.parse(source["created_datetime"])
-
-        # If no cases were returned, there's nothing to do, since we cannot map
-        # files back
-        if "cases" not in source:
-            continue
-
-        case = source["cases"][0]
-
-        case_id = case["case_id"]
-        metadata[file_id] = case
-
-        # NOTE: We might encounter a use-case in the future, where we can have
-        #   multiple samples associated with a single gene expression file
-        sample_type = case["samples"][0]["sample_type"]
-
-        sample_weight = sample_weights.get(sample_type, 10)
-
-        gef = GeneExpressionFile(file_id, created_time, sample_weight)
-
-        case_files[case_id].append(gef)
-
-    for case_id, ge_files in case_files.items():
-        ge_files = sorted(
-            ge_files,
-            key=lambda x: (x.sample_weight, x.created_datetime, x.file_id),
-        )
-        file_id = ge_files[0].file_id
-
-        file_map[file_id] = metadata[file_id]
-        file_map[file_id]["file_id"] = file_id
-
-    return file_map
-
-
-def is_main_url(metadata):
-    """
-    Check if given metadata corresponds to main IndexD URL:
-        * type == cleversafe
-        * state == validated
-
-    Returns:
-        bool: True if main URL, False otherwise
-    """
-    return (
-        metadata.get("type") in ["cleversafe"] and
-        metadata.get("state") == "validated"
-    )
-
-
-def get_and_format_url(doc):
-    """
-    Select main IndexD url if one exist and format it to something that Spark
-    understands
-
-    Args:
-        doc (indexclient.client.Document): IndexD document to extract URL from
-
-    Returns:
-        str: formatted main URL
-    """
-    for url, meta in doc.urls_metadata.items():
-        if is_main_url(meta):
-            url = url.replace("s3://", "s3a://").replace("cleversafe.service.consul/", "")
-            return url
-    return None
-
-
-def _get_main_urls(indexd_client, file_ids):
-    """
-    Construct a {file_id -> url} mapping, where url is a main URL for each file_id
-
-    Args:
-        indexd_client (indexclient.client.IndexClient): indexd client
-        file_ids (list): a list of file_ids
-
-    Returns:
-        dict: file_id to main url mapping
-    """
-    urls_map = {}
-
-    batch_n = 0
-    batch_size = 1000
-
-    batches = []
-    while batch_n * batch_size < len(file_ids):
-        batches.append(file_ids[batch_n*batch_size:(batch_n+1)*batch_size])
-        batch_n += 1
-
-    for batch_ids in batches:
-        docs = indexd_client.bulk_request(batch_ids)
-
-        for doc in docs:
-            urls_map[doc.did] = get_and_format_url(doc)
-
-    return urls_map
-
-
-def get_gene_expression_metadata(
-    config,
-    source=None,
-    workflow_types=None,
-    gene_expression_selector=_select_primary_aliquot_gene_expressions,
-):
-    """
-    Query ES graph file index to extract case and gene expression metadata,
-    return the results in a list
-    """
-    query = _create_gene_expression_files_query(
-        projects=config.projects,
-        workflow_types=workflow_types,
-    )
-
-    if source is None:
-        source = ["cases.case_id", "cases.samples.sample_type"]
-
-    body = {
-        "_source": source,
-        "query": query,
-    }
-
-    results = iterate_es_results(
-        config.source_es,
-        index_name=config.graph_file_index,
-        doc_type=config.graph_file_doc_type,
-        query=body,
-    )
-
-    file_map = gene_expression_selector(results)
-
-    urls_map = _get_main_urls(config.indexd, list(file_map))
-
-    files = []
-    for file_id, url in urls_map.items():
-        if url is None:
-            logger.warning("File is missing: '{}'".format(file_id))
-        else:
-            meta = file_map[file_id]
-            meta["file_url"] = url
-            files.append(meta)
-
-    return files
 
 
 def ssm_label_col(chromosome,

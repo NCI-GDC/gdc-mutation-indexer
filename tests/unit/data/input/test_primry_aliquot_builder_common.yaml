@@ -1,0 +1,152 @@
+- _id: file-1
+  file_id: file-1
+  experimental_strategy: Targeted Sequencing
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-1
+      submitter_id: fill
+      samples:
+        - sample_type: "Normal"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-2
+  file_id: file-2
+  experimental_strategy: WXG
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-1
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-3
+  file_id: file-3
+  experimental_strategy: Targeted Sequencing
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-1
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-4
+  file_id: file-4
+  experimental_strategy: WSG
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-2
+      submitter_id: fill
+      samples:
+        - sample_type: "Normal"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-5
+  file_id: file-5
+  experimental_strategy: WSG
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-3
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-6
+  file_id: file-6
+  experimental_strategy: Targeted Sequencing
+  created_datetime: "2020-01-02T10:28:47.799242-04:00"
+  cases:
+    - case_id: case-3
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-7
+  file_id: file-7
+  experimental_strategy: Targeted Sequencing
+  created_datetime: "2020-01-02T10:28:47.799242-05:00"
+  cases:
+    - case_id: case-4
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100
+- _id: file-8
+  file_id: file-8
+  experimental_strategy: WXG
+  created_datetime: "2020-01-02T10:28:47.799241-05:00"
+  cases:
+    - case_id: case-4
+      submitter_id: fill
+      samples:
+        - sample_type: "Primary Tumor"
+      demographic:
+        days_to_death: 100
+        ethnicity: fill
+        gender: fill
+        race: fill
+        vital_status: fill
+      project:
+        project_id: fill
+      diagnoses:
+        - age_at_diagnosis: 100

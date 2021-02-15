@@ -18,7 +18,7 @@ from pyspark.sql.types import (
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.gene_model import GeneModelBuilder
-from exports.builders.utils import get_gene_expression_metadata
+from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 
 
 CASE_METADATA = [
@@ -76,27 +76,34 @@ def trim_gene_id(raw_gene_id):
 class GeneExpressionInputBuilder(object):
     supported_workflow_types = ["HTSeq - FPKM-UQ"]
 
-    def __init__(self, config, *args, **kwargs):
-        super(GeneExpressionInputBuilder, self).__init__(config, *args, **kwargs)
+    def __init__(self, config, sqlContext, *args, **kwargs):
+        super(GeneExpressionInputBuilder, self).__init__(config, sqlContext, *args, **kwargs)
 
+        self.sql_context = sqlContext
         self.config = config
-        self.gene_expression_files_metadata = None
+        self._primary_aliquot_data = None
+        self.primary_aliquot_builder = PrimaryAliquotBuilder(sqlContext, config)
 
-    def _load_metadata(self):
-        if self.gene_expression_files_metadata is not None:
-            return self.gene_expression_files_metadata
+    def get_primary_aliquot_data(self):
+        """
+        Gets the primary aliquot data originating from ES from memory or loads it into memory if
+        not there. This data includes a data frame with each file containing the primary aliquot 
+        for a case and the associated case data. The primary aliquot data also has a list of the 
+        file urls containing the primary aliquots.
 
-        file_source = [
-            "cases." + field for field in CASE_METADATA + CASE_NESTED_METADATA
-        ] + ["file_id", "created_datetime"]
+        Returns:
+            GeneExpressionPrimaryAliquotData: the primary aliquot data for the project
+        """
+        if self._primary_aliquot_data is not None:
+            return self._primary_aliquot_data
 
-        self.gene_expression_files_metadata = get_gene_expression_metadata(
-            self.config,
-            source=file_source,
-            workflow_types=self.supported_workflow_types,
+        self._primary_aliquot_data = (
+            self.primary_aliquot_builder.build_gene_expression_primary_aliquot_data(
+                self.supported_workflow_types,
+            )
         )
 
-        return self.gene_expression_files_metadata
+        return self._primary_aliquot_data
 
 
 class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuilder):
@@ -119,9 +126,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuild
         return ge_values_df
 
     def get_urls(self):
-        files_metadata = self._load_metadata()
-
-        return [file_meta["file_url"] for file_meta in files_metadata]
+        return self.get_primary_aliquot_data().file_urls
 
     def load_gene_expression_files_into_df(self, batch_size=500):
         self.logger.info("Loading gene expression files")
@@ -165,11 +170,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuild
 class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder, BaseInputBuilder):
 
     def build_from_scratch(self):
-        files_metadata = self._load_metadata()
-        # provide schema to avoid occasional TypeError, the schema here is not correct
-        # the data types will be casted to correct types in BaseBuilder
-        schema = _parse_datatype_json_value(GENE_EXPRESSION_SCHEMA)
-        initial_df = self.sqlContext.createDataFrame(files_metadata, schema=schema)
+        initial_df = self.get_primary_aliquot_data().primary_aliquot_df
 
         # NOTE: diagnoses is a nested document, so we are flattening it by
         #   simply aggregating age_at_diagnosis values into an array

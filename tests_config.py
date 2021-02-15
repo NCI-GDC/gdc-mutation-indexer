@@ -38,8 +38,8 @@ class TestConfig(BaseConfig):
 
     # Additional test files
     doc_files = {
-        'case': os.path.join(input_dir, 'cases.json.gz'),
-        'file': os.path.join(input_dir, 'files.json.gz')
+        'case': os.path.join(input_dir, 'cases.ndjson.gz'),
+        'file': os.path.join(input_dir, 'files.ndjson.gz')
     }
 
     # Additional exports files
