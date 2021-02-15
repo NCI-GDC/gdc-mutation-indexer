@@ -3,6 +3,7 @@ import os
 
 from indexclient.client import IndexClient, Document
 import pytest
+from pyspark.sql.types import StructType, StructField, StringType, ArrayType, LongType
 from pyspark.sql.functions import col
 
 from exports.builders.gene_expression import (
@@ -32,12 +33,26 @@ def ge_builder(sqlContext, ge_conf):
 
 @pytest.fixture
 def ge_cases_df(sqlContext, ge_conf):
-    return GeneExpressionCaseInputBuilder(
+    cases_df = GeneExpressionCaseInputBuilder(
         ge_conf,
         sqlContext,
         "gene_expression_cases",
     ).build()
 
+    assert cases_df.schema == StructType([
+        StructField("case_id", StringType(), True),
+        StructField("days_to_death", LongType(), True),
+        StructField("ethnicity", StringType(), True),
+        StructField("gender", StringType(), True),
+        StructField("race", StringType(), True),
+        StructField("vital_status", StringType(), True),
+        StructField("submitter_id", StringType(), True),
+        StructField("project_id", StringType(), True),
+        StructField("file_url", StringType(), True),
+        StructField("age_at_diagnosis", ArrayType(LongType(), True), True),
+    ])
+
+    return cases_df
 
 @pytest.fixture
 def ge_values_df(sqlContext, ge_conf):
