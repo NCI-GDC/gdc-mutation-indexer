@@ -47,6 +47,12 @@ class GeneModelBuilder(object):
         # Rename 'end' to 'gene_end'
         gene_df = gene_df.withColumnRenamed('end', 'gene_end')
 
+        # Elasticsearch 6+ is strict about how booleans are represented.
+        # This column really needs to be lowercase.
+        gene_df = gene_df.withColumn(
+            'is_cancer_gene_census', lower(gene_df.is_cancer_gene_census)
+        )
+
         gene_df = self.rename_columns(gene_df)
 
         return gene_df

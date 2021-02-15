@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql.functions import col, lit, udf
+from pyspark.sql.functions import col, lit, lower, udf
 from pyspark.sql.types import StringType
 
 from exports.builders.gene_model import GeneModelBuilder
@@ -34,6 +34,8 @@ class GisticBuilder(BaseInputBuilder):
         super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
 
     def build_from_cache(self, df):
+        """Fix the format of old cached GISTIC DFs."""
+        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
         return df
 
     def build_from_scratch(self):

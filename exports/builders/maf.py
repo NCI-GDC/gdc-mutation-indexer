@@ -31,6 +31,8 @@ class MAFBuilder(BaseInputBuilder):
         self.annotation_builders = [CivicBuilder(config, sqlContext)]
 
     def build_from_cache(self, df):
+        """Fix the format of old cached MAF DFs."""
+        df = df.withColumn('is_cancer_gene_census', lower(df.is_cancer_gene_census))
         return df
 
     def build_from_scratch(self):
@@ -93,7 +95,7 @@ class MAFBuilder(BaseInputBuilder):
             if column in self.schema:
                 if 'type' in self.schema[column]:
                     val_type = self.schema[column]['type']
-                    assert val_type in ['float', 'int', 'str', 'boolean']
+                    assert val_type in ['float', 'int', 'str', 'bool']
                     df = df.withColumn(column, df[column].cast(val_type))
 
                 elif 'pattern' in self.schema[column]:
