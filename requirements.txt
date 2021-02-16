@@ -1,3 +1,4 @@
+boto==2.49.0
 elasticsearch==7.6.0
 networkx==1.10
 python-dateutil==2.8.1
