@@ -8,7 +8,6 @@ from pyspark.sql.functions import (
     udf,
 )
 from pyspark.sql.types import (
-    _parse_datatype_json_value,
     DoubleType,
     StringType,
     StructField,
