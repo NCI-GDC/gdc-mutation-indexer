@@ -1,4 +1,4 @@
-from .base import BaseParser
+from parsers.base import BaseParser
 
 
 class IndexdArgs(BaseParser):
