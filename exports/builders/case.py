@@ -3,7 +3,7 @@ import logging
 
 from pyspark.sql.functions import collect_set, lit
 
-from utils import get_case_ids_from_source_es, standardize_schema
+from exports.builders.utils import get_case_ids_from_source_es, standardize_schema
 
 from config import LOG_FORMAT
 

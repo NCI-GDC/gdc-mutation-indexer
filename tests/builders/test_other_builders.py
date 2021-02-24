@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from deepdiff import DeepDiff
 from pyspark.sql.functions import explode
 
 from exports.builders import (
@@ -28,7 +29,7 @@ class TestOtherBase:
         this fixture is used
 
         """
-        build_type = request.getfuncargvalue('build_type')
+        build_type = request.getfixturevalue('build_type')
         id_field = '{}_id'.format(build_type)
         build_function = 'build_for_{}'.format(build_type)
         if build_type == 'ssm':
@@ -99,7 +100,7 @@ class TestObservationBuilder(TestOtherBase):
         obs = map(json.loads, (obs_df.select('case_id', id_field)
                                      .toJSON().collect()))
 
-        assert sorted(obs) == sorted(true_obs)
+        assert DeepDiff(true_obs, obs, ignore_order=True) == {}
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
     def test_variant_caller(

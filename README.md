@@ -36,11 +36,10 @@ python modules. Make sure the paths are correct in `bin/run-tests.sh`.
 bin/run-tests.sh
 ```
 
-The mutation indexer is currently deployed with Spark 2.4.3.
+The mutation indexer is currently deployed with Spark 2.4.5.
 If you try to run the tests on a different version, you may need to update
 `bin/run-tests.sh` to refer to the specific Py4J build included with your
 Spark distribution.
-
 
 
 ## Vagrant
@@ -67,6 +66,37 @@ pytest /vagrant/tests
 
 To get a better understanding of how to tweak/customize provisioning steps read
 the docs! Have fun testing.
+
+### Use Pycharm debug in Vagrant.
+
+You can use Pycharm debug tool with vagrant, but you need the professional version of 
+Pycharm.
+
+1. Set the Vagrant Interpreter
+
+    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
+        Interpreter, select Vagrant, set 'Python interpreter path' to 
+        '/home/vagrant/venv/bin/python', Click 'OK'
+       
+    * Set Path mappings: <project root> -> '/vagrant'
+
+2. Add new Run/Debug configurations
+
+    * Add new pytest configuration
+    * Set script path to <project>/tests (or any test file you want)
+    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
+        Vagrant VM ...'
+    * Set working directory to your project folder
+    * Set the following environment variables
+        ```
+        SPARK_HOME=/home/vagrant/spark-2.4.5-bin-hadoop2.7
+        PYTHONPATH=/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/
+        PYSPARK_PYTHON=/home/vagrant/venv/bin/python
+        ```
+
+After the above steps, you can save your changes and click the run button to start your 
+tests.
+
 
 ## Setup pre-commit hook to check for secrets
 

@@ -34,8 +34,8 @@ class TestDFBuildersBase:
     def get_inputs(self, maf_df, gistic_df, request):
 
         # get parameter values from the test using this fixture:
-        index_type = request.getfuncargvalue('index_type')
-        df_type = request.getfuncargvalue('df_type')
+        index_type = request.getfixturevalue('index_type')
+        df_type = request.getfixturevalue('df_type')
 
         # return corresponding get_function, input_df and id_field
         get_function = globals()['get_{}_df'.format(df_type)]
@@ -86,10 +86,10 @@ class TestDFBuildersBase:
                 if key in mapping and val is not None:
                     if (mapping[key].get('default'), val) in superset:
                         continue
-                    print 'item not in superset:', item
+                    print('item not in superset:', item)
                     result = False
                 else:
-                    print 'item not mapped', item
+                    print('item not mapped', item)
 
         return result
 
@@ -113,6 +113,9 @@ class TestDFBuilders(TestDFBuildersBase):
         """
         get_function, input_df, extra_inputs = get_inputs
         id_field = extra_inputs['id_field']
+
+        # the input_df has entries with duplicated id but different values
+        input_df = input_df.drop_duplicates(subset=[id_field])
 
         df = get_function(input_df, index_type)
         mapping = select_mapping(index_type, df_type)['properties']

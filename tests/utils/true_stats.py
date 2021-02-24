@@ -1,5 +1,6 @@
-import json
 import gzip
+import io
+import json
 import os
 
 
@@ -46,18 +47,23 @@ class TestDataStats:
     @staticmethod
     def load_es_graph_dump(filename):
         if filename.endswith('.gz'):
-            f = gzip.open(filename, 'rb')
+            f = gzip.open(filename, 'r')
         else:
-            f = open(filename, 'rb')
+            f = open(filename, 'r')
 
         try:
-            docs = json.load(f)
-        except:
+            try:
+                docs = json.load(f)
+            except TypeError:
+                # probably a bug with gzip
+                f = io.TextIOWrapper(f)
+                docs = json.load(f)
+        except ValueError or json.JSONDecodeError:
             f.seek(0)
             # If instead the file is a case doc per line
-            docs = []
-            for line in f.readlines():
-                docs.append(json.loads(line))
+            docs = [json.loads(line) for line in f.readlines()]
+
+        f.close()
         return docs
 
     @classmethod

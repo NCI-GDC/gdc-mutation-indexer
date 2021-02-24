@@ -92,7 +92,7 @@ class TestMiscFunctions:
         v = [randint(0, 100) for i in range(length + 1)]
         sorted_v = sorted(v)
         assert percentile(v, 0) == sorted_v[0]
-        assert percentile(v, 50) == sorted_v[length/2]
+        assert percentile(v, 50) == sorted_v[length//2]
         assert percentile(v, 100) == sorted_v[-1]
 
     def test_graph_index(self, source_es_client):

@@ -95,7 +95,7 @@ class MAFBuilder(BaseInputBuilder):
             if column in self.schema:
                 if 'type' in self.schema[column]:
                     val_type = self.schema[column]['type']
-                    assert val_type in ['float', 'int', 'str', 'bool']
+                    assert val_type in ['float', 'int', 'str', 'boolean']
                     df = df.withColumn(column, df[column].cast(val_type))
 
                 elif 'pattern' in self.schema[column]:

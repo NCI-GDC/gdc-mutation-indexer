@@ -8,7 +8,6 @@ from pyspark.sql.functions import (
     udf,
 )
 from pyspark.sql.types import (
-    ArrayType,
     DoubleType,
     StringType,
     StructField,
@@ -42,6 +41,30 @@ RawGeneExpression = StructType([
     StructField("raw_gene_id", StringType()),
     StructField("expression_value", DoubleType()),
 ])
+
+GENE_EXPRESSION_SCHEMA = {
+    'type': 'struct',
+    'fields': [
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'case_id'},
+        {'metadata': {}, 'nullable': True,
+         'type': {'valueContainsNull': True, 'valueType': 'string', 'type': 'map',
+                  'keyType': 'string'}, 'name': 'demographic'},
+        {'metadata': {}, 'nullable': True, 'type': {
+            'elementType': {'valueContainsNull': True, 'valueType': 'long', 'type': 'map',
+                            'keyType': 'string'}, 'containsNull': True, 'type': 'array'},
+         'name': 'diagnoses'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'file_id'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'file_url'},
+        {'metadata': {}, 'nullable': True,
+         'type': {'valueContainsNull': True, 'valueType': 'string', 'type': 'map',
+                  'keyType': 'string'}, 'name': 'project'},
+        {'metadata': {}, 'nullable': True, 'type': {
+            'elementType': {'valueContainsNull': True, 'valueType': 'string',
+                            'type': 'map', 'keyType': 'string'}, 'containsNull': True,
+            'type': 'array'}, 'name': 'samples'},
+        {'metadata': {}, 'nullable': True, 'type': 'string', 'name': 'submitter_id'}
+    ]
+}
 
 
 @udf(returnType=StringType())
