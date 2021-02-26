@@ -54,7 +54,6 @@ def cast_booleans(df, mapping):
     for path in paths:
         field = None
         for node in path:
-            node = node.encode('utf-8')
             if field is None:
                 field = schema[node]
             elif isinstance(field.dataType, StructType):

@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from deepdiff import DeepDiff
 
 import pytest
 from normalizer.mapper import ModelMapper
@@ -7,7 +8,6 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import explode
 
 from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
-
 
 
 @pytest.fixture
@@ -19,10 +19,13 @@ def get_mapping_data():
 
 def test_get_all_boolean_paths(get_mapping_data):
     paths = get_all_boolean_paths(get_mapping_data)
-    assert paths == [
-        [u"gene", u"cnv", u"gene_level_cn"],
-        [u"gene", u"is_cancer_gene_census"],
+    expected_paths = [
+        ["gene", "cnv", "gene_level_cn"],
+        ["gene", "is_cancer_gene_census"],
     ]
+    assert (
+        DeepDiff(paths, expected_paths, ignore_order=True, report_repetition=True) == {}
+    )
 
 
 def test_sample_data_cast_boolean(get_mapping_data):
