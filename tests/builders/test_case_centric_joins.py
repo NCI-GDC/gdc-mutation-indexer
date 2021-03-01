@@ -2,7 +2,7 @@ import pytest
 import json
 from pyspark.sql.functions import explode
 
-from exports.builders import ConsequenceBuilder, ObservationBuilder
+from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
 from tests_config import TestConfig
 from base_joins_test import BaseJoinsTest
 
@@ -81,11 +81,17 @@ class TestCaseCentricJoins(BaseJoinsTest):
 
             return res
 
+        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
+        observation_builder = ObservationBuilder(primary_aliquot_builder)
+        consequence_builder = ConsequenceBuilder(conf, sqlContext)
+
         # ssm_subtree stats expected:
-        cons_df = (ConsequenceBuilder(conf, sqlContext)
-                   .build_for_ssm(maf_df, 'case_centric'))
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, 'case_centric',
-                                                    selector='ssm')
+        cons_df = consequence_builder.build_for_ssm(maf_df, 'case_centric')
+        obs_df = observation_builder.build_for_ssm(
+            maf_df,
+            'case_centric',
+            selector='ssm'
+        )
 
         df = cons_df.join(obs_df, on=['ssm_id'], how='left')
 

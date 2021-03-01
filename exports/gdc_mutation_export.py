@@ -1,20 +1,18 @@
 import logging
 
-from parsers import (
-    BuildArgs,
-    S3Args,
-    ESArgs,
-)
 from config import LOG_FORMAT
 from exports.builders import (
     MAFBuilder,
     GisticBuilder,
     CaseBuilder,
     CaseCentricBuilder,
+    ConsequenceBuilder,
     GeneCentricBuilder,
     GeneExpressionBuilder,
     GeneExpressionCaseInputBuilder,
     GeneExpressionValueInputBuilder,
+    ObservationBuilder,
+    PrimaryAliquotBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
@@ -91,8 +89,14 @@ class GDCMutationExport(object):
                     self.sqlContext,
                     "gene_expression_values",
                 ).build()
+                primary_aliquot_builder = PrimaryAliquotBuilder(self.config, self.sqlContext)
 
-                builder(self.config, self.sqlContext).build(ge_case_df, ge_values_df).load()
+                builder(
+                    self.config, 
+                    self.sqlContext,
+                    consequence_builder=ConsequenceBuilder(self.config, self.sqlContext),
+                    observation_builder=ObservationBuilder(primary_aliquot_builder),
+                ).build(ge_case_df, ge_values_df).load()
 
                 continue
 

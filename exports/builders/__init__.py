@@ -8,6 +8,7 @@ from exports.builders.gene_model import GeneModelBuilder
 # Utility builders
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.observation import ObservationBuilder
+from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 # Centric builders
 from exports.builders.case_centric import CaseCentricBuilder
 from exports.builders.gene_centric import GeneCentricBuilder

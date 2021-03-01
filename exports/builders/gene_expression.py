@@ -81,7 +81,7 @@ class GeneExpressionInputBuilder(object):
         self.sql_context = sqlContext
         self.config = config
         self._primary_aliquot_data = None
-        self.primary_aliquot_builder = PrimaryAliquotBuilder(sqlContext, config)
+        self.primary_aliquot_builder = PrimaryAliquotBuilder(config, sqlContext)
 
     def get_primary_aliquot_data(self):
         """

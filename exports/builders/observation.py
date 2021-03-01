@@ -1,5 +1,7 @@
 import logging
+from typing import Optional
 
+from pyspark import sql
 from pyspark.sql.functions import (
     col,
     explode,
@@ -11,11 +13,12 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, StringType
 
+from exports import builders
 from exports.builders.utils import (
     struct_select,
     select_nested,
     transform_variant_caller,
-    uuid5_col,
+    uuid5_col
 )
 
 from config import LOG_FORMAT
@@ -23,18 +26,22 @@ from config import LOG_FORMAT
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class ObservationBuilder(object):
+class ObservationBuilder:
     """
     Builds observation dataframe from the maf dataframe
     """
 
-    def build_for_ssm(self, maf_df, index_name, selector=None):
+    def __init__(self, primary_aliquot_builder: builders.BaseBuilder):
+        self.primary_aliquot_builder = primary_aliquot_builder
+
+    def build_for_ssm(self, maf_df: sql.DataFrame, index_name: str, selector: Optional[str] = None) -> sql.DataFrame:
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
         said that a unique observation is identified by a unqiue pairing of
         tumor and normal sample uuids and an ssm uuid.
         """
+        primary_aliquot_df = self.primary_aliquot_builder.build_primary_aliquots_for_project()
 
         # Select all of the nested fields
         flat_obs_df = maf_df.select(
@@ -43,9 +50,10 @@ class ObservationBuilder(object):
             'occurrence_id',
             *select_nested(index_name, 'observation', selector=selector,
                            ignore=['observation_id'])
-        )
+        ).join(primary_aliquot_df, ["case_id"], how="left")
 
         # This will be used to explode variant_caller column
+        # TODO: TECH DEBT - THIS CAN BE EASILY CONVERTED TO NATIVE SPARK
         variant_caller = udf(
             transform_variant_caller,
             ArrayType(StringType()),
@@ -88,7 +96,7 @@ class ObservationBuilder(object):
 
         return obs_df
 
-    def build_for_cnv(self, gistic_df, index, selector=None):
+    def build_for_cnv(self, gistic_df: sql.DataFrame, index: str, selector: Optional[str] = None) -> sql.DataFrame:
         """
         observation[]
         |____ observation{}

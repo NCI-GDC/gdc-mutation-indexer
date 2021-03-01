@@ -4,7 +4,7 @@ from normalizer.mapper import ModelMapper
 from exports.es_utils import get_non_null_fields, get_dataframe_from_es
 
 from tests_config import TestConfig
-from utils.schema_validation import PysparkSchemaValidator, Schema
+from tests.utils.schema_validation import PysparkSchemaValidator, Schema
 
 config = TestConfig()
 
@@ -63,7 +63,6 @@ def test_missing_fields(diagnoses_missing_field):
 
     assert result
     assert set(result) == {expected_field}
-
 
 
 @pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
