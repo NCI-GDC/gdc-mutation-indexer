@@ -207,7 +207,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         result_data = {row["case_id"]: row for row in result_collected}
 
         self.assertEquals(len(result_collected), len(expected_data))
-        self.assertSetEqual(result_data.keys(), expected_data.keys())
+        self.assertSetEqual(set(result_data.keys()), set(expected_data.keys()))
         self.assertDictEqual(result_data, expected_data)
 
         self.assertEquals(len(result_urls), 2)
