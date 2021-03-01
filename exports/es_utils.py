@@ -223,6 +223,8 @@ def get_dataframe_from_es(
         sql_context.read.format("org.elasticsearch.spark.sql")
         .option("es.read.metadata", read_metadata)
         .option("es.nodes", config.source_es_nodes)
+        .option('es.net.http.auth.user', config.source_es_user)
+        .option('es.net.http.auth.pass', config.source_es_pass)
         .option('es.net.ssl', config.es_use_ssl)
         .option('es.net.ssl.cert.allow.self.signed', config.disable_es_verify_certs)
         .option('es.nodes.resolve.hostname', False)
