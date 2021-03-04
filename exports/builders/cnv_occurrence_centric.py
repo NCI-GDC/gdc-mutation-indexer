@@ -1,23 +1,21 @@
 import logging
 
+from pyspark.sql import SQLContext
 from pyspark.sql.functions import (
     struct,
 )
+
+from exports import builders
 from exports.builders.df_builders import (
     build_cnv_subtree,
 )
-from exports.builders import (
-    BaseBuilder,
-    ConsequenceBuilder,
-    ObservationBuilder,
-)
 
-from config import LOG_FORMAT
+from config import BaseConfig, LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class CNVOccurrenceCentricBuilder(BaseBuilder):
+class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
     """
     Builds cnv-occurrence-centric dataframe given
     case, gene, and maf dataframes:
@@ -34,6 +32,18 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
 
     index_name = 'cnv_occurrence_centric'
     id_field = 'cnv_occurrence_id'
+
+    def __init__(
+        self,
+        config: BaseConfig,
+        sqlContext: SQLContext,
+        consequence_builder: builders.ConsequenceBuilder,
+        observation_builder: builders.ObservationBuilder
+    ):
+        super().__init__(config, sqlContext)
+
+        self.consequence_builder = consequence_builder
+        self.observation_builder = observation_builder
 
     def build(self, gistic_df, case_df):
         """
@@ -81,8 +91,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         """
 
         # Consequence
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_cnv(gistic_df, self.index_name))
+        cons_df = self.consequence_builder.build_for_cnv(gistic_df, self.index_name)
 
         cnv_df = build_cnv_subtree(gistic_df, self.index_name,
                                    cons_df=cons_df,
@@ -104,7 +113,7 @@ class CNVOccurrenceCentricBuilder(BaseBuilder):
         self.log('Building case subtree')
 
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = self.observation_builder.build_for_cnv(gistic_df, self.index_name)
 
         self.log('Join observation with case')
         case_obs_df = (case_df.join(obs_df, on='case_id', how='left')

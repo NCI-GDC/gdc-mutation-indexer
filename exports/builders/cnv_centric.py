@@ -1,20 +1,16 @@
 import logging
+from pyspark.sql import SQLContext
 from pyspark.sql.functions import struct, collect_set
 
-from exports.builders import (
-    BaseBuilder,
-    ConsequenceBuilder,
-    ObservationBuilder,
-)
-
+from exports import builders
 from exports.builders.df_builders import get_cnv_df
 
-from config import LOG_FORMAT
+from config import BaseConfig, LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class CNVCentricBuilder(BaseBuilder):
+class CNVCentricBuilder(builders.BaseBuilder):
     """
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
@@ -31,6 +27,18 @@ class CNVCentricBuilder(BaseBuilder):
     index_name = 'cnv_centric'
     id_field = 'cnv_id'
 
+    def __init__(
+        self,
+        config: BaseConfig,
+        sqlContext: SQLContext,
+        consequence_builder: builders.ConsequenceBuilder,
+        observation_builder: builders.ObservationBuilder,
+    ):
+        super().__init__(config, sqlContext)
+
+        self.consequence_builder = consequence_builder
+        self.observation_builder = observation_builder
+
     def build(self, gistic_df, case_df):
         """
         Builds CNV Centric index
@@ -45,9 +53,9 @@ class CNVCentricBuilder(BaseBuilder):
         cnv_df = get_cnv_df(gistic_df, self.index_name)
 
         self.log('Build Consequence')
-        cons_df = (
-            ConsequenceBuilder(self.config, self.sqlContext)
-            .build_for_cnv(gistic_df, self.index_name)
+        cons_df = self.consequence_builder.build_for_cnv(
+            gistic_df,
+            self.index_name,
         )
 
         self.log('Build Occurrence')
@@ -90,7 +98,10 @@ class CNVCentricBuilder(BaseBuilder):
 
         # 1. Observation
         self.logger.info('Aggregating Observation from gistic')
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name)
+        obs_df = self.observation_builder.build_for_cnv(
+            gistic_df,
+            self.index_name,
+        )
 
         # 2. Join Case to Observation and create structs
         self.logger.info('Joining Cases with Observation, [right, case_id]')

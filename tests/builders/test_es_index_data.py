@@ -1,8 +1,8 @@
 import pytest
 
 from exports.es_utils import get_es_doc_count
-from utils.true_stats import TestDataStats
-from utils.json_metrics import (
+from tests.utils.true_stats import TestDataStats
+from tests.utils.json_metrics import (
     CaseCentricStats,
     GeneCentricStats,
     SSMCentricStats,

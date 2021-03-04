@@ -1,7 +1,7 @@
 import pytest
 
 from normalizer.mapper import ModelMapper
-from utils.true_stats import TestDataStats
+from tests.utils.true_stats import TestDataStats
 from tests_config import TestConfig
 
 conf = TestConfig()

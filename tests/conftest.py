@@ -4,6 +4,9 @@ import os
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
+from pyspark.sql.types import StructType, StructField, StringType
+
+from unittest.mock import MagicMock
 import pytest
 import yaml
 
@@ -18,19 +21,20 @@ from exports.builders.utils import (
 from exports.es_utils import (
     iterate_es_results,
 )
-from utils.maf_metrics import MAFStats
-from utils.true_stats import TestDataStats
+from tests.utils.maf_metrics import MAFStats
+from tests.utils.true_stats import TestDataStats
 from exports.builders import (
-    MAFBuilder,
-    GisticBuilder,
     CaseBuilder,
+    CaseCentricBuilder,
     CNVCentricBuilder,
     CNVOccurrenceCentricBuilder,
     ConsequenceBuilder,
+    GisticBuilder,
     GeneCentricBuilder,
-    CaseCentricBuilder,
+    MAFBuilder,
+    ObservationBuilder,
     SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder,
+    SSMOccurrenceCentricBuilder
 )
 
 
@@ -242,126 +246,189 @@ def ssm_transcript_df(sqlContext, maf_df):
     return ConsequenceBuilder(conf, sqlContext).build_all_effects_cols(maf_df)
 
 
+@pytest.fixture(scope="session")
+def primary_aliquot_builder(sqlContext):
+    """
+    Builds a dataframe of primary aliquot selections for each of the cases in
+    the test data.
+    """
+    primary_aliquot_builder = MagicMock()
+    primary_aliquots = [
+        ("1db41963-a520-47f0-828c-ed5c626507b1", "WXG"),
+        ("0ff579a1-e295-408d-b194-febbca798e34", "WSG"),
+        ("872092b3-d31e-44d7-bd03-e29f52f8ab5a", "WSG"),
+        ("bbbce1ba-c739-43ba-b9cf-a4f746491ae3", "WXG"),
+        ("2f5d8110-35c7-419f-8b35-bc3040f940f3", "WXG"),
+        ("13afbde8-e5b5-4f3c-8a9d-daef71560005", "WXG"),
+        ("e8c2a8c6-5c2b-460b-b536-60bc537e6be3", "WXG"),
+        ("b08dfba8-6afb-4217-9259-72be6f1f3363", "WXG"),
+        ("68642658-7996-4423-bb25-d3beb9a414f1", "WXG"),
+        ("a29a20e3-5c2c-4f37-b93e-ae9ebc46ec53", "WXG"),
+        ("f18cfe4a-fffd-4e09-9eef-343ba9ffd0d1", "WXG"),
+        ("c689ae1d-4a6b-45db-b4d1-6b34c5c61522", "WSG"),
+        ("d2748e35-4719-43c1-a533-b6b0cd9688c3", "WXG"),
+        ("d241a660-1c84-44fa-a6b3-ec9284333bd2", "WSG"),
+        ("00000000-1111-2222-4444-888888888888", "WSG"),
+        ("ee8c1919-17a9-4df1-8aa5-79546621b23c", "WSG"),
+        ("452135f2-6de6-4593-a091-ddf6344ee431", "WXG"),
+        ("a20aeafc-9a68-4af0-87ea-532ee835ebb2", "WSG"),
+    ]
+    schema = StructType([
+        StructField("case_id", StringType()),
+        StructField("experimental_strategy", StringType())
+    ])
+    primary_aliquot_df = sqlContext.createDataFrame(primary_aliquots, schema)
+
+    primary_aliquot_builder.build_primary_aliquots_for_project.return_value = primary_aliquot_df
+
+    return primary_aliquot_builder
+
+
 @pytest.fixture(scope='session')
-def case_centric_df(sqlContext, maf_df, gistic_df, case_df):
+def consequence_builder(sqlContext):
+    return ConsequenceBuilder(conf, sqlContext)
+
+
+@pytest.fixture(scope='session')
+def observation_builder(primary_aliquot_builder):
+    return ObservationBuilder(primary_aliquot_builder)
+
+
+@pytest.fixture(scope='session')
+def case_centric_df(sqlContext, maf_df, gistic_df, case_df, consequence_builder, observation_builder):
     """
     Builds case centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING CASE_CENTRIC_DF\n\n')
-    builder = CaseCentricBuilder(conf, sqlContext)
+    builder = CaseCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+
     builder.build(maf_df, gistic_df, case_df)
 
     log.info('\n\n\tLOADING CASE_CENTRIC_DF\n\n')
     builder.load()
+        
     return builder.case_centric
 
 
 @pytest.fixture(scope='session')
-def gene_centric_df(sqlContext, maf_df, gistic_df, case_df):
+def gene_centric_df(sqlContext, maf_df, gistic_df, case_df, consequence_builder, observation_builder):
     """
     Builds gene centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING GENE_CENTRIC_DF\n\n')
     sub_case_df = case_df.drop('summary')
-    builder = GeneCentricBuilder(conf, sqlContext)
+    builder = GeneCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+    
     builder.build(maf_df, gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING GENE_CENTRIC_DF\n\n')
     builder.load()
+    
     return builder.gene_centric
 
 
 @pytest.fixture(scope='session')
-def ssm_centric_df(sqlContext, maf_df, case_df):
+def ssm_centric_df(sqlContext, maf_df, case_df, consequence_builder, observation_builder):
     """
     Builds ssm centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_CENTRIC_DF\n\n')
     sub_case_df = case_df.drop('summary')
-    builder = SSMCentricBuilder(conf, sqlContext)
+    builder = SSMCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+
     builder.build(maf_df, sub_case_df)
 
     log.info('\n\n\tLOADING SSM_CENTRIC_DF\n\n')
     builder.load()
+    
     return builder.ssm_centric
 
 
 @pytest.fixture(scope='session')
-def ssm_occurrence_centric_df(sqlContext, maf_df, case_df):
+def ssm_occurrence_centric_df(sqlContext, maf_df, case_df, consequence_builder, observation_builder):
     """
     Builds ssm occurrence centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info('\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     sub_case_df = case_df.drop('summary')
-    builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
+    builder = SSMOccurrenceCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+
     builder.build(maf_df, sub_case_df)
 
     log.info('\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
+    
     return builder.ssm_occurrence_centric
 
 
 @pytest.fixture(scope='session')
-def cnv_centric_df(sqlContext, gistic_df, case_df):
+def cnv_centric_df(sqlContext, gistic_df, case_df, consequence_builder, observation_builder):
     """
     Builds cnv centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_CENTRIC DF\n\n')
     sub_case_df = case_df.drop('summary')
-    builder = CNVCentricBuilder(conf, sqlContext)
+    builder = CNVCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+    
     builder.build(gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING CNV_CENTRIC_DF\n\n')
     builder.load()
+    
     return builder.cnv_centric
 
 
 @pytest.fixture(scope='session')
-def cnv_occurrence_centric_df(sqlContext, gistic_df, case_df):
+def cnv_occurrence_centric_df(sqlContext, gistic_df, case_df, consequence_builder, observation_builder):
     """
     Builds cnv occurrence centric dataframe
     """
     log.info('\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n')
     sub_case_df = case_df.drop('summary')
-    builder = CNVOccurrenceCentricBuilder(conf, sqlContext)
+    builder = CNVOccurrenceCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+
     builder.build(gistic_df, sub_case_df)
 
     log.info('\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n')
     builder.load()
+    
     return builder.cnv_occurrence_centric
 
 
 @pytest.fixture(scope='session')
-def case_ssm_subtree(sqlContext, maf_df):
+def case_ssm_subtree(sqlContext, maf_df, consequence_builder, observation_builder):
     """
     Builds case centric ssm subtree dataframe
     """
     log.info('\n\n\tBUILDING CASE_SSM_SUBTREE\n\n')
-    builder = CaseCentricBuilder(conf, sqlContext)
+    builder = CaseCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+        
     return builder.build_ssm_subtree(maf_df)
 
 
 @pytest.fixture(scope='session')
-def gene_ssm_subtree(sqlContext, maf_df):
+def gene_ssm_subtree(sqlContext, maf_df, consequence_builder, observation_builder):
     """
     Builds gene centric ssm subtree dataframe
     """
     log.info('\n\n\tBUILDING GENE_SSM_SUBTREE\n\n')
-    builder = GeneCentricBuilder(conf, sqlContext)
+    builder = GeneCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+        
     return builder.build_ssm_subtree(maf_df)
 
 
 @pytest.fixture(scope='session')
-def ssm_occurrence_ssm_subtree(sqlContext, maf_df):
+def ssm_occurrence_ssm_subtree(sqlContext, maf_df, consequence_builder, observation_builder):
     """
     Builds ssm occurrence centric ssm subtree dataframe
     """
     log.info('\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n')
-    builder = SSMOccurrenceCentricBuilder(conf, sqlContext)
+    builder = SSMOccurrenceCentricBuilder(conf, sqlContext, consequence_builder, observation_builder)
+    
     return builder.build_ssm_subtree(maf_df)
 
 

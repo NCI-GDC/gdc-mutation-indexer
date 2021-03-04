@@ -1,3 +1,4 @@
+from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 import json
 
 import pytest
@@ -63,7 +64,8 @@ class TestObservationBuilder(TestOtherBase):
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
-        yield ObservationBuilder()
+        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
+        yield ObservationBuilder(primary_aliquot_builder)
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
     def test_join_columns(self, builder, index_name, build_type, get_inputs):

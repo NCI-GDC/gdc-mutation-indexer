@@ -1,19 +1,18 @@
 from pyspark.sql.functions import struct, collect_list, udf, col
 from pyspark.sql.types import ArrayType, StringType
+from pyspark.sql import SQLContext
 
+from config import BaseConfig
+
+from exports import builders
 from exports.builders.df_builders import (
     get_gene_df,
     build_ssm_subtree,
     build_cnv_subtree,
 )
-from exports.builders import (
-    ConsequenceBuilder,
-    ObservationBuilder,
-)
-from exports.builders import BaseBuilder
 
 
-class CaseCentricBuilder(BaseBuilder):
+class CaseCentricBuilder(builders.BaseBuilder):
     """
     Builds case-centric dataframe given case and maf dataframes::
 
@@ -34,6 +33,18 @@ class CaseCentricBuilder(BaseBuilder):
 
     index_name = 'case_centric'
     id_field = 'case_id'
+
+    def __init__(
+        self, 
+        config: BaseConfig, 
+        sqlContext: SQLContext, 
+        consequence_builder: builders.ConsequenceBuilder, 
+        observation_builder: builders.ObservationBuilder,
+    ):
+        super().__init__(config, sqlContext)
+
+        self.consequence_builder = consequence_builder
+        self.observation_builder = observation_builder
 
     def build(self, maf_df, gistic_df, case_df):
         """
@@ -133,12 +144,14 @@ class CaseCentricBuilder(BaseBuilder):
 
         """
         # Consequence
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_ssm(maf_df, self.index_name, join_gene=False))
+        cons_df = self.consequence_builder.build_for_ssm(maf_df, self.index_name, join_gene=False)
 
         # Observation
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name,
-                                                    selector='ssm')
+        obs_df = self.observation_builder.build_for_ssm(
+            maf_df,
+            self.index_name,
+            selector='ssm',
+        )
         obs_df = obs_df.drop('occurrence_id')
 
         # SSM
@@ -165,8 +178,11 @@ class CaseCentricBuilder(BaseBuilder):
         """
 
         # Observation
-        obs_df = ObservationBuilder().build_for_cnv(gistic_df, self.index_name,
-                                                    selector='cnv')
+        obs_df = self.observation_builder.build_for_cnv(
+            gistic_df,
+            self.index_name,
+            selector='cnv',
+        )
 
         # Build the final cnv dataframe
         cnv_df = build_cnv_subtree(gistic_df, self.index_name, obs_df=obs_df)

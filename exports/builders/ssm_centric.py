@@ -1,22 +1,19 @@
 import logging
 
+from pyspark.sql import SQLContext
 from pyspark.sql.functions import struct, collect_list
 
-from exports.builders import (
-    ConsequenceBuilder,
-    ObservationBuilder
-)
-from exports.builders import BaseBuilder
+from exports import builders
 from exports.builders.df_builders import (
     get_ssm_df
 )
 
-from config import LOG_FORMAT
+from config import BaseConfig, LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class SSMCentricBuilder(BaseBuilder):
+class SSMCentricBuilder(builders.BaseBuilder):
     """
     Builds ssm-centric dataframe given case and maf dataframes::
 
@@ -32,6 +29,18 @@ class SSMCentricBuilder(BaseBuilder):
 
     index_name = 'ssm_centric'
     id_field = 'ssm_id'
+
+    def __init__(
+        self,
+        config: BaseConfig,
+        sqlContext: SQLContext,
+        consequence_builder: builders.ConsequenceBuilder,
+        observation_builder: builders.ObservationBuilder,
+    ):
+        super().__init__(config, sqlContext)
+
+        self.consequence_builder = consequence_builder
+        self.observation_builder = observation_builder
 
     def build(self, maf_df, case_df):
         """
@@ -67,17 +76,22 @@ class SSMCentricBuilder(BaseBuilder):
         return self
 
     def build_consequence(self, maf_df):
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_ssm(maf_df,
-                                  self.index_name,
-                                  join_gene=True,
-                                  add_gene_aa_change=True))
+        cons_df = self.consequence_builder.build_for_ssm(
+            maf_df,
+            self.index_name,
+            join_gene=True,
+            add_gene_aa_change=True
+        )
+
         return cons_df
 
     def build_occurrence(self, maf_df, case_df):
         # Observation
         self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        obs_df = self.observation_builder.build_for_ssm(
+            maf_df,
+            self.index_name,
+        )
 
         self.log('Joining Cases with Observation, [right, case_id]')
         occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
@@ -89,4 +103,5 @@ class SSMCentricBuilder(BaseBuilder):
                          .groupby('ssm_id')
                          .agg(collect_list('occurrence').alias('occurrence')))
         self.log_count(occurrence_df)
+
         return occurrence_df

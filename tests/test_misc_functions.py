@@ -9,7 +9,7 @@ from exports.builders.utils import (
     extract_aas_position,
 )
 from tests_config import TestConfig
-from utils.true_stats import TestDataStats
+from tests.utils.true_stats import TestDataStats
 from exports.builders.utils import (
     ssm_label,
     _udf_uuid5_field,
