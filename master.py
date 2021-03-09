@@ -24,7 +24,6 @@ from config import (
 )
 from exports.es_utils import get_non_null_fields
 
-
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
@@ -53,7 +52,7 @@ def parse_args():
     """
     Parse mutation indexer arguments
     """
-    parser = ParserBuilder.build(ALL_PARSERS, description="Mutation Indexer",)
+    parser = ParserBuilder.build(ALL_PARSERS, description="Mutation Indexer")
     args = parser.parse_args()
     return args
 
