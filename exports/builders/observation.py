@@ -19,7 +19,6 @@ from exports.builders.utils import (
     transform_variant_caller,
     uuid5_col
 )
-from build.lib.exports.builders.primary_aliquot import PrimaryAliquotBuilder
 
 from config import LOG_FORMAT
 
@@ -31,7 +30,7 @@ class ObservationBuilder:
     Builds observation dataframe from the maf dataframe
     """
 
-    def __init__(self, primary_aliquot_builder: PrimaryAliquotBuilder):
+    def __init__(self, primary_aliquot_builder):
         self.primary_aliquot_builder = primary_aliquot_builder
 
     def build_for_ssm(self, maf_df: sql.DataFrame, index_name: str, selector: Optional[str] = None) -> sql.DataFrame:
