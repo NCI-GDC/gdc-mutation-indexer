@@ -42,6 +42,16 @@ If you try to run the tests on a different version, you may need to update
 Spark distribution.
 
 
+## Tests the easy way
+
+After PySpark(current version 2.4.5) is installed via pip, download 
+`elasticsearch-hadoop-7.6.2.zip` and extract the content. Copy the file 
+`dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
+`venv/lib/python2.7/site-packages/pyspark/jars/`. 
+
+Make sure your elasticsearch server is running at port 9200 and start the tests. If you
+see timeout error for es, restart the tests.
+
 ## Vagrant
 
 Testing locally can be hard and `vagrant` support has been added to make our lives
@@ -96,7 +106,6 @@ Pycharm.
 
 After the above steps, you can save your changes and click the run button to start your 
 tests.
-
 
 ## Setup pre-commit hook to check for secrets
 
