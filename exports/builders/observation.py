@@ -13,7 +13,6 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, StringType
 
-from exports import builders
 from exports.builders.utils import (
     struct_select,
     select_nested,
@@ -31,7 +30,7 @@ class ObservationBuilder:
     Builds observation dataframe from the maf dataframe
     """
 
-    def __init__(self, primary_aliquot_builder: builders.BaseBuilder):
+    def __init__(self, primary_aliquot_builder):
         self.primary_aliquot_builder = primary_aliquot_builder
 
     def build_for_ssm(self, maf_df: sql.DataFrame, index_name: str, selector: Optional[str] = None) -> sql.DataFrame:
