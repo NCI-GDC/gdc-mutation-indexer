@@ -1,0 +1,9 @@
+-c requirements.txt
+
+pytest~=5.3
+jsonpath-rw~=1.4
+Sphinx==1.5.2
+ghp-import==0.5.4
+pre-commit==1.21.0
+deepdiff==3.3.0
+git+ssh://git@github.com/NCI-GDC/cdisutils.git@1.2.2#egg=cdisutils

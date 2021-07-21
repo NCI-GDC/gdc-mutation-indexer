@@ -1,22 +1,29 @@
-import os
-import shlex
-from subprocess import check_output
 from setuptools import setup, find_packages
-from config import (
-    VERSION,
-    ROOT_DIR,
-    get_git_commit,
-)
 
 PACKAGES = find_packages()
 
 setup(
     name="gdc-mutation-indexer",
-    version=VERSION,
+    use_scm_version={"local_scheme": "dirty-tag", "write_to": "_version.py"},
+    setup_requires=["setuptools_scm<6"],
     description="ETL for mutation elasticsearch indices",
     license="Apache",
-    packages=PACKAGES,
+    packages=find_packages(),
     py_modules=["config"],
     include_package_data=True,
-    options=dict(egg_info=dict(tag_build=('_rev_' + get_git_commit(ROOT_DIR)))),
+    install_requires=[
+        "boto==2.49.0",
+        "elasticsearch~=7.6",
+        "networkx<=2.4",
+        "requests~=2.7",
+        "python-dateutil~=2.8",
+        "PyYaml>=3.11,<6",
+        "six~=1.15.0",
+        "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph",
+        "gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary",
+        "gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel",
+        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.0.0#egg=indexclient",
+        "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/dev-807-boveri-mappings#egg=gdcmodels",
+        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.4#egg=normalizer",
+    ],
 )
