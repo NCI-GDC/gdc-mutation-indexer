@@ -2,12 +2,13 @@ boto==2.49.0
 elasticsearch==7.6.0
 networkx==1.10
 python-dateutil==2.8.1
-PyYAML==3.11
+PyYAML==5.1.2
 requests==2.6.0
+six==1.15.0
 
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.7.0#egg=gdcmodels
--e git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.1#egg=normalizer
-git+ssh://git@github.com/NCI-GDC/indexclient.git@1.5.10#egg=indexclient
+-e git+https://github.com/NCI-GDC/gdc-models.git@2.8.1-rc.2#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.4#egg=normalizer
+git+https://github.com/NCI-GDC/indexclient.git@2.0.0#egg=indexclient
 git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
-git+ssh://git@github.com/NCI-GDC/psqlgraph.git@3.0.2#egg=psqlgraph
-git+ssh://git@github.com/NCI-GDC/gdcdatamodel.git@3.0.3#egg=gdcdatamodel
+git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph
+git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel
