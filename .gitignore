@@ -88,3 +88,5 @@ tests/data/*
 # testing stuff
 elasticsearch-*
 spark-2.*
+/_version.py
+/.env
