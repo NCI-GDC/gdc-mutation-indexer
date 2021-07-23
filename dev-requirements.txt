@@ -27,7 +27,9 @@ chardet==4.0.0
     #   -c requirements.txt
     #   requests
 coverage[toml]==5.5
-    # via -r dev-requirements.in
+    # via
+    #   -r dev-requirements.in
+    #   pytest-cov
 decorator==5.0.9
     # via
     #   -c requirements.txt
@@ -92,8 +94,12 @@ pygments==2.9.0
     # via sphinx
 pyparsing==2.4.7
     # via packaging
-pytest==5.4.3
+pytest-cov==2.12.1
     # via -r dev-requirements.in
+pytest==5.4.3
+    # via
+    #   -r dev-requirements.in
+    #   pytest-cov
 pytz==2020.5
     # via
     #   -c requirements.txt
@@ -124,6 +130,7 @@ toml==0.10.2
     # via
     #   coverage
     #   pre-commit
+    #   pytest-cov
 urllib3==1.26.6
     # via
     #   -c requirements.txt
