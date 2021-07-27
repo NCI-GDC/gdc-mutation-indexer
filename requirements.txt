@@ -46,7 +46,7 @@ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcdatamodel
-git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.8.1-rc.2#egg=gdcmodels
+-e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.8.1-rc.2#egg=gdcmodels  # manually set to editable to fix deployment
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer
