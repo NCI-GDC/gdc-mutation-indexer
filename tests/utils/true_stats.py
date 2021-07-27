@@ -1,7 +1,9 @@
 import gzip
-import io
 import json
 import os
+from typing import List, Dict
+
+import ndjson
 
 
 class TestDataStats:
@@ -17,9 +19,8 @@ class TestDataStats:
         cases = cls.load_es_graph_dump(os.path.join(data_dir, cases_file))
 
         # load genes
-        genes_file = cls.filter_files(data_dir, ['genes', 'json'])[0]
+        genes_file = cls.filter_files(data_dir, ['genes', 'ndjson'])[0]
         genes = cls.load_es_graph_dump(os.path.join(data_dir, genes_file))
-
         return {'case': cases, 'gene': genes}
 
     @staticmethod
@@ -45,24 +46,12 @@ class TestDataStats:
         return {'header': header, 'data': rows}
 
     @staticmethod
-    def load_es_graph_dump(filename):
-        if filename.endswith('.gz'):
-            f = gzip.open(filename, 'r')
-        else:
-            f = open(filename, 'r')
+    def load_es_graph_dump(filename: str) -> List[Dict]:
 
-        try:
-            try:
-                docs = json.load(f)
-            except TypeError:
-                # probably a bug with gzip
-                f = io.TextIOWrapper(f)
-                docs = json.load(f)
-        except ValueError or json.JSONDecodeError:
-            f.seek(0)
-            # If instead the file is a case doc per line
-            docs = [json.loads(line) for line in f.readlines()]
-
+        loader = ndjson if ".ndjson" in filename else json
+        open_fn = gzip.open if filename.endswith(".gz") else open
+        f = open_fn(filename, "rt", encoding="utf-8")
+        docs = loader.load(f)
         f.close()
         return docs
 

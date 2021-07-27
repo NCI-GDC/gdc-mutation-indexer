@@ -8,3 +8,4 @@ echo 'SPARK_HOME:' $SPARK_HOME
 echo 'PYTHONPATH:' $PYTHONPATH
 
 python -m pytest -m 'not do_not_collect' --cov=gdc-mutation-indexer --cov-report xml --cov-report term
+#python -m pytest -vv tests/builders/test_es_index_data.py --pdb

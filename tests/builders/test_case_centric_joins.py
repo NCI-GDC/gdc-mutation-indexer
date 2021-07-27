@@ -1,6 +1,5 @@
 import pytest
 import json
-from pyspark.sql.functions import explode
 
 from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
 from tests_config import TestConfig

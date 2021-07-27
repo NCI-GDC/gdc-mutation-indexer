@@ -44,23 +44,20 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 
-GraphDocType = collections.namedtuple('GraphDocType', ['doc_type', 'model_name'])
-
-
-GRAPH_INDICES = [GraphDocType('case', 'graph_case'), GraphDocType('file', 'graph_file')]
+GRAPH_INDICES = frozenset(['case', 'file'])
 
 
 @pytest.fixture(scope='session')
 def setup_graph_indices():
     """Create graph indices with required docs."""
     es = conf.es
-    for doc_type, model_name in GRAPH_INDICES:
+    for doc_type in GRAPH_INDICES:
         print('\n\n\tSETTING UP {} TEST INDICES\n\n'.format(doc_type.upper()))
-        if create_test_index(es, doc_type=doc_type, model_name=model_name):
+        if create_test_index(es, doc_type=doc_type):
             load_docs_into_test_index(es, doc_type)
 
 
-def create_test_index(es, doc_type, model_name):
+def create_test_index(es, doc_type):
     """Create and configure an Elasticsearch index if needed.
 
     Skip creation if the index already exists, unless ``graph_force_build`` is set,
@@ -114,7 +111,7 @@ def load_docs_into_test_index(es, doc_type, input_path=None):
     # TODO: temp fix
     docs = remove_keys_from_dict(docs, ['file_state'])
 
-    log.info('Bulk loading {} docs to the ES...'.format(doc_type))
+    log.info('Bulk loading {} docs to the ES... {}'.format(doc_type, len(docs)))
     bulk(es, docs, ignore=409)
 
     log.info('loaded {} {} docs'.format(len(docs), doc_type))
@@ -469,6 +466,7 @@ def exploded_variant_caller_counts():
         'somaticsniper': 6,
         'varscan': 3,
     }
+
 
 @pytest.fixture(scope="function")
 def load_data_from_file():

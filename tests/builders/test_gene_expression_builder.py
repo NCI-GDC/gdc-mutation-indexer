@@ -1,6 +1,7 @@
 import json
 import os
 
+import ndjson
 from indexclient.client import IndexClient, Document
 import pytest
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType, LongType
@@ -103,9 +104,9 @@ def mock_indexd_requests(monkeypatch, ge_conf):
 
 @pytest.fixture
 def ge_file_docs(source_es_client, ge_conf):
-    path = os.path.join(ge_conf.input_dir, "ge-files.json")
+    path = os.path.join(ge_conf.input_dir, "ge-files.ndjson")
     with open(path) as f:
-        docs = json.load(f)
+        docs = ndjson.load(f)
 
     for doc in docs:
         source_es_client.index(

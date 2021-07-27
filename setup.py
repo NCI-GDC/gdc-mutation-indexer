@@ -37,6 +37,7 @@ setup(
         "click~=7.1",
         "boto==2.49.0",
         "elasticsearch~=7.6",
+        "ndjson~=0.3",
         "networkx<=2.4",
         "requests~=2.7",
         "python-dateutil~=2.8",

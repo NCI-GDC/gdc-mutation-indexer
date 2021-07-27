@@ -45,7 +45,7 @@ class TestConfig(BaseConfig):
     # Additional exports files
     citobands_file = os.path.join(input_dir, 'genes.cytobands.tsv.gz')
     census_file = os.path.join(input_dir, 'cancer_gene_census_set.tsv.gz')
-    gene_model_file = os.path.join(input_dir, 'genes.json.gz')
+    gene_model_file = os.path.join(input_dir, 'genes.ndjson.gz')
 
     percentile_threshold = {
         'genes_per_case': 100,

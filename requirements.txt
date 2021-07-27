@@ -74,6 +74,8 @@ jsonschema==3.2.0
     #   gdcdictionary
 git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource
     # via gdc-mutation-indexer (setup.py)
+ndjson==0.3.1
+    # via gdc-mutation-indexer (setup.py)
 networkx==2.4
     # via gdc-mutation-indexer (setup.py)
 git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.4#egg=normalizer
