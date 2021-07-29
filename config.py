@@ -6,6 +6,7 @@ import subprocess
 import sys
 import uuid
 
+import pkg_resources
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from distutils.version import StrictVersion
 from elasticsearch import Elasticsearch
@@ -59,13 +60,7 @@ LOG_FORMAT = '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
 CONFIG_PATH = os.path.abspath(__file__)
 ROOT_DIR = os.path.dirname(CONFIG_PATH)
 
-VERSION = "0.2.0"
-
-
-def get_git_commit(git_dir):
-    return subprocess.check_output(
-        shlex.split('git --git-dir={}/.git rev-parse HEAD'.format(git_dir))
-    ).decode('utf-8').strip()
+VERSION = pkg_resources.get_distribution("gdc_mutation_indexer").version  # format: <version>.rev.<hash>
 
 
 class BaseConfig(object):

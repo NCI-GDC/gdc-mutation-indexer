@@ -40,18 +40,14 @@ before_install:
   - sudo service elasticsearch restart
 
 install:
-  - pip install -r requirements.txt
-  - pip install -r dev-requirements.txt
-  - python setup.py install
   - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
   - unzip elasticsearch-hadoop-${ES_VERSION}.zip
   - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
-  - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
-  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
   - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
+  - pip install tox-travis
 
 script:
   - java -version
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
-  - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
+  - tox

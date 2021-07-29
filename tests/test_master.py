@@ -162,10 +162,6 @@ def test_get_spark_args(get_args, monkeypatch):
     tmp_dir = tempfile.mkdtemp()
     monkeypatch.setattr(master, 'ROOT_DIR', tmp_dir)
 
-    def mock_git_commit(dir):
-        return 'fffffff'
-    monkeypatch.setattr(master, 'get_git_commit', mock_git_commit)
-
     artifacts_dir = os.path.join(tmp_dir, 'artifacts')
     jars_dir = os.path.join(artifacts_dir, 'jars')
     eggs_dir = os.path.join(artifacts_dir, 'eggs')
