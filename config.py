@@ -94,6 +94,8 @@ class BaseConfig(object):
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
+    gene_model_version = 'v22'
+
     # The location of the gene model json
     gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.v2.json'
     citobands_file = 's3a://gdc-mutation-indexer/genes.cytobands.tsv.gz'
@@ -256,6 +258,9 @@ class BaseConfig(object):
                 key = key.replace('-', '_')
                 value = getattr(args, key)
                 setattr(self, key, value)
+                
+        if self.gene_model_version == 'v36':
+            setattr(self, 'gene_model_file', 's3a://gdc-mutation-indexer/***')
 
     def get_index_names(self):
         """Create {index_type: es_index_name} dictionary based on build config."""
