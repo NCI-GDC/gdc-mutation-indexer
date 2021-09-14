@@ -258,9 +258,12 @@ class BaseConfig(object):
                 key = key.replace('-', '_')
                 value = getattr(args, key)
                 setattr(self, key, value)
-                
+
         if self.gene_model_version == 'v36':
-            setattr(self, 'gene_model_file', 's3a://gdc-mutation-indexer/***')
+            setattr(self, 'gene_model_file', 's3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json')
+            setattr(self, 'citobands_file', 's3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz')
+            setattr(self, 'census_file', 's3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz')
+
 
     def get_index_names(self):
         """Create {index_type: es_index_name} dictionary based on build config."""
