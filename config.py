@@ -260,9 +260,9 @@ class BaseConfig(object):
                 setattr(self, key, value)
 
         if self.gencode_version == "v36":
-            setattr(self, 'gene_model_file', 's3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json')
-            setattr(self, 'citobands_file', 's3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz')
-            setattr(self, 'census_file', 's3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz')
+            self.gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json'
+            self.citobands_file = 's3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz'
+            self.census_file = 's3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz'
 
 
     def get_index_names(self):
