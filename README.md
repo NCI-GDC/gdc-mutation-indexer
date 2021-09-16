@@ -41,6 +41,10 @@ If you try to run the tests on a different version, you may need to update
 `bin/run-tests.sh` to refer to the specific Py4J build included with your
 Spark distribution.
 
+NOTE:
+
+Some tests are not idempotent and you may need to delete elastic search indices created by the tests.
+
 
 ## Tests the easy way
 
@@ -128,6 +132,9 @@ git add .secrets.baseline
 ```
 detect-secrets audit .secrets.baseline
 ```
+
+### Internal documentation
+https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer
 
 
 ## Contributing
