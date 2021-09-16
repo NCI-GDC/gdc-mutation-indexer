@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SPARK_HOME="${SPARK_HOME:-~/spark-2.4.5-bin-hadoop2.7}"
+export SPARK_HOME=~/spark-2.4.5-bin-hadoop2.7
 export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
 export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
 
