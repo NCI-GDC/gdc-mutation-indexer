@@ -31,8 +31,8 @@ class BuildArgs(BaseParser):
                 'type': int,
                 'default': [0],
             },
-            'gene-model-version': {
-                'help': 'The gencode version to use for gene model',
+            'gencode-version': {
+                'help': 'The gencode version to build with',
                 'default': 'v22'
             },
             'study-label': {

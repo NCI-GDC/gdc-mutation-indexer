@@ -94,7 +94,7 @@ class BaseConfig(object):
     # Namespace for ssm_ids so that they may be reproduced
     ssm_namespace = uuid.UUID('d15296a3-38ed-412e-8ace-75e235f82f55')
 
-    gene_model_version = 'v22'
+    gencode_version = 'v22'
 
     # The location of the gene model json
     gene_model_file = 's3a://gdc-mutation-indexer/genes.hg38.v2.json'
@@ -259,7 +259,7 @@ class BaseConfig(object):
                 value = getattr(args, key)
                 setattr(self, key, value)
 
-        if self.gene_model_version == 'v36':
+        if self.gencode_version == "v36":
             setattr(self, 'gene_model_file', 's3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json')
             setattr(self, 'citobands_file', 's3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz')
             setattr(self, 'census_file', 's3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz')
