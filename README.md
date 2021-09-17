@@ -133,9 +133,12 @@ git add .secrets.baseline
 detect-secrets audit .secrets.baseline
 ```
 
-### Internal documentation
+### Internal Reference
 https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer
 
+### TODO
+- Expand background on purpose
+- Provide instructions for how to use
 
 ## Contributing
 
