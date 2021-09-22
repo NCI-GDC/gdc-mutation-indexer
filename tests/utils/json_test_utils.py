@@ -74,7 +74,7 @@ class DiffsReporter(object):
         for filename in os.listdir(conf.log_dir):
             with open(os.path.join(conf.log_dir, filename), 'r') as f:
                 n_paths, n_diffs = map(int, f.readlines()[0].split()[0].split('/'))
-            print '{}: wrong paths {}, n_diffs {}'.format(filename, n_paths, n_diffs)
+            print('{}: wrong paths {}, n_diffs {}'.format(filename, n_paths, n_diffs))
 
 
 def __build_dict_from_list_json(list_json, identity_fields, object_name=""):

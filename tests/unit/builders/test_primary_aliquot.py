@@ -1,25 +1,30 @@
+from unittest import mock
+from pyspark.sql import functions as f
 import yaml
 
 from collections import defaultdict
 from os import path
-from typing import Iterable
+from typing import Dict, Iterable
 from unittest import TestCase
 from unittest.mock import call, MagicMock, patch
 
 import pytest
 
-from pyspark.sql.types import ArrayType, IntegerType, StringType, StructField, StructType
+from pyspark.sql.types import (
+    ArrayType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+)
 
-from exports import builders
+from exports import builders, es_utils
 
 from tests.utils import schema_validation
 
 
 class TestPrimaryAliquotBuilder(TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.schema_validator = schema_validation.PysparkSchemaValidator()
+    schema_validator = schema_validation.PysparkSchemaValidator()
 
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):
@@ -27,39 +32,89 @@ class TestPrimaryAliquotBuilder(TestCase):
         self.data_dir = data_dir
 
     def _build_es_dataframe(self, data: Iterable[dict], load_min: bool):
-        min_case_fields = [
-            StructField("case_id", StringType(), False),
-            StructField("samples", ArrayType(
-                StructType([
-                    StructField("sample_type", StringType(), False)
-                ])
-            ), False),
-        ]
+        portions = StructField(
+            "portions",
+            ArrayType(
+                StructType(
+                    [
+                        StructField(
+                            "analytes",
+                            ArrayType(
+                                StructType(
+                                    [
+                                        StructField(
+                                            "aliquots",
+                                            ArrayType(
+                                                StructType(
+                                                    [
+                                                        StructField(
+                                                            "aliquot_id",
+                                                            StringType(),
+                                                        )
+                                                    ]
+                                                )
+                                            ),
+                                        )
+                                    ]
+                                )
+                            ),
+                        )
+                    ]
+                )
+            ),
+        )
+        sample_type = StructField("sample_type", StringType(), False)
+        samples = StructField(
+            "samples",
+            ArrayType(
+                StructType([sample_type, portions] if load_min else [sample_type])
+            ),
+            False,
+        )
+        min_case_fields = [StructField("case_id", StringType(), False), samples]
         extra_case_fields = [
             StructField("submitter_id", StringType(), False),
-            StructField("demographic", StructType([
-                StructField("days_to_death", IntegerType(), False),
-                StructField("ethnicity", StringType(), False),
-                StructField("gender", StringType(), False),
-                StructField("race", StringType(), False),
-                StructField("vital_status", StringType(), False),
-            ]), False),
-            StructField("project", StructType([
-                StructField("project_id", StringType(), False),
-            ]), False),
-            StructField("diagnoses", ArrayType(
-                StructType([
-                    StructField("age_at_diagnosis", IntegerType(), False)
-                ])
-            ), False),
+            StructField(
+                "demographic",
+                StructType(
+                    [
+                        StructField("days_to_death", IntegerType(), False),
+                        StructField("ethnicity", StringType(), False),
+                        StructField("gender", StringType(), False),
+                        StructField("race", StringType(), False),
+                        StructField("vital_status", StringType(), False),
+                    ]
+                ),
+                False,
+            ),
+            StructField(
+                "project",
+                StructType(
+                    [
+                        StructField("project_id", StringType(), False),
+                    ]
+                ),
+                False,
+            ),
+            StructField(
+                "diagnoses",
+                ArrayType(
+                    StructType([StructField("age_at_diagnosis", IntegerType(), False)])
+                ),
+                False,
+            ),
         ]
-        case_fiels = min_case_fields if load_min else min_case_fields + extra_case_fields
-        schema = StructType([
-            StructField("file_id", StringType(), False),
-            StructField("experimental_strategy", StringType(), False),
-            StructField("created_datetime", StringType(), False),
-            StructField("cases", ArrayType(StructType(case_fiels)), False)
-        ])
+        case_fiels = (
+            min_case_fields if load_min else min_case_fields + extra_case_fields
+        )
+        schema = StructType(
+            [
+                StructField("file_id", StringType(), False),
+                StructField("experimental_strategy", StringType(), False),
+                StructField("created_datetime", StringType(), False),
+                StructField("cases", ArrayType(StructType(case_fiels)), False),
+            ]
+        )
 
         return self.sql_context.createDataFrame(data, schema)
 
@@ -72,28 +127,28 @@ class TestPrimaryAliquotBuilder(TestCase):
 
         return self._build_es_dataframe(data, load_min)
 
-    @patch("exports.es_utils.get_dataframe_from_es")
-    def test__build_primary_aliquots_for_project(self, get_dataframe_from_es: MagicMock):
+    def test__build_primary_aliquots_for_project(self):
         # Arrange
+        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
+        es_dataframe_util = mock.MagicMock()
+        es_dataframe_util.get_dataframe.return_value = es_df
         config = MagicMock()
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
             self.sql_context,
+            es_dataframe_util,
+            mock.MagicMock(),
         )
-        es_df = self._load_data_into_df(
-            "input/test_primry_aliquot_builder_common.yaml")
-        get_dataframe_from_es.return_value = es_df
 
         config.projects = ["TEST0"]
 
         # Load Expected Results
         expected = self._load_data_from_file(
-            "output/test_build_primary_aliquots_for_project.yaml")
-        expected_es_include_fields = frozenset(
-            expected["expected_es_include_fields"])
+            "output/test_build_primary_aliquots_for_project.yaml"
+        )
+        expected_es_include_fields = frozenset(expected["expected_es_include_fields"])
         expected_es_query = expected["expected_es_query"]
-        expected_data = frozenset(tuple(row)
-                                  for row in expected["expected_data"])
+        expected_data = frozenset(tuple(row) for row in expected["expected_data"])
         expected_schema = schema_validation.Schema(expected["expected_schema"])
 
         # Act
@@ -101,17 +156,14 @@ class TestPrimaryAliquotBuilder(TestCase):
 
         # Assert
         # Check External Calls
-        get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
-            config,
-            config.graph_file_index,
-            include_fields=expected_es_include_fields,
+        es_dataframe_util.get_dataframe.assert_called_once_with(
+            es_utils.Index.File,
+            include_fields=expected_es_include_fields | {"cases.samples.portions.analytes.aliquots.aliquot_id"},
             query=expected_es_query,
         )
 
         # Check Result Data
-        self.schema_validator.validate_schema(
-            result_df.schema, expected_schema)
+        self.schema_validator.validate_schema(result_df.schema, expected_schema)
 
         result_collected = result_df.collect()
         result_data = frozenset(
@@ -128,18 +180,22 @@ class TestPrimaryAliquotBuilder(TestCase):
 
     @staticmethod
     def _mock_bulk_request(bids: Iterable[str]):
-        docs = defaultdict(MagicMock)
+        docs = defaultdict(MagicMock)  # type: Dict[str, MagicMock]
         docs["file-2"].urls_metadata.items.return_value = (
             ("bad_url", {"type": "aws", "state": "validated"}),
             ("bad_url", {"type": "cleversafe", "state": "unvalidated"}),
-            ("s3://cleversafe.service.consul/good_url",
-             {"type": "cleversafe", "state": "validated"}),
+            (
+                "s3://cleversafe.service.consul/good_url",
+                {"type": "cleversafe", "state": "validated"},
+            ),
         )
         docs["file-2"].did = "file-2"
         docs["file-4"].urls_metadata.items.return_value = (
             ("bad_url", {"type": "aws", "state": "validated"}),
-            ("s3://cleversafe.service.consul/good_url",
-             {"type": "cleversafe", "state": "validated"}),
+            (
+                "s3://cleversafe.service.consul/good_url",
+                {"type": "cleversafe", "state": "validated"},
+            ),
             ("bad_url", {"type": "cleversafe", "state": "unvalidated"}),
         )
         docs["file-4"].did = "file-4"
@@ -151,17 +207,17 @@ class TestPrimaryAliquotBuilder(TestCase):
 
         return (doc for file_id, doc in docs.items() if file_id in bids)
 
-    @patch("exports.es_utils.get_dataframe_from_es")
-    def test__build_gene_expression_prinary_aliquot_data(self, get_dataframe_from_es: MagicMock):
+    def test__build_gene_expression_prinary_aliquot_data(self):
         # Arrange
         config = MagicMock()
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config,
-            self.sql_context,
-        )
         es_df = self._load_data_into_df(
-            "input/test_primry_aliquot_builder_common.yaml", False)
-        get_dataframe_from_es.return_value = es_df
+            "input/test_primry_aliquot_builder_common.yaml", False
+        )
+        es_dataframe_util = mock.MagicMock()
+        es_dataframe_util.get_dataframe.return_value = es_df
+        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+            config, self.sql_context, es_dataframe_util, mock.MagicMock()
+        )
 
         primary_aliquot_builder.logger = MagicMock()
         primary_aliquot_builder.FILE_URL_BATCH_SIZE = 3
@@ -171,39 +227,39 @@ class TestPrimaryAliquotBuilder(TestCase):
 
         # Load Expected Results
         expected = self._load_data_from_file(
-            "output/test_build_gene_expression_prinary_aliquot_data.yaml")
-        expected_es_include_fields = frozenset(
-            expected["expected_es_include_fields"])
+            "output/test_build_gene_expression_prinary_aliquot_data.yaml"
+        )
+        expected_es_include_fields = frozenset(expected["expected_es_include_fields"])
         expected_es_query = expected["expected_es_query"]
         expected_data = {row["case_id"]: row for row in expected["expected_data"]}
         expected_schema = schema_validation.Schema(expected["expected_schema"])
 
         # Act
-        result = primary_aliquot_builder.build_gene_expression_primary_aliquot_data([
-                                                                                    "type0", "type1"])
+        result = primary_aliquot_builder.build_gene_expression_primary_aliquot_data(
+            ["type0", "type1"]
+        )
         result_df = result.primary_aliquot_df
         result_urls = result.file_urls
 
         # Assert
         # Check External Calls
-        get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
-            config,
-            config.graph_file_index,
+        es_dataframe_util.get_dataframe.assert_called_once_with(
+            es_utils.Index.File,
             include_fields=expected_es_include_fields,
             query=expected_es_query,
         )
         self.assertEquals(config.indexd.bulk_request.call_count, 2)
-        primary_aliquot_builder.logger.warning.assert_has_calls([
-            call("File is missing: 'file-8'"),
-        ], any_order=True)
+        primary_aliquot_builder.logger.warning.assert_has_calls(
+            [
+                call("File is missing: 'file-8'"),
+            ],
+            any_order=True,
+        )
 
         # Check Results
-        self.schema_validator.validate_schema(
-            result_df.schema, expected_schema)
+        self.schema_validator.validate_schema(result_df.schema, expected_schema)
 
-        result_collected = tuple(row.asDict(True)
-                                 for row in result_df.collect())
+        result_collected = tuple(row.asDict(True) for row in result_df.collect())
         result_data = {row["case_id"]: row for row in result_collected}
 
         self.assertEquals(len(result_collected), len(expected_data))

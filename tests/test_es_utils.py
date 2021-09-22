@@ -1,7 +1,7 @@
 import pytest
 from normalizer.mapper import ModelMapper
 
-from exports.es_utils import get_non_null_fields, get_dataframe_from_es
+from exports import es_utils
 
 from tests_config import TestConfig
 from tests.utils.schema_validation import PysparkSchemaValidator, Schema
@@ -56,7 +56,7 @@ def diagnoses_missing_field(source_es_client):
 
 @pytest.mark.usefixtures('setup_graph_indices')
 def test_missing_fields(diagnoses_missing_field):
-    result = get_non_null_fields(config)
+    result = es_utils.get_non_null_fields(config)
 
     field, _ = diagnoses_missing_field['diagnoses'].popitem()
     expected_field = 'diagnoses.{}'.format(field)
@@ -83,19 +83,21 @@ def test_get_dataframe_from_es(sqlContext, input_file, output_file, load_data_fr
     validator = PysparkSchemaValidator()
 
     inputs = load_data_from_file(input_file)
-    index = inputs["index"]
+    index = es_utils.Index[inputs["index"]]
     doc_id = inputs["document_id"]
     kwargs = inputs["kwargs"]
 
     expected = load_data_from_file(output_file)
     expected_schema = Schema(expected["expected_schema"])
     expected_data = expected["expected_data"]
-
-    # Act
-    result_df = get_dataframe_from_es(
+    util = es_utils.ElasticsearchDataFrameUtil(
         sqlContext,
         config,
-        indexes[index],
+    )
+
+    # Act
+    result_df = util.get_dataframe(
+        index,
         **kwargs
     )
 

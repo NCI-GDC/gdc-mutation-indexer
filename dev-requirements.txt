@@ -72,8 +72,10 @@ jsonpickle==2.0.0
     # via deepdiff
 markupsafe==1.1.1
     # via jinja2
-more-itertools==8.8.0
-    # via pytest
+more-itertools==8.9.0
+    # via
+    #   -c requirements.txt
+    #   pytest
 nodeenv==1.6.0
     # via pre-commit
 packaging==20.9

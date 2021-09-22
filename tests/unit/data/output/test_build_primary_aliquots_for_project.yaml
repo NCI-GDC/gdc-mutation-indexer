@@ -32,3 +32,5 @@ expected_schema:
     dataType: *string_type
   - name: case_id
     dataType: *string_type
+  - name: aliquot_id
+    dataType: *string_type

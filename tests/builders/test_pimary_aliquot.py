@@ -1,9 +1,10 @@
 import unittest
+from unittest import mock
 
 import pytest
 from pyspark import sql
 
-from exports import builders
+from exports import builders, es_utils
 
 from tests_config import TestConfig
 
@@ -16,9 +17,12 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     def test__get_case_file_metadata__tcga_kich(self):
         config = TestConfig()
         config.projects = ["TCGA-KICH"]
+        es_dataframe_util = es_utils.ElasticsearchDataFrameUtil(self.sql_context, config)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.sql_context,
+            es_dataframe_util,
+            mock.MagicMock(),
         )
 
         df = primary_aliquot_builder.build_primary_aliquots_for_project()
@@ -38,9 +42,12 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     def test__get_case_file_metadata__tcga(self):
         config = TestConfig()
         config.projects = ["TCGA"]
+        es_dataframe_util = es_utils.ElasticsearchDataFrameUtil(self.sql_context, config)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.sql_context,
+            es_dataframe_util,
+            mock.MagicMock()
         )
 
         df = primary_aliquot_builder.build_primary_aliquots_for_project()

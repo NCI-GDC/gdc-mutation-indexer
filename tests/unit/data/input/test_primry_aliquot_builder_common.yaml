@@ -7,6 +7,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Normal"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-1
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -26,6 +30,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-2
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -45,6 +53,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-3
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -64,6 +76,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Normal"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-4
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -83,6 +99,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-5
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -102,6 +122,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-6
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -121,6 +145,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-7
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -140,6 +168,10 @@
       submitter_id: fill
       samples:
         - sample_type: "Primary Tumor"
+          portions:
+            - analytes:
+                - aliquots:
+                    - aliquot_id: aliquot-8
       demographic:
         days_to_death: 100
         ethnicity: fill
