@@ -3,13 +3,12 @@ import copy
 import json
 import logging
 
-from normalizer.mapper import ModelMapper
-from pyspark.sql.functions import col, size
-from pyspark.sql.types import StructType, ArrayType, MapType, BooleanType
-
 from config import LOG_FORMAT
 from exports.builders.utils import percentile
-
+from normalizer.mapper import ModelMapper
+from pyspark import sql
+from pyspark.sql.functions import col, size
+from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -68,20 +67,19 @@ def cast_booleans(df, mapping):
     return df.select(*select_expr)
 
 
-class BaseBuilder(object):
+class BaseBuilder(abc.ABC):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
-    __metaclass__ = abc.ABCMeta
 
     index_name = None
     id_field = None
     settings = None
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config, spark_session: sql.SparkSession):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
         self.debug = config.debug
 
     @abc.abstractmethod
@@ -189,7 +187,7 @@ class BaseBuilder(object):
             path = self.config.get_raw_output_path(self.index_name)
         try:
             self.logger.info('Using existing index from {}'.format(path))
-            df = self.sqlContext.read.load(path)
+            df = self._spark_session.read.load(path)
             return df
         except Exception:
             self.logger.info('Couldn\'t find file at {}'.format(path))

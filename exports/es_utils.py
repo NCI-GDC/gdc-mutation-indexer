@@ -1,8 +1,9 @@
-import re
 import json
+import re
 
 from elasticsearch.helpers import scan
 from normalizer.mapper import ModelMapper
+from pyspark import sql
 
 
 def iterate_es_results(es_client, index_name, doc_type=None, query=None):
@@ -199,18 +200,17 @@ def get_non_null_fields(config, blacklist=None):
 
 
 def get_dataframe_from_es(
-    sql_context,
+    spark_session: sql.SparkSession,
     config, 
     index,
     include_fields=None,
     include_as_arrays=None,
     query=None, read_metadata=False,
 ):
-    """
-    A utility for loading data from ES natively into spark. 
+    """A utility for loading data from ES natively into spark. 
 
     Args:
-        sql_context (pyspark.sql.SQLContext): The spark sql context
+        spark_session: The spark session for the application
         config: The configuration for the current process
         index: The index from which the data will be loaded
         include_fields: The fields which will be included when read
@@ -220,7 +220,7 @@ def get_dataframe_from_es(
         query: The query to use in ES to limit the records returned
     """
     reader = (
-        sql_context.read.format("org.elasticsearch.spark.sql")
+        spark_session.read.format("org.elasticsearch.spark.sql")
         .option("es.read.metadata", read_metadata)
         .option("es.nodes", config.source_es_nodes)
         .option('es.net.http.auth.user', config.source_es_user)

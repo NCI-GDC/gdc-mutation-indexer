@@ -1,16 +1,14 @@
 import logging
-
 from collections import namedtuple
 from itertools import chain
-from typing import Iterable, Mapping, Optional, TypeVar
+from typing import Iterable, List, Mapping, Optional, TypeVar
 
-from pyspark import sql
-from pyspark.sql import functions as f
+from indexclient import client as indexclient
 
 from config import BaseConfig
 from exports import es_utils
-from indexclient import client as indexclient
-
+from pyspark import sql
+from pyspark.sql import functions as f
 
 GeneExpressionPrimaryAliquotData = namedtuple(
     "GeneExpressionPrimaryAliquotData", ["primary_aliquot_df", "file_urls"]
@@ -24,8 +22,8 @@ class PrimaryAliquotBuilder:
 
     FILE_URL_BATCH_SIZE = 1000
 
-    def __init__(self, config: BaseConfig, sql_context: sql.SQLContext):
-        self.sql_context = sql_context
+    def __init__(self, config: BaseConfig, spark_session: sql.SparkSession):
+        self._spark_session = spark_session
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -90,7 +88,7 @@ class PrimaryAliquotBuilder:
             "cases.samples.sample_type"
         }.union(include_fields or [])
         files_df = es_utils.get_dataframe_from_es(
-            self.sql_context,
+            self._spark_session,
             self.config,
             self.config.graph_file_index,
             include_fields=include_fields,
@@ -276,7 +274,7 @@ class PrimaryAliquotBuilder:
             {"terms": {"data_type": ["Gene Expression Quantification"]}},
             {"terms": {"acl": ["open"]}},
             {"terms": {"analysis.workflow_type": workflow_types}}
-        ]
+        ]  # type: List[dict]
         case_fields = [
             "cases.submitter_id",
             "cases.demographic.days_to_death",
@@ -304,7 +302,7 @@ class PrimaryAliquotBuilder:
             "file_id").distinct().collect())
 
         urls = tuple(self._get_main_urls(file_ids))
-        urls_df = self.sql_context.createDataFrame(urls)
+        urls_df = self._spark_session.createDataFrame(urls)
 
         primary_aliquot_df = primary_aliquot_df.select(
             "file_id",
@@ -331,10 +329,6 @@ class PrimaryAliquotBuilder:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)
-
-        Args:
-            sql_context(pyspark.sql.SQLContext): The spark sql context
-            config: The configuration for the current process
 
         Return:
             A data frame with the file data

@@ -1,12 +1,13 @@
-import pytest
 import json
 
-from pyspark.sql.functions import col, lit
+import pytest
 
+from base_joins_test import BaseJoinsTest
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.utils import uuid5_col
+from pyspark import sql
+from pyspark.sql.functions import col, lit
 from tests_config import TestConfig
-from base_joins_test import BaseJoinsTest
 
 conf = TestConfig()
 
@@ -85,7 +86,7 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         assert cpo == true_cpo
 
     @pytest.mark.ssm_occurrence_centric_ssm_subtree
-    def test_ssm_subtree(self, sqlContext, maf_df, ssm_occurrence_ssm_subtree):
+    def test_ssm_subtree(self, spark_session: sql.SparkSession, maf_df, ssm_occurrence_ssm_subtree):
         def get_stats(dataframe):
             """
             Extracts ssm, consequence, transcript, gene relationships
@@ -116,7 +117,7 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
 
         # ssm_subtree stats expected:
         cons_df = (
-            ConsequenceBuilder(conf, sqlContext).build_for_ssm(
+            ConsequenceBuilder(conf, spark_session).build_for_ssm(
                 maf_df, 'ssm_occurrence_centric',
                 join_gene=True
             )
@@ -133,4 +134,3 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         stats = get_stats(df)
 
         assert stats == true_stats
-

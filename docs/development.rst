@@ -81,7 +81,7 @@ Here are some examples of ways to interact with the s3 adapter::
                         'org.apache.hadoop.io.Text',
                         'org.apache.hadoop.io.LongWritable')
 
-    df = sqlContext.read.format('com.databricks.spark.csv')\
+    df = spark_session.read.format('com.databricks.spark.csv')\
                         .options(header='true')\
                         .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                         .load(url)

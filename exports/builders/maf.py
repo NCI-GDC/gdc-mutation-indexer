@@ -1,20 +1,20 @@
 import logging
-from pkg_resources import resource_filename
 
 import yaml
-from pyspark.sql.functions import col, lit, lower, struct, udf
-from pyspark.sql.types import StringType, IntegerType, ArrayType
+from pkg_resources import resource_filename
 
 from config import LOG_FORMAT
-from exports.builders.utils import (
-    uuid5_col,
-    ssm_label_col,
-    extract_sift_polyphen,
-)
-
 from exports.builders.base_input_builder import BaseInputBuilder
-from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.clinical_annotations.civic import CivicBuilder
+from exports.builders.gene_model import GeneModelBuilder
+from exports.builders.utils import (
+    extract_sift_polyphen,
+    ssm_label_col,
+    uuid5_col
+)
+from pyspark import sql
+from pyspark.sql.functions import col, lit, struct, udf
+from pyspark.sql.types import ArrayType, IntegerType, StringType
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -25,10 +25,10 @@ class MAFBuilder(BaseInputBuilder):
     uniform features
     """
 
-    def __init__(self, config, sqlContext):
-        super(MAFBuilder, self).__init__(config, sqlContext, 'maf')
+    def __init__(self, config, spark_session: sql.SparkSession):
+        super().__init__(config, spark_session, 'maf')
         self.schema = self.get_schema()
-        self.annotation_builders = [CivicBuilder(config, sqlContext)]
+        self.annotation_builders = [CivicBuilder(config, spark_session)]
 
     def build_from_cache(self, df):
         return df
@@ -57,7 +57,7 @@ class MAFBuilder(BaseInputBuilder):
         # Extract sift and polyphen columns
         df = extract_sift_polyphen(df)
         # Build gene model and join with MAF dataframe
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+        gm_df = GeneModelBuilder(self.config, self._spark_session).build()
 
         cols_to_drop = [c for c in gm_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])

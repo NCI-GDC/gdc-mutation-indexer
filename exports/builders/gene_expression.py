@@ -1,24 +1,17 @@
+from exports.builders.base_builder import BaseBuilder
+from exports.builders.base_input_builder import BaseInputBuilder
+from exports.builders.gene_model import GeneModelBuilder
+from exports.builders.primary_aliquot import PrimaryAliquotBuilder
+from pyspark import sql
 from pyspark.sql.functions import (
     col,
     collect_list,
     explode,
     input_file_name,
-    lit,
     struct,
-    udf,
+    udf
 )
-from pyspark.sql.types import (
-    DoubleType,
-    StringType,
-    StructField,
-    StructType,
-)
-
-from exports.builders.base_builder import BaseBuilder
-from exports.builders.base_input_builder import BaseInputBuilder
-from exports.builders.gene_model import GeneModelBuilder
-from exports.builders.primary_aliquot import PrimaryAliquotBuilder
-
+from pyspark.sql.types import DoubleType, StringType, StructField, StructType
 
 CASE_METADATA = [
     "case_id",
@@ -72,16 +65,16 @@ def trim_gene_id(raw_gene_id):
     return raw_gene_id.split(".")[0]
 
 
-class GeneExpressionInputBuilder(object):
+class GeneExpressionInputBuilder:
     supported_workflow_types = ["HTSeq - FPKM-UQ"]
 
-    def __init__(self, config, sqlContext, *args, **kwargs):
-        super(GeneExpressionInputBuilder, self).__init__(config, sqlContext, *args, **kwargs)
+    def __init__(self, config, spark_session: sql.SparkSession, *args, **kwargs):
+        super().__init__(config, spark_session, *args, **kwargs)  # type: ignore
 
-        self.sql_context = sqlContext
+        self._spark_session = spark_session
         self.config = config
         self._primary_aliquot_data = None
-        self.primary_aliquot_builder = PrimaryAliquotBuilder(config, sqlContext)
+        self.primary_aliquot_builder = PrimaryAliquotBuilder(config, spark_session)
 
     def get_primary_aliquot_data(self):
         """
@@ -108,7 +101,7 @@ class GeneExpressionInputBuilder(object):
 class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuilder):
 
     def build_from_scratch(self):
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+        gm_df = GeneModelBuilder(self.config, self._spark_session).build()
 
         pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select("_gene_id", "symbol")
 
@@ -143,7 +136,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder, BaseInputBuild
         for i, file_batch in enumerate(file_batches):
             self.logger.info("Loading batch {}/{}".format(i+1, len(file_batches)))
 
-            batch_df = self.sqlContext.read.csv(
+            batch_df = self._spark_session.read.csv(
                 file_batch,
                 schema=RawGeneExpression,
                 sep="\t",

@@ -1,13 +1,14 @@
 import json
 from collections import Counter
-from deepdiff import DeepDiff
 
 import pytest
+
+from deepdiff import DeepDiff
+from exports.builders.base_builder import cast_booleans, get_all_boolean_paths
 from normalizer.mapper import ModelMapper
+from pyspark import sql
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import explode
-
-from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
 
 
 @pytest.fixture
@@ -59,7 +60,7 @@ def test_sample_data_cast_boolean(get_mapping_data):
         "cnv_occurrence_centric",
     ),
 )
-def test_base_builder_cast_boolean(sqlContext, index, request):
+def test_base_builder_cast_boolean(spark_session: sql.SparkSession, index, request):
     df = request.getfixturevalue("{}_df".format(index))
     index_mapper = ModelMapper(index)
     df = cast_booleans(df, index_mapper.mapping)

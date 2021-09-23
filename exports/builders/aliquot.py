@@ -1,11 +1,10 @@
 import collections
 import logging
 
-from pyspark.sql import types
-
-from exports.builders.base_input_builder import BaseInputBuilder
-
 from config import LOG_FORMAT
+from exports.builders.base_input_builder import BaseInputBuilder
+from pyspark import sql
+from pyspark.sql import types
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -35,8 +34,8 @@ class AliquotBuilder(BaseInputBuilder):
     PRAGMA_PROJECT_ID = '#project_id'
     PRAGMA_TUMOR_SUB_IDS = '#tumor.aliquots.submitter_id'
 
-    def __init__(self, config, sqlContext):
-        super(AliquotBuilder, self).__init__(config, sqlContext, 'aliquot')
+    def __init__(self, config, spark_session: sql.SparkSession):
+        super(AliquotBuilder, self).__init__(config, spark_session, 'aliquot')
 
     def build_from_scratch(self):
         return self.get_aliquots_from_headers()
@@ -90,11 +89,11 @@ class AliquotBuilder(BaseInputBuilder):
             for field in TestedAliquot._fields
         ]
         schema = types.StructType(schema_fields)
-        return self.sqlContext.createDataFrame(aliquots, schema)
+        return self._spark_session.createDataFrame(aliquots, schema)
 
     def read_maf_header(self, url, n_lines=10):
         """
         Reads only maf header
         """
         self.logger.debug(url)
-        return self.sqlContext.read.text(url).limit(n_lines)
+        return self._spark_session.read.text(url).limit(n_lines)

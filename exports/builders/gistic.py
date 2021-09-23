@@ -1,19 +1,18 @@
 import logging
 
-from pyspark.sql.functions import col, lit, udf
-from pyspark.sql.types import StringType
-
-from exports.builders.gene_model import GeneModelBuilder
+from config import LOG_FORMAT
 from exports.builders.base_input_builder import BaseInputBuilder
+from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.utils import (
     map_create_column,
     melt_df,
     remove_columns,
-    uuid5_col,
+    uuid5_col
 )
 from exports.es_utils import iterate_es_results
-
-from config import LOG_FORMAT
+from pyspark import sql
+from pyspark.sql.functions import col, lit, udf
+from pyspark.sql.types import StringType
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -30,8 +29,8 @@ class GisticBuilder(BaseInputBuilder):
     NOTE: ncbi_build = 'GRCh38' - constant value, same as in ssm branch (c) Zhenyu
     """
 
-    def __init__(self, config, sqlContext):
-        super(GisticBuilder, self).__init__(config, sqlContext, 'gistic')
+    def __init__(self, config, spark_session: sql.SparkSession):
+        super().__init__(config, spark_session, 'gistic')
 
     def build_from_cache(self, df):
         return df
@@ -198,7 +197,7 @@ class GisticBuilder(BaseInputBuilder):
                                  'gene_end': 'end_position'}
 
         # get gene_df
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
+        gm_df = GeneModelBuilder(self.config, self._spark_session).build()
 
         # add gene info to gistic_df
         new_df = gistic_df.join(gm_df, gistic_df.gene_id == gm_df._gene_id)

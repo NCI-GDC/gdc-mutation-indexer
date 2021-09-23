@@ -1,24 +1,23 @@
 import unittest
 
 import pytest
-from pyspark import sql
 
 from exports import builders
-
+from pyspark import sql
 from tests_config import TestConfig
 
 
 class TestPrimaryAliquotBuilder(unittest.TestCase):
     @pytest.fixture(autouse=True)
-    def import_fixtures(self, sqlContext: sql.SQLContext, files_with_linked_cases):
-        self.sql_context = sqlContext
+    def import_fixtures(self, spark_session: sql.SparkSession, files_with_linked_cases):
+        self.spark_session = spark_session
 
     def test__get_case_file_metadata__tcga_kich(self):
         config = TestConfig()
         config.projects = ["TCGA-KICH"]
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.spark_session
         )
 
         df = primary_aliquot_builder.build_primary_aliquots_for_project()
@@ -40,7 +39,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         config.projects = ["TCGA"]
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.spark_session
         )
 
         df = primary_aliquot_builder.build_primary_aliquots_for_project()

@@ -1,11 +1,12 @@
-import pytest
 import json
 
-from pyspark.sql.functions import col
+import pytest
 
-from exports.builders.consequence import ConsequenceBuilder
-from tests_config import TestConfig
 from base_joins_test import BaseJoinsTest
+from exports.builders.consequence import ConsequenceBuilder
+from pyspark import sql
+from pyspark.sql.functions import col
+from tests_config import TestConfig
 
 conf = TestConfig()
 
@@ -60,7 +61,7 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
         assert cpo == true_cpo
 
     @pytest.mark.cnv_occurrence_centric_cnv_subtree
-    def test_cnv_subtree(self, sqlContext, gistic_df, cnv_occurrence_centric_df):
+    def test_cnv_subtree(self, spark_session: sql.SparkSession, gistic_df, cnv_occurrence_centric_df):
         def get_stats(dataframe):
             """
             Extracts cnv, consequence, transcript, gene relationships
@@ -85,7 +86,7 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
         ]
 
         # ssm_subtree stats expected:
-        cons_df = (ConsequenceBuilder(conf, sqlContext)
+        cons_df = (ConsequenceBuilder(conf, spark_session)
                    .build_for_cnv(gistic_df, 'cnv_occurrence_centric'))
         df = self.unpack_df_list(cons_df, 'cnv_id', 'consequence',
                                  fields_to_unpack)
@@ -98,4 +99,3 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
         stats = get_stats(df)
 
         assert stats == true_stats
-

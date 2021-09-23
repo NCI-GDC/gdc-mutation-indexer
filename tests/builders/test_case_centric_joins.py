@@ -1,14 +1,19 @@
-import pytest
 import json
 
-from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
-from tests_config import TestConfig
+import pytest
+
 from base_joins_test import BaseJoinsTest
+from exports.builders import (
+    ConsequenceBuilder,
+    ObservationBuilder,
+    PrimaryAliquotBuilder
+)
+from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'case_centric_df', 'ssm_transcript_df')
+@pytest.mark.usefixtures('spark_session', 'maf_df', 'gistic_df', 'case_centric_df', 'ssm_transcript_df')
 class TestCaseCentricJoins(BaseJoinsTest):
     """
     Test case_centric index joins
@@ -62,7 +67,7 @@ class TestCaseCentricJoins(BaseJoinsTest):
         assert es_spg == spg
 
     @pytest.mark.case_centric_ssm_subtree
-    def test_ssm_subtree(self, sqlContext, maf_df, case_centric_df, case_ssm_subtree):
+    def test_ssm_subtree(self, spark_session, maf_df, case_centric_df, case_ssm_subtree):
         def get_stats(dataframe):
             """
             Extracts ssm, consequence, transcript relationships from a flat dataframe
@@ -80,9 +85,9 @@ class TestCaseCentricJoins(BaseJoinsTest):
 
             return res
 
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
+        primary_aliquot_builder = PrimaryAliquotBuilder(conf, spark_session)
         observation_builder = ObservationBuilder(primary_aliquot_builder)
-        consequence_builder = ConsequenceBuilder(conf, sqlContext)
+        consequence_builder = ConsequenceBuilder(conf, spark_session)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, 'case_centric')

@@ -1,38 +1,43 @@
 import logging
-from pyspark.sql.functions import (explode,
-                                   col,
-                                   collect_list,
-                                   collect_set,
-                                   struct,
-                                   lit,
-                                   when,
-                                   concat_ws)
-from exports.builders.utils import (extract_rows_udf,
-                                    all_effects_udf,
-                                    struct_select,
-                                    uuid5_col,
-                                    extract_aas_position,
-                                    extract_sift_polyphen,
-                                    sanitize_aa_change,
-                                    convert_empty_str_to_null_in_col,
-                                    sanitize_gene_aa_change,
-                                    )
-from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 
 from config import LOG_FORMAT
+from exports.builders.utils import (
+    all_effects_udf,
+    convert_empty_str_to_null_in_col,
+    extract_aas_position,
+    extract_rows_udf,
+    extract_sift_polyphen,
+    sanitize_aa_change,
+    sanitize_gene_aa_change,
+    struct_select,
+    uuid5_col
+)
+from pyspark import sql
+from pyspark.sql.functions import (
+    col,
+    collect_list,
+    collect_set,
+    concat_ws,
+    explode,
+    lit,
+    struct,
+    when
+)
+
+from .df_builders import get_annotation_df, get_gene_df, get_transcript_df
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class ConsequenceBuilder(object):
+class ConsequenceBuilder:
     """
     Build transcripts for each ssm by joining in data from the gene model
     """
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config, spark_session: sql.SparkSession):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
 
     def build_for_ssm(self, maf_df, index_name,
                       join_gene=False, add_gene_aa_change=False):
@@ -248,4 +253,3 @@ class ConsequenceBuilder(object):
         gene_struct_df = gene_df.select('gene_id',
                                         struct(col('*')).alias('gene'))
         return gene_struct_df
-

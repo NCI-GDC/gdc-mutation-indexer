@@ -1,22 +1,27 @@
 import collections
-import pkg_resources
+import logging
 import re
 import uuid
-import logging
 from functools import partial
 
+import pkg_resources
 import yaml
+
+from config import LOG_FORMAT
+from exports import es_utils
+from exports.builders.aliquot import AliquotBuilder
 from normalizer.mapper import ModelMapper
+from pyspark import sql
 from pyspark.sql.functions import (
+    UserDefinedFunction,
     array,
     col,
     explode,
-    lit, 
+    lit,
     regexp_extract,
     struct,
     udf,
-    UserDefinedFunction,
-    when,
+    when
 )
 from pyspark.sql.types import (
     ArrayType,
@@ -26,10 +31,6 @@ from pyspark.sql.types import (
     StructField,
     StructType
 )
-
-from exports import es_utils
-from exports.builders.aliquot import AliquotBuilder
-from config import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
@@ -112,7 +113,7 @@ def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
     return aliquot_clause
 
 
-def get_case_ids_from_source_es(config, sqlContext):
+def get_case_ids_from_source_es(config, spark_session: sql.SparkSession):
     """Query source ES for case_ids that correspond to MAF aliquots.
 
     TODO: Make this query ES through Spark instead...?
@@ -125,7 +126,7 @@ def get_case_ids_from_source_es(config, sqlContext):
     project_filter = frozenset(config.projects) if config.projects else None
 
     # Read unique aliquots from maf headers
-    aliquot_df = AliquotBuilder(config, sqlContext).build()
+    aliquot_df = AliquotBuilder(config, spark_session).build()
 
     # Figure out which aliquots are required to be in certain projects and which
     # could come from anywhere.
@@ -177,7 +178,7 @@ def get_case_ids_from_source_es(config, sqlContext):
     # Give an explicit schema in case we found nothing, as schema inference doesn't
     # work on empty dataframes.
     cases_df_schema = StructType([StructField('case_id', StringType())])
-    cases_df = sqlContext.createDataFrame(cases, schema=cases_df_schema)
+    cases_df = spark_session.createDataFrame(cases, schema=cases_df_schema)
 
     return cases_df
 

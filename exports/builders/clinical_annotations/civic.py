@@ -1,19 +1,18 @@
-import yaml
-import logging
 import csv
+import logging
 
-from pyspark.sql import Row
-from pyspark.sql.types import StringType
-from pyspark.sql.functions import (
-    col, udf
-)
-
-from exports.builders.clinical_annotations.base import ClinicalAnnotationBuilder
-from exports.builders.utils import remove_columns, get_column_name
-
-from pkg_resources import resource_filename, Requirement
+import yaml
+from pkg_resources import Requirement, resource_filename
 
 from config import LOG_FORMAT
+from exports.builders.clinical_annotations.base import (
+    ClinicalAnnotationBuilder
+)
+from exports.builders.utils import get_column_name, remove_columns
+from pyspark import sql
+from pyspark.sql import Row
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import StringType
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -24,8 +23,8 @@ class CivicBuilder(ClinicalAnnotationBuilder):
     uniform features
     """
 
-    def __init__(self, config, sqlContext):
-        super(CivicBuilder, self).__init__(config, sqlContext)
+    def __init__(self, config, spark_session: sql.SparkSession):
+        super().__init__(config, spark_session)
         self.sources, self.schema = self._get_resource()
 
     def merge_columns_by_name(self, df, adding_fields):
@@ -62,7 +61,7 @@ class CivicBuilder(ClinicalAnnotationBuilder):
                 # read Civic annotation from csv files and merge with existing dataframe
                 with open(file_path) as f:
                     reader = csv.DictReader(f, delimiter='\t')
-                    new_df = self.sqlContext.createDataFrame(Row(**d) for d in reader)
+                    new_df = self._spark_session.createDataFrame(Row(**d) for d in reader)
 
                 maf_df = self.standardize_schema_with_maf(new_df, maf_df, k)
 

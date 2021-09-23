@@ -1,5 +1,7 @@
-import pytest
 import os
+
+import pytest
+
 # import re
 # import json
 # import yaml
@@ -7,17 +9,18 @@ import os
 # from pyspark.sql.types import ArrayType, StringType
 # 
 from exports.builders import GisticBuilder
+from pyspark import sql
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'gistic_df')
+@pytest.mark.usefixtures('spark_session', 'gistic_df')
 class TestGisticBuilder:
 
     @pytest.fixture
-    def builder(self, sqlContext):
-        return GisticBuilder(conf, sqlContext)
+    def builder(self, spark_session: sql.SparkSession):
+        return GisticBuilder(conf, spark_session)
 
     @pytest.fixture
     def expected_counts(self, builder):
@@ -66,4 +69,3 @@ class TestGisticBuilder:
         values = {r.cnv_change for r in distinct.collect()}
         expected_values = {'Loss', 'Gain'}
         assert values == expected_values
-

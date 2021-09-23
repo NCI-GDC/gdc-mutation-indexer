@@ -1,24 +1,26 @@
 import json
 import logging
 
-from pyspark.sql.functions import collect_set, lit
-
-from exports.builders.utils import get_case_ids_from_source_es, standardize_schema
-
 from config import LOG_FORMAT
+from exports.builders.utils import (
+    get_case_ids_from_source_es,
+    standardize_schema
+)
+from pyspark import sql
+from pyspark.sql.functions import collect_set, lit
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class CaseBuilder(object):
+class CaseBuilder:
     """
     Builds a case dataframe by loading case documents from gdc_from_graph
     """
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config, spark_session: sql.SparkSession):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
 
     def build(self, maf_df, gistic_df):
         """
@@ -58,7 +60,7 @@ class CaseBuilder(object):
             es_source = self.config.graph_case_index
 
         df = (
-            self.sqlContext.read.format("es")
+            self._spark_session.read.format("es")
             .option('es.nodes', self.config.source_es_nodes)
             .option('es.net.http.auth.user', self.config.source_es_user)
             .option('es.net.http.auth.pass', self.config.source_es_pass)
@@ -75,7 +77,7 @@ class CaseBuilder(object):
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
         all_maf_cases = get_case_ids_from_source_es(self.config,
-                                                    self.sqlContext)
+                                                    self._spark_session)
 
         maf_and_gistic_df = self.populate_available_variation_data(maf_df,
                                                                    all_maf_cases,

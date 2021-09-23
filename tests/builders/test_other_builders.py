@@ -1,17 +1,17 @@
-from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 import json
 
 import pytest
-from deepdiff import DeepDiff
-from pyspark.sql.functions import explode
 
+from deepdiff import DeepDiff
 from exports.builders import (
     CaseBuilder,
     ConsequenceBuilder,
-    ObservationBuilder,
+    ObservationBuilder
 )
+from exports.builders.primary_aliquot import PrimaryAliquotBuilder
+from pyspark import sql
+from pyspark.sql.functions import explode
 from tests_config import TestConfig
-
 
 conf = TestConfig()
 
@@ -58,13 +58,13 @@ class TestOtherBase:
         return [(index_name, 'cnv') for index_name in conf.cnv_indices]
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df')
+@pytest.mark.usefixtures('spark_session', 'maf_df', 'gistic_df')
 class TestObservationBuilder(TestOtherBase):
     """ Test intermediate result from the observation builder """
 
     @pytest.fixture(scope='class')
-    def builder(self, sqlContext):
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
+    def builder(self, spark_session: sql.SparkSession):
+        primary_aliquot_builder = PrimaryAliquotBuilder(conf, spark_session)
         yield ObservationBuilder(primary_aliquot_builder)
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
@@ -127,13 +127,13 @@ class TestObservationBuilder(TestOtherBase):
         assert actual_counts == exploded_variant_caller_counts
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
+@pytest.mark.usefixtures('spark_session', 'maf_df')
 class TestConsequenceBuilder(TestOtherBase):
     """ Test intermediate result from the transcript builder """
 
     @pytest.fixture(scope='class')
-    def builder(self, sqlContext):
-        yield ConsequenceBuilder(conf, sqlContext)
+    def builder(self, spark_session: sql.SparkSession):
+        yield ConsequenceBuilder(conf, spark_session)
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
     def test_consequence_count(self, builder, index_name, build_type, get_inputs):
@@ -311,22 +311,22 @@ class TestConsequenceBuilder(TestOtherBase):
         assert 'consequence_id' in cons_df.first().asDict()['consequence'][0]
 
 
-@pytest.mark.usefixtures('sqlContext', 'case_df', 'source_es_client', 'all_cases')
+@pytest.mark.usefixtures('spark_session', 'case_df', 'source_es_client', 'all_cases')
 class TestCaseBuilder:
     """ Test the CaseBuilder functionality for extracting the graph index """
 
-    def test_case_build(self, sqlContext, source_es_client, case_df):
+    def test_case_build(self, spark_session: sql.SparkSession, source_es_client, case_df):
         expected_count = source_es_client.count(index=conf.graph_case_index)['count']
         assert case_df.count() == expected_count
 
-    def test_case_columns(self, sqlContext, case_df):
+    def test_case_columns(self, spark_session: sql.SparkSession, case_df):
         """ Test that the right properties were loaded from case docs """
         assert 'case_id' in case_df.columns
         assert 'files' not in case_df.columns
         # Make sure the sample_ids, slide_ids are not present
         assert '_ids' not in ','.join(case_df.columns)
 
-    def test_number_of_cases(self, sqlContext, case_df, all_cases):
+    def test_number_of_cases(self, spark_session, case_df, all_cases):
         """
         Check if case_df has correct number of lines
 
@@ -343,7 +343,7 @@ class TestCaseBuilder:
         ],
     )
     def test_project_filter(
-        self, projects, expected_count, sqlContext, maf_df, gistic_df
+        self, projects, expected_count, spark_session: sql.SparkSession, maf_df, gistic_df
     ):
         """Test filtering the projects included in the case DF.
 
@@ -353,7 +353,7 @@ class TestCaseBuilder:
         local_conf = TestConfig()
         local_conf.projects = projects
 
-        df = CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
+        df = CaseBuilder(local_conf, spark_session).build(maf_df, gistic_df)
 
         assert df.count() == expected_count
         for row in df.collect():

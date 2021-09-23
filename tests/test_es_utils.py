@@ -1,10 +1,9 @@
 import pytest
+
+from exports.es_utils import get_dataframe_from_es, get_non_null_fields
 from normalizer.mapper import ModelMapper
-
-from exports.es_utils import get_non_null_fields, get_dataframe_from_es
-
-from tests_config import TestConfig
 from tests.utils.schema_validation import PysparkSchemaValidator, Schema
+from tests_config import TestConfig
 
 config = TestConfig()
 
@@ -73,7 +72,7 @@ def test_missing_fields(diagnoses_missing_field):
         ("input/es_utils/test_get_dataframe_from_es_complex.yaml", "output/es_utils/test_get_dataframe_from_es_complex.yaml"),
     )
 )
-def test_get_dataframe_from_es(sqlContext, input_file, output_file, load_data_from_file):
+def test_get_dataframe_from_es(spark_session, input_file, output_file, load_data_from_file):
     # Arrange
     config = TestConfig()
     indexes = {
@@ -93,7 +92,7 @@ def test_get_dataframe_from_es(sqlContext, input_file, output_file, load_data_fr
 
     # Act
     result_df = get_dataframe_from_es(
-        sqlContext,
+        spark_session,
         config,
         indexes[index],
         **kwargs

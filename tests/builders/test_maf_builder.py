@@ -1,19 +1,20 @@
+import json
 import os
 import re
-import json
 
-import yaml
 import pytest
-from pyspark.sql.functions import lit
-from pyspark.sql.types import ArrayType, StringType
+import yaml
 
 from exports.builders import MAFBuilder
+from pyspark import sql
+from pyspark.sql.functions import lit
+from pyspark.sql.types import ArrayType, StringType
 from tests_config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
+@pytest.mark.usefixtures('spark_session', 'maf_df')
 class TestMAFBuilder:
 
     @pytest.fixture
@@ -25,32 +26,32 @@ class TestMAFBuilder:
         return maf_schema
 
     @pytest.fixture
-    def annotation_schemas(self, sqlContext):
-        builder = MAFBuilder(conf, sqlContext)
+    def annotation_schemas(self, spark_session: sql.SparkSession):
+        builder = MAFBuilder(conf, spark_session)
         return builder.get_annotation_schemas()
 
-    def test_patch_url(self, sqlContext):
+    def test_patch_url(self, spark_session: sql.SparkSession):
         ''' Test that s3 urls are patched correctly '''
-        builder = MAFBuilder(conf, sqlContext)
+        builder = MAFBuilder(conf, spark_session)
         url1 = 's3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt'
         assert builder.patch_url(url1).startswith('s3a://')
 
-    def test_combine(self, sqlContext, raw_variant_caller_counts):
+    def test_combine(self, spark_session, raw_variant_caller_counts):
         '''
         Test that mafs are combined correctly
         '''
-        builder = MAFBuilder(conf, sqlContext)
+        builder = MAFBuilder(conf, spark_session)
 
         combined_df = builder.combine(conf.maf_urls)
 
         actual_counts = dict(combined_df.groupBy('variant_caller').count().collect())
         assert actual_counts == raw_variant_caller_counts
 
-    def test_schema(self, sqlContext, maf_schema):
+    def test_schema(self, spark_session: sql.SparkSession, maf_schema):
         '''
         Test that maf has columns correctly renamed
         '''
-        builder = MAFBuilder(conf, sqlContext)
+        builder = MAFBuilder(conf, spark_session)
 
         # combine() should standardize the columns while loading the data
         df = builder.combine(conf.maf_urls)
@@ -58,13 +59,13 @@ class TestMAFBuilder:
         for field in maf_schema.keys():
             assert field in df.columns
 
-    def test_standardize_schema_field_order(self, sqlContext, maf_schema):
+    def test_standardize_schema_field_order(self, spark_session: sql.SparkSession, maf_schema):
         '''
         Confirm that standardize_schema standardizes the field order
 
         This verifies that we can safely union mafs together
         '''
-        builder = MAFBuilder(conf, sqlContext)
+        builder = MAFBuilder(conf, spark_session)
 
         # Bypass combine() so the dataframe isn't already standardized.
         # Note that this particular input DF is missing a column, which
@@ -89,14 +90,14 @@ class TestMAFBuilder:
         extra_df = builder.standardize_schema(df.select(*extra_columns))
         assert extra_df.columns == sort_df.columns
 
-    def test_standardize_schema_missing_field(self, sqlContext, maf_schema):
+    def test_standardize_schema_missing_field(self, spark_session: sql.SparkSession, maf_schema):
         '''
         Test standardize_schema's handling of missing fields
 
         Fields that default_to_none should be filled in with None columns;
         other missing fields should trigger an exception
         '''
-        builder = MAFBuilder(conf, sqlContext)
+        builder = MAFBuilder(conf, spark_session)
 
         # If we drop some columns, the initial MAF should fail standardization, as there
         # is no possible way to rearrange those columns into the expected schema.

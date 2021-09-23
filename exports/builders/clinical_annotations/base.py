@@ -1,8 +1,8 @@
 import logging
 
-from exports.builders.base_input_builder import BaseInputBuilder
-
 from config import LOG_FORMAT
+from exports.builders.base_input_builder import BaseInputBuilder
+from pyspark import sql
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -13,8 +13,8 @@ class ClinicalAnnotationBuilder(BaseInputBuilder):
     uniform features
     """
 
-    def __init__(self, config, sqlContext):
-        super(ClinicalAnnotationBuilder, self).__init__(config, sqlContext, 'tsv')
+    def __init__(self, config, spark_session: sql.SparkSession):
+        super().__init__(config, spark_session, 'tsv')
 
     def build_from_scratch(self):
         """

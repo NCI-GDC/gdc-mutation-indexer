@@ -4,23 +4,24 @@ import pytest
 
 import tests_config
 from exports.builders import utils
+from pyspark import sql
 
 
 def _case_ids_from_df(case_id_df):
     return set(row.case_id for row in case_id_df.select('case_id').collect())
 
 
-class TestUtils(object):
+class TestUtils:
     """Tests for the mutation indexer's ``exports.builders.utils`` module.
 
     Not to be confused with utils for tests.
     """
 
-    def test_get_case_ids_from_source_es(self, sqlContext):
+    def test_get_case_ids_from_source_es(self, spark_session: sql.SparkSession):
         """Verify the expected case IDs are read from the test MAF headers and graph."""
         conf = tests_config.TestConfig()
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, spark_session)
 
         # Rather than try to reconstruct this programmatically and create even
         # more code to test, here's what the test data should yield.
@@ -45,12 +46,12 @@ class TestUtils(object):
 
         assert _case_ids_from_df(case_id_df) == expected_case_ids
 
-    def test_get_case_ids_from_source_es__project_filter(self, sqlContext):
+    def test_get_case_ids_from_source_es__project_filter(self, spark_session: sql.SparkSession):
         """Verify the case IDs are filtered based on the config."""
         conf = tests_config.TestConfig()
         conf.projects = ["TCGA-KICH"]
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, spark_session)
 
         expected_case_ids = {
             "452135f2-6de6-4593-a091-ddf6344ee431",
@@ -64,7 +65,7 @@ class TestUtils(object):
         assert _case_ids_from_df(case_id_df) == expected_case_ids
 
     @pytest.mark.usefixtures("index_cases_with_duplicate_aliquots")
-    def test_get_case_ids_from_source_es__project_id_pragma(self, sqlContext):
+    def test_get_case_ids_from_source_es__project_id_pragma(self, spark_session: sql.SparkSession):
         """Verify the right case IDs are chosen for a MAF with a project ID pragma.
 
         Provide a MAF with an aliquot submitter ID that is referenced by cases in
@@ -77,7 +78,7 @@ class TestUtils(object):
         )
         conf.maf_urls.append(bad_maf_path)
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, spark_session)
 
         expected_case_ids = {
             "13afbde8-e5b5-4f3c-8a9d-daef71560005",
@@ -102,7 +103,7 @@ class TestUtils(object):
         assert _case_ids_from_df(case_id_df) == expected_case_ids
 
     @pytest.mark.usefixtures("index_cases_with_duplicate_aliquots")
-    def test_get_case_ids_from_source_es__project_filter_and_pragma(self, sqlContext):
+    def test_get_case_ids_from_source_es__project_filter_and_pragma(self, spark_session: sql.SparkSession):
         """Test interaction between the project ID pragma and project filter.
 
         Try various project filters that may or may not include the project referenced
@@ -126,17 +127,17 @@ class TestUtils(object):
         expected_bad_graph_ids = {"bbbbbbbb-aaaa-4ddd-dddd-00000000001b"}
 
         conf.projects = ["TCGA-KICH"]
-        kich_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        kich_df = utils.get_case_ids_from_source_es(conf, spark_session)
         assert _case_ids_from_df(kich_df) == expected_kich_ids
 
         conf.projects = ["BAD-GRAPH-B"]
-        bad_graph_b_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        bad_graph_b_df = utils.get_case_ids_from_source_es(conf, spark_session)
         assert _case_ids_from_df(bad_graph_b_df) == expected_bad_graph_ids
 
         conf.projects = ["BAD-GRAPH-B", "TCGA-KICH"]
-        both_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        both_df = utils.get_case_ids_from_source_es(conf, spark_session)
         assert _case_ids_from_df(both_df) == expected_bad_graph_ids | expected_kich_ids
 
         conf.projects = ["BAD-GRAPH-A", "BAD-GRAPH-C"]
-        bad_graph_other_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        bad_graph_other_df = utils.get_case_ids_from_source_es(conf, spark_session)
         assert _case_ids_from_df(bad_graph_other_df) == set()

@@ -1,24 +1,22 @@
 import logging
 
-from pyspark.sql.functions import col, lower, udf
-from pyspark.sql.types import (
-    StringType, ArrayType, StructType, StructField
-)
-
 from config import LOG_FORMAT
+from pyspark import sql
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import ArrayType, StringType, StructField, StructType
 
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class GeneModelBuilder(object):
+class GeneModelBuilder:
     """
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config, spark_session: sql.SparkSession):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
 
     def build(self):
         """
@@ -58,7 +56,7 @@ class GeneModelBuilder(object):
         """
         spark_csv_path = "org.apache.spark.sql.execution.datasources.csv.CSVFileFormat"
 
-        cytobands_df = self.sqlContext\
+        cytobands_df = self._spark_session\
                            .read\
                            .format(spark_csv_path)\
                            .option("delimiter", "\t") \
@@ -70,14 +68,14 @@ class GeneModelBuilder(object):
                                 udf(lambda x: x.split(',') if x else [x],
                                     ArrayType(StringType()))(col('cytoband')))
 
-        census_df = self.sqlContext\
+        census_df = self._spark_session\
                         .read\
                         .format(spark_csv_path)\
                         .option("delimiter", "\t") \
                         .option("header", "true")\
                         .load(self.config.census_file)
 
-        gene_model_df = self.sqlContext.read.json(self.config.gene_model_file)
+        gene_model_df = self._spark_session.read.json(self.config.gene_model_file)
 
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(col('external_db_ids.*'),

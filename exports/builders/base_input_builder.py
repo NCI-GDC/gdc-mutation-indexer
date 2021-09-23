@@ -1,20 +1,20 @@
 import abc
 import logging
 
+from pyspark import sql
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
 
-class BaseInputBuilder(object):
-    __metaclass__ = abc.ABCMeta
+class BaseInputBuilder(abc.ABC):
 
-    def __init__(self, config, sqlContext, input_type):
+    def __init__(self, config, spark_session: sql.SparkSession, input_type):
         """
 
         Args:
             config(BaseConfig): a config instance
-            sqlContext: spark sql context instance
+            spark_session: spark session for the application
             input_type(str): a string that uniquely represents an output data
                 frame type. Can be one of: (
                     'gistic',
@@ -27,7 +27,7 @@ class BaseInputBuilder(object):
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)
         self.config = config
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
 
     @property
     def urls(self):
@@ -134,13 +134,13 @@ class BaseInputBuilder(object):
         """
         if data_format in ['csv', 'tsv']:
             delimiter = '\t' if data_format == 'tsv' else ','
-            return self.sqlContext.read.format('com.databricks.spark.csv')\
+            return self._spark_session.read.format('com.databricks.spark.csv')\
                        .options(comment="#")\
                        .options(delimiter=delimiter)\
                        .options(codec="org.apache.hadoop.io.compress.GzipCodec")\
                        .load(url, header=header, schema=schema)
         elif data_format == 'parquet':
-            return self.sqlContext.read.parquet(url)
+            return self._spark_session.read.parquet(url)
         else:
             raise ValueError("Unknown read format: {}".format(data_format))
 

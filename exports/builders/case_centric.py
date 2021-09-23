@@ -1,15 +1,13 @@
-from pyspark.sql.functions import struct, collect_list, udf, col
-from pyspark.sql.types import ArrayType, StringType
-from pyspark.sql import SQLContext
-
 from config import BaseConfig
-
 from exports import builders
 from exports.builders.df_builders import (
-    get_gene_df,
-    build_ssm_subtree,
     build_cnv_subtree,
+    build_ssm_subtree,
+    get_gene_df
 )
+from pyspark import sql
+from pyspark.sql.functions import col, collect_list, struct, udf
+from pyspark.sql.types import ArrayType, StringType
 
 
 class CaseCentricBuilder(builders.BaseBuilder):
@@ -37,11 +35,11 @@ class CaseCentricBuilder(builders.BaseBuilder):
     def __init__(
         self, 
         config: BaseConfig, 
-        sqlContext: SQLContext, 
+        spark_session: sql.SparkSession, 
         consequence_builder: builders.ConsequenceBuilder, 
         observation_builder: builders.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, spark_session)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder

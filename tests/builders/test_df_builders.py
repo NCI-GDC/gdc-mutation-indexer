@@ -1,19 +1,27 @@
 import itertools
-import pytest
-from pyspark.sql.types import BooleanType
-from pyspark.sql.functions import UserDefinedFunction, col
 
-from exports.builders.utils import select_mapping
-from exports.builders.consequence import ConsequenceBuilder
+import pytest
+
 from exports.builders.df_builders import (
     get_annotation_df,
+    get_cnv_df,
     get_gene_df,
     get_ssm_df,
-    get_cnv_df,
-    get_transcript_df,
+    get_transcript_df
 )
+from exports.builders.utils import select_mapping
+from pyspark.sql.functions import col
 from tests_config import TestConfig
+
 conf = TestConfig()
+
+GET_FUNCTIONS = {
+    get_annotation_df.__name__: get_annotation_df,
+    get_cnv_df.__name__: get_cnv_df,
+    get_gene_df.__name__: get_gene_df,
+    get_ssm_df.__name__: get_ssm_df,
+    get_transcript_df.__name__: get_transcript_df
+}
 
 
 @pytest.mark.usefixtures('maf_df', 'gistic_df')
@@ -38,7 +46,7 @@ class TestDFBuildersBase:
         df_type = request.getfixturevalue('df_type')
 
         # return corresponding get_function, input_df and id_field
-        get_function = globals()['get_{}_df'.format(df_type)]
+        get_function = GET_FUNCTIONS['get_{}_df'.format(df_type)]
 
         extra_inputs = {}
         if 'cnv' in index_type or df_type == 'cnv':
@@ -103,7 +111,7 @@ class TestDFBuildersBase:
         assert cls.is_sub(item, filtered_dict.items(), mapping)
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df')
+@pytest.mark.usefixtures('spark_session', 'maf_df')
 class TestDFBuilders(TestDFBuildersBase):
     @pytest.mark.parametrize('index_type,df_type', TestDFBuildersBase.params())
     def test_simple_df_build(self, index_type, df_type, get_inputs):

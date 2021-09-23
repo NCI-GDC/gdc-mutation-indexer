@@ -1,17 +1,23 @@
-import json
 import os
 
-import ndjson
-from indexclient.client import IndexClient, Document
 import pytest
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType, LongType
-from pyspark.sql.functions import col
+from indexclient.client import Document, IndexClient
 
+import ndjson
 from exports.builders.gene_expression import (
     GeneExpressionBuilder,
     GeneExpressionCaseInputBuilder,
     GeneExpressionValueInputBuilder,
-    trim_gene_id,
+    trim_gene_id
+)
+from pyspark import sql
+from pyspark.sql.functions import col
+from pyspark.sql.types import (
+    ArrayType,
+    LongType,
+    StringType,
+    StructField,
+    StructType
 )
 from tests_config import TestConfig
 
@@ -26,17 +32,17 @@ def ge_conf():
 
 
 @pytest.fixture
-def ge_builder(sqlContext, ge_conf):
-    builder = GeneExpressionBuilder(ge_conf, sqlContext)
+def ge_builder(spark_session: sql.SparkSession, ge_conf):
+    builder = GeneExpressionBuilder(ge_conf, spark_session)
 
     return builder
 
 
 @pytest.fixture
-def ge_cases_df(sqlContext, ge_conf):
+def ge_cases_df(spark_session: sql.SparkSession, ge_conf):
     cases_df = GeneExpressionCaseInputBuilder(
         ge_conf,
-        sqlContext,
+        spark_session,
         "gene_expression_cases",
     ).build()
 
@@ -56,10 +62,10 @@ def ge_cases_df(sqlContext, ge_conf):
     return cases_df
 
 @pytest.fixture
-def ge_values_df(sqlContext, ge_conf):
+def ge_values_df(spark_session: sql.SparkSession, ge_conf):
     return GeneExpressionValueInputBuilder(
         ge_conf,
-        sqlContext,
+        spark_session,
         "gene_expression_values",
     ).build()
 
@@ -128,8 +134,8 @@ def ge_file_docs(source_es_client, ge_conf):
         )
 
 
-def test_trim_gene_version(sqlContext):
-    df = sqlContext.createDataFrame(
+def test_trim_gene_version(spark_session: sql.SparkSession):
+    df = spark_session.createDataFrame(
         [{"raw_gene_id": "ENS001.1"}, {"raw_gene_id": "ENS002.2"}]
     )
 

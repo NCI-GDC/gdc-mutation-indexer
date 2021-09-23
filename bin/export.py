@@ -1,9 +1,8 @@
 import logging
-from pyspark import SparkConf, SparkContext
-from pyspark.sql import SQLContext
 
-from exports.gdc_mutation_export import GDCMutationExport
 from config import BaseConfig as Config
+from exports import gdc_mutation_export
+from pyspark import sql
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
@@ -15,29 +14,19 @@ def main():
     """
     config = Config()
 
-    sc, sqlContext = make_spark_context(config)
+    with get_spark_session(config) as spark_session:
+        exporter = gdc_mutation_export.GDCMutationExport(spark_session, config)
 
-    exporter = GDCMutationExport(sc, sqlContext, config)
-
-    exporter.run_export()
-
-    # Tear down actions
-    sc.stop()
+        exporter.run_export()
 
 
-def make_spark_context(config):
+def get_spark_session(config) -> sql.SparkSession:
     """
-    Makes a spark and sqlContext
+    Creates the spark session to be used by the application.
     """
-    conf = SparkConf().setAppName(config.name)
-    conf = conf.setMaster(config.master)
-    sc = SparkContext(conf=conf, pyFiles=[])
-    sqlContext = SQLContext(sc)
-    # Configure logging
-    log4j = sc._jvm.org.apache.log4j
-    log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
+    spark_session = sql.SparkSession.builder.master(config.master).appName(config.name).config("log4j.rootCategory", "FATAL").getOrCreate()
 
-    return sc, sqlContext
+    return spark_session
 
 
 if __name__ == '__main__':

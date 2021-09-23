@@ -1,17 +1,21 @@
-import yaml
-
 from collections import defaultdict
 from os import path
 from typing import Iterable
 from unittest import TestCase
-from unittest.mock import call, MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
-
-from pyspark.sql.types import ArrayType, IntegerType, StringType, StructField, StructType
+import yaml
 
 from exports import builders
-
+from pyspark import sql
+from pyspark.sql.types import (
+    ArrayType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType
+)
 from tests.utils import schema_validation
 
 
@@ -22,8 +26,8 @@ class TestPrimaryAliquotBuilder(TestCase):
         cls.schema_validator = schema_validation.PysparkSchemaValidator()
 
     @pytest.fixture(autouse=True)
-    def fixture_set_up(self, sqlContext, data_dir):
-        self.sql_context = sqlContext
+    def fixture_set_up(self, spark_session: sql.SparkSession, data_dir):
+        self.spark_session = spark_session
         self.data_dir = data_dir
 
     def _build_es_dataframe(self, data: Iterable[dict], load_min: bool):
@@ -61,7 +65,7 @@ class TestPrimaryAliquotBuilder(TestCase):
             StructField("cases", ArrayType(StructType(case_fiels)), False)
         ])
 
-        return self.sql_context.createDataFrame(data, schema)
+        return self.spark_session.createDataFrame(data, schema)
 
     def _load_data_from_file(self, filename: str):
         with open(path.join(self.data_dir, filename)) as f:
@@ -78,7 +82,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         config = MagicMock()
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context,
+            self.spark_session,
         )
         es_df = self._load_data_into_df(
             "input/test_primry_aliquot_builder_common.yaml")
@@ -102,7 +106,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         # Assert
         # Check External Calls
         get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
+            self.spark_session,
             config,
             config.graph_file_index,
             include_fields=expected_es_include_fields,
@@ -157,7 +161,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         config = MagicMock()
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context,
+            self.spark_session,
         )
         es_df = self._load_data_into_df(
             "input/test_primry_aliquot_builder_common.yaml", False)
@@ -187,7 +191,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         # Assert
         # Check External Calls
         get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
+            self.spark_session,
             config,
             config.graph_file_index,
             include_fields=expected_es_include_fields,

@@ -1,14 +1,10 @@
 import logging
 
-from pyspark.sql import SQLContext
-from pyspark.sql.functions import struct, collect_list
-
+from config import LOG_FORMAT, BaseConfig
 from exports import builders
-from exports.builders.df_builders import (
-    get_ssm_df
-)
-
-from config import BaseConfig, LOG_FORMAT
+from exports.builders.df_builders import get_ssm_df
+from pyspark import sql
+from pyspark.sql.functions import collect_list, struct
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -33,11 +29,11 @@ class SSMCentricBuilder(builders.BaseBuilder):
     def __init__(
         self,
         config: BaseConfig,
-        sqlContext: SQLContext,
+        spark_session: sql.SparkSession,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, spark_session)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
