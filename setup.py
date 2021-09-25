@@ -40,6 +40,7 @@ setup(
         "ndjson~=0.3",
         "networkx<=2.4",
         "requests~=2.7",
+        "more-itertools~=8.8",
         "python-dateutil~=2.8",
         "PyYaml>=3.11,<6",
         "six~=1.15.0",

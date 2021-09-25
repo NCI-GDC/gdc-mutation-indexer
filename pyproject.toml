@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+minversion = 6.0
+addopts = "-rflv"
+testpaths = [
+    "tests"
+]
+markers = [
+  "do_not_collect",
+  "cnv_occurrence_centric_cnv_subtree",
+  "case_centric_ssm_subtree",
+  "gistic_combine",
+  "gistic_build",
+  "ssm_occurrence_centric_ssm_subtree",
+  "gene_centric_ssm_subtree"
+]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3

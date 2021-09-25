@@ -1,8 +1,16 @@
+import enum
 import re
 import json
+from typing import Dict, Iterable, Optional
 
 from elasticsearch.helpers import scan
 from normalizer.mapper import ModelMapper
+from pyspark import sql
+
+
+class Index(enum.IntEnum):
+    File = 1
+    Case = 2
 
 
 def iterate_es_results(es_client, index_name, doc_type=None, query=None):
@@ -198,45 +206,54 @@ def get_non_null_fields(config, blacklist=None):
     return paths_with_data
 
 
-def get_dataframe_from_es(
-    sql_context,
-    config, 
-    index,
-    include_fields=None,
-    include_as_arrays=None,
-    query=None, read_metadata=False,
-):
-    """
-    A utility for loading data from ES natively into spark. 
+class ElasticsearchDataFrameUtil:
+    def __init__(self, config, sql_context: sql.SQLContext):
+        self._config = config
+        self._sql_context = sql_context
+        self._indexes = {
+            Index.File: "{}".format(self._config.graph_file_index),
+            Index.Case: "{}".format(self._config.graph_case_index),
+        }  # type: Dict[Index, str]
 
-    Args:
-        sql_context (pyspark.sql.SQLContext): The spark sql context
-        config: The configuration for the current process
-        index: The index from which the data will be loaded
-        include_fields: The fields which will be included when read
-        include_as_arrays: The fields which need to be read as arrays and not 
-            simple types (e.g. field: ["this", "is", "example"])
-            NOTE: This does NOT apply to arrays of objects
-        query: The query to use in ES to limit the records returned
-    """
-    reader = (
-        sql_context.read.format("org.elasticsearch.spark.sql")
-        .option("es.read.metadata", read_metadata)
-        .option("es.nodes", config.source_es_nodes)
-        .option('es.net.http.auth.user', config.source_es_user)
-        .option('es.net.http.auth.pass', config.source_es_pass)
-        .option('es.net.ssl', config.es_use_ssl)
-        .option('es.net.ssl.cert.allow.self.signed', config.disable_es_verify_certs)
-        .option('es.nodes.resolve.hostname', False)
-    )
 
-    if query:
-        reader = reader.option("es.query", json.dumps(query))
+    def get_dataframe(
+        self,
+        index: Index,
+        include_fields: Optional[Iterable[str]]=None,
+        include_as_arrays: Optional[Iterable[str]]=None,
+        query: Optional[dict]=None, read_metadata:bool=False,
+    ) -> sql.DataFrame:
+        """
+        A utility for loading data from ES natively into spark. 
 
-    if include_fields and hasattr(include_fields, "__iter__"):
-        reader = reader.option("es.read.field.include", ",".join(include_fields))
-    
-    if include_as_arrays and hasattr(include_as_arrays, "__iter__"):
-        reader = reader.option("es.read.field.as.array.include", ",".join(include_as_arrays))
+        Args:
+            sql_context (pyspark.sql.SQLContext): The spark sql context
+            config: The configuration for the current process
+            index: The index from which the data will be loaded
+            include_fields: The fields which will be included when read
+            include_as_arrays: The fields which need to be read as arrays and not 
+                simple types (e.g. field: ["this", "is", "example"])
+                NOTE: This does NOT apply to arrays of objects
+            query: The query to use in ES to limit the records returned
+        """
+        reader = (
+            self._sql_context.read.format("org.elasticsearch.spark.sql")
+            .option("es.read.metadata", read_metadata)
+            .option("es.nodes", self._config.source_es_nodes)
+            .option('es.net.http.auth.user', self._config.source_es_user)
+            .option('es.net.http.auth.pass', self._config.source_es_pass)
+            .option('es.net.ssl', self._config.es_use_ssl)
+            .option('es.net.ssl.cert.allow.self.signed', self._config.disable_es_verify_certs)
+            .option('es.nodes.resolve.hostname', False)
+        )
+
+        if query:
+            reader = reader.option("es.query", json.dumps(query))
+
+        if isinstance(include_fields, Iterable):
+            reader = reader.option("es.read.field.include", ",".join(include_fields))
         
-    return reader.load("{}".format(index))
+        if isinstance(include_as_arrays, Iterable):
+            reader = reader.option("es.read.field.as.array.include", ",".join(include_as_arrays))
+            
+        return reader.load(self._indexes[index])

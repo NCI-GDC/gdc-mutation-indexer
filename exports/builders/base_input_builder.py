@@ -1,13 +1,13 @@
 import abc
 import logging
 
+from pyspark import sql
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
 
-class BaseInputBuilder(object):
-    __metaclass__ = abc.ABCMeta
+class BaseInputBuilder(abc.ABC):
 
     def __init__(self, config, sqlContext, input_type):
         """
@@ -36,7 +36,7 @@ class BaseInputBuilder(object):
             return config_urls
         return self.get_urls()
 
-    def build(self):
+    def build(self) -> sql.DataFrame:
         """
         ALWAYS
 
@@ -69,7 +69,7 @@ class BaseInputBuilder(object):
         return df
 
     @abc.abstractmethod
-    def build_from_scratch(self):
+    def build_from_scratch(self) -> sql.DataFrame:
         pass
 
     def get_urls(self):

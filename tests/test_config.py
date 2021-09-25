@@ -1,28 +1,29 @@
 from collections import namedtuple
+from typing import NamedTuple
 
 import pytest
 from indexclient.client import IndexClient, Document
 
 from config import BaseConfig
-from tests_config import TestConfig
+import tests_config
 
 
 BOGUS_MAF_URL = 'file://tmp/no.test.data.found.maf'
 
-FakeS3Key = namedtuple('FakeS3Key', 'key')
-FakeS3Key.__docs__ = 'Fake Boto S3 Key with a minimal subset of fields.'
+FakeS3Key = NamedTuple('FakeS3Key', [('key', str)])
+FakeS3Key.__docs__ = 'Fake Boto S3 Key with a minimal subset of fields.'  # type: ignore
 
-test_config = TestConfig()
+test_config = tests_config.Config()
 
 
-class TestBaseConfig(object):
+class TestBaseConfig:
     """Tests for the BaseConfig class from the mutation indexer config module.
 
     Not to be confused with a config for tests (see tests_config.py for that).
     """
 
     @pytest.fixture
-    def base_config(self, setup_graph_indices, monkeypatch):
+    def base_config(self, load_default_data, monkeypatch):
         """Create a BaseConfig and configure it for the test environment.
 
         Monkeypatch the config as needed to avoid querying indexd or S3.
@@ -30,7 +31,7 @@ class TestBaseConfig(object):
         monkeypatch.setattr(IndexClient, 'get', self._stub_indexd_get_maf)
         monkeypatch.setattr(BaseConfig, 'list_bucket', self._stub_list_bucket)
 
-        env_dict = TestConfig.get_env_dict()
+        env_dict = tests_config.Config.get_env_dict()
         base_config = BaseConfig(env_dict=env_dict)
 
         # Mutation indexer normally expects the MAFs to be gzipped, but the

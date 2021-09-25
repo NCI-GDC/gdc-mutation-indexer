@@ -2,14 +2,14 @@ import pytest
 import json
 
 from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
-from tests_config import TestConfig
+import tests_config
 from base_joins_test import BaseJoinsTest
 
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
-@pytest.mark.usefixtures('maf_df', 'gistic_df', 'gene_centric_df', 'gene_ssm_subtree')
+@pytest.mark.usefixtures('maf_df', 'gistic_df', 'gene_centric_df', 'gene_ssm_subtree', "primary_aliquot_df")
 class TestGeneCentricJoins(BaseJoinsTest):
     """
     Test case_centric index joins
@@ -65,7 +65,7 @@ class TestGeneCentricJoins(BaseJoinsTest):
         assert es_spc == spc
 
     @pytest.mark.gene_centric_ssm_subtree
-    def test_ssm_subtree(self, sqlContext, maf_df, gene_centric_df, gene_ssm_subtree):
+    def test_ssm_subtree(self, sqlContext, maf_df, primary_aliquot_df, gene_centric_df, gene_ssm_subtree):
         def get_stats(dataframe):
             """
             Extracts ssm, consequence, transcript relationships from a flat dataframe
@@ -83,14 +83,14 @@ class TestGeneCentricJoins(BaseJoinsTest):
 
             return res
 
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
-        observation_builder = ObservationBuilder(primary_aliquot_builder)
+        observation_builder = ObservationBuilder()
         consequence_builder = ConsequenceBuilder(conf, sqlContext)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, 'gene_centric')
         obs_df = observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             'gene_centric',
             selector='ssm'
         )

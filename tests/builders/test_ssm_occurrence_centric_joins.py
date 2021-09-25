@@ -5,10 +5,10 @@ from pyspark.sql.functions import col, lit
 
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.utils import uuid5_col
-from tests_config import TestConfig
+import tests_config
 from base_joins_test import BaseJoinsTest
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures(

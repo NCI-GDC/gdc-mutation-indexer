@@ -8,7 +8,7 @@ from exports.builders.utils import (
     struct_select,
     extract_aas_position,
 )
-from tests_config import TestConfig
+import tests_config
 from tests.utils.true_stats import TestDataStats
 from exports.builders.utils import (
     ssm_label,
@@ -20,7 +20,7 @@ from exports.builders.utils import (
     extract_score,
 )
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 def create_df(sqlContext, values, column_name='values'):
@@ -95,6 +95,7 @@ class TestMiscFunctions:
         assert percentile(v, 50) == sorted_v[length//2]
         assert percentile(v, 100) == sorted_v[-1]
 
+    @pytest.mark.usefixtures("load_default_data")
     def test_graph_index(self, source_es_client):
         """
         Test the test graph index fixtures

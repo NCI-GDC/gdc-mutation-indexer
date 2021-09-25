@@ -8,9 +8,9 @@ from pyspark.sql.functions import lit
 from pyspark.sql.types import ArrayType, StringType
 
 from exports.builders import MAFBuilder
-from tests_config import TestConfig
+import tests_config
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('sqlContext', 'maf_df')
@@ -20,7 +20,7 @@ class TestMAFBuilder:
     def maf_schema(self):
         path = os.path.join(conf.schemas_dir, 'maf.yml')
         with open(path) as f:
-            maf_schema = yaml.load(f)['maf_schema']
+            maf_schema = yaml.safe_load(f)['maf_schema']
 
         return maf_schema
 

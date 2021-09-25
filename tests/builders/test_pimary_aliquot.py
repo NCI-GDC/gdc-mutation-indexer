@@ -1,11 +1,12 @@
 import unittest
+from unittest import mock
 
 import pytest
 from pyspark import sql
 
-from exports import builders
+from exports import builders, es_utils
 
-from tests_config import TestConfig
+import tests_config
 
 
 class TestPrimaryAliquotBuilder(unittest.TestCase):
@@ -14,14 +15,18 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         self.sql_context = sqlContext
 
     def test__get_case_file_metadata__tcga_kich(self):
-        config = TestConfig()
+        config = tests_config.Config()
         config.projects = ["TCGA-KICH"]
+        logger = mock.MagicMock()
+        es_dataframe_util = es_utils.ElasticsearchDataFrameUtil(config, self.sql_context)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.sql_context,
+            logger,
+            es_dataframe_util
         )
 
-        df = primary_aliquot_builder.build_primary_aliquots_for_project()
+        df = primary_aliquot_builder.build()
 
         files = {row.case_id: row.file_id for row in df.collect()}
 
@@ -36,14 +41,18 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         )
 
     def test__get_case_file_metadata__tcga(self):
-        config = TestConfig()
+        config = tests_config.Config()
         config.projects = ["TCGA"]
+        logger = mock.MagicMock()
+        es_dataframe_util = es_utils.ElasticsearchDataFrameUtil(config, self.sql_context)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
-            self.sql_context
+            self.sql_context,
+            logger,
+            es_dataframe_util
         )
 
-        df = primary_aliquot_builder.build_primary_aliquots_for_project()
+        df = primary_aliquot_builder.build()
 
         files = {row.case_id: row.file_id for row in df.collect()}
 

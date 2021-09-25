@@ -4,10 +4,10 @@ import json
 from pyspark.sql.functions import col
 
 from exports.builders.consequence import ConsequenceBuilder
-from tests_config import TestConfig
+import tests_config
 from base_joins_test import BaseJoinsTest
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('gistic_df', 'cnv_occurrence_centric_df')

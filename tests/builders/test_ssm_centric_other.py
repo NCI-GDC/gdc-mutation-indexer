@@ -1,9 +1,9 @@
 import pytest
 
 from normalizer.mapper import ModelMapper
-from tests_config import TestConfig
+import tests_config
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('ssm_centric_df')

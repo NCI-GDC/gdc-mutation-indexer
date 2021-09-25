@@ -112,7 +112,7 @@ class GisticBuilder(BaseInputBuilder):
                 if gistic_df is None:
                     gistic_df = new_df
                 else:
-                    gistic_df = gistic_df.unionAll(new_df)
+                    gistic_df = gistic_df.union(new_df)
             except BaseException as e:
                 self.logger.error(e)
 

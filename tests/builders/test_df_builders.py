@@ -12,8 +12,8 @@ from exports.builders.df_builders import (
     get_cnv_df,
     get_transcript_df,
 )
-from tests_config import TestConfig
-conf = TestConfig()
+import tests_config
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('maf_df', 'gistic_df')

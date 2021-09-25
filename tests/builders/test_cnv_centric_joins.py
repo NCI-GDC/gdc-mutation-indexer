@@ -1,10 +1,10 @@
 import pytest
 
-from tests_config import TestConfig
+import tests_config
 from base_joins_test import BaseJoinsTest
 
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('gistic_df', 'cnv_centric_df')

@@ -7,9 +7,9 @@ import os
 # from pyspark.sql.types import ArrayType, StringType
 # 
 from exports.builders import GisticBuilder
-from tests_config import TestConfig
+import tests_config
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('sqlContext', 'gistic_df')

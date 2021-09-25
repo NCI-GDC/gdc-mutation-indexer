@@ -3,7 +3,7 @@ import os
 from config import BaseConfig
 
 
-class TestConfig(BaseConfig):
+class Config(BaseConfig):
     # Directories used for test data
     root_dir = os.path.dirname(os.path.realpath(__file__))
     test_dir = os.path.join(root_dir, 'tests')
@@ -68,7 +68,7 @@ class TestConfig(BaseConfig):
 
     def __init__(self):
         env = self.get_env_dict()
-        super(TestConfig, self).__init__(env_dict=env)
+        super().__init__(env_dict=env)
 
         # To make it more convenient to write tests that load in data, put the names
         # of the graph indices in a dictionary keyed by doc type.

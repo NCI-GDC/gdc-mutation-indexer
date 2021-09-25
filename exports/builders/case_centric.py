@@ -1,3 +1,4 @@
+from pyspark import sql
 from pyspark.sql.functions import struct, collect_list, udf, col
 from pyspark.sql.types import ArrayType, StringType
 from pyspark.sql import SQLContext
@@ -46,7 +47,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df, gistic_df, case_df):
+    def build(self, maf_df: sql.DataFrame, gistic_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         Builds Case Centric index
         """
@@ -58,7 +59,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
                 return self
 
         self.log('Building Gene subtree')
-        gene_subtree = self.build_gene_subtree(maf_df, gistic_df)
+        gene_subtree = self.build_gene_subtree(maf_df, gistic_df, primary_aliquot_df)
 
         self.log('Join Case with Gene subtree [left, case_id]')
         case_centric = (
@@ -79,7 +80,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
 
         return self
 
-    def build_gene_subtree(self, maf_df, gistic_df):
+    def build_gene_subtree(self, maf_df: sql.DataFrame, gistic_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         - build_ssm_subtree
         - build_cnv_subtree
@@ -104,7 +105,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         self.log_count(gene_df)
 
         self.log('Building SSM subtree')
-        ssm_df = self.build_ssm_subtree(maf_df)
+        ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
         self.log_count(ssm_df)
 
         self.log('Building CNV subtree')
@@ -134,7 +135,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         )
         return gene_ssm_cnv_df
 
-    def build_ssm_subtree(self, maf_df):
+    def build_ssm_subtree(self, maf_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         ssm[]
            |___ consequence[]
@@ -149,6 +150,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             self.index_name,
             selector='ssm',
         )

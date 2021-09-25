@@ -2,10 +2,10 @@ import pytest
 from pyspark.sql.functions import lit, col
 
 from exports.builders.utils import uuid5_col
-from tests_config import TestConfig
+import tests_config
 from base_joins_test import BaseJoinsTest
 
-conf = TestConfig()
+conf = tests_config.Config()
 
 
 @pytest.mark.usefixtures('maf_df', 'ssm_centric_df', 'ssm_transcript_df')

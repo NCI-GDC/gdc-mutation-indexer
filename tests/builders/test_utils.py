@@ -18,7 +18,7 @@ class TestUtils(object):
 
     def test_get_case_ids_from_source_es(self, sqlContext):
         """Verify the expected case IDs are read from the test MAF headers and graph."""
-        conf = tests_config.TestConfig()
+        conf = tests_config.Config()
 
         case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
 
@@ -47,7 +47,7 @@ class TestUtils(object):
 
     def test_get_case_ids_from_source_es__project_filter(self, sqlContext):
         """Verify the case IDs are filtered based on the config."""
-        conf = tests_config.TestConfig()
+        conf = tests_config.Config()
         conf.projects = ["TCGA-KICH"]
 
         case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
@@ -71,7 +71,7 @@ class TestUtils(object):
         multiple projects. Confirm mutation indexer associates the aliquot with the
         correct case based on the ``#project_id`` pragma.
         """
-        conf = tests_config.TestConfig()
+        conf = tests_config.Config()
         bad_maf_path = os.path.join(
             conf.input_dir, 'maf', 'edge_cases', 'ambiguous_submitter_id.maf'
         )
@@ -108,7 +108,7 @@ class TestUtils(object):
         Try various project filters that may or may not include the project referenced
         in a ``#project_id`` pragma, and confirm the expected cases are returned.
         """
-        conf = tests_config.TestConfig()
+        conf = tests_config.Config()
         bad_maf_path = os.path.join(
             conf.input_dir, 'maf', 'edge_cases', 'ambiguous_submitter_id.maf'
         )

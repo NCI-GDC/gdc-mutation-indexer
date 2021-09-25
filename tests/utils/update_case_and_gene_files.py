@@ -7,10 +7,10 @@ import boto.s3.connection
 from elasticsearch import Elasticsearch
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(root_dir)
-from tests_config import TestConfig
+import tests_config
 from config import factory
 
-cfg_test = TestConfig()
+cfg_test = tests_config.Config()
 
 ES_HOST = os.environ['ES_HOST']
 ES_PORT = os.environ['ES_PORT']

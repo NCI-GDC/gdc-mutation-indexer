@@ -1,6 +1,9 @@
+from typing import cast
+from exports import es_utils
 import logging
 
 from config import LOG_FORMAT
+from exports import builders
 from exports.builders import (
     MAFBuilder,
     GisticBuilder,
@@ -12,7 +15,6 @@ from exports.builders import (
     GeneExpressionCaseInputBuilder,
     GeneExpressionValueInputBuilder,
     ObservationBuilder,
-    PrimaryAliquotBuilder,
     SSMCentricBuilder,
     SSMOccurrenceCentricBuilder,
     CNVCentricBuilder,
@@ -21,15 +23,17 @@ from exports.builders import (
 
 logging.basicConfig(format=LOG_FORMAT)
 
+logger = logging.getLogger("GDC-Mutation-Indexer")
 
-class GDCMutationExport(object):
+
+class GDCMutationExport:
     """
     The main entry point into the index export process for the mutation indices
     """
 
     def __init__(self, sc, sqlContext, config):
         self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
         self.sc = sc
         self.sqlContext = sqlContext
         self.builders = [
@@ -43,6 +47,10 @@ class GDCMutationExport(object):
         ]
 
     def build_input_data_frames(self):
+        es_dataframe_util = es_utils.ElasticsearchDataFrameUtil(self.config, self.sqlContext)
+
+        self.sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot dataframe")
+        primary_aliquot_df = builders.PrimaryAliquotBuilder(self.config, self.sqlContext, logger, es_dataframe_util).build()
 
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
@@ -58,13 +66,14 @@ class GDCMutationExport(object):
         sub_case_df = case_df.drop("summary")
         sub_case_df.persist()
 
-        return maf_df, gistic_df, case_df, sub_case_df
+        return maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
 
     def run_export(self):
         maf_df = None
         gistic_df = None
         case_df = None
         sub_case_df = None
+        primary_aliquot_df = None
 
         for builder in self.builders:
             index_name = builder.index_name
@@ -74,11 +83,8 @@ class GDCMutationExport(object):
 
             self.sc.setJobGroup(index_name, "Build {}".format(index_name))
 
-            primary_aliquot_builder = PrimaryAliquotBuilder(
-                self.config, self.sqlContext
-            )
             consequence_builder = ConsequenceBuilder(self.config, self.sqlContext)
-            observation_builder = ObservationBuilder(primary_aliquot_builder)
+            observation_builder = ObservationBuilder()
 
             active_builder = builder(
                 self.config,
@@ -109,17 +115,21 @@ class GDCMutationExport(object):
                 continue
 
             if maf_df is None:
-                maf_df, gistic_df, case_df, sub_case_df = self.build_input_data_frames()
+                maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df = self.build_input_data_frames()
 
             if index_name == "case_centric":
-                active_builder.build(maf_df, gistic_df, case_df).load()
+                case_centric_builder = cast(builders.CaseCentricBuilder, active_builder)
+
+                case_centric_builder.build(maf_df, gistic_df, case_df, primary_aliquot_df).load()
             elif index_name in ["ssm_centric", "ssm_occurrence_centric"]:
                 # these builders do not yet depend on gistic_df
-                active_builder.build(maf_df, sub_case_df).load()
+                active_builder.build(maf_df, sub_case_df, primary_aliquot_df).load()
             elif index_name in ["cnv_centric", "cnv_occurrence_centric"]:
                 # these builders do not depend on maf_df
                 active_builder.build(gistic_df, sub_case_df).load()
-            else:
-                active_builder.build(maf_df, gistic_df, sub_case_df).load()
+            elif index_name == "gene_centric":
+                gene_centric_builder = cast(builders.GeneCentricBuilder, active_builder)
+
+                gene_centric_builder.build(maf_df, gistic_df, sub_case_df, primary_aliquot_df).load()
 
         self.logger.info("Mutation Indexer finished successfully")
