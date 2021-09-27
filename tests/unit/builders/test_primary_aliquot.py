@@ -1,8 +1,9 @@
+from unittest import mock
 import yaml
 
 from collections import defaultdict
 from os import path
-from typing import Iterable
+from typing import Dict, Iterable
 from unittest import TestCase
 from unittest.mock import call, MagicMock, patch
 
@@ -16,10 +17,7 @@ from tests.utils import schema_validation
 
 
 class TestPrimaryAliquotBuilder(TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.schema_validator = schema_validation.PysparkSchemaValidator()
+    schema_validator = schema_validation.PysparkSchemaValidator()
 
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):
@@ -97,7 +95,7 @@ class TestPrimaryAliquotBuilder(TestCase):
         expected_schema = schema_validation.Schema(expected["expected_schema"])
 
         # Act
-        result_df = primary_aliquot_builder.build_primary_aliquots_for_project()
+        result_df = primary_aliquot_builder.build()
 
         # Assert
         # Check External Calls
@@ -128,7 +126,7 @@ class TestPrimaryAliquotBuilder(TestCase):
 
     @staticmethod
     def _mock_bulk_request(bids: Iterable[str]):
-        docs = defaultdict(MagicMock)
+        docs = defaultdict(MagicMock)  # type: Dict[str, mock.MagicMock]
         docs["file-2"].urls_metadata.items.return_value = (
             ("bad_url", {"type": "aws", "state": "validated"}),
             ("bad_url", {"type": "cleversafe", "state": "unvalidated"}),

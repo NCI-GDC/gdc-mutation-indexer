@@ -1,3 +1,4 @@
+from pyspark import sql
 import pytest
 import json
 
@@ -62,7 +63,7 @@ class TestCaseCentricJoins(BaseJoinsTest):
         assert es_spg == spg
 
     @pytest.mark.case_centric_ssm_subtree
-    def test_ssm_subtree(self, sqlContext, maf_df, case_centric_df, case_ssm_subtree):
+    def test_ssm_subtree(self, sqlContext: sql.SQLContext, maf_df: sql.DataFrame, case_centric_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame, case_ssm_subtree: sql.DataFrame):
         def get_stats(dataframe):
             """
             Extracts ssm, consequence, transcript relationships from a flat dataframe
@@ -80,14 +81,14 @@ class TestCaseCentricJoins(BaseJoinsTest):
 
             return res
 
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
-        observation_builder = ObservationBuilder(primary_aliquot_builder)
+        observation_builder = ObservationBuilder()
         consequence_builder = ConsequenceBuilder(conf, sqlContext)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, 'case_centric')
         obs_df = observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             'case_centric',
             selector='ssm'
         )

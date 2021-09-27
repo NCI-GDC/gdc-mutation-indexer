@@ -1,32 +1,30 @@
+import itertools
 import logging
+from typing import Iterable, List, Mapping, NamedTuple, Optional, TypeVar
 
-from collections import namedtuple
-from itertools import chain
-from typing import Iterable, Mapping, Optional, TypeVar
+from indexclient import client as indexclient
 
+import config
+from exports import es_utils
+from exports.builders import base_input_builder
 from pyspark import sql
 from pyspark.sql import functions as f
 
-from config import BaseConfig
-from exports import es_utils
-from indexclient import client as indexclient
-
-
-GeneExpressionPrimaryAliquotData = namedtuple(
-    "GeneExpressionPrimaryAliquotData", ["primary_aliquot_df", "file_urls"]
+GeneExpressionPrimaryAliquotData = NamedTuple(
+    "GeneExpressionPrimaryAliquotData", [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])]
 )
 
 
 T = TypeVar('T')
 
 
-class PrimaryAliquotBuilder:
+class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
 
     FILE_URL_BATCH_SIZE = 1000
 
-    def __init__(self, config: BaseConfig, sql_context: sql.SQLContext):
+    def __init__(self, config: config.BaseConfig, sql_context: sql.SQLContext):
+        super().__init__(config, sql_context, "primary_aliquot")
         self.sql_context = sql_context
-        self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @staticmethod
@@ -222,7 +220,7 @@ class PrimaryAliquotBuilder:
             {file_id: x, file_url: u}
         """
         batches = self._batch(file_ids, self.FILE_URL_BATCH_SIZE)
-        docs = chain.from_iterable(
+        docs = itertools.chain.from_iterable(
             self.config.indexd.bulk_request(list(bids)) for bids in batches
         )
 
@@ -276,7 +274,7 @@ class PrimaryAliquotBuilder:
             {"terms": {"data_type": ["Gene Expression Quantification"]}},
             {"terms": {"acl": ["open"]}},
             {"terms": {"analysis.workflow_type": workflow_types}}
-        ]
+        ]  # type: List[dict]
         case_fields = [
             "cases.submitter_id",
             "cases.demographic.days_to_death",
@@ -303,7 +301,7 @@ class PrimaryAliquotBuilder:
         file_ids = (r.file_id for r in primary_aliquot_df.select(
             "file_id").distinct().collect())
 
-        urls = tuple(self._get_main_urls(file_ids))
+        urls = tuple(sql.Row(**url) for url in self._get_main_urls(file_ids))
         urls_df = self.sql_context.createDataFrame(urls)
 
         primary_aliquot_df = primary_aliquot_df.select(
@@ -320,14 +318,14 @@ class PrimaryAliquotBuilder:
             ["file_id"],
             how="left",
         )
-        file_urls = list(u["file_url"] for u in urls)
+        file_urls = list(url.file_url for url in urls)
 
         return GeneExpressionPrimaryAliquotData(
             primary_aliquot_df=primary_aliquot_df,
             file_urls=file_urls
         )
 
-    def build_primary_aliquots_for_project(self):
+    def build_from_scratch(self) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)

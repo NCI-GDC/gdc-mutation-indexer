@@ -1,19 +1,14 @@
-from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 import json
 
 import pytest
-from deepdiff import DeepDiff
-from pyspark.sql.functions import explode
 
-from exports.builders import (
-    CaseBuilder,
-    ConsequenceBuilder,
-    ObservationBuilder,
-)
-from tests_config import TestConfig
+import deepdiff
+import tests_config
+from exports import builders
+from pyspark import sql
+from pyspark.sql import functions as f
 
-
-conf = TestConfig()
+conf = tests_config.TestConfig()
 
 
 @pytest.mark.usefixtures('maf_df', 'gistic_df')
@@ -58,68 +53,180 @@ class TestOtherBase:
         return [(index_name, 'cnv') for index_name in conf.cnv_indices]
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df')
-class TestObservationBuilder(TestOtherBase):
-    """ Test intermediate result from the observation builder """
+@pytest.mark.usefixtures("maf_df", "gistic_df")
+class TestObservationBuilder:
+    """Test intermediate result from the observation builder"""
 
-    @pytest.fixture(scope='class')
-    def builder(self, sqlContext):
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
-        yield ObservationBuilder(primary_aliquot_builder)
+    @pytest.fixture(scope="class")
+    def builder(self):
+        yield builders.ObservationBuilder()
 
-    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
-    def test_join_columns(self, builder, index_name, build_type, get_inputs):
-        """ Check for correct columns """
-        build_function, input_df, id_field = get_inputs
-        obs_df = getattr(builder, build_function)(input_df, index_name)
-        assert set(obs_df.columns) == {'case_id', id_field,
-                                       'observation', 'occurrence_id'}
-
-    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
-    def test_observation_id(self, builder, index_name, build_type, get_inputs):
-        """ Test that the observation_id was created """
-        build_function, input_df, id_field = get_inputs
-        obs_df = getattr(builder, build_function)(input_df, index_name)
-        assert 'observation_id' in (obs_df.select(explode('observation')
-                                                  .alias('observation'))
-                                          .select('observation.*')
-                                          .columns)
-
-    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
-    def test_observation_count(self, builder, index_name, build_type, get_inputs):
-        """ Check for the right number of observations by submitter_id """
-        build_function, input_df, id_field = get_inputs
-        n_observations = input_df.select('case_id', id_field).distinct().count()
-        assert getattr(builder, build_function)(input_df, index_name).count() == n_observations
-
-    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
-    def test_observation_values(self, builder, index_name, build_type, get_inputs):
-        build_function, input_df, id_field = get_inputs
-        obs_df = getattr(builder, build_function)(input_df, index_name)
-
-        true_obs = map(json.loads, (input_df.select('case_id', id_field)
-                                            .distinct().toJSON().collect()))
-        obs = map(json.loads, (obs_df.select('case_id', id_field)
-                                     .toJSON().collect()))
-
-        assert DeepDiff(true_obs, obs, ignore_order=True) == {}
-
-    @pytest.mark.parametrize('index_name,build_type', TestOtherBase.ssm_params())
-    def test_variant_caller(
+    @pytest.mark.parametrize(
+        ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
+    )
+    def test__build_for_ssm__join_columns(
         self,
-        builder,
-        index_name,
-        build_type,
-        get_inputs,
-        exploded_variant_caller_counts,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        maf_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
     ):
-        """Confirm the expected number of observations is created for each caller."""
-        build_function, input_df, id_field = get_inputs
-        obs_df = getattr(builder, build_function)(input_df, index_name)
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
+
+        assert set(result_df.columns) == {
+            "case_id",
+            "ssm_id",
+            "observation",
+            "occurrence_id",
+        }
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("cnv_centric",), ("cnv_occurrence_centric",))
+    )
+    def test__build_for_cnv__join_columns(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        gistic_df: sql.DataFrame,
+    ):
+        result_df = builder.build_for_cnv(gistic_df, index_name)
+
+        assert set(result_df.columns) == {
+            "case_id",
+            "cnv_id",
+            "observation",
+            "occurrence_id",
+        }
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
+    )
+    def test__build_for_ssm__observation_id(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        maf_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ):
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
+
+        assert "observation_id" in (
+            result_df.select(f.explode("observation").alias("observation"))
+            .select("observation.*")
+            .columns
+        )
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("cnv_centric",), ("cnv_occurrence_centric",))
+    )
+    def test__build_for_cnv__observation_id(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        gistic_df: sql.DataFrame,
+    ):
+        result_df = builder.build_for_cnv(gistic_df, index_name)
+
+        assert "observation_id" in (
+            result_df.select(f.explode("observation").alias("observation"))
+            .select("observation.*")
+            .columns
+        )
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
+    )
+    def test__build_for_ssm__observation_count(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        maf_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ):
+        observation_count = maf_df.select("case_id", "ssm_id").distinct().count()
+
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
+
+        assert result_df.count() == observation_count
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("cnv_centric",), ("cnv_occurrence_centric",))
+    )
+    def test__build_for_cnv__observation_count(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        gistic_df: sql.DataFrame,
+    ):
+        observation_count = gistic_df.select("case_id", "cnv_id").distinct().count()
+
+        result_df = builder.build_for_cnv(gistic_df, index_name)
+
+        assert result_df.count() == observation_count
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
+    )
+    def test__build_for_ssm__observation_values(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        maf_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ):
+        expected_opservations = map(
+            json.loads,
+            (maf_df.select("case_id", "ssm_id").distinct().toJSON().collect()),
+        )
+
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
+
+        actual_observations = map(
+            json.loads, (result_df.select("case_id", "ssm_id").toJSON().collect())
+        )
+        assert not deepdiff.DeepDiff(
+            expected_opservations, actual_observations, ignore_order=True
+        )
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("cnv_centric",), ("cnv_occurrence_centric",))
+    )
+    def test__build_for_cnv__observation_values(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        gistic_df: sql.DataFrame,
+    ):
+        expected_opservations = map(
+            json.loads,
+            (gistic_df.select("case_id", "cnv_id").distinct().toJSON().collect()),
+        )
+
+        result_df = builder.build_for_cnv(gistic_df, index_name)
+
+        actual_observations = map(
+            json.loads, (result_df.select("case_id", "cnv_id").toJSON().collect())
+        )
+        assert not deepdiff.DeepDiff(
+            expected_opservations, actual_observations, ignore_order=True
+        )
+
+    @pytest.mark.parametrize(
+        ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
+    )
+    def test__build_for_ssm__variant_caller(
+        self,
+        index_name: str,
+        builder: builders.ObservationBuilder,
+        maf_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+        exploded_variant_caller_counts: int,
+    ):
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
 
         actual_counts = dict(
-            obs_df.select(explode('observation').alias('observation'))
-            .groupBy('observation.variant_calling.variant_caller')
+            result_df.select(f.explode("observation").alias("observation"))
+            .groupBy("observation.variant_calling.variant_caller")
             .count()
             .collect()
         )
@@ -133,7 +240,7 @@ class TestConsequenceBuilder(TestOtherBase):
 
     @pytest.fixture(scope='class')
     def builder(self, sqlContext):
-        yield ConsequenceBuilder(conf, sqlContext)
+        yield builders.ConsequenceBuilder(conf, sqlContext)
 
     @pytest.mark.parametrize('index_name,build_type', TestOtherBase.params())
     def test_consequence_count(self, builder, index_name, build_type, get_inputs):
@@ -149,7 +256,7 @@ class TestConsequenceBuilder(TestOtherBase):
 
         # Explode consequences
         tran_df = (
-            cons_df.select(explode('consequence').alias('c'))
+            cons_df.select(f.explode('consequence').alias('c'))
                    .select('c.consequence_id', 'c.transcript.transcript_id',
                            'c.transcript.annotation',
                            'c.transcript.consequence_type')
@@ -205,7 +312,7 @@ class TestConsequenceBuilder(TestOtherBase):
     @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_no_gene(self, builder, maf_df, index_name):
         cons_df = builder.build_for_ssm(maf_df, index_name)
-        transcripts = (cons_df.select(explode('consequence.transcript')
+        transcripts = (cons_df.select(f.explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
 
@@ -215,11 +322,11 @@ class TestConsequenceBuilder(TestOtherBase):
     @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_with_gene(self, builder, maf_df, index_name):
         cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True)
-        transcripts = (cons_df.select(explode('consequence.transcript')
+        transcripts = (cons_df.select(f.explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
 
-        assert 'symbol' in (cons_df.select(explode('consequence.transcript.gene')
+        assert 'symbol' in (cons_df.select(f.explode('consequence.transcript.gene')
                                            .alias('gene'))
                                    .select('gene.*')
                                    .columns)
@@ -350,10 +457,10 @@ class TestCaseBuilder:
         Confirm that the expected number of cases are extracted and that
         all cases are in one of the expected projects.
         """
-        local_conf = TestConfig()
+        local_conf = tests_config.TestConfig()
         local_conf.projects = projects
 
-        df = CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
+        df = builders.CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
 
         assert df.count() == expected_count
         for row in df.collect():

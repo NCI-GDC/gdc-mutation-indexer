@@ -1,4 +1,5 @@
 import logging
+from pyspark import sql
 
 from pyspark.sql import SQLContext
 from pyspark.sql.functions import struct, collect_list
@@ -42,7 +43,7 @@ class SSMCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df, case_df):
+    def build(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         Builds SSM Centric index
         """
@@ -56,7 +57,7 @@ class SSMCentricBuilder(builders.BaseBuilder):
 
         cons_df = self.build_consequence(maf_df)
 
-        occurrence_df = self.build_occurrence(maf_df, case_df)
+        occurrence_df = self.build_occurrence(maf_df, case_df, primary_aliquot_df)
 
         self.log('Final join SSM + Consequence + Occurrence')
         ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
@@ -85,11 +86,12 @@ class SSMCentricBuilder(builders.BaseBuilder):
 
         return cons_df
 
-    def build_occurrence(self, maf_df, case_df):
+    def build_occurrence(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         # Observation
         self.log('Aggregating Observation from MAF')
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             self.index_name,
         )
 

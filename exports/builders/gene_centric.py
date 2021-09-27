@@ -1,4 +1,5 @@
 import logging
+from pyspark import sql
 
 from pyspark.sql import SQLContext
 from pyspark.sql.functions import struct, collect_list
@@ -49,7 +50,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df, gistic_df, case_df):
+    def build(self, maf_df: sql.DataFrame, gistic_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         Builds Gene Centric index
         """
@@ -69,7 +70,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         self.log_count(gene_df)
 
         self.log('Building Case subtree')
-        case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df)
+        case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df, primary_aliquot_df)
 
         self.log('Joining Gene with Case subtree [inner, "gene_id"]')
         gene_centric = gene_df.join(
@@ -88,7 +89,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
 
         return self
 
-    def build_case_subtree(self, maf_df, gistic_df, case_df):
+    def build_case_subtree(self, maf_df: sql.DataFrame, gistic_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         - build_ssm_subtree
         - build_cnv_subtree
@@ -102,7 +103,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         )
 
         self.log('Building SSM subtree')
-        ssm_df = self.build_ssm_subtree(maf_df)
+        ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
         self.log_count(ssm_df)
 
         self.log('Building CNV subtree')
@@ -130,7 +131,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         )
         return case_subtree
 
-    def build_ssm_subtree(self, maf_df):
+    def build_ssm_subtree(self, maf_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         TODO: This branch is same as in case_centric and can be reused
         ssm[]
@@ -150,6 +151,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             self.index_name,
             selector='ssm',
         )

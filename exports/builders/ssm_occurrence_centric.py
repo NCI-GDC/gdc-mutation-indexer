@@ -1,4 +1,5 @@
 import logging
+from pyspark import sql
 
 from pyspark.sql import SQLContext
 from pyspark.sql.functions import col, struct
@@ -40,7 +41,7 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df, case_df):
+    def build(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         Builds SSM Occurrence Centric index
         """
@@ -50,7 +51,7 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
             if self.ssm_occurrence_centric is not None:
                 return self
 
-        case_obs_df = self.build_case_subtree(maf_df, case_df)
+        case_obs_df = self.build_case_subtree(maf_df, case_df, primary_aliquot_df)
 
         ssm_cons = self.build_ssm_subtree(maf_df)
 
@@ -95,11 +96,12 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
 
         return ssm_cons
 
-    def build_case_subtree(self, maf_df, case_df):
+    def build_case_subtree(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         self.log('Building case subtree')
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             self.index_name,
         )
 

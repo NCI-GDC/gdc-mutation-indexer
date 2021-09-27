@@ -21,7 +21,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
             self.sql_context
         )
 
-        df = primary_aliquot_builder.build_primary_aliquots_for_project()
+        df = primary_aliquot_builder.build()
 
         files = {row.case_id: row.file_id for row in df.collect()}
 
@@ -43,7 +43,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
             self.sql_context
         )
 
-        df = primary_aliquot_builder.build_primary_aliquots_for_project()
+        df = primary_aliquot_builder.build()
 
         files = {row.case_id: row.file_id for row in df.collect()}
 
