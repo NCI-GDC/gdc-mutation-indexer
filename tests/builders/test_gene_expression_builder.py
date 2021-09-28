@@ -1,24 +1,20 @@
-import json
 import os
 
-import ndjson
-from indexclient.client import IndexClient, Document
 import pytest
-from pyspark.sql.types import StructType, StructField, StringType, ArrayType, LongType
-from pyspark.sql.functions import col
+from indexclient import client
 
-from exports.builders.gene_expression import (
-    GeneExpressionBuilder,
-    GeneExpressionCaseInputBuilder,
-    GeneExpressionValueInputBuilder,
-    trim_gene_id,
-)
-from tests_config import TestConfig
+import ndjson
+import tests_config
+from exports import builders
+from exports.builders import gene_expression
+from pyspark import sql
+from pyspark.sql import functions as f
+from pyspark.sql import types
 
 
 @pytest.fixture(scope="module")
 def ge_conf():
-    conf = TestConfig()
+    conf = tests_config.TestConfig()
     conf.index_types = ["gene_expression"]
     conf.indices = conf.get_index_names()
 
@@ -27,37 +23,42 @@ def ge_conf():
 
 @pytest.fixture
 def ge_builder(sqlContext, ge_conf):
-    builder = GeneExpressionBuilder(ge_conf, sqlContext)
+    builder = builders.GeneExpressionBuilder(ge_conf, sqlContext)
 
     return builder
 
 
 @pytest.fixture
 def ge_cases_df(sqlContext, ge_conf):
-    cases_df = GeneExpressionCaseInputBuilder(
+    cases_df = builders.GeneExpressionCaseInputBuilder(
         ge_conf,
         sqlContext,
         "gene_expression_cases",
     ).build()
 
-    assert cases_df.schema == StructType([
-        StructField("case_id", StringType(), True),
-        StructField("days_to_death", LongType(), True),
-        StructField("ethnicity", StringType(), True),
-        StructField("gender", StringType(), True),
-        StructField("race", StringType(), True),
-        StructField("vital_status", StringType(), True),
-        StructField("submitter_id", StringType(), True),
-        StructField("project_id", StringType(), True),
-        StructField("file_url", StringType(), True),
-        StructField("age_at_diagnosis", ArrayType(LongType(), True), True),
-    ])
+    assert cases_df.schema == types.StructType(
+        [
+            types.StructField("case_id", types.StringType(), True),
+            types.StructField("days_to_death", types.LongType(), True),
+            types.StructField("ethnicity", types.StringType(), True),
+            types.StructField("gender", types.StringType(), True),
+            types.StructField("race", types.StringType(), True),
+            types.StructField("vital_status", types.StringType(), True),
+            types.StructField("submitter_id", types.StringType(), True),
+            types.StructField("project_id", types.StringType(), True),
+            types.StructField("file_url", types.StringType(), True),
+            types.StructField(
+                "age_at_diagnosis", types.ArrayType(types.LongType(), True), True
+            ),
+        ]
+    )
 
     return cases_df
 
+
 @pytest.fixture
 def ge_values_df(sqlContext, ge_conf):
-    return GeneExpressionValueInputBuilder(
+    return builders.GeneExpressionValueInputBuilder(
         ge_conf,
         sqlContext,
         "gene_expression_values",
@@ -74,7 +75,7 @@ def mock_indexd_requests(monkeypatch, ge_conf):
         url = "file://" + os.path.join(path, filename)
         urls = [url]
         urls_metadata = {url: {"type": "cleversafe", "state": "validated"}}
-        return Document(
+        return client.Document(
             client=None,
             did=file_id,
             json={"urls": urls, "urls_metadata": urls_metadata},
@@ -98,8 +99,8 @@ def mock_indexd_requests(monkeypatch, ge_conf):
             results.append(make_document(file_id, filename))
         return results
 
-    monkeypatch.setattr(IndexClient, "get", mock_get)
-    monkeypatch.setattr(IndexClient, "bulk_request", mock_bulk_request)
+    monkeypatch.setattr(client.IndexClient, "get", mock_get)
+    monkeypatch.setattr(client.IndexClient, "bulk_request", mock_bulk_request)
 
 
 @pytest.fixture
@@ -130,16 +131,20 @@ def ge_file_docs(source_es_client, ge_conf):
 
 def test_trim_gene_version(sqlContext):
     df = sqlContext.createDataFrame(
-        [{"raw_gene_id": "ENS001.1"}, {"raw_gene_id": "ENS002.2"}]
+        [sql.Row(raw_gene_id="ENS001.1"), sql.Row(raw_gene_id="ENS002.2")]
     )
 
-    new_df = df.withColumn("gene_id", trim_gene_id(col("raw_gene_id")))
+    new_df = df.withColumn(
+        "gene_id", gene_expression.trim_gene_id(f.col("raw_gene_id"))
+    )
 
     assert {row["gene_id"] for row in new_df.collect()} == {"ENS001", "ENS002"}
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
-def test_gene_expression_builder(ge_builder, es_client, ge_conf, ge_cases_df, ge_values_df):
+def test_gene_expression_builder(
+    ge_builder, es_client, ge_conf, ge_cases_df, ge_values_df
+):
     ge_builder.build(ge_cases_df, ge_values_df).load()
 
     es_client.indices.refresh()
@@ -159,12 +164,13 @@ def test_gene_expression_builder(ge_builder, es_client, ge_conf, ge_cases_df, ge
             "nested": {"path": "genes"},
             "aggs": {
                 "gene_counts": {"terms": {"field": "genes.gene_id", "size": 200}},
-            }
+            },
         }
     }
 
-    agg_response = es_client.search(index=ge_conf.indices["gene_expression"],
-                                    body={"size": 0, "aggs": aggs})
+    agg_response = es_client.search(
+        index=ge_conf.indices["gene_expression"], body={"size": 0, "aggs": aggs}
+    )
     gene_counts = agg_response["aggregations"]["genes"]
 
     # Make sure that only protein_coding genes have been selected (mock data contains only 10)
