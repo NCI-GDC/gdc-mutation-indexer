@@ -8,7 +8,7 @@ import config
 from exports import es_utils
 from exports.builders import base_input_builder
 from pyspark import sql
-from pyspark.sql import functions as f
+from pyspark.sql import functions as F
 
 GeneExpressionPrimaryAliquotData = NamedTuple(
     "GeneExpressionPrimaryAliquotData", [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])]
@@ -46,11 +46,11 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             ("Recurrent Blood Derived Cancer - Peripheral Blood", 8),
             ("Additional - New Primary", 9),
         )
-        when_clause = f.when(f.lit(1) != f.lit(1), 0)
+        when_clause = F.when(F.lit(1) != F.lit(1), 0)
 
         for sample_type, weight in weights:
             when_clause = when_clause.when(
-                f.col("sample_type") == sample_type, weight)
+                F.col("sample_type") == sample_type, weight)
 
         return when_clause.otherwise(len(weights) + 1).alias("sample_weight")
 
@@ -97,16 +97,16 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
 
         weighted_files_df = files_df.select(
             "file_id",
-            f.col("created_datetime").cast("timestamp"),
+            F.col("created_datetime").cast("timestamp"),
             "experimental_strategy",
-            f.explode("cases").alias("case")
+            F.explode("cases").alias("case")
         ).select(
             "file_id",
             "created_datetime",
             "experimental_strategy",
-            f.col("case.case_id").alias("case_id"),
+            F.col("case.case_id").alias("case_id"),
             "case",
-            f.explode("case.samples").alias("sample")
+            F.explode("case.samples").alias("sample")
         ).select(
             "file_id",
             "created_datetime",
@@ -124,15 +124,15 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         )
 
         case_window = sql.Window().partitionBy("case_id").orderBy(
-            f.col("sample_weight"),
-            f.col("created_datetime"),
-            f.col("file_id"),
+            F.col("sample_weight"),
+            F.col("created_datetime"),
+            F.col("file_id"),
         )
 
         return weighted_files_df.withColumn(
-            "row_number", f.row_number().over(case_window)
+            "row_number", F.row_number().over(case_window)
         ).where(
-            f.col("row_number") == 1
+            F.col("row_number") == 1
         ).select(
             "file_id",
             "created_datetime",

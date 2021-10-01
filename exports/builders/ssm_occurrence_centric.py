@@ -1,15 +1,12 @@
 import logging
-from pyspark import sql
 
-from pyspark.sql import SQLContext
-from pyspark.sql.functions import col, struct
-
+import config
 from exports import builders
-from exports.builders.df_builders import build_ssm_subtree
+from exports.builders import df_builders
+from pyspark import sql
+from pyspark.sql import functions as F
 
-from config import BaseConfig, LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=config.LOG_FORMAT)
 
 
 class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
@@ -26,13 +23,13 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
                        |____ observation[]
     """
 
-    index_name = 'ssm_occurrence_centric'
-    id_field = 'ssm_occurrence_id'
+    index_name = "ssm_occurrence_centric"
+    id_field = "ssm_occurrence_id"
 
     def __init__(
         self,
-        config: BaseConfig,
-        sqlContext: SQLContext,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
@@ -41,12 +38,17 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
+    def build(
+        self,
+        maf_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ) -> sql.DataFrame:
         """
         Builds SSM Occurrence Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.output_raw == 'read':
+        if self.config.output_raw == "read":
             self.ssm_occurrence_centric = self.load_raw()
             if self.ssm_occurrence_centric is not None:
                 return self
@@ -55,19 +57,18 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
 
         ssm_cons = self.build_ssm_subtree(maf_df)
 
-        self.log('Joining ssm with case')
-        ssm_occurrence_centric = (ssm_cons.join(case_obs_df,
-                                                on=['case_id', 'ssm_id'],
-                                                how='inner')
-                                  .withColumn('ssm_occurrence_id',
-                                              col('occurrence_id'))
-                                  .drop('case_id')
-                                  .drop('ssm_id')
-                                  .drop('occurrence_id'))
+        self.log("Joining ssm with case")
+        ssm_occurrence_centric = (
+            ssm_cons.join(case_obs_df, on=["case_id", "ssm_id"], how="inner")
+            .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
+            .drop("case_id")
+            .drop("ssm_id")
+            .drop("occurrence_id")
+        )
         self.log_count(ssm_occurrence_centric)
 
         self.ssm_occurrence_centric = ssm_occurrence_centric
-        self.log('Build finished')
+        self.log("Build finished")
 
         # Save the resulting dataframe to s3
         self.write()
@@ -83,21 +84,29 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         )
 
         # SSM
-        ssm_df = build_ssm_subtree(
-            maf_df, cons_df, self.index_name).drop('gene_id')
+        ssm_df = df_builders.build_ssm_subtree(maf_df, cons_df, self.index_name).drop(
+            "gene_id"
+        )
         self.log_count(ssm_df)
 
-        ssm_cons = ssm_df.select('ssm_id', 'case_id',
-                                 struct('consequence',
-                                        *ssm_df.drop('consequence')
-                                               .drop('case_id').columns)
-                                 .alias('ssm'))
+        ssm_cons = ssm_df.select(
+            "ssm_id",
+            "case_id",
+            F.struct(
+                "consequence", *ssm_df.drop("consequence").drop("case_id").columns
+            ).alias("ssm"),
+        )
         self.log_count(ssm_cons)
 
         return ssm_cons
 
-    def build_case_subtree(self, maf_df: sql.DataFrame, case_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
-        self.log('Building case subtree')
+    def build_case_subtree(
+        self,
+        maf_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ) -> sql.DataFrame:
+        self.log("Building case subtree")
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
@@ -105,11 +114,13 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
             self.index_name,
         )
 
-        self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                              .select('case_id', 'ssm_id', 'occurrence_id',
-                                      struct('observation',
-                                             *case_df.columns).alias('case')))
+        self.log("Join observation with case")
+        case_obs_df = case_df.join(obs_df, on=["case_id"], how="right").select(
+            "case_id",
+            "ssm_id",
+            "occurrence_id",
+            F.struct("observation", *case_df.columns).alias("case"),
+        )
         self.log_count(case_obs_df)
 
         return case_obs_df
