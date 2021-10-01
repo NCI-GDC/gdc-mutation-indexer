@@ -1,14 +1,10 @@
 import http.client
 import os
-import shlex
 import ssl
-import subprocess
-import sys
 import uuid
 
 import pkg_resources
 from boto.s3.connection import S3Connection, OrdinaryCallingFormat
-from distutils.version import StrictVersion
 from elasticsearch import Elasticsearch
 from exports.es_utils import iterate_es_results
 from indexclient.client import IndexClient
@@ -40,12 +36,7 @@ def create_factory(host, port=443, timeout=10):
     )
 
 
-py_ver = ".".join(str(sys.version_info[i]) for i in range(3))
-if StrictVersion(py_ver) >= StrictVersion('2.7.9'):
-    factory = (create_factory, ())
-else:
-    factory = None
-
+factory = (create_factory, ())
 
 ALL_PARSERS = [
     S3Args,
@@ -105,6 +96,7 @@ class BaseConfig(object):
     aliquot_path = 'aliquot_df.parquet'
     gene_expression_values_path = "gene_expression_values_df.parquet"
     gene_expression_cases_path = "gene_expression_cases_df.parquet"
+    primary_aliquot_path = "primary_aliquot_df.parquet"
 
     percentile_threshold = {
         'genes_per_case': 100,

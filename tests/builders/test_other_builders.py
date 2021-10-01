@@ -6,7 +6,7 @@ import deepdiff
 import tests_config
 from exports import builders
 from pyspark import sql
-from pyspark.sql import functions as f
+from pyspark.sql import functions as F
 
 conf = tests_config.TestConfig()
 
@@ -111,7 +111,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
 
         assert "observation_id" in (
-            result_df.select(f.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .select("observation.*")
             .columns
         )
@@ -128,7 +128,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_cnv(gistic_df, index_name)
 
         assert "observation_id" in (
-            result_df.select(f.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .select("observation.*")
             .columns
         )
@@ -225,7 +225,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
 
         actual_counts = dict(
-            result_df.select(f.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .groupBy("observation.variant_calling.variant_caller")
             .count()
             .collect()
@@ -256,7 +256,7 @@ class TestConsequenceBuilder(TestOtherBase):
 
         # Explode consequences
         tran_df = (
-            cons_df.select(f.explode('consequence').alias('c'))
+            cons_df.select(F.explode('consequence').alias('c'))
                    .select('c.consequence_id', 'c.transcript.transcript_id',
                            'c.transcript.annotation',
                            'c.transcript.consequence_type')
@@ -312,7 +312,7 @@ class TestConsequenceBuilder(TestOtherBase):
     @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_no_gene(self, builder, maf_df, index_name):
         cons_df = builder.build_for_ssm(maf_df, index_name)
-        transcripts = (cons_df.select(f.explode('consequence.transcript')
+        transcripts = (cons_df.select(F.explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
 
@@ -322,11 +322,11 @@ class TestConsequenceBuilder(TestOtherBase):
     @pytest.mark.parametrize('index_name', conf.ssm_indices)
     def test_consequence_with_gene(self, builder, maf_df, index_name):
         cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True)
-        transcripts = (cons_df.select(f.explode('consequence.transcript')
+        transcripts = (cons_df.select(F.explode('consequence.transcript')
                                       .alias('transcript'))
                               .select('transcript.*'))
 
-        assert 'symbol' in (cons_df.select(f.explode('consequence.transcript.gene')
+        assert 'symbol' in (cons_df.select(F.explode('consequence.transcript.gene')
                                            .alias('gene'))
                                    .select('gene.*')
                                    .columns)
