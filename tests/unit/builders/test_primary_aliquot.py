@@ -71,7 +71,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
                 False,
             ),
         ]
-        case_fiels = (
+        case_fields = (
             min_case_fields if load_min else min_case_fields + extra_case_fields
         )
         schema = types.StructType(
@@ -80,7 +80,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
                 types.StructField("experimental_strategy", types.StringType(), False),
                 types.StructField("created_datetime", types.StringType(), False),
                 types.StructField(
-                    "cases", types.ArrayType(types.StructType(case_fiels)), False
+                    "cases", types.ArrayType(types.StructType(case_fields)), False
                 ),
             ]
         )
