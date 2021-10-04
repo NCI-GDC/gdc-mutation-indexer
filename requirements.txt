@@ -28,8 +28,6 @@ certifi==2021.5.30
     #   requests
 chardet==4.0.0
     # via requests
-click==7.1.2
-    # via gdc-mutation-indexer (setup.py)
 decorator==5.0.9
     # via networkx
 elasticsearch==7.13.4
@@ -46,7 +44,7 @@ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcdatamodel
--e git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.8.1-rc.2#egg=gdcmodels  # manually set to editable to fix deployment
+git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.8.1-rc.2#egg=gdcmodels
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer

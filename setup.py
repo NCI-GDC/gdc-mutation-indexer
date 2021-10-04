@@ -34,7 +34,6 @@ setup(
     include_package_data=True,
     options=dict(egg_info=dict(tag_build=(".rev." + git_hash))),
     install_requires=[
-        "click~=7.1",
         "boto==2.49.0",
         "elasticsearch~=7.6",
         "ndjson~=0.3",
