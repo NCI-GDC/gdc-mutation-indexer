@@ -3,8 +3,9 @@ import unittest
 import pytest
 
 import tests_config
-from exports import builders
+from exports import builders, es_utils
 from pyspark import sql
+from pyspark.sql import functions as F
 
 
 class TestPrimaryAliquotBuilder(unittest.TestCase):
@@ -15,13 +16,17 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     def test__get_case_file_metadata__tcga_kich(self):
         config = tests_config.TestConfig()
         config.projects = ["TCGA-KICH"]
+        es_dataframe_util = es_utils.DataFrameUtil(config, self.sql_context)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config, self.sql_context
+            config, self.sql_context, config.indexd, es_dataframe_util
         )
 
         df = primary_aliquot_builder.build()
 
-        files = {row.case_id: row.file_id for row in df.collect()}
+        files = {
+            row.case_id: row.file_id
+            for row in df.where(F.col("entity") == F.lit("case")).collect()
+        }
 
         self.assertEqual(len(files), 2)
         self.assertEqual(
@@ -36,13 +41,17 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     def test__get_case_file_metadata__tcga(self):
         config = tests_config.TestConfig()
         config.projects = ["TCGA"]
+        es_dataframe_util = es_utils.DataFrameUtil(config, self.sql_context)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config, self.sql_context
+            config, self.sql_context, config.indexd, es_dataframe_util
         )
 
         df = primary_aliquot_builder.build()
 
-        files = {row.case_id: row.file_id for row in df.collect()}
+        files = {
+            row.case_id: row.file_id
+            for row in df.where(F.col("entity") == F.lit("case")).collect()
+        }
 
         self.assertEqual(len(files), 1)
         self.assertEqual(

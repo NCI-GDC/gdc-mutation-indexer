@@ -28,7 +28,8 @@ expected_data:
     diagnoses:
       - age_at_diagnosis: 100
     samples:
-      - sample_type: Primary Tumor
+      - sample_id: s-2
+        sample_type: Primary Tumor
   - file_id: file-4
     file_url: s3a://good_url
     case_id: case-2
@@ -44,7 +45,8 @@ expected_data:
     diagnoses:
       - age_at_diagnosis: 100
     samples:
-      - sample_type: Normal
+      - sample_id: s-4
+        sample_type: Normal
   - file_id: file-6
     file_url: null
     case_id: case-3
@@ -60,7 +62,8 @@ expected_data:
     diagnoses:
       - age_at_diagnosis: 100
     samples:
-      - sample_type: Primary Tumor
+      - sample_id: s-6
+        sample_type: Primary Tumor
   - file_id: file-8
     file_url: null
     case_id: case-4
@@ -76,13 +79,17 @@ expected_data:
     diagnoses:
       - age_at_diagnosis: 100
     samples:
-      - sample_type: Primary Tumor
+      - sample_id: s-8a
+        sample_type: Primary Tumor
+      - sample_id: s-8b
+        sample_type: Solid Tissue Normal
 
 expected_es_include_fields:
   - file_id
   - created_datetime
   - experimental_strategy
   - cases.case_id
+  - cases.samples.sample_id
   - cases.samples.sample_type
   - cases.submitter_id
   - cases.demographic.days_to_death
@@ -97,21 +104,21 @@ expected_es_query:
   query:
     bool:
       must:
-        - terms: 
+        - terms:
             data_type:
               - Gene Expression Quantification
         - terms:
-            acl: 
+            acl:
               - open
         - terms:
-            analysis.workflow_type: 
+            analysis.workflow_type:
               - type0
               - type1
-        - nested: 
+        - nested:
             path: cases
             query:
               terms:
-                cases.project.project_id: 
+                cases.project.project_id:
                   - TEST0
                   - TEST1
 
@@ -125,7 +132,7 @@ expected_schema:
   - name: submitter_id
     dataType: *string_type
   - name: demographic
-    dataType: 
+    dataType:
       <<: *struct_type
       fields:
         - name: days_to_death
@@ -139,13 +146,13 @@ expected_schema:
         - name: vital_status
           dataType: *string_type
   - name: project
-    dataType: 
+    dataType:
       <<: *struct_type
       fields:
         - name: project_id
           dataType: *string_type
   - name: diagnoses
-    dataType: 
+    dataType:
       <<: *array_type
       elementType:
         <<: *struct_type
@@ -158,5 +165,7 @@ expected_schema:
       elementType:
         <<: *struct_type
         fields:
+          - name: sample_id
+            dataType: *string_type
           - name: sample_type
             dataType: *string_type

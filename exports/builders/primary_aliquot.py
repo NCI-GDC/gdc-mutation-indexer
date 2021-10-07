@@ -1,8 +1,18 @@
 import itertools
 import logging
-from typing import Iterable, List, Mapping, NamedTuple, Optional, TypeVar
+from typing import (
+    AbstractSet,
+    Iterable,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union
+)
 
-from indexclient import client as indexclient
+import more_itertools
+from indexclient import client
 
 import config
 from exports import es_utils
@@ -11,24 +21,32 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 GeneExpressionPrimaryAliquotData = NamedTuple(
-    "GeneExpressionPrimaryAliquotData", [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])]
+    "GeneExpressionPrimaryAliquotData",
+    [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])],
 )
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
-
     FILE_URL_BATCH_SIZE = 1000
 
-    def __init__(self, config: config.BaseConfig, sql_context: sql.SQLContext):
+    def __init__(
+        self,
+        config: config.BaseConfig,
+        sql_context: sql.SQLContext,
+        indexd: client.IndexClient,
+        es_dataframe_util: es_utils.DataFrameUtil,
+    ):
         super().__init__(config, sql_context, "primary_aliquot")
-        self.sql_context = sql_context
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self._sql_context = sql_context
+        self._indexd = indexd
+        self._es_dataframe_util = es_dataframe_util
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @staticmethod
-    def _sample_weight():
+    def _sample_weight_col():
         """
         Builds the sample weight column based on the sample type.
 
@@ -49,12 +67,110 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         when_clause = F.when(F.lit(1) != F.lit(1), 0)
 
         for sample_type, weight in weights:
-            when_clause = when_clause.when(
-                F.col("sample_type") == sample_type, weight)
+            when_clause = when_clause.when(F.col("sample_type") == sample_type, weight)
 
         return when_clause.otherwise(len(weights) + 1).alias("sample_weight")
 
-    def _get_primary_aliquots(self, filters: Iterable[dict], include_fields: Iterable[str] = None):
+    def _add_required_include_fields(
+        self, include_fields: Union[Iterable[str], bool]
+    ) -> Union[Iterable[str], bool]:
+        if include_fields is not True:
+            return frozenset(
+                {
+                    "file_id",
+                    "created_datetime",
+                    "experimental_strategy",
+                    "cases.case_id",
+                    "cases.samples.sample_id",
+                    "cases.samples.sample_type",
+                }
+            ).union(
+                include_fields  # type: ignore
+            )
+
+        return include_fields
+
+    def _get_weighted_df(
+        self, query: dict, include_fields: Union[Iterable[str], bool]
+    ) -> sql.DataFrame:
+        return (
+            self._es_dataframe_util.get_dataframe(
+                es_utils.Index.File,
+                include_fields=include_fields,
+                query=query,
+            )
+            .select(
+                "file_id",
+                F.col("created_datetime").cast("timestamp"),
+                "experimental_strategy",
+                F.explode("cases").alias("case"),
+            )
+            .select(
+                "file_id",
+                "created_datetime",
+                "experimental_strategy",
+                F.col("case.case_id").alias("case_id"),
+                "case",
+                F.explode("case.samples").alias("sample"),
+            )
+            .select(
+                "file_id",
+                "created_datetime",
+                "experimental_strategy",
+                "case_id",
+                "case",
+                "sample.sample_id",
+                "sample.sample_type",
+            )
+            .select(
+                "file_id",
+                "created_datetime",
+                "experimental_strategy",
+                "case_id",
+                "sample_id",
+                "case",
+                self._sample_weight_col(),
+            )
+        )
+
+    def _get_weighted_entity_df(
+        self, weighted_df: sql.DataFrame, entity_id: str, entity: str
+    ) -> sql.DataFrame:
+        return weighted_df.select(
+            F.col(entity_id).alias("entity_id"),
+            F.lit(entity).alias("entity"),
+            "file_id",
+            "created_datetime",
+            "experimental_strategy",
+            "case_id",
+            "sample_id",
+            "case",
+            "sample_weight",
+        )
+
+    def _combine_weighted_entity_dfs(
+        self,
+        weighted_file_df: Optional[sql.DataFrame],
+        weighted_case_df: Optional[sql.DataFrame],
+    ) -> sql.DataFrame:
+        if weighted_case_df and weighted_file_df:
+            return weighted_case_df.union(weighted_file_df)
+
+        elif weighted_case_df:
+            return weighted_case_df
+
+        elif weighted_file_df:
+            return weighted_file_df
+
+        else:
+            raise ValueError("At lease one valid enitity must be provided.")
+
+    def _get_primary_aliquot_df(
+        self,
+        filters: Iterable[dict],
+        entities: AbstractSet[str] = frozenset(("case", "file")),
+        include_fields: Union[Iterable[str], bool] = True,
+    ) -> sql.DataFrame:
         """
         Args:
             filters: The filters used to query es files with
@@ -73,72 +189,50 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
                 samples
                 (other case fields can be included in the include fields param)
         """
-        query = {
-            "query": {
-                "bool": {
-                    "must": filters
-                }
-            }
-        }
-        include_fields = {
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            "cases.case_id",
-            "cases.samples.sample_type"
-        }.union(include_fields or [])
-        files_df = es_utils.get_dataframe_from_es(
-            self.sql_context,
-            self.config,
-            self.config.graph_file_index,
-            include_fields=include_fields,
-            query=query
+        query = {"query": {"bool": {"must": filters}}}
+        include_fields = self._add_required_include_fields(include_fields)
+        weighted_df = self._get_weighted_df(query, include_fields)
+        weighted_file_df = None
+        weighted_case_df = None
+
+        if "file" in entities:
+            weighted_file_df = self._get_weighted_entity_df(
+                weighted_df, "file_id", "file"
+            )
+
+        if "case" in entities:
+            weighted_case_df = self._get_weighted_entity_df(
+                weighted_df, "case_id", "case"
+            )
+
+        weighted_entity_df = self._combine_weighted_entity_dfs(
+            weighted_file_df, weighted_case_df
+        )
+        entity_window = (
+            sql.Window()
+            .partitionBy("entity", "entity_id")
+            .orderBy(
+                F.col("sample_weight"),
+                F.col("created_datetime"),
+                F.col("file_id"),
+            )
         )
 
-        weighted_files_df = files_df.select(
-            "file_id",
-            F.col("created_datetime").cast("timestamp"),
-            "experimental_strategy",
-            F.explode("cases").alias("case")
-        ).select(
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            F.col("case.case_id").alias("case_id"),
-            "case",
-            F.explode("case.samples").alias("sample")
-        ).select(
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            "case_id",
-            "case",
-            "sample.sample_type",
-        ).select(
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            "case_id",
-            "case",
-            self._sample_weight(),
-        )
-
-        case_window = sql.Window().partitionBy("case_id").orderBy(
-            F.col("sample_weight"),
-            F.col("created_datetime"),
-            F.col("file_id"),
-        )
-
-        return weighted_files_df.withColumn(
-            "row_number", F.row_number().over(case_window)
-        ).where(
-            F.col("row_number") == 1
-        ).select(
-            "file_id",
-            "created_datetime",
-            "experimental_strategy",
-            "case_id",
-            "case",
+        return (
+            weighted_entity_df.withColumn(
+                "row_number", F.row_number().over(entity_window)
+            )
+            .where(F.col("row_number") == 1)
+            .select(
+                "entity_id",
+                "entity",
+                "file_id",
+                "created_datetime",
+                "experimental_strategy",
+                "case_id",
+                "sample_id",
+                "case",
+            )
         )
 
     def _is_main_url(self, metadata: dict):
@@ -151,11 +245,11 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             bool: True if main URL, False otherwise
         """
         return (
-            metadata.get("type") == "cleversafe" and
-            metadata.get("state") == "validated"
+            metadata.get("type") == "cleversafe"
+            and metadata.get("state") == "validated"
         )
 
-    def _get_and_format_url(self, doc: indexclient.Document) -> Optional[str]:
+    def _get_and_format_url(self, doc: client.Document) -> Optional[str]:
         """
         Select main IndexD url if one exist and format it to something that Spark
         understands
@@ -168,45 +262,12 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         """
         for url, meta in doc.urls_metadata.items():
             if self._is_main_url(meta):
-                url = url.replace(
-                    "s3://", "s3a://").replace("cleversafe.service.consul/", "")
+                url = url.replace("s3://", "s3a://").replace(
+                    "cleversafe.service.consul/", ""
+                )
                 return url
+
         return None
-
-    @staticmethod
-    def _batch(iterable: Iterable[T], n: int) -> Iterable[Iterable[T]]:
-        """
-        Groups the iterable into batches of n.
-
-        Args:
-            iterable: the iterable to be batched
-            n: the number of elements in each batch
-
-        Returns:
-            An iterable of batches where each batch is an iterable itself
-            with no more than n items.
-
-        """
-        iterator = iter(iterable)
-
-        def batch(first):
-            try:
-                yield first
-
-                for _ in range(1, n):
-                    yield next(iterator)
-
-            except StopIteration:
-                return
-
-        while True:
-            try:
-                first = next(iterator)
-
-                yield batch(first)
-
-            except StopIteration:
-                return
 
     def _get_main_urls(self, file_ids: Iterable[str]) -> Iterable[Mapping[str, str]]:
         """
@@ -219,9 +280,9 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             A generator where each mapping is
             {file_id: x, file_url: u}
         """
-        batches = self._batch(file_ids, self.FILE_URL_BATCH_SIZE)
+        batches = more_itertools.ichunked(file_ids, self.FILE_URL_BATCH_SIZE)
         docs = itertools.chain.from_iterable(
-            self.config.indexd.bulk_request(list(bids)) for bids in batches
+            self._indexd.bulk_request(list(bids)) for bids in batches
         )
 
         for doc in docs:
@@ -241,7 +302,7 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         Gets the case and it's associated file data for the mutation index.
 
         Args:
-            workflow_types: A collection of analysis workflow types to 
+            workflow_types: A collection of analysis workflow types to
                 filter files on.
 
         Returns:
@@ -273,7 +334,7 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         filters = [
             {"terms": {"data_type": ["Gene Expression Quantification"]}},
             {"terms": {"acl": ["open"]}},
-            {"terms": {"analysis.workflow_type": workflow_types}}
+            {"terms": {"analysis.workflow_type": workflow_types}},
         ]  # type: List[dict]
         case_fields = [
             "cases.submitter_id",
@@ -287,22 +348,28 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         ]
 
         if self.config.projects:
-            filters.append({
-                "nested": {
-                    "path": "cases",
-                    "query": {"terms": {"cases.project.project_id": self.config.projects}},
+            filters.append(
+                {
+                    "nested": {
+                        "path": "cases",
+                        "query": {
+                            "terms": {"cases.project.project_id": self.config.projects}
+                        },
+                    }
                 }
-            })
+            )
 
-        primary_aliquot_df = self._get_primary_aliquots(
+        primary_aliquot_df = self._get_primary_aliquot_df(
             filters,
+            entities=frozenset(("case",)),
             include_fields=case_fields,
         )
-        file_ids = (r.file_id for r in primary_aliquot_df.select(
-            "file_id").distinct().collect())
+        file_ids = (
+            r.file_id for r in primary_aliquot_df.select("file_id").distinct().collect()
+        )
 
         urls = tuple(sql.Row(**url) for url in self._get_main_urls(file_ids))
-        urls_df = self.sql_context.createDataFrame(urls)
+        urls_df = self._sql_context.createDataFrame(urls)
 
         primary_aliquot_df = primary_aliquot_df.select(
             "file_id",
@@ -321,18 +388,13 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         file_urls = list(url.file_url for url in urls)
 
         return GeneExpressionPrimaryAliquotData(
-            primary_aliquot_df=primary_aliquot_df,
-            file_urls=file_urls
+            primary_aliquot_df=primary_aliquot_df, file_urls=file_urls
         )
 
     def build_from_scratch(self) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)
-
-        Args:
-            sql_context(pyspark.sql.SQLContext): The spark sql context
-            config: The configuration for the current process
 
         Return:
             A data frame with the file data
@@ -346,13 +408,55 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             {
                 "nested": {
                     "path": "cases",
-                    "query": {"terms": {"cases.project.project_id": self.config.projects}},
+                    "query": {
+                        "terms": {"cases.project.project_id": self.config.projects}
+                    },
                 }
             },
         ]
 
-        return self._get_primary_aliquots(filters).select(
-            "case_id",
-            "file_id",
-            "experimental_strategy"
+        return (
+            self._get_primary_aliquot_df(filters)
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                "sample_id",
+                F.explode("case.samples").alias("sample"),
+            )
+            .where(F.col("sample.sample_id") == F.col("sample_id"))
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                F.explode_outer("sample.portions").alias("portion"),
+            )
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                F.explode_outer("portion.analytes").alias("analyte"),
+            )
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                F.explode_outer("analyte.aliquots").alias("aliquot"),
+            )
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                "aliquot.aliquot_id",
+            )
         )

@@ -5,10 +5,10 @@ from indexclient import client
 
 import ndjson
 import tests_config
-from exports import builders
+from exports import builders, es_utils
 from exports.builders import gene_expression
 from pyspark import sql
-from pyspark.sql import functions as f
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 
@@ -30,10 +30,15 @@ def ge_builder(sqlContext, ge_conf):
 
 @pytest.fixture
 def ge_cases_df(sqlContext, ge_conf):
+    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
+    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
+    )
+
     cases_df = builders.GeneExpressionCaseInputBuilder(
         ge_conf,
         sqlContext,
-        "gene_expression_cases",
+        primary_aliquot_builder,
     ).build()
 
     assert cases_df.schema == types.StructType(
@@ -58,10 +63,13 @@ def ge_cases_df(sqlContext, ge_conf):
 
 @pytest.fixture
 def ge_values_df(sqlContext, ge_conf):
+    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
+    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
+    )
+
     return builders.GeneExpressionValueInputBuilder(
-        ge_conf,
-        sqlContext,
-        "gene_expression_values",
+        ge_conf, sqlContext, primary_aliquot_builder
     ).build()
 
 
@@ -135,7 +143,7 @@ def test_trim_gene_version(sqlContext):
     )
 
     new_df = df.withColumn(
-        "gene_id", gene_expression.trim_gene_id(f.col("raw_gene_id"))
+        "gene_id", gene_expression.trim_gene_id(F.col("raw_gene_id"))
     )
 
     assert {row["gene_id"] for row in new_df.collect()} == {"ENS001", "ENS002"}

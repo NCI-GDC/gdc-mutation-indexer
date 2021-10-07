@@ -7,29 +7,66 @@ from unittest import mock
 import pytest
 import yaml
 
-from exports import builders
+from exports import builders, es_utils
 from pyspark.sql import types
 from tests.utils import schema_validation
 
 
 class TestPrimaryAliquotBuilder(unittest.TestCase):
     schema_validator = schema_validation.PysparkSchemaValidator()
+    maxDiff = None
 
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):
         self.sql_context = sqlContext
         self.data_dir = data_dir
 
-    def _build_es_dataframe(self, data: Iterable[dict], load_min: bool):
+    def _build_es_dataframe(self, data: Iterable[dict], is_gene_expression: bool):
+        sample_fields = [
+            types.StructField("sample_id", types.StringType(), False),
+            types.StructField("sample_type", types.StringType(), False),
+        ]
+
+        if not is_gene_expression:
+            sample_fields.append(
+                types.StructField(
+                    "portions",
+                    types.ArrayType(
+                        types.StructType(
+                            [
+                                types.StructField(
+                                    "analytes",
+                                    types.ArrayType(
+                                        types.StructType(
+                                            [
+                                                types.StructField(
+                                                    "aliquots",
+                                                    types.ArrayType(
+                                                        types.StructType(
+                                                            [
+                                                                types.StructField(
+                                                                    "aliquot_id",
+                                                                    types.StringType(),
+                                                                )
+                                                            ]
+                                                        )
+                                                    ),
+                                                )
+                                            ]
+                                        )
+                                    ),
+                                )
+                            ]
+                        )
+                    ),
+                )
+            )
+
         min_case_fields = [
             types.StructField("case_id", types.StringType(), False),
             types.StructField(
                 "samples",
-                types.ArrayType(
-                    types.StructType(
-                        [types.StructField("sample_type", types.StringType(), False)]
-                    )
-                ),
+                types.ArrayType(types.StructType(sample_fields)),
                 False,
             ),
         ]
@@ -72,7 +109,9 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
             ),
         ]
         case_fields = (
-            min_case_fields if load_min else min_case_fields + extra_case_fields
+            min_case_fields + extra_case_fields
+            if is_gene_expression
+            else min_case_fields
         )
         schema = types.StructType(
             [
@@ -91,23 +130,23 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         with open(path.join(self.data_dir, filename)) as f:
             return yaml.safe_load(f)
 
-    def _load_data_into_df(self, filename: str, load_min=True):
+    def _load_data_into_df(self, filename: str, is_gene_expression: bool = False):
         data = self._load_data_from_file(filename)
 
-        return self._build_es_dataframe(data, load_min)
+        return self._build_es_dataframe(data, is_gene_expression)
 
-    @mock.patch("exports.es_utils.get_dataframe_from_es")
-    def test__build_primary_aliquots_for_project(
-        self, get_dataframe_from_es: mock.MagicMock
-    ):
+    def test__build_primary_aliquots_for_project(self):
         # Arrange
         config = mock.MagicMock()
+        es_dataframe_util = mock.MagicMock()
+        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
+        es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
             self.sql_context,
+            config.indexd,
+            es_dataframe_util,
         )
-        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
-        get_dataframe_from_es.return_value = es_df
 
         config.projects = ["TEST0"]
 
@@ -115,7 +154,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         expected = self._load_data_from_file(
             "output/test_build_primary_aliquots_for_project.yaml"
         )
-        expected_es_include_fields = frozenset(expected["expected_es_include_fields"])
+        expected_es_include_fields = expected["expected_es_include_fields"]
         expected_es_query = expected["expected_es_query"]
         expected_data = frozenset(tuple(row) for row in expected["expected_data"])
         expected_schema = schema_validation.Schema(expected["expected_schema"])
@@ -125,10 +164,8 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         # Assert
         # Check External Calls
-        get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
-            config,
-            config.graph_file_index,
+        es_dataframe_util.get_dataframe.assert_called_once_with(
+            es_utils.Index.File,
             include_fields=expected_es_include_fields,
             query=expected_es_query,
         )
@@ -139,9 +176,12 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         result_collected = result_df.collect()
         result_data = frozenset(
             (
-                row["case_id"],
-                row["file_id"],
-                row["experimental_strategy"],
+                row.entity,
+                row.entity_id,
+                row.case_id,
+                row.file_id,
+                row.experimental_strategy,
+                row.aliquot_id,
             )
             for row in result_collected
         )
@@ -180,26 +220,25 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         return (doc for file_id, doc in docs.items() if file_id in bids)
 
-    @mock.patch("exports.es_utils.get_dataframe_from_es")
-    def test__build_gene_expression_prinary_aliquot_data(
-        self, get_dataframe_from_es: mock.MagicMock
-    ):
+    def test__build_gene_expression_prinary_aliquot_data(self):
         # Arrange
         config = mock.MagicMock()
+        config.projects = ["TEST0", "TEST1"]
+        config.indexd.bulk_request.side_effect = self._mock_bulk_request
+        es_dataframe_util = mock.MagicMock()
+        es_df = self._load_data_into_df(
+            "input/test_primry_aliquot_builder_common.yaml", True
+        )
+        es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
             self.sql_context,
+            config.indexd,
+            es_dataframe_util,
         )
-        es_df = self._load_data_into_df(
-            "input/test_primry_aliquot_builder_common.yaml", False
-        )
-        get_dataframe_from_es.return_value = es_df
 
         primary_aliquot_builder.logger = mock.MagicMock()
         primary_aliquot_builder.FILE_URL_BATCH_SIZE = 3
-
-        config.projects = ["TEST0", "TEST1"]
-        config.indexd.bulk_request.side_effect = self._mock_bulk_request
 
         # Load Expected Results
         expected = self._load_data_from_file(
@@ -219,10 +258,8 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         # Assert
         # Check External Calls
-        get_dataframe_from_es.assert_called_once_with(
-            self.sql_context,
-            config,
-            config.graph_file_index,
+        es_dataframe_util.get_dataframe.assert_called_once_with(
+            es_utils.Index.File,
             include_fields=expected_es_include_fields,
             query=expected_es_query,
         )
