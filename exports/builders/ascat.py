@@ -72,15 +72,10 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
                 {"terms": {"cases.project.project_id": self.config.projects}}
             )
 
-        x = (
+        return (
             self._es_datafram_util.get_dataframe(
                 es_utils.Index.File, query=body, include_fields=included_fields
             )
-        )
-
-        print(x.count())
-
-        x = (x
             .select(
                 "file_id",
                 F.explode("cases").alias("case"),
@@ -111,8 +106,6 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
                 "aliquot.aliquot_id",
             )
         )
-
-        return x
 
     def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         primary_aliquot_df = kwargs["primary_aliquot_df"]
