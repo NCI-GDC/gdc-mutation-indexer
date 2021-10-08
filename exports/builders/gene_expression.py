@@ -1,3 +1,4 @@
+from pyspark import sql
 from pyspark.sql.functions import (
     col,
     collect_list,
@@ -154,7 +155,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder):
             config, sqlContext, "gene_expression_values", primary_aliquot_builder
         )
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
         pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select(
