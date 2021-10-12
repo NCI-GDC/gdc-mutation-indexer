@@ -4,6 +4,8 @@ from config import BaseConfig
 
 
 class TestConfig(BaseConfig):
+    __test__ = False
+
     # Directories used for test data
     root_dir = os.path.dirname(os.path.realpath(__file__))
     test_dir = os.path.join(root_dir, 'tests')

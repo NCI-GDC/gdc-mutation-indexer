@@ -1,18 +1,12 @@
 import logging
 
-from pyspark.sql import SQLContext
-from pyspark.sql.functions import struct, collect_list
-
+import config
 from exports import builders
-from exports.builders.df_builders import (
-    get_gene_df,
-    build_ssm_subtree,
-    build_cnv_subtree,
-)
+from exports.builders import df_builders
+from pyspark import sql
+from pyspark.sql import functions as F
 
-from config import BaseConfig, LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=config.LOG_FORMAT)
 
 
 class GeneCentricBuilder(builders.BaseBuilder):
@@ -34,13 +28,13 @@ class GeneCentricBuilder(builders.BaseBuilder):
                            |___ observation[]
     """
 
-    index_name = 'gene_centric'
-    id_field = 'gene_id'
+    index_name = "gene_centric"
+    id_field = "gene_id"
 
     def __init__(
         self,
-        config: BaseConfig,
-        sqlContext: SQLContext,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
@@ -49,88 +43,100 @@ class GeneCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, maf_df, gistic_df, case_df):
+    def build(
+        self,
+        maf_df: sql.DataFrame,
+        gistic_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ) -> "GeneCentricBuilder":
         """
         Builds Gene Centric index
         """
-        self.log('Building GeneCentric')
+        self.log("Building GeneCentric")
         # Check if we should load a pre-built dataframe
-        if self.config.output_raw == 'read':
+        if self.config.output_raw == "read":
             self.gene_centric = self.load_raw()
             if self.gene_centric is not None:
                 return self
 
-        self.log('Building Gene from MAF and Gistic')
-        gene_df = get_gene_df(maf_df, self.index_name,
-                              unique_fields=['gene_id'])
-        gistic_gene_df = get_gene_df(gistic_df, self.index_name,
-                                     unique_fields=['gene_id'])
+        self.log("Building Gene from MAF and Gistic")
+        gene_df = df_builders.get_gene_df(
+            maf_df, self.index_name, unique_fields=["gene_id"]
+        )
+        gistic_gene_df = df_builders.get_gene_df(
+            gistic_df, self.index_name, unique_fields=["gene_id"]
+        )
         gene_df = gene_df.union(gistic_gene_df).distinct()
         self.log_count(gene_df)
 
-        self.log('Building Case subtree')
-        case_subtree = self.build_case_subtree(maf_df, gistic_df, case_df)
+        self.log("Building Case subtree")
+        case_subtree = self.build_case_subtree(
+            maf_df, gistic_df, case_df, primary_aliquot_df
+        )
 
         self.log('Joining Gene with Case subtree [inner, "gene_id"]')
         gene_centric = gene_df.join(
-            case_subtree,
-            gene_df.gene_id == case_subtree.gene_id,
-            'inner'
+            case_subtree, gene_df.gene_id == case_subtree.gene_id, "inner"
         ).drop(case_subtree.gene_id)
 
         self.log_count(gene_centric)
 
         self.gene_centric = gene_centric
-        self.log('Build finished')
+        self.log("Build finished")
 
         # Save the resulting dataframe to s3
         self.write()
 
         return self
 
-    def build_case_subtree(self, maf_df, gistic_df, case_df):
+    def build_case_subtree(
+        self,
+        maf_df: sql.DataFrame,
+        gistic_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ) -> sql.DataFrame:
         """
         - build_ssm_subtree
         - build_cnv_subtree
         - join them together
         """
-        self.log('Building Case with gene info from MAF and GeneModel')
+        self.log("Building Case with gene info from MAF and GeneModel")
         case_and_gene_df = self._build_case_with_gene_id(
             maf_df,
             gistic_df,
             case_df,
         )
 
-        self.log('Building SSM subtree')
-        ssm_df = self.build_ssm_subtree(maf_df)
+        self.log("Building SSM subtree")
+        ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
         self.log_count(ssm_df)
 
-        self.log('Building CNV subtree')
+        self.log("Building CNV subtree")
         cnv_df = self.build_cnv_subtree(gistic_df)
         self.log_count(cnv_df)
 
         self.log("Join SSM and CNV subtrees to Case [left, gene_id, case_id]")
         case_subtree = (
-            case_and_gene_df.join(ssm_df,
-                                  on=['gene_id', 'case_id'], how='left')
-            .join(cnv_df,
-                  on=['gene_id', 'case_id'], how='left')
-            .select('gene_id',
-                    struct('ssm',
-                           'cnv',
-                           *case_df.drop('gene_id').columns)
-                    .alias('case'))
+            case_and_gene_df.join(ssm_df, on=["gene_id", "case_id"], how="left")
+            .join(cnv_df, on=["gene_id", "case_id"], how="left")
+            .select(
+                "gene_id",
+                F.struct("ssm", "cnv", *case_df.drop("gene_id").columns).alias("case"),
+            )
         )
         self.log_count(case_subtree)
 
         self.log('Grouping by case_id and aggregating to list under "gene"')
-        case_subtree = (
-            case_subtree.groupBy(case_subtree.gene_id.alias('gene_id'))
-            .agg(collect_list('case').alias('case'))
+        case_subtree = case_subtree.groupBy(case_subtree.gene_id.alias("gene_id")).agg(
+            F.collect_list("case").alias("case")
         )
         return case_subtree
 
-    def build_ssm_subtree(self, maf_df):
+    def build_ssm_subtree(
+        self, maf_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame
+    ) -> sql.DataFrame:
         """
         TODO: This branch is same as in case_centric and can be reused
         ssm[]
@@ -150,26 +156,27 @@ class GeneCentricBuilder(builders.BaseBuilder):
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             self.index_name,
-            selector='ssm',
+            selector="ssm",
         )
-        obs_df = obs_df.drop('occurrence_id')
+        obs_df = obs_df.drop("occurrence_id")
 
         # SSM
-        ssm_df = build_ssm_subtree(maf_df, cons_df, self.index_name,
-                                   obs_df=obs_df)
+        ssm_df = df_builders.build_ssm_subtree(
+            maf_df, cons_df, self.index_name, obs_df=obs_df
+        )
 
         # Aggregating SSM
-        self.log('Aggregating ssm by case_id and gene_id')
+        self.log("Aggregating ssm by case_id and gene_id")
         ssm_df = (
-            ssm_df.select('gene_id',
-                          'case_id',
-                          struct(*ssm_df.drop('gene_id')
-                                 .drop('case_id').columns)
-                          .alias('ssm')
-                          )
-            .groupBy(['gene_id', 'case_id'])
-            .agg(collect_list('ssm').alias('ssm'))
+            ssm_df.select(
+                "gene_id",
+                "case_id",
+                F.struct(*ssm_df.drop("gene_id").drop("case_id").columns).alias("ssm"),
+            )
+            .groupBy(["gene_id", "case_id"])
+            .agg(F.collect_list("ssm").alias("ssm"))
         )
         return ssm_df
 
@@ -184,35 +191,38 @@ class GeneCentricBuilder(builders.BaseBuilder):
         obs_df = self.observation_builder.build_for_cnv(
             gistic_df,
             self.index_name,
-            selector='cnv',
+            selector="cnv",
         )
 
         # Build the final cnv dataframe
-        cnv_df = build_cnv_subtree(gistic_df, self.index_name, obs_df=obs_df)
+        cnv_df = df_builders.build_cnv_subtree(
+            gistic_df, self.index_name, obs_df=obs_df
+        )
 
         # Aggregate CNV
-        self.log('Aggregating cnv by case_id and gene_id')
+        self.log("Aggregating cnv by case_id and gene_id")
         cnv_df = (
             cnv_df.select(
-                'gene_id', 'case_id',
-                struct(*cnv_df.drop('gene_id')
-                           .drop('case_id').columns).alias('cnv'))
-            .groupBy(['gene_id', 'case_id'])
-            .agg(collect_list('cnv').alias('cnv')))
+                "gene_id",
+                "case_id",
+                F.struct(*cnv_df.drop("gene_id").drop("case_id").columns).alias("cnv"),
+            )
+            .groupBy(["gene_id", "case_id"])
+            .agg(F.collect_list("cnv").alias("cnv"))
+        )
 
         return cnv_df
 
     def _build_case_with_gene_id(self, maf_df, gistic_df, case_df):
-        self.log('\nSelecting Gene from MAF')
+        self.log("\nSelecting Gene from MAF")
         maf_and_gistic = (
-            maf_df.select('case_id', 'gene_id')
-            .union(gistic_df.select('case_id', 'gene_id'))
+            maf_df.select("case_id", "gene_id")
+            .union(gistic_df.select("case_id", "gene_id"))
             .distinct()
         )
 
-        self.log('Getting gene_id for each case via joining with gene_df')
-        case_gene_id = (
-            maf_and_gistic.join(case_df, on='case_id')
-                          .select('gene_id', *case_df.columns)
+        self.log("Getting gene_id for each case via joining with gene_df")
+        case_gene_id = maf_and_gistic.join(case_df, on="case_id").select(
+            "gene_id", *case_df.columns
         )
         return case_gene_id

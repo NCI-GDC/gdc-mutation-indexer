@@ -1,3 +1,4 @@
+from pyspark import sql
 import pytest
 import json
 
@@ -65,7 +66,7 @@ class TestGeneCentricJoins(BaseJoinsTest):
         assert es_spc == spc
 
     @pytest.mark.gene_centric_ssm_subtree
-    def test_ssm_subtree(self, sqlContext, maf_df, gene_centric_df, gene_ssm_subtree):
+    def test_ssm_subtree(self, sqlContext: sql.SQLContext, maf_df: sql.DataFrame, gene_centric_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame, gene_ssm_subtree: sql.DataFrame):
         def get_stats(dataframe):
             """
             Extracts ssm, consequence, transcript relationships from a flat dataframe
@@ -83,14 +84,14 @@ class TestGeneCentricJoins(BaseJoinsTest):
 
             return res
 
-        primary_aliquot_builder = PrimaryAliquotBuilder(conf, sqlContext)
-        observation_builder = ObservationBuilder(primary_aliquot_builder)
+        observation_builder = ObservationBuilder()
         consequence_builder = ConsequenceBuilder(conf, sqlContext)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, 'gene_centric')
         obs_df = observation_builder.build_for_ssm(
             maf_df,
+            primary_aliquot_df,
             'gene_centric',
             selector='ssm'
         )
