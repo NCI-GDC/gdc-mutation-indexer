@@ -188,7 +188,7 @@ class TestAscatBuilder(unittest.TestCase):
 
     @classmethod
     def _load_ascat_files(cls) -> Iterable[dict]:
-        with open("tests/unit/data/input/test_ascat_builder_common.ndjson", "r") as f:
+        with open("tests/unit/data/input/builders/ascat/test_ascat_builder_common.ndjson", "r") as f:
             for line in f.readlines():
                 yield json.loads(line)
 
