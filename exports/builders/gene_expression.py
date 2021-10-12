@@ -17,7 +17,6 @@ from pyspark.sql.types import (
 
 from exports.builders.base_builder import BaseBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
-from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.primary_aliquot import PrimaryAliquotBuilder
 
 
@@ -155,10 +154,8 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder):
             config, sqlContext, "gene_expression_values", primary_aliquot_builder
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-
-        pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select(
+    def build_from_scratch(self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame) -> sql.DataFrame:
+        pc_genes_df = gene_model_df.filter(gene_model_df.biotype == "protein_coding").select(
             "_gene_id", "symbol"
         )
 

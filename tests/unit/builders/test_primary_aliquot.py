@@ -12,6 +12,10 @@ from pyspark.sql import types
 from tests.utils import schema_validation
 
 
+INPUT_FOLDER_PATH = "input/builders/primary_aliquot"
+OUTPUT_FOLDER_PATH = "output/builders/primary_aliquot"
+
+
 class TestPrimaryAliquotBuilder(unittest.TestCase):
     schema_validator = schema_validation.PysparkSchemaValidator()
     maxDiff = None
@@ -19,7 +23,8 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):
         self.sql_context = sqlContext
-        self.data_dir = data_dir
+        self.input_dir = path.join(data_dir, INPUT_FOLDER_PATH)
+        self.output_dir = path.join(data_dir, OUTPUT_FOLDER_PATH)
 
     def _build_es_dataframe(self, data: Iterable[dict], is_gene_expression: bool):
         sample_fields = [
@@ -126,12 +131,14 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         return self.sql_context.createDataFrame(data, schema)
 
-    def _load_data_from_file(self, filename: str):
-        with open(path.join(self.data_dir, filename)) as f:
+    def _load_data_from_file(self, filename: str, is_input: bool = False):
+        data_dir = self.input_dir if is_input else self.output_dir
+
+        with open(path.join(data_dir, filename)) as f:
             return yaml.safe_load(f)
 
     def _load_data_into_df(self, filename: str, is_gene_expression: bool = False):
-        data = self._load_data_from_file(filename)
+        data = self._load_data_from_file(filename, is_input=True)
 
         return self._build_es_dataframe(data, is_gene_expression)
 
@@ -139,7 +146,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         # Arrange
         config = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
+        es_df = self._load_data_into_df("test_primry_aliquot_builder_common.yaml")
         es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,
@@ -152,7 +159,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         # Load Expected Results
         expected = self._load_data_from_file(
-            "output/test_build_primary_aliquots_for_project.yaml"
+            "test_build_primary_aliquots_for_project.yaml"
         )
         expected_es_include_fields = expected["expected_es_include_fields"]
         expected_es_query = expected["expected_es_query"]
@@ -227,7 +234,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         config.indexd.bulk_request.side_effect = self._mock_bulk_request
         es_dataframe_util = mock.MagicMock()
         es_df = self._load_data_into_df(
-            "input/test_primry_aliquot_builder_common.yaml", True
+            "test_primry_aliquot_builder_common.yaml", True
         )
         es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
@@ -242,7 +249,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         # Load Expected Results
         expected = self._load_data_from_file(
-            "output/test_build_gene_expression_prinary_aliquot_data.yaml"
+            "test_build_gene_expression_prinary_aliquot_data.yaml"
         )
         expected_es_include_fields = frozenset(expected["expected_es_include_fields"])
         expected_es_query = expected["expected_es_query"]

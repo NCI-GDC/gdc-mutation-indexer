@@ -4,7 +4,6 @@ from pyspark import sql
 from pyspark.sql.functions import col, lit, udf
 from pyspark.sql.types import StringType
 
-from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.base_input_builder import BaseInputBuilder
 from exports.builders.utils import (
     map_create_column,
@@ -37,7 +36,7 @@ class GisticBuilder(BaseInputBuilder):
     def build_from_cache(self, df):
         return df
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
+    def build_from_scratch(self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Read, combine and transform gistic files
 
@@ -46,7 +45,7 @@ class GisticBuilder(BaseInputBuilder):
         gistic_df = self.combine()
 
         # add gene information
-        gistic_df = self._add_gene_information(gistic_df)
+        gistic_df = self._add_gene_information(gistic_df, gene_model_df)
 
         # add canonical_transcript_lengths
         gistic_df = self.add_canonical_transcript_lengths(gistic_df)
@@ -193,16 +192,13 @@ class GisticBuilder(BaseInputBuilder):
 
         return trimmed_and_deduped_df
 
-    def _add_gene_information(self, gistic_df):
+    def _add_gene_information(self, gistic_df: sql.DataFrame, gene_model_df: sql.DataFrame) -> sql.DataFrame:
         gene_to_cnv_col_names = {'chromosome': 'gene_chromosome',
                                  'gene_start': 'start_position',
                                  'gene_end': 'end_position'}
 
-        # get gene_df
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
-
         # add gene info to gistic_df
-        new_df = gistic_df.join(gm_df, gistic_df.gene_id == gm_df._gene_id)
+        new_df = gistic_df.join(gene_model_df, gistic_df.gene_id == gene_model_df._gene_id)
 
         # Create cnv columns from gene model
         for old, new in gene_to_cnv_col_names.items():

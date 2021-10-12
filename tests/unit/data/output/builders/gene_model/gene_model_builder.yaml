@@ -1,0 +1,660 @@
+string_type: &string_type
+  class_name: StringType
+
+integer_type: &integer_type
+  class_name: IntegerType
+
+struct_type: &struct_type
+  class_name: StructType
+  fields: []
+
+bool_type: &bool_type
+  class_name: BooleanType
+
+long_type: &long_type
+  class_name: LongType
+
+array_type: &array_type
+  class_name: ArrayType
+  elementType: null
+
+expected_schema:
+  - name: gene_strand
+    dataType: *long_type
+  - name: biotype
+    dataType: *string_type
+  - name: _gene_id
+    dataType: *string_type
+  - name: is_cancer_gene_census
+    dataType: *string_type
+  - name: description
+    dataType: *string_type
+  - name: canonical_transcript_id
+    dataType: *string_type
+  - name: symbol
+    dataType: *string_type
+  - name: gene_end
+    dataType: *long_type
+  - name: gene_start
+    dataType: *long_type
+  - name: chromosome
+    dataType: *string_type
+  - name: name
+    dataType: *string_type
+  - name: hgnc
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: cytoband
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: omim_gene
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: uniprotkb_swissprot
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: synonyms
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: entrez_gene
+    dataType:
+      <<: *array_type
+      elementType: *string_type
+  - name: _id
+    dataType:
+      <<: *struct_type
+      fields:
+        - name: $oid
+          dataType: *string_type
+  - name: transcripts
+    dataType:
+      <<: *array_type
+      elementType:
+        <<: *struct_type
+        fields:
+          - name: biotype
+            dataType: *string_type
+          - name: cdna_coding_end
+            dataType: *long_type
+          - name: cdna_coding_start
+            dataType: *long_type
+          - name: coding_region_end
+            dataType: *long_type
+          - name: coding_region_start
+            dataType: *long_type
+          - name: domains
+            dataType:
+              <<: *array_type
+              elementType: 
+                <<: *struct_type
+                fields:
+                  - name: description
+                    dataType: *string_type
+                  - name: end
+                    dataType: *long_type
+                  - name: gff_source
+                    dataType: *string_type
+                  - name: hit_name
+                    dataType: *string_type
+                  - name: interpro_id
+                    dataType: *string_type
+                  - name: start
+                    dataType: *long_type
+          - name: end
+            dataType: *long_type
+          - name: end_exon
+            dataType: *long_type
+          - name: transcript_id
+            dataType: *string_type
+          - name: is_canonical
+            dataType: *bool_type
+          - name: length
+            dataType: *long_type
+          - name: length_amino_acid
+            dataType: *long_type
+          - name: length_cds
+            dataType: *long_type
+          - name: name
+            dataType: *string_type
+          - name: number_of_exons
+            dataType: *long_type
+          - name: seq_exon_end
+            dataType: *long_type
+          - name: seq_exon_start
+            dataType: *long_type
+          - name: start
+            dataType: *long_type
+          - name: start_exon
+            dataType: *long_type
+          - name: translation_id
+            dataType: *string_type
+          - name: exons
+            dataType:
+              <<: *array_type
+              elementType:
+                <<: *struct_type
+                fields:
+                  - name: cdna_coding_end
+                    dataType: *long_type
+                  - name: cdna_coding_start
+                    dataType: *long_type
+                  - name: cdna_end
+                    dataType: *long_type
+                  - name: cdna_start
+                    dataType: *long_type
+                  - name: end
+                    dataType: *long_type
+                  - name: end_phase
+                    dataType: *long_type
+                  - name: genomic_coding_end
+                    dataType: *long_type
+                  - name: genomic_coding_stairt
+                    dataType: *long_type
+                  - name: genomic_coding_start
+                    dataType: *long_type
+                  - name: start
+                    dataType: *long_type
+                  - name: start_phase
+                    dataType: *long_type
+
+expected_data:
+  - transcripts:
+      - biotype: processed_transcript
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 14409
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 359
+            cdna_start: 1
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 11869
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 468
+            cdna_start: 360
+            end: 12721
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 1657
+            cdna_start: 469
+            end: 14409
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: 0
+            genomic_coding_start: null
+            start: 13221
+            start_phase: -1
+        transcript_id: ENST00000456328
+        is_canonical: true
+        length: 1657
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-002
+        number_of_exons: 3
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 11869
+        start_exon: null
+        translation_id: null
+      - biotype: transcribed_unprocessed_pseudogene
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 13670
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 48
+            cdna_start: 1
+            end: 12057
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12010
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 97
+            cdna_start: 49
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12179
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 182
+            cdna_start: 98
+            end: 12697
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 260
+            cdna_start: 183
+            end: 13052
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12975
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 414
+            cdna_start: 261
+            end: 13374
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13221
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 632
+            cdna_start: 415
+            end: 13670
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13453
+            start_phase: -1
+        transcript_id: ENST00000450305
+        is_canonical: false
+        length: 632
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-001
+        number_of_exons: 6
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 12010
+        start_exon: null
+        translation_id: null
+    gene_start: 11869
+    symbol: DDX11L1
+    biotype: transcribed_unprocessed_pseudogene
+    canonical_transcript_id: ENST00000456328
+    description: "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    hgnc: ["HGNC:37102"]
+    gene_strand: 1
+    name: DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1
+    chromosome: "1"
+    entrez_gene:
+      - "100287596"
+      - "100287102"
+      - "727856"
+      - "84771"
+    _id:
+      $oid: 589c87ca0ef75875ed614a40
+    _gene_id: ENSG00000223972
+    cytoband: [1p36.33]
+    synonyms: []
+    gene_end: 14409
+    omim_gene: []
+    uniprotkb_swissprot: []
+    is_cancer_gene_census: "True"
+  - transcripts:
+      - biotype: processed_transcript
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 14409
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 359
+            cdna_start: 1
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 11869
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 468
+            cdna_start: 360
+            end: 12721
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 1657
+            cdna_start: 469
+            end: 14409
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: 0
+            genomic_coding_start: null
+            start: 13221
+            start_phase: -1
+        transcript_id: ENST00000456328
+        is_canonical: true
+        length: 1657
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-002
+        number_of_exons: 3
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 11869
+        start_exon: null
+        translation_id: null
+      - biotype: transcribed_unprocessed_pseudogene
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 13670
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 48
+            cdna_start: 1
+            end: 12057
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12010
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 97
+            cdna_start: 49
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12179
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 182
+            cdna_start: 98
+            end: 12697
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 260
+            cdna_start: 183
+            end: 13052
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12975
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 414
+            cdna_start: 261
+            end: 13374
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13221
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 632
+            cdna_start: 415
+            end: 13670
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13453
+            start_phase: -1
+        transcript_id: ENST00000450305
+        is_canonical: false
+        length: 632
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-001
+        number_of_exons: 6
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 12010
+        start_exon: null
+        translation_id: null
+    gene_start: 11869
+    symbol: DDX11L1
+    biotype: transcribed_unprocessed_pseudogene
+    canonical_transcript_id: ENST00000456328
+    description: "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    hgnc: ["HGNC:37102"]
+    gene_strand: 1
+    name: DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1
+    chromosome: "1"
+    entrez_gene:
+      - "100287596"
+      - "100287102"
+      - "727856"
+      - "84771"
+    _id:
+      $oid: 589c87ca0ef75875ed614a40
+    _gene_id: ENSG00000223971
+    cytoband: [null]
+    synonyms: []
+    gene_end: 14409
+    omim_gene: []
+    uniprotkb_swissprot: []
+    is_cancer_gene_census: "True"
+  - transcripts:
+      - biotype: processed_transcript
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 14409
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 359
+            cdna_start: 1
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 11869
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 468
+            cdna_start: 360
+            end: 12721
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 1657
+            cdna_start: 469
+            end: 14409
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: 0
+            genomic_coding_start: null
+            start: 13221
+            start_phase: -1
+        transcript_id: ENST00000456328
+        is_canonical: true
+        length: 1657
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-002
+        number_of_exons: 3
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 11869
+        start_exon: null
+        translation_id: null
+      - biotype: transcribed_unprocessed_pseudogene
+        cdna_coding_end: 0
+        cdna_coding_start: 0
+        coding_region_end: 0
+        coding_region_start: 0
+        domains: []
+        end: 13670
+        end_exon: null
+        exons:
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 48
+            cdna_start: 1
+            end: 12057
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12010
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 97
+            cdna_start: 49
+            end: 12227
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12179
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 182
+            cdna_start: 98
+            end: 12697
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12613
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 260
+            cdna_start: 183
+            end: 13052
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 12975
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 414
+            cdna_start: 261
+            end: 13374
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13221
+            start_phase: -1
+          - cdna_coding_end: 0
+            cdna_coding_start: 0
+            cdna_end: 632
+            cdna_start: 415
+            end: 13670
+            end_phase: -1
+            genomic_coding_end: 0
+            genomic_coding_stairt: null
+            genomic_coding_start: 0
+            start: 13453
+            start_phase: -1
+        transcript_id: ENST00000450305
+        is_canonical: false
+        length: 632
+        length_amino_acid: null
+        length_cds: null
+        name: DDX11L1-001
+        number_of_exons: 6
+        seq_exon_end: null
+        seq_exon_start: null
+        start: 12010
+        start_exon: null
+        translation_id: null
+    gene_start: 11869
+    symbol: DDX11L1
+    biotype: transcribed_unprocessed_pseudogene
+    canonical_transcript_id: ENST00000456328
+    description: "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    hgnc: ["HGNC:37102"]
+    gene_strand: 1
+    name: DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1
+    chromosome: "1"
+    entrez_gene:
+      - "100287596"
+      - "100287102"
+      - "727856"
+      - "84771"
+    _id:
+      $oid: 589c87ca0ef75875ed614a40
+    _gene_id: ENSG00000223969
+    cytoband: null
+    synonyms: []
+    gene_end: 14409
+    omim_gene: []
+    uniprotkb_swissprot: []
+    is_cancer_gene_census: null

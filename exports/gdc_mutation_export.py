@@ -11,6 +11,7 @@ logging.basicConfig(format=config.LOG_FORMAT)
 BuilderInputs = NamedTuple(
     "BuilderInputs",
     [
+        ("gene_model_df", sql.DataFrame),
         ("maf_df", sql.DataFrame),
         ("gistic_df", sql.DataFrame),
         ("case_df", sql.DataFrame),
@@ -34,6 +35,9 @@ class GDCMutationExport(object):
     def build_input_data_frames(self) -> BuilderInputs:
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
 
+        # Load gene model
+        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
+
         # Load primary aliquot data
         self.sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe")
         primary_aliquot_df = builders.PrimaryAliquotBuilder(
@@ -42,11 +46,11 @@ class GDCMutationExport(object):
 
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
-        maf_df = builders.MAFBuilder(self.config, self.sqlContext).build()
+        maf_df = builders.MAFBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
 
         # Combine Gistics into one DataFrame
         self.sc.setJobGroup("GisticBuilder", "Build Gistic dataframe")
-        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build()
+        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
 
         # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
@@ -57,7 +61,7 @@ class GDCMutationExport(object):
         sub_case_df.persist()
 
         return BuilderInputs(
-            maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
+            gene_model_df, maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
         )
 
     def run_gene_expression_export(self):
@@ -86,6 +90,7 @@ class GDCMutationExport(object):
 
     def run_core_exports(self, index_names: Iterable[str]):
         (
+            gene_model_df,
             maf_df,
             gistic_df,
             case_df,
