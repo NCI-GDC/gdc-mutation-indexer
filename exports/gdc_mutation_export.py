@@ -70,6 +70,7 @@ class GDCMutationExport(object):
             self.config, self.sqlContext, self.config.indexd, es_dataframe_util
         )
         active_builder = builders.GeneExpressionBuilder(self.config, self.sqlContext)
+        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
 
         self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = builders.GeneExpressionCaseInputBuilder(
@@ -83,7 +84,7 @@ class GDCMutationExport(object):
             self.config,
             self.sqlContext,
             primary_aliquot_builder,
-        ).build()
+        ).build(gene_model_df=gene_model_df)
 
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))
         active_builder.build(ge_case_df, ge_values_df).load()
