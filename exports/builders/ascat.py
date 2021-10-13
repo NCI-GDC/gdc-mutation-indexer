@@ -68,6 +68,31 @@ def _generate_uuids(
     }
 
 
+def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
+    return ascat_df.select(
+        "file_id",
+        "case_id",
+        "aliquot_id",
+        "gene_id",
+        "symbol",
+        "gene_chromosome",
+        "start_position",
+        "end_position",
+        "copy_number",
+        _generate_uuids(
+            "gene_chromosome",
+            "start_position",
+            "end_position",
+            "copy_number",
+            "symbol",
+            "gene_id",
+            "is_cancer_gene_census",
+            "biotype",
+            "case_id",
+        ).alias("uuids"),
+    )
+
+
 class AscatBuilder(base_input_builder.BaseInputBuilder):
     def __init__(
         self,
@@ -154,14 +179,6 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def _get_uuid(self, *values):
-        str(
-            uuid.uuid5(
-                uuid.NAMESPACE_DNS,
-                "\t".join([v if type(v) == str else str(v) for v in values]),
-            )
-        )
-
     def build_from_scratch(
         self, primary_aliquot_df: sql.DataFrame, gene_model_df, **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
@@ -202,28 +219,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             gene_model_df, on=["gene_id"]
         )
 
-        return ascat_df.select(
-            "file_id",
-            "case_id",
-            "aliquot_id",
-            "gene_id",
-            "symbol",
-            "gene_chromosome",
-            "start_position",
-            "end_position",
-            "copy_number",
-            _generate_uuids(
-                "gene_chromosome",
-                "start_position",
-                "end_position",
-                "copy_number",
-                "symbol",
-                "gene_id",
-                "is_cancer_gene_census",
-                "biotype",
-                "case_id",
-            ).alias("uuids"),
-        ).select(
+        return _add_uuids(ascat_df).select(
             "file_id",
             "case_id",
             "aliquot_id",
