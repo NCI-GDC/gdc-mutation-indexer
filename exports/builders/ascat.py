@@ -1,12 +1,13 @@
 import uuid
 from typing import Any, Dict, Iterable
 
-import config
-from exports import es_utils, indexd_utils
-from exports.builders import base_input_builder
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+
+import config
+from exports import es_utils, indexd_utils
+from exports.builders import base_input_builder
 
 RAW_ASCAT_STRUCT = types.StructType(
     [
