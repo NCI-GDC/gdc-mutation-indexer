@@ -36,12 +36,6 @@ def _parse_gene_id(col_name) -> sql.Column:
     return F.element_at(F.split(gene_id, r"\."), 1)
 
 
-def _convert_copy_number(col_name: str) -> sql.Column:
-    copy_number = F.col(col_name)
-
-    return F.when(copy_number < 2, "loss").when(copy_number > 2, "gain").otherwise(None)
-
-
 @F.udf(returnType=UUIDS_STRUCT)
 def _generate_uuids(
     chromosome: str,
@@ -69,28 +63,24 @@ def _generate_uuids(
 
 
 def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
-    return ascat_df.select(
-        "file_id",
-        "case_id",
-        "aliquot_id",
-        "gene_id",
-        "symbol",
+    uuids = _generate_uuids(
         "gene_chromosome",
         "start_position",
         "end_position",
         "copy_number",
-        _generate_uuids(
-            "gene_chromosome",
-            "start_position",
-            "end_position",
-            "copy_number",
-            "symbol",
-            "gene_id",
-            "is_cancer_gene_census",
-            "biotype",
-            "case_id",
-        ).alias("uuids"),
+        "symbol",
+        "gene_id",
+        "is_cancer_gene_census",
+        "biotype",
+        "case_id",
     )
+
+    ascat_df = ascat_df.withColumn("uuids", uuids)
+    ascat_df = ascat_df.withColumn("cnv_id", F.col("uuids.cnv_id"))
+    ascat_df = ascat_df.withColumn("consequence_id", F.col("uuids.consequence_id"))
+    ascat_df = ascat_df.withColumn("occurance_id", F.col("uuids.occurance_id"))
+
+    return ascat_df
 
 
 class AscatBuilder(base_input_builder.BaseInputBuilder):
@@ -213,8 +203,8 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             .select("file_id", "case_id", "aliquot_id")
         )
 
-        doc_ids = file_df.select("file_id").distinct().collect()  # type: ignore
-        document_df = self._build_document_df(doc_ids)
+        rows = file_df.select("file_id").distinct().collect()
+        document_df = self._build_document_df(row.file_id for row in rows)
         ascat_df = document_df.join(file_df, on=["file_id"]).join(
             gene_model_df, on=["gene_id"]
         )
@@ -229,7 +219,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "start_position",
             "end_position",
             "copy_number",
-            "uuids.cnv_id",
-            "uuids.consequence_id",
-            "uuids.occurance_id",
+            "cnv_id",
+            "consequence_id",
+            "occurance_id",
         )
