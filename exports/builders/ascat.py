@@ -1,4 +1,5 @@
-from typing import Iterable
+import uuid
+from typing import Any, Dict, Iterable
 
 import config
 from exports import es_utils, indexd_utils
@@ -7,7 +8,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-RawAscatStruct = types.StructType(
+RAW_ASCAT_STRUCT = types.StructType(
     [
         types.StructField("gene_id", types.StringType()),
         types.StructField("gene_name", types.StringType()),
@@ -19,6 +20,52 @@ RawAscatStruct = types.StructType(
         types.StructField("max_copy_number", types.IntegerType()),
     ]
 )
+
+UUIDS_STRUCT = types.StructType(
+    [
+        types.StructField("cnv_id", types.StringType()),
+        types.StructField("consequence_id", types.StringType()),
+        types.StructField("occurance_id", types.StringType()),
+    ]
+)
+
+
+def _parse_gene_id(col_name) -> sql.Column:
+    gene_id = F.col(col_name)
+
+    return F.element_at(F.split(gene_id, r"\."), 1)
+
+
+def _convert_copy_number(col_name: str) -> sql.Column:
+    copy_number = F.col(col_name)
+
+    return F.when(copy_number < 2, "loss").when(copy_number > 2, "gain").otherwise(None)
+
+
+@F.udf(returnType=UUIDS_STRUCT)
+def _generate_uuids(
+    chromosome: str,
+    start_position: int,
+    end_position: int,
+    copy_number: int,
+    symbol: str,
+    gene_id: str,
+    is_cancer_gene_census: bool,
+    biotype: str,
+    case_id: str,
+) -> Dict[str, str]:
+    def generate_uuid(*values: Any) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, "\t".join(str(v) for v in values)))
+
+    cnv_id = generate_uuid(chromosome, start_position, end_position, copy_number)
+
+    return {
+        "cnv_id": cnv_id,
+        "consequence_id": generate_uuid(
+            symbol, gene_id, is_cancer_gene_census, biotype
+        ),
+        "occurance_id": generate_uuid(cnv_id, case_id),
+    }
 
 
 class AscatBuilder(base_input_builder.BaseInputBuilder):
@@ -36,12 +83,12 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
-            doc_ids, RawAscatStruct
+            doc_ids, RAW_ASCAT_STRUCT
         )
 
         return document_df.select(
             F.col("did").alias("file_id"),
-            "gene_id",
+            _parse_gene_id("gene_id").alias("gene_id"),
             F.col("gene_name").alias("symbol"),
             F.col("chromosome").alias("gene_chromosome"),
             F.col("start").alias("start_position"),
@@ -107,11 +154,41 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        primary_aliquot_df = kwargs["primary_aliquot_df"]
+    def _get_uuid(self, *values):
+        str(
+            uuid.uuid5(
+                uuid.NAMESPACE_DNS,
+                "\t".join([v if type(v) == str else str(v) for v in values]),
+            )
+        )
+
+    def build_from_scratch(
+        self, primary_aliquot_df: sql.DataFrame, gene_model_df, **kwargs: sql.DataFrame
+    ) -> sql.DataFrame:
+        """Builds the ASCAT dataframe
+
+        ascat_df {}
+        |---file_id
+        |---case_id
+        |---aliquot_id
+        |---gene_id
+        |---symbol
+        |---gene_chromosome
+        |---start_position
+        |---end_position
+        |---copy_number (TODO: Switch to cnv_change)
+        |---cnv_id
+        |---consequence_id
+        |---occurance_id
+        """
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
+        gene_model_df = gene_model_df.select(
+            F.col("_gene_id").alias("gene_id"),
+            "is_cancer_gene_census",
+            "biotype",
+        )
 
         file_df = (
             self._build_file_df()
@@ -119,10 +196,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             .select("file_id", "case_id", "aliquot_id")
         )
 
-        doc_ids = file_df.select("file_id").distinct().collect()
+        doc_ids = file_df.select("file_id").distinct().collect()  # type: ignore
         document_df = self._build_document_df(doc_ids)
+        ascat_df = document_df.join(file_df, on=["file_id"]).join(
+            gene_model_df, on=["gene_id"]
+        )
 
-        return document_df.join(file_df, on=["file_id"]).select(
+        return ascat_df.select(
             "file_id",
             "case_id",
             "aliquot_id",
@@ -132,4 +212,28 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "start_position",
             "end_position",
             "copy_number",
+            _generate_uuids(
+                "gene_chromosome",
+                "start_position",
+                "end_position",
+                "copy_number",
+                "symbol",
+                "gene_id",
+                "is_cancer_gene_census",
+                "biotype",
+                "case_id",
+            ).alias("uuids"),
+        ).select(
+            "file_id",
+            "case_id",
+            "aliquot_id",
+            "gene_id",
+            "symbol",
+            "gene_chromosome",
+            "start_position",
+            "end_position",
+            "copy_number",
+            "uuids.cnv_id",
+            "uuids.consequence_id",
+            "uuids.occurance_id",
         )

@@ -1,277 +1,102 @@
-import functools
-import json
+import yaml
+from os import path
 import unittest
-from typing import Container, Iterable
+from typing import List, NamedTuple, Sequence
 from unittest import mock
 
 import pytest
 
 from exports import builders
 from pyspark import sql
-from pyspark.sql import types
+from pyspark.sql import types, functions as F
 
-FILE_SCHEMA = types.StructType(
-    [
-        types.StructField("file_id", types.StringType()),
-        types.StructField(
-            "cases",
-            types.ArrayType(
-                types.StructType(
-                    [
-                        types.StructField("case_id", types.StringType()),
-                        types.StructField(
-                            "samples",
-                            types.ArrayType(
-                                types.StructType(
-                                    [
-                                        types.StructField(
-                                            "portions",
-                                            types.ArrayType(
-                                                types.StructType(
-                                                    [
-                                                        types.StructField(
-                                                            "analytes",
-                                                            types.ArrayType(
-                                                                types.StructType(
-                                                                    [
-                                                                        types.StructField(
-                                                                            "aliquots",
-                                                                            types.ArrayType(
-                                                                                types.StructType(
-                                                                                    [
-                                                                                        types.StructField(
-                                                                                            "aliquot_id",
-                                                                                            types.StringType(),
-                                                                                        )
-                                                                                    ]
-                                                                                )
-                                                                            ),
-                                                                        )
-                                                                    ]
-                                                                )
-                                                            ),
-                                                        )
-                                                    ]
-                                                )
-                                            ),
-                                        )
-                                    ]
-                                )
-                            ),
-                        ),
-                    ]
-                )
-            ),
-        ),
-    ]
-)
-ASCAT_DOCUMENTS = (
-    (
-        "1805d249-bc24-4eed-b191-86d333d7563f",
-        "ENSG00000223972.5",
-        "DDX11L1",
-        "chr1",
-        11869,
-        14409,
-        None,
-        None,
-        None,
-    ),
-    (
-        "66d974b9-d64c-4585-a94b-8325e0e11b33",
-        "ENSG00000227232.5",
-        "WASH7P",
-        "chr1",
-        14404,
-        29570,
-        None,
-        None,
-        None,
-    ),
-    (
-        "e1d964ae-7676-40be-a2c4-b3a13804e1f5",
-        "ENSG00000278267.1",
-        "MIR6859-3",
-        "chr1",
-        17369,
-        17436,
-        None,
-        None,
-        None,
-    ),
-    (
-        "c5435e5e-516a-4db6-b761-ef4f5307c15c",
-        "ENSG00000243485.3",
-        "RP11-34P13.3",
-        "chr1",
-        29554,
-        31109,
-        None,
-        None,
-        None,
-    ),
-    (
-        "9ea1b305-8b2d-43a4-95cf-42bef54126e1",
-        "ENSG00000274890.1",
-        "MIR1302-9",
-        "chr1",
-        30366,
-        30503,
-        None,
-        None,
-        None,
-    ),
-    (
-        "d519256b-6419-4928-bc17-a7aa32d22450",
-        "ENSG00000237613.2",
-        "FAM138A",
-        "chr1",
-        34554,
-        36081,
-        None,
-        None,
-        None,
-    ),
-    (
-        "c3c9b822-1a01-4298-b5c5-b1d105c484e9",
-        "ENSG00000268020.3",
-        "OR4G4P",
-        "chr1",
-        52473,
-        53312,
-        None,
-        None,
-        None,
-    ),
-    (
-        "945e4d87-aea7-44cc-bc8d-3088ee5c9910",
-        "ENSG00000240361.1",
-        "OR4G11P",
-        "chr1",
-        62948,
-        63887,
-        2,
-        2,
-        2,
-    ),
-    (
-        "c17be6a4-d22a-4806-97b7-aafae0da4fd2",
-        "ENSG00000186092.4",
-        "OR4F5",
-        "chr1",
-        69091,
-        70008,
-        2,
-        2,
-        2,
-    ),
-    (
-        "15a00a97-c304-4826-ae3c-c8dddcbac8a6",
-        "ENSG00000186092.4",
-        "OR4F5",
-        "chr1",
-        69091,
-        70008,
-        2,
-        2,
-        2,
-    ),
-)
+from exports.builders import ascat
+from tests.utils import schema_validation
 
+INPUT_FOLDER_PATH = "input/builders/ascat"
+OUTPUT_FOLDER_PATH = "output/builders/ascat"
+
+
+Output = NamedTuple("Output", [("expected_schema", schema_validation.Schema), ("expected_data", Sequence[dict])])
+RAW_ASCAT_STRUCT = types.StructType(ascat.RAW_ASCAT_STRUCT.fields + [types.StructField("did", types.StringType())])
 
 class TestAscatBuilder(unittest.TestCase):
-    ascat_files = ()  # type: Iterable[dict]
+    schema_validator = schema_validation.PysparkSchemaValidator()
+    maxDiff = None
 
     @pytest.fixture(autouse=True)
-    def import_fixtures(self, sqlContext: sql.SQLContext):
+    def import_fixtures(self, sqlContext: sql.SQLContext, data_dir: str):
         self.sql_context = sqlContext
+        self.input_dir = path.join(data_dir, INPUT_FOLDER_PATH)
+        self.output_dir = path.join(data_dir, OUTPUT_FOLDER_PATH)
 
-    @classmethod
-    def _load_ascat_files(cls) -> Iterable[dict]:
-        with open("tests/unit/data/input/test_ascat_builder_common.ndjson", "r") as f:
-            for line in f.readlines():
-                yield json.loads(line)
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.ascat_files = tuple(cls._load_ascat_files())
-
-    def _get_ascat_document_df(self) -> sql.DataFrame:
-
-        return self.sql_context.createDataFrame(
-            ASCAT_DOCUMENTS,
-            (
-                "did",
-                "gene_id",
-                "gene_name",
-                "chromosome",
-                "start",
-                "end",
-                "copy_number",
-                "min_copy_number",
-                "max_copy_number",
-            ),
+    def setUp(self) -> None:
+        self.file_df = self.sql_context.read.json(
+            path.join(self.input_dir, "test_ascat_builder_files_common.ndjson")
+        )
+        self.gene_model_df = self.sql_context.read.json(
+            path.join(self.input_dir, "test_ascat_builder_gene_model_common.ndjson")
+        )
+        self.ascat_df = self.sql_context.read.csv(
+            path.join(self.input_dir, "test_ascat_builder_ascat_common.tsv"),
+            sep="\t",
+            header=True,
+            # schema=RAW_ASCAT_STRUCT,
+        ).select(
+            "did",
+            "gene_id",
+            "gene_name",
+            "chromosome",
+            F.col("start").cast(types.IntegerType()),
+            F.col("end").cast(types.IntegerType()),
+            F.col("copy_number").cast(types.IntegerType()),
+            F.col("min_copy_number").cast(types.IntegerType()),
+            F.col("max_copy_number").cast(types.IntegerType()),
+        )
+        self.primary_aliquot_df = self.sql_context.read.csv(
+            path.join(self.input_dir, "test_ascat_builder_primary_aliquot_common.tsv"),
+            sep="\t",
+            header=True,
         )
 
-    def _file_filter(self, projects: Container[str], file: dict) -> bool:
-        project_ids = (
-            case.get("project", {}).get("project_id") for case in file.get("cases", ())
+    def _load_file_data(self, project_ids: List[str]) -> sql.DataFrame:
+        lit_project_ids = tuple(F.lit(project_id) for project_id in project_ids)
+
+        return self.file_df.where(
+            F.arrays_overlap("cases.project.project_id", F.array(*lit_project_ids))
         )
 
-        for project_id in project_ids:
-            self.assertIsNotNone(
-                project_id, "Invalid test data. Project ID cannot be None."
-            )
+    def _load_output(self, output_file_name: str) -> Output:
+        with open(path.join(self.output_dir, output_file_name), "rb") as f:
+            output = yaml.safe_load(f)
 
-            if project_id in projects:
-                return True
-
-        return False
-
-    def _get_files_df(self, projects: Container[str]) -> sql.DataFrame:
-        files = filter(functools.partial(self._file_filter, projects), self.ascat_files)
-        rows = tuple((file["file_id"], file["cases"]) for file in files)
-
-        df = self.sql_context.createDataFrame(rows, FILE_SCHEMA)
-
-        return df
+            return Output(expected_schema=schema_validation.Schema(output["expected_schema"]), expected_data=output["expected_data"])
 
     def test__build__tcga_hnsc(self):
-        primary_aliquot_data = frozenset(
-            (
-                ("1805d249-bc24-4eed-b191-86d333d7563f", "fcf1dd86-0f1b-4f3d-a6c6-dcd80e201f20"),
-                ("66d974b9-d64c-4585-a94b-8325e0e11b33", "77470620-3cc3-4f23-a666-156e9cd1c81e"),
-                ("c5435e5e-516a-4db6-b761-ef4f5307c15c", "5d9d664e-c0d5-4ec4-8cc3-65c518b3ec87"),
-                ("9ea1b305-8b2d-43a4-95cf-42bef54126e1", "0e867d2c-937c-4705-afec-c5aef316c2ba"),
-                ("c3c9b822-1a01-4298-b5c5-b1d105c484e9", "dfe50668-4203-4ea4-9239-2cc8e3d87de8"),
-                ("c17be6a4-d22a-4806-97b7-aafae0da4fd2", "03884466-45fc-4dfb-8108-f32c4315bca8"),
-            )
-        )
         config = mock.MagicMock()
         config.projects = ["TCGA-HNSC"]
         config.ascat_backup = "neither"
         es_dataframe_util = mock.MagicMock()
-        es_dataframe_util.get_dataframe.return_value = self._get_files_df(
+        es_dataframe_util.get_dataframe.return_value = self._load_file_data(
             config.projects
         )
         document_service = mock.MagicMock()
-        document_service.get_dataframe.return_value = self._get_ascat_document_df()
+        document_service.get_dataframe.return_value = self.ascat_df
+        output = self._load_output("ascat_builder.yaml")
         builder = builders.AscatBuilder(
             config,
             self.sql_context,
             document_service,
             es_dataframe_util,
         )
-        primary_aliquot_df = self.sql_context.createDataFrame(
-            tuple((file_id, aliquot_id, "file") for file_id, aliquot_id in primary_aliquot_data),
-            ("file_id", "aliquot_id", "entity"),
+
+        ascat_df = builder.build(
+            primary_aliquot_df=self.primary_aliquot_df, gene_model_df=self.gene_model_df
         )
 
-        ascat_df = builder.build(primary_aliquot_df=primary_aliquot_df)
+        ascat_data = tuple(row.asDict() for row in ascat_df.collect())
 
-        actual_aliquot_ids = frozenset(
-            (row.file_id, row.aliquot_id) for row in ascat_df.select("aliquot_id", "file_id").collect()
-        )
-        self.assertSetEqual(actual_aliquot_ids, primary_aliquot_data)
+        self.assertEqual(len(ascat_data), len(output.expected_data))
+
+        for actual_row, expected_row in zip(ascat_data, output.expected_data):
+            self.assertDictEqual(actual_row, expected_row)
