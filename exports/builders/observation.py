@@ -30,18 +30,13 @@ class ObservationBuilder:
     Builds observation dataframe from the maf dataframe
     """
 
-    def __init__(self, primary_aliquot_builder):
-        self.primary_aliquot_builder = primary_aliquot_builder
-
-    def build_for_ssm(self, maf_df: sql.DataFrame, index_name: str, selector: Optional[str] = None) -> sql.DataFrame:
+    def build_for_ssm(self, maf_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame, index_name: str, selector: Optional[str] = None) -> sql.DataFrame:
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
         said that a unique observation is identified by a unqiue pairing of
         tumor and normal sample uuids and an ssm uuid.
         """
-        primary_aliquot_df = self.primary_aliquot_builder.build_primary_aliquots_for_project()
-
         # Select all of the nested fields
         flat_obs_df = maf_df.select(
             'ssm_id',
