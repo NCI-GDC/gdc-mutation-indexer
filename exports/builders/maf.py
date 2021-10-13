@@ -146,7 +146,7 @@ class MAFBuilder(BaseInputBuilder):
         """
         path = resource_filename('exports.schemas', 'maf.yml')
         with open(path) as f:
-            return yaml.load(f)['maf_schema']
+            return yaml.safe_load(f)['maf_schema']
 
     def format_cosmic_id(self, df):
         """
@@ -335,7 +335,7 @@ class MAFBuilder(BaseInputBuilder):
                 if df is None:
                     df = new_df
                 else:
-                    df = df.unionAll(new_df)
+                    df = df.union(new_df)
             except Exception as e:
                 self.logger.error(e)
 

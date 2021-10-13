@@ -64,6 +64,8 @@ importlib-resources==3.2.1
     # via
     #   pre-commit
     #   virtualenv
+iniconfig==1.1.1
+    # via pytest
 jinja2==2.11.3
     # via sphinx
 jsonpath-rw==1.4.0
@@ -72,8 +74,6 @@ jsonpickle==2.0.0
     # via deepdiff
 markupsafe==1.1.1
     # via jinja2
-more-itertools==8.8.0
-    # via pytest
 nodeenv==1.6.0
     # via pre-commit
 packaging==20.9
@@ -96,7 +96,7 @@ pyparsing==2.4.7
     # via packaging
 pytest-cov==2.12.1
     # via -r dev-requirements.in
-pytest==5.4.3
+pytest==6.1.2
     # via
     #   -r dev-requirements.in
     #   pytest-cov
@@ -130,6 +130,7 @@ toml==0.10.2
     # via
     #   coverage
     #   pre-commit
+    #   pytest
     #   pytest-cov
 urllib3==1.26.6
     # via
@@ -137,8 +138,6 @@ urllib3==1.26.6
     #   requests
 virtualenv==20.6.0
     # via pre-commit
-wcwidth==0.2.5
-    # via pytest
 zipp==1.2.0
     # via
     #   -c requirements.txt

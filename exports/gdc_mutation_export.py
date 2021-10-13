@@ -2,7 +2,7 @@ import logging
 from typing import Iterable, NamedTuple
 
 import config
-from exports import builders
+from exports import builders, es_utils
 from pyspark import sql
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -25,17 +25,19 @@ class GDCMutationExport(object):
     The main entry point into the index export process for the mutation indices
     """
 
-    def __init__(self, sc, sqlContext, config):
+    def __init__(self, sc, sqlContext: sql.SQLContext, config: config.BaseConfig):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sc = sc
         self.sqlContext = sqlContext
 
     def build_input_data_frames(self) -> BuilderInputs:
+        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+
         # Load primary aliquot data
         self.sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe")
         primary_aliquot_df = builders.PrimaryAliquotBuilder(
-            self.config, self.sqlContext
+            self.config, self.sqlContext, self.config.indexd, es_dataframe_util
         ).build()
 
         # Combine MAFs into one DataFrame
@@ -59,20 +61,24 @@ class GDCMutationExport(object):
         )
 
     def run_gene_expression_export(self) -> None:
+        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+            self.config, self.sqlContext, self.config.indexd, es_dataframe_util
+        )
         active_builder = builders.GeneExpressionBuilder(self.config, self.sqlContext)
 
         self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = builders.GeneExpressionCaseInputBuilder(
             self.config,
             self.sqlContext,
-            "gene_expression_cases",
+            primary_aliquot_builder,
         ).build()
 
         self.sc.setJobGroup("GeneExpressionValueInputBuilder", "Build GE ValueInput df")
         ge_values_df = builders.GeneExpressionValueInputBuilder(
             self.config,
             self.sqlContext,
-            "gene_expression_values",
+            primary_aliquot_builder,
         ).build()
 
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))
