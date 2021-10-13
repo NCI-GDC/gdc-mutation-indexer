@@ -18,7 +18,6 @@ OUTPUT_FOLDER_PATH = "output/builders/ascat"
 
 
 Output = NamedTuple("Output", [("expected_schema", schema_validation.Schema), ("expected_data", Sequence[dict])])
-RAW_ASCAT_STRUCT = types.StructType(ascat.RAW_ASCAT_STRUCT.fields + [types.StructField("did", types.StringType())])
 
 class TestAscatBuilder(unittest.TestCase):
     schema_validator = schema_validation.PysparkSchemaValidator()
@@ -41,7 +40,6 @@ class TestAscatBuilder(unittest.TestCase):
             path.join(self.input_dir, "test_ascat_builder_ascat_common.tsv"),
             sep="\t",
             header=True,
-            # schema=RAW_ASCAT_STRUCT,
         ).select(
             "did",
             "gene_id",
