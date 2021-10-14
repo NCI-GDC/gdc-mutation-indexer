@@ -9,6 +9,7 @@ import config
 from exports import es_utils, indexd_utils
 from exports.builders import base_input_builder
 
+
 RAW_ASCAT_STRUCT = types.StructType(
     [
         types.StructField("gene_id", types.StringType()),
@@ -27,6 +28,7 @@ UUIDS_STRUCT = types.StructType(
         types.StructField("cnv_id", types.StringType()),
         types.StructField("consequence_id", types.StringType()),
         types.StructField("occurance_id", types.StringType()),
+        types.StructField("observation_id", types.StringType()),
     ]
 )
 
@@ -48,6 +50,7 @@ def _generate_uuids(
     is_cancer_gene_census: bool,
     biotype: str,
     case_id: str,
+    aliquot_id: str,
 ) -> Dict[str, str]:
     def generate_uuid(*values: Any) -> str:
         return str(uuid.uuid5(uuid.NAMESPACE_DNS, "\t".join(str(v) for v in values)))
@@ -60,6 +63,7 @@ def _generate_uuids(
             symbol, gene_id, is_cancer_gene_census, biotype
         ),
         "occurance_id": generate_uuid(cnv_id, case_id),
+        "observation_id": generate_uuid(cnv_id, case_id, aliquot_id),
     }
 
 
@@ -74,12 +78,14 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         "is_cancer_gene_census",
         "biotype",
         "case_id",
+        "aliquot_id",
     )
 
     ascat_df = ascat_df.withColumn("uuids", uuids)
     ascat_df = ascat_df.withColumn("cnv_id", F.col("uuids.cnv_id"))
     ascat_df = ascat_df.withColumn("consequence_id", F.col("uuids.consequence_id"))
     ascat_df = ascat_df.withColumn("occurance_id", F.col("uuids.occurance_id"))
+    ascat_df = ascat_df.withColumn("observation_id", F.col("uuids.observation_id"))
 
     return ascat_df
 
@@ -188,6 +194,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         |---cnv_id
         |---consequence_id
         |---occurance_id
+        |---observation_id
         """
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
@@ -223,4 +230,5 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "cnv_id",
             "consequence_id",
             "occurance_id",
+            "observation_id",
         )

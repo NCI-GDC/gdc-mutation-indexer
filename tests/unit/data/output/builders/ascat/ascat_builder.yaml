@@ -43,6 +43,7 @@ expected_data:
     cnv_id: 5bd43fcc-6c9c-51ec-a8d4-740312bb655f
     consequence_id: 382a8a26-5a18-5932-8963-fbb970683061
     occurance_id: 2602f0a7-c249-50c6-af1e-08d11e5799a9
+    observation_id: a6e9754a-ea4c-5c48-9fd9-5d9724b5bc8d
   - file_id: 66d974b9-d64c-4585-a94b-8325e0e11b33
     case_id: 12d05e8f-8d13-47c1-b713-2250f6abcef9
     aliquot_id: 77470620-3cc3-4f23-a666-156e9cd1c81e
@@ -55,6 +56,7 @@ expected_data:
     cnv_id: 89b85f31-4d58-5321-8f57-f4e70e56be5b
     consequence_id: 509f1468-4fa0-58be-a514-a1dd7e1274f5
     occurance_id: 005fb9c3-7300-5ffe-9165-75c41331800d
+    observation_id: e3f926ad-976e-54d0-9b9c-e3389c88a7e0
   - file_id: c5435e5e-516a-4db6-b761-ef4f5307c15c
     case_id: 60fcc18c-0509-4c7b-aca9-178f47055077
     aliquot_id: 5d9d664e-c0d5-4ec4-8cc3-65c518b3ec87
@@ -67,6 +69,7 @@ expected_data:
     cnv_id: fb5bc00e-06b6-5372-9dcd-66aaed37ce30
     consequence_id: 41d2b09e-5b6e-55cf-bb0c-325286ceb4e4
     occurance_id: 2a1453ba-66a7-51a1-bcf1-e8e6c1e76a4b
+    observation_id: ebfa5354-b892-587b-ac9f-15cc187cb186
   - file_id: 9ea1b305-8b2d-43a4-95cf-42bef54126e1
     case_id: e08e1d99-81e1-454a-9bda-cda92c9e22b4
     aliquot_id: 0e867d2c-937c-4705-afec-c5aef316c2ba
@@ -79,6 +82,7 @@ expected_data:
     cnv_id: 4f007f9e-3fa0-5fee-b3ad-6a029c5157f4
     consequence_id: 4a04b529-9953-51ae-ad3f-839323bc9163
     occurance_id: 0de1b4a1-c1f0-5a90-aae2-a9e8e4ccfa08
+    observation_id: ee3a9a50-3629-51d9-a0cd-bcc7a675f644
   - file_id: c3c9b822-1a01-4298-b5c5-b1d105c484e9
     case_id: 90d21b9b-dbb8-43a6-9817-67ed69fabdc0
     aliquot_id: 97b1603a-66aa-4e93-96e9-2f6d714ad31f
@@ -91,6 +95,7 @@ expected_data:
     cnv_id: 78c43b46-3cce-5683-9b95-b5cd75f09eb2
     consequence_id: c0d142b6-b43d-5723-ac3c-de21480eef68
     occurance_id: dce95edc-0142-526c-bbee-41a14faab0a5
+    observation_id: c6ffbb1d-e09c-5469-b01d-5e3e01187a0b
   - file_id: c17be6a4-d22a-4806-97b7-aafae0da4fd2
     case_id: 3f2e0c8a-6d5f-4763-be60-5a70994d31a1
     aliquot_id: bde1e806-1437-46df-b3e2-0350aa50ea8d
@@ -103,3 +108,4 @@ expected_data:
     cnv_id: 369fbf15-b8d1-5ab3-ad96-54f7b2e5c001
     consequence_id: 13a23a2c-c80e-55fc-aa13-a99f934bc058
     occurance_id: e0229fb8-452e-597b-8c8b-3e0960438654
+    observation_id: db49870b-d634-59ad-bd9d-c1c9b11e0e60

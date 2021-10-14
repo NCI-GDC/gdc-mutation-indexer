@@ -91,9 +91,8 @@ class TestAscatBuilder(unittest.TestCase):
             primary_aliquot_df=self.primary_aliquot_df, gene_model_df=self.gene_model_df
         )
 
-        ascat_data = tuple(row.asDict() for row in ascat_df.collect())
+        ascat_data = {row.file_id: row.asDict() for row in ascat_df.collect()}
+        expected_data = {row["file_id"]: row for row in output.expected_data}
 
         self.assertEqual(len(ascat_data), len(output.expected_data))
-
-        for actual_row, expected_row in zip(ascat_data, output.expected_data):
-            self.assertDictEqual(actual_row, expected_row)
+        self.assertDictEqual(ascat_data, expected_data)
