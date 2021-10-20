@@ -86,6 +86,8 @@ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph
     #   gdcdatamodel
 psycopg2==2.8.6
     # via psqlgraph
+py4j==0.10.7
+    # via pyspark
 pyrsistent==0.17.3
     # via jsonschema
 pyspark==2.4.5
