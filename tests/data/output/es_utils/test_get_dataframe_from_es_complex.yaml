@@ -22,16 +22,16 @@ expected_schema:
     dataType: *string_type
   - name: updated_datetime
     dataType: *string_type
+  - name: acl
+    dataType:
+      <<: *array_type
+      elementType: *string_type
   - name: cases
     dataType:
       <<: *array_type
       elementType:
         <<: *struct_type
         fields:
-          - name: submitter_analyte_ids
-            dataType: 
-              <<: *array_type
-              elementType: *string_type
           - name: demographic
             dataType:
               <<: *struct_type
@@ -47,7 +47,7 @@ expected_schema:
                     <<: *array_type
                     elementType: *string_type
           - name: diagnoses
-            dataType: 
+            dataType:
               <<: *array_type
               elementType:
                 <<: *struct_type
@@ -70,14 +70,10 @@ expected_data:
   213fd6e3-9462-492f-8917-56967be8fc9d:
     file_id: 213fd6e3-9462-492f-8917-56967be8fc9d
     updated_datetime: "2018-07-20T22:27:55.342974+00:00"
+    acl:
+      - open
     cases:
-      - submitter_analyte_ids:
-          - TCGA-KM-8440-01A-11W
-          - TCGA-KM-8440-01A-11R
-          - TCGA-KM-8440-10A-01W
-          - TCGA-KM-8440-10A-01D
-          - TCGA-KM-8440-01A-11D
-        demographic:
+      - demographic:
           year_of_birth: 1972
         project:
           primary_site:

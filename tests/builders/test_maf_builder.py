@@ -4,11 +4,11 @@ import re
 
 import pytest
 import yaml
+from pyspark.sql import functions as F
+from pyspark.sql import types
 
 import tests_config
 from exports import builders
-from pyspark.sql import functions as f
-from pyspark.sql import types
 
 conf = tests_config.TestConfig()
 
@@ -69,7 +69,7 @@ class TestMAFBuilder:
         # Note that this particular input DF is missing a column, which
         # we need to fix or else standardize_schema will reject it.
         df = builder.file_to_df(conf.maf_urls[0]).withColumn(
-            "callers", f.lit("variant_caller")
+            "callers", F.lit("variant_caller")
         )
         columns = df.columns
 
@@ -81,9 +81,9 @@ class TestMAFBuilder:
         assert reverse_df.columns == sort_df.columns
 
         extra_columns = columns[:]
-        extra_columns.insert(0, f.lit("asdf").alias("extra"))
-        extra_columns.insert(4, f.lit(300).alias("extraneous"))
-        extra_columns.append(f.lit(None).alias("superfluous"))
+        extra_columns.insert(0, F.lit("asdf").alias("extra"))
+        extra_columns.insert(4, F.lit(300).alias("extraneous"))
+        extra_columns.append(F.lit(None).alias("superfluous"))
         extra_df = builder.standardize_schema(df.select(*extra_columns))
         assert extra_df.columns == sort_df.columns
 

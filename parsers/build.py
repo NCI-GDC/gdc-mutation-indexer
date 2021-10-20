@@ -31,6 +31,10 @@ class BuildArgs(BaseParser):
                 'type': int,
                 'default': [0],
             },
+            'gencode-version': {
+                'help': 'The gencode version to build with',
+                'default': 'v22'
+            },
             'study-label': {
                 'help':
                     'Label for the controlled-access study associated with the new '

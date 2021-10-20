@@ -1,10 +1,11 @@
 import logging
 
+from pyspark import sql
+from pyspark.sql import functions as F
+
 import config
 from exports import builders
 from exports.builders import df_builders
-from pyspark import sql
-from pyspark.sql import functions as F
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
@@ -43,7 +44,7 @@ class SSMCentricBuilder(builders.BaseBuilder):
         maf_df: sql.DataFrame,
         case_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
-    ) -> sql.DataFrame:
+    ) -> "SSMCentricBuilder":
         """
         Builds SSM Centric index
         """

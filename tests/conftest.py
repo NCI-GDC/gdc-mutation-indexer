@@ -1,20 +1,17 @@
 import logging
 import os
-
-import pytest
-import yaml
+from typing import Generator
 
 import elasticsearch
-import pyspark
-import tests_config
-from cdisutils import dictionary
-from elasticsearch import helpers
-from exports import builders, es_utils
-from exports.builders import utils
-from normalizer import mapper
+import pytest
+import yaml
 from pyspark import sql
 from pyspark.sql import types
-from tests.utils import maf_metrics, true_stats
+
+import tests_config
+from exports import builders, es_utils
+from exports.builders import utils
+from tests.utils import maf_metrics, test_setup, true_stats
 
 conf = tests_config.TestConfig()
 
@@ -26,85 +23,18 @@ GRAPH_INDICES = frozenset(["case", "file"])
 
 
 @pytest.fixture(scope="session")
-def setup_graph_indices():
+def setup_graph_indices() -> Generator[bool, None, None]:
     """Create graph indices with required docs."""
-    es = conf.es
-    for doc_type in GRAPH_INDICES:
-        print("\n\n\tSETTING UP {} TEST INDICES\n\n".format(doc_type.upper()))
-        if create_test_index(es, doc_type=doc_type):
-            load_docs_into_test_index(es, doc_type)
+    manager = test_setup.IndexManager(conf, conf.es, log, GRAPH_INDICES)
+    loader = test_setup.DocumentLoader(conf, conf.es, log)
 
-    yield True
+    with manager, loader:
+        manager.create_indices()
 
-    for doc_type in GRAPH_INDICES:
-        es.indices.delete(index=conf.graph_indices[doc_type], ignore=[404])
+        for doc_type in GRAPH_INDICES:
+            loader.load_docs(doc_type)
 
-
-def create_test_index(es, doc_type):
-    """Create and configure an Elasticsearch index if needed.
-
-    Skip creation if the index already exists, unless ``graph_force_build`` is set,
-    on the assumption that we already populated the test data.
-
-    Returns:
-        True if the index was created; False if an existing index was reused.
-    """
-    index_name = conf.graph_indices[doc_type]
-    if es.indices.exists(index_name):
-        if not conf.graph_force_build:
-            print("SKIPPING {} TEST INDEX SETUP".format(doc_type.upper()))
-            return False
-
-        es.indices.delete(index_name)
-        es.indices.refresh()
-
-    # TODO Make sure this is how model mapper is actually gonna work.
-    model_mapper = mapper.ModelMapper("gdc_from_graph", doc_type)
-    es.indices.create(index=index_name, body=model_mapper.index_settings)
-
-    return True
-
-
-def load_docs_into_test_index(es, doc_type, input_path=None):
-    """Load documents from gzipped test data into test index.
-
-    Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
-
-    Returns:
-        A set containing the IDs of the documents that were inserted.
-    """
-    if not input_path:
-        input_path = conf.doc_files[doc_type]
-
-    index_name = conf.graph_indices[doc_type]
-
-    docs = []
-    for doc in true_stats.TestDataStats.load_es_graph_dump(input_path):
-        to_append = {
-            "_id": doc["{}_id".format(doc_type)],
-            "_index": index_name,
-            "_source": doc,
-        }
-        docs.append(to_append)
-
-    # Remove .cases[] from underneath case.files[]
-    if doc_type == "case":
-        for doc in docs:
-            for _file in doc["_source"]["files"]:
-                _file.pop("cases", None)
-
-    # TODO: temp fix
-    docs = dictionary.remove_keys_from_dict(docs, ["file_state"])
-
-    log.info("Bulk loading {} docs to the ES... {}".format(doc_type, len(docs)))
-    helpers.bulk(es, docs, ignore=409)
-
-    log.info("loaded {} {} docs".format(len(docs), doc_type))
-
-    es.indices.refresh(index_name)
-
-    ids = {doc["_id"] for doc in docs}
-    return ids
+        yield True
 
 
 @pytest.fixture(scope="session")
@@ -122,33 +52,27 @@ def source_es_client(setup_graph_indices):
 
 
 @pytest.fixture
-def index_cases_with_duplicate_aliquots(source_es_client, request):
+def index_cases_with_duplicate_aliquots(source_es_client):
     """Add cases with duplicate aliquot submitter IDs to the index.
 
     Remove them after the test completes.
     """
     input_path = os.path.join(conf.input_dir, "cases_with_duplicate_aliquots.ndjson")
-    ids = load_docs_into_test_index(source_es_client, "case", input_path=input_path)
 
-    yield ids
-
-    body = {"query": {"terms": {"file_id": list(ids)}}}
-    source_es_client.delete_by_query(index=conf.graph_case_index, body=body)
+    with test_setup.DocumentLoader(conf, source_es_client, log) as loader:
+        yield loader.load_docs("case", input_path=input_path)
 
 
 @pytest.fixture(scope="class")
-def files_with_linked_cases(source_es_client, request):
+def files_with_linked_cases(source_es_client):
     input_path = os.path.join(conf.input_dir, "files_with_linked_cases.ndjson")
-    ids = load_docs_into_test_index(source_es_client, "file", input_path=input_path)
 
-    yield ids
-
-    body = {"query": {"terms": {"file_id": list(ids)}}}
-    source_es_client.delete_by_query(index=conf.graph_file_index, body=body)
+    with test_setup.DocumentLoader(conf, source_es_client, log) as loader:
+        yield loader.load_docs("file", input_path=input_path)
 
 
 @pytest.fixture(scope="session")
-def spark_session() -> sql.SparkSession:
+def spark_session() -> Generator[sql.SparkSession, None, None]:
     with sql.SparkSession.builder.master("local[1]").appName(
         "sqlContextFixture"
     ).getOrCreate() as spark_session:
@@ -157,8 +81,6 @@ def spark_session() -> sql.SparkSession:
         spark_session.sql("set spark.sql.caseSensitive=true")
 
         yield spark_session
-
-    spark_session._jvm.System.clearProperty("spark.driver.port")
 
 
 @pytest.fixture(scope="session")
@@ -242,27 +164,28 @@ def primary_aliquot_df(sqlContext):
     the test data.
     """
     primary_aliquots = [
-        ("1db41963-a520-47f0-828c-ed5c626507b1", "WXG"),
-        ("0ff579a1-e295-408d-b194-febbca798e34", "WSG"),
-        ("872092b3-d31e-44d7-bd03-e29f52f8ab5a", "WSG"),
-        ("bbbce1ba-c739-43ba-b9cf-a4f746491ae3", "WXG"),
-        ("2f5d8110-35c7-419f-8b35-bc3040f940f3", "WXG"),
-        ("13afbde8-e5b5-4f3c-8a9d-daef71560005", "WXG"),
-        ("e8c2a8c6-5c2b-460b-b536-60bc537e6be3", "WXG"),
-        ("b08dfba8-6afb-4217-9259-72be6f1f3363", "WXG"),
-        ("68642658-7996-4423-bb25-d3beb9a414f1", "WXG"),
-        ("a29a20e3-5c2c-4f37-b93e-ae9ebc46ec53", "WXG"),
-        ("f18cfe4a-fffd-4e09-9eef-343ba9ffd0d1", "WXG"),
-        ("c689ae1d-4a6b-45db-b4d1-6b34c5c61522", "WSG"),
-        ("d2748e35-4719-43c1-a533-b6b0cd9688c3", "WXG"),
-        ("d241a660-1c84-44fa-a6b3-ec9284333bd2", "WSG"),
-        ("00000000-1111-2222-4444-888888888888", "WSG"),
-        ("ee8c1919-17a9-4df1-8aa5-79546621b23c", "WSG"),
-        ("452135f2-6de6-4593-a091-ddf6344ee431", "WXG"),
-        ("a20aeafc-9a68-4af0-87ea-532ee835ebb2", "WSG"),
+        ("case", "1db41963-a520-47f0-828c-ed5c626507b1", "WXG"),
+        ("case", "0ff579a1-e295-408d-b194-febbca798e34", "WSG"),
+        ("case", "872092b3-d31e-44d7-bd03-e29f52f8ab5a", "WSG"),
+        ("case", "bbbce1ba-c739-43ba-b9cf-a4f746491ae3", "WXG"),
+        ("case", "2f5d8110-35c7-419f-8b35-bc3040f940f3", "WXG"),
+        ("case", "13afbde8-e5b5-4f3c-8a9d-daef71560005", "WXG"),
+        ("case", "e8c2a8c6-5c2b-460b-b536-60bc537e6be3", "WXG"),
+        ("case", "b08dfba8-6afb-4217-9259-72be6f1f3363", "WXG"),
+        ("case", "68642658-7996-4423-bb25-d3beb9a414f1", "WXG"),
+        ("case", "a29a20e3-5c2c-4f37-b93e-ae9ebc46ec53", "WXG"),
+        ("case", "f18cfe4a-fffd-4e09-9eef-343ba9ffd0d1", "WXG"),
+        ("case", "c689ae1d-4a6b-45db-b4d1-6b34c5c61522", "WSG"),
+        ("case", "d2748e35-4719-43c1-a533-b6b0cd9688c3", "WXG"),
+        ("case", "d241a660-1c84-44fa-a6b3-ec9284333bd2", "WSG"),
+        ("case", "00000000-1111-2222-4444-888888888888", "WSG"),
+        ("case", "ee8c1919-17a9-4df1-8aa5-79546621b23c", "WSG"),
+        ("case", "452135f2-6de6-4593-a091-ddf6344ee431", "WXG"),
+        ("case", "a20aeafc-9a68-4af0-87ea-532ee835ebb2", "WSG"),
     ]
     schema = types.StructType(
         [
+            types.StructField("entity", types.StringType()),
             types.StructField("case_id", types.StringType()),
             types.StructField("experimental_strategy", types.StringType()),
         ]

@@ -1,4 +1,4 @@
-index: files
+index: File
 document_id: file_id
 kwargs:
   query:
@@ -9,18 +9,17 @@ kwargs:
           terms:
             cases.case_id:
               - c65d7c98-9678-401b-9f4d-0e1e83be3697
-  
+
   include_fields:
     - file_id
+    - acl
     - updated_datetime
     - cases.demographic.year_of_birth
     - cases.diagnoses.treatments.state
-    - cases.submitter_analyte_ids
     - cases.project.primary_site
-  
+
   include_as_arrays:
-    - cases.submitter_analyte_ids
+    - acl
     - cases.project.primary_site
-  
+
   read_metadata: true
-  
