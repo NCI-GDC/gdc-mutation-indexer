@@ -47,6 +47,10 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
                                                                 types.StructField(
                                                                     "aliquot_id",
                                                                     types.StringType(),
+                                                                ),
+                                                                types.StructField(
+                                                                    "created_datetime",
+                                                                    types.StringType(),
                                                                 )
                                                             ]
                                                         )

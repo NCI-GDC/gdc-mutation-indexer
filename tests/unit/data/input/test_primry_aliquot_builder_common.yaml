@@ -128,6 +128,7 @@
             - analytes:
                 - aliquots:
                     - aliquot_id: a-6
+                    - aliquot_id: a-6a
       demographic:
         days_to_death: 100
         ethnicity: fill
@@ -176,6 +177,9 @@
             - analytes:
                 - aliquots:
                     - aliquot_id: a-8a
+                      created_datetime: "2020-01-02T10:28:47.799241-05:00"
+                    - aliquot_id: a-8ab
+                      created_datetime: "2020-01-02T10:28:47.799242-05:00"
         - sample_id: s-8b
           sample_type: Solid Tissue Normal
           portions:

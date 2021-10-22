@@ -401,7 +401,7 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             },
         ]
 
-        return (
+        aliquot_df = (
             self._get_primary_aliquot_df(filters)
             .select(
                 "entity_id",
@@ -444,5 +444,26 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
                 "file_id",
                 "experimental_strategy",
                 "aliquot.aliquot_id",
+                F.col("aliquot.created_datetime")
+                .cast("timestamp")
+                .alias("aliquot_created_datetime"),
+            )
+        )
+        aliquot_window = (
+            sql.Window()
+            .partitionBy("entity", "entity_id")
+            .orderBy("aliquot_created_datetime", "aliquot_id")
+        )
+
+        return (
+            aliquot_df.withColumn("row_number", F.row_number().over(aliquot_window))
+            .where(F.col("row_number") == 1)
+            .select(
+                "entity_id",
+                "entity",
+                "case_id",
+                "file_id",
+                "experimental_strategy",
+                "aliquot_id",
             )
         )
