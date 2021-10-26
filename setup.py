@@ -2,7 +2,7 @@ import shlex
 import subprocess
 from os import path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md")) as f:
@@ -39,6 +39,7 @@ setup(
         "ndjson~=0.3",
         "networkx<=2.4",
         "requests~=2.7",
+        "more-itertools~=8.9",
         "python-dateutil~=2.8",
         "PyYaml>=3.11,<6",
         "six~=1.15.0",
