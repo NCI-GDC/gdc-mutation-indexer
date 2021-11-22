@@ -1,4 +1,5 @@
 import logging
+from pyspark import sql
 
 from pyspark.sql.functions import col, lit, udf
 from pyspark.sql.types import StringType
@@ -36,7 +37,7 @@ class GisticBuilder(BaseInputBuilder):
     def build_from_cache(self, df):
         return df
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Read, combine and transform gistic files
 

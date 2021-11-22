@@ -1,5 +1,6 @@
 import collections
 import logging
+from pyspark import sql
 
 from pyspark.sql import types
 
@@ -38,7 +39,7 @@ class AliquotBuilder(BaseInputBuilder):
     def __init__(self, config, sqlContext):
         super(AliquotBuilder, self).__init__(config, sqlContext, 'aliquot')
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         return self.get_aliquots_from_headers()
 
     def get_aliquots_from_headers(self):

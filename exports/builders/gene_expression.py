@@ -1,4 +1,5 @@
 import abc
+from pyspark import sql
 
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -144,7 +145,7 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder):
             config, sqlContext, "gene_expression_values", primary_aliquot_builder
         )
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         gm_df = gene_model.GeneModelBuilder(self.config, self.sqlContext).build()
 
         pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select(
@@ -214,7 +215,7 @@ class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder):
             config, sqlContext, "gene_expression_cases", primary_aliquot_builder
         )
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         initial_df = self.get_primary_aliquot_data().primary_aliquot_df
 
         # NOTE: diagnoses is a nested document, so we are flattening it by

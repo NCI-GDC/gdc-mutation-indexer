@@ -1,0 +1,6 @@
+# These are only required by master.py and will not be distributed to spark workers
+-c requirements.txt
+
+pyspark==2.4.5
+git+ssh://git@github.com/NCI-GDC/cdisutils.git@1.7.0#egg=cdisutils
+git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary
