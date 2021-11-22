@@ -1,5 +1,6 @@
 import abc
 import logging
+from pyspark import sql
 
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
@@ -36,7 +37,7 @@ class BaseInputBuilder(object):
             return config_urls
         return self.get_urls()
 
-    def build(self):
+    def build(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         ALWAYS
 
@@ -53,7 +54,7 @@ class BaseInputBuilder(object):
         if df:
             df = self.build_from_cache(df)
         else:
-            df = self.build_from_scratch()
+            df = self.build_from_scratch(**kwargs)
 
         # write
         self.write(df)
@@ -69,7 +70,7 @@ class BaseInputBuilder(object):
         return df
 
     @abc.abstractmethod
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         pass
 
     def get_urls(self):

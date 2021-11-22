@@ -377,7 +377,7 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             primary_aliquot_df=primary_aliquot_df, file_urls=file_urls
         )
 
-    def build_from_scratch(self) -> sql.DataFrame:
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)

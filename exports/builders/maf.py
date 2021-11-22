@@ -1,5 +1,6 @@
 import logging
 from pkg_resources import resource_filename
+from pyspark import sql
 
 import yaml
 from pyspark.sql.functions import col, lit, lower, struct, udf
@@ -33,7 +34,7 @@ class MAFBuilder(BaseInputBuilder):
     def build_from_cache(self, df):
         return df
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
