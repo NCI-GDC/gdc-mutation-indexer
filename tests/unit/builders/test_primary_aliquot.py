@@ -143,7 +143,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         # Arrange
         config = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
+        es_df = self._load_data_into_df("tests/unit/data/input/builders/primary_aliquot/common_es_files.yaml")
         es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
             config,

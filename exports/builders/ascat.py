@@ -1,11 +1,13 @@
 from typing import Iterable
 
-import config
-from exports import es_utils, indexd_utils
-from exports.builders import base_input_builder
+import elasticsearch
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+
+import config
+from exports import es_utils, indexd_utils
+from exports.builders import base_input_builder
 
 RawAscatStruct = types.StructType(
     [
@@ -28,11 +30,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         sqlContext: sql.SQLContext,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
+        es_client: elasticsearch.Elasticsearch,
     ) -> None:
         super().__init__(config, sqlContext, "ascat")
 
         self._document_dataframe_util = document_dataframe_util
         self._es_dataframe_util = es_dataframe_util
+        self._es_client = es_client
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
@@ -49,28 +53,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "copy_number",
         )
 
-    def _build_file_df(self) -> sql.DataFrame:
-        body = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"match": {"experimental_strategy": "Genotyping Array"}},
-                        {"match": {"data_type": "Gene Level Copy Number"}},
-                        {"match": {"analysis.workflow_type": "ASCAT2"}},
-                    ]
-                }
-            }
-        }
+    def _build_file_df(self, dids: Iterable[str]) -> sql.DataFrame:
+        body = {"query": {"terms": {"file_id": list(dids)}}}
         included_fields = [
             "file_id",
             "cases.case_id",
             "cases.samples.portions.analytes.aliquots.aliquot_id",
         ]
-
-        if self.config.projects:
-            body["query"]["bool"]["must"].append(
-                {"terms": {"cases.project.project_id": self.config.projects}}
-            )
 
         return (
             self._es_dataframe_util.get_dataframe(
@@ -107,22 +96,47 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        primary_aliquot_df = kwargs["primary_aliquot_df"]
+    def _get_document_ids(self) -> Iterable[str]:
+        body = {
+            "_source": ["file_id"],
+            "query": {
+                "bool": {
+                    "must": [
+                        {"match": {"experimental_strategy": "Genotyping Array"}},
+                        {"match": {"data_type": "Gene Level Copy Number"}},
+                        {"match": {"analysis.workflow_type": "ASCAT2"}},
+                    ]
+                }
+            },
+        }
+
+        if self.config.projects:
+            body["query"]["bool"]["must"].append(
+                {"terms": {"cases.project.project_id": self.config.projects}}
+            )
+
+        hits = es_utils.iterate_es_results(
+            self._es_client,
+            index_name=self.config.graph_file_index,
+            doc_type=self.config.graph_file_doc_type,
+            query=body,
+        )
+
+        return (hit["_source"]["file_id"] for hit in hits)
+
+    def build_from_scratch(
+        self, primary_aliquot_df: sql.DataFrame, **kwargs: sql.DataFrame
+    ) -> sql.DataFrame:
+        dids = tuple(self._get_document_ids())
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
-
         file_df = (
-            self._build_file_df()
+            self._build_file_df(dids)
             .join(primary_aliquot_df, on=["file_id", "aliquot_id"])
             .select("file_id", "case_id", "aliquot_id")
         )
-
-        doc_ids = (
-            row.file_id for row in file_df.select("file_id").distinct().collect()
-        )
-        document_df = self._build_document_df(doc_ids)
+        document_df = self._build_document_df(dids)
 
         return document_df.join(file_df, on=["file_id"]).select(
             "file_id",
