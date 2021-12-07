@@ -1,15 +1,10 @@
 import abc
-from pyspark import sql
 
+from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from exports.builders import (
-    base_builder,
-    base_input_builder,
-    gene_model,
-    primary_aliquot,
-)
+from exports.builders import base_builder, base_input_builder, primary_aliquot
 
 CASE_METADATA = [
     "case_id",
@@ -145,10 +140,12 @@ class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder):
             config, sqlContext, "gene_expression_values", primary_aliquot_builder
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        gm_df = gene_model.GeneModelBuilder(self.config, self.sqlContext).build()
-
-        pc_genes_df = gm_df.filter(gm_df.biotype == "protein_coding").select(
+    def build_from_scratch(self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame) -> sql.DataFrame:
+        """
+        Args:
+            gene_model_df: The output of the GeneModelBuilder.
+        """
+        pc_genes_df = gene_model_df.filter(F.col("biotype") == F.lit("protein_coding")).select(
             "_gene_id", "symbol"
         )
 

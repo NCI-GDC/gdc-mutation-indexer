@@ -125,21 +125,26 @@ def test_data():
 
 
 @pytest.fixture(scope="session")
-def maf_df(sqlContext):
+def gene_model_df(sqlContext) -> sql.DataFrame:
+    return builders.GeneModelBuilder(conf, sqlContext).build()
+
+
+@pytest.fixture(scope="session")
+def maf_df(sqlContext, gene_model_df):
     """
     Builds combined maf dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
-    return builders.MAFBuilder(conf, sqlContext).build()
+    return builders.MAFBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture(scope="session")
-def gistic_df(sqlContext):
+def gistic_df(sqlContext, gene_model_df):
     """
     Builds combined gistic dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING GISTIC_DF\n\n")
-    return builders.GisticBuilder(conf, sqlContext).build()
+    return builders.GisticBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture(scope="session")
