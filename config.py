@@ -100,6 +100,7 @@ class BaseConfig(object):
     gene_expression_cases_path = "gene_expression_cases_df.parquet"
     primary_aliquot_path = "primary_aliquot_df.parquet"
     ascat_path = "ascat_df.parquet"
+    gene_model_path = "gene_model_df.parquet"
 
     percentile_threshold = {
         'genes_per_case': 100,

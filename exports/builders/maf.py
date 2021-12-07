@@ -14,7 +14,6 @@ from exports.builders.utils import (
 )
 
 from exports.builders.base_input_builder import BaseInputBuilder
-from exports.builders.gene_model import GeneModelBuilder
 from exports.builders.clinical_annotations.civic import CivicBuilder
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -34,10 +33,13 @@ class MAFBuilder(BaseInputBuilder):
     def build_from_cache(self, df):
         return df
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
+    def build_from_scratch(self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features
+
+        Args:
+            gene_model_df: The output of the GeneModelbuilder.
         """
 
         df = self.combine()
@@ -57,12 +59,10 @@ class MAFBuilder(BaseInputBuilder):
         df = self.extract_cds_position(df)
         # Extract sift and polyphen columns
         df = extract_sift_polyphen(df)
-        # Build gene model and join with MAF dataframe
-        gm_df = GeneModelBuilder(self.config, self.sqlContext).build()
 
-        cols_to_drop = [c for c in gm_df.columns]
+        cols_to_drop = [c for c in gene_model_df.columns]
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        df = df.join(gm_df, df.gene_id == gm_df._gene_id, 'inner')
+        df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, 'inner')
         df = df.drop('_gene_id')
         df = self.add_null(df)
         df = self.add_canonical_transcript_lengths(df)

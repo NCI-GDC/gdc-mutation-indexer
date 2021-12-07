@@ -63,6 +63,7 @@ def ge_cases_df(sqlContext, ge_conf):
 
 @pytest.fixture
 def ge_values_df(sqlContext, ge_conf):
+    gene_model_df = builders.GeneModelBuilder(ge_conf, sqlContext).build()
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
     primary_aliquot_builder = builders.PrimaryAliquotBuilder(
         ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
@@ -70,7 +71,7 @@ def ge_values_df(sqlContext, ge_conf):
 
     return builders.GeneExpressionValueInputBuilder(
         ge_conf, sqlContext, primary_aliquot_builder
-    ).build()
+    ).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture

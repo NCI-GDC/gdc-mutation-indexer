@@ -12,6 +12,7 @@ logging.basicConfig(format=config.LOG_FORMAT)
 BuilderInputs = NamedTuple(
     "BuilderInputs",
     [
+        ("gene_model_df", sql.DataFrame),
         ("maf_df", sql.DataFrame),
         ("gistic_df", sql.DataFrame),
         ("case_df", sql.DataFrame),
@@ -35,6 +36,10 @@ class GDCMutationExport(object):
     def build_input_data_frames(self) -> BuilderInputs:
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
 
+        # Load gene model
+        self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
+        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
+
         # Load primary aliquot data
         self.sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe")
         primary_aliquot_df = builders.PrimaryAliquotBuilder(
@@ -43,11 +48,11 @@ class GDCMutationExport(object):
 
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
-        maf_df = builders.MAFBuilder(self.config, self.sqlContext).build()
+        maf_df = builders.MAFBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
 
         # Combine Gistics into one DataFrame
         self.sc.setJobGroup("GisticBuilder", "Build Gistic dataframe")
-        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build()
+        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
 
         # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
@@ -58,7 +63,7 @@ class GDCMutationExport(object):
         sub_case_df.persist()
 
         return BuilderInputs(
-            maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
+            gene_model_df, maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
         )
 
     def run_gene_expression_export(self) -> None:
@@ -67,6 +72,7 @@ class GDCMutationExport(object):
             self.config, self.sqlContext, self.config.indexd, es_dataframe_util
         )
         active_builder = builders.GeneExpressionBuilder(self.config, self.sqlContext)
+        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
 
         self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = builders.GeneExpressionCaseInputBuilder(
@@ -80,7 +86,7 @@ class GDCMutationExport(object):
             self.config,
             self.sqlContext,
             primary_aliquot_builder,
-        ).build()
+        ).build(gene_model_df=gene_model_df)
 
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))
         active_builder.build(ge_case_df, ge_values_df).load()
