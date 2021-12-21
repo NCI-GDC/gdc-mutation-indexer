@@ -52,13 +52,13 @@ maf_schema:
   consequence_type:
       name:  Consequence
   ref_seq_accession:
-      name:  AA_MAF
+      name:  ESP_AA_AF
   aa_start:
-      name:  AA_MAF
+      name:  ESP_AA_AF
   aa_end:
-      name:  AA_MAF
+      name:  ESP_AA_AF
   aa_change:
-      name:  AA_MAF
+      name:  ESP_AA_AF
   vep_impact:
       name:  IMPACT
   amino_acids:
