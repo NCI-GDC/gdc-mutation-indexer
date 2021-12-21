@@ -51,6 +51,14 @@ def _generate_uuids(
     case_id: str,
     aliquot_id: str,
 ) -> Dict[str, str]:
+    """Creates a uuid struct the following uuids (based on):
+            cnv_id (chromosome, start_position, end_position, copy_number)
+            consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
+            occurrence_id (cnv_id, case_id)
+            observation_id (cnv_id, case_id, aliquot_id)
+
+        Returns: UUIDS_STRUCT
+    """
     cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, copy_number)
 
     return {
@@ -64,6 +72,29 @@ def _generate_uuids(
 
 
 def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
+    """Adds the following uuids to the dataframe:
+            cnv_id
+            consequence_id
+            occurrence_id
+            observation_id
+        Which are created using the following columns from the input ascat_df:
+            gene_chromosome
+            start_position
+            end_position
+            copy_number
+            symbol
+            gene_id
+            is_cancer_gene_census
+            biotype
+            case_id
+            aliquot_id
+
+        Args:
+            ascat_df: The ascat dataframe with the documented columns present.
+
+        Returns:
+            Ascat data frame with the uuuids added.
+    """
     uuids = _generate_uuids(
         "gene_chromosome",
         "start_position",
