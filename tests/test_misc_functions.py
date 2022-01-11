@@ -1,26 +1,14 @@
+import random
+
 import pytest
-from random import randint
+from normalizer import mapper
+from pyspark.sql import functions as F
 
-from normalizer.mapper import ModelMapper
-from pyspark.sql.functions import lit
-from exports.builders.utils import (
-    percentile,
-    struct_select,
-    extract_aas_position,
-)
-from tests_config import TestConfig
-from tests.utils.true_stats import TestDataStats
-from exports.builders.utils import (
-    ssm_label,
-    _udf_uuid5_field,
-    sanitize_aa_change,
-    sanitize_gene_aa_change,
-    convert_empty_str_to_null_in_col,
-    extract_impact,
-    extract_score,
-)
+import tests_config
+from exports.builders import utils
+from tests.utils import true_stats
 
-conf = TestConfig()
+conf = tests_config.TestConfig()
 
 
 def create_df(sqlContext, values, column_name='values'):
@@ -34,13 +22,13 @@ def create_df(sqlContext, values, column_name='values'):
 @pytest.mark.parametrize('index', ['ssm_centric', 'ssm_occurrence_centric',
                                    'cnv_centric', 'cnv_occurrence_centric'])
 def test_struct_select_without_selector(sqlContext, index):
-    mapper = ModelMapper(index)
+    model_mapper = mapper.ModelMapper(index)
 
     # Make sure that we are actually testing something
-    assert len(mapper.nested_mappings) > 0
+    assert len(model_mapper.nested_mappings) > 0
 
-    for mapping in mapper.nested_mappings:
-        stmt = struct_select(index, mapping)
+    for mapping in model_mapper.nested_mappings:
+        stmt = utils.struct_select(index, mapping)
         assert stmt
 
 
@@ -58,13 +46,13 @@ def test_struct_select_with_selector(sqlContext, index, selector):
     Since case_centric and gene_centric have same nested mappings under
     different paths we need to provide a selector to resolve it.
     """
-    mapper = ModelMapper(index)
+    model_mapper = mapper.ModelMapper(index)
 
     # Make sure that we are actually testing something
-    assert len(mapper.nested_mappings) > 0
+    assert len(model_mapper.nested_mappings) > 0
 
-    for mapping in mapper.nested_mappings:
-        stmt = struct_select(index, mapping, selector=selector)
+    for mapping in model_mapper.nested_mappings:
+        stmt = utils.struct_select(index, mapping, selector=selector)
         assert stmt
 
 
@@ -86,14 +74,14 @@ class TestMiscFunctions:
         """
         Test the percentile util function
         """
-        length = randint(0, 100)
+        length = random.randint(0, 100)
         if length % 2:
             length += 1
-        v = [randint(0, 100) for i in range(length + 1)]
+        v = [random.randint(0, 100) for i in range(length + 1)]
         sorted_v = sorted(v)
-        assert percentile(v, 0) == sorted_v[0]
-        assert percentile(v, 50) == sorted_v[length//2]
-        assert percentile(v, 100) == sorted_v[-1]
+        assert utils.percentile(v, 0) == sorted_v[0]
+        assert utils.percentile(v, 50) == sorted_v[length//2]
+        assert utils.percentile(v, 100) == sorted_v[-1]
 
     def test_graph_index(self, source_es_client):
         """
@@ -129,7 +117,7 @@ class TestMiscFunctions:
         expected_df = create_df(sqlContext, expected_output, 'aa_change')
 
         # Test:
-        assert sanitize_aa_change(df).collect() == expected_df.collect()
+        assert utils.sanitize_aa_change(df).collect() == expected_df.collect()
 
     def test_extract_impact_or_score(self, sqlContext):
         # Fake input and expected output
@@ -145,8 +133,8 @@ class TestMiscFunctions:
         expected_score_df = create_df(sqlContext, expected_score_output, 'field_score')
 
         # Test:
-        df = extract_impact(df, 'field', 'field_impact')
-        df = extract_score(df, 'field', 'field_score')
+        df = utils.extract_impact(df, 'field', 'field_impact')
+        df = utils.extract_score(df, 'field', 'field_score')
 
         assert df.select('field_impact').collect() == expected_impact_df.collect()
         assert df.select('field_score').collect() == expected_score_df.collect()
@@ -161,7 +149,7 @@ class TestMiscFunctions:
         expected_df = create_df(sqlContext, expected_output, 'gene_aa_change')
 
         # Test:
-        assert sanitize_gene_aa_change(df).collect() == expected_df.collect()
+        assert utils.sanitize_gene_aa_change(df).collect() == expected_df.collect()
 
     def test_convert_empty_str_to_null_in_col(self, sqlContext):
         # Fake input and expected output
@@ -173,14 +161,14 @@ class TestMiscFunctions:
         expected_df = create_df(sqlContext, expected_output, 'test')
 
         # Test:
-        assert convert_empty_str_to_null_in_col(df, 'test').collect() == expected_df.collect()
+        assert utils.convert_empty_str_to_null_in_col(df, 'test').collect() == expected_df.collect()
 
     def test_aa_start_end(self, maf_df):
         """
         Test aa_start and aa_end extraction
         """
-        new_df = maf_df.withColumn('aa_change', lit('p.L1201R'))
-        new_df = extract_aas_position(new_df)
+        new_df = maf_df.withColumn('aa_change', F.lit('p.L1201R'))
+        new_df = utils.extract_aas_position(new_df)
 
         assert 'aa_start' in new_df.columns
         assert 'aa_end' in new_df.columns
@@ -192,26 +180,26 @@ class TestMiscFunctions:
         """
         Test ssm label generation
         """
-        label = ssm_label('chr3', 'SNP', 41589825, '', 'A', 'T')
+        label = utils.ssm_label('chr3', 'SNP', 41589825, '', 'A', 'T')
         assert label == 'chr3:g.41589825A>T'
 
-        label = ssm_label('chr3', 'DEL', 41589825, '', 'A', '')
+        label = utils.ssm_label('chr3', 'DEL', 41589825, '', 'A', '')
         assert label == 'chr3:g.41589825delA'
 
         # TODO Other indel cases
-        label = ssm_label('chr3', 'INS', 41589825, 41589825, '', 'T')
+        label = utils.ssm_label('chr3', 'INS', 41589825, 41589825, '', 'T')
         assert label == 'chr3:g.41589825_41589825insT'
 
-        label = ssm_label('chr4', 'SNP', 112382545, '', 'A', 'T')
+        label = utils.ssm_label('chr4', 'SNP', 112382545, '', 'A', 'T')
         assert label == 'chr4:g.112382545A>T'
 
-        label = ssm_label('chr5', 'DNP', 112382500, 112382501, 'AC', 'TG')
+        label = utils.ssm_label('chr5', 'DNP', 112382500, 112382501, 'AC', 'TG')
         assert label == 'chr5:g.112382500_112382501delinsTG'
 
-        label = ssm_label('chr5', 'TNP', 112382500, 112382502, 'ACT', 'TGA')
+        label = utils.ssm_label('chr5', 'TNP', 112382500, 112382502, 'ACT', 'TGA')
         assert label == 'chr5:g.112382500_112382502delinsTGA'
 
-        label = ssm_label('chr5', 'ONP', 112382500, 112382505, 'TCGATC', 'CTAGCT')
+        label = utils.ssm_label('chr5', 'ONP', 112382500, 112382505, 'TCGATC', 'CTAGCT')
         assert label == 'chr5:g.112382500_112382505delinsCTAGCT'
 
     def test_uuid5(self):
@@ -219,12 +207,12 @@ class TestMiscFunctions:
         Test uuid5 generation
         """
 
-        ssm_id = _udf_uuid5_field('ssm', 'GRCh38', 'chr4',
+        ssm_id = utils.generate_uuid5('ssm', 'GRCh38', 'chr4',
                                   '112382545', '112382545',
                                   'SNP', 'A', 'T')
         assert ssm_id == '3439eab1-0c63-50cd-bad7-1ae8ffa8aa01'
 
-        ssm_occ_id = _udf_uuid5_field('ssm_occurrence',
+        ssm_occ_id = utils.generate_uuid5('ssm_occurrence',
                                       '642a6e7d-8b15-5f93-9e29-22c9649e9058',
                                       '13afbde8-e5b5-4f3c-8a9d-daef71560005')
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
@@ -234,8 +222,8 @@ class TestMiscFunctions:
         """
         Test that TestDataStats loads test data and returns stats
         """
-        data = TestDataStats.load_test_data(conf.input_dir)
-        stats = TestDataStats.get_stats(maf_df, gistic_df, data, index)
+        data = true_stats.TestDataStats.load_test_data(conf.input_dir)
+        stats = true_stats.TestDataStats.get_stats(maf_df, gistic_df, data, index)
 
         if index in ["gene_expression"]:
             assert stats is None

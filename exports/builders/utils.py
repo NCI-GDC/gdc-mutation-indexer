@@ -1,4 +1,5 @@
 import collections
+from typing import Any
 import pkg_resources
 import re
 import uuid
@@ -188,7 +189,7 @@ def ssm_label_col(chromosome,
                                         end_pos, ref_allele, tumor_allele)
 
 
-def _udf_uuid5_field(*values):
+def generate_uuid5(*values: Any) -> str:
     """
     From Junjun's indexer:
     https://github.com/NCI-GDC/es-indexer/blob/d30cf9ef9a445c5bea441b9333ca4b8c2c2c33cb/es_indexer/dataframe/processor/uuid5_field.py#L6
@@ -207,7 +208,7 @@ def _udf_uuid5_field(*values):
 
 
 def uuid5_col(*values):
-    return udf(_udf_uuid5_field, StringType())(*values)
+    return udf(generate_uuid5, StringType())(*values)
 
 
 def ssm_occurrence_uuid(namespace, ssm, case):
