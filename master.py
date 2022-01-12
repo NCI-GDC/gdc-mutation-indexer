@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     """
     Parse mutation indexer arguments
     """
-    parser = config.ParserBuilder.build(
+    parser = parsers.ParserBuilder.build(
         config.ALL_PARSERS, description="Mutation Indexer"
     )
     args = parser.parse_args()
