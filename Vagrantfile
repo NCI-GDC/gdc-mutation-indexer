@@ -5,7 +5,7 @@
 $core_setup = <<-SCRIPT
   add-apt-repository ppa:deadsnakes/ppa
   apt-get update
-  apt-get install -y python3.5 python3.5-venv
+  apt-get install -y python3.6 python3.6-venv
   apt-get install -y openjdk-8-jdk unzip
 SCRIPT
 
@@ -54,7 +54,7 @@ then
   rm -rf /home/vagrant/venv
 fi
 
-python3.5 -m venv /home/vagrant/venv
+python3.6 -m venv /home/vagrant/venv
 source /home/vagrant/venv/bin/activate
 ssh-keyscan github.com >> /home/vagrant/.ssh/known_hosts
 cd /vagrant

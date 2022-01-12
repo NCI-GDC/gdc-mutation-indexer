@@ -3,10 +3,9 @@ import tempfile
 
 import pytest
 
+import config
 import master
-from master import get_spark_args, get_config_args
-from parsers import ParserBuilder
-from config import ALL_PARSERS
+import parsers
 
 REQUIRED_ARGUMENTS = [
     "--s3-host",
@@ -150,8 +149,8 @@ EXPECTED_PARTIAL_CONFIG_ARGS = {
 
 @pytest.fixture()
 def get_args():
-    parser = ParserBuilder.build(
-        ALL_PARSERS,
+    parser = parsers.ParserBuilder.build(
+        config.ALL_PARSERS,
         description="Mutation Indexer",
     )
     args = parser.parse_args(REQUIRED_ARGUMENTS)
@@ -160,18 +159,20 @@ def get_args():
 
 def test_get_spark_args(get_args, monkeypatch):
     tmp_dir = tempfile.mkdtemp()
-    monkeypatch.setattr(master, 'ROOT_DIR', tmp_dir)
+    monkeypatch.setattr(config, "ROOT_DIR", tmp_dir)
 
-    artifacts_dir = os.path.join(tmp_dir, 'artifacts')
-    jars_dir = os.path.join(artifacts_dir, 'jars')
-    eggs_dir = os.path.join(artifacts_dir, 'eggs')
+    artifacts_dir = os.path.join(tmp_dir, "artifacts")
+    jars_dir = os.path.join(artifacts_dir, "jars")
+    eggs_dir = os.path.join(artifacts_dir, "eggs")
     os.mkdir(artifacts_dir)
     os.mkdir(jars_dir)
     os.mkdir(eggs_dir)
-    spark_args = get_spark_args(get_args)
+    spark_args = master.get_spark_args(get_args)
     assert EXPECTED_PARTIAL_SPARK_ARGS < set(spark_args)
 
 
 def test_get_config_args(get_args):
-    config_args = get_config_args(get_args)
-    assert EXPECTED_PARTIAL_CONFIG_ARGS <= {arg.split('=')[0] for arg in set(config_args)}
+    config_args = master.get_config_args(get_args)
+    assert EXPECTED_PARTIAL_CONFIG_ARGS <= {
+        arg.split("=")[0] for arg in set(config_args)
+    }
