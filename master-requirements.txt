@@ -21,7 +21,7 @@ botocore==1.19.63
     #   -c requirements.txt
     #   boto3
     #   s3transfer
-cdisutils @ git+ssh://git@github.com/NCI-GDC/cdisutils.git@1.7.0
+cdisutils @ git+https://github.com/NCI-GDC/cdisutils.git@1.7.0
     # via
     #   -c requirements.txt
     #   -r master-requirements.in
