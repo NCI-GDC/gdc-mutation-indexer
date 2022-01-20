@@ -1,4 +1,3 @@
-from distutils import util
 from os import path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from unittest import mock
@@ -38,7 +37,9 @@ class MAF:
     Tumor_Seq_Allele2 = attr.ib(type=str, default="A")
     dbSNP_RS = attr.ib(type=str, default="novel")
     dbSNP_Val_Status = attr.ib(type=Optional[str], default=None)
-    Tumor_Sample_Barcode = attr.ib(type=str, default="MBCProject_3808_T1_WES_1")
+    Tumor_Sample_Barcode = attr.ib(
+        type=Optional[str], default="MBCProject_3808_T1_WES_1"
+    )
     Matched_Norm_Sample_Barcode = attr.ib(type=str, default="MBCProject_3808_SALIVA_1")
     Match_Norm_Seq_Allele1 = attr.ib(type=Optional[str], default=None)
     Match_Norm_Seq_Allele2 = attr.ib(type=Optional[str], default=None)
@@ -311,10 +312,15 @@ class TestMAFBuilder:
         mafs: Tuple[MAF, ...] = (MAF(),),
         config_values: Optional[Dict[str, Any]] = None,
         annotation_builders: Iterable[mock.MagicMock] = (),
+        drop_optional_cols: bool = False,
     ) -> base_input_builder.BaseInputBuilder:
         maf_df = self.spark_session.createDataFrame(
             tuple(maf.to_sql_row() for maf in mafs), self.raw_maf_schema
         )
+
+        if drop_optional_cols:
+            maf_df = maf_df.drop("callers", "normal_bam_uuid", "tumor_bam_uuid")
+
         config = arrange_config(config_values)
         sql_context = mock.MagicMock()
         sql_context.read = sql_context
@@ -449,7 +455,7 @@ class TestMAFBuilder:
     @pytest.mark.parametrize(
         ("bool_value", "expected_value"),
         (("True", True), ("False", False), ("", None), (None, None)),
-        ids=("true", "false", "empty", "null")
+        ids=("true", "false", "empty", "null"),
     )
     def test__build_from_scratch__cast_str_to_bool(
         self, bool_value: Optional[str], expected_value: Optional[bool]
@@ -842,3 +848,37 @@ class TestMAFBuilder:
 
         annotation_builder0.merge_with_maf.assert_called_once()
         annotation_builder1.merge_with_maf.assert_called_once()
+
+    def test__build_from_scratch__strip_domains(self) -> None:
+        inputs = self.arrange_inputs()
+        builder = self.arrange_builder(
+            mafs=(
+                MAF(
+                    DOMAINS="Gene3D:2.60.40.10;PDB-ENSP_mappings:4l29.b;PDB-ENSP_mappings:4l3c.b;PDB-ENSP_mappings:6nca.a;PDB-ENSP_mappings:6nca.b;PDB-ENSP_mappings:6nca.c;PDB-ENSP_mappings:6nca.d;PDB-ENSP_mappings:6nca.e;PDB-ENSP_mappings:6nca.f;PDB-ENSP_mappings:6nca.g;PDB-ENSP_mappings:6nca.h;PDB-ENSP_mappings:6nca.i;PDB-ENSP_mappings:6nca.j;PDB-ENSP_mappings:6nca.k;PDB-ENSP_mappings:6nca.l;PDB-ENSP_mappings:6nca.m;PDB-ENSP_mappings:6nca.n;PDB-ENSP_mappings:6nca.o;PDB-ENSP_mappings:6nca.p;PDB-ENSP_mappings:6nca.q;PDB-ENSP_mappings:6nca.r;PDB-ENSP_mappings:6nca.s;PDB-ENSP_mappings:6nca.t;Pfam:PF07654;PROSITE_profiles:PS50835;PANTHER:PTHR19944;PANTHER:PTHR19944:SF62;SMART:SM00407;Superfamily:SSF48726;CDD:cd05770"
+                ),
+            )
+        )
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert (
+            result_row.domains
+            == "Gene3D:2.60.40.10;Pfam:PF07654;PROSITE_profiles:PS50835;PANTHER:PTHR19944;PANTHER:PTHR19944:SF62;SMART:SM00407;Superfamily:SSF48726;CDD:cd05770"
+        )
+
+    def test__build_from_scratch__default_columns(self) -> None:
+        inputs = self.arrange_inputs()
+        builder = self.arrange_builder(
+            mafs=(
+                MAF(callers="test", normal_bam_uuid="value0", tumor_bam_uuid="value1"),
+            ),
+            drop_optional_cols=True,
+        )
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.variant_caller == "FM Simple Somatic Mutation"
+        assert result_row.normal_bam_uuid is None
+        assert result_row.tumor_bam_uuid is None
