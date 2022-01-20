@@ -7,6 +7,7 @@ import pytest
 import yaml
 from pyspark import sql
 from pyspark.sql import types
+from exports.builders.clinical_annotations import civic
 
 import tests_config
 from exports import builders, es_utils
@@ -135,7 +136,7 @@ def maf_df(sqlContext, gene_model_df):
     Builds combined maf dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
-    return builders.MAFBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
+    return builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture(scope="session")
