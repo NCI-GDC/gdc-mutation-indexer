@@ -8,6 +8,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
+from exports import pyspark_extensions
 from exports.builders import base_input_builder, utils
 from exports.builders.clinical_annotations import civic
 
@@ -343,12 +344,12 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
                 #   latter should go as a static method to base class for MAF and Gistic Builders
                 new_df = self.file_to_df(url)
 
-                new_df = utils.default_columns(
+                new_df = pyspark_extensions.default_columns(
                     new_df,
                     (
-                        utils.DefaultColumn(name="normal_bam_uuid"),
-                        utils.DefaultColumn(name="tumor_bam_uuid"),
-                        utils.DefaultColumn(
+                        pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
+                        pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),
+                        pyspark_extensions.DefaultColumn(
                             name="callers", value="FM Simple Somatic Mutation"
                         ),
                     ),
