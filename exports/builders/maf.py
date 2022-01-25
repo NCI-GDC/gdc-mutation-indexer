@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Iterable
+from typing import Dict, Iterable
 
 import yaml
 from pkg_resources import resource_filename
