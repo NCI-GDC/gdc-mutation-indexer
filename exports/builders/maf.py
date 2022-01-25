@@ -142,7 +142,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         # ensure that we output columns in a consistent order.
         return df.select(*[standardize(k, v) for k, v in self.schema.items()])
 
-    def get_schema(self) -> Dict[str, Any]:
+    def get_schema(self) -> Dict[str, Dict[str, str]]:
         """
         Load the intended MAF schema from the local YAML file
         """
