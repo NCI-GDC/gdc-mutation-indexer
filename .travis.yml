@@ -18,7 +18,7 @@ cache: pip
 env:
   global:
     - SPARK_VERSION="2.4.5"
-    - ES_VERSION="7.7.1"
+    - ES_VERSION="7.16.3"
     - BOTO_CONFIG=/dev/null
 
 before_install:
