@@ -6,6 +6,7 @@ import pytest
 import yaml
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from exports.builders.clinical_annotations import civic
 
 import tests_config
 from exports import builders
@@ -25,12 +26,12 @@ class TestMAFBuilder:
 
     @pytest.fixture
     def annotation_schemas(self, sqlContext):
-        builder = builders.MAFBuilder(conf, sqlContext)
+        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
         return builder.get_annotation_schemas()
 
     def test_patch_url(self, sqlContext):
         """Test that s3 urls are patched correctly"""
-        builder = builders.MAFBuilder(conf, sqlContext)
+        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
         url1 = "s3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt"
         assert builder.patch_url(url1).startswith("s3a://")
 
@@ -38,7 +39,7 @@ class TestMAFBuilder:
         """
         Test that mafs are combined correctly
         """
-        builder = builders.MAFBuilder(conf, sqlContext)
+        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
 
         combined_df = builder.combine(conf.maf_urls)
 
@@ -49,7 +50,7 @@ class TestMAFBuilder:
         """
         Test that maf has columns correctly renamed
         """
-        builder = builders.MAFBuilder(conf, sqlContext)
+        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
 
         # combine() should standardize the columns while loading the data
         df = builder.combine(conf.maf_urls)
@@ -63,7 +64,7 @@ class TestMAFBuilder:
 
         This verifies that we can safely union mafs together
         """
-        builder = builders.MAFBuilder(conf, sqlContext)
+        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
 
         # Bypass combine() so the dataframe isn't already standardized.
         # Note that this particular input DF is missing a column, which
@@ -86,35 +87,6 @@ class TestMAFBuilder:
         extra_columns.append(F.lit(None).alias("superfluous"))
         extra_df = builder.standardize_schema(df.select(*extra_columns))
         assert extra_df.columns == sort_df.columns
-
-    def test_standardize_schema_missing_field(self, sqlContext, maf_schema):
-        """
-        Test standardize_schema's handling of missing fields
-
-        Fields that default_to_none should be filled in with None columns;
-        other missing fields should trigger an exception
-        """
-        builder = builders.MAFBuilder(conf, sqlContext)
-
-        # If we drop some columns, the initial MAF should fail standardization, as there
-        # is no possible way to rearrange those columns into the expected schema.
-        df = builder.file_to_df(conf.maf_urls[0])
-        reduced_df = df.drop("Hugo_Symbol", "IMPACT")
-
-        try:
-            builder.standardize_schema(reduced_df)
-            assert False, "Builder accepted df missing required columns"
-        except KeyError:
-            pass
-
-        # If we tell the builder to supply None values for the missing columns,
-        # then it should fill in those columns and standardize successfully.
-        standardized_df = builder.standardize_schema(
-            reduced_df,
-            default_to_none=["callers", "Hugo_Symbol", "IMPACT"],
-        )
-        assert len(standardized_df.columns) == len(maf_schema.keys())
-        assert set(standardized_df.columns) == maf_schema.keys()
 
     def test_ssm_id(self, maf_df):
         """

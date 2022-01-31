@@ -5,6 +5,7 @@ from pyspark import sql
 
 import config
 from exports import builders, es_utils
+from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
@@ -48,11 +49,16 @@ class GDCMutationExport(object):
 
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
-        maf_df = builders.MAFBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
+        annotation_builders = (civic.CivicBuilder(self.config, self.sqlContext),)
+        maf_df = builders.MAFBuilder(
+            self.config, self.sqlContext, annotation_builders
+        ).build(gene_model_df=gene_model_df)
 
         # Combine Gistics into one DataFrame
         self.sc.setJobGroup("GisticBuilder", "Build Gistic dataframe")
-        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build(gene_model_df=gene_model_df)
+        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build(
+            gene_model_df=gene_model_df
+        )
 
         # Use maf_df and gistic_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")

@@ -4,7 +4,7 @@ import yaml
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def data_dir():
     current_path = os.path.dirname(os.path.abspath(__file__))
 
