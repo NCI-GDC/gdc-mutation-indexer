@@ -44,7 +44,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
     def build(
         self,
         maf_df: sql.DataFrame,
-        gistic_df: sql.DataFrame,
+        ascat_df: sql.DataFrame,
         case_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ) -> "CaseCentricBuilder":
@@ -59,7 +59,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
                 return self
 
         self.log("Building Gene subtree")
-        gene_subtree = self.build_gene_subtree(maf_df, gistic_df, primary_aliquot_df)
+        gene_subtree = self.build_gene_subtree(maf_df, ascat_df, primary_aliquot_df)
 
         self.log("Join Case with Gene subtree [left, case_id]")
         case_centric = case_df.join(gene_subtree, on=["case_id"], how="left")
@@ -80,7 +80,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
     def build_gene_subtree(
         self,
         maf_df: sql.DataFrame,
-        gistic_df: sql.DataFrame,
+        ascat_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ) -> sql.DataFrame:
         """
@@ -90,7 +90,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         """
 
         # TODO Refactor with gene centric.
-        self.log("Building Gene from MAF and Gistic")
+        self.log("Building Gene from MAF and ASCAT")
         gene_df = df_builders.get_gene_df(
             maf_df,
             self.index_name,
@@ -102,8 +102,8 @@ class CaseCentricBuilder(builders.BaseBuilder):
             ],
         )
 
-        gistic_gene_df = df_builders.get_gene_df(
-            gistic_df,
+        ascat_gene_df = df_builders.get_gene_df(
+            ascat_df,
             self.index_name,
             add_fields=["case_id"],
             drop_fields=[
@@ -113,7 +113,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
             ],
         )
 
-        gene_df = gene_df.union(gistic_gene_df).distinct()
+        gene_df = gene_df.union(ascat_gene_df).distinct()
         self.log_count(gene_df)
 
         self.log("Building SSM subtree")
@@ -121,7 +121,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         self.log_count(ssm_df)
 
         self.log("Building CNV subtree")
-        cnv_df = self.build_cnv_subtree(gistic_df)
+        cnv_df = self.build_cnv_subtree(ascat_df)
         self.log_count(cnv_df)
 
         self.log("Join SSM and CNV subtrees to Gene [left, gene_id, case_id]")
@@ -187,7 +187,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
 
         return ssm_df
 
-    def build_cnv_subtree(self, gistic_df):
+    def build_cnv_subtree(self, ascat_df):
         """
         cnv[]
            |___ observation[]
@@ -196,14 +196,14 @@ class CaseCentricBuilder(builders.BaseBuilder):
 
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            gistic_df,
+            ascat_df,
             self.index_name,
             selector="cnv",
         )
 
         # Build the final cnv dataframe
         cnv_df = df_builders.build_cnv_subtree(
-            gistic_df, self.index_name, obs_df=obs_df
+            ascat_df, self.index_name, obs_df=obs_df
         )
 
         # Aggregate CNV
