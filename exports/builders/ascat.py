@@ -1,9 +1,11 @@
+import json
 from typing import Any, Dict, Iterable
 
 import elasticsearch
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+import pkg_resources
 
 import config
 from exports import es_utils, indexd_utils
@@ -187,7 +189,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         )
 
     def _get_document_ids(self) -> Iterable[str]:
-        body = {
+        body: Dict[str, Any] = {
             "_source": ["file_id"],
             "query": {
                 "bool": {
@@ -291,3 +293,22 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "start_position",
             "symbol",
         )
+
+
+def _load_ascat_schema() -> types.StructType:
+    schema_path = pkg_resources.resource_filename("exports.schemas", "builders/ascat/final_ascat.json")
+
+    with open(schema_path, "r") as f:
+        return types.StructType.fromJson(json.load(f))
+
+
+def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
+    """
+    Creates and empty dataframe with no data for omitting all cnv data from the
+    output indices.
+
+    TODO: DEV-1000: Remove this omission process from the code.
+    """
+    schema = _load_ascat_schema()
+
+    return sql_context.createDataFrame((), schema=schema)

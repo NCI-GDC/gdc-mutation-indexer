@@ -45,7 +45,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, gistic_df, case_df):
+    def build(self, ascat_df, case_df):
         """
         Builds CNV Occurrence Centric index
         """
@@ -55,13 +55,13 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
             if self.cnv_occurrence_centric is not None:
                 return self
 
-        self.log_count(gistic_df)
+        self.log_count(ascat_df)
 
         # CNV subtree
-        cnv_df = self.build_cnv_subtree(gistic_df)
+        cnv_df = self.build_cnv_subtree(ascat_df)
 
         # Case subtree
-        case_subtree = self.build_case_subtree(gistic_df, case_df)
+        case_subtree = self.build_case_subtree(ascat_df, case_df)
 
         self.log('Joining cnv with case')
 
@@ -83,7 +83,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
 
         return self
 
-    def build_cnv_subtree(self, gistic_df):
+    def build_cnv_subtree(self, ascat_df):
         """
             cnv{}
                 |____ consequence[]
@@ -91,9 +91,9 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
         """
 
         # Consequence
-        cons_df = self.consequence_builder.build_for_cnv(gistic_df, self.index_name)
+        cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name)
 
-        cnv_df = build_cnv_subtree(gistic_df, self.index_name,
+        cnv_df = build_cnv_subtree(ascat_df, self.index_name,
                                    cons_df=cons_df,
                                    add_fields=['case_id'])
 
@@ -105,7 +105,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
 
         return cnv_subtree
 
-    def build_case_subtree(self, gistic_df, case_df):
+    def build_case_subtree(self, ascat_df, case_df):
         """
             case{}
                 |____ observation[]
@@ -113,7 +113,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
         self.log('Building case subtree')
 
         # Observation
-        obs_df = self.observation_builder.build_for_cnv(gistic_df, self.index_name)
+        obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name)
 
         self.log('Join observation with case')
         case_obs_df = (case_df.join(obs_df, on='case_id', how='left')

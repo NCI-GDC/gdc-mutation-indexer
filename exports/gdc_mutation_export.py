@@ -4,7 +4,8 @@ from typing import Iterable, NamedTuple
 from pyspark import sql
 
 import config
-from exports import builders, es_utils
+from exports import builders, es_utils, indexd_utils
+from exports.builders import ascat
 from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -15,7 +16,7 @@ BuilderInputs = NamedTuple(
     [
         ("gene_model_df", sql.DataFrame),
         ("maf_df", sql.DataFrame),
-        ("gistic_df", sql.DataFrame),
+        ("ascat_df", sql.DataFrame),
         ("case_df", sql.DataFrame),
         ("sub_case_df", sql.DataFrame),
         ("primary_aliquot_df", sql.DataFrame),
@@ -35,6 +36,9 @@ class GDCMutationExport(object):
         self.sqlContext = sqlContext
 
     def build_input_data_frames(self) -> BuilderInputs:
+        doc_dataframe_util = indexd_utils.DataFrameUtil(
+            self.config.indexd, self.sqlContext, self.logger
+        )
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
 
         # Load gene model
@@ -54,22 +58,30 @@ class GDCMutationExport(object):
             self.config, self.sqlContext, annotation_builders
         ).build(gene_model_df=gene_model_df)
 
-        # Combine Gistics into one DataFrame
-        self.sc.setJobGroup("GisticBuilder", "Build Gistic dataframe")
-        gistic_df = builders.GisticBuilder(self.config, self.sqlContext).build(
-            gene_model_df=gene_model_df
+        # Create dataframe from ASCAT data
+        self.sc.setJobGroup("AscatBuilder", "Build Ascat dataframe")
+        ascat_df = (
+            ascat.load_empty_ascat_data(self.sqlContext)
+            if self.config.omit_cnv_data
+            else builders.AscatBuilder(
+                self.config,
+                self.sqlContext,
+                doc_dataframe_util,
+                es_dataframe_util,
+                self.config.es,
+            ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
         )
 
-        # Use maf_df and gistic_df to build case DataFrame
+        # Use maf_df and ascat_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
         case_df = builders.CaseBuilder(self.config, self.sqlContext).build(
-            maf_df, gistic_df
+            maf_df, ascat_df
         )
         sub_case_df = case_df.drop("summary")
         sub_case_df.persist()
 
         return BuilderInputs(
-            gene_model_df, maf_df, gistic_df, case_df, sub_case_df, primary_aliquot_df
+            gene_model_df, maf_df, ascat_df, case_df, sub_case_df, primary_aliquot_df
         )
 
     def run_gene_expression_export(self) -> None:
@@ -115,7 +127,7 @@ class GDCMutationExport(object):
 
                 active_builder.build(
                     inputs.maf_df,
-                    inputs.gistic_df,
+                    inputs.ascat_df,
                     inputs.case_df,
                     inputs.primary_aliquot_df,
                 ).load()
@@ -149,7 +161,7 @@ class GDCMutationExport(object):
                     observation_builder,
                 )
 
-                active_builder.build(inputs.gistic_df, inputs.sub_case_df).load()
+                active_builder.build(inputs.ascat_df, inputs.sub_case_df).load()
             elif index_name == "cnv_occurrence_centric":
                 active_builder = builders.CNVOccurrenceCentricBuilder(
                     self.config,
@@ -158,7 +170,7 @@ class GDCMutationExport(object):
                     observation_builder,
                 )
 
-                active_builder.build(inputs.gistic_df, inputs.sub_case_df).load()
+                active_builder.build(inputs.ascat_df, inputs.sub_case_df).load()
             elif index_name == "gene_centric":
                 active_builder = builders.GeneCentricBuilder(
                     self.config,
@@ -169,7 +181,7 @@ class GDCMutationExport(object):
 
                 active_builder.build(
                     inputs.maf_df,
-                    inputs.gistic_df,
+                    inputs.ascat_df,
                     inputs.sub_case_df,
                     inputs.primary_aliquot_df,
                 ).load()

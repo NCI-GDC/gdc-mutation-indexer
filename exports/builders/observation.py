@@ -83,7 +83,7 @@ class ObservationBuilder:
         return obs_df
 
     def build_for_cnv(
-        self, gistic_df: sql.DataFrame, index: str, selector: Optional[str] = None
+        self, ascat_df: sql.DataFrame, index: str, selector: Optional[str] = None
     ) -> sql.DataFrame:
         """
         observation[]
@@ -96,7 +96,7 @@ class ObservationBuilder:
         """
 
         # add other observation fields
-        obs_df = gistic_df.withColumn(
+        obs_df = ascat_df.withColumn(
             "variant_calling", F.struct("variant_caller").alias("variant_calling")
         )
 

@@ -20,18 +20,18 @@ class CaseBuilder(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
 
-    def build(self, maf_df, gistic_df):
+    def build(self, maf_df, ascat_df):
         """
         Builds Case dataframe
         """
-        df = self.load_into_df(maf_df, gistic_df)
+        df = self.load_into_df(maf_df, ascat_df)
 
         # Select only columns that are in case mapping:
         df = standardize_schema(df, 'case_centric', 'case')
 
         return df
 
-    def load_into_df(self, maf_df, gistic_df):
+    def load_into_df(self, maf_df, ascat_df):
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
@@ -77,11 +77,11 @@ class CaseBuilder(object):
         all_maf_cases = get_case_ids_from_source_es(self.config,
                                                     self.sqlContext)
 
-        maf_and_gistic_df = self.populate_available_variation_data(maf_df,
+        maf_and_ascat_df = self.populate_available_variation_data(maf_df,
                                                                    all_maf_cases,
-                                                                   gistic_df)
+                                                                   ascat_df)
 
-        df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
+        df = df.join(maf_and_ascat_df, on=['case_id'], how='left')
 
         self.logger.info('Repartitioning case dataframe')
         df = df.repartition(self.config.df_repartition, 'case_id')
@@ -92,14 +92,14 @@ class CaseBuilder(object):
 
         return df
 
-    def populate_available_variation_data(self, maf_df, all_maf_cases, gistic_df):
+    def populate_available_variation_data(self, maf_df, all_maf_cases_df, ascat_df):
         """
         This function calculates the value of the column
         "available_variation_data."
 
         We retrieve a set of cases from graph_index
         and add "ssm" for both those cases and the cases in the maf_df,
-        "cnv" if that case id is present in the gistic_df,
+        "cnv" if that case id is present in the ascat_df,
         ["ssm", "cnv"] if both.
 
         """
@@ -107,27 +107,27 @@ class CaseBuilder(object):
         avd = 'available_variation_data'
 
         # Get set of "tested cases" from maf_df
-        maf_data = (maf_df.select('case_id', avd)
+        maf_data_df = (maf_df.select('case_id', avd)
                           .dropDuplicates(
                               subset=['case_id',
                                       avd]))
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = all_maf_cases.join(maf_data, on=['case_id'], how='left')
+        maf_data_df = all_maf_cases_df.join(maf_data_df, on=['case_id'], how='left')
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
-        maf_data = maf_data.drop(avd)
+        maf_data_df = maf_data_df.drop(avd)
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data = (maf_data.withColumn(avd, lit('ssm')))
+        maf_data_df = (maf_data_df.withColumn(avd, lit('ssm')))
 
-        # Stack with gistic data
-        maf_and_gistic_data = maf_data.union((
-                                gistic_df.select('case_id', avd)))
+        # Stack with ascat data
+        maf_and_ascat_df = maf_data_df.union((
+                                ascat_df.select('case_id', avd)))
 
         # Finally, group by case
-        maf_and_gistic_data = (maf_and_gistic_data
+        maf_and_ascat_df = (maf_and_ascat_df
                                .groupby('case_id')
                                .agg(collect_set(avd).alias(avd)))
 
-        return maf_and_gistic_data
+        return maf_and_ascat_df
