@@ -54,12 +54,12 @@ def _generate_uuids(
     aliquot_id: str,
 ) -> Dict[str, str]:
     """Creates a uuid struct the following uuids (based on):
-            cnv_id (chromosome, start_position, end_position, copy_number)
-            consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
-            occurrence_id (cnv_id, case_id)
-            observation_id (cnv_id, case_id, aliquot_id)
+        cnv_id (chromosome, start_position, end_position, copy_number)
+        consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
+        occurrence_id (cnv_id, case_id)
+        observation_id (cnv_id, case_id, aliquot_id)
 
-        Returns: UUIDS_STRUCT
+    Returns: UUIDS_STRUCT
     """
     cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, copy_number)
 
@@ -75,27 +75,27 @@ def _generate_uuids(
 
 def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
     """Adds the following uuids to the dataframe:
-            cnv_id
-            consequence_id
-            occurrence_id
-            observation_id
-        Which are created using the following columns from the input ascat_df:
-            gene_chromosome
-            start_position
-            end_position
-            copy_number
-            symbol
-            gene_id
-            is_cancer_gene_census
-            biotype
-            case_id
-            aliquot_id
+        cnv_id
+        consequence_id
+        occurrence_id
+        observation_id
+    Which are created using the following columns from the input ascat_df:
+        gene_chromosome
+        start_position
+        end_position
+        copy_number
+        symbol
+        gene_id
+        is_cancer_gene_census
+        biotype
+        case_id
+        aliquot_id
 
-        Args:
-            ascat_df: The ascat dataframe with the documented columns present.
+    Args:
+        ascat_df: The ascat dataframe with the documented columns present.
 
-        Returns:
-            Ascat data frame with the uuuids added.
+    Returns:
+        Ascat data frame with the uuuids added.
     """
     uuids = _generate_uuids(
         "gene_chromosome",
@@ -110,9 +110,19 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         "aliquot_id",
     )
 
-    ascat_df = ascat_df.withColumn("uuids", uuids)
+    ascat_df = ascat_df.withColumn(
+        "uuids", uuids
+    )  # This adds the uuids struct used below.
 
     return ascat_df.select("*", "uuids.*")
+
+
+def _cnv_change() -> sql.Column:
+    return (
+        F.when(F.col("copy_number") < 2, "Loss")
+        .when(F.col("copy_number") > 2, "Gain")
+        .otherwise(None)
+    )
 
 
 class AscatBuilder(base_input_builder.BaseInputBuilder):
@@ -132,31 +142,21 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
-            doc_ids, RAW_ASCAT_STRUCT
+            doc_ids, schema=RAW_ASCAT_STRUCT
         )
 
         return document_df.select(
+            "copy_number",
+            _cnv_change().alias("cnv_change"),
             F.col("did").alias("file_id"),
             _strip_gene_id().alias("gene_id"),
-            F.col("gene_name").alias("symbol"),
-            F.col("chromosome").alias("gene_chromosome"),
-            F.col("start").alias("start_position"),
-            F.col("end").alias("end_position"),
-            "copy_number",
-        )
+        ).na.drop(subset=["cnv_change"])
 
-    def _build_file_df(self, dids: Iterable[str]) -> sql.DataFrame:
-        body = {"query": {"terms": {"file_id": list(dids)}}}
-        included_fields = [
-            "file_id",
-            "cases.case_id",
-            "cases.samples.portions.analytes.aliquots.aliquot_id",
-        ]
+    def _build_file_df(self, file_ids: Iterable[str]) -> sql.DataFrame:
+        body = {"query": {"terms": {"file_id": list(file_ids)}}}
 
         return (
-            self._es_dataframe_util.get_dataframe(
-                es_utils.Index.File, query=body, include_fields=included_fields
-            )
+            self._es_dataframe_util.get_dataframe(es_utils.Index.File, query=body)
             .select(
                 "file_id",
                 F.explode("cases").alias("case"),
@@ -194,10 +194,30 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "query": {
                 "bool": {
                     "must": [
-                        {"match": {"experimental_strategy": "Genotyping Array"}},
-                        {"match": {"data_type": "Gene Level Copy Number"}},
-                        {"match": {"analysis.workflow_type": "ASCAT2"}},
-                    ]
+                        {"term": {"data_type": "Gene Level Copy Number"}},
+                    ],
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {"term": {"experimental_strategy": "WGS"}},
+                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
+                                ]
+                            }
+                        },
+                    ],
                 }
             },
         }
@@ -227,7 +247,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
                         "query": {"term": {"cases.project.program.name": "TCGA"}},
                     }
                 }
-            ) 
+            )
 
         hits = es_utils.iterate_es_results(
             self._es_client,
@@ -243,55 +263,127 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
     ) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
-        ascat_df {}
-        |---file_id
-        |---case_id
+        ascat {}
+        |---_id
         |---aliquot_id
-        |---gene_id
-        |---symbol
-        |---gene_chromosome
-        |---start_position
-        |---end_position
-        |---copy_number (TODO: Switch to cnv_change)
+        |---available_variation_data
+        |---biotype
+        |---canonical_transcript_id
+        |---canonical_transcript_length
+        |---canonical_transcript_length_cds
+        |---canonical_transcript_length_genomic
+        |---case_id
+        |---chromosome
+        |---cnv_change
         |---cnv_id
         |---consequence_id
-        |---occurance_id
+        |---cytoband
+        |---description
+        |---end_position
+        |---entrez_gene
+        |---gene_chromosome
+        |---gene_end
+        |---gene_id
+        |---gene_level_cn
+        |---gene_start
+        |---gene_strand
+        |---hgnc
+        |---is_cancer_gene_census
+        |---name
+        |---ncbi_build
         |---observation_id
+        |---occurrence_id
+        |---omim_gene
+        |---start_position
+        |---symbol
+        |---synonyms
+        |---transcripts [{}]
+        |   +---(see gene_model.py)
+        |---uniprotkb_swissprot
+        |---variant_caller
+        +---variant_status
         """
         dids = self._get_document_ids()
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
-        gene_model_df = gene_model_df.select(
-            F.col("_gene_id").alias("gene_id"),
-            "is_cancer_gene_census",
-            "biotype",
+        gene_model_df = (
+            gene_model_df.select(
+                F.col("_gene_id").alias("gene_id"),
+                "_id",
+                "biotype",
+                "canonical_transcript_id",
+                "chromosome",
+                "cytoband",
+                "description",
+                F.col("gene_end").alias("end_position"),
+                "entrez_gene",
+                F.col("chromosome").alias("gene_chromosome"),
+                "gene_end",
+                "gene_start",
+                "gene_strand",
+                "hgnc",
+                "is_cancer_gene_census",
+                "name",
+                "omim_gene",
+                F.col("gene_start").alias("start_position"),
+                "synonyms",
+                "symbol",
+                "transcripts",
+                "uniprotkb_swissprot",
+            )
+            .where(F.col("biotype") == F.lit("protein_coding"))
+            .where(F.coalesce(F.col("chromosome").cast("int"), F.lit(-1)).between(0, 22))
         )
-
-        file_df = (
-            self._build_file_df(dids)
-            .join(primary_aliquot_df, on=["file_id", "aliquot_id"])
-            .select("file_id", "case_id", "aliquot_id")
+        file_df = self._build_file_df(dids)
+        file_df = file_df.join(primary_aliquot_df, on=["file_id", "aliquot_id"]).select(
+            "file_id", "case_id", "aliquot_id"
         )
-
         document_df = self._build_document_df(dids)
         ascat_df = document_df.join(file_df, on=["file_id"]).join(
             gene_model_df, on=["gene_id"]
         )
+        ascat_df = utils.add_canonical_transcript_lengths(ascat_df)
+        ascat_df = _add_uuids(ascat_df)
 
-        return _add_uuids(ascat_df).select(
+        return ascat_df.select(
+            "_id",
             "aliquot_id",
+            F.lit("cnv").alias("available_variation_data"),
             "biotype",
+            "canonical_transcript_id",
+            "canonical_transcript_length",
+            "canonical_transcript_length_cds",
+            "canonical_transcript_length_genomic",
             "case_id",
-            "consequence_id",
+            "chromosome",
+            "cnv_change",
             "cnv_id",
+            "consequence_id",
+            "cytoband",
+            "description",
             "end_position",
+            "entrez_gene",
             "gene_chromosome",
+            "gene_end",
             "gene_id",
+            F.lit(True).alias("gene_level_cn"),
+            "gene_start",
+            "gene_strand",
+            "hgnc",
+            "is_cancer_gene_census",
+            "name",
+            F.lit("GRCh38").alias("ncbi_build"),
             "observation_id",
             "occurrence_id",
+            "omim_gene",
             "start_position",
             "symbol",
+            "synonyms",
+            "transcripts",
+            "uniprotkb_swissprot",
+            F.lit("ASCAT").alias("variant_caller"),
+            F.lit("Tumor Only").alias("variant_status"),
         )
 
 

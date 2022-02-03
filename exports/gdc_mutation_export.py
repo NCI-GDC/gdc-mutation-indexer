@@ -1,6 +1,7 @@
 import logging
 from typing import Iterable, NamedTuple
 
+import pyspark
 from pyspark import sql
 
 import config
@@ -9,6 +10,8 @@ from exports.builders import ascat
 from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
+
+logger = logging.getLogger("exports")
 
 
 BuilderInputs = NamedTuple(
@@ -24,14 +27,19 @@ BuilderInputs = NamedTuple(
 )
 
 
-class GDCMutationExport(object):
+class GDCMutationExport:
     """
     The main entry point into the index export process for the mutation indices
     """
 
-    def __init__(self, sc, sqlContext: sql.SQLContext, config: config.BaseConfig):
+    def __init__(
+        self,
+        sc: pyspark.SparkContext,
+        sqlContext: sql.SQLContext,
+        config: config.BaseConfig,
+    ) -> None:
         self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
         self.sc = sc
         self.sqlContext = sqlContext
 
@@ -40,6 +48,9 @@ class GDCMutationExport(object):
             self.config.indexd, self.sqlContext, self.logger
         )
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        doc_dataframe_util = indexd_utils.DataFrameUtil(
+            self.config.indexd, self.sqlContext, logger
+        )
 
         # Load gene model
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
@@ -109,7 +120,7 @@ class GDCMutationExport(object):
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))
         active_builder.build(ge_case_df, ge_values_df).load()
 
-    def run_core_exports(self, index_names: Iterable[str]):
+    def run_core_exports(self, index_names: Iterable[str]) -> None:
         inputs = self.build_input_data_frames()
         consequence_builder = builders.ConsequenceBuilder(self.config, self.sqlContext)
         observation_builder = builders.ObservationBuilder()
@@ -118,68 +129,61 @@ class GDCMutationExport(object):
             self.sc.setJobGroup(index_name, "Build {}".format(index_name))
 
             if index_name == "case_centric":
-                active_builder = builders.CaseCentricBuilder(
+                builders.CaseCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
-
-                active_builder.build(
+                ).build(
                     inputs.maf_df,
                     inputs.ascat_df,
                     inputs.case_df,
                     inputs.primary_aliquot_df,
                 ).load()
+
             elif index_name == "ssm_centric":
-                active_builder = builders.SSMCentricBuilder(
+                builders.SSMCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
-
-                active_builder.build(
+                ).build(
                     inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
                 ).load()
+
             elif index_name == "ssm_occurrence_centric":
-                active_builder = builders.SSMOccurrenceCentricBuilder(
+                builders.SSMOccurrenceCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
-
-                active_builder.build(
+                ).build(
                     inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
                 ).load()
+
             elif index_name == "cnv_centric":
-                active_builder = builders.CNVCentricBuilder(
+                builders.CNVCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
+                ).build(inputs.ascat_df, inputs.sub_case_df).load()
 
-                active_builder.build(inputs.ascat_df, inputs.sub_case_df).load()
             elif index_name == "cnv_occurrence_centric":
-                active_builder = builders.CNVOccurrenceCentricBuilder(
+                builders.CNVOccurrenceCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
+                ).build(inputs.ascat_df, inputs.sub_case_df).load()
 
-                active_builder.build(inputs.ascat_df, inputs.sub_case_df).load()
             elif index_name == "gene_centric":
-                active_builder = builders.GeneCentricBuilder(
+                builders.GeneCentricBuilder(
                     self.config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
-                )
-
-                active_builder.build(
+                ).build(
                     inputs.maf_df,
                     inputs.ascat_df,
                     inputs.sub_case_df,

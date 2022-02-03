@@ -93,19 +93,19 @@ class Transcript:
     coding_region_end = attr.ib(type=int, default=0)
     coding_region_start = attr.ib(type=int, default=0)
     domains = attr.ib(type=Tuple[Domain, ...], default=(Domain(),))
-    end = attr.ib(type=int, default=14409)
+    end = attr.ib(type=Optional[int], default=14409)
     end_exon = attr.ib(type=Optional[int], default=None)
     exons = attr.ib(type=Tuple[Exon, ...], default=(Exon(),))
     transcript_id = attr.ib(type=str, default="ENST00000456328")
     is_canonical = attr.ib(type=bool, default=False)
-    length = attr.ib(type=int, default=1657)
+    length = attr.ib(type=Optional[int], default=1657)
     length_amino_acid = attr.ib(type=Optional[int], default=None)
     length_cds = attr.ib(type=Optional[int], default=None)
     name = attr.ib(type=str, default="DDX11L1-002")
     number_of_exons = attr.ib(type=int, default=6)
     seq_exon_end = attr.ib(type=Optional[int], default=None)
     seq_exon_start = attr.ib(type=Optional[int], default=None)
-    start = attr.ib(type=int, default=11869)
+    start = attr.ib(type=Optional[int], default=11869)
     start_exon = attr.ib(type=Optional[int], default=None)
     translation_id = attr.ib(type=Optional[str], default=None)
 
@@ -117,7 +117,7 @@ class GeneModel:
         type=Dict[str, str],
         default=attr.Factory(lambda: {"$oid": "589c87ca0ef75875ed614a40"}),
     )
-    biotype = attr.ib(type=str, default="transcribed_unprocessed_pseudogene")
+    biotype = attr.ib(type=str, default="protein_coding")
     canonical_transcript_id = attr.ib(type=str, default="ENST00000456328")
     chromosome = attr.ib(type=str, default="1")
     cytoband = attr.ib(type=Tuple[Optional[str], ...], default=("1p36.33",))
@@ -275,10 +275,10 @@ class TestAscatBuilder:
 
         assert ascat_row.biotype == gene_model.biotype
         assert ascat_row.case_id == es_file.cases[0].case_id
-        assert ascat_row.end_position == ascat_document.end
-        assert ascat_row.gene_chromosome == ascat_document.chromosome
-        assert ascat_row.start_position == ascat_document.start
-        assert ascat_row.symbol == ascat_document.gene_name
+        assert ascat_row.end_position == gene_model.gene_end
+        assert ascat_row.gene_chromosome == gene_model.chromosome
+        assert ascat_row.start_position == gene_model.gene_start
+        assert ascat_row.symbol == gene_model.symbol
 
     @pytest.mark.parametrize(
         argnames=("es_files", "ascat_documents", "primary_aliquots", "gene_model"),
@@ -377,6 +377,50 @@ class TestAscatBuilder:
 
         assert ascat_row.gene_id == "ENSG00000238009"
 
+    @pytest.mark.parametrize(
+        argnames=("copy_number", "cnv_change"),
+        argvalues=((3, "Gain"), (34, "Gain"), (1, "Loss"), (0, "Loss")),
+    )
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__copy_number_maps_to_cnv_change(
+        self, iterate_es_results: mock.MagicMock, copy_number: int, cnv_change: str
+    ) -> None:
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(copy_number=copy_number),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        ascat_df = builder.build_from_scratch(**inputs)
+        ascat_row = more_itertools.one(ascat_df.collect())
+
+        assert ascat_row.cnv_change == cnv_change
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__copy_number_of_2_filtered(
+        self,
+        iterate_es_results: mock.MagicMock,
+    ) -> None:
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(copy_number=2),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        ascat_df = builder.build_from_scratch(**inputs)
+
+        assert ascat_df.count() == 0
+
     @mock.patch(
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
@@ -388,26 +432,26 @@ class TestAscatBuilder:
         ascat_document = AscatDocument()
         ascat_documents = (ascat_document,)
         primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        gene_model = GeneModel()
 
-        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder(es_files, ascat_documents)
 
         ascat_df = builder.build_from_scratch(**inputs)
         ascat_row = more_itertools.one(ascat_df.collect())
         cnv_id = utils.generate_uuid5(
-            ascat_document.chromosome,
-            ascat_document.start,
-            ascat_document.end,
+            gene_model.chromosome,
+            gene_model.gene_start,
+            gene_model.gene_end,
             ascat_document.copy_number,
         )
 
         assert ascat_row.cnv_id == cnv_id
         assert ascat_row.consequence_id == utils.generate_uuid5(
-            ascat_document.gene_name,
-            ascat_document.gene_id,
-            gene_model[0].is_cancer_gene_census,
-            gene_model[0].biotype,
+            gene_model.symbol,
+            gene_model._gene_id,
+            gene_model.is_cancer_gene_census,
+            gene_model.biotype,
         )
         assert ascat_row.occurrence_id == utils.generate_uuid5(
             cnv_id, es_files[0].cases[0].case_id
@@ -415,3 +459,106 @@ class TestAscatBuilder:
         assert ascat_row.observation_id == utils.generate_uuid5(
             cnv_id, es_files[0].cases[0].case_id, primary_aliquots[0].aliquot_id
         )
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__canonical_transcript_lengths_added(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        canonical_transcript = Transcript(
+            length=100, length_cds=30, end=1222, start=1000, is_canonical=True
+        )
+        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == canonical_transcript.length
+        assert (
+            result_row.canonical_transcript_length_cds
+            == canonical_transcript.length_cds
+        )
+        assert (
+            result_row.canonical_transcript_length_genomic
+            == canonical_transcript.end - canonical_transcript.start + 1
+        )
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__null_canonical_transcript_lengths_added(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        canonical_transcript = Transcript(
+            length=None, length_cds=None, end=None, start=None, is_canonical=True
+        )
+        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == None
+        assert result_row.canonical_transcript_length_cds == None
+        assert result_row.canonical_transcript_length_genomic == None
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__canonical_transcript_lengths_no_canonical_transcipt(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(transcript,)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == None
+        assert result_row.canonical_transcript_length_cds == None
+        assert result_row.canonical_transcript_length_genomic == None
+
+    @pytest.mark.parametrize(
+        ("gene_model",),
+        (
+            (GeneModel(biotype="transcribed_unprocessed_pseudogene"),),
+            (GeneModel(chromosome="X"),),
+        ),
+        ids=("non_protein_coding", "x_chromosome"),
+    )
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__filter_gene_model(
+        self, iterate_es_results: mock.MagicMock, gene_model: GeneModel
+    ) -> None:
+        inputs = self._arrange_input_dataframes((PrimaryAliquot(),), (gene_model,))
+        builder = self._arrange_builder((ESFile(),), (AscatDocument(),))
+
+        result_df = builder.build_from_scratch(**inputs)
+
+        assert result_df.count() == 0
