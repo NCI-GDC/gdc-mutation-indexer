@@ -2,6 +2,7 @@ import json
 import logging
 
 from pyspark.sql.functions import collect_set, lit
+from pyspark import sql
 
 from exports.builders.utils import get_case_ids_from_source_es, standardize_schema
 
@@ -57,7 +58,7 @@ class CaseBuilder(object):
         else:
             es_source = self.config.graph_case_index
 
-        df = (
+        df: sql.DataFrame = (
             self.sqlContext.read.format("es")
             .option('es.nodes', self.config.source_es_nodes)
             .option('es.net.http.auth.user', self.config.source_es_user)
@@ -71,6 +72,8 @@ class CaseBuilder(object):
             .option('es.resource.read', es_source)
             .load(es_source)
         )
+
+        self.logger.info(f"RAW CASE SCHEMA: {df.schema}")
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
