@@ -1,25 +1,32 @@
 import json
 import logging
 
-from pyspark.sql.functions import collect_set, lit
+from pyspark.sql import functions as F
 from pyspark import sql
+from exports import es_utils
 
-from exports.builders.utils import get_case_ids_from_source_es, standardize_schema
+from exports.builders import utils
 
-from config import LOG_FORMAT
+import config
 
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=config.LOG_FORMAT)
 
 
-class CaseBuilder(object):
+class CaseBuilder:
     """
     Builds a case dataframe by loading case documents from gdc_from_graph
     """
 
-    def __init__(self, config, sqlContext):
+    def __init__(
+        self,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
+        es_dataframe_util: es_utils.DataFrameUtil,
+    ):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
+        self._es_dataframe_util = es_dataframe_util
 
     def build(self, maf_df, ascat_df):
         """
@@ -28,74 +35,60 @@ class CaseBuilder(object):
         df = self.load_into_df(maf_df, ascat_df)
 
         # Select only columns that are in case mapping:
-        df = standardize_schema(df, 'case_centric', 'case')
+        df = utils.standardize_schema(df, "case_centric", "case")
 
         return df
 
-    def load_into_df(self, maf_df, ascat_df):
+    def load_into_df(
+        self, maf_df: sql.DataFrame, ascat_df: sql.DataFrame
+    ) -> sql.DataFrame:
         """
         Loads case docs from the gdc_from_graph index into a dataframe
         """
 
         # Only load cases from the requested projects
         if self.config.projects:
-            query = json.dumps({
-                'query': {
-                    'terms': {'project.project_id': self.config.projects}
-                }
-            })
+            query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
-            query = json.dumps({'query': {'match_all': {}}})
+            query = {"query": {"match_all": {}}}
 
         # Only retrieve the fields we want
-        self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
+        exclude_fields = tuple(self.config.exclude_fields)
+        self.logger.info("Exclude fields: {}".format(self.config.exclude_fields))
 
-        # Load cases from graph index
-        if self.config.graph_case_doc_type:
-            es_source = '{}/{}'.format(
-                self.config.graph_case_index, self.config.graph_case_doc_type
-            )
-        else:
-            es_source = self.config.graph_case_index
-
-        df: sql.DataFrame = (
-            self.sqlContext.read.format("es")
-            .option('es.nodes', self.config.source_es_nodes)
-            .option('es.net.http.auth.user', self.config.source_es_user)
-            .option('es.net.http.auth.pass', self.config.source_es_pass)
-            .option('es.nodes.wan.only', 'true')
-            .option('es.net.ssl', self.config.es_use_ssl)
-            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)
-            .option('es.nodes.resolve.hostname', 'false')
-            .option('es.query', query)
-            .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
-            .option('es.resource.read', es_source)
-            .load(es_source)
+        df = self._es_dataframe_util.get_dataframe(
+            es_utils.Index.Case,
+            exclude_fields=exclude_fields,
+            query=query,
         )
-
-        self.logger.info(f"RAW CASE SCHEMA: {df.schema}")
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(self.config,
-                                                    self.sqlContext)
+        all_maf_cases_df = utils.get_case_ids_from_source_es(
+            self.config, self.sqlContext
+        )
 
-        maf_and_ascat_df = self.populate_available_variation_data(maf_df,
-                                                                   all_maf_cases,
-                                                                   ascat_df)
+        maf_and_ascat_df = self.populate_available_variation_data(
+            maf_df, all_maf_cases_df, ascat_df
+        )
 
-        df = df.join(maf_and_ascat_df, on=['case_id'], how='left')
+        df = df.join(maf_and_ascat_df, on=["case_id"], how="left")
 
-        self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.df_repartition, 'case_id')
+        self.logger.info("Repartitioning case dataframe")
+        df = df.repartition(self.config.df_repartition, "case_id")
 
-        if self.config.cache_dataframes['cases']:
-            self.logger.info('Caching repartitioned case dataframe')
+        if self.config.cache_dataframes["cases"]:
+            self.logger.info("Caching repartitioned case dataframe")
             df.cache().count()
 
         return df
 
-    def populate_available_variation_data(self, maf_df, all_maf_cases_df, ascat_df):
+    def populate_available_variation_data(
+        self,
+        maf_df: sql.DataFrame,
+        all_maf_cases_df: sql.DataFrame,
+        ascat_df: sql.DataFrame,
+    ) -> sql.DataFrame:
         """
         This function calculates the value of the column
         "available_variation_data."
@@ -107,30 +100,28 @@ class CaseBuilder(object):
 
         """
 
-        avd = 'available_variation_data'
+        avd = "available_variation_data"
 
         # Get set of "tested cases" from maf_df
-        maf_data_df = (maf_df.select('case_id', avd)
-                          .dropDuplicates(
-                              subset=['case_id',
-                                      avd]))
+        maf_data_df = maf_df.select("case_id", avd).dropDuplicates(
+            subset=["case_id", avd]
+        )
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data_df = all_maf_cases_df.join(maf_data_df, on=['case_id'], how='left')
+        maf_data_df = all_maf_cases_df.join(maf_data_df, on=["case_id"], how="left")
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data_df = maf_data_df.drop(avd)
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data_df = (maf_data_df.withColumn(avd, lit('ssm')))
+        maf_data_df = maf_data_df.withColumn(avd, F.lit("ssm"))
 
         # Stack with ascat data
-        maf_and_ascat_df = maf_data_df.union((
-                                ascat_df.select('case_id', avd)))
+        maf_and_ascat_df = maf_data_df.union((ascat_df.select("case_id", avd)))
 
         # Finally, group by case
-        maf_and_ascat_df = (maf_and_ascat_df
-                               .groupby('case_id')
-                               .agg(collect_set(avd).alias(avd)))
+        maf_and_ascat_df = maf_and_ascat_df.groupby("case_id").agg(
+            F.collect_set(avd).alias(avd)
+        )
 
         return maf_and_ascat_df

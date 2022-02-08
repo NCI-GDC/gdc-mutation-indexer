@@ -85,7 +85,7 @@ class GDCMutationExport:
 
         # Use maf_df and ascat_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
-        case_df = builders.CaseBuilder(self.config, self.sqlContext).build(
+        case_df = builders.CaseBuilder(self.config, self.sqlContext, es_dataframe_util).build(
             maf_df, ascat_df
         )
         sub_case_df = case_df.drop("summary")

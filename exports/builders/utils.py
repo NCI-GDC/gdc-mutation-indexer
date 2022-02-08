@@ -96,7 +96,7 @@ def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
     return aliquot_clause
 
 
-def get_case_ids_from_source_es(config, sqlContext):
+def get_case_ids_from_source_es(config, sqlContext: sql.SQLContext) -> sql.DataFrame:
     """Query source ES for case_ids that correspond to MAF aliquots.
 
     TODO: Make this query ES through Spark instead...?

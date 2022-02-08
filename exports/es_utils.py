@@ -218,6 +218,7 @@ class DataFrameUtil:
         self,
         index: Index,
         include_fields: Union[Iterable[str], bool] = True,
+        exclude_fields: Union[Iterable[str], bool] = False,
         include_as_arrays: Iterable[str] = (),
         query: dict = None,
         read_metadata: bool = False,
@@ -252,6 +253,9 @@ class DataFrameUtil:
 
         if include_fields and isinstance(include_fields, Iterable):
             reader = reader.option("es.read.field.include", ",".join(include_fields))
+
+        if exclude_fields and isinstance(exclude_fields, Iterable):
+            reader = reader.option("es.read.field.exclude", ",".join(exclude_fields))
 
         if include_as_arrays and isinstance(include_as_arrays, Iterable):
             reader = reader.option(

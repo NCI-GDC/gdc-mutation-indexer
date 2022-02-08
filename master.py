@@ -4,18 +4,18 @@ import logging
 import os
 import pprint
 import subprocess
+import uuid
 from typing import Callable, Iterable, List, Sequence
 
 import elasticsearch
+import halo
 import psqlgraph
 from gdcdatamodel import models
-from gdcmodels import esutils
 
 import config
 import parsers
 from exports import es_utils
 
-logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
@@ -211,20 +211,30 @@ def get_created_indices(
 
 
 if __name__ == "__main__":
+    run_id = uuid.uuid4()
+    print(f"MUTATION INDEXER RUN ID: {run_id}")
+    logging.basicConfig(format=config.LOG_FORMAT, filename=f"tmp/{run_id}.log")
     # Parse and confirm arguments
     args = parse_args()
     configuration = confirm_args(args)
     # Assemble and run the command
     command = get_submit_command(args)
-    subprocess.call(command)
+
+    with halo.Halo(text=f"Running Pyspark: {args.projects if args.projects else 'all'}", spinner="bouncingBall") as spinner:
+        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        spinner.stop_and_persist()
+
     es = configuration.es
     # mutation indexer might have failed after building a subset of the indices
     # but the ones that were built might still be good, so we want to force-merge
     # whatever we have, force merge will fail if non exist index name in the list
     indices = get_created_indices(es, configuration.indices.values())
 
-    if not indices:
-        logger.info("No indices were built. Nothing to force merge")
-        exit(0)
+    print(f"Indices built: {', '.join(indices)}")
+    
+    for index in indices:
+        print(f"Deleting index: {index}")
+        es.indices.delete(index)
 
-    esutils.force_merge_elasticsearch_indices(es, indices)
+    # esutils.force_merge_elasticsearch_indices(es, indices)
