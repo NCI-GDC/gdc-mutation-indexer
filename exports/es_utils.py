@@ -1,7 +1,7 @@
 import enum
 import json
 import re
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 from elasticsearch import helpers
 from normalizer import mapper
@@ -218,7 +218,7 @@ class DataFrameUtil:
         self,
         index: Index,
         include_fields: Union[Iterable[str], bool] = True,
-        exclude_fields: Union[Iterable[str], bool] = False,
+        exclude_fields: Optional[Iterable[str]] = None,
         include_as_arrays: Iterable[str] = (),
         query: dict = None,
         read_metadata: bool = False,

@@ -16,7 +16,9 @@ import config
 import parsers
 from exports import es_utils
 
-logger = logging.getLogger(__file__)
+run_id = uuid.uuid4()
+logging.basicConfig(format=config.LOG_FORMAT, filename=f"/tmp/{run_id}.log")
+logger = logging.getLogger("exports")
 logger.setLevel(logging.INFO)
 
 
@@ -79,14 +81,14 @@ def user_confirm(
     :param on_decline: callable to invoke when user declines
     """
     while True:
-        log.info(prompt)
+        print(prompt)
         ans = input().lower()
         if ans in ["y", "yes"]:
             return on_confirm()
         elif ans in ["n", "no"]:
             return on_decline()
         else:
-            log.error(f"Invalid answer: {ans}")
+            print(f"Invalid answer: {ans}")
 
 
 def confirm_args(args: argparse.Namespace) -> config.BaseConfig:
@@ -211,9 +213,7 @@ def get_created_indices(
 
 
 if __name__ == "__main__":
-    run_id = uuid.uuid4()
     print(f"MUTATION INDEXER RUN ID: {run_id}")
-    logging.basicConfig(format=config.LOG_FORMAT, filename=f"tmp/{run_id}.log")
     # Parse and confirm arguments
     args = parse_args()
     configuration = confirm_args(args)

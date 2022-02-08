@@ -400,9 +400,21 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
                 }
             },
         ]
+        include_fields = frozenset(
+            {
+                "file_id",
+                "created_datetime",
+                "experimental_strategy",
+                "cases.case_id",
+                "cases.samples.sample_id",
+                "cases.samples.sample_type",
+                "cases.samples.portions.analytes.aliquots.aliquot_id",
+                "cases.samples.portions.analytes.aliquots.created_datetime",
+            }
+        )
 
         aliquot_df = (
-            self._get_primary_aliquot_df(filters)
+            self._get_primary_aliquot_df(filters, include_fields=include_fields)
             .select(
                 "entity_id",
                 "entity",
