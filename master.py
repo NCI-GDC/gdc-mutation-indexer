@@ -18,7 +18,7 @@ from exports import es_utils
 
 run_id = uuid.uuid4()
 logging.basicConfig(format=config.LOG_FORMAT, filename=f"/tmp/{run_id}.log")
-logger = logging.getLogger("exports")
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 

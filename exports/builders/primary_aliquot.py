@@ -153,6 +153,12 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             self._es_dataframe_util.get_dataframe(
                 es_utils.Index.File,
                 include_fields=include_fields,
+                include_as_arrays=(
+                    "cases.samples",
+                    "cases.samples.portions",
+                    "cases.samples.portions.analytes",
+                    "cases.samples.portions.analytes.aliquots",
+                ),
                 query=query,
             )
             .select(
