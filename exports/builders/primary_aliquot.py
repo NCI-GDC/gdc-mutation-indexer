@@ -6,7 +6,6 @@ import more_itertools
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import TypedDict
 
 import config
 from exports import es_utils
