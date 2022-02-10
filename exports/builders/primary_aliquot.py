@@ -6,6 +6,7 @@ import more_itertools
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
+from typing_extensions import TypedDict
 
 import config
 from exports import es_utils
@@ -124,6 +125,35 @@ def _add_required_include_fields(
     return include_fields
 
 
+def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
+    return (
+        aliquot_df.select("file_id", F.explode_outer("cases").alias("case"))
+        .select(
+            "file_id",
+            F.col("case.case_id").alias("case_id"),
+            F.explode_outer("case.samples").alias("sample"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            F.col("sample.sample_id").alias("sample_id"),
+            F.explode_outer("sample.portions").alias("portion"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("portion.analytes").alias("analyte"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("analyte.aliquots").alias("aliquot"),
+        )
+    )
+
+
 GeneExpressionPrimaryAliquotData = NamedTuple(
     "GeneExpressionPrimaryAliquotData",
     [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])],
@@ -153,12 +183,6 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             self._es_dataframe_util.get_dataframe(
                 es_utils.Index.File,
                 include_fields=include_fields,
-                include_as_arrays=(
-                    "cases.samples",
-                    "cases.samples.portions",
-                    "cases.samples.portions.analytes",
-                    "cases.samples.portions.analytes.aliquots",
-                ),
                 query=query,
             )
             .select(
@@ -383,6 +407,110 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             primary_aliquot_df=primary_aliquot_df, file_urls=file_urls
         )
 
+    def _get_aliquot_level_df(self) -> sql.DataFrame:
+        dated_query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "nested": {
+                                "path": "cases.samples.portions.analytes.aliquots",
+                                "query": {
+                                    "exists": {
+                                        "field": "cases.samples.portions.analytes.aliquots.created_datetime"
+                                    }
+                                },
+                            }
+                        },
+                    ]
+                }
+            }
+        }
+        undated_query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "nested": {
+                                "path": "cases.samples.portions.analytes.aliquots",
+                                "query": {
+                                    "exists": {
+                                        "field": "cases.samples.portions.analytes.aliquots"
+                                    }
+                                },
+                            }
+                        },
+                    ],
+                    "must_not": [
+                        {
+                            "nested": {
+                                "path": "cases.samples.portions.analytes.aliquots",
+                                "query": {
+                                    "exists": {
+                                        "field": "cases.samples.portions.analytes.aliquots.created_datetime"
+                                    }
+                                },
+                            }
+                        },
+                    ],
+                }
+            }
+        }
+        undated_included_fields = (
+            "file_id",
+            "cases.case_id",
+            "cases.samples.sample_id",
+            "cases.samples.portions.analytes.aliquots.aliquot_id",
+        )
+        dated_included_fields = tuple(itertools.chain(
+            undated_included_fields,
+            ("cases.samples.portions.analytes.aliquots.created_datetime",),
+        ))
+
+        if self.config.projects:
+            project_clause = {
+                "nested": {
+                    "path": "cases",
+                    "query": {
+                        "terms": {"cases.project.project_id": self.config.projects}
+                    },
+                }
+            }
+
+            dated_query["query"]["bool"]["must"].append(project_clause)
+            undated_query["query"]["bool"]["must"].append(project_clause)
+
+        dated_df = _expand_aliquots(
+            self._es_dataframe_util.get_dataframe(
+                es_utils.Index.File,
+                include_fields=dated_included_fields,
+                query=dated_query,
+            )
+        ).select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            "aliquot.aliquot_id",
+            F.col("aliquot.created_datetime")
+            .cast("timestamp")
+            .alias("aliquot_created_datetime"),
+        )
+        undated_df = _expand_aliquots(
+            self._es_dataframe_util.get_dataframe(
+                es_utils.Index.File,
+                include_fields=undated_included_fields,
+                query=undated_query,
+            )
+        ).select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            "aliquot.aliquot_id",
+            F.lit(None).cast("timestamp").alias("aliquot_created_datetime"),
+        )
+
+        return dated_df.union(undated_df)
+
     def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
@@ -396,77 +524,44 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             |---file_id
             |---experimental_strategy
         """
-        filters = [
-            {
-                "nested": {
-                    "path": "cases",
-                    "query": {
-                        "terms": {"cases.project.project_id": self.config.projects}
-                    },
+        filters = (
+            [
+                {
+                    "nested": {
+                        "path": "cases",
+                        "query": {
+                            "terms": {"cases.project.project_id": self.config.projects}
+                        },
+                    }
                 }
-            },
-        ]
-        include_fields = frozenset(
-            {
-                "file_id",
-                "created_datetime",
-                "experimental_strategy",
-                "cases.case_id",
-                "cases.samples.sample_id",
-                "cases.samples.sample_type",
-                "cases.samples.portions.analytes.aliquots.aliquot_id",
-                "cases.samples.portions.analytes.aliquots.created_datetime",
-            }
+            ]
+            if self.config.projects
+            else [{"match_all": {}}]
         )
 
-        aliquot_df = (
-            self._get_primary_aliquot_df(filters, include_fields=include_fields)
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                "sample_id",
-                F.explode("case.samples").alias("sample"),
-            )
-            .where(F.col("sample.sample_id") == F.col("sample_id"))
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("sample.portions").alias("portion"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("portion.analytes").alias("analyte"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("analyte.aliquots").alias("aliquot"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                "aliquot.aliquot_id",
-                F.col("aliquot.created_datetime")
-                .cast("timestamp")
-                .alias("aliquot_created_datetime"),
-            )
+        include_fields = (
+            "file_id",
+            "created_datetime",
+            "experimental_strategy",
+            "cases.case_id",
+            "cases.samples.sample_id",
+            "cases.samples.sample_type",
         )
+        primary_aliquot_df = self._get_primary_aliquot_df(
+            filters, include_fields=include_fields
+        ).select(
+            "entity_id",
+            "entity",
+            "case_id",
+            "file_id",
+            "experimental_strategy",
+            "sample_id",
+        )
+        aliquot_data_df = self._get_aliquot_level_df()
+        aliquot_df = primary_aliquot_df.join(
+            aliquot_data_df, on=["file_id", "case_id", "sample_id"], how="left"
+        )
+
         aliquot_window = (
             sql.Window()
             .partitionBy("entity", "entity_id")
