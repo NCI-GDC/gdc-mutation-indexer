@@ -74,7 +74,7 @@ def files_with_linked_cases(source_es_client):
 
 @pytest.fixture(scope="session")
 def spark_session() -> Generator[sql.SparkSession, None, None]:
-    with sql.SparkSession.builder.master("local[1]").appName(
+    with sql.SparkSession.builder.master("local[*]").appName(
         "sqlContextFixture"
     ).getOrCreate() as spark_session:
         spark_session.sparkContext.setLogLevel("FATAL")

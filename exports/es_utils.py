@@ -1,8 +1,9 @@
 import enum
 import json
 import re
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
+import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
 from pyspark import sql
@@ -259,3 +260,91 @@ class DataFrameUtil:
             )
 
         return reader.load(self._index_to_str(index))
+
+
+class RDDUtil:
+    """
+    A tool for loading spark RDD containing data loaded from an  elasticsearch index. 
+    
+    CAUTION: In any case where the data has a regular schema and thus can be loaded
+        using the DataframeUtil, default to loading the optimizable DataFrame object
+        vs an RDD.
+    """
+
+    def __init__(self, config, spark_context: pyspark.SparkContext) -> None:
+        self._config = config
+        self._spark_context = spark_context
+
+    def _index_to_str(self, index: Index) -> str:
+        if index == Index.File:
+            return str(self._config.graph_file_index)
+
+        if index == Index.Case:
+            return str(self._config.graph_case_index)
+
+        raise ValueError("Invalid index: {}".format(index))
+
+    def get_rdd(
+        self,
+        index: Index,
+        include_fields: Union[Iterable[str], bool] = True,
+        exclude_fields: Optional[Iterable[str]] = None,
+        include_as_arrays: Iterable[str] = (),
+        exclude_as_arrays: Iterable[str] = (),
+        query: dict = None,
+        read_metadata: bool = False,
+    ) -> pyspark.RDD:
+        """
+        A utility for loading data from ES natively into spark RDD objects.
+
+        CAUTION: Use this only for loading data which cannot conform to a schema
+            and thus cannot be loaded into a dataframe. All RDD objects should be 
+            standardized and converted into dataframes with `.toDF(SCHEMA)` ASAP in 
+            the process to maximize optimization of the spark program.
+
+        Args:
+            index: The index from which the data will be loaded
+            include_fields: The fields which will be included when read
+            include_as_arrays: The fields which need to be read as arrays and not
+                simple types (e.g. field: ["this", "is", "example"])
+                NOTE: This does NOT apply to arrays of objects
+            query: The query to use in ES to limit the records returned
+
+        Returns:
+            An RDD dataset which contains the dynamic data returned by the query
+            to the provided elasticsearch index.
+        """
+        config = {
+            "es.read.metadata": str(read_metadata),
+            "es.nodes": self._config.source_es_nodes,
+            "es.net.http.auth.user": self._config.source_es_user,
+            "es.net.http.auth.pass": self._config.source_es_pass,
+            "es.net.ssl": str(self._config.es_use_ssl),
+            "es.net.ssl.cert.allow.self.signed": str(
+                self._config.disable_es_verify_certs
+            ),
+            "es.nodes.resolve.hostname": str(False),
+            "es.resource": self._index_to_str(index),
+        }
+
+        if query:
+            config["es.query"] = json.dumps(query)
+
+        if include_fields and isinstance(include_fields, Iterable):
+            config["es.read.field.include"] = ",".join(include_fields)
+
+        if exclude_fields and isinstance(exclude_fields, Iterable):
+            config["es.read.field.exclude"] = ",".join(exclude_fields)
+
+        if include_as_arrays and isinstance(include_as_arrays, Iterable):
+            config["es.read.field.as.array.include"] = ",".join(include_as_arrays)
+
+        if exclude_as_arrays and isinstance(exclude_as_arrays, Iterable):
+            config["es.read.field.as.array.exclude"] = ",".join(exclude_as_arrays)
+
+        return self._spark_context.newAPIHadoopRDD(
+            "org.elasticsearch.hadoop.mr.EsInputFormat",
+            "org.apache.hadoop.io.NullWritable",
+            "org.elasticsearch.hadoop.mr.LinkedMapWritable",
+            conf=config,
+        )

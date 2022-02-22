@@ -15,7 +15,6 @@ DOCUMENT_URL_SCHEMA = types.StructType(
     ]
 )
 
-
 DocumentUrl = NamedTuple("DocumentUrl", [("did", str), ("url", str)])
 
 
@@ -66,7 +65,7 @@ class DataFrameUtil:
     def _get_doc_urls(self, doc_ids: Iterable[str]) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, self.FILE_URL_BATCH_SIZE)
         docs = itertools.chain.from_iterable(
-            self._indexd.bulk_request(list(bids)) or () for bids in batches
+            self._indexd.bulk_request(list(dids)) or () for dids in batches
         )
 
         for doc in docs:
@@ -86,8 +85,10 @@ class DataFrameUtil:
         enforce_schema: bool,
         has_header: bool,
     ) -> sql.DataFrame:
+        urls = [urls] if isinstance(urls, str) else list(urls)
+
         df = self._sql_context.read.csv(
-            list(urls),
+            urls,
             schema=schema,
             sep="\t",
             header=has_header,
@@ -96,7 +97,7 @@ class DataFrameUtil:
         )
 
         if include_file_name:
-            return df.withColumn("_input_file_name", F.input_file_name())
+            df = df.withColumn("_input_file_name", F.input_file_name())
 
         return df
 
