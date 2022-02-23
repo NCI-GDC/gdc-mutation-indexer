@@ -201,19 +201,23 @@ class Index(enum.IntEnum):
     Case = 2
 
 
+def _get_index_name(config, index: Index) -> str:
+    if index == Index.File:
+        return str(config.graph_file_index)
+
+    if index == Index.Case:
+        return str(config.graph_case_index)
+
+    raise ValueError("Invalid index: {}".format(index))
+
+
 class DataFrameUtil:
     def __init__(self, config, sql_context: sql.SQLContext) -> None:
         self._config = config
         self._sql_context = sql_context
 
     def _index_to_str(self, index: Index) -> str:
-        if index == Index.File:
-            return str(self._config.graph_file_index)
-
-        if index == Index.Case:
-            return str(self._config.graph_case_index)
-
-        raise ValueError("Invalid index: {}".format(index))
+        return _get_index_name(self._config, index)
 
     def get_dataframe(
         self,
@@ -264,8 +268,8 @@ class DataFrameUtil:
 
 class RDDUtil:
     """
-    A tool for loading spark RDD containing data loaded from an  elasticsearch index. 
-    
+    A tool for loading spark RDD containing data loaded from an  elasticsearch index.
+
     CAUTION: In any case where the data has a regular schema and thus can be loaded
         using the DataframeUtil, default to loading the optimizable DataFrame object
         vs an RDD.
@@ -276,13 +280,7 @@ class RDDUtil:
         self._spark_context = spark_context
 
     def _index_to_str(self, index: Index) -> str:
-        if index == Index.File:
-            return str(self._config.graph_file_index)
-
-        if index == Index.Case:
-            return str(self._config.graph_case_index)
-
-        raise ValueError("Invalid index: {}".format(index))
+        return _get_index_name(self._config, index)
 
     def get_rdd(
         self,
@@ -298,8 +296,8 @@ class RDDUtil:
         A utility for loading data from ES natively into spark RDD objects.
 
         CAUTION: Use this only for loading data which cannot conform to a schema
-            and thus cannot be loaded into a dataframe. All RDD objects should be 
-            standardized and converted into dataframes with `.toDF(SCHEMA)` ASAP in 
+            and thus cannot be loaded into a dataframe. All RDD objects should be
+            standardized and converted into dataframes with `.toDF(SCHEMA)` ASAP in
             the process to maximize optimization of the spark program.
 
         Args:

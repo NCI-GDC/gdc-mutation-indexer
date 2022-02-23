@@ -1,6 +1,5 @@
 import itertools
 import logging
-from email import utils
 from typing import AbstractSet, Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import more_itertools
@@ -456,7 +455,7 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
                 es_utils.Index.File, include_fields=included_fields, query=query
             )
             .toDF(aliquot_data_schema)
-            .select("file_id", "nested_cases.cases")
+            .select("_source.*")
         ).select(
             "file_id",
             "case_id",

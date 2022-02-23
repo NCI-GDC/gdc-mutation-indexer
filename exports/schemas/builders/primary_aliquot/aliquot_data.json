@@ -2,13 +2,13 @@
     "fields": [
         {
             "metadata": {},
-            "name": "file_id",
+            "name": "_id",
             "nullable": true,
             "type": "string"
         },
         {
             "metadata": {},
-            "name": "nested_cases",
+            "name": "_source",
             "nullable": true,
             "type": {
                 "fields": [
@@ -105,6 +105,12 @@
                             },
                             "type": "array"
                         }
+                    },
+                    {
+                        "metadata": {},
+                        "name": "file_id",
+                        "nullable": true,
+                        "type": "string"
                     }
                 ],
                 "type": "struct"

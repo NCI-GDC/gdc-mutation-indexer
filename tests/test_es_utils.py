@@ -1,5 +1,8 @@
+from typing import Iterable
+
 import pytest
 from normalizer import mapper
+from pyspark import sql
 
 import tests_config
 from exports import es_utils
@@ -102,3 +105,35 @@ def test_get_dataframe_from_es(
     result_data = {row[doc_id]: row.asDict(True) for row in result_df.collect()}
 
     assert result_data == expected_data
+
+
+@pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
+def test_get_rdd_from_es(spark_session: sql.SparkSession):
+    # Arrange
+    config = tests_config.TestConfig()
+    included_fields = (
+        "file_id",
+        "cases.case_id",
+    )
+    query = {
+        "query": {
+            "nested": {"path": "cases", "query": {"exists": {"field": "cases.case_id"}}}
+        }
+    }
+    rdd_util = es_utils.RDDUtil(config, spark_session.sparkContext)
+
+    # Act
+    result = rdd_util.get_rdd(
+        es_utils.Index.File, include_fields=included_fields, query=query
+    ).first()
+
+    # Assert
+    assert len(result) == 2
+    assert isinstance(result[0], str)
+    assert isinstance(result[1], dict)
+    assert "cases" in result[1]
+    assert isinstance(result[1]["cases"], Iterable)
+    assert "file_id" in result[1]
+    assert isinstance(result[1]["file_id"], str)
+    assert all("case_id" in case for case in result[1]["cases"])
+    assert all(isinstance(case["case_id"], str) for case in result[1]["cases"])
