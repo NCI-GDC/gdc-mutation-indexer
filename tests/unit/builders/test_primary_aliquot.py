@@ -92,7 +92,10 @@ class ESFile:
     def to_rdd_data(self) -> tuple:
         return (
             self.file_id,
-            {"cases": tuple(case.to_rdd_data() for case in self.cases)},
+            {
+                "cases": tuple(case.to_rdd_data() for case in self.cases),
+                "file_id": self.file_id,
+            },
         )
 
 
@@ -552,11 +555,7 @@ class TestPrimaryAliquotBuilderOLD(unittest.TestCase):
         )
         es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config,
-            self.sql_context,
-            config.indexd,
-            es_dataframe_util,
-            mock.MagicMock()
+            config, self.sql_context, config.indexd, es_dataframe_util, mock.MagicMock()
         )
 
         primary_aliquot_builder.logger = mock.MagicMock()
