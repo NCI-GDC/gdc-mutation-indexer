@@ -1,6 +1,5 @@
 import logging
 from typing import Iterable, NamedTuple
-from unittest import mock
 
 import pyspark
 from pyspark import sql
@@ -103,8 +102,9 @@ class GDCMutationExport:
 
     def run_gene_expression_export(self) -> None:
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        es_rdd_util = es_utils.RDDUtil(self.config, self.sc)
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            self.config, self.sqlContext, self.config.indexd, es_dataframe_util, mock.MagicMock()
+            self.config, self.sqlContext, self.config.indexd, es_dataframe_util, es_rdd_util
         )
         active_builder = builders.GeneExpressionBuilder(self.config, self.sqlContext)
         gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()

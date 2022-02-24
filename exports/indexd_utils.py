@@ -85,7 +85,7 @@ class DataFrameUtil:
         enforce_schema: bool,
         has_header: bool,
     ) -> sql.DataFrame:
-        urls = [urls] if isinstance(urls, str) else list(urls)
+        urls = list(more_itertools.always_iterable(urls))
 
         df = self._sql_context.read.csv(
             urls,
