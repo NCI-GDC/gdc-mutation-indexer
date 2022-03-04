@@ -4,8 +4,7 @@ import tempfile
 import pytest
 
 import cli.master as master
-from mutation_indexer import parsers
-from mutation_indexer import config
+from mutation_indexer import config, parsers
 
 REQUIRED_ARGUMENTS = [
     "--s3-host",

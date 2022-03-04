@@ -1,8 +1,8 @@
 import pytest
 from normalizer import mapper
 
-from tests.integration import config
 from mutation_indexer import es_utils
+from tests.integration import config
 from tests.integration.utils import schema_validation
 
 config = config.TestConfig()

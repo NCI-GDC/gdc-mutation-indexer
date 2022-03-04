@@ -1,13 +1,13 @@
-import json
 import collections
-import deepdiff
+import json
 
+import deepdiff
 import pytest
 from normalizer import mapper
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer.builders.bases import get_all_boolean_paths, cast_booleans
+from mutation_indexer.builders import bases
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def get_mapping_data():
 
 
 def test_get_all_boolean_paths(get_mapping_data):
-    paths = get_all_boolean_paths(get_mapping_data)
+    paths = bases.get_all_boolean_paths(get_mapping_data)
     expected_paths = [
         ["gene", "cnv", "gene_level_cn"],
         ["gene", "is_cancer_gene_census"],
@@ -65,8 +65,8 @@ def test_sample_data_cast_boolean(get_mapping_data):
 def test_base_builder_cast_boolean(sqlContext, index, request):
     df = request.getfixturevalue("{}_df".format(index))
     index_mapper = mapper.ModelMapper(index)
-    df = cast_booleans(df, index_mapper.mapping)
-    paths = get_all_boolean_paths(index_mapper.mapping)
+    df = bases.cast_booleans(df, index_mapper.mapping)
+    paths = bases.get_all_boolean_paths(index_mapper.mapping)
     boolean_counts = collections.Counter(path[-1] for path in paths)
     simple_string = df.schema.simpleString()
     for field, count in boolean_counts.items():

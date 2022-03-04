@@ -1,7 +1,7 @@
 import os
 
-import yaml
 import pytest
+import yaml
 
 
 @pytest.fixture(scope="session")
@@ -13,7 +13,6 @@ def data_dir():
 
 @pytest.fixture
 def fake_hits_and_expectations(data_dir):
-
     def load_hits_from_file(filename):
         with open(os.path.join(data_dir, filename)) as f:
             contents = yaml.safe_load(f)

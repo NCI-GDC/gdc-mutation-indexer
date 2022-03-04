@@ -7,9 +7,9 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+from mutation_indexer import config
 from mutation_indexer.builders import utils
 from mutation_indexer.builders.viz.clinical_annotations import base
-from mutation_indexer import config
 
 logging.basicConfig(format=config.LOG_FORMAT)
 

@@ -27,7 +27,9 @@ class TestDataFrameUtil:
                 yield mock.MagicMock(
                     did=did,
                     urls_metadata={
-                        "file://{}_{}.tsv".format(path.join(self.data_dir, TEST_FILE_PATH), did): {
+                        "file://{}_{}.tsv".format(
+                            path.join(self.data_dir, TEST_FILE_PATH), did
+                        ): {
                             "type": "cleversafe",
                             "state": "blocked" if did in missing_dids else "validated",
                         },

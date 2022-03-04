@@ -9,7 +9,7 @@ import yaml
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
-from tests.utils import schema_validation
+from tests.integration.utils import schema_validation
 
 
 class TestPrimaryAliquotBuilder(unittest.TestCase):
@@ -51,7 +51,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
                                                                 types.StructField(
                                                                     "created_datetime",
                                                                     types.StringType(),
-                                                                )
+                                                                ),
                                                             ]
                                                         )
                                                     ),

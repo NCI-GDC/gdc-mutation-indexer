@@ -1,6 +1,6 @@
 import pytest
-
 from normalizer import mapper
+
 from tests.integration import config
 
 conf = config.TestConfig()
