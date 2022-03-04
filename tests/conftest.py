@@ -424,7 +424,7 @@ def raw_variant_caller_counts():
         "mutect2": 11,
         "mutect2;muse*;somaticsniper": 1,
         "pindel": 3,
-        "somaticsniper": 5,
+        "somaticsniper;muse": 5,
         "varscan": 3,
     }
 
@@ -437,10 +437,9 @@ def exploded_variant_caller_counts():
     To update, ``grep -c`` for the various callers in the test MAFs.
     """
     return {
-        "muse": 8,
+        "muse": 13,
         "mutect2": 12,
         "pindel": 3,
-        "somaticsniper": 6,
         "varscan": 3,
     }
 
