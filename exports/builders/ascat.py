@@ -194,9 +194,29 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "query": {
                 "bool": {
                     "must": [
-                        {"match": {"experimental_strategy": "Genotyping Array"}},
-                        {"match": {"data_type": "Gene Level Copy Number"}},
-                        {"match": {"analysis.workflow_type": "ASCAT2"}},
+                        {"term": {"data_type": "Gene Level Copy Number"}},
+                    ],
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {"term": {"experimental_strategy": "WGS"}},
+                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
+                                ]
+                            }
+                        },
                     ],
                 }
             },
