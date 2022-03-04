@@ -194,29 +194,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             "query": {
                 "bool": {
                     "must": [
-                        {"term": {"data_type": "Gene Level Copy Number"}},
-                    ],
-                    "should": [
-                        {
-                            "bool": {
-                                "must": [
-                                    {
-                                        "term": {
-                                            "experimental_strategy": "Genotyping Array"
-                                        }
-                                    },
-                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
-                                ]
-                            }
-                        },
-                        {
-                            "bool": {
-                                "must": [
-                                    {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
-                                ]
-                            }
-                        },
+                        {"match": {"experimental_strategy": "Genotyping Array"}},
+                        {"match": {"data_type": "Gene Level Copy Number"}},
+                        {"match": {"analysis.workflow_type": "ASCAT2"}},
                     ],
                 }
             },
@@ -259,7 +239,10 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         return tuple(hit["_source"]["file_id"] for hit in hits)
 
     def build_from_scratch(
-        self, primary_aliquot_df: sql.DataFrame, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame
+        self,
+        primary_aliquot_df: sql.DataFrame,
+        gene_model_df: sql.DataFrame,
+        **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
@@ -333,7 +316,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
                 "uniprotkb_swissprot",
             )
             .where(F.col("biotype") == F.lit("protein_coding"))
-            .where(F.coalesce(F.col("chromosome").cast("int"), F.lit(-1)).between(0, 22))
+            .where(
+                F.coalesce(F.col("chromosome").cast("int"), F.lit(-1)).between(0, 22)
+            )
         )
         file_df = self._build_file_df(dids)
         file_df = file_df.join(primary_aliquot_df, on=["file_id", "aliquot_id"]).select(
@@ -388,7 +373,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
 
 
 def _load_ascat_schema() -> types.StructType:
-    schema_path = pkg_resources.resource_filename("exports.schemas", "builders/ascat/final_ascat.json")
+    schema_path = pkg_resources.resource_filename(
+        "exports.schemas", "builders/ascat/final_ascat.json"
+    )
 
     with open(schema_path, "r") as f:
         return types.StructType.fromJson(json.load(f))
