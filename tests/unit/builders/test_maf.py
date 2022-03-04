@@ -286,6 +286,10 @@ def gene_model_schema(schema_dir: str) -> types.StructType:
 def raw_maf_schema(schema_dir: str) -> types.StructType:
     return utils.load_schema(schema_dir, "raw_maf.json")
 
+@pytest.fixture(scope="class")
+def final_maf_schema(schema_dir: str) -> types.StructType:
+    return utils.load_schema(schema_dir, "final_maf.json")
+
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
     values = dict(DEFAULT_CONFIG_VALUES)
@@ -302,10 +306,12 @@ class TestMAFBuilder:
         spark_session: sql.SparkSession,
         gene_model_schema: types.StructType,
         raw_maf_schema: types.StructType,
+        final_maf_schema: types.StructType
     ) -> None:
         self.spark_session = spark_session
         self.gene_model_schema = gene_model_schema
         self.raw_maf_schema = raw_maf_schema
+        self.final_maf_schema = final_maf_schema
 
     def arrange_builder(
         self,
@@ -346,6 +352,7 @@ class TestMAFBuilder:
         result_df = builder.build_from_scratch(**inputs)
 
         assert result_df.count() == 1
+        assert result_df.schema == self.final_maf_schema
 
     def test__build_from_scratch__input_schema_transformed(self) -> None:
         gene_model = GeneModel()

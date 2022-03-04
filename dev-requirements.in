@@ -2,6 +2,7 @@
 
 attrs~=21.2.0
 coverage[toml]~=5.5
+dataclasses~=0.8
 deepdiff==3.3.0
 ghp-import==0.5.4
 jsonpath-rw~=1.4

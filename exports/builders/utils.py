@@ -546,10 +546,3 @@ def convert_empty_str_to_null_in_col(df, col_name):
 
 def get_column_name(column_name, dataset_key):
     return '{}_{}'.format(column_name, dataset_key)
-
-
-def transform_variant_caller(callers):
-    partitioned = callers.split(';')
-    sanitized = [caller.strip('*') for caller in partitioned]
-
-    return sanitized
