@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 from pyspark import sql
 
-from exports import indexd_utils
+from mutation_indexer import indexd_utils
 
 TEST_FILE_PATH = "input/indexd_utils/dataframe_util/test_dataframe_util_header"
 

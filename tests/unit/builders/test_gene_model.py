@@ -7,7 +7,7 @@ import more_itertools
 import pytest
 from pyspark import sql
 
-from exports import builders
+from mutation_indexer import builders
 from tests.unit import utils
 
 

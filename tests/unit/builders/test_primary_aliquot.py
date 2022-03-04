@@ -8,7 +8,7 @@ import pytest
 import yaml
 from pyspark.sql import types
 
-from exports import builders, es_utils
+from mutation_indexer import builders, es_utils
 from tests.utils import schema_validation
 
 

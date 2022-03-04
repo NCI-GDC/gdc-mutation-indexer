@@ -51,5 +51,5 @@ setup(
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.4#egg=normalizer",
         "cdisutils @ git+https://github.com/NCI-GDC/cdisutils.git@1.7.0#egg=cdisutils",
         "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
-    ]
+    ],
 )

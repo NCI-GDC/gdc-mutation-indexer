@@ -8,8 +8,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
-from exports.builders import ascat
+from mutation_indexer import builders
+from mutation_indexer.builders import ascat
 from tests.unit import utils
 
 

@@ -8,8 +8,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
-from exports.builders import base_input_builder
+from mutation_indexer import builders
+from mutation_indexer.builders import base_input_builder
 from tests.unit import utils
 
 DEFAULT_CONFIG_VALUES = {

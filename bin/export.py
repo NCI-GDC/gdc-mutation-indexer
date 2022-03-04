@@ -1,9 +1,9 @@
 import logging
-from pyspark import SparkConf, SparkContext
-from pyspark.sql import SQLContext
 
-from exports.gdc_mutation_export import GDCMutationExport
-from config import BaseConfig as Config
+import pyspark
+from pyspark import sql
+
+from mutation_indexer import config, gdc_mutation_export
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
@@ -13,11 +13,11 @@ def main():
     """
     Define the spark context and parse agruments into config
     """
-    config = Config()
+    conf = config.Config()
 
-    sc, sqlContext = make_spark_context(config)
+    sc, sqlContext = make_spark_context(conf)
 
-    exporter = GDCMutationExport(sc, sqlContext, config)
+    exporter = gdc_mutation_export.GDCMutationExport(sc, sqlContext, conf)
 
     exporter.run_export()
 
@@ -29,10 +29,10 @@ def make_spark_context(config):
     """
     Makes a spark and sqlContext
     """
-    conf = SparkConf().setAppName(config.name)
+    conf = pyspark.SparkConf().setAppName(config.name)
     conf = conf.setMaster(config.master)
-    sc = SparkContext(conf=conf, pyFiles=[])
-    sqlContext = SQLContext(sc)
+    sc = pyspark.SparkContext(conf=conf, pyFiles=[])
+    sqlContext = sql.SQLContext(sc)
     # Configure logging
     log4j = sc._jvm.org.apache.log4j
     log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
@@ -40,6 +40,6 @@ def make_spark_context(config):
     return sc, sqlContext
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Execute Main functionality
     main()
