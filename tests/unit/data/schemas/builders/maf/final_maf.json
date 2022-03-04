@@ -1,0 +1,879 @@
+{
+    "fields": [
+        {
+            "metadata": {},
+            "name": "variant_caller",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "cosmic_id",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "clin_sig",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "dbsnp_val_status",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "gene_chromosome",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "gene_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "ncbi_build",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "start_position",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "end_position",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "variant_type",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_allele",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "reference_allele",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "mutation_type",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "case_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "is_canonical",
+            "nullable": true,
+            "type": "boolean"
+        },
+        {
+            "metadata": {},
+            "name": "consequence_type",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "ref_seq_accession",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "aa_start",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "aa_end",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "aa_change",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "vep_impact",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "amino_acids",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "existing_variation",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "pubmed",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "ccds",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "cdna_position",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "hgvsp",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "ensp",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "dbsnp_rs",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "trembl",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "uniparc",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "codons",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "hgvsc",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "swissprot",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "domains",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "protein_position",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "cds_position",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "hgvsp_short",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "mutation_status",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "center",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "match_norm_seq_allele1",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "match_norm_seq_allele2",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_seq_allele1",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_seq_allele2",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_validation_allele1",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_validation_allele2",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "validation_method",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "n_depth",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "t_alt_count",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "t_depth",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "t_ref_count",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "normal_bam_uuid",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_bam_uuid",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "matched_norm_sample_barcode",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "matched_norm_sample_uuid",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_sample_barcode",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "tumor_sample_uuid",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "all_effects",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "transcript_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "available_variation_data",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "genomic_dna_change",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "mutation_subtype",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "ssm_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "occurrence_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "cds_start",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "cds_end",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "cds_length",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "polyphen_impact",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "polyphen_score",
+            "nullable": true,
+            "type": "double"
+        },
+        {
+            "metadata": {},
+            "name": "sift_impact",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "sift_score",
+            "nullable": true,
+            "type": "double"
+        },
+        {
+            "metadata": {},
+            "name": "transcripts",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": {
+                    "fields": [
+                        {
+                            "metadata": {},
+                            "name": "biotype",
+                            "nullable": true,
+                            "type": "string"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "cdna_coding_end",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "cdna_coding_start",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "coding_region_end",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "coding_region_start",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "domains",
+                            "nullable": true,
+                            "type": {
+                                "containsNull": true,
+                                "elementType": {
+                                    "fields": [
+                                        {
+                                            "metadata": {},
+                                            "name": "description",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "gff_source",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "hit_name",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "interpro_id",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        }
+                                    ],
+                                    "type": "struct"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        {
+                            "metadata": {},
+                            "name": "end",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "end_exon",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "exons",
+                            "nullable": true,
+                            "type": {
+                                "containsNull": true,
+                                "elementType": {
+                                    "fields": [
+                                        {
+                                            "metadata": {},
+                                            "name": "cdna_coding_end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "cdna_coding_start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "cdna_end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "cdna_start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "end_phase",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "genomic_coding_end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "genomic_coding_stairt",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "genomic_coding_start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "start_phase",
+                                            "nullable": true,
+                                            "type": "long"
+                                        }
+                                    ],
+                                    "type": "struct"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        {
+                            "metadata": {},
+                            "name": "transcript_id",
+                            "nullable": true,
+                            "type": "string"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "is_canonical",
+                            "nullable": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "length",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "length_amino_acid",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "length_cds",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "name",
+                            "nullable": true,
+                            "type": "string"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "number_of_exons",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "seq_exon_end",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "seq_exon_start",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "start",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "start_exon",
+                            "nullable": true,
+                            "type": "long"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "translation_id",
+                            "nullable": true,
+                            "type": "string"
+                        }
+                    ],
+                    "type": "struct"
+                },
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "entrez_gene",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "hgnc",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "omim_gene",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "uniprotkb_swissprot",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "_id",
+            "nullable": true,
+            "type": {
+                "fields": [
+                    {
+                        "metadata": {},
+                        "name": "$oid",
+                        "nullable": true,
+                        "type": "string"
+                    }
+                ],
+                "type": "struct"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "biotype",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "canonical_transcript_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "chromosome",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "description",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "gene_end",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "name",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "gene_start",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "gene_strand",
+            "nullable": true,
+            "type": "long"
+        },
+        {
+            "metadata": {},
+            "name": "symbol",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "synonyms",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "cytoband",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "is_cancer_gene_census",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "empty",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "canonical_transcript_length",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "canonical_transcript_length_cds",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "canonical_transcript_length_genomic",
+            "nullable": true,
+            "type": "integer"
+        },
+        {
+            "metadata": {},
+            "name": "normal_genotype",
+            "nullable": false,
+            "type": {
+                "fields": [
+                    {
+                        "metadata": {},
+                        "name": "allele_id",
+                        "nullable": true,
+                        "type": "string"
+                    }
+                ],
+                "type": "struct"
+            }
+        },
+        {
+            "metadata": {},
+            "name": "variant_process",
+            "nullable": false,
+            "type": "string"
+        }
+    ],
+    "type": "struct"
+}

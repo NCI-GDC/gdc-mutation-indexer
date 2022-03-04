@@ -555,13 +555,6 @@ def get_column_name(column_name, dataset_key):
     return "{}_{}".format(column_name, dataset_key)
 
 
-def transform_variant_caller(callers):
-    partitioned = callers.split(";")
-    sanitized = [caller.strip("*") for caller in partitioned]
-
-    return sanitized
-
-
 def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataFrame:
     """
     Calculates and adds canonical_transcript_length{'','_cds','_genomic'} fields to a
