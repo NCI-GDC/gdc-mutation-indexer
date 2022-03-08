@@ -4,7 +4,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import mutation_indexer.config as config
+from mutation_indexer import config
 from mutation_indexer.builders import bases
 
 logging.basicConfig(format=config.LOG_FORMAT)

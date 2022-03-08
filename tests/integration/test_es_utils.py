@@ -5,7 +5,7 @@ from mutation_indexer import es_utils
 from tests.integration import config
 from tests.integration.utils import schema_validation
 
-config = config.TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.fixture
@@ -19,9 +19,7 @@ def diagnoses_missing_field(source_es_client):
     diff = set(graph_diagnoses.keys()) - set(centric_diagnoses.keys())
 
     default_blacklist = {
-        f.split(".")[1]
-        for f in config.case_exclude_fields
-        if f.startswith("diagnoses.")
+        f.split(".")[1] for f in conf.case_exclude_fields if f.startswith("diagnoses.")
     }
 
     diff = diff - default_blacklist
@@ -37,7 +35,7 @@ def diagnoses_missing_field(source_es_client):
 
     dummy_document = {"case_id": "foo", "diagnoses": {target_field: "dummy-value"}}
 
-    index_name = config.graph_case_index
+    index_name = conf.graph_case_index
     result = source_es_client.index(index=index_name, body=dummy_document)
     source_es_client.indices.refresh(index_name)
 
@@ -51,7 +49,7 @@ def diagnoses_missing_field(source_es_client):
 
 @pytest.mark.usefixtures("setup_graph_indices")
 def test_missing_fields(diagnoses_missing_field):
-    result = es_utils.get_non_null_fields(config)
+    result = es_utils.get_non_null_fields(conf)
 
     field, _ = diagnoses_missing_field["diagnoses"].popitem()
     expected_field = "diagnoses.{}".format(field)
@@ -79,7 +77,6 @@ def test_get_dataframe_from_es(
     sqlContext, input_file, output_file, load_data_from_file
 ):
     # Arrange
-    config = config.TestConfig()
     validator = schema_validation.PysparkSchemaValidator()
 
     inputs = load_data_from_file(input_file)
@@ -91,7 +88,7 @@ def test_get_dataframe_from_es(
     expected_schema = schema_validation.Schema(expected["expected_schema"])
     expected_data = expected["expected_data"]
 
-    dataframe_util = es_utils.DataFrameUtil(config, sqlContext)
+    dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
 
     # Act
     result_df = dataframe_util.get_dataframe(es_utils.Index[index], **kwargs)

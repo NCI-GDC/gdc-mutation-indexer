@@ -3,14 +3,14 @@ import logging
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import mutation_indexer.config as config
-from mutation_indexer import builders
-from mutation_indexer.builders.viz import df_builders
+from mutation_indexer import config
+from mutation_indexer.builders import bases
+from mutation_indexer.builders.viz import consequence, df_builders, observation
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
 
-class SSMCentricBuilder(builders.BaseBuilder):
+class SSMCentricBuilder(bases.BaseBuilder):
     """
     Builds ssm-centric dataframe given case and maf dataframes::
 
@@ -31,8 +31,8 @@ class SSMCentricBuilder(builders.BaseBuilder):
         self,
         config: config.BaseConfig,
         sqlContext: sql.SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 

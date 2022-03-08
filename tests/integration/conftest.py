@@ -8,8 +8,9 @@ import yaml
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer import builders, es_utils
-from mutation_indexer.builders import utils
+from mutation_indexer import es_utils
+from mutation_indexer.builders import utils, viz
+from mutation_indexer.builders.viz import aliquot, consequence, observation
 from mutation_indexer.builders.viz.clinical_annotations import civic
 from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
@@ -101,7 +102,8 @@ def all_maf_cases(sqlContext, maf_df):
     The info is taken from aliquots in test maf headers
     """
     # Read aliquots from maf headers and get list of corresponding cases:
-    cases = utils.get_case_ids_from_source_es(conf, sqlContext)
+    aliquot_df = aliquot.AliquotBuilder(conf, sqlContext).build()
+    cases = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
     return {c.case_id for c in cases.collect()}
 
 
@@ -127,7 +129,7 @@ def test_data():
 
 @pytest.fixture(scope="session")
 def gene_model_df(sqlContext) -> sql.DataFrame:
-    return builders.GeneModelBuilder(conf, sqlContext).build()
+    return viz.GeneModelBuilder(conf, sqlContext).build()
 
 
 @pytest.fixture(scope="session")
@@ -136,7 +138,7 @@ def maf_df(sqlContext, gene_model_df):
     Builds combined maf dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
-    return builders.MAFBuilder(
+    return viz.MAFBuilder(
         conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
     ).build(gene_model_df=gene_model_df)
 
@@ -147,12 +149,12 @@ def gistic_df(sqlContext, gene_model_df):
     Builds combined gistic dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING GISTIC_DF\n\n")
-    return builders.GisticBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
+    return viz.GisticBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture(scope="session")
 def case_df(sqlContext, maf_df, gistic_df):
-    return builders.CaseBuilder(conf, sqlContext).build(maf_df, gistic_df)
+    return viz.CaseBuilder(conf, sqlContext).build(maf_df, gistic_df)
 
 
 @pytest.fixture(scope="session")
@@ -162,7 +164,9 @@ def ssm_transcript_df(sqlContext, maf_df):
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
     log.info("\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n")
-    return builders.ConsequenceBuilder(conf, sqlContext).build_all_effects_cols(maf_df)
+    return consequence.ConsequenceBuilder(conf, sqlContext).build_all_effects_cols(
+        maf_df
+    )
 
 
 @pytest.fixture(scope="session")
@@ -204,12 +208,12 @@ def primary_aliquot_df(sqlContext):
 
 @pytest.fixture(scope="session")
 def consequence_builder(sqlContext):
-    return builders.ConsequenceBuilder(conf, sqlContext)
+    return consequence.ConsequenceBuilder(conf, sqlContext)
 
 
 @pytest.fixture(scope="session")
 def observation_builder():
-    return builders.ObservationBuilder()
+    return observation.ObservationBuilder()
 
 
 @pytest.fixture(scope="session")
@@ -227,7 +231,7 @@ def case_centric_df(
     Reused throughout test suite
     """
     log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
-    builder = builders.CaseCentricBuilder(
+    builder = viz.CaseCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -255,7 +259,7 @@ def gene_centric_df(
     """
     log.info("\n\n\tBUILDING GENE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
-    builder = builders.GeneCentricBuilder(
+    builder = viz.GeneCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -282,7 +286,7 @@ def ssm_centric_df(
     """
     log.info("\n\n\tBUILDING SSM_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
-    builder = builders.SSMCentricBuilder(
+    builder = viz.SSMCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -309,7 +313,7 @@ def ssm_occurrence_centric_df(
     """
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
-    builder = builders.SSMOccurrenceCentricBuilder(
+    builder = viz.SSMOccurrenceCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -330,7 +334,7 @@ def cnv_centric_df(
     """
     log.info("\n\n\tBUILDING CNV_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
-    builder = builders.CNVCentricBuilder(
+    builder = viz.CNVCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -351,7 +355,7 @@ def cnv_occurrence_centric_df(
     """
     log.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
-    builder = builders.CNVOccurrenceCentricBuilder(
+    builder = viz.CNVOccurrenceCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -371,7 +375,7 @@ def case_ssm_subtree(
     Builds case centric ssm subtree dataframe
     """
     log.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
-    builder = builders.CaseCentricBuilder(
+    builder = viz.CaseCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -386,7 +390,7 @@ def gene_ssm_subtree(
     Builds gene centric ssm subtree dataframe
     """
     log.info("\n\n\tBUILDING GENE_SSM_SUBTREE\n\n")
-    builder = builders.GeneCentricBuilder(
+    builder = viz.GeneCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
@@ -401,7 +405,7 @@ def ssm_occurrence_ssm_subtree(
     Builds ssm occurrence centric ssm subtree dataframe
     """
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n")
-    builder = builders.SSMOccurrenceCentricBuilder(
+    builder = viz.SSMOccurrenceCentricBuilder(
         conf, sqlContext, consequence_builder, observation_builder
     )
 

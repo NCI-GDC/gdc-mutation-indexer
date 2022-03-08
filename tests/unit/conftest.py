@@ -1,7 +1,21 @@
 import os
+from typing import Iterable
 
 import pytest
 import yaml
+from pyspark import sql
+
+
+@pytest.fixture(scope="session")
+def spark_session() -> Iterable[sql.SparkSession]:
+    with sql.SparkSession.builder.master("local[*]").appName(
+        "sqlContextFixture"
+    ).getOrCreate() as spark_session:
+        spark_session.sparkContext.setLogLevel("FATAL")
+        spark_session.sql("set spark.sql.shuffle.partitions=200")
+        spark_session.sql("set spark.sql.caseSensitive=true")
+
+        yield spark_session
 
 
 @pytest.fixture(scope="session")

@@ -7,9 +7,9 @@ class TestConfig(config.BaseConfig):
     __test__ = False
 
     # Directories used for test data
-    root_dir = os.path.dirname(os.path.realpath(__file__))
-    test_dir = os.path.join(root_dir, "tests")
-    schemas_dir = os.path.join(root_dir, "exports", "schemas")
+    test_dir = os.path.dirname(os.path.realpath(__file__))
+    root_dir = os.path.join(test_dir, "..", "..")
+    schemas_dir = os.path.join(root_dir, "mutation_indexer", "schemas")
     data_dir = os.path.join(test_dir, "data")
     log_dir = os.path.join(data_dir, "log")
     input_dir = os.path.join(data_dir, "input")

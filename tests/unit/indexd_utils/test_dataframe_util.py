@@ -13,9 +13,9 @@ TEST_FILE_PATH = "input/indexd_utils/dataframe_util/test_dataframe_util_header"
 
 class TestDataFrameUtil:
     @pytest.fixture(autouse=True)
-    def import_fixtures(self, data_dir: str, sqlContext: sql.SQLContext):
+    def import_fixtures(self, data_dir: str, spark_session: sql.SparkSession):
         self.data_dir = data_dir
-        self.sql_context = sqlContext
+        self.spark_session = spark_session
 
     def _mock_bulk_request(
         self, missing_dids: Container[str] = frozenset()
@@ -42,7 +42,8 @@ class TestDataFrameUtil:
     def test__get_dataframe__include_dids(self):
         indexd = mock.MagicMock(bulk_request=self._mock_bulk_request())
         logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, self.sql_context, logger)
+        sql_context = mock.MagicMock()
+        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
         doc_ids = ("1", "2")
 
         result = util.get_dataframe(doc_ids, enforce_schema=False).collect()

@@ -7,7 +7,7 @@ import more_itertools
 import pytest
 from pyspark import sql
 
-from mutation_indexer import builders
+from mutation_indexer.builders import viz
 from tests.unit import utils
 
 
@@ -124,7 +124,7 @@ class TestGeneModelBuilder:
         cytobands: Tuple[Cytoband, ...],
         census: Tuple[Census, ...],
         gene_model: Tuple[GeneModel, ...],
-    ) -> builders.GeneModelBuilder:
+    ) -> viz.GeneModelBuilder:
         cytoband_df = self.spark_session.createDataFrame(
             cytobands, "ens_gene_id: string, cytoband: string"
         )
@@ -156,7 +156,7 @@ class TestGeneModelBuilder:
             gene_model_file="gene_model",
         )
 
-        return builders.GeneModelBuilder(config, sql_context)
+        return viz.GeneModelBuilder(config, sql_context)
 
     @pytest.mark.parametrize(
         ("cytoband_gene_id", "census_gene_id"),

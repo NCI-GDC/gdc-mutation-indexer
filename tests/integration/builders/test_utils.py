@@ -3,6 +3,7 @@ import os
 import pytest
 
 from mutation_indexer.builders import utils
+from mutation_indexer.builders.viz import aliquot
 from tests.integration import config
 
 
@@ -11,7 +12,7 @@ def _case_ids_from_df(case_id_df):
 
 
 class TestUtils(object):
-    """Tests for the mutation indexer's ``exports.builders.utils`` module.
+    """Tests for the mutation indexer's ``mutation_indexer.builders.utils`` module.
 
     Not to be confused with utils for tests.
     """
@@ -19,8 +20,9 @@ class TestUtils(object):
     def test_get_case_ids_from_source_es(self, sqlContext):
         """Verify the expected case IDs are read from the test MAF headers and graph."""
         conf = config.TestConfig()
+        aliquot_df = aliquot.AliquotBuilder(conf, sqlContext).build()
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
 
         # Rather than try to reconstruct this programmatically and create even
         # more code to test, here's what the test data should yield.
@@ -49,8 +51,9 @@ class TestUtils(object):
         """Verify the case IDs are filtered based on the config."""
         conf = config.TestConfig()
         conf.projects = ["TCGA-KICH"]
+        aliquot_df = aliquot.AliquotBuilder(conf, sqlContext).build()
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
 
         expected_case_ids = {
             "452135f2-6de6-4593-a091-ddf6344ee431",
@@ -76,8 +79,9 @@ class TestUtils(object):
             conf.input_dir, "maf", "edge_cases", "ambiguous_submitter_id.maf"
         )
         conf.maf_urls.append(bad_maf_path)
+        aliquot_df = aliquot.AliquotBuilder(conf, sqlContext).build()
 
-        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        case_id_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
 
         expected_case_ids = {
             "13afbde8-e5b5-4f3c-8a9d-daef71560005",
@@ -124,19 +128,22 @@ class TestUtils(object):
         }
 
         expected_bad_graph_ids = {"bbbbbbbb-aaaa-4ddd-dddd-00000000001b"}
+        aliquot_df = aliquot.AliquotBuilder(conf, sqlContext).build()
 
         conf.projects = ["TCGA-KICH"]
-        kich_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        kich_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
         assert _case_ids_from_df(kich_df) == expected_kich_ids
 
         conf.projects = ["BAD-GRAPH-B"]
-        bad_graph_b_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        bad_graph_b_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
         assert _case_ids_from_df(bad_graph_b_df) == expected_bad_graph_ids
 
         conf.projects = ["BAD-GRAPH-B", "TCGA-KICH"]
-        both_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        both_df = utils.get_case_ids_from_source_es(conf, sqlContext, aliquot_df)
         assert _case_ids_from_df(both_df) == expected_bad_graph_ids | expected_kich_ids
 
         conf.projects = ["BAD-GRAPH-A", "BAD-GRAPH-C"]
-        bad_graph_other_df = utils.get_case_ids_from_source_es(conf, sqlContext)
+        bad_graph_other_df = utils.get_case_ids_from_source_es(
+            conf, sqlContext, aliquot_df
+        )
         assert _case_ids_from_df(bad_graph_other_df) == set()

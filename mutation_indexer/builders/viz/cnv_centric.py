@@ -3,13 +3,14 @@ import logging
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer import builders, config
-from mutation_indexer.builders.viz import df_builders
+from mutation_indexer import config
+from mutation_indexer.builders import bases
+from mutation_indexer.builders.viz import consequence, df_builders, observation
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
 
-class CNVCentricBuilder(builders.BaseBuilder):
+class CNVCentricBuilder(bases.BaseBuilder):
     """
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
@@ -30,8 +31,8 @@ class CNVCentricBuilder(builders.BaseBuilder):
         self,
         config: config.BaseConfig,
         sqlContext: sql.SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 

@@ -19,7 +19,9 @@ ES_PORT = os.environ["ES_PORT"]
 ES_USER = os.environ["ES_USER"]
 ES_PASSWORD = os.environ["ES_PASSWORD"]
 
-es = elasticsearch.Elasticsearch(host=ES_HOST, http_auth=(ES_USER, ES_PASSWORD), port=ES_PORT)
+es = elasticsearch.Elasticsearch(
+    host=ES_HOST, http_auth=(ES_USER, ES_PASSWORD), port=ES_PORT
+)
 
 S3_HOST = os.environ["S3_HOST"]
 S3_ACCESS_KEY = os.environ["S3_ACCESS_KEY"]
@@ -33,7 +35,7 @@ def update_genes():
     - Get a set of genes that appear in test mafs
     - Get full gene model from cleversafe
     - Drop all genes that not in test mafs from gene model
-    - Save resulting gene model to tests/data/input/genes.json.gz
+    - Save resulting gene model to tests/integration/data/input/genes.json.gz
 
     """
     print("- Downloading full gene model")
@@ -56,7 +58,7 @@ def update_cases(es):
 
     - Get a set of cases that appear in test mafs
     - Get corresponding case documents from gdc_from_graph
-    - Save results to tests/data/input/cases.ndjson.gz
+    - Save results to tests/integration/data/input/cases.ndjson.gz
 
     """
 

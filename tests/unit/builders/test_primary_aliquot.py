@@ -8,7 +8,8 @@ import pytest
 import yaml
 from pyspark.sql import types
 
-from mutation_indexer import builders, es_utils
+from mutation_indexer import es_utils
+from mutation_indexer.builders import viz
 from tests.integration.utils import schema_validation
 
 
@@ -17,8 +18,8 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
     maxDiff = None
 
     @pytest.fixture(autouse=True)
-    def fixture_set_up(self, sqlContext, data_dir):
-        self.sql_context = sqlContext
+    def fixture_set_up(self, spark_session, data_dir):
+        self.sql_context = spark_session
         self.data_dir = data_dir
 
     def _build_es_dataframe(self, data: Iterable[dict], is_gene_expression: bool):
@@ -145,7 +146,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         es_dataframe_util = mock.MagicMock()
         es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
         es_dataframe_util.get_dataframe.return_value = es_df
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        primary_aliquot_builder = viz.PrimaryAliquotBuilder(
             config,
             self.sql_context,
             config.indexd,
@@ -234,7 +235,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
             "input/test_primry_aliquot_builder_common.yaml", True
         )
         es_dataframe_util.get_dataframe.return_value = es_df
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        primary_aliquot_builder = viz.PrimaryAliquotBuilder(
             config,
             self.sql_context,
             config.indexd,

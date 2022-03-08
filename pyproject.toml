@@ -1,5 +1,5 @@
 [tool.isort]
-known_first_party = ["exports"]
+known_first_party = ["mutation_indexer"]
 multi_line_output = 3
 profile = "black"
 

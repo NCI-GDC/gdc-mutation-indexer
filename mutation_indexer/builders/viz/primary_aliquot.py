@@ -7,9 +7,8 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import mutation_indexer.config as config
-from mutation_indexer import es_utils
-from mutation_indexer.builders import base_input_builder
+from mutation_indexer import config, es_utils
+from mutation_indexer.builders import bases
 
 
 def _is_main_url(metadata: dict):
@@ -130,7 +129,7 @@ GeneExpressionPrimaryAliquotData = NamedTuple(
 )
 
 
-class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
+class PrimaryAliquotBuilder(bases.BaseInputBuilder):
     FILE_URL_BATCH_SIZE = 1000
 
     def __init__(

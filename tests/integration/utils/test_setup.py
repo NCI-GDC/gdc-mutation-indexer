@@ -69,7 +69,7 @@ class IndexManager(ContextManager["IndexManager"]):
 class DocumentLoader(ContextManager["DocumentLoader"]):
     def __init__(
         self,
-        config: tests_config.TestConfig,
+        config: config.TestConfig,
         es: elasticsearch.Elasticsearch,
         logger: logging.Logger,
     ) -> None:

@@ -7,8 +7,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import mutation_indexer.config as config
-from mutation_indexer import es_utils, indexd_utils
+from mutation_indexer import config, es_utils, indexd_utils
 from mutation_indexer.builders import bases, utils
 
 RAW_ASCAT_STRUCT = types.StructType(
@@ -297,7 +296,7 @@ class AscatBuilder(bases.BaseInputBuilder):
 
 def _load_ascat_schema() -> types.StructType:
     schema_path = pkg_resources.resource_filename(
-        "exports.schemas", "builders/ascat/final_ascat.json"
+        "mutation_indexer.schemas", "builders/ascat/final_ascat.json"
     )
 
     with open(schema_path, "r") as f:

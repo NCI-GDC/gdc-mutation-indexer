@@ -1,7 +1,7 @@
 import logging
 
 from mutation_indexer.builders import utils
-from mutation_indexer.builders.viz import df_builders
+from mutation_indexer.builders.viz import clinical_annotations, df_builders
 
 logger = logging.getLogger("df_builder")
 
@@ -76,7 +76,9 @@ def get_gene_df(
 def get_ssm_df(
     input_df, index_name, add_fields=[], drop_fields=[], unique_fields=None, ignore=[]
 ):
-    clinical_anno_df = df_builders.get_clinical_annotation_df(index_name, input_df)
+    clinical_anno_df = clinical_annotations.get_clinical_annotation_df(
+        index_name, input_df
+    )
     df = get_single_df(
         input_df, index_name, "ssm", add_fields, [], unique_fields, ignore
     )

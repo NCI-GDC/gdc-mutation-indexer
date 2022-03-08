@@ -8,8 +8,7 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer import builders
-from mutation_indexer.builders import base_input_builder
+from mutation_indexer.builders import bases, viz
 from tests.unit import utils
 
 DEFAULT_CONFIG_VALUES = {
@@ -313,7 +312,7 @@ class TestMAFBuilder:
         config_values: Optional[Dict[str, Any]] = None,
         annotation_builders: Iterable[mock.MagicMock] = (),
         drop_optional_cols: bool = False,
-    ) -> base_input_builder.BaseInputBuilder:
+    ) -> bases.BaseInputBuilder:
         maf_df = self.spark_session.createDataFrame(
             tuple(maf.to_sql_row() for maf in mafs), self.raw_maf_schema
         )
@@ -328,7 +327,7 @@ class TestMAFBuilder:
         sql_context.options.return_value = sql_context
         sql_context.load.return_value = maf_df
 
-        return builders.MAFBuilder(config, sql_context, annotation_builders)
+        return viz.MAFBuilder(config, sql_context, annotation_builders)
 
     def arrange_inputs(
         self, gene_model: Tuple[GeneModel, ...] = (GeneModel(),)

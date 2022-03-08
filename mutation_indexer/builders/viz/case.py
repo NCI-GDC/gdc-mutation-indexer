@@ -5,6 +5,7 @@ from pyspark.sql import functions as F
 
 from mutation_indexer import config
 from mutation_indexer.builders import utils
+from mutation_indexer.builders.viz import aliquot
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
@@ -73,7 +74,10 @@ class CaseBuilder(object):
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = utils.get_case_ids_from_source_es(self.config, self.sqlContext)
+        aliquot_df = aliquot.AliquotBuilder(self.config, self.sqlContext).build()
+        all_maf_cases = utils.get_case_ids_from_source_es(
+            self.config, self.sqlContext, aliquot_df
+        )
 
         maf_and_ascat_df = self.populate_available_variation_data(
             maf_df, all_maf_cases, ascat_df

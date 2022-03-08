@@ -8,11 +8,11 @@ from typing import Any
 import pkg_resources
 import yaml
 from normalizer import mapper
+from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import config, es_utils
-from mutation_indexer.builders.viz import aliquot
 
 logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
@@ -25,7 +25,9 @@ def get_default_excludes(index, mapping):
     if DEFAULT_EXCLUDE_FIELDS:
         return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
-    path = pkg_resources.resource_filename("exports", "schemas/exclude.defaults.yaml")
+    path = pkg_resources.resource_filename(
+        "mutation_indexer", "schemas/exclude.defaults.yaml"
+    )
 
     with open(path) as f:
         excludes = yaml.safe_load(f)
@@ -95,7 +97,9 @@ def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
     return aliquot_clause
 
 
-def get_case_ids_from_source_es(config, sqlContext):
+def get_case_ids_from_source_es(
+    config: config.BaseConfig, sqlContext: sql.SQLContext, aliquot_df: sql.DataFrame
+):
     """Query source ES for case_ids that correspond to MAF aliquots.
 
     TODO: Make this query ES through Spark instead...?
@@ -106,9 +110,6 @@ def get_case_ids_from_source_es(config, sqlContext):
     """
 
     project_filter = frozenset(config.projects) if config.projects else None
-
-    # Read unique aliquots from maf headers
-    aliquot_df = aliquot.AliquotBuilder(config, sqlContext).build()
 
     # Figure out which aliquots are required to be in certain projects and which
     # could come from anywhere.
@@ -501,7 +502,7 @@ def extract_aas_position(df):
     )
     df = df.withColumn(
         "aa_end",
-        F.udf(lambda aa_change: extract(aa_change, False), F.IntegerType())(
+        F.udf(lambda aa_change: extract(aa_change, False), types.IntegerType())(
             F.col("aa_change")
         ),
     )

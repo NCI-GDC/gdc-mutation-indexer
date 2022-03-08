@@ -5,7 +5,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer import builders
+from mutation_indexer.builders import viz
+from mutation_indexer.builders.viz import consequence, observation
 from tests.integration import config
 
 conf = config.TestConfig()
@@ -59,7 +60,7 @@ class TestObservationBuilder:
 
     @pytest.fixture(scope="class")
     def builder(self):
-        yield builders.ObservationBuilder()
+        yield observation.ObservationBuilder()
 
     @pytest.mark.parametrize(
         ("index_name",), (("ssm_centric",), ("ssm_occurrence_centric",))
@@ -67,7 +68,7 @@ class TestObservationBuilder:
     def test__build_for_ssm__join_columns(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ):
@@ -86,7 +87,7 @@ class TestObservationBuilder:
     def test__build_for_cnv__join_columns(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         gistic_df: sql.DataFrame,
     ):
         result_df = builder.build_for_cnv(gistic_df, index_name)
@@ -104,7 +105,7 @@ class TestObservationBuilder:
     def test__build_for_ssm__observation_id(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ):
@@ -122,7 +123,7 @@ class TestObservationBuilder:
     def test__build_for_cnv__observation_id(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         gistic_df: sql.DataFrame,
     ):
         result_df = builder.build_for_cnv(gistic_df, index_name)
@@ -139,7 +140,7 @@ class TestObservationBuilder:
     def test__build_for_ssm__observation_count(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ):
@@ -155,7 +156,7 @@ class TestObservationBuilder:
     def test__build_for_cnv__observation_count(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         gistic_df: sql.DataFrame,
     ):
         observation_count = gistic_df.select("case_id", "cnv_id").distinct().count()
@@ -170,7 +171,7 @@ class TestObservationBuilder:
     def test__build_for_ssm__observation_values(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ):
@@ -194,7 +195,7 @@ class TestObservationBuilder:
     def test__build_for_cnv__observation_values(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         gistic_df: sql.DataFrame,
     ):
         expected_opservations = map(
@@ -217,7 +218,7 @@ class TestObservationBuilder:
     def test__build_for_ssm__variant_caller(
         self,
         index_name: str,
-        builder: builders.ObservationBuilder,
+        builder: observation.ObservationBuilder,
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
         exploded_variant_caller_counts: int,
@@ -240,7 +241,7 @@ class TestConsequenceBuilder(TestOtherBase):
 
     @pytest.fixture(scope="class")
     def builder(self, sqlContext):
-        yield builders.ConsequenceBuilder(conf, sqlContext)
+        yield consequence.ConsequenceBuilder(conf, sqlContext)
 
     @pytest.mark.parametrize("index_name,build_type", TestOtherBase.params())
     def test_consequence_count(self, builder, index_name, build_type, get_inputs):
@@ -489,10 +490,10 @@ class TestCaseBuilder:
         Confirm that the expected number of cases are extracted and that
         all cases are in one of the expected projects.
         """
-        local_conf = tests_config.TestConfig()
+        local_conf = config.TestConfig()
         local_conf.projects = projects
 
-        df = builders.CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
+        df = viz.CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)
 
         assert df.count() == expected_count
         for row in df.collect():

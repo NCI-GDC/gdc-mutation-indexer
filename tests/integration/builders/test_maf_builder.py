@@ -7,7 +7,7 @@ import yaml
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import builders
+from mutation_indexer.builders import viz
 from mutation_indexer.builders.viz.clinical_annotations import civic
 from tests.integration import config
 
@@ -26,14 +26,14 @@ class TestMAFBuilder:
 
     @pytest.fixture
     def annotation_schemas(self, sqlContext):
-        builder = builders.MAFBuilder(
+        builder = viz.MAFBuilder(
             conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
         )
         return builder.get_annotation_schemas()
 
     def test_patch_url(self, sqlContext):
         """Test that s3 urls are patched correctly"""
-        builder = builders.MAFBuilder(
+        builder = viz.MAFBuilder(
             conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
         )
         url1 = "s3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt"
@@ -43,7 +43,7 @@ class TestMAFBuilder:
         """
         Test that mafs are combined correctly
         """
-        builder = builders.MAFBuilder(
+        builder = viz.MAFBuilder(
             conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
         )
 
@@ -56,7 +56,7 @@ class TestMAFBuilder:
         """
         Test that maf has columns correctly renamed
         """
-        builder = builders.MAFBuilder(
+        builder = viz.MAFBuilder(
             conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
         )
 
@@ -72,7 +72,7 @@ class TestMAFBuilder:
 
         This verifies that we can safely union mafs together
         """
-        builder = builders.MAFBuilder(
+        builder = viz.MAFBuilder(
             conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)
         )
 

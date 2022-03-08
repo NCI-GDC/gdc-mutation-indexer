@@ -8,8 +8,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer import builders
-from mutation_indexer.builders import ascat
+from mutation_indexer.builders import viz
+from mutation_indexer.builders.viz import ascat
 from tests.unit import utils
 
 
@@ -207,14 +207,14 @@ class TestAscatBuilder:
 
     def _arrange_builder(
         self, es_files: Tuple[ESFile, ...], ascat_documents: Tuple[AscatDocument, ...]
-    ) -> builders.AscatBuilder:
+    ) -> viz.AscatBuilder:
         config = mock.MagicMock()
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)
         es_client = mock.MagicMock()
 
-        return builders.AscatBuilder(
+        return viz.AscatBuilder(
             config, mock_sql_context, doc_dataframe_util, es_dataframe_util, es_client
         )
 
@@ -234,7 +234,7 @@ class TestAscatBuilder:
         }
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__joins_single_record(
@@ -255,7 +255,7 @@ class TestAscatBuilder:
         assert ascat_df.schema == utils.load_schema(self.schema_dir, "final_ascat.json")
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__input_data_transformed(
@@ -338,7 +338,7 @@ class TestAscatBuilder:
         ),
     )
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__failed_joins(
@@ -358,7 +358,7 @@ class TestAscatBuilder:
         assert ascat_df.schema == utils.load_schema(self.schema_dir, "final_ascat.json")
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__gene_id_stripped(
@@ -378,7 +378,7 @@ class TestAscatBuilder:
         assert ascat_row.gene_id == "ENSG00000238009"
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__uuids_generated(

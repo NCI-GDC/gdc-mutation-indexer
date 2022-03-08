@@ -4,7 +4,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer import builders, es_utils
+from mutation_indexer import es_utils
+from mutation_indexer.builders import viz
 from tests.integration import config
 
 
@@ -17,7 +18,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         conf = config.TestConfig()
         conf.projects = ["TCGA-KICH"]
         es_dataframe_util = es_utils.DataFrameUtil(conf, self.sql_context)
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        primary_aliquot_builder = viz.PrimaryAliquotBuilder(
             conf, self.sql_context, conf.indexd, es_dataframe_util
         )
 
@@ -42,7 +43,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         conf = config.TestConfig()
         conf.projects = ["TCGA"]
         es_dataframe_util = es_utils.DataFrameUtil(conf, self.sql_context)
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+        primary_aliquot_builder = viz.PrimaryAliquotBuilder(
             conf, self.sql_context, conf.indexd, es_dataframe_util
         )
 

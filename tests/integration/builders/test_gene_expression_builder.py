@@ -7,8 +7,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import builders, es_utils
-from mutation_indexer.builders import gene_expression
+from mutation_indexer import es_utils
+from mutation_indexer.builders import gene_expression, viz
 from tests.integration import config
 
 
@@ -23,7 +23,7 @@ def ge_conf():
 
 @pytest.fixture
 def ge_builder(sqlContext, ge_conf):
-    builder = builders.GeneExpressionBuilder(ge_conf, sqlContext)
+    builder = gene_expression.GeneExpressionBuilder(ge_conf, sqlContext)
 
     return builder
 
@@ -31,11 +31,11 @@ def ge_builder(sqlContext, ge_conf):
 @pytest.fixture
 def ge_cases_df(sqlContext, ge_conf):
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
-    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+    primary_aliquot_builder = viz.PrimaryAliquotBuilder(
         ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
     )
 
-    cases_df = builders.GeneExpressionCaseInputBuilder(
+    cases_df = gene_expression.GeneExpressionCaseInputBuilder(
         ge_conf,
         sqlContext,
         primary_aliquot_builder,
@@ -63,13 +63,13 @@ def ge_cases_df(sqlContext, ge_conf):
 
 @pytest.fixture
 def ge_values_df(sqlContext, ge_conf):
-    gene_model_df = builders.GeneModelBuilder(ge_conf, sqlContext).build()
+    gene_model_df = viz.GeneModelBuilder(ge_conf, sqlContext).build()
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
-    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
+    primary_aliquot_builder = viz.PrimaryAliquotBuilder(
         ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
     )
 
-    return builders.GeneExpressionValueInputBuilder(
+    return gene_expression.GeneExpressionValueInputBuilder(
         ge_conf, sqlContext, primary_aliquot_builder
     ).build(gene_model_df=gene_model_df)
 

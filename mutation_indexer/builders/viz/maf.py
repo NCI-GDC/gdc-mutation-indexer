@@ -7,15 +7,14 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import mutation_indexer.config as config
-from mutation_indexer import pyspark_extensions
-from mutation_indexer.builders import base_input_builder, utils
-from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer import config, pyspark_extensions
+from mutation_indexer.builders import bases, utils
+from mutation_indexer.builders.viz.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
 
-class MAFBuilder(base_input_builder.BaseInputBuilder):
+class MAFBuilder(bases.BaseInputBuilder):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
@@ -146,7 +145,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         """
         Load the intended MAF schema from the local YAML file
         """
-        path = resource_filename("exports.schemas", "maf.yml")
+        path = resource_filename("mutation_indexer.schemas", "maf.yml")
         with open(path) as f:
             return yaml.safe_load(f)["maf_schema"]
 

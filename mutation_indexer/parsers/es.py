@@ -77,7 +77,7 @@ class ESArgs(base.BaseParser):
         }
 
 
-class ESHadoopArgs(BaseParser):
+class ESHadoopArgs(base.BaseParser):
     """
     Elasticsearch-Hadoop adapter parameters
     """
