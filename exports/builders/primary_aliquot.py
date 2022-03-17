@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import AbstractSet, Iterable, List, NamedTuple, Optional, Union
+from typing import AbstractSet, Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import more_itertools
 from indexclient import client
@@ -8,7 +8,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 import config
-from exports import es_utils
+from exports import es_utils, schemas
 from exports.builders import base_input_builder
 
 
@@ -124,6 +124,35 @@ def _add_required_include_fields(
     return include_fields
 
 
+def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
+    return (
+        aliquot_df.select("file_id", F.explode_outer("cases").alias("case"))
+        .select(
+            "file_id",
+            F.col("case.case_id").alias("case_id"),
+            F.explode_outer("case.samples").alias("sample"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            F.col("sample.sample_id").alias("sample_id"),
+            F.explode_outer("sample.portions").alias("portion"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("portion.analytes").alias("analyte"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("analyte.aliquots").alias("aliquot"),
+        )
+    )
+
+
 GeneExpressionPrimaryAliquotData = NamedTuple(
     "GeneExpressionPrimaryAliquotData",
     [("primary_aliquot_df", sql.DataFrame), ("file_urls", Iterable[str])],
@@ -139,11 +168,13 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         sql_context: sql.SQLContext,
         indexd: client.IndexClient,
         es_dataframe_util: es_utils.DataFrameUtil,
+        es_rdd_util: es_utils.RDDUtil,
     ) -> None:
         super().__init__(config, sql_context, "primary_aliquot")
         self._sql_context = sql_context
         self._indexd = indexd
         self._es_dataframe_util = es_dataframe_util
+        self._es_rdd_util = es_rdd_util
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def _get_weighted_df(
@@ -377,6 +408,66 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             primary_aliquot_df=primary_aliquot_df, file_urls=file_urls
         )
 
+    def _get_aliquot_level_df(self) -> sql.DataFrame:
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "nested": {
+                                "path": "cases.samples.portions.analytes.aliquots",
+                                "query": {
+                                    "exists": {
+                                        "field": "cases.samples.portions.analytes.aliquots"
+                                    }
+                                },
+                            }
+                        },
+                    ]
+                }
+            }
+        }
+        included_fields = (
+            "file_id",
+            "cases.case_id",
+            "cases.samples.sample_id",
+            "cases.samples.portions.analytes.aliquots.aliquot_id",
+            "cases.samples.portions.analytes.aliquots.created_datetime",
+        )
+        aliquot_data_schema = schemas.load_schema(
+            "builders/primary_aliquot/aliquot_data.json"
+        )
+
+        if self.config.projects:
+            project_clause = {
+                "nested": {
+                    "path": "cases",
+                    "query": {
+                        "terms": {"cases.project.project_id": self.config.projects}
+                    },
+                }
+            }
+
+            query["query"]["bool"]["must"].append(project_clause)
+
+        aliquot_df = _expand_aliquots(
+            self._es_rdd_util.get_rdd(
+                es_utils.Index.File, include_fields=included_fields, query=query
+            )
+            .toDF(aliquot_data_schema)
+            .select("_source.*")
+        ).select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            "aliquot.aliquot_id",
+            F.col("aliquot.created_datetime")
+            .cast("timestamp")
+            .alias("aliquot_created_datetime"),
+        )
+
+        return aliquot_df
+
     def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
@@ -390,65 +481,44 @@ class PrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             |---file_id
             |---experimental_strategy
         """
-        filters = [
-            {
-                "nested": {
-                    "path": "cases",
-                    "query": {
-                        "terms": {"cases.project.project_id": self.config.projects}
-                    },
+        filters = (
+            [
+                {
+                    "nested": {
+                        "path": "cases",
+                        "query": {
+                            "terms": {"cases.project.project_id": self.config.projects}
+                        },
+                    }
                 }
-            },
-        ]
-
-        aliquot_df = (
-            self._get_primary_aliquot_df(filters)
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                "sample_id",
-                F.explode("case.samples").alias("sample"),
-            )
-            .where(F.col("sample.sample_id") == F.col("sample_id"))
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("sample.portions").alias("portion"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("portion.analytes").alias("analyte"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                F.explode_outer("analyte.aliquots").alias("aliquot"),
-            )
-            .select(
-                "entity_id",
-                "entity",
-                "case_id",
-                "file_id",
-                "experimental_strategy",
-                "aliquot.aliquot_id",
-                F.col("aliquot.created_datetime")
-                .cast("timestamp")
-                .alias("aliquot_created_datetime"),
-            )
+            ]
+            if self.config.projects
+            else [{"match_all": {}}]
         )
+
+        include_fields = (
+            "file_id",
+            "created_datetime",
+            "experimental_strategy",
+            "cases.case_id",
+            "cases.samples.sample_id",
+            "cases.samples.sample_type",
+        )
+        primary_aliquot_df = self._get_primary_aliquot_df(
+            filters, include_fields=include_fields
+        ).select(
+            "entity_id",
+            "entity",
+            "case_id",
+            "file_id",
+            "experimental_strategy",
+            "sample_id",
+        )
+        aliquot_data_df = self._get_aliquot_level_df()
+        aliquot_df = primary_aliquot_df.join(
+            aliquot_data_df, on=["file_id", "case_id", "sample_id"], how="left"
+        )
+
         aliquot_window = (
             sql.Window()
             .partitionBy("entity", "entity_id")

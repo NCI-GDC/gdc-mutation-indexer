@@ -1,8 +1,8 @@
+import dataclasses
 from os import path
 from typing import Dict, Iterable, Mapping, Optional, Tuple
 from unittest import mock
 
-import attr
 import more_itertools
 import pytest
 from pyspark import sql
@@ -13,141 +13,131 @@ from exports.builders import ascat
 from tests.unit import utils
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class AscatDocument:
-    did = attr.ib(type=str, default="file-0")
-    gene_id = attr.ib(type=str, default="ENSG00000238009")
-    gene_name = attr.ib(type=str, default="RP11-34P13.7")
-    chromosome = attr.ib(type=str, default="chr1")
-    start = attr.ib(type=int, default=0)
-    end = attr.ib(type=int, default=100)
-    copy_number = attr.ib(type=int, default=33)
-    min_copy_number = attr.ib(type=int, default=0)
-    max_copy_number = attr.ib(type=int, default=100)
+    did: str = "file-0"
+    gene_id: str = "ENSG00000238009"
+    gene_name: str = "RP11-34P13.7"
+    chromosome: str = "chr1"
+    start: int = 0
+    end: int = 100
+    copy_number: int = 33
+    min_copy_number: int = 0
+    max_copy_number: int = 100
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESAliquot:
-    aliquot_id = attr.ib(type=str, default="aliquot-0")
+    aliquot_id: str = "aliquot-0"
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESAnalyte:
-    aliquots = attr.ib(type=Tuple[ESAliquot, ...], default=(ESAliquot(),))
+    aliquots: Tuple[ESAliquot, ...] = (ESAliquot(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESPortion:
-    analytes = attr.ib(type=Tuple[ESAnalyte, ...], default=(ESAnalyte(),))
+    analytes: Tuple[ESAnalyte, ...] = (ESAnalyte(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESSample:
-    portions = attr.ib(type=Tuple[ESPortion, ...], default=(ESPortion(),))
+    portions: Tuple[ESPortion, ...] = (ESPortion(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESCase:
-    case_id = attr.ib(type=str, default="case-0")
-    samples = attr.ib(type=Tuple[ESSample, ...], default=(ESSample(),))
+    case_id: str = "case-0"
+    samples: Tuple[ESSample, ...] = (ESSample(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ESFile:
-    file_id = attr.ib(type=str, default="file-0")
-    cases = attr.ib(type=Tuple[ESCase, ...], default=(ESCase(),))
+    file_id: str = "file-0"
+    cases: Tuple[ESCase, ...] = (ESCase(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Domain:
-    description = attr.ib(
-        type=str, default="G protein-coupled receptor, rhodopsin-like"
-    )
-    end = attr.ib(type=int, default=280)
-    gff_source = attr.ib(type=str, default="pfam")
-    hit_name = attr.ib(type=str, default="PF00001")
-    interpro_id = attr.ib(type=str, default="IPR000276")
-    start = attr.ib(type=int, default=34)
+    description: str = "G protein-coupled receptor, rhodopsin-like"
+    end: int = 280
+    gff_source: str = "pfam"
+    hit_name: str = "PF00001"
+    interpro_id: str = "IPR000276"
+    start: int = 34
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Exon:
-    cdna_coding_end = attr.ib(type=int, default=0)
-    cdna_coding_start = attr.ib(type=int, default=0)
-    cdna_end = attr.ib(type=int, default=359)
-    cdna_start = attr.ib(type=int, default=1)
-    end = attr.ib(type=int, default=12227)
-    end_phase = attr.ib(type=int, default=-1)
-    genomic_coding_end = attr.ib(type=int, default=0)
-    genomic_coding_stairt = attr.ib(type=int, default=0)
-    genomic_coding_start = attr.ib(type=int, default=0)
-    start = attr.ib(type=int, default=11869)
-    start_phase = attr.ib(type=int, default=-1)
+    cdna_coding_end: int = 0
+    cdna_coding_start: int = 0
+    cdna_end: int = 359
+    cdna_start: int = 1
+    end: int = 12227
+    end_phase: int = -1
+    genomic_coding_end: int = 0
+    genomic_coding_stairt: int = 0
+    genomic_coding_start: int = 0
+    start: int = 11869
+    start_phase: int = -1
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Transcript:
-    biotype = attr.ib(type=str, default="processed_transcript")
-    cdna_coding_end = attr.ib(type=int, default=0)
-    cdna_coding_start = attr.ib(type=int, default=0)
-    coding_region_end = attr.ib(type=int, default=0)
-    coding_region_start = attr.ib(type=int, default=0)
-    domains = attr.ib(type=Tuple[Domain, ...], default=(Domain(),))
-    end = attr.ib(type=int, default=14409)
-    end_exon = attr.ib(type=Optional[int], default=None)
-    exons = attr.ib(type=Tuple[Exon, ...], default=(Exon(),))
-    transcript_id = attr.ib(type=str, default="ENST00000456328")
-    is_canonical = attr.ib(type=bool, default=False)
-    length = attr.ib(type=int, default=1657)
-    length_amino_acid = attr.ib(type=Optional[int], default=None)
-    length_cds = attr.ib(type=Optional[int], default=None)
-    name = attr.ib(type=str, default="DDX11L1-002")
-    number_of_exons = attr.ib(type=int, default=6)
-    seq_exon_end = attr.ib(type=Optional[int], default=None)
-    seq_exon_start = attr.ib(type=Optional[int], default=None)
-    start = attr.ib(type=int, default=11869)
-    start_exon = attr.ib(type=Optional[int], default=None)
-    translation_id = attr.ib(type=Optional[str], default=None)
+    biotype: str = "processed_transcript"
+    cdna_coding_end: int = 0
+    cdna_coding_start: int = 0
+    coding_region_end: int = 0
+    coding_region_start: int = 0
+    domains: Tuple[Domain, ...] = (Domain(),)
+    end: Optional[int] = 14409
+    end_exon: Optional[int] = None
+    exons: Tuple[Exon, ...] = (Exon(),)
+    transcript_id: str = "ENST00000456328"
+    is_canonical: bool = False
+    length: Optional[int] = 1657
+    length_amino_acid: Optional[int] = None
+    length_cds: Optional[int] = None
+    name: str = "DDX11L1-002"
+    number_of_exons: int = 6
+    seq_exon_end: Optional[int] = None
+    seq_exon_start: Optional[int] = None
+    start: Optional[int] = 11869
+    start_exon: Optional[int] = None
+    translation_id: Optional[str] = None
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GeneModel:
-    _gene_id = attr.ib(type=str, default="ENSG00000238009")
-    _id = attr.ib(
-        type=Dict[str, str],
-        default=attr.Factory(lambda: {"$oid": "589c87ca0ef75875ed614a40"}),
+    _gene_id: str = "ENSG00000238009"
+    _id: Dict[str, str] = dataclasses.field(
+        default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"},
     )
-    biotype = attr.ib(type=str, default="transcribed_unprocessed_pseudogene")
-    canonical_transcript_id = attr.ib(type=str, default="ENST00000456328")
-    chromosome = attr.ib(type=str, default="1")
-    cytoband = attr.ib(type=Tuple[Optional[str], ...], default=("1p36.33",))
-    description = attr.ib(
-        type=str,
-        default="DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation.",
-    )
-    entrez_gene = attr.ib(
-        type=Tuple[str, ...], default=("100287596", "100287102", "727856", "84771")
-    )
-    gene_end = attr.ib(type=int, default=14409)
-    gene_start = attr.ib(type=int, default=11869)
-    gene_strand = attr.ib(type=int, default=1)
-    hgnc = attr.ib(type=Tuple[str, ...], default=("HGNC:37102",))
-    is_cancer_gene_census = attr.ib(type=str, default="true")
-    omim_gene = attr.ib(type=Tuple[str, ...], default=())
-    uniprotkb_swissprot = attr.ib(type=Tuple[str, ...], default=())
-    name = attr.ib(
-        type=str, default="DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
-    )
-    symbol = attr.ib(type=str, default="DDX11L1")
-    synonyms = attr.ib(type=Tuple[str, ...], default=())
-    transcripts = attr.ib(type=Tuple[Transcript, ...], default=(Transcript(),))
+    biotype: str = "protein_coding"
+    canonical_transcript_id: str = "ENST00000456328"
+    chromosome: str = "1"
+    cytoband: Tuple[Optional[str], ...] = ("1p36.33",)
+    description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
+    gene_end: int = 14409
+    gene_start: int = 11869
+    gene_strand: int = 1
+    hgnc: Tuple[str, ...] = ("HGNC:37102",)
+    is_cancer_gene_census: str = "true"
+    omim_gene: Tuple[str, ...] = ()
+    uniprotkb_swissprot: Tuple[str, ...] = ()
+    name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
+    symbol: str = "DDX11L1"
+    synonyms: Tuple[str, ...] = ()
+    transcripts: Tuple[Transcript, ...] = (Transcript(),)
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class PrimaryAliquot:
-    entity = attr.ib(type=str, default="file")
-    file_id = attr.ib(type=str, default="file-0")
-    aliquot_id = attr.ib(type=str, default="aliquot-0")
+    entity: str = "file"
+    file_id: str = "file-0"
+    aliquot_id: str = "aliquot-0"
 
 
 def _arrange_dataframe_util(dataframe: sql.DataFrame) -> mock.MagicMock:
@@ -275,10 +265,10 @@ class TestAscatBuilder:
 
         assert ascat_row.biotype == gene_model.biotype
         assert ascat_row.case_id == es_file.cases[0].case_id
-        assert ascat_row.end_position == ascat_document.end
-        assert ascat_row.gene_chromosome == ascat_document.chromosome
-        assert ascat_row.start_position == ascat_document.start
-        assert ascat_row.symbol == ascat_document.gene_name
+        assert ascat_row.end_position == gene_model.gene_end
+        assert ascat_row.gene_chromosome == gene_model.chromosome
+        assert ascat_row.start_position == gene_model.gene_start
+        assert ascat_row.symbol == gene_model.symbol
 
     @pytest.mark.parametrize(
         argnames=("es_files", "ascat_documents", "primary_aliquots", "gene_model"),
@@ -325,7 +315,7 @@ class TestAscatBuilder:
                 (ESFile(),),
                 (AscatDocument(),),
                 (PrimaryAliquot(),),
-                (GeneModel(gene_id="ENSG00000238008"),),
+                (GeneModel(_gene_id="ENSG00000238008"),),
             ),
         ),
         ids=(
@@ -377,6 +367,50 @@ class TestAscatBuilder:
 
         assert ascat_row.gene_id == "ENSG00000238009"
 
+    @pytest.mark.parametrize(
+        argnames=("copy_number", "cnv_change"),
+        argvalues=((3, "Gain"), (34, "Gain"), (1, "Loss"), (0, "Loss")),
+    )
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__copy_number_maps_to_cnv_change(
+        self, iterate_es_results: mock.MagicMock, copy_number: int, cnv_change: str
+    ) -> None:
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(copy_number=copy_number),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        ascat_df = builder.build_from_scratch(**inputs)
+        ascat_row = more_itertools.one(ascat_df.collect())
+
+        assert ascat_row.cnv_change == cnv_change
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__copy_number_of_2_filtered(
+        self,
+        iterate_es_results: mock.MagicMock,
+    ) -> None:
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(copy_number=2),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        ascat_df = builder.build_from_scratch(**inputs)
+
+        assert ascat_df.count() == 0
+
     @mock.patch(
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
@@ -388,26 +422,26 @@ class TestAscatBuilder:
         ascat_document = AscatDocument()
         ascat_documents = (ascat_document,)
         primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        gene_model = GeneModel()
 
-        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder(es_files, ascat_documents)
 
         ascat_df = builder.build_from_scratch(**inputs)
         ascat_row = more_itertools.one(ascat_df.collect())
         cnv_id = utils.generate_uuid5(
-            ascat_document.chromosome,
-            ascat_document.start,
-            ascat_document.end,
+            gene_model.chromosome,
+            gene_model.gene_start,
+            gene_model.gene_end,
             ascat_document.copy_number,
         )
 
         assert ascat_row.cnv_id == cnv_id
         assert ascat_row.consequence_id == utils.generate_uuid5(
-            ascat_document.gene_name,
-            ascat_document.gene_id,
-            gene_model[0].is_cancer_gene_census,
-            gene_model[0].biotype,
+            gene_model.symbol,
+            gene_model._gene_id,
+            gene_model.is_cancer_gene_census,
+            gene_model.biotype,
         )
         assert ascat_row.occurrence_id == utils.generate_uuid5(
             cnv_id, es_files[0].cases[0].case_id
@@ -415,3 +449,106 @@ class TestAscatBuilder:
         assert ascat_row.observation_id == utils.generate_uuid5(
             cnv_id, es_files[0].cases[0].case_id, primary_aliquots[0].aliquot_id
         )
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__canonical_transcript_lengths_added(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        canonical_transcript = Transcript(
+            length=100, length_cds=30, end=1222, start=1000, is_canonical=True
+        )
+        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == canonical_transcript.length
+        assert (
+            result_row.canonical_transcript_length_cds
+            == canonical_transcript.length_cds
+        )
+        assert (
+            result_row.canonical_transcript_length_genomic
+            == canonical_transcript.end - canonical_transcript.start + 1
+        )
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__null_canonical_transcript_lengths_added(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        canonical_transcript = Transcript(
+            length=None, length_cds=None, end=None, start=None, is_canonical=True
+        )
+        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == None
+        assert result_row.canonical_transcript_length_cds == None
+        assert result_row.canonical_transcript_length_genomic == None
+
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__canonical_transcript_lengths_no_canonical_transcipt(
+        self, iterate_es_results: mock.MagicMock
+    ) -> None:
+        transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        es_files = (ESFile(),)
+        ascat_documents = (AscatDocument(),)
+        primary_aliquots = (PrimaryAliquot(),)
+        gene_model = (GeneModel(transcripts=(transcript,)),)
+
+        inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
+        builder = self._arrange_builder(es_files, ascat_documents)
+
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.canonical_transcript_length == None
+        assert result_row.canonical_transcript_length_cds == None
+        assert result_row.canonical_transcript_length_genomic == None
+
+    @pytest.mark.parametrize(
+        ("gene_model",),
+        (
+            (GeneModel(biotype="transcribed_unprocessed_pseudogene"),),
+            (GeneModel(chromosome="X"),),
+        ),
+        ids=("non_protein_coding", "x_chromosome"),
+    )
+    @mock.patch(
+        "exports.es_utils.iterate_es_results",
+        return_value=_arrange_iterate_es_results_return(("file-0",)),
+    )
+    def test__build_from_scratch__filter_gene_model(
+        self, iterate_es_results: mock.MagicMock, gene_model: GeneModel
+    ) -> None:
+        inputs = self._arrange_input_dataframes((PrimaryAliquot(),), (gene_model,))
+        builder = self._arrange_builder((ESFile(),), (AscatDocument(),))
+
+        result_df = builder.build_from_scratch(**inputs)
+
+        assert result_df.count() == 0

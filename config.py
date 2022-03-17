@@ -110,6 +110,8 @@ class BaseConfig(object):
         "ssm_occurrence_centric": True,
         "cnv_centric": True,
         "cnv_occurrence_centric": True,
+        "primary_aliquot": True,
+        "gene_model": True,
     }
 
     # Case load settings
