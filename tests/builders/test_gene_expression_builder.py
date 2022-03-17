@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 
 import ndjson
 import pytest
@@ -32,7 +33,7 @@ def ge_builder(sqlContext, ge_conf):
 def ge_cases_df(sqlContext, ge_conf):
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
     primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
+        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util, mock.MagicMock()
     )
 
     cases_df = builders.GeneExpressionCaseInputBuilder(
@@ -66,7 +67,7 @@ def ge_values_df(sqlContext, ge_conf):
     gene_model_df = builders.GeneModelBuilder(ge_conf, sqlContext).build()
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
     primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util
+        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util, mock.MagicMock()
     )
 
     return builders.GeneExpressionValueInputBuilder(

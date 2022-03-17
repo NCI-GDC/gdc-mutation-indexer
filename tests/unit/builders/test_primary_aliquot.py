@@ -1,20 +1,394 @@
 import collections
 import unittest
+import dataclasses
+import datetime
 from os import path
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional, Tuple
 from unittest import mock
 
+import more_itertools
 import pytest
 import yaml
+from pyspark import sql
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from tests.unit import utils
 from tests.utils import schema_validation
 
 
-class TestPrimaryAliquotBuilder(unittest.TestCase):
+@dataclasses.dataclass(frozen=True)
+class ESAliquot:
+    aliquot_id: str = "a-0"
+    created_datetime: Optional[str] = datetime.datetime.min.isoformat(
+        timespec="microseconds"
+    )
+
+    def to_rdd_data(self) -> dict:
+        if self.created_datetime:
+            return {
+                "aliquot_id": self.aliquot_id,
+                "created_datetime": self.created_datetime,
+            }
+
+        return {"aliquot_id": self.aliquot_id}
+
+
+@dataclasses.dataclass(frozen=True)
+class ESAnalyte:
+    aliquots: Tuple[ESAliquot, ...] = (ESAliquot(),)
+
+    def to_rdd_data(self) -> dict:
+        return {"aliquots": tuple(aliquot.to_rdd_data() for aliquot in self.aliquots)}
+
+
+@dataclasses.dataclass(frozen=True)
+class ESPortion:
+    analytes: Optional[Tuple[ESAnalyte, ...]] = (ESAnalyte(),)
+
+    def to_rdd_data(self) -> dict:
+        analytes = (
+            None
+            if self.analytes is None
+            else tuple(analyte.to_rdd_data() for analyte in self.analytes)
+        )
+
+        return {"analytes": analytes}
+
+
+@dataclasses.dataclass(frozen=True)
+class ESSample:
+    sample_id: str = "s-0"
+    sample_type: str = "Primay Tumor"
+    portions: Tuple[ESPortion, ...] = (ESPortion(),)
+
+    def to_rdd_data(self) -> dict:
+        return {
+            "sample_id": self.sample_id,
+            "portions": tuple(portion.to_rdd_data() for portion in self.portions),
+        }
+
+
+@dataclasses.dataclass(frozen=True)
+class ESCase:
+    case_id: str = "c-0"
+    samples: Tuple[ESSample, ...] = (ESSample(),)
+
+    def to_rdd_data(self) -> dict:
+        return {
+            "case_id": self.case_id,
+            "samples": tuple(sample.to_rdd_data() for sample in self.samples),
+        }
+
+
+@dataclasses.dataclass(frozen=True)
+class ESFile:
+    file_id: str = "f-0"
+    created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
+    experimental_strategy: str = "WXS"
+    cases: Tuple[ESCase, ...] = (ESCase(),)
+
+    def to_rdd_data(self) -> tuple:
+        return (
+            self.file_id,
+            {
+                "cases": tuple(case.to_rdd_data() for case in self.cases),
+                "file_id": self.file_id,
+            },
+        )
+
+
+@pytest.fixture(scope="class")
+def schema_dir(data_dir: str) -> str:
+    return path.join(data_dir, "schemas", "builders", "primary_aliquot")
+
+
+@pytest.fixture(scope="class")
+def input_file_schema(schema_dir: str) -> types.StructType:
+    return utils.load_schema(schema_dir, "input_file.json")
+
+
+class TestPrimaryAliquotBuilder:
+    @pytest.fixture(autouse=True)
+    def initialize_fixtures(
+        self, spark_session: sql.SparkSession, input_file_schema: types.StructType
+    ) -> None:
+        self.spark_session = spark_session
+        self.input_file_schema = input_file_schema
+
+    def _arrange_es_rdd_util(self, files: Iterable[ESFile]) -> es_utils.RDDUtil:
+        spark_context = self.spark_session.sparkContext
+        rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
+
+        rdd_util.get_rdd.return_value = spark_context.parallelize(
+            file.to_rdd_data() for file in files
+        )
+
+        return rdd_util
+
+    def _arrange_es_dataframe_util(
+        self,
+        files: Iterable[ESFile],
+    ) -> es_utils.DataFrameUtil:
+        files = files if isinstance(files, tuple) else tuple(files)
+        dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
+        file_df = self.spark_session.createDataFrame(
+            files, schema=self.input_file_schema
+        )
+
+        dataframe_util.get_dataframe.return_value = file_df
+
+        return dataframe_util
+
+    def _arrange_builder(
+        self,
+        es_files: Tuple[ESFile, ...],
+        aliquot_data: Optional[Tuple[ESFile, ...]] = None,
+    ) -> builders.AliquotBuilder:
+        aliquot_data = es_files if aliquot_data is None else aliquot_data
+        config = mock.MagicMock()
+        sql_context = mock.MagicMock()
+        indexd = mock.MagicMock()
+        dataframe_util = self._arrange_es_dataframe_util(es_files)
+        rdd_util = self._arrange_es_rdd_util(aliquot_data)
+
+        return builders.PrimaryAliquotBuilder(
+            config, sql_context, indexd, dataframe_util, rdd_util
+        )
+
+    @pytest.mark.parametrize(
+        ("files", "aliquot_data"),
+        (((ESFile(),), (ESFile(),)), ((ESFile(),), ())),
+        ids=("aliquot_exists", "no_aliquots"),
+    )
+    def test__build_from_scratch__positive_joins(
+        self, files: Iterable[ESFile], aliquot_data: Iterable[ESFile]
+    ) -> None:
+        builder = self._arrange_builder(files, aliquot_data)
+
+        result_df = builder.build()
+
+        assert result_df.count() == 2
+
+    @pytest.mark.parametrize(
+        ("primay_sample_type", "other_sample_type"),
+        (
+            ("Primary Tumor", "Primary Blood Derived Cancer - Bone Marrow"),
+            (
+                "Primary Blood Derived Cancer - Bone Marrow",
+                "Primary Blood Derived Cancer - Peripheral Blood",
+            ),
+            ("Primary Blood Derived Cancer - Peripheral Blood", "Metastatic"),
+            ("Metastatic", "Additional Metastatic"),
+            ("Additional Metastatic", "Recurrent Tumor"),
+            ("Recurrent Tumor", "Recurrent Blood Derived Cancer - Bone Marrow"),
+            (
+                "Recurrent Blood Derived Cancer - Bone Marrow",
+                "Recurrent Blood Derived Cancer - Peripheral Blood",
+            ),
+            (
+                "Recurrent Blood Derived Cancer - Peripheral Blood",
+                "Additional - New Primary",
+            ),
+            ("Additional - New Primary", "OTHER"),
+        ),
+    )
+    def test__build_from_scratch__sample_type_selection(
+        self, primay_sample_type: str, other_sample_type: str
+    ) -> None:
+        other_portions = (
+            ESPortion(analytes=(ESAnalyte(aliquots=(ESAliquot(aliquot_id="a-0"),)),)),
+        )
+        primary_portions = (
+            ESPortion(analytes=(ESAnalyte(aliquots=(ESAliquot(aliquot_id="a-1"),)),)),
+        )
+        samples = (
+            ESSample(
+                sample_id="s-0",
+                sample_type=other_sample_type,
+                portions=other_portions,
+            ),
+            ESSample(
+                sample_id="s-1",
+                sample_type=primay_sample_type,
+                portions=primary_portions,
+            ),
+        )
+        file = ESFile(cases=(ESCase(samples=samples),))
+        builder = self._arrange_builder((file,))
+
+        result_df = builder.build_from_scratch()
+        result_case_row = more_itertools.one(
+            result_df.where(F.col("entity") == F.lit("case")).collect()
+        )
+        result_file_row = more_itertools.one(
+            result_df.where(F.col("entity") == F.lit("file")).collect()
+        )
+
+        assert result_case_row.aliquot_id == "a-1"
+        assert result_file_row.aliquot_id == "a-1"
+
+    @pytest.mark.parametrize(
+        ("primary_datetime", "other_datetime"),
+        (
+            (
+                datetime.datetime.max - datetime.timedelta(microseconds=1),
+                datetime.datetime.max,
+            ),
+            (
+                datetime.datetime(
+                    1970,
+                    1,
+                    12,
+                    8,
+                    45,
+                    34,
+                    203025,
+                    datetime.timezone(datetime.timedelta(hours=-5)),
+                ),
+                datetime.datetime(
+                    1970,
+                    1,
+                    12,
+                    8,
+                    45,
+                    34,
+                    203025,
+                    datetime.timezone(datetime.timedelta(hours=-6)),
+                ),
+            ),
+        ),
+        ids=("microsecond_diff", "timezone_diff"),
+    )
+    def test__build_from_scratch__file_created_datetime(
+        self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
+    ) -> None:
+        files = (
+            ESFile(
+                file_id="f-0",
+                created_datetime=other_datetime.isoformat(timespec="microseconds"),
+            ),
+            ESFile(
+                file_id="f-1",
+                created_datetime=primary_datetime.isoformat(timespec="microseconds"),
+            ),
+        )
+        builder = self._arrange_builder(files, ())
+
+        result_df = builder.build_from_scratch()
+        result_row = more_itertools.one(
+            result_df.where(F.col("entity") == F.lit("case")).collect()
+        )
+
+        assert result_row.file_id == "f-1"
+
+    def test__build_from_scratch__file_id(self) -> None:
+        files = (ESFile(file_id="f-1"), ESFile(file_id="f-0"))
+        builder = self._arrange_builder(files, ())
+
+        result_df = builder.build_from_scratch()
+        result_row = more_itertools.one(
+            result_df.where(F.col("entity") == F.lit("case")).collect()
+        )
+
+        assert result_row.file_id == "f-0"
+
+    def test__build_from_scratch__aliquot_none(self) -> None:
+        builder = self._arrange_builder((ESFile(),), ())
+
+        result_df = builder.build_from_scratch()
+        result_rows = result_df.collect()
+
+        assert all(row.aliquot_id is None for row in result_rows)
+
+    @pytest.mark.parametrize(
+        ("primary_datetime", "other_datetime"),
+        (
+            (
+                datetime.datetime.max - datetime.timedelta(microseconds=1),
+                datetime.datetime.max,
+            ),
+            (
+                datetime.datetime(
+                    1970,
+                    1,
+                    12,
+                    8,
+                    45,
+                    34,
+                    203025,
+                    datetime.timezone(datetime.timedelta(hours=-5)),
+                ),
+                datetime.datetime(
+                    1970,
+                    1,
+                    12,
+                    8,
+                    45,
+                    34,
+                    203025,
+                    datetime.timezone(datetime.timedelta(hours=-6)),
+                ),
+            ),
+        ),
+        ids=("microsecond_diff", "timezone_diff"),
+    )
+    def test__build_from_scratch__aliquot_created_datetime(
+        self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
+    ) -> None:
+        aliquots = (
+            ESAliquot(
+                aliquot_id="a-0",
+                created_datetime=other_datetime.isoformat(timespec="microseconds"),
+            ),
+            ESAliquot(
+                aliquot_id="a-1",
+                created_datetime=primary_datetime.isoformat(timespec="microseconds"),
+            ),
+        )
+        sample = ESSample(
+            portions=(ESPortion(analytes=(ESAnalyte(aliquots=aliquots),)),)
+        )
+        file = ESFile(cases=(ESCase(samples=(sample,)),))
+        builder = self._arrange_builder((file,))
+
+        result_df = builder.build_from_scratch()
+        result_rows = result_df.collect()
+
+        assert all(row.aliquot_id == "a-1" for row in result_rows)
+
+    def test__build_from_scratch__aliquot_id(self) -> None:
+        aliquots = (ESAliquot(aliquot_id="a-0"), ESAliquot(aliquot_id="a-1"))
+        sample = ESSample(
+            portions=(ESPortion(analytes=(ESAnalyte(aliquots=aliquots),)),)
+        )
+        file = ESFile(cases=(ESCase(samples=(sample,)),))
+        builder = self._arrange_builder((file,))
+
+        result_df = builder.build_from_scratch()
+        result_rows = result_df.collect()
+
+        assert all(row.aliquot_id == "a-0" for row in result_rows)
+
+    def test__build_from_scratch__missing_analytes(self) -> None:
+        aliquots = (ESAliquot(aliquot_id="a-0"), ESAliquot(aliquot_id="a-1"))
+        sample = ESSample(
+            portions=(
+                ESPortion(analytes=(ESAnalyte(aliquots=aliquots),)),
+                ESPortion(analytes=None),
+            )
+        )
+        file = ESFile(cases=(ESCase(samples=(sample,)),))
+        builder = self._arrange_builder((file,))
+
+        result_df = builder.build_from_scratch()
+
+        assert result_df.count() == 2
+
+
+class TestPrimaryAliquotBuilderOLD(unittest.TestCase):
     schema_validator = schema_validation.PysparkSchemaValidator()
-    maxDiff = None
 
     @pytest.fixture(autouse=True)
     def fixture_set_up(self, sqlContext, data_dir):
@@ -51,7 +425,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
                                                                 types.StructField(
                                                                     "created_datetime",
                                                                     types.StringType(),
-                                                                )
+                                                                ),
                                                             ]
                                                         )
                                                     ),
@@ -139,60 +513,6 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
 
         return self._build_es_dataframe(data, is_gene_expression)
 
-    def test__build_primary_aliquots_for_project(self):
-        # Arrange
-        config = mock.MagicMock()
-        es_dataframe_util = mock.MagicMock()
-        es_df = self._load_data_into_df("input/test_primry_aliquot_builder_common.yaml")
-        es_dataframe_util.get_dataframe.return_value = es_df
-        primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config,
-            self.sql_context,
-            config.indexd,
-            es_dataframe_util,
-        )
-
-        config.projects = ["TEST0"]
-
-        # Load Expected Results
-        expected = self._load_data_from_file(
-            "output/test_build_primary_aliquots_for_project.yaml"
-        )
-        expected_es_include_fields = expected["expected_es_include_fields"]
-        expected_es_query = expected["expected_es_query"]
-        expected_data = frozenset(tuple(row) for row in expected["expected_data"])
-        expected_schema = schema_validation.Schema(expected["expected_schema"])
-
-        # Act
-        result_df = primary_aliquot_builder.build()
-
-        # Assert
-        # Check External Calls
-        es_dataframe_util.get_dataframe.assert_called_once_with(
-            es_utils.Index.File,
-            include_fields=expected_es_include_fields,
-            query=expected_es_query,
-        )
-
-        # Check Result Data
-        self.schema_validator.validate_schema(result_df.schema, expected_schema)
-
-        result_collected = result_df.collect()
-        result_data = frozenset(
-            (
-                row.entity,
-                row.entity_id,
-                row.case_id,
-                row.file_id,
-                row.experimental_strategy,
-                row.aliquot_id,
-            )
-            for row in result_collected
-        )
-
-        self.assertEqual(len(result_collected), len(expected_data))
-        self.assertSetEqual(result_data, expected_data)
-
     @staticmethod
     def _mock_bulk_request(bids: Iterable[str]):
         docs = collections.defaultdict(
@@ -235,10 +555,7 @@ class TestPrimaryAliquotBuilder(unittest.TestCase):
         )
         es_dataframe_util.get_dataframe.return_value = es_df
         primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-            config,
-            self.sql_context,
-            config.indexd,
-            es_dataframe_util,
+            config, self.sql_context, config.indexd, es_dataframe_util, mock.MagicMock()
         )
 
         primary_aliquot_builder.logger = mock.MagicMock()

@@ -1,0 +1,121 @@
+{
+    "fields": [
+        {
+            "metadata": {},
+            "name": "_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "_source",
+            "nullable": true,
+            "type": {
+                "fields": [
+                    {
+                        "metadata": {},
+                        "name": "cases",
+                        "nullable": true,
+                        "type": {
+                            "containsNull": true,
+                            "elementType": {
+                                "fields": [
+                                    {
+                                        "metadata": {},
+                                        "name": "case_id",
+                                        "nullable": true,
+                                        "type": "string"
+                                    },
+                                    {
+                                        "metadata": {},
+                                        "name": "samples",
+                                        "nullable": true,
+                                        "type": {
+                                            "containsNull": true,
+                                            "elementType": {
+                                                "fields": [
+                                                    {
+                                                        "metadata": {},
+                                                        "name": "sample_id",
+                                                        "nullable": true,
+                                                        "type": "string"
+                                                    },
+                                                    {
+                                                        "metadata": {},
+                                                        "name": "portions",
+                                                        "nullable": true,
+                                                        "type": {
+                                                            "containsNull": true,
+                                                            "elementType": {
+                                                                "fields": [
+                                                                    {
+                                                                        "metadata": {},
+                                                                        "name": "analytes",
+                                                                        "nullable": true,
+                                                                        "type": {
+                                                                            "containsNull": true,
+                                                                            "elementType": {
+                                                                                "fields": [
+                                                                                    {
+                                                                                        "metadata": {},
+                                                                                        "name": "aliquots",
+                                                                                        "nullable": true,
+                                                                                        "type": {
+                                                                                            "containsNull": true,
+                                                                                            "elementType": {
+                                                                                                "fields": [
+                                                                                                    {
+                                                                                                        "metadata": {},
+                                                                                                        "name": "aliquot_id",
+                                                                                                        "nullable": true,
+                                                                                                        "type": "string"
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "metadata": {},
+                                                                                                        "name": "created_datetime",
+                                                                                                        "nullable": true,
+                                                                                                        "type": "string"
+                                                                                                    }
+                                                                                                ],
+                                                                                                "type": "struct"
+                                                                                            },
+                                                                                            "type": "array"
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "type": "struct"
+                                                                            },
+                                                                            "type": "array"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "type": "struct"
+                                                            },
+                                                            "type": "array"
+                                                        }
+                                                    }
+                                                ],
+                                                "type": "struct"
+                                            },
+                                            "type": "array"
+                                        }
+                                    }
+                                ],
+                                "type": "struct"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    {
+                        "metadata": {},
+                        "name": "file_id",
+                        "nullable": true,
+                        "type": "string"
+                    }
+                ],
+                "type": "struct"
+            }
+        }
+    ],
+    "type": "struct"
+}

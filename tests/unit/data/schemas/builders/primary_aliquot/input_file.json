@@ -1,0 +1,69 @@
+{
+    "fields": [
+        {
+            "metadata": {},
+            "name": "file_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "created_datetime",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "experimental_strategy",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "cases",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": {
+                    "fields": [
+                        {
+                            "metadata": {},
+                            "name": "case_id",
+                            "nullable": true,
+                            "type": "string"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "samples",
+                            "nullable": true,
+                            "type": {
+                                "containsNull": true,
+                                "elementType": {
+                                    "fields": [
+                                        {
+                                            "metadata": {},
+                                            "name": "sample_id",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "sample_type",
+                                            "nullable": true,
+                                            "type": "string"
+                                        }
+                                    ],
+                                    "type": "struct"
+                                },
+                                "type": "array"
+                            }
+                        }
+                    ],
+                    "type": "struct"
+                },
+                "type": "array"
+            }
+        }
+    ],
+    "type": "struct"
+}

@@ -272,7 +272,47 @@
                             "nullable": true,
                             "type": {
                                 "containsNull": true,
-                                "elementType": "string",
+                                "elementType": {
+                                    "fields": [
+                                        {
+                                            "metadata": {},
+                                            "name": "description",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "end",
+                                            "nullable": true,
+                                            "type": "long"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "gff_source",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "hit_name",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "interpro_id",
+                                            "nullable": true,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "metadata": {},
+                                            "name": "start",
+                                            "nullable": true,
+                                            "type": "long"
+                                        }
+                                    ],
+                                    "type": "struct"
+                                },
                                 "type": "array"
                             }
                         },
