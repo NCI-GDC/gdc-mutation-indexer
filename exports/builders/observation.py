@@ -3,7 +3,6 @@ from typing import Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 
 import config
 from exports.builders import utils
@@ -39,35 +38,28 @@ class ObservationBuilder:
                 index_name, "observation", selector=selector, ignore=["observation_id"]
             )
         ).join(primary_aliquot_df, ["case_id"], how="left")
-
-        # This will be used to explode variant_caller column
-        # TODO: TECH DEBT - THIS CAN BE EASILY CONVERTED TO NATIVE SPARK
-        variant_caller = F.udf(
-            utils.transform_variant_caller,
-            types.ArrayType(types.StringType()),
-        )
-
         flat_obs_df = (
-            flat_obs_df.
-            # Explode variant_caller into multiple observations
-            withColumn(
-                "variant_caller", F.explode(variant_caller(F.col("variant_caller")))
-            ).
-            # Add observation_id
-            withColumn(
-                "observation_id",
-                utils.uuid5_col(
-                    F.lit("ssm_observation"),
-                    F.col("occurrence_id"),
-                    F.col("tumor_sample_uuid"),
-                    F.col("matched_norm_sample_uuid"),
-                    F.col("variant_caller"),
-                    F.lit("masked"),
-                ),
+            flat_obs_df.withColumn(
+                "variant_caller", F.explode(F.split("variant_caller", ";"))
             )
+            .withColumn(
+                "variant_caller", F.regexp_replace("variant_caller", r"^\*+|\*+$", "")
+            )
+            .where(F.col("variant_caller") != F.lit("somaticsniper"))
+        )
+        flat_obs_df = flat_obs_df.withColumn(
+            "observation_id",
+            utils.uuid5_col(
+                F.lit("ssm_observation"),
+                F.col("occurrence_id"),
+                F.col("tumor_sample_uuid"),
+                F.col("matched_norm_sample_uuid"),
+                F.col("variant_caller"),
+                F.lit("masked"),
+            ),
         )
 
-        obs_df = (
+        return (
             flat_obs_df.select(
                 "ssm_id",
                 "case_id",
@@ -79,8 +71,6 @@ class ObservationBuilder:
             .groupby("ssm_id", "case_id", "occurrence_id")
             .agg(F.collect_list("observation").alias("observation"))
         )
-
-        return obs_df
 
     def build_for_cnv(
         self, ascat_df: sql.DataFrame, index: str, selector: Optional[str] = None
