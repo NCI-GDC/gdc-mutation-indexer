@@ -15,7 +15,10 @@ DOCUMENT_URL_SCHEMA = types.StructType(
     ]
 )
 
-DocumentUrl = NamedTuple("DocumentUrl", [("did", str), ("url", str)])
+
+class DocumentUrl(NamedTuple):
+    did: str
+    url: str
 
 
 def _is_main_url(metadata: dict):
@@ -50,8 +53,6 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
 
 
 class DataFrameUtil:
-    FILE_URL_BATCH_SIZE = 1000
-
     def __init__(
         self,
         indexd: client.IndexClient,
@@ -62,8 +63,8 @@ class DataFrameUtil:
         self._sql_context = sql_context
         self._logger = logger
 
-    def _get_doc_urls(self, doc_ids: Iterable[str]) -> Iterator[DocumentUrl]:
-        batches = more_itertools.ichunked(doc_ids, self.FILE_URL_BATCH_SIZE)
+    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
+        batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
             self._indexd.bulk_request(list(dids)) or () for dids in batches
         )
@@ -84,6 +85,7 @@ class DataFrameUtil:
         include_file_name: bool,
         enforce_schema: bool,
         has_header: bool,
+        comment: Optional[str],
     ) -> sql.DataFrame:
         urls = list(more_itertools.always_iterable(urls))
 
@@ -91,6 +93,7 @@ class DataFrameUtil:
             urls,
             schema=schema,
             sep="\t",
+            comment=comment,
             header=has_header,
             enforceSchema=enforce_schema,
             mode="FAILFAST",
@@ -105,14 +108,16 @@ class DataFrameUtil:
         self,
         doc_ids: Iterable[str],
         schema: Optional[types.StructType] = None,
-        batch_size: int = 500,
+        csv_batch_size: int = 500,
+        index_batch_size: int = 1000,
         include_document_ids: bool = True,
         enforce_schema: bool = True,
         has_header: bool = True,
+        comment: Optional[str] = None,
     ) -> sql.DataFrame:
-        doc_urls = tuple(self._get_doc_urls(doc_ids))
+        doc_urls = tuple(self._get_doc_urls(doc_ids, index_batch_size))
         urls = (doc_url.url for doc_url in doc_urls)
-        batches = more_itertools.ichunked(urls, batch_size)
+        batches = more_itertools.ichunked(urls, csv_batch_size)
 
         document_df = self._get_dataframe(
             more_itertools.first(batches, ()),
@@ -120,11 +125,12 @@ class DataFrameUtil:
             include_document_ids,
             enforce_schema,
             has_header,
+            comment,
         )
 
         for batch in batches:
             batch_df = self._get_dataframe(
-                batch, schema, include_document_ids, enforce_schema, has_header
+                batch, schema, include_document_ids, enforce_schema, has_header, comment
             )
 
             document_df = document_df.union(batch_df)

@@ -146,6 +146,8 @@ toml==0.10.2
     #   pre-commit
     #   pytest
     #   pytest-cov
+typing-extensions==4.0.1 ; python_version < "3.8"
+    # via -r dev-requirements.in
 urllib3==1.26.6
     # via
     #   -c master-requirements.txt
