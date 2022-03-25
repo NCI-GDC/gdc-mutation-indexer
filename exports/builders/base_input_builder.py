@@ -1,16 +1,17 @@
 import abc
 import logging
-from pyspark import sql
 
+from pyspark import sql
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
+import config
 
-class BaseInputBuilder(object):
-    __metaclass__ = abc.ABCMeta
 
-    def __init__(self, config, sqlContext, input_type):
+class BaseInputBuilder(abc.ABC):
+
+    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext, input_type: str):
         """
 
         Args:
