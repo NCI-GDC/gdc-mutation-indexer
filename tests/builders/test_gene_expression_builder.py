@@ -5,12 +5,10 @@ import ndjson
 import pytest
 from indexclient import client
 from pyspark import sql
-from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import tests_config
-from exports import builders, es_utils
-from exports.builders import gene_expression
+from exports import builders, es_utils, indexd_utils
 
 
 @pytest.fixture(scope="module")
@@ -22,6 +20,18 @@ def ge_conf():
     return conf
 
 
+@pytest.fixture(scope="module")
+def ge_primary_aliquot_df(
+    ge_conf: tests_config.BaseConfig, sqlContext: sql.SQLContext
+) -> sql.DataFrame:
+    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
+    primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
+        ge_conf, sqlContext, es_dataframe_util
+    )
+
+    return primary_aliquot_builder.build()
+
+
 @pytest.fixture
 def ge_builder(sqlContext, ge_conf):
     builder = builders.GeneExpressionBuilder(ge_conf, sqlContext)
@@ -29,33 +39,27 @@ def ge_builder(sqlContext, ge_conf):
     return builder
 
 
-@pytest.fixture
-def ge_cases_df(sqlContext, ge_conf):
-    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
-    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util, mock.MagicMock()
-    )
-
+@pytest.fixture(scope="module")
+def ge_cases_df(sqlContext, ge_conf, ge_primary_aliquot_df):
     cases_df = builders.GeneExpressionCaseInputBuilder(
         ge_conf,
         sqlContext,
-        primary_aliquot_builder,
-    ).build()
+    ).build(gene_expression_primary_aliquot_df=ge_primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
         [
-            types.StructField("case_id", types.StringType(), True),
-            types.StructField("days_to_death", types.LongType(), True),
-            types.StructField("ethnicity", types.StringType(), True),
-            types.StructField("gender", types.StringType(), True),
-            types.StructField("race", types.StringType(), True),
-            types.StructField("vital_status", types.StringType(), True),
-            types.StructField("submitter_id", types.StringType(), True),
-            types.StructField("project_id", types.StringType(), True),
-            types.StructField("file_url", types.StringType(), True),
             types.StructField(
                 "age_at_diagnosis", types.ArrayType(types.LongType(), True), True
             ),
+            types.StructField("case_id", types.StringType(), True),
+            types.StructField("days_to_death", types.LongType(), True),
+            types.StructField("ethnicity", types.StringType(), True),
+            types.StructField("file_id", types.StringType(), True),
+            types.StructField("gender", types.StringType(), True),
+            types.StructField("project_id", types.StringType(), True),
+            types.StructField("race", types.StringType(), True),
+            types.StructField("submitter_id", types.StringType(), True),
+            types.StructField("vital_status", types.StringType(), True),
         ]
     )
 
@@ -63,16 +67,18 @@ def ge_cases_df(sqlContext, ge_conf):
 
 
 @pytest.fixture
-def ge_values_df(sqlContext, ge_conf):
+def ge_values_df(sqlContext, ge_conf, ge_primary_aliquot_df):
     gene_model_df = builders.GeneModelBuilder(ge_conf, sqlContext).build()
-    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
-    primary_aliquot_builder = builders.PrimaryAliquotBuilder(
-        ge_conf, sqlContext, ge_conf.indexd, es_dataframe_util, mock.MagicMock()
+    doc_dataframe_util = indexd_utils.DataFrameUtil(
+        ge_conf.indexd, sqlContext, mock.MagicMock()
     )
 
     return builders.GeneExpressionValueInputBuilder(
-        ge_conf, sqlContext, primary_aliquot_builder
-    ).build(gene_model_df=gene_model_df)
+        ge_conf, sqlContext, doc_dataframe_util
+    ).build(
+        gene_model_df=gene_model_df,
+        gene_expression_primary_aliquot_df=ge_primary_aliquot_df,
+    )
 
 
 @pytest.fixture
@@ -137,18 +143,6 @@ def ge_file_docs(source_es_client, ge_conf):
             doc_type=ge_conf.graph_file_doc_type,
             id=doc["file_id"],
         )
-
-
-def test_trim_gene_version(sqlContext):
-    df = sqlContext.createDataFrame(
-        [sql.Row(raw_gene_id="ENS001.1"), sql.Row(raw_gene_id="ENS002.2")]
-    )
-
-    new_df = df.withColumn(
-        "gene_id", gene_expression.trim_gene_id(F.col("raw_gene_id"))
-    )
-
-    assert {row["gene_id"] for row in new_df.collect()} == {"ENS001", "ENS002"}
 
 
 @pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
