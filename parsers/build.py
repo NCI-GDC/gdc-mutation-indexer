@@ -85,6 +85,12 @@ class BuildArgs(BaseParser):
                 "choices": ["read", "write", "neither"],
                 "default": "neither",
             },
+            "gene-expression-primary-aliquot-backup": {
+                "help": "Whether to read gene_expression_primary_aliquot_df from backup or rebuild and write"
+                " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
             "primary-aliquot-backup": {
                 "help": "Whether to read primary_aliquot_df from backup or rebuild and write"
                 " or do nothing",

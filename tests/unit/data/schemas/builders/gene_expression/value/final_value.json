@@ -1,0 +1,43 @@
+{
+    "fields": [
+        {
+            "metadata": {},
+            "name": "file_id",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "genes",
+            "nullable": true,
+            "type": {
+                "containsNull": true,
+                "elementType": {
+                    "fields": [
+                        {
+                            "metadata": {},
+                            "name": "expression_value",
+                            "nullable": true,
+                            "type": "double"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "gene_id",
+                            "nullable": true,
+                            "type": "string"
+                        },
+                        {
+                            "metadata": {},
+                            "name": "symbol",
+                            "nullable": true,
+                            "type": "string"
+                        }
+                    ],
+                    "type": "struct"
+                },
+                "type": "array"
+            }
+        }
+    ],
+    "type": "struct"
+}

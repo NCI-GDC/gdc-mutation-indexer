@@ -1,259 +1,224 @@
-import abc
+from typing import Iterable, Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 
-from exports.builders import base_builder, base_input_builder, primary_aliquot
-
-CASE_METADATA = [
-    "case_id",
-    "demographic.days_to_death",
-    "demographic.ethnicity",
-    "demographic.gender",
-    "demographic.race",
-    "demographic.vital_status",
-    "submitter_id",
-    "project.project_id",
-]
-
-CASE_NESTED_METADATA = ["diagnoses.age_at_diagnosis", "samples.sample_type"]
+import config
+from exports import indexd_utils, schemas
+from exports.builders import base_builder, base_input_builder
 
 
-RawGeneExpression = types.StructType(
-    [
-        types.StructField("raw_gene_id", types.StringType()),
-        types.StructField("expression_value", types.DoubleType()),
-    ]
-)
-
-GENE_EXPRESSION_SCHEMA = {
-    "type": "struct",
-    "fields": [
-        {"metadata": {}, "nullable": True, "type": "string", "name": "case_id"},
-        {
-            "metadata": {},
-            "nullable": True,
-            "type": {
-                "valueContainsNull": True,
-                "valueType": "string",
-                "type": "map",
-                "keyType": "string",
-            },
-            "name": "demographic",
-        },
-        {
-            "metadata": {},
-            "nullable": True,
-            "type": {
-                "elementType": {
-                    "valueContainsNull": True,
-                    "valueType": "long",
-                    "type": "map",
-                    "keyType": "string",
-                },
-                "containsNull": True,
-                "type": "array",
-            },
-            "name": "diagnoses",
-        },
-        {"metadata": {}, "nullable": True, "type": "string", "name": "file_id"},
-        {"metadata": {}, "nullable": True, "type": "string", "name": "file_url"},
-        {
-            "metadata": {},
-            "nullable": True,
-            "type": {
-                "valueContainsNull": True,
-                "valueType": "string",
-                "type": "map",
-                "keyType": "string",
-            },
-            "name": "project",
-        },
-        {
-            "metadata": {},
-            "nullable": True,
-            "type": {
-                "elementType": {
-                    "valueContainsNull": True,
-                    "valueType": "string",
-                    "type": "map",
-                    "keyType": "string",
-                },
-                "containsNull": True,
-                "type": "array",
-            },
-            "name": "samples",
-        },
-        {"metadata": {}, "nullable": True, "type": "string", "name": "submitter_id"},
-    ],
-}
-
-
-@F.udf(returnType=types.StringType())
-def trim_gene_id(raw_gene_id):
-    return raw_gene_id.split(".")[0]
-
-
-class GeneExpressionInputBuilder(base_input_builder.BaseInputBuilder, abc.ABC):
-    supported_workflow_types = ["HTSeq - FPKM-UQ"]
+class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
+    """
+    An input builder class for loading gene expression values.
+    """
 
     def __init__(
         self,
-        config,
-        sqlContext,
-        input_type,
-        primary_aliquot_builder: primary_aliquot.PrimaryAliquotBuilder,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
+        doc_dataframe_util: indexd_utils.DataFrameUtil,
     ):
-        super().__init__(config, sqlContext, input_type)
+        super().__init__(config, sqlContext, "gene_expression_values")
 
-        self._primary_aliquot_data = None
-        self.primary_aliquot_builder = primary_aliquot_builder
+        self._doc_dataframe_util = doc_dataframe_util
 
-    def get_primary_aliquot_data(self):
+    def build_from_scratch(
+        self,
+        gene_model_df: sql.DataFrame,
+        gene_expression_primary_aliquot_df: sql.DataFrame,
+        **kwargs: sql.DataFrame
+    ) -> sql.DataFrame:
         """
-        Gets the primary aliquot data originating from ES from memory or loads it into memory if
-        not there. This data includes a data frame with each file containing the primary aliquot
-        for a case and the associated case data. The primary aliquot data also has a list of the
-        file urls containing the primary aliquots.
+        Creates a data frame containing the gene expression values contained within
+        each file of the ge primary aliquot data. This excludes any expression values
+        associated with any non-protein coding genes.
 
-        Returns:
-            GeneExpressionPrimaryAliquotData: the primary aliquot data for the project
-        """
-        if self._primary_aliquot_data is not None:
-            return self._primary_aliquot_data
-
-        self._primary_aliquot_data = (
-            self.primary_aliquot_builder.build_gene_expression_primary_aliquot_data(
-                self.supported_workflow_types,
-            )
-        )
-
-        return self._primary_aliquot_data
-
-
-class GeneExpressionValueInputBuilder(GeneExpressionInputBuilder):
-    def __init__(
-        self, config, sqlContext, primary_aliquot_builder: primary_aliquot.PrimaryAliquotBuilder
-    ):
-        super().__init__(
-            config, sqlContext, "gene_expression_values", primary_aliquot_builder
-        )
-
-    def build_from_scratch(self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        """
         Args:
             gene_model_df: The output of the GeneModelBuilder.
-        """
-        pc_genes_df = gene_model_df.filter(F.col("biotype") == F.lit("protein_coding")).select(
-            "_gene_id", "symbol"
-        )
+            gene_expression_primary_aliquot_df: the output of the GeneExpressionPrimaryAliquotBuilder
 
-        ge_values_df = self.load_gene_expression_files_into_df()
+        Returns:
+            a data frame of expression values associated with the file containing them
+
+            gene_espression_value {}
+            |---file_id
+            +---genes [{}]
+                |---expression_value
+                |---gene_id
+                +---symbol
+        """
+        pc_genes_df = gene_model_df.filter(
+            F.col("biotype") == F.lit("protein_coding")
+        ).select(F.col("_gene_id").alias("gene_id"), "symbol")
+
+        ge_values_df = self.load_gene_expression_files(
+            gene_expression_primary_aliquot_df
+        )
 
         ge_values_df = (
-            ge_values_df.join(pc_genes_df, ge_values_df.gene_id == pc_genes_df._gene_id)
-            .drop("_gene_id")
-            .withColumn("genes", F.struct("gene_id", "expression_value", "symbol"))
+            ge_values_df.join(pc_genes_df, "gene_id")
+            .withColumn("gene", F.struct("expression_value", "gene_id", "symbol"))
             .drop("gene_id", "expression_value", "symbol")
-            .groupBy("file_url")
-            .agg(F.collect_list("genes").alias("genes"))
+            .groupBy("file_id")
+            .agg(F.collect_list("gene").alias("genes"))
         )
 
-        return ge_values_df
+        return ge_values_df.select("file_id", "genes")
 
-    def get_urls(self):
-        return self.get_primary_aliquot_data().file_urls
+    def load_gene_expression_files(
+        self, primary_aliquot_df: sql.DataFrame
+    ) -> sql.DataFrame:
+        """
+        Load the gene espression data from the files referenced in the primary aliqout df
 
-    def load_gene_expression_files_into_df(self, batch_size=500):
+        Args:
+            primary_aliquot_df: The dataframe of primary aliquot data for all
+                "STAR - Counts files"
+        """
         self.logger.info("Loading gene expression files")
+        file_ids: Iterable[str] = (
+            row.file_id
+            for row in primary_aliquot_df.select("file_id").distinct().toLocalIterator()
+        )
+        schema = schemas.load_schema("builders/gene_expression/star_counts.json")
+        gene_expression_df = self._doc_dataframe_util.get_dataframe(
+            file_ids, schema=schema, comment="#", has_header=True
+        ).where(F.col("gene_type") == F.lit("protein_coding"))
 
-        file_urls = self.urls
-
-        # make batches
-        file_batches = [
-            file_urls[offset : offset + batch_size]
-            for offset in range(0, len(file_urls), batch_size)
-        ]
-
-        ge_df = None
-        # Batch files and load them into DF
-        for i, file_batch in enumerate(file_batches):
-            self.logger.info("Loading batch {}/{}".format(i + 1, len(file_batches)))
-
-            batch_df = self.sqlContext.read.csv(
-                file_batch,
-                schema=RawGeneExpression,
-                sep="\t",
-                header=False,
-                enforceSchema=True,
-                mode="FAILFAST",
-            )
-            batch_df = batch_df.withColumn("file_url", F.input_file_name())
-
-            batch_df = batch_df.withColumn(
-                "gene_id", trim_gene_id(F.col("raw_gene_id"))
-            ).drop("raw_gene_id")
-
-            if ge_df is None:
-                ge_df = batch_df
-                continue
-
-            ge_df = ge_df.union(batch_df)
-
-        return ge_df
-
-
-class GeneExpressionCaseInputBuilder(GeneExpressionInputBuilder):
-    def __init__(
-        self, config, sqlContext, primary_aliquot_builder: primary_aliquot.PrimaryAliquotBuilder
-    ):
-        super().__init__(
-            config, sqlContext, "gene_expression_cases", primary_aliquot_builder
+        return gene_expression_df.select(
+            F.element_at(F.split("gene_id", "\\."), 1).alias("gene_id"),
+            F.col("fpkm_uq_unstranded").alias("expression_value"),
+            F.col("did").alias("file_id"),
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
-        initial_df = self.get_primary_aliquot_data().primary_aliquot_df
+
+class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
+    """
+    An input builder class for loading case data related to gene expression.
+    """
+
+    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext):
+        super().__init__(config, sqlContext, "gene_expression_cases")
+
+    def build_from_scratch(
+        self, gene_expression_primary_aliquot_df: sql.DataFrame, **kwargs: sql.DataFrame
+    ) -> sql.DataFrame:
+        """
+        Creates a data frame containing the case data associated with the aliquots in the ge
+        primary aliquot data and their related file_id.
+
+        Args:
+            gene_expression_primary_aliquot_df: the output of the GeneExpressionPrimaryAliquotBuilder
+
+        Returns:
+            a data frame of gene expression cases
+
+            gene_expression_case {}
+            |---age_at_diagnosis
+            |---case_id
+            |---days_to_death
+            |---ethnicity
+            |---file_id
+            |---gender
+            |---project_id
+            |---race
+            |---submitter_id
+            +---vital_status
+        """
+        initial_df = gene_expression_primary_aliquot_df
 
         # NOTE: diagnoses is a nested document, so we are flattening it by
         #   simply aggregating age_at_diagnosis values into an array
-        flat_diagnosis_df = (
-            initial_df.select("case_id", F.explode("diagnoses").alias("diagnosis"))
-            .select("case_id", "diagnosis.age_at_diagnosis")
-            .groupby("case_id")
-            .agg(F.collect_list("age_at_diagnosis").alias("age_at_diagnosis"))
+        flat_diagnosis_df = initial_df.select(
+            "case_id", F.col("diagnoses.age_at_diagnosis").alias("age_at_diagnosis")
         )
 
-        case_ge_df = initial_df.select(*(CASE_METADATA + ["file_url"])).join(
-            flat_diagnosis_df, "case_id"
-        )
+        case_ge_df = initial_df.select(
+            "case_id",
+            "demographic.days_to_death",
+            "demographic.ethnicity",
+            "demographic.gender",
+            "demographic.race",
+            "demographic.vital_status",
+            "submitter_id",
+            "project.project_id",
+            "file_id",
+        ).join(flat_diagnosis_df, "case_id")
 
-        return case_ge_df
+        return case_ge_df.select(
+            "age_at_diagnosis",
+            "case_id",
+            "days_to_death",
+            "ethnicity",
+            "file_id",
+            "gender",
+            "project_id",
+            "race",
+            "submitter_id",
+            "vital_status",
+        )
 
 
 class GeneExpressionBuilder(base_builder.BaseBuilder):
+    """
+    A builder class for loading gene expression data.
+    """
+
     index_name = "gene_expression"
     # NOTE: We might need a synthetic ID here, when we add support for Aliquot
     #   level gene expressions
     id_field = "case_id"
 
-    def __init__(self, *args, **kwargs):
-        super(GeneExpressionBuilder, self).__init__(*args, **kwargs)
+    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext):
+        super().__init__(config, sqlContext)
 
-        self.gene_expression = None
+        self.gene_expression: Optional[sql.DataFrame] = None
         self.gene_expression_backup = "neither"
 
-    def build(self, case_df, ge_values_df):
+    def build(
+        self, case_df: sql.DataFrame, ge_values_df: sql.DataFrame
+    ) -> "GeneExpressionBuilder":
         """
-        Combine two input data frames into a final gene_expression data frame
+        Combines the ge case data and the ge expression value data based on the
+        file they are associated with.
 
         Args:
-            case_df: expected to be a gene_expression case DF
-            ge_values_df: expected to be a gene_expression values DF
+            case_df: the output of the GeneExpressionCaseInputBuilder
+            ge_values_df: the output of the GeneExpressionValueInputBuilder
+
+        Returns:
+            The finalized Gene Expression Data Frame
+
+            gene_expression {}
+            |---age_at_diagnosis
+            |---case_id
+            |---days_to_death
+            |---ethnicity
+            |---gender
+            |---genes [{}]
+            |   |---expression_value
+            |   |---gene_id
+            |   +---symbol
+            |---project_id
+            |---race
+            |---submitter_id
+            +---vital_status
         """
 
         # NOTE: the default join strategy is 'inner', so any extra cases/expression
         #   values will be dropped, which is expected
-        self.gene_expression = case_df.join(ge_values_df, "file_url").drop("file_url")
+        self.gene_expression = case_df.join(ge_values_df, "file_id").select(
+            "age_at_diagnosis",
+            "case_id",
+            "days_to_death",
+            "ethnicity",
+            "gender",
+            "genes",
+            "project_id",
+            "race",
+            "submitter_id",
+            "vital_status",
+        )
 
         return self
