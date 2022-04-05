@@ -4,11 +4,11 @@ import pytest
 from normalizer import mapper
 from pyspark.sql import functions as F
 
-import tests_config
+from tests.integration import config
 from exports.builders import utils
-from tests.utils import true_stats
+from tests.integration.utils import true_stats
 
-conf = tests_config.TestConfig()
+conf = config.TestConfig()
 
 
 def create_df(sqlContext, values, column_name='values'):

@@ -9,12 +9,12 @@ from pyspark import sql
 from pyspark.sql import types
 from exports.builders.clinical_annotations import civic
 
-import tests_config
+from tests.integration import config
 from exports import builders, es_utils
 from exports.builders import utils
-from tests.utils import maf_metrics, test_setup, true_stats
+from tests.integration.utils import maf_metrics, test_setup, true_stats
 
-conf = tests_config.TestConfig()
+conf = config.TestConfig()
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)

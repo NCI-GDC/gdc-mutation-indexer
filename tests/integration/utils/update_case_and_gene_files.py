@@ -1,14 +1,13 @@
-import json
 import gzip
-import sys
+import json
 import os
+
 import boto
 import boto.s3.connection
 from elasticsearch import Elasticsearch
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(root_dir)
-from tests_config import TestConfig
+
 from config import factory
+from tests.integration.config import TestConfig
 
 cfg_test = TestConfig()
 
@@ -31,7 +30,7 @@ def update_genes():
     - Get a set of genes that appear in test mafs
     - Get full gene model from cleversafe
     - Drop all genes that not in test mafs from gene model
-    - Save resulting gene model to tests/data/input/genes.json.gz
+    - Save resulting gene model to tests/integration/data/input/genes.json.gz
 
     """
     print('- Downloading full gene model')
@@ -54,7 +53,7 @@ def update_cases(es):
 
     - Get a set of cases that appear in test mafs
     - Get corresponding case documents from gdc_from_graph
-    - Save results to tests/data/input/cases.ndjson.gz
+    - Save results to tests/integration/data/input/cases.ndjson.gz
 
     """
 

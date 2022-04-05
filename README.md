@@ -8,7 +8,6 @@ Backend for exporting mutation indices for visualization on the GDC
   - [Architecture](#architecture)
   - [Make the docs](#make-the-docs)
   - [Tests](#tests)
-  - [Vagrant](#vagrant)
   - [Setup pre-commit hook to check for secrets](#setup-pre-commit-hook-to-check-for-secrets)
   - [Contributing](#contributing)
 
@@ -28,88 +27,38 @@ ghp-import build/html
 ```
 
 ## Tests
+### ElasticSearch
+Insure you have elasticsearch working on your device:
+`service elasticsearch status`
 
-Tests depend on `$PYTHONPATH` being configured correctly to find the spark 
-python modules. Make sure the paths are correct in `bin/run-tests.sh`.
-
+In case you need to install elastic search:
+#### Homebrew
 ```
-bin/run-tests.sh
-```
-
-The mutation indexer is currently deployed with Spark 2.4.5.
-If you try to run the tests on a different version, you may need to update
-`bin/run-tests.sh` to refer to the specific Py4J build included with your
-Spark distribution.
-
-NOTE:
-
-Some tests are not idempotent and you may need to delete elastic search indices created by the tests.
-
-
-## Tests the easy way
-
-After PySpark(current version 2.4.5) is installed via pip, download 
-`elasticsearch-hadoop-7.6.2.zip` and extract the content. Copy the file 
-`dist/elasticsearch-spark-20_2.11-7.6.2.jar` to 
-`venv/lib/python2.7/site-packages/pyspark/jars/`. 
-
-Make sure your elasticsearch server is running at port 9200 and start the tests. If you
-see timeout error for es, restart the tests.
-
-## Vagrant
-
-Testing locally can be hard and `vagrant` support has been added to make our lives
-a little bit easier. Make sure to have `vagrant` and `VirtualBox` installed, then
-simply do and start making coffee, it's gonna take a while:
-```
-vagrant up
+brew install elasticsearch@7.6
+/usr/local/Cellar/elasticsearch\@7.6/7.6.2/bin/elasticsearch-plugin install mapper-size
+brew services start elasticsearch@7.6
 ```
 
-This will spin up a VM and run necessary setup steps like:
-* installing some core libs like `jdk`, `python-pip` etc
-* downloading and setting up `pyspark`, `elasticsearch` and related plugins
-* setting up development environment
-
-The tests should be ran from within the box:
-
+#### Ubuntu/Debian bases systems
 ```
-vagrant ssh
-source venv/bin/activate
-pytest /vagrant/tests
+apt install elasticsearch=7.6.2
+apt-mark hold elasticsearch
+service elasticsearch start
+```
+Make sure your elasticsearch server is running at port 9200.
+
+### Tox
+Insure tox is install via pip or pipx
+```
+pipx install tox
 ```
 
-To get a better understanding of how to tweak/customize provisioning steps read
-the docs! Have fun testing.
+To run tests:
+```
+tox -- path/to/test(s)
+```
 
-### Use Pycharm debug in Vagrant.
 
-You can use Pycharm debug tool with vagrant, but you need the professional version of 
-Pycharm.
-
-1. Set the Vagrant Interpreter
-
-    * In Settings/Preferences > Project <project name> | Python Interpreter. Add new 
-        Interpreter, select Vagrant, set 'Python interpreter path' to 
-        '/home/vagrant/venv/bin/python', Click 'OK'
-       
-    * Set Path mappings: <project root> -> '/vagrant'
-
-2. Add new Run/Debug configurations
-
-    * Add new pytest configuration
-    * Set script path to <project>/tests (or any test file you want)
-    * Select the interpreter you just created, should looks like 'Remote Python 2.7.17
-        Vagrant VM ...'
-    * Set working directory to your project folder
-    * Set the following environment variables
-        ```
-        SPARK_HOME=/home/vagrant/spark-2.4.5-bin-hadoop2.7
-        PYTHONPATH=/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip:/home/vagrant/spark-2.4.5-bin-hadoop2.7/python/
-        PYSPARK_PYTHON=/home/vagrant/venv/bin/python
-        ```
-
-After the above steps, you can save your changes and click the run button to start your 
-tests.
 
 ## Setup pre-commit hook to check for secrets
 
