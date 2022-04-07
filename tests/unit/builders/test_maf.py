@@ -1,3 +1,4 @@
+import gzip
 from os import path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from unittest import mock
@@ -11,7 +12,9 @@ from pyspark.sql import types
 from exports import builders
 from exports.builders import base_input_builder
 from tests.unit import utils
+from tests.unit.data import schemas
 
+SCHEMA_DIR = "builders/maf"
 DEFAULT_CONFIG_VALUES = {
     "maf_urls": ("fake_url0",),
     "cache_dataframes": {"mafs": False},
@@ -273,22 +276,18 @@ class GeneModel:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "maf")
+def gene_model_schema() -> types.StructType:
+    return schemas.load_schema(path.join(SCHEMA_DIR, "input_gene_model.json"))
 
 
 @pytest.fixture(scope="class")
-def gene_model_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_gene_model.json")
+def raw_maf_schema() -> types.StructType:
+    return schemas.load_schema(path.join(SCHEMA_DIR, "raw_maf.yaml"))
 
 
 @pytest.fixture(scope="class")
-def raw_maf_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "raw_maf.json")
-
-@pytest.fixture(scope="class")
-def final_maf_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_maf.json")
+def final_maf_schema() -> types.StructType:
+    return schemas.load_schema(path.join(SCHEMA_DIR, "final_maf.yaml"))
 
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
@@ -306,7 +305,7 @@ class TestMAFBuilder:
         spark_session: sql.SparkSession,
         gene_model_schema: types.StructType,
         raw_maf_schema: types.StructType,
-        final_maf_schema: types.StructType
+        final_maf_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.gene_model_schema = gene_model_schema
@@ -329,6 +328,7 @@ class TestMAFBuilder:
 
         config = arrange_config(config_values)
         sql_context = mock.MagicMock()
+        sql_context.createDataFrame.side_effect = self.spark_session.createDataFrame
         sql_context.read = sql_context
         sql_context.format.return_value = sql_context
         sql_context.options.return_value = sql_context
@@ -352,6 +352,11 @@ class TestMAFBuilder:
         result_df = builder.build_from_scratch(**inputs)
 
         assert result_df.count() == 1
+        for actual_field, expected_field in filter(
+            lambda t: t[0].dataType != t[1].dataType,
+            zip(result_df.schema.fields, self.final_maf_schema.fields),
+        ):
+            print(f"{actual_field}: {actual_field.dataType} != {expected_field}: {expected_field.dataType}")
         assert result_df.schema == self.final_maf_schema
 
     def test__build_from_scratch__input_schema_transformed(self) -> None:
@@ -491,15 +496,6 @@ class TestMAFBuilder:
         with pytest.raises(Exception):
             builder.build_from_scratch(**inputs)
 
-    def test__build_from_scratch__urls_is_empty_raises_assertion_exception(
-        self,
-    ) -> None:
-        inputs = self.arrange_inputs()
-        builder = self.arrange_builder(config_values={"maf_urls": ()})
-
-        with pytest.raises(AssertionError):
-            builder.build_from_scratch(**inputs)
-
     def test__build_from_scratch__multiple_urls_unioned(self) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
@@ -511,15 +507,6 @@ class TestMAFBuilder:
 
         assert len(result_rows) == 2
         assert result_rows[0] == result_rows[1]
-
-    def test__build_from_scratch__debug_true(self) -> None:
-        inputs = self.arrange_inputs()
-        builder = self.arrange_builder(config_values={"debug": True})
-        config = builder.config
-
-        _ = builder.build_from_scratch(**inputs)
-
-        assert config.nb_mutations == 1
 
     @pytest.mark.parametrize(
         ("tumor_sample_barcode", "case_id", "available_variation_data"),
@@ -889,3 +876,9 @@ class TestMAFBuilder:
         assert result_row.variant_caller == "FM Simple Somatic Mutation"
         assert result_row.normal_bam_uuid is None
         assert result_row.tumor_bam_uuid is None
+
+
+def get_lines(file_in, file_out):
+    with gzip.open(file_in, "rt") as f_in, open(file_out, "w") as f_out:
+        for _ in range(15):
+            f_out.write(f_in.readline())

@@ -1,0 +1,353 @@
+fields:
+  - metadata: {}
+    name: _id
+    nullable: true
+    type:
+      fields:
+        - &string_field
+          metadata: {}
+          name: $oid
+          nullable: true
+          type: string
+      type: struct
+  - <<: *string_field
+    name: aa_change
+  - <<: *string_field
+    name: aa_end
+  - <<: *string_field
+    name: aa_start
+  - <<: *string_field
+    name: all_effects
+  - <<: *string_field
+    name: amino_acids
+  - metadata: {}
+    name: available_variation_data
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: biotype
+  - <<: *string_field
+    name: canonical_transcript_id
+  - &int_field
+    <<: *string_field
+    name: canonical_transcript_length
+    type: integer
+  - <<: *int_field
+    name: canonical_transcript_length_cds
+  - <<: *int_field
+    name: canonical_transcript_length_genomic
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: ccds
+  - <<: *string_field
+    name: cdna_position
+  - <<: *int_field
+    name: cds_end
+  - <<: *int_field
+    name: cds_length
+  - <<: *string_field
+    name: cds_position
+  - <<: *int_field
+    name: cds_start
+  - <<: *string_field
+    name: center
+  - <<: *string_field
+    name: chromosome
+  - <<: *string_field
+    name: clin_sig
+  - <<: *string_field
+    name: codons
+  - <<: *string_field
+    name: consequence_type
+  - metadata: {}
+    name: cosmic_id
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: cytoband
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: dbsnp_rs
+  - <<: *string_field
+    name: dbsnp_val_status
+  - <<: *string_field
+    name: description
+  - <<: *string_field
+    name: domains
+  - <<: *string_field
+    name: empty
+  - <<: *int_field
+    name: end_position
+  - <<: *string_field
+    name: ensp
+  - metadata: {}
+    name: entrez_gene
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: existing_variation
+  - <<: *string_field
+    name: gene_chromosome
+  - &long_field
+    <<: *string_field
+    name: gene_end
+    type: long
+  - <<: *string_field
+    name: gene_id
+  - <<: *long_field
+    name: gene_start
+  - <<: *long_field
+    name: gene_strand
+  - <<: *string_field
+    name: genomic_dna_change
+  - metadata: {}
+    name: hgnc
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: hgvsc
+  - <<: *string_field
+    name: hgvsp
+  - <<: *string_field
+    name: hgvsp_short
+  - <<: *string_field
+    name: is_cancer_gene_census
+  - &bool_field
+    <<: *string_field
+    name: is_canonical
+    type: boolean
+  - <<: *string_field
+    name: match_norm_seq_allele1
+  - <<: *string_field
+    name: match_norm_seq_allele2
+  - <<: *string_field
+    name: matched_norm_sample_barcode
+  - <<: *string_field
+    name: matched_norm_sample_uuid
+  - <<: *string_field
+    name: mutation_status
+  - <<: *string_field
+    name: mutation_subtype
+  - <<: *string_field
+    name: mutation_type
+  - <<: *int_field
+    name: n_depth
+  - <<: *string_field
+    name: name
+  - <<: *string_field
+    name: ncbi_build
+  - <<: *string_field
+    name: normal_bam_uuid
+  - metadata: {}
+    name: normal_genotype
+    nullable: false
+    type:
+      fields:
+        - <<: *string_field
+          name: allele_id
+      type: struct
+  - <<: *string_field
+    name: occurrence_id
+  - metadata: {}
+    name: omim_gene
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: polyphen_impact
+  - &double_field
+    <<: *string_field
+    name: polyphen_score
+    type: double
+  - <<: *string_field
+    name: protein_position
+  - <<: *string_field
+    name: pubmed
+  - <<: *string_field
+    name: ref_seq_accession
+  - <<: *string_field
+    name: reference_allele
+  - <<: *string_field
+    name: sift_impact
+  - <<: *double_field
+    name: sift_score
+  - <<: *string_field
+    name: ssm_id
+  - <<: *int_field
+    name: start_position
+  - <<: *string_field
+    name: swissprot
+  - <<: *string_field
+    name: symbol
+  - metadata: {}
+    name: synonyms
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *int_field
+    name: t_alt_count
+  - <<: *int_field
+    name: t_depth
+  - <<: *int_field
+    name: t_ref_count
+  - <<: *string_field
+    name: transcript_id
+  - metadata: {}
+    name: transcripts
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *string_field
+            name: biotype
+          - <<: *long_field
+            name: cdna_coding_end
+          - <<: *long_field
+            name: cdna_coding_start
+          - <<: *long_field
+            name: coding_region_end
+          - <<: *long_field
+            name: coding_region_start
+          - metadata: {}
+            name: domains
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: description
+                  - <<: *long_field
+                    name: end
+                  - <<: *string_field
+                    name: gff_source
+                  - <<: *string_field
+                    name: hit_name
+                  - <<: *string_field
+                    name: interpro_id
+                  - <<: *long_field
+                    name: start
+                type: struct
+              type: array
+          - <<: *long_field
+            name: end
+          - <<: *long_field
+            name: end_exon
+          - metadata: {}
+            name: exons
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *long_field
+                    name: cdna_coding_end
+                  - <<: *long_field
+                    name: cdna_coding_start
+                  - <<: *long_field
+                    name: cdna_end
+                  - <<: *long_field
+                    name: cdna_start
+                  - <<: *long_field
+                    name: end
+                  - <<: *long_field
+                    name: end_phase
+                  - <<: *long_field
+                    name: genomic_coding_end
+                  - <<: *long_field
+                    name: genomic_coding_stairt
+                  - <<: *long_field
+                    name: genomic_coding_start
+                  - <<: *long_field
+                    name: start
+                  - <<: *long_field
+                    name: start_phase
+                type: struct
+              type: array
+          - <<: *string_field
+            name: transcript_id
+          - <<: *bool_field
+            name: is_canonical
+          - <<: *long_field
+            name: length
+          - <<: *long_field
+            name: length_amino_acid
+          - <<: *long_field
+            name: length_cds
+          - <<: *string_field
+            name: name
+          - <<: *long_field
+            name: number_of_exons
+          - <<: *long_field
+            name: seq_exon_end
+          - <<: *long_field
+            name: seq_exon_start
+          - <<: *long_field
+            name: start
+          - <<: *long_field
+            name: start_exon
+          - <<: *string_field
+            name: translation_id
+        type: struct
+      type: array
+  - <<: *string_field
+    name: trembl
+  - <<: *string_field
+    name: tumor_allele
+  - <<: *string_field
+    name: tumor_bam_uuid
+  - <<: *string_field
+    name: tumor_sample_barcode
+  - <<: *string_field
+    name: tumor_sample_uuid
+  - <<: *string_field
+    name: tumor_seq_allele1
+  - <<: *string_field
+    name: tumor_seq_allele2
+  - <<: *string_field
+    name: tumor_validation_allele1
+  - <<: *string_field
+    name: tumor_validation_allele2
+  - <<: *string_field
+    name: uniparc
+  - metadata: {}
+    name: uniprotkb_swissprot
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: validation_method
+  - <<: *string_field
+    name: variant_caller
+  - <<: *string_field
+    name: variant_process
+    nullable: false
+  - <<: *string_field
+    name: variant_type
+  - <<: *string_field
+    name: vep_impact
+type: struct

@@ -1,14 +1,13 @@
+import functools
 import logging
-from typing import Dict, Iterable
+from typing import Iterable, Optional
 
-import yaml
-from pkg_resources import resource_filename
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
-from exports import pyspark_extensions
+from exports import pyspark_extensions, schemas
 from exports.builders import base_input_builder, utils
 from exports.builders.clinical_annotations import civic
 
@@ -28,8 +27,15 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         annotation_builders: Iterable[civic.CivicBuilder],
     ):
         super(MAFBuilder, self).__init__(config, sqlContext, "maf")
-        self.schema = self.get_schema()
         self.annotation_builders = annotation_builders
+        self._raw_maf_schema: Optional[types.StructType] = None
+
+    @property
+    def raw_maf_schema(self) -> types.StructType:
+        if not self._raw_maf_schema:
+            self._raw_maf_schema = schemas.load_schema("builders/maf/raw_maf.yaml")
+
+        return self._raw_maf_schema
 
     def build_from_cache(self, df):
         return df
@@ -63,14 +69,12 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         # Extract sift and polyphen columns
         df = utils.extract_sift_polyphen(df)
 
-        cols_to_drop = frozenset(gene_model_df.columns)
-        df = df.select(*[c for c in df.columns if c not in cols_to_drop])
         df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, "inner")
         df = df.drop("_gene_id")
         df = self.add_null(df)
         df = self.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
-        df = self.map_transform(df)
+        df = df.withColumn("chromosome", F.concat(F.lit("chr"), "chromosome"))
         df = df.withColumn("variant_process", F.lit("masked"))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
@@ -87,68 +91,109 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
             self.logger.info("Caching repartitioned MAF dataframe")
             df.cache().count()
 
-        return df
-
-    def get_annotation_schemas(self):
-        return [ann.schema for ann in self.annotation_builders]
-
-    def map_transform(self, df: sql.DataFrame) -> sql.DataFrame:
-        """
-        Transforms maf_df according to maf.yml :type and :pattern
-        """
-        for column in df.columns:
-            if column in self.schema:
-                if "type" in self.schema[column]:
-                    val_type = self.schema[column]["type"]
-                    assert val_type in ["float", "int", "str", "boolean"]
-                    df = df.withColumn(column, df[column].cast(val_type))
-
-                elif "pattern" in self.schema[column]:
-                    pattern = self.schema[column]["pattern"]
-
-                    def apply_pattern(value):
-                        return pattern.format(value)
-
-                    df = df.withColumn(
-                        column, F.udf(apply_pattern, types.StringType())(df[column])
-                    )
-                else:
-                    pass
-        return df
+        return df.select(
+            "_id",
+            "aa_change",
+            "aa_end",
+            "aa_start",
+            "all_effects",
+            "amino_acids",
+            "available_variation_data",
+            "biotype",
+            "canonical_transcript_id",
+            "canonical_transcript_length",
+            "canonical_transcript_length_cds",
+            "canonical_transcript_length_genomic",
+            "case_id",
+            "ccds",
+            "cdna_position",
+            "cds_end",
+            "cds_length",
+            "cds_position",
+            "cds_start",
+            "center",
+            "chromosome",
+            "clin_sig",
+            "codons",
+            "consequence_type",
+            "cosmic_id",
+            "cytoband",
+            "dbsnp_rs",
+            "dbsnp_val_status",
+            "description",
+            "domains",
+            "empty",
+            "end_position",
+            "ensp",
+            "entrez_gene",
+            "existing_variation",
+            "gene_chromosome",
+            "gene_end",
+            "gene_id",
+            "gene_start",
+            "gene_strand",
+            "genomic_dna_change",
+            "hgnc",
+            "hgvsc",
+            "hgvsp",
+            "hgvsp_short",
+            "is_cancer_gene_census",
+            "is_canonical",
+            "match_norm_seq_allele1",
+            "match_norm_seq_allele2",
+            "matched_norm_sample_barcode",
+            "matched_norm_sample_uuid",
+            "mutation_status",
+            "mutation_subtype",
+            "mutation_type",
+            "n_depth",
+            "name",
+            "ncbi_build",
+            "normal_bam_uuid",
+            "normal_genotype",
+            "occurrence_id",
+            "omim_gene",
+            "polyphen_impact",
+            "polyphen_score",
+            "protein_position",
+            "pubmed",
+            "ref_seq_accession",
+            "reference_allele",
+            "sift_impact",
+            "sift_score",
+            "ssm_id",
+            "start_position",
+            "swissprot",
+            "symbol",
+            "synonyms",
+            "t_alt_count",
+            "t_depth",
+            "t_ref_count",
+            "transcript_id",
+            "transcripts",
+            "trembl",
+            "tumor_allele",
+            "tumor_bam_uuid",
+            "tumor_sample_barcode",
+            "tumor_sample_uuid",
+            "tumor_seq_allele1",
+            "tumor_seq_allele2",
+            "tumor_validation_allele1",
+            "tumor_validation_allele2",
+            "uniparc",
+            "uniprotkb_swissprot",
+            "validation_method",
+            "variant_caller",
+            "variant_process",
+            "variant_type",
+            "vep_impact",
+        )
 
     def add_null(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Adds a null column to use as defaults for mappings.
         """
         return df.withColumn("empty", F.lit(None).cast(types.StringType()))
-
-    def standardize_schema(self, df: sql.DataFrame) -> sql.DataFrame:
-        """
-        Renames and select required columns from the MAF documents
-        """
-        df_columns = frozenset(df.columns)
-
-        # Map old columns to their new names as given in the schema.
-        # Some columns are optional; supply None values for those as specified.
-        def standardize(new_column, props):
-            old_column = props["name"]
-            if old_column in df_columns:
-                return F.col(old_column).alias(new_column)
-            else:
-                raise KeyError("Required column {} missing from MAF".format(old_column))
-
-        # Iterate over the output schema rather than the input dataframe.
-        # As long as we don't modify the schema after loading it, this should
-        # ensure that we output columns in a consistent order.
-        return df.select(*[standardize(k, v) for k, v in self.schema.items()])
-
-    def get_schema(self) -> Dict[str, Dict[str, str]]:
-        """
-        Load the intended MAF schema from the local YAML file
-        """
-        path = resource_filename("exports.schemas", "maf.yml")
-        with open(path) as f:
-            return yaml.safe_load(f)["maf_schema"]
 
     def format_cosmic_id(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -251,7 +296,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
             utils.uuid5_col(
                 F.lit("ssm"),
                 F.col("ncbi_build"),
-                F.col("chromosome"),
+                F.col("gene_chromosome"),
                 F.col("start_position"),
                 F.col("end_position"),
                 F.col("mutation_subtype"),
@@ -279,7 +324,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         maf_df = df.withColumn(
             "genomic_dna_change",
             utils.ssm_label_col(
-                F.col("chromosome"),
+                F.col("gene_chromosome"),
                 F.col("variant_type"),
                 F.col("start_position"),
                 F.col("end_position"),
@@ -327,65 +372,104 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         )
         return df
 
-    def combine(self, urls=None) -> sql.DataFrame:
-        """
-        Combines data frames from a list of urls
-        """
-        df = None  # type Optional[sql.DataFrame]
+    def _get_urls(self, urls: Optional[Iterable[str]]) -> Iterable[str]:
         urls = urls or self.urls
 
         if urls is None:
             self.logger.error("Urls not passed")
-            raise Exception
+            raise Exception("No MAF urls were found to load.")
 
-        for url in urls:
-            try:
-                # TODO: separate data transforms from combining multiple df into one
-                #   latter should go as a static method to base class for MAF and Gistic Builders
-                new_df = self.file_to_df(url)
+        return urls
 
-                new_df = pyspark_extensions.default_columns(
-                    new_df,
-                    (
-                        pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
-                        pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),
-                        pyspark_extensions.DefaultColumn(
-                            name="callers", value="FM Simple Somatic Mutation"
-                        ),
+    def _load_url(self, url: str) -> Optional[sql.DataFrame]:
+        try:
+            return pyspark_extensions.default_columns(
+                self.file_to_df(url),
+                (
+                    pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
+                    pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),
+                    pyspark_extensions.DefaultColumn(
+                        name="callers", value="FM Simple Somatic Mutation"
                     ),
-                )
-
-                # ensure a consistent schema so that the union works correctly
-                # this will strip out any columns that aren't in the schema,
-                # but we should not need those columns
-                new_df = self.standardize_schema(new_df)
-
-                if self.config.debug:
-                    self.logger.info("Read {} rows from {}".format(new_df.count(), url))
-                if df is None:
-                    df = new_df
-                else:
-                    df = df.union(new_df)
-            except Exception as e:
-                self.logger.error(e)
-
-        assert df is not None
-
-        if self.config.debug:
-            self.config.nb_mutations = df.count()
-            self.logger.info(
-                "Combined {} files for a total of {} rows".format(
-                    len(urls), self.config.nb_mutations
-                )
+                ),
             )
-        self.df = df
-        return df
 
-    def patch_url(self, url: str) -> str:
+        except Exception as e:
+            self.logger.error(e)
+
+        return None
+
+    def combine(self, urls=None) -> sql.DataFrame:
         """
-        changes domain/bucket to bucket format
-        s3:// -> s3a://
+        Combines data frames from a list of urls
         """
-        url = url.replace("cleversafe.service.consul/somatic_maf", "test")
-        url = url.replace("s3://", "s3a://")
-        return url
+        urls = self._get_urls(urls)
+        base_df = self.sqlContext.createDataFrame((), schema=self.raw_maf_schema)
+        dfs = filter(None, (self._load_url(url) for url in urls))
+        df = functools.reduce(lambda df0, df1: df0.unionByName(df1), dfs, base_df)
+
+        df = df.select(
+            F.col("ESP_AA_AF").alias("aa_change"),
+            F.col("ESP_AA_AF").alias("aa_end"),
+            F.col("ESP_AA_AF").alias("aa_start"),
+            "all_effects",
+            F.col("Amino_acids").alias("amino_acids"),
+            "case_id",
+            F.col("CCDS").alias("ccds"),
+            F.col("cDNA_position").alias("cdna_position"),
+            F.col("CDS_position").alias("cds_position"),
+            F.col("Center").alias("center"),
+            F.col("CLIN_SIG").alias("clin_sig"),
+            F.col("Codons").alias("codons"),
+            F.col("Consequence").alias("consequence_type"),
+            F.col("COSMIC").alias("cosmic_id"),
+            F.col("dbSNP_RS").alias("dbsnp_rs"),
+            F.col("dbSNP_Val_Status").alias("dbsnp_val_status"),
+            F.col("DOMAINS").alias("domains"),
+            F.col("End_Position").cast(types.IntegerType()).alias("end_position"),
+            F.col("ENSP").alias("ensp"),
+            F.col("Existing_variation").alias("existing_variation"),
+            F.col("Chromosome").alias("gene_chromosome"),
+            F.col("Gene").alias("gene_id"),
+            F.col("HGVSc").alias("hgvsc"),
+            F.col("HGVSp").alias("hgvsp"),
+            F.col("HGVSp_Short").alias("hgvsp_short"),
+            F.col("CANONICAL").cast(types.BooleanType()).alias("is_canonical"),
+            F.col("Match_Norm_Seq_Allele1").alias("match_norm_seq_allele1"),
+            F.col("Match_Norm_Seq_Allele2").alias("match_norm_seq_allele2"),
+            F.col("Matched_Norm_Sample_Barcode").alias("matched_norm_sample_barcode"),
+            F.col("Matched_Norm_Sample_UUID").alias("matched_norm_sample_uuid"),
+            F.col("Mutation_Status").alias("mutation_status"),
+            F.col("Mutation_Status").alias("mutation_type"),
+            F.col("n_depth").cast(types.IntegerType()),
+            F.col("NCBI_Build").alias("ncbi_build"),
+            "normal_bam_uuid",
+            F.col("PolyPhen").alias("polyphen"),
+            F.col("Protein_position").alias("protein_position"),
+            F.col("PUBMED").alias("pubmed"),
+            F.col("ESP_AA_AF").alias("ref_seq_accession"),
+            F.col("Reference_Allele").alias("reference_allele"),
+            F.col("SIFT").alias("sift"),
+            F.col("Start_Position").cast(types.IntegerType()).alias("start_position"),
+            F.col("SWISSPROT").alias("swissprot"),
+            F.col("t_alt_count").cast(types.IntegerType()),
+            F.col("t_depth").cast(types.IntegerType()),
+            F.col("t_ref_count").cast(types.IntegerType()),
+            F.col("Transcript_ID").alias("transcript_id"),
+            F.col("TREMBL").alias("trembl"),
+            F.col("Allele").alias("tumor_allele"),
+            "tumor_bam_uuid",
+            F.col("Tumor_Sample_Barcode").alias("tumor_sample_barcode"),
+            F.col("Tumor_Sample_UUID").alias("tumor_sample_uuid"),
+            F.col("Tumor_Seq_Allele1").alias("tumor_seq_allele1"),
+            F.col("Tumor_Seq_Allele2").alias("tumor_seq_allele2"),
+            F.col("Tumor_Validation_Allele1").alias("tumor_validation_allele1"),
+            F.col("Tumor_Validation_Allele2").alias("tumor_validation_allele2"),
+            F.col("UNIPARC").alias("uniparc"),
+            F.col("Validation_Method").alias("validation_method"),
+            F.col("callers").alias("variant_caller"),
+            F.col("Variant_Type").alias("variant_type"),
+            F.col("IMPACT").alias("vep_impact"),
+        )
+
+        return df

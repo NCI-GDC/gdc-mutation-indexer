@@ -7,7 +7,6 @@ import pytest
 import yaml
 from pyspark import sql
 from pyspark.sql import types
-from exports.builders.clinical_annotations import civic
 
 from tests.integration import config
 from exports import builders, es_utils
@@ -128,15 +127,6 @@ def test_data():
 @pytest.fixture(scope="session")
 def gene_model_df(sqlContext) -> sql.DataFrame:
     return builders.GeneModelBuilder(conf, sqlContext).build()
-
-
-@pytest.fixture(scope="session")
-def maf_df(sqlContext, gene_model_df):
-    """
-    Builds combined maf dataframe once. Reused throughout test suite
-    """
-    log.info("\n\n\tBUILDING MAF_DF\n\n")
-    return builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)).build(gene_model_df=gene_model_df)
 
 
 @pytest.fixture(scope="session")
@@ -409,24 +399,6 @@ def ssm_occurrence_ssm_subtree(
 @pytest.fixture(scope="module")
 def maf_stats():
     yield maf_metrics.MAFStats(conf.maf_urls)
-
-
-@pytest.fixture(scope="module")
-def raw_variant_caller_counts():
-    """Get the expected number of observations for each caller in the raw MAFs.
-
-    Hardcode based on the test data to minimize the risk of logic bugs in this
-    fixture. Ensemble calls are not exploded when building the MAF DF, so list
-    any ensemble calls verbatim.
-    """
-    return {
-        "muse": 7,
-        "mutect2": 11,
-        "mutect2;muse*;somaticsniper": 1,
-        "pindel": 3,
-        "somaticsniper;muse": 5,
-        "varscan": 3,
-    }
 
 
 @pytest.fixture(scope="module")
