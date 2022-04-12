@@ -4,7 +4,7 @@ import pytest
 from indexclient.client import IndexClient, Document
 
 from config import BaseConfig
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 
 
 BOGUS_MAF_URL = 'file://tmp/no.test.data.found.maf'

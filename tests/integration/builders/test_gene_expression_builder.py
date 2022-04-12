@@ -7,13 +7,13 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
-import tests_config
+from tests.integration import config
 from exports import builders, es_utils, indexd_utils
 
 
 @pytest.fixture(scope="module")
 def ge_conf():
-    conf = tests_config.TestConfig()
+    conf = config.TestConfig()
     conf.index_types = ["gene_expression"]
     conf.indices = conf.get_index_names()
 
@@ -22,7 +22,7 @@ def ge_conf():
 
 @pytest.fixture(scope="module")
 def ge_primary_aliquot_df(
-    ge_conf: tests_config.BaseConfig, sqlContext: sql.SQLContext
+    ge_conf: config.BaseConfig, sqlContext: sql.SQLContext
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(

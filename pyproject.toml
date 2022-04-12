@@ -16,5 +16,6 @@ markers = [
 ]
 minversion = "6.0"
 testpaths = [
-  "tests",
+  "tests/unit",
+  "tests/integration"
 ]

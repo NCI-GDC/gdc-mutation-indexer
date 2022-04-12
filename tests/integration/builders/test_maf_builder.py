@@ -8,10 +8,10 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from exports.builders.clinical_annotations import civic
 
-import tests_config
+from tests.integration import config
 from exports import builders
 
-conf = tests_config.TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures("sqlContext", "maf_df")

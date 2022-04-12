@@ -16,14 +16,14 @@ from cdisutils import dictionary
 from elasticsearch import helpers
 from normalizer import mapper
 
-import tests_config
-from tests.utils import true_stats
+from tests.integration import config
+from tests.integration.utils import true_stats
 
 
 class IndexManager(ContextManager["IndexManager"]):
     def __init__(
         self,
-        config: tests_config.TestConfig,
+        config: config.TestConfig,
         es: elasticsearch.Elasticsearch,
         logger: logging.Logger,
         doc_types: Iterable[str],
@@ -69,7 +69,7 @@ class IndexManager(ContextManager["IndexManager"]):
 class DocumentLoader(ContextManager["DocumentLoader"]):
     def __init__(
         self,
-        config: tests_config.TestConfig,
+        config: config.TestConfig,
         es: elasticsearch.Elasticsearch,
         logger: logging.Logger,
     ) -> None:
@@ -90,7 +90,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
             if ids:
                 index_name = self._config.graph_indices[doc_type]
                 body = {"query": {"terms": {"file_id": list(ids)}}}
-                self._es.delete_by_query(index=index_name, body=body)
+                self._es.delete_by_query(index=index_name, body=body, refresh=True)
 
         return None
 

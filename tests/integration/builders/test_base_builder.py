@@ -12,7 +12,7 @@ from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
 
 @pytest.fixture
 def get_mapping_data():
-    with open("tests/data/input/case_centric_mapping.json") as mapping_fp:
+    with open("tests/integration/data/input/case_centric_mapping.json") as mapping_fp:
         data = json.load(mapping_fp)
     return data
 
@@ -30,7 +30,7 @@ def test_get_all_boolean_paths(get_mapping_data):
 
 def test_sample_data_cast_boolean(get_mapping_data):
     spark = SparkSession.builder.appName("test").getOrCreate()
-    df = spark.read.parquet("tests/data/input/sample.parquet")
+    df = spark.read.parquet("tests/integration/data/input/sample.parquet")
     gene_df = df.select(explode("gene")).select("col.*")
     gene_dtypes = dict(gene_df.dtypes)
     assert gene_dtypes["is_cancer_gene_census"] == "string"

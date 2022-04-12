@@ -15,7 +15,7 @@ from pyspark.sql import types
 
 from exports import builders, es_utils
 from tests.unit import utils
-from tests.utils import schema_validation
+from tests.integration.utils import schema_validation
 
 
 @dataclasses.dataclass(frozen=True)
@@ -391,8 +391,8 @@ class TestPrimaryAliquotBuilderOLD(unittest.TestCase):
     schema_validator = schema_validation.PysparkSchemaValidator()
 
     @pytest.fixture(autouse=True)
-    def fixture_set_up(self, sqlContext, data_dir):
-        self.sql_context = sqlContext
+    def fixture_set_up(self, spark_session: sql.SparkSession, data_dir: str):
+        self.sql_context = sql.SQLContext(spark_session.sparkContext)
         self.data_dir = data_dir
 
     def _build_es_dataframe(self, data: Iterable[dict], is_gene_expression: bool):

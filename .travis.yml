@@ -28,8 +28,6 @@ before_install:
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
   - sudo rm -rf /var/lib/elasticsearch
-  - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - wget https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
@@ -41,10 +39,6 @@ before_install:
   - sudo service elasticsearch restart
 
 install:
-  - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - unzip elasticsearch-hadoop-${ES_VERSION}.zip
-  - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
-  - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
   - pip install tox-travis
 
 script:

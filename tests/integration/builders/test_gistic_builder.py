@@ -7,7 +7,7 @@ import os
 # from pyspark.sql.types import ArrayType, StringType
 # 
 from exports.builders import GisticBuilder
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 
 conf = TestConfig()
 

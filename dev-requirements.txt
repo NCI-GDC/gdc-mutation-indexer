@@ -93,20 +93,10 @@ pre-commit==1.21.0
     # via -r dev-requirements.in
 py==1.10.0
     # via pytest
-py4j==0.10.7
-    # via
-    #   -c master-requirements.txt
-    #   pyspark
 pygments==2.9.0
     # via sphinx
 pyparsing==2.4.7
     # via packaging
-pyspark==2.4.5
-    # via
-    #   -c master-requirements.txt
-    #   pyspark-stubs
-pyspark-stubs==2.4.0.post12
-    # via -r dev-requirements.in
 pytest==6.1.2
     # via
     #   -r dev-requirements.in

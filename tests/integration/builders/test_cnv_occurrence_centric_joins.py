@@ -4,7 +4,7 @@ import json
 from pyspark.sql.functions import col
 
 from exports.builders.consequence import ConsequenceBuilder
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 from base_joins_test import BaseJoinsTest
 
 conf = TestConfig()

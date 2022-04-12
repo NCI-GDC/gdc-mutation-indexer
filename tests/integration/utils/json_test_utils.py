@@ -1,8 +1,8 @@
 import os
 
-import tests_config
+from tests.integration import config
 
-conf = tests_config.TestConfig()
+conf = config.TestConfig()
 
 MAPPING = {
     ###

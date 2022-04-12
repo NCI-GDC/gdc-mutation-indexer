@@ -3,7 +3,7 @@ import pytest
 import json
 
 from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 from base_joins_test import BaseJoinsTest
 
 conf = TestConfig()

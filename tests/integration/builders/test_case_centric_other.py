@@ -1,8 +1,8 @@
 import pytest
 
 from normalizer.mapper import ModelMapper
-from tests.utils.true_stats import TestDataStats
-from tests_config import TestConfig
+from tests.integration.utils.true_stats import TestDataStats
+from tests.integration.config import TestConfig
 
 conf = TestConfig()
 

@@ -5,7 +5,7 @@ from pyspark.sql.functions import col, lit
 
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.utils import uuid5_col
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 from base_joins_test import BaseJoinsTest
 
 conf = TestConfig()

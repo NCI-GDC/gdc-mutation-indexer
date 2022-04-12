@@ -3,12 +3,12 @@ import json
 import pytest
 
 import deepdiff
-import tests_config
+from tests.integration import config
 from exports import builders
 from pyspark import sql
 from pyspark.sql import functions as F
 
-conf = tests_config.TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures('maf_df', 'gistic_df')
@@ -457,7 +457,7 @@ class TestCaseBuilder:
         Confirm that the expected number of cases are extracted and that
         all cases are in one of the expected projects.
         """
-        local_conf = tests_config.TestConfig()
+        local_conf = config.TestConfig()
         local_conf.projects = projects
 
         df = builders.CaseBuilder(local_conf, sqlContext).build(maf_df, gistic_df)

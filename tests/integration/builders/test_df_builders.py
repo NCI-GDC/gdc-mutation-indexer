@@ -12,7 +12,7 @@ from exports.builders.df_builders import (
     get_cnv_df,
     get_transcript_df,
 )
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 conf = TestConfig()
 
 

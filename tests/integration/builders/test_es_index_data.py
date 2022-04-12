@@ -1,14 +1,14 @@
 import pytest
 
 from exports.es_utils import get_es_doc_count
-from tests.utils.true_stats import TestDataStats
-from tests.utils.json_metrics import (
+from tests.integration.utils.true_stats import TestDataStats
+from tests.integration.utils.json_metrics import (
     CaseCentricStats,
     GeneCentricStats,
     SSMCentricStats,
     SSMOccurrenceCentricStats,
 )
-from tests_config import TestConfig
+from tests.integration.config import TestConfig
 
 conf = TestConfig()
 
