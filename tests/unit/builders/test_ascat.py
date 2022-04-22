@@ -1,5 +1,4 @@
 import dataclasses
-from os import path
 from typing import Dict, Iterable, Mapping, Optional, Tuple
 from unittest import mock
 
@@ -9,8 +8,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders import ascat
 from tests.unit import utils
+from tests.unit.data import schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -140,6 +139,13 @@ class PrimaryAliquot:
     aliquot_id: str = "aliquot-0"
 
 
+DEFAULT_ASCAT_DOCUMENTS = (
+    AscatDocument(),
+    AscatDocument(copy_number=30),
+    AscatDocument(copy_number=30),
+)
+
+
 def _arrange_dataframe_util(dataframe: sql.DataFrame) -> mock.MagicMock:
     dataframe_util = mock.MagicMock()
 
@@ -163,25 +169,48 @@ def _arrange_case(
     )
 
 
+@pytest.fixture(scope="class")
+def input_ascat_schema() -> types.StructType:
+    return schemas.load_schema("builders/ascat/input_ascat.yaml")
+
+
+@pytest.fixture(scope="class")
+def es_file_schema() -> types.StructType:
+    return schemas.load_schema("builders/ascat/es_file.json")
+
+
+@pytest.fixture(scope="class")
+def input_gene_model_schema() -> types.StructType:
+    return schemas.load_schema("builders/ascat/input_gene_model.json")
+
+
+@pytest.fixture(scope="class")
+def final_ascat_schema() -> types.StructType:
+    return schemas.load_schema("builders/ascat/final_ascat.json")
+
+
 class TestAscatBuilder:
     @pytest.fixture(autouse=True)
     def initialize_fixtures(
-        self, spark_session: sql.SparkSession, data_dir: str
+        self,
+        spark_session: sql.SparkSession,
+        input_ascat_schema: types.StructType,
+        es_file_schema: types.StructType,
+        input_gene_model_schema: types.StructType,
+        final_ascat_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
-        self.schema_dir = path.join(data_dir, "schemas", "builders", "ascat")
+        self.input_ascat_schema = input_ascat_schema
+        self.es_file_schema = es_file_schema
+        self.input_gene_model_schema = input_gene_model_schema
+        self.final_ascat_schema = final_ascat_schema
 
     def _arrange_doc_dataframe_util(
         self, ascat_document_data: Tuple[AscatDocument, ...]
     ) -> mock.MagicMock:
         ascat_document_df = self.spark_session.createDataFrame(
             ascat_document_data,
-            types.StructType(
-                [
-                    types.StructField("did", types.StringType()),
-                    *ascat.RAW_ASCAT_STRUCT.fields,
-                ]
-            ),
+            self.input_ascat_schema,
         )
 
         return _arrange_dataframe_util(ascat_document_df)
@@ -189,14 +218,14 @@ class TestAscatBuilder:
     def _arrange_es_dataframe_util(
         self, es_files: Tuple[ESFile, ...]
     ) -> mock.MagicMock:
-        es_file_df = self.spark_session.createDataFrame(
-            es_files, utils.load_schema(self.schema_dir, "es_file.json")
-        )
+        es_file_df = self.spark_session.createDataFrame(es_files, self.es_file_schema)
 
         return _arrange_dataframe_util(es_file_df)
 
     def _arrange_builder(
-        self, es_files: Tuple[ESFile, ...], ascat_documents: Tuple[AscatDocument, ...]
+        self,
+        es_files: Tuple[ESFile, ...],
+        ascat_documents: Tuple[AscatDocument, ...] = DEFAULT_ASCAT_DOCUMENTS,
     ) -> builders.AscatBuilder:
         config = mock.MagicMock()
         mock_sql_context = mock.MagicMock()
@@ -215,7 +244,7 @@ class TestAscatBuilder:
     ) -> Mapping[str, sql.DataFrame]:
         primary_aliquot_df = self.spark_session.createDataFrame(primary_aliquots)
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, utils.load_schema(self.schema_dir, "input_gene_model.json")
+            gene_model, self.input_gene_model_schema
         )
 
         return {
@@ -232,17 +261,16 @@ class TestAscatBuilder:
         iterate_es_results: mock.MagicMock,
     ) -> None:
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
-        builder = self._arrange_builder(es_files, ascat_documents)
+        builder = self._arrange_builder(es_files)
 
         ascat_df = builder.build_from_scratch(**inputs)
 
         assert ascat_df.count() == 1
-        assert ascat_df.schema == utils.load_schema(self.schema_dir, "final_ascat.json")
+        assert ascat_df.schema == self.final_ascat_schema
 
     @mock.patch(
         "exports.es_utils.iterate_es_results",
@@ -253,12 +281,11 @@ class TestAscatBuilder:
         iterate_es_results: mock.MagicMock,
     ) -> None:
         es_file = ESFile()
-        ascat_document = AscatDocument()
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = GeneModel()
 
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
-        builder = self._arrange_builder((es_file,), (ascat_document,))
+        builder = self._arrange_builder((es_file,))
 
         ascat_df = builder.build_from_scratch(**inputs)
         ascat_row = more_itertools.one(ascat_df.collect())
@@ -275,7 +302,7 @@ class TestAscatBuilder:
         argvalues=(
             (
                 (ESFile(file_id="file-1"),),
-                (AscatDocument(),),
+                DEFAULT_ASCAT_DOCUMENTS,
                 (PrimaryAliquot(),),
                 (GeneModel(),),
             ),
@@ -289,31 +316,35 @@ class TestAscatBuilder:
                         )
                     ),
                 ),
-                (AscatDocument(),),
+                DEFAULT_ASCAT_DOCUMENTS,
                 (PrimaryAliquot(),),
                 (GeneModel(),),
             ),
             (
                 (ESFile(),),
-                (AscatDocument(did="file-1"),),
+                (
+                    AscatDocument(did="file-1"),
+                    AscatDocument(did="file-1", copy_number=30),
+                    AscatDocument(did="file-1", copy_number=30),
+                ),
                 (PrimaryAliquot(),),
                 (GeneModel(),),
             ),
             (
                 (ESFile(),),
-                (AscatDocument(),),
+                DEFAULT_ASCAT_DOCUMENTS,
                 (PrimaryAliquot(aliquot_id="aliquot-1"),),
                 (GeneModel(),),
             ),
             (
                 (ESFile(),),
-                (AscatDocument(),),
+                DEFAULT_ASCAT_DOCUMENTS,
                 (PrimaryAliquot(file_id="file-1"),),
                 (GeneModel(),),
             ),
             (
                 (ESFile(),),
-                (AscatDocument(),),
+                DEFAULT_ASCAT_DOCUMENTS,
                 (PrimaryAliquot(),),
                 (GeneModel(_gene_id="ENSG00000238008"),),
             ),
@@ -345,7 +376,7 @@ class TestAscatBuilder:
         ascat_df = builder.build_from_scratch(**inputs)
 
         assert ascat_df.count() == 0
-        assert ascat_df.schema == utils.load_schema(self.schema_dir, "final_ascat.json")
+        assert ascat_df.schema == self.final_ascat_schema
 
     @mock.patch(
         "exports.es_utils.iterate_es_results",
@@ -355,7 +386,11 @@ class TestAscatBuilder:
         self, iterate_es_results: mock.MagicMock
     ) -> None:
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(gene_id="ENSG00000238009.9"),)
+        ascat_documents = (
+            AscatDocument(gene_id="ENSG00000238009.9"),
+            AscatDocument(copy_number=30),
+            AscatDocument(copy_number=30),
+        )
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(),)
 
@@ -368,18 +403,30 @@ class TestAscatBuilder:
         assert ascat_row.gene_id == "ENSG00000238009"
 
     @pytest.mark.parametrize(
-        argnames=("copy_number", "cnv_change"),
-        argvalues=((3, "Gain"), (34, "Gain"), (1, "Loss"), (0, "Loss")),
+        ("copy_numbers", "cnv_change"),
+        (
+            ((100, 50, 50), "Gain"),
+            ((1, 0, 0), "Gain"),
+            ((100, 200, 200), "Loss"),
+            ((0, 2, 2), "Loss"),
+            ((40, 20, 20, 30, 30), "Gain"),
+            ((1, 2, 2, 3, 3), "Loss"),
+        ),
     )
     @mock.patch(
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__copy_number_maps_to_cnv_change(
-        self, iterate_es_results: mock.MagicMock, copy_number: int, cnv_change: str
+        self,
+        iterate_es_results: mock.MagicMock,
+        copy_numbers: Tuple[int, ...],
+        cnv_change: str,
     ) -> None:
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(copy_number=copy_number),)
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(),)
 
@@ -391,18 +438,23 @@ class TestAscatBuilder:
 
         assert ascat_row.cnv_change == cnv_change
 
+    @pytest.mark.parametrize(
+        "copy_numbers",
+        ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
+    )
     @mock.patch(
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
-    def test__build_from_scratch__copy_number_of_2_filtered(
-        self,
-        iterate_es_results: mock.MagicMock,
+    def test__build_from_scratch__nuetral_copy_numbers_filtered(
+        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[str]
     ) -> None:
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(copy_number=2),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(),)
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
@@ -419,13 +471,11 @@ class TestAscatBuilder:
         self, iterate_es_results: mock.MagicMock
     ) -> None:
         es_files = (ESFile(),)
-        ascat_document = AscatDocument()
-        ascat_documents = (ascat_document,)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = GeneModel()
 
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
-        builder = self._arrange_builder(es_files, ascat_documents)
+        builder = self._arrange_builder(es_files)
 
         ascat_df = builder.build_from_scratch(**inputs)
         ascat_row = more_itertools.one(ascat_df.collect())
@@ -433,7 +483,7 @@ class TestAscatBuilder:
             gene_model.chromosome,
             gene_model.gene_start,
             gene_model.gene_end,
-            ascat_document.copy_number,
+            "Gain",
         )
 
         assert ascat_row.cnv_id == cnv_id
@@ -462,12 +512,11 @@ class TestAscatBuilder:
         )
         other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
-        builder = self._arrange_builder(es_files, ascat_documents)
+        builder = self._arrange_builder(es_files)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -494,12 +543,11 @@ class TestAscatBuilder:
         )
         other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
-        builder = self._arrange_builder(es_files, ascat_documents)
+        builder = self._arrange_builder(es_files)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -517,12 +565,11 @@ class TestAscatBuilder:
     ) -> None:
         transcript = Transcript(length=10, length_cds=3, end=122, start=100)
         es_files = (ESFile(),)
-        ascat_documents = (AscatDocument(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(transcripts=(transcript,)),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
-        builder = self._arrange_builder(es_files, ascat_documents)
+        builder = self._arrange_builder(es_files)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -532,22 +579,39 @@ class TestAscatBuilder:
         assert result_row.canonical_transcript_length_genomic == None
 
     @pytest.mark.parametrize(
-        ("gene_model",),
+        ("gene_model", "ascat_documents"),
         (
-            (GeneModel(biotype="transcribed_unprocessed_pseudogene"),),
-            (GeneModel(chromosome="X"),),
+            (
+                GeneModel(biotype="transcribed_unprocessed_pseudogene"),
+                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+            ),
+            (
+                GeneModel(chromosome="X"),
+                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+            ),
+            (
+                GeneModel(),
+                (
+                    AscatDocument(copy_number=30, chromosome="X"),
+                    AscatDocument(),
+                    AscatDocument(),
+                ),
+            ),
         ),
-        ids=("non_protein_coding", "x_chromosome"),
+        ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
     @mock.patch(
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__filter_gene_model(
-        self, iterate_es_results: mock.MagicMock, gene_model: GeneModel
+        self,
+        iterate_es_results: mock.MagicMock,
+        gene_model: GeneModel,
+        ascat_documents: Tuple[AscatDocument, ...],
     ) -> None:
         inputs = self._arrange_input_dataframes((PrimaryAliquot(),), (gene_model,))
-        builder = self._arrange_builder((ESFile(),), (AscatDocument(),))
+        builder = self._arrange_builder((ESFile(),), ascat_documents)
 
         result_df = builder.build_from_scratch(**inputs)
 
