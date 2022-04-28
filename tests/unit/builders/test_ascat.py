@@ -446,7 +446,7 @@ class TestAscatBuilder:
         "exports.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
-    def test__build_from_scratch__nuetral_copy_numbers_filtered(
+    def test__build_from_scratch__neutral_copy_numbers_filtered(
         self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[str]
     ) -> None:
         es_files = (ESFile(),)

@@ -96,6 +96,39 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
 
 
 def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
+    """
+    Adds the cnv_change value to the data frame. This is calculated based on the
+    modal values in each file. Any value less then the smallest modal value is a
+    Loss while any value greater than the maximum mode is considered a Gain. All
+    other values are neutral and are dropped from the data.
+
+    METHOD:
+    This is calculated by grouping all copy_numbers in a file and getting a count
+    of their occurances/frequency. Then the counts are grouped again by file; in
+    this aggregation, the min and max copy number are taken as the upper and
+    lower ploity for a given count/frequency.
+
+    Then the maximum count/frequency is calculated from aggregating the original
+    counts based on file id and taking the max count. This data frame now has the
+    count of the modal value(s).
+
+    Using the above two data frames the modal count is then inner joined into the
+    ploity data frame to give us the ploity values for a given file. This is then
+    joined into the original data frame by file id to give every row a
+    upper_ploity_number and lower_ploity_number which is used to select the
+    cnv_change column in the returned data frame.
+
+    Args:
+        document_df: the data frame of ascat document data
+
+    Returns:
+        the bare info needed from the ascat document including cnv_change
+
+        data {}
+        |---cnv_change
+        |---file_id
+        +---gene_id
+    """
     ploidy_df = document_df.groupby("file_id", "copy_number").count()
     ploidy_df = (
         ploidy_df.groupBy("file_id", "count")
@@ -126,9 +159,9 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     )
 
     return document_df.select(
+        cnv_change,
         "file_id",
         "gene_id",
-        cnv_change,
     ).na.drop(subset=["cnv_change"])
 
 
