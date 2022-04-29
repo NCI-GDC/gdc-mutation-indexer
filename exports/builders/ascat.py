@@ -1,37 +1,15 @@
-import json
 from typing import Any, Dict, Iterable
 
 import elasticsearch
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-import pkg_resources
 
 import config
-from exports import es_utils, indexd_utils
+from exports import es_utils, indexd_utils, schemas
 from exports.builders import base_input_builder, utils
 
-RAW_ASCAT_STRUCT = types.StructType(
-    [
-        types.StructField("gene_id", types.StringType()),
-        types.StructField("gene_name", types.StringType()),
-        types.StructField("chromosome", types.StringType()),
-        types.StructField("start", types.IntegerType()),
-        types.StructField("end", types.IntegerType()),
-        types.StructField("copy_number", types.IntegerType()),
-        types.StructField("min_copy_number", types.IntegerType()),
-        types.StructField("max_copy_number", types.IntegerType()),
-    ]
-)
-
-UUIDS_STRUCT = types.StructType(
-    [
-        types.StructField("cnv_id", types.StringType()),
-        types.StructField("consequence_id", types.StringType()),
-        types.StructField("occurrence_id", types.StringType()),
-        types.StructField("observation_id", types.StringType()),
-    ]
-)
+UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
 
 
 def _strip_gene_id() -> sql.Column:
@@ -45,7 +23,7 @@ def _generate_uuids(
     chromosome: str,
     start_position: int,
     end_position: int,
-    copy_number: int,
+    cnv_change: int,
     symbol: str,
     gene_id: str,
     is_cancer_gene_census: bool,
@@ -61,7 +39,7 @@ def _generate_uuids(
 
     Returns: UUIDS_STRUCT
     """
-    cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, copy_number)
+    cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, cnv_change)
 
     return {
         "cnv_id": cnv_id,
@@ -101,7 +79,7 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         "gene_chromosome",
         "start_position",
         "end_position",
-        "copy_number",
+        "cnv_change",
         "symbol",
         "gene_id",
         "is_cancer_gene_census",
@@ -117,12 +95,74 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
     return ascat_df.select("*", "uuids.*")
 
 
-def _cnv_change() -> sql.Column:
-    return (
-        F.when(F.col("copy_number") < 2, "Loss")
-        .when(F.col("copy_number") > 2, "Gain")
-        .otherwise(None)
+def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
+    """
+    Adds the cnv_change value to the data frame. This is calculated based on the
+    modal values in each file. Any value less then the smallest modal value is a
+    Loss while any value greater than the maximum mode is considered a Gain. All
+    other values are neutral and are dropped from the data.
+
+    METHOD:
+    This is calculated by grouping all copy_numbers in a file and getting a count
+    of their occurances/frequency. Then the counts are grouped again by file; in
+    this aggregation, the min and max copy number are taken as the upper and
+    lower ploity for a given count/frequency.
+
+    Then the maximum count/frequency is calculated from aggregating the original
+    counts based on file id and taking the max count. This data frame now has the
+    count of the modal value(s).
+
+    Using the above two data frames the modal count is then inner joined into the
+    ploity data frame to give us the ploity values for a given file. This is then
+    joined into the original data frame by file id to give every row a
+    upper_ploity_number and lower_ploity_number which is used to select the
+    cnv_change column in the returned data frame.
+
+    Args:
+        document_df: the data frame of ascat document data
+
+    Returns:
+        the bare info needed from the ascat document including cnv_change
+
+        data {}
+        |---cnv_change
+        |---file_id
+        +---gene_id
+    """
+    ploidy_df = document_df.groupby("file_id", "copy_number").count()
+    ploidy_df = (
+        ploidy_df.groupBy("file_id", "count")
+        .agg(F.min("copy_number"), F.max("copy_number"))
+        .select(
+            "count",
+            "file_id",
+            F.col("max(copy_number)").alias("upper_ploity_number"),
+            F.col("min(copy_number)").alias("lower_ploity_number"),
+        )
     )
+    max_count_df = (
+        ploidy_df.groupBy("file_id")
+        .max("count")
+        .withColumnRenamed("max(count)", "count")
+    )
+    ploidy_df = ploidy_df.join(max_count_df, on=["file_id", "count"]).select(
+        "file_id", "upper_ploity_number", "lower_ploity_number"
+    )
+    document_df = document_df.select("file_id", "gene_id", "copy_number").join(
+        ploidy_df, on="file_id"
+    )
+    cnv_change = (
+        F.when(F.col("copy_number") > F.col("upper_ploity_number"), "Gain")
+        .when(F.col("copy_number") < F.col("lower_ploity_number"), "Loss")
+        .otherwise(None)
+        .alias("cnv_change")
+    )
+
+    return document_df.select(
+        cnv_change,
+        "file_id",
+        "gene_id",
+    ).na.drop(subset=["cnv_change"])
 
 
 class AscatBuilder(base_input_builder.BaseInputBuilder):
@@ -142,15 +182,26 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
-            doc_ids, schema=RAW_ASCAT_STRUCT
+            doc_ids, schema=schemas.load_schema("builders/ascat/ascat_document.yaml")
         )
 
-        return document_df.select(
-            "copy_number",
-            _cnv_change().alias("cnv_change"),
-            F.col("did").alias("file_id"),
-            _strip_gene_id().alias("gene_id"),
-        ).na.drop(subset=["cnv_change"])
+        document_df = (
+            document_df.withColumn(
+                "chromosome",
+                F.coalesce(
+                    F.regexp_replace("chromosome", "chr", "").cast(types.IntegerType()),
+                    F.lit(-1),
+                ),
+            )
+            .where(F.col("chromosome").between(1, 22))
+            .select(
+                "copy_number",
+                F.col("did").alias("file_id"),
+                _strip_gene_id().alias("gene_id"),
+            )
+        )
+
+        return _add_cnv_change(document_df)
 
     def _build_file_df(self, file_ids: Iterable[str]) -> sql.DataFrame:
         body = {"query": {"terms": {"file_id": list(file_ids)}}}
@@ -259,7 +310,10 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         return tuple(hit["_source"]["file_id"] for hit in hits)
 
     def build_from_scratch(
-        self, primary_aliquot_df: sql.DataFrame, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame
+        self,
+        primary_aliquot_df: sql.DataFrame,
+        gene_model_df: sql.DataFrame,
+        **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
@@ -333,7 +387,11 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
                 "uniprotkb_swissprot",
             )
             .where(F.col("biotype") == F.lit("protein_coding"))
-            .where(F.coalesce(F.col("chromosome").cast("int"), F.lit(-1)).between(0, 22))
+            .where(
+                F.coalesce(
+                    F.col("chromosome").cast(types.IntegerType()), F.lit(-1)
+                ).between(0, 22)
+            )
         )
         file_df = self._build_file_df(dids)
         file_df = file_df.join(primary_aliquot_df, on=["file_id", "aliquot_id"]).select(
@@ -387,13 +445,6 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         )
 
 
-def _load_ascat_schema() -> types.StructType:
-    schema_path = pkg_resources.resource_filename("exports.schemas", "builders/ascat/final_ascat.json")
-
-    with open(schema_path, "r") as f:
-        return types.StructType.fromJson(json.load(f))
-
-
 def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
     """
     Creates and empty dataframe with no data for omitting all cnv data from the
@@ -401,6 +452,6 @@ def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
 
     TODO: DEV-1000: Remove this omission process from the code.
     """
-    schema = _load_ascat_schema()
+    schema = schemas.load_schema("builders/ascat/final_ascat.json")
 
     return sql_context.createDataFrame((), schema=schema)

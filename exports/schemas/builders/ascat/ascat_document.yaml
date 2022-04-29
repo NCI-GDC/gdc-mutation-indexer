@@ -1,0 +1,23 @@
+fields:
+  - &string_field
+    metadata: {}
+    name: gene_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: gene_name
+  - <<: *string_field
+    name: chromosome
+  - &integer_field
+    <<: *string_field
+    name: start
+    type: integer
+  - <<: *integer_field
+    name: end
+  - <<: *integer_field
+    name: copy_number
+  - <<: *integer_field
+    name: min_copy_number
+  - <<: *integer_field
+    name: max_copy_number
+type: struct
