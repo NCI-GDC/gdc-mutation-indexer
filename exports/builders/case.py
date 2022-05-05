@@ -77,7 +77,7 @@ class CaseBuilder(object):
         s = io.StringIO()
         yaml.safe_dump(df.schema.json(), s)
 
-        print(s.getvalue())
+        self.logger.info(s.getvalue())
 
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
