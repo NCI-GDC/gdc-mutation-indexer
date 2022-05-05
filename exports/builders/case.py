@@ -1,7 +1,9 @@
+import io
 import json
 import logging
 
 from pyspark.sql.functions import collect_set, lit
+import yaml
 
 from exports.builders.utils import get_case_ids_from_source_es, standardize_schema
 
@@ -27,7 +29,7 @@ class CaseBuilder(object):
         df = self.load_into_df(maf_df, ascat_df)
 
         # Select only columns that are in case mapping:
-        df = standardize_schema(df, 'case_centric', 'case')
+        df = standardize_schema(df, "case_centric", "case")
 
         return df
 
@@ -38,20 +40,18 @@ class CaseBuilder(object):
 
         # Only load cases from the requested projects
         if self.config.projects:
-            query = json.dumps({
-                'query': {
-                    'terms': {'project.project_id': self.config.projects}
-                }
-            })
+            query = json.dumps(
+                {"query": {"terms": {"project.project_id": self.config.projects}}}
+            )
         else:
-            query = json.dumps({'query': {'match_all': {}}})
+            query = json.dumps({"query": {"match_all": {}}})
 
         # Only retrieve the fields we want
-        self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
+        self.logger.info("Exclude fields: {}".format(self.config.exclude_fields))
 
         # Load cases from graph index
         if self.config.graph_case_doc_type:
-            es_source = '{}/{}'.format(
+            es_source = "{}/{}".format(
                 self.config.graph_case_index, self.config.graph_case_doc_type
             )
         else:
@@ -59,35 +59,41 @@ class CaseBuilder(object):
 
         df = (
             self.sqlContext.read.format("es")
-            .option('es.nodes', self.config.source_es_nodes)
-            .option('es.net.http.auth.user', self.config.source_es_user)
-            .option('es.net.http.auth.pass', self.config.source_es_pass)
-            .option('es.nodes.wan.only', 'true')
-            .option('es.net.ssl', self.config.es_use_ssl)
-            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)
-            .option('es.nodes.resolve.hostname', 'false')
-            .option('es.query', query)
-            .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
-            .option('es.resource.read', es_source)
+            .option("es.nodes", self.config.source_es_nodes)
+            .option("es.net.http.auth.user", self.config.source_es_user)
+            .option("es.net.http.auth.pass", self.config.source_es_pass)
+            .option("es.nodes.wan.only", "true")
+            .option("es.net.ssl", self.config.es_use_ssl)
+            .option(
+                "es.net.ssl.cert.allow.self.signed", self.config.disable_es_verify_certs
+            )
+            .option("es.nodes.resolve.hostname", "false")
+            .option("es.query", query)
+            .option("es.read.field.exclude", ",".join(self.config.exclude_fields))
+            .option("es.resource.read", es_source)
             .load(es_source)
         )
 
+        s = io.StringIO()
+        yaml.safe_dump(df.schema.json(), s)
+
+        print(s.getvalue())
+
         # Get all the cases that have been tested for ssm
         # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(self.config,
-                                                    self.sqlContext)
+        all_maf_cases = get_case_ids_from_source_es(self.config, self.sqlContext)
 
-        maf_and_ascat_df = self.populate_available_variation_data(maf_df,
-                                                                   all_maf_cases,
-                                                                   ascat_df)
+        maf_and_ascat_df = self.populate_available_variation_data(
+            maf_df, all_maf_cases, ascat_df
+        )
 
-        df = df.join(maf_and_ascat_df, on=['case_id'], how='left')
+        df = df.join(maf_and_ascat_df, on=["case_id"], how="left")
 
-        self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.df_repartition, 'case_id')
+        self.logger.info("Repartitioning case dataframe")
+        df = df.repartition(self.config.df_repartition, "case_id")
 
-        if self.config.cache_dataframes['cases']:
-            self.logger.info('Caching repartitioned case dataframe')
+        if self.config.cache_dataframes["cases"]:
+            self.logger.info("Caching repartitioned case dataframe")
             df.cache().count()
 
         return df
@@ -104,30 +110,28 @@ class CaseBuilder(object):
 
         """
 
-        avd = 'available_variation_data'
+        avd = "available_variation_data"
 
         # Get set of "tested cases" from maf_df
-        maf_data_df = (maf_df.select('case_id', avd)
-                          .dropDuplicates(
-                              subset=['case_id',
-                                      avd]))
+        maf_data_df = maf_df.select("case_id", avd).dropDuplicates(
+            subset=["case_id", avd]
+        )
 
         # Add empty rows to input_data corresponding to "empty cases"
-        maf_data_df = all_maf_cases_df.join(maf_data_df, on=['case_id'], how='left')
+        maf_data_df = all_maf_cases_df.join(maf_data_df, on=["case_id"], how="left")
 
         # the original maf_data is in array form ['ssm'] and we need 'ssm'
         maf_data_df = maf_data_df.drop(avd)
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data_df = (maf_data_df.withColumn(avd, lit('ssm')))
+        maf_data_df = maf_data_df.withColumn(avd, lit("ssm"))
 
         # Stack with ascat data
-        maf_and_ascat_df = maf_data_df.union((
-                                ascat_df.select('case_id', avd)))
+        maf_and_ascat_df = maf_data_df.union((ascat_df.select("case_id", avd)))
 
         # Finally, group by case
-        maf_and_ascat_df = (maf_and_ascat_df
-                               .groupby('case_id')
-                               .agg(collect_set(avd).alias(avd)))
+        maf_and_ascat_df = maf_and_ascat_df.groupby("case_id").agg(
+            collect_set(avd).alias(avd)
+        )
 
         return maf_and_ascat_df
