@@ -87,7 +87,6 @@ expected_data:
 expected_es_include_fields:
   - file_id
   - created_datetime
-  - experimental_strategy
   - cases.case_id
   - cases.samples.sample_id
   - cases.samples.sample_type

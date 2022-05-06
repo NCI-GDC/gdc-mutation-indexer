@@ -1,0 +1,39 @@
+fields:
+  - &field
+    metadata: {}
+    name: file_id
+    nullable: true
+    type: string
+  - <<: *field
+    name: data_type
+  - <<: *field
+    name: created_datetime
+  - <<: *field
+    name: analysis
+    type:
+      fields:
+        - <<: *field
+          name: workflow_type
+      type: struct
+  - <<: *field
+    name: cases
+    type:
+      containsNull: true
+      type: array
+      elementType:
+        type: struct
+        fields:
+          - <<: *field
+            name: case_id
+          - <<: *field
+            name: samples
+            type:
+              containsNull: true
+              type: array
+              elementType:
+                type: struct
+                fields:
+                  - <<: *field
+                    name: sample_id
+                  - <<: *field
+                    name: sample_type
