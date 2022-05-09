@@ -6,6 +6,7 @@ import more_itertools
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
+from typing_extensions import Literal
 
 import config
 from exports import es_utils, schemas
@@ -71,22 +72,6 @@ def _sample_weight_col() -> sql.Column:
     return when_clause.otherwise(len(weights) + 1).alias("sample_weight")
 
 
-def _get_weighted_entity_df(
-    weighted_df: sql.DataFrame, entity_id: str, entity: str
-) -> sql.DataFrame:
-    return weighted_df.select(
-        F.col(entity_id).alias("entity_id"),
-        F.lit(entity).alias("entity"),
-        "file_id",
-        "created_datetime",
-        "experimental_strategy",
-        "case_id",
-        "sample_id",
-        "case",
-        "sample_weight",
-    )
-
-
 def _combine_weighted_entity_dfs(
     weighted_file_df: Optional[sql.DataFrame],
     weighted_case_df: Optional[sql.DataFrame],
@@ -104,22 +89,22 @@ def _combine_weighted_entity_dfs(
         raise ValueError("At least one valid entity must be provided.")
 
 
+BASE_PRIMARY_ALIQUOT_FIELDS = frozenset(
+    (
+        "file_id",
+        "created_datetime",
+        "cases.case_id",
+        "cases.samples.sample_id",
+        "cases.samples.sample_type",
+    )
+)
+
+
 def _add_required_include_fields(
-    include_fields: Union[Iterable[str], bool]
-) -> Union[Iterable[str], bool]:
+    include_fields: Union[Iterable[str], Literal[True]]
+) -> Union[Iterable[str], Literal[True]]:
     if include_fields is not True:
-        return frozenset(
-            {
-                "file_id",
-                "created_datetime",
-                "experimental_strategy",
-                "cases.case_id",
-                "cases.samples.sample_id",
-                "cases.samples.sample_type",
-            }
-        ).union(
-            include_fields  # type: ignore
-        )
+        return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)  # type: ignore
 
     return include_fields
 
@@ -166,51 +151,106 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         input_type: str,
+        additional_selections: Iterable[str] = (),
     ) -> None:
+        """
+        Args:
+            config: The app configuration object
+            sqlContext: The sql context object for the current pyspark run
+            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+            input_type: The name of the input type that this builder represents
+            additional_selections: An additional set of fields to include when selecting
+                data from the newly created primary aliquot data frame.
+        """
         super().__init__(config, sqlContext, input_type)
 
         self._es_dataframe_util = es_dataframe_util
+        self._additional_selections = additional_selections
+
+    def _get_weighted_entity_df(
+        self,
+        weighted_df: sql.DataFrame,
+        entity_id: str,
+        entity: str,
+    ) -> sql.DataFrame:
+        return weighted_df.select(
+            F.col(entity_id).alias("entity_id"),
+            F.lit(entity).alias("entity"),
+            "file_id",
+            "created_datetime",
+            "case_id",
+            "sample_id",
+            "case",
+            "sample_weight",
+            *self._additional_selections
+        )
+
+    def _get_initial_weighted_df(
+        self,
+        query: dict,
+        include_fields: Union[Iterable[str], Literal[True]],
+    ) -> sql.DataFrame:
+        """
+        Gets the initial data from elasticsearch. This is the data meeting the
+        criteria in the query and includes the fields given in include_fields. 
+        
+        NOTE: Override this method if any manipulation of the data frame needs to 
+        happen before the standard primary aliquot selection begins. E.g. use it to
+        alias fields that have special characters that cannot be utilized in 
+        additional_selections
+
+        Args:
+            query: The query to be run in elasticsearch to determine the data loaded.
+            include_fields: The fields that will be included/returned in the dataframe.
+                If set to True, all fields are returned.
+
+        Returns:
+            The data frame created in the above process.
+        """
+        return self._es_dataframe_util.get_dataframe(
+            es_utils.Index.File,
+            include_fields=include_fields,
+            query=query,
+        )
 
     def _get_weighted_df(
-        self, query: dict, include_fields: Union[Iterable[str], bool]
+        self,
+        query: dict,
+        include_fields: Union[Iterable[str], Literal[True]],
     ) -> sql.DataFrame:
         return (
-            self._es_dataframe_util.get_dataframe(
-                es_utils.Index.File,
-                include_fields=include_fields,
-                query=query,
-            )
+            self._get_initial_weighted_df(query, include_fields)
             .select(
                 "file_id",
                 F.col("created_datetime").cast("timestamp"),
-                "experimental_strategy",
                 F.explode("cases").alias("case"),
+                *self._additional_selections
             )
             .select(
                 "file_id",
                 "created_datetime",
-                "experimental_strategy",
                 F.col("case.case_id").alias("case_id"),
                 "case",
                 F.explode("case.samples").alias("sample"),
+                *self._additional_selections
             )
             .select(
                 "file_id",
                 "created_datetime",
-                "experimental_strategy",
                 "case_id",
                 "case",
                 "sample.sample_id",
                 "sample.sample_type",
+                *self._additional_selections
             )
             .select(
                 "file_id",
                 "created_datetime",
-                "experimental_strategy",
                 "case_id",
                 "sample_id",
                 "case",
                 _sample_weight_col(),
+                *self._additional_selections
             )
         )
 
@@ -218,7 +258,7 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         self,
         filters: Iterable[dict],
         entities: AbstractSet[str] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], bool] = True,
+        include_fields: Union[Iterable[str], Literal[True]] = True,
     ) -> sql.DataFrame:
         """
         Args:
@@ -245,10 +285,14 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
         weighted_case_df = None
 
         if "file" in entities:
-            weighted_file_df = _get_weighted_entity_df(weighted_df, "file_id", "file")
+            weighted_file_df = self._get_weighted_entity_df(
+                weighted_df, "file_id", "file"
+            )
 
         if "case" in entities:
-            weighted_case_df = _get_weighted_entity_df(weighted_df, "case_id", "case")
+            weighted_case_df = self._get_weighted_entity_df(
+                weighted_df, "case_id", "case"
+            )
 
         weighted_entity_df = _combine_weighted_entity_dfs(
             weighted_file_df, weighted_case_df
@@ -273,10 +317,10 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
                 "entity",
                 "file_id",
                 "created_datetime",
-                "experimental_strategy",
                 "case_id",
                 "sample_id",
                 "case",
+                *self._additional_selections
             )
         )
 
@@ -308,6 +352,12 @@ class GeneExpressionPrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
         sql_context: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:
+        """
+        Args:
+            config: The app configuration object
+            sqlContext: The sql context object for the current pyspark run
+            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+        """
         super().__init__(
             config, sql_context, es_dataframe_util, "gene_expression_primary_aliquot"
         )
@@ -384,7 +434,21 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
     ) -> None:
-        super().__init__(config, sql_context, es_dataframe_util, "primary_aliquot")
+        """
+        Args:
+            config: The app configuration object
+            sql_context: The sql context object for the current pyspark run
+            indexd: The indexd client for retrieving documents
+            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+            es_rdd_util: The util for creating RDD objects from data in elasticsearch
+        """
+        super().__init__(
+            config,
+            sql_context,
+            es_dataframe_util,
+            "primary_aliquot",
+            additional_selections=("experimental_strategy",),
+        )
         self._sql_context = sql_context
         self._indexd = indexd
         self._es_rdd_util = es_rdd_util

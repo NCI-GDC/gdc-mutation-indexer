@@ -44,6 +44,7 @@ setup(
         "PyYaml>=3.11,<6",
         "requests~=2.7",
         "six~=1.15.0",
+        "typing-extensions~=4.1.0",
         "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph",
         "gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary",
         "gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel",
