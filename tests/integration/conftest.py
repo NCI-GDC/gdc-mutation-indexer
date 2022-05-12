@@ -1,17 +1,21 @@
+import glob
 import logging
 import os
+from os import path
 from typing import Generator
+from unittest import mock
 
 import elasticsearch
 import pytest
 import yaml
 from pyspark import sql
+from pyspark.sql import functions as F
 from pyspark.sql import types
-from exports.builders.clinical_annotations import civic
 
-from tests.integration import config
-from exports import builders, es_utils
+from exports import builders, es_utils, indexd_utils, schemas
 from exports.builders import utils
+from exports.builders.clinical_annotations import civic
+from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
 
 conf = config.TestConfig()
@@ -131,12 +135,102 @@ def gene_model_df(sqlContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def maf_df(sqlContext, gene_model_df):
+def maf_df(sqlContext: sql.SQLContext, gene_model_df):
     """
     Builds combined maf dataframe once. Reused throughout test suite
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
-    return builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),)).build(gene_model_df=gene_model_df)
+    maf_df = (
+        sqlContext.read.csv(
+            glob.glob(path.join(conf.maf_dir, "**", "*.maf"), recursive=True),
+            sep="\t",
+            header=True,
+            comment="#",
+        )
+        .drop(
+            "AFR_MAF",
+            "ALLELE_NUM",
+            "AMR_MAF",
+            "ASN_MAF",
+            "EAS_MAF",
+            "EA_MAF",
+            "EUR_MAF",
+            "ExAC_AF",
+            "ExAC_AF_AFR",
+            "ExAC_AF_AMR",
+            "ExAC_AF_Adj",
+            "ExAC_AF_EAS",
+            "ExAC_AF_FIN",
+            "ExAC_AF_NFE",
+            "ExAC_AF_OTH",
+            "ExAC_AF_SAS",
+            "FILTER",
+            "GDC_Validation_Status",
+            "GMAF",
+            "MC3_Overlap",
+            "MINIMISED",
+            "SAS_MAF",
+        )
+        .select(
+            "*",
+            *(
+                F.lit(None).cast(types.StringType()).alias(name)
+                for name in (
+                    "1000G_AF",
+                    "1000G_AFR_AF",
+                    "1000G_AMR_AF",
+                    "1000G_EAS_AF",
+                    "1000G_EUR_AF",
+                    "1000G_SAS_AF",
+                    "APPRIS",
+                    "ESP_EA_AF",
+                    "FLAGS",
+                    "MANE",
+                    "MAX_AF",
+                    "MAX_AF_POPS",
+                    "RNA_Support",
+                    "RNA_alt_count",
+                    "RNA_depth",
+                    "RNA_ref_count",
+                    "TRANSCRIPTION_FACTORS",
+                    "UNIPROT_ISOFORM",
+                    "gnomAD_AF",
+                    "gnomAD_AFR_AF",
+                    "gnomAD_AMR_AF",
+                    "gnomAD_ASJ_AF",
+                    "gnomAD_EAS_AF",
+                    "gnomAD_FIN_AF",
+                    "gnomAD_NFE_AF",
+                    "gnomAD_OTH_AF",
+                    "gnomAD_SAS_AF",
+                    "gnomAD_non_cancer_AF",
+                    "gnomAD_non_cancer_AFR_AF",
+                    "gnomAD_non_cancer_AMI_AF",
+                    "gnomAD_non_cancer_AMR_AF",
+                    "gnomAD_non_cancer_ASJ_AF",
+                    "gnomAD_non_cancer_EAS_AF",
+                    "gnomAD_non_cancer_FIN_AF",
+                    "gnomAD_non_cancer_MAX_AF_POPS_adj",
+                    "gnomAD_non_cancer_MAX_AF_adj",
+                    "gnomAD_non_cancer_MID_AF",
+                    "gnomAD_non_cancer_NFE_AF",
+                    "gnomAD_non_cancer_OTH_AF",
+                    "gnomAD_non_cancer_SAS_AF",
+                    "hotspot",
+                    "miRNA",
+                )
+            )
+        )
+    )
+    fm_ad_maf_df = sqlContext.createDataFrame(
+        (), schema=schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+    )
+    doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
+    doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
+
+    return builders.MAFBuilder(
+        conf, sqlContext, doc_dataframe_util, (civic.CivicBuilder(conf, sqlContext),)
+    ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())
 
 
 @pytest.fixture(scope="session")
