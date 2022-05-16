@@ -1,0 +1,81 @@
+[spark_arguments]
+master = "yarn"
+name = "GDC Mutation Indexer"
+num_executors = 25
+
+[spark]
+[spark.driver]
+auto_broadcast_join_threshold = -1
+max_result_size = "1g"
+memory = "12g"
+[spark.sql.shuffle]
+partitions = 1024
+[spark.executor]
+cores = 8
+memory = "40g"
+
+[build]
+case_index = "graph_case"
+file_index = "graph_file"
+gencode_version = "v36"
+index_types = [
+  "case_centric",
+  "gene_centric",
+  "ssm_centric",
+  "ssm_occurrence_centric",
+  "cnv_centric",
+  "cnv_occurrence_centric",
+  "gene_expression",
+]
+projects = []
+study_label = ""
+[build.cases]
+blacklist_fields = []
+
+[builders]
+[builders.ascat]
+backup = "neitehr"
+cache = true
+[builders.case]
+backup = "neither"
+cache = true
+[builders.gene_expression_values]
+backup = "neither"
+cache = true
+[builders.gene_expression_cases]
+backup = "neither"
+cache = true
+[builders.gene_model]
+backup = "neither"
+cache = true
+[builders.maf_metadata]
+backup = "neither"
+cache = true
+[builders.maf]
+backup = "neither"
+cache = true
+[builders.gene_expression_primary_aliquot]
+backup = "neither"
+cache = true
+[builders.primary_aliquot]
+backup = "neither"
+cache = true
+
+[aws]
+[aws.s3]
+access_key = ""
+host = ""
+secret_key = ""
+
+[indexd]
+host = "indexd.service.consul"
+password = ""
+port = 80
+user = ""
+
+[elasticsearch]
+nodes = "localhost:9200"
+password = ""
+use_ssl = false
+user = ""
+verify_certs = true
