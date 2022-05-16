@@ -1,5 +1,6 @@
-import importlib_resources as resources
 import yaml
+
+import importlib_resources as resources
 from pyspark.sql import types
 
 

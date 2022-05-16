@@ -14,17 +14,13 @@ logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger("exports")
 
 
-BuilderInputs = NamedTuple(
-    "BuilderInputs",
-    [
-        ("gene_model_df", sql.DataFrame),
-        ("maf_df", sql.DataFrame),
-        ("ascat_df", sql.DataFrame),
-        ("case_df", sql.DataFrame),
-        ("sub_case_df", sql.DataFrame),
-        ("primary_aliquot_df", sql.DataFrame),
-    ],
-)
+class BuilderInputs(NamedTuple):
+    gene_model_df: sql.DataFrame
+    maf_df: sql.DataFrame
+    ascat_df: sql.DataFrame
+    case_df: sql.DataFrame
+    sub_case_df: sql.DataFrame
+    primary_aliquot_df: sql.DataFrame
 
 
 class GDCMutationExport:
@@ -67,6 +63,13 @@ class GDCMutationExport:
             es_rdd_util,
         ).build()
 
+        self.sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
+        maf_metadata_df = builders.MAFMetadataBuilder(
+            self.config,
+            self.sqlContext,
+            es_dataframe_util,
+        ).build()
+
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
         annotation_builders = (civic.CivicBuilder(self.config, self.sqlContext),)
@@ -91,7 +94,7 @@ class GDCMutationExport:
         # Use maf_df and ascat_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
         case_df = builders.CaseBuilder(self.config, self.sqlContext).build(
-            maf_df, ascat_df
+            maf_metadata_df=maf_metadata_df, ascat_df=ascat_df
         )
         sub_case_df = case_df.drop("summary")
         sub_case_df.persist()
@@ -112,7 +115,9 @@ class GDCMutationExport:
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model df")
         gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
 
-        self.sc.setJobGroup("GeneExpressionPrimaryAliquotBuilder", "Build GE Primary Aliquot df")
+        self.sc.setJobGroup(
+            "GeneExpressionPrimaryAliquotBuilder", "Build GE Primary Aliquot df"
+        )
         primary_aliquot_df = builders.GeneExpressionPrimaryAliquotBuilder(
             self.config, self.sqlContext, es_dataframe_util
         ).build()
