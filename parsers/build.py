@@ -109,6 +109,12 @@ class BuildArgs(BaseParser):
                 "choices": ["read", "write", "neither"],
                 "default": "neither",
             },
+            "case-backup": {
+                "help": "Whether to read case_df from backup or rebuild and write"
+                " or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
             "output-raw": {
                 "help": "Whether to read raw output indices from backup or rebuild and write or do nothing",
                 "choices": ["read", "write", "neither"],
