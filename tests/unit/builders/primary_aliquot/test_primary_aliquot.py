@@ -145,7 +145,7 @@ class TestPrimaryAliquotBuilder:
         self,
         es_files: Tuple[ESFile, ...],
         aliquot_data: Optional[Tuple[ESFile, ...]] = None,
-    ) -> builders.AliquotBuilder:
+    ) -> builders.PrimaryAliquotBuilder:
         aliquot_data = es_files if aliquot_data is None else aliquot_data
         config = mock.MagicMock()
         sql_context = mock.MagicMock()
