@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 from os import path
-from typing import Generator
+from typing import Generator, Iterable
 from unittest import mock
 
 import elasticsearch
@@ -13,7 +13,6 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils, indexd_utils, schemas
-from exports.builders import utils
 from exports.builders.clinical_annotations import civic
 from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
@@ -105,8 +104,26 @@ def all_maf_cases(sqlContext, maf_df):
     The info is taken from aliquots in test maf headers
     """
     # Read aliquots from maf headers and get list of corresponding cases:
-    cases = utils.get_case_ids_from_source_es(conf, sqlContext)
-    return {c.case_id for c in cases.collect()}
+    return frozenset(
+        (
+            "13afbde8-e5b5-4f3c-8a9d-daef71560005",
+            "d2748e35-4719-43c1-a533-b6b0cd9688c3",
+            "ee8c1919-17a9-4df1-8aa5-79546621b23c",
+            "d241a660-1c84-44fa-a6b3-ec9284333bd2",
+            "2f5d8110-35c7-419f-8b35-bc3040f940f3",
+            "1db41963-a520-47f0-828c-ed5c626507b1",
+            "b08dfba8-6afb-4217-9259-72be6f1f3363",
+            "452135f2-6de6-4593-a091-ddf6344ee431",
+            "68642658-7996-4423-bb25-d3beb9a414f1",
+            "f18cfe4a-fffd-4e09-9eef-343ba9ffd0d1",
+            "a20aeafc-9a68-4af0-87ea-532ee835ebb2",
+            "bbbce1ba-c739-43ba-b9cf-a4f746491ae3",
+            "a29a20e3-5c2c-4f37-b93e-ae9ebc46ec53",
+            "c689ae1d-4a6b-45db-b4d1-6b34c5c61522",
+            "e8c2a8c6-5c2b-460b-b536-60bc537e6be3",
+            "872092b3-d31e-44d7-bd03-e29f52f8ab5a",
+        )
+    )
 
 
 @pytest.fixture(scope="session")
@@ -135,7 +152,7 @@ def gene_model_df(sqlContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def maf_df(sqlContext: sql.SQLContext, gene_model_df):
+def maf_df(sqlContext: sql.SQLContext, gene_model_df) -> sql.DataFrame:
     """
     Builds combined maf dataframe once. Reused throughout test suite
     """
@@ -243,8 +260,24 @@ def gistic_df(sqlContext, gene_model_df):
 
 
 @pytest.fixture(scope="session")
-def case_df(sqlContext, maf_df, gistic_df):
-    return builders.CaseBuilder(conf, sqlContext).build(maf_df, gistic_df)
+def maf_metadata_df(
+    sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]
+) -> sql.DataFrame:
+    return sqlContext.createDataFrame(
+        tuple((case_id,) for case_id in all_maf_cases), schema="case_id: string"
+    )
+
+
+@pytest.fixture(scope="session")
+def case_df(
+    sqlContext,
+    maf_metadata_df: sql.DataFrame,
+    maf_df: sql.DataFrame,
+    gistic_df: sql.DataFrame,
+) -> sql.DataFrame:
+    return builders.CaseBuilder(conf, sqlContext).build(
+        maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
+    )
 
 
 @pytest.fixture(scope="session")
