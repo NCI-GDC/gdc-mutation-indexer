@@ -63,7 +63,6 @@ class GDCMutationExport:
             es_rdd_util,
         ).build()
 
-        # Load primary aliquot data
         self.sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
         maf_metadata_df = builders.MAFMetadataBuilder(
             self.config,

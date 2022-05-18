@@ -108,18 +108,30 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
         ascat_df: sql.DataFrame,
     ) -> sql.DataFrame:
         """
-        This function calculates the value of the column
-        "available_variation_data."
+        Calculates the value of available_variation_data. The values in the
+        available_variation_data are determined by the existance of the case_id
+        in either or both of the ascat_df or the all_maf_cases_df. If the case_id
+        is found in the ascat_df then "cnv" is added to the available_variation_data
+        and if it is found in the all_maf_cases_df then "ssm" is added.
 
-        We retrieve a set of cases from graph_index
-        and add "ssm" for both those cases and the cases in the maf_df,
-        "cnv" if that case id is present in the ascat_df,
-        ["ssm", "cnv"] if both.
+        Args:
+            all_maf_cases_df: A data frame containing all case ids related to the maf
+                data loaded in the build process
+            ascat_df: A data frame of all the ascat data including all case ids related
+                to the data.
 
+        Returns:
+            A data frame with cases and their associated available_variation_data
+
+            df {}
+            |---case_id
+            +---available_variation_data
         """
         # Set all cases in maf_data to "tested"
         # i.e., 'available_variation_data' == 'ssm'
-        maf_data_df = all_maf_cases_df.withColumn(AVAILABLE_VARIATION_DATA, F.lit("ssm"))
+        maf_data_df = all_maf_cases_df.withColumn(
+            AVAILABLE_VARIATION_DATA, F.lit("ssm")
+        )
 
         # Stack with ascat data
         maf_and_ascat_df = maf_data_df.union(
