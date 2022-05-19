@@ -52,8 +52,15 @@ class Shuffle(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class Pyspark:
+    python: str
+
+
+@dataclasses.dataclass(frozen=True)
 class SQL(ConfigArgumentMixin):
+    case_sensitive: bool
     shuffle: Shuffle
+    python: str
 
 
 @dataclasses.dataclass(frozen=True)

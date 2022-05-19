@@ -9,6 +9,8 @@ auto_broadcast_join_threshold = -1
 max_result_size = "1g"
 memory = "12g"
 
+[spark.sql]
+case_sensitive = true
 [spark.sql.shuffle]
 partitions = 1024
 
@@ -16,8 +18,12 @@ partitions = 1024
 cores = 8
 memory = "40g"
 
+[spark.pyspark]
+python = "python3.6"
+
 [build]
 build_version = ""
+config_dir = ""
 data_release = ""
 index_types = [
   "case_centric",
@@ -28,7 +34,9 @@ index_types = [
   "cnv_occurrence_centric",
   "gene_expression",
 ]
+jar_dir = ""
 projects = []
+py_dir = ""
 study_label = ""
 
 [builders]

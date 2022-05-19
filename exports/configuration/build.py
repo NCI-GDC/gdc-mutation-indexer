@@ -1,4 +1,5 @@
 import dataclasses
+import pathlib
 from typing import Iterable, Mapping, Tuple
 
 from marshmallow import fields
@@ -25,6 +26,9 @@ class Build:
             )
         }
     )
+    py_dir: pathlib.Path
+    jar_dir: pathlib.Path
+    config_dir: pathlib.Path
 
     def _get_index_template(self) -> str:
         if self.study_label:
