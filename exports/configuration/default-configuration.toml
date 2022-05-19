@@ -1,0 +1,178 @@
+[spark_arguments]
+master = "yarn"
+name = "GDC Mutation Indexer"
+num_executors = 25
+
+[spark]
+[spark.driver]
+auto_broadcast_join_threshold = -1
+max_result_size = "1g"
+memory = "12g"
+
+[spark.sql.shuffle]
+partitions = 1024
+
+[spark.executor]
+cores = 8
+memory = "40g"
+
+[build]
+build_version = ""
+data_release = ""
+index_types = [
+  "case_centric",
+  "gene_centric",
+  "ssm_centric",
+  "ssm_occurrence_centric",
+  "cnv_centric",
+  "cnv_occurrence_centric",
+  "gene_expression",
+]
+projects = []
+study_label = ""
+
+[builders]
+[builders.ascat]
+is_cached = true
+[builders.ascat.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case]
+excluded_fields = [
+  "annotations",
+  "case_autocomplete",
+  "family_histories",
+  "files",
+  "follow_ups",
+  "project.disease_type",
+  "project.primary_site",
+  "*_ids",
+  "diagnoses.annotations",
+  "*.updated_datetime",
+  "*.created_datetime",
+  "project.releasable",
+  "project.released",
+  "project.state",
+]
+included_fields = [
+  "samples.sample_type",
+]
+is_cached = true
+[builders.case.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_model]
+census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
+citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
+is_cached = true
+[builders.gene_model.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.maf_metadata]
+is_cached = true
+[builders.maf_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.maf]
+is_cached = true
+[builders.maf.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.primary_aliquot]
+is_cached = true
+[builders.primary_aliquot.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.case_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.gene_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.cnv_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.cnv_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.cnv_occurrence_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.cnv_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.ssm_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.ssm_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.ssm_occurrence_centric]
+array_size_threshold = 100
+is_cached = true
+[builders.ssm_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_expression.value]
+is_cached = true
+[builders.gene_expression.value.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_expression.case]
+is_cached = true
+[builders.gene_expression.case.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_expression.primary_aliquot]
+is_cached = true
+[builders.gene_expression.primary_aliquot.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_expression.gene_expression]
+array_size_threshold = 100
+is_cached = true
+[builders.gene_expression.gene_expression.backup]
+mode = "NEITHER"
+path = ""
+
+[aws.s3]
+access_key = ""
+host = ""
+secret_key = ""
+
+[indexd]
+host = "indexd.service.consul"
+password = ""
+port = 80
+user = ""
+
+[elasticsearch]
+case_index = "graph_case"
+file_index = "graph_file"
+nodes = "localhost:9200"
+password = ""
+use_ssl = false
+user = ""
+verify_certs = true
