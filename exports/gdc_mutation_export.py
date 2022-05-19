@@ -45,9 +45,6 @@ class GDCMutationExport:
         )
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
         es_rdd_util = es_utils.RDDUtil(self.config, self.sc)
-        doc_dataframe_util = indexd_utils.DataFrameUtil(
-            self.config.indexd, self.sqlContext, logger
-        )
 
         # Load gene model
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")

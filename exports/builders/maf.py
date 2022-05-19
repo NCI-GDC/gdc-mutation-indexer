@@ -45,14 +45,21 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """
-        Builds a master MAF dataframe by combining individual MAFs and
-        augmenting them with additional features
+        Builds a master MAF dataframe by combining individual MAFs and augmenting them
+        with additional features
 
         Args:
+            maf_metadata_df: The output of the MAFMetadataBuilder
             gene_model_df: The output of the GeneModelbuilder.
+
+        Return:
+            A data frame containing all of the required data related to MAFS
+
+            MAF {}
+            +---???
         """
 
-        df = self.combine(maf_metadata_df)
+        df = self._build_document_dataframe(maf_metadata_df)
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -334,9 +341,19 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         )
         return df
 
-    def combine(self, maf_metadata_df: sql.DataFrame) -> sql.DataFrame:
+    def _build_document_dataframe(
+        self, maf_metadata_df: sql.DataFrame
+    ) -> sql.DataFrame:
         """
-        Combines data frames from a list of urls
+        Builds a data frame from the data contained in the files whose ids are
+        in the maf_metadata_df
+
+        Args:
+            maf_metadata_df: a data frame containing all file ids related to MAFs
+                which need to be loaded
+
+        Return:
+            A data frame containing all data within the required MAF files.
         """
         files = dict(
             itertools.groupby(
