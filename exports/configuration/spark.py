@@ -14,7 +14,7 @@ class ArgumentMixin:
 
     def get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
         fields = (
-            (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()
+            (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()  # type: ignore
         )
 
         for field, value in fields:

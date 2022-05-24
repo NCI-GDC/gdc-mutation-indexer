@@ -40,13 +40,14 @@ py_dir = ""
 study_label = ""
 
 [builders]
-[builders.ascat]
+[builders.viz.ascat]
 is_cached = true
-[builders.ascat.backup]
+omit_cnv_data = true
+[builders.viz.ascat.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.case]
+[builders.viz.case]
 excluded_fields = [
   "annotations",
   "case_autocomplete",
@@ -62,81 +63,135 @@ excluded_fields = [
   "project.releasable",
   "project.released",
   "project.state",
+  "samples.updated_datetime",
+  "samples.shortest_dimension",
+  "samples.freezing_method",
+  "samples.biospecimen_laterality",
+  "samples.tissue_type",
+  "samples.created_datetime",
+  "samples.intermediate_dimension",
+  "samples.oct_embedded",
+  "samples.tumor_code",
+  "samples.is_ffpe",
+  "samples.days_to_sample_procurement",
+  "samples.sample_type_id",
+  "samples.growth_rate",
+  "samples.method_of_sample_procurement",
+  "samples.preservation_method",
+  "samples.pathology_report_uuid",
+  "samples.longest_dimension",
+  "samples.distributor_reference",
+  "samples.tumor_code_id",
+  "samples.catalog_reference",
+  "samples.biospecimen_anatomic_site",
+  "samples.state",
+  "samples.time_between_excision_and_freezing",
+  "samples.submitter_id",
+  "samples.sample_id",
+  "samples.time_between_clamping_and_freezing",
+  "samples.sample_ordinal",
+  "samples.annotations",
+  "samples.days_to_collection",
+  "samples.tumor_descriptor",
+  "samples.distance_normal_to_tumor",
+  "samples.current_weight",
+  "samples.composition",
+  "samples.tissue_collection_type",
+  "samples.portions",
+  "samples.initial_weight",
+  "samples.diagnosis_pathologically_confirmed",
+  "samples.passage_count",
+  "exposures.exposure_type",
+  "diagnoses.wilms_tumor_histologic_subtype",
+  "exposures.alcohol_drinks_per_day",
+  "exposures.parent_with_radiation_exposure",
+  "diagnoses.tumor_confined_to_organ_of_origin",
+  "diagnoses.best_overall_response",
+  "exposures.type_of_tobacco_used",
+  "diagnoses.tumor_focality",
+  "exposures.secondhand_smoke_as_child",
+  "diagnoses.irs_group",
+  "exposures.type_of_smoke_exposure",
+  "diagnoses.satellite_nodule_present",
+  "diagnoses.cog_rhabdomyosarcoma_risk_group",
+  "diagnoses.days_to_best_overall_response",
+  "diagnoses.eln_risk_classification",
+  "diagnoses.pathology_details.necrosis_present",
 ]
 included_fields = [
   "samples.sample_type",
 ]
 is_cached = true
-[builders.case.backup]
+[builders.viz.case.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.gene_model]
+[builders.viz.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
 citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
 gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
 is_cached = true
-[builders.gene_model.backup]
+[builders.viz.gene_model.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.maf_metadata]
+[builders.viz.maf_metadata]
 is_cached = true
-[builders.maf_metadata.backup]
+[builders.viz.maf_metadata.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.maf]
+[builders.viz.maf]
 is_cached = true
-[builders.maf.backup]
+[builders.viz.maf.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.primary_aliquot]
+[builders.viz.primary_aliquot]
 is_cached = true
-[builders.primary_aliquot.backup]
+[builders.viz.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.case_centric]
+[builders.viz.case_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.case_centric.backup]
+[builders.viz.case_centric.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.gene_centric]
+[builders.viz.gene_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.gene_centric.backup]
+[builders.viz.gene_centric.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.cnv_centric]
+[builders.viz.cnv_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.cnv_centric.backup]
+[builders.viz.cnv_centric.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.cnv_occurrence_centric]
+[builders.viz.cnv_occurrence_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.cnv_occurrence_centric.backup]
+[builders.viz.cnv_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.ssm_centric]
+[builders.viz.ssm_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.ssm_centric.backup]
+[builders.viz.ssm_centric.backup]
 mode = "NEITHER"
 path = ""
 
-[builders.ssm_occurrence_centric]
+[builders.viz.ssm_occurrence_centric]
 array_size_threshold = 100
 is_cached = true
-[builders.ssm_occurrence_centric.backup]
+[builders.viz.ssm_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
 
@@ -177,10 +232,17 @@ port = 80
 user = ""
 
 [elasticsearch]
-case_index = "graph_case"
-file_index = "graph_file"
+[elasticsearch.connection]
 nodes = "localhost:9200"
 password = ""
 use_ssl = false
 user = ""
 verify_certs = true
+[elasticsearch.read]
+case_index = "graph_case"
+file_index = "graph_file"
+[elasticsearch.write]
+batch_size_bytes = "16mb"
+batch_size_entities = 1000
+coalesce_size = 12
+repartition_size = 2048

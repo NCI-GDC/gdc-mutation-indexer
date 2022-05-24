@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import Tuple
+from typing import Sequence
 
 from marshmallow import fields
 
@@ -26,15 +26,20 @@ class Builder:
 
 
 @dataclasses.dataclass(frozen=True)
+class AscatBuilder(Builder):
+    omit_cnv_data: bool
+
+
+@dataclasses.dataclass(frozen=True)
 class CaseBuilder(Builder):
-    excluded_fields: Tuple[str, ...] = dataclasses.field(
+    excluded_fields: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
                 fields.String()
             )
         }
     )
-    included_fields: Tuple[str, ...] = dataclasses.field(
+    included_fields: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
                 fields.String()
@@ -56,16 +61,8 @@ class IndexBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class GeneExpression:
-    case: Builder
-    value: Builder
-    primary_aliquot: Builder
-    gene_expression: IndexBuilder
-
-
-@dataclasses.dataclass(frozen=True)
-class Builders:
-    ascat: Builder
+class Viz:
+    ascat: AscatBuilder
     case: CaseBuilder
     gene_model: GeneModelBuilder
     maf_metadata: Builder
@@ -77,4 +74,17 @@ class Builders:
     cnv_occurrence_centric: IndexBuilder
     ssm_centric: IndexBuilder
     ssm_occurrence_centric: IndexBuilder
+
+
+@dataclasses.dataclass(frozen=True)
+class GeneExpression:
+    case: Builder
+    value: Builder
+    primary_aliquot: Builder
+    gene_expression: IndexBuilder
+
+
+@dataclasses.dataclass(frozen=True)
+class Builders:
+    viz: Viz
     gene_expression: GeneExpression

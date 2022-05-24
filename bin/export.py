@@ -1,9 +1,16 @@
+import contextlib
+import glob
 import logging
-from pyspark import SparkConf, SparkContext
-from pyspark.sql import SQLContext
+from os import path
+from typing import Iterator
 
-from exports.gdc_mutation_export import GDCMutationExport
-from config import BaseConfig as Config
+import pyspark
+import toml
+from pyspark import sql
+
+from exports import configuration, gdc_mutation_export
+from exports.configuration import spark
+import config as old_config
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
@@ -13,33 +20,35 @@ def main():
     """
     Define the spark context and parse agruments into config
     """
-    config = Config()
+    files_dir = pyspark.SparkFiles().getRootDirectory()
+    config_file = glob.glob(path.join(files_dir, "mutation-indexer-config-*.toml"))[0]
+    config: configuration.Configuration = configuration.CONGIF_SCHEMA.load(
+        toml.load(config_file)
+    )
 
-    sc, sqlContext = make_spark_context(config)
+    with initialize_spark(config.spark_arguments) as spark_session:
+        sql_context = sql.SQLContext(spark_session.sparkContext)
+        config_adapter = old_config.ConfigAdapter(config)
+        exporter = gdc_mutation_export.GDCMutationExport(
+            spark_session.sparkContext, sql_context, config_adapter
+        )
 
-    exporter = GDCMutationExport(sc, sqlContext, config)
-
-    exporter.run_export()
-
-    # Tear down actions
-    sc.stop()
+        exporter.run_export()
 
 
-def make_spark_context(config):
+@contextlib.contextmanager
+def initialize_spark(spark_arguments: spark.Arguments) -> Iterator[sql.SparkSession]:
     """
     Makes a spark and sqlContext
     """
-    conf = SparkConf().setAppName(config.name)
-    conf = conf.setMaster(config.master)
-    sc = SparkContext(conf=conf, pyFiles=[])
-    sqlContext = SQLContext(sc)
-    # Configure logging
-    log4j = sc._jvm.org.apache.log4j
-    log4j.LogManager.getRootLogger().setLevel(log4j.Level.FATAL)
+    with sql.SparkSession.builder.master(spark_arguments.master).appName(
+        spark_arguments.name
+    ).getOrCreate() as spark_session:
+        spark_session.sparkContext.setLogLevel("FATAL")
 
-    return sc, sqlContext
+        yield spark_session
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Execute Main functionality
     main()
