@@ -4,8 +4,18 @@
 #
 #    pip-compile
 #
+aiohttp==3.8.1
+    # via elasticsearch
+aiosignal==1.2.0
+    # via aiohttp
+async-timeout==4.0.2
+    # via aiohttp
+asynctest==0.13.0
+    # via aiohttp
 attrs==21.2.0
-    # via jsonschema
+    # via
+    #   aiohttp
+    #   jsonschema
 backports.tempfile==1.0
     # via normalizer
 backports.weakref==1.0.post1
@@ -28,12 +38,18 @@ certifi==2021.5.30
     #   requests
 chardet==4.0.0
     # via requests
+charset-normalizer==2.0.12
+    # via aiohttp
 decorator==5.0.9
     # via networkx
-elasticsearch==7.13.4
+elasticsearch[async]==7.13.4
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
+frozenlist==1.2.0
+    # via
+    #   aiohttp
+    #   aiosignal
 future==0.18.2
     # via cdisutils
 gdc-ng-models @ git+https://github.com/NCI-GDC/gdc-ng-models.git@1.5.2
@@ -57,7 +73,12 @@ gitpython==2.1.11
 graphviz==0.14.2
     # via gdcdatamodel
 idna==2.10
-    # via requests
+    # via
+    #   idna-ssl
+    #   requests
+    #   yarl
+idna-ssl==1.1.0
+    # via aiohttp
 importlib-metadata==2.1.1
     # via jsonschema
 importlib-resources==3.2.1
@@ -74,6 +95,10 @@ jsonschema==3.2.0
     #   gdcdictionary
 more-itertools==8.10.0
     # via gdc-mutation-indexer (setup.py)
+multidict==5.2.0
+    # via
+    #   aiohttp
+    #   yarl
 mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot
     # via gdc-mutation-indexer (setup.py)
 ndjson==0.3.1
@@ -125,7 +150,11 @@ smmap==4.0.0
 sqlalchemy==1.3.24
     # via psqlgraph
 typing-extensions==4.1.1
-    # via gdc-mutation-indexer (setup.py)
+    # via
+    #   aiohttp
+    #   async-timeout
+    #   gdc-mutation-indexer (setup.py)
+    #   yarl
 urllib3==1.26.6
     # via
     #   botocore
@@ -134,6 +163,8 @@ urllib3==1.26.6
     #   requests
 xlocal==0.5
     # via psqlgraph
+yarl==1.7.2
+    # via aiohttp
 zipp==1.2.0
     # via
     #   importlib-metadata
