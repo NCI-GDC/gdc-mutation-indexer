@@ -23,7 +23,7 @@ def main():
     """
     files_dir = pyspark.SparkFiles().getRootDirectory()
     config_file = glob.glob(path.join(files_dir, "mutation-indexer-config-*.toml"))[0]
-    config: configuration.Configuration = configuration.CONGIF_SCHEMA.load(
+    config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(
         toml.load(config_file)
     )
     es_client = elasticsearch.Elasticsearch(

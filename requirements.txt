@@ -40,6 +40,8 @@ chardet==4.0.0
     # via requests
 charset-normalizer==2.0.12
     # via aiohttp
+dataclasses==0.8
+    # via marshmallow-dataclass
 decorator==5.0.9
     # via networkx
 elasticsearch[async]==7.13.4
@@ -93,6 +95,14 @@ jsonschema==3.2.0
     # via
     #   gdcdatamodel
     #   gdcdictionary
+marshmallow==3.14.1
+    # via
+    #   marshmallow-dataclass
+    #   marshmallow-enum
+marshmallow-dataclass==8.5.8
+    # via gdc-mutation-indexer (setup.py)
+marshmallow-enum==1.5.1
+    # via gdc-mutation-indexer (setup.py)
 more-itertools==8.10.0
     # via gdc-mutation-indexer (setup.py)
 multidict==5.2.0
@@ -101,6 +111,8 @@ multidict==5.2.0
     #   yarl
 mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot
     # via gdc-mutation-indexer (setup.py)
+mypy-extensions==0.4.3
+    # via typing-inspect
 ndjson==0.3.1
     # via gdc-mutation-indexer (setup.py)
 networkx==2.4
@@ -149,12 +161,19 @@ smmap==4.0.0
     # via gitdb
 sqlalchemy==1.3.24
     # via psqlgraph
+toml==0.10.2
+    # via gdc-mutation-indexer (setup.py)
+types-dataclasses==0.6.3
+    # via marshmallow-dataclass
 typing-extensions==4.1.1
     # via
     #   aiohttp
     #   async-timeout
     #   gdc-mutation-indexer (setup.py)
+    #   typing-inspect
     #   yarl
+typing-inspect==0.7.1
+    # via marshmallow-dataclass
 urllib3==1.26.6
     # via
     #   botocore

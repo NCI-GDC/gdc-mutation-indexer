@@ -20,23 +20,22 @@ from exports import configuration
 def get_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-c", "--config", type=pathlib.Path, default=None)
+    parser.add_argument("-c", "--config", type=str, default=None)
 
     return parser
 
 
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
-    with resources.path(
-        "exports.configuration", "default-configuration.toml"
-    ) as default_file:
-        default_config = toml.load(default_file)
+    default_config = toml.loads(
+        resources.read_text(configuration, "default-configuration.toml")
+    )
 
     if config_path:
         user_config = toml.load(config_path)
 
         default_config.update(user_config)
 
-    return configuration.CONGIF_SCHEMA.load(default_config)
+    return configuration.CONFIG_SCHEMA.load(default_config)
 
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:

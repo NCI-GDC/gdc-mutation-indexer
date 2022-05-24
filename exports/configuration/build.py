@@ -1,6 +1,5 @@
 import dataclasses
-import pathlib
-from typing import Iterable, Mapping, Tuple
+from typing import Mapping, Sequence
 
 from marshmallow import fields
 
@@ -12,23 +11,22 @@ class Build:
     study_label: str
     data_release: str
     build_version: str
-    index_types: Tuple[str, ...] = dataclasses.field(
+    index_types: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
                 fields.String()
             )
         }
     )
-    projects: Tuple[str, ...] = dataclasses.field(
+    projects: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
                 fields.String()
             )
         }
     )
-    py_dir: pathlib.Path
-    jar_dir: pathlib.Path
-    config_dir: pathlib.Path
+    jar_dir: str
+    config_dir: str
 
     def _get_index_template(self) -> str:
         if self.study_label:

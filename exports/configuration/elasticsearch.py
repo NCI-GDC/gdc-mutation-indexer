@@ -21,7 +21,7 @@ class Write:
     batch_size_bytes: str
     batch_size_entities: int
     repartition_size: int
-    coalese_size: int
+    coalesce_size: int
 
 
 @dataclasses.dataclass(frozen=True)

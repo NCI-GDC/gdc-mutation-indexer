@@ -680,7 +680,7 @@ class ConfigAdapter(BaseConfig):
         return self._config.elasticsearch.write.batch_size_entities
 
     @property
-    def batch_size_bytes(self) -> int:
+    def batch_size_bytes(self) -> str:
         return self._config.elasticsearch.write.batch_size_bytes
 
     @property
@@ -689,7 +689,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def df_coalesce(self) -> int:
-        return self._config.elasticsearch.write.coalese_size
+        return self._config.elasticsearch.write.coalesce_size
 
     @property
     def graph_file_index(self) -> str:

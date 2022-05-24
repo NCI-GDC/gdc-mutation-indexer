@@ -15,4 +15,4 @@ class Configuration:
     elasticsearch: elasticsearch.Elasticsearch
 
 
-CONGIF_SCHEMA: marshmallow.Schema = Configuration.Schema()
+CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()

@@ -36,9 +36,8 @@ index_types = [
   "cnv_occurrence_centric",
   "gene_expression",
 ]
-jar_dir = ""
+jar_dir = "artifacts/jars"
 projects = []
-py_dir = ""
 study_label = ""
 
 [builders]

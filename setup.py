@@ -39,11 +39,14 @@ setup(
         "importlib-resources~=3.2",
         "ndjson~=0.3",
         "networkx<=2.4",
+        "marshmallow-dataclass~=8.5",
+        "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
         "python-dateutil~=2.8",
         "PyYaml>=3.11,<6",
         "requests~=2.7",
         "six~=1.15.0",
+        "toml~=0.10",
         "typing-extensions~=4.1",
         "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph",
         "gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary",
@@ -53,5 +56,5 @@ setup(
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@2.0.4#egg=normalizer",
         "cdisutils @ git+https://github.com/NCI-GDC/cdisutils.git@1.7.0#egg=cdisutils",
         "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
-    ]
+    ],
 )
