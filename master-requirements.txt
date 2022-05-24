@@ -54,6 +54,8 @@ jsonschema==3.2.0
     #   gdcdictionary
 log-symbols==0.0.14
     # via halo
+pex==2.1.89
+    # via -r master-requirements.in
 py4j==0.10.7
     # via pyspark
 pyrsistent==0.17.3
