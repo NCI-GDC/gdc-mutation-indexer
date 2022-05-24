@@ -1,3 +1,4 @@
+import itertools
 import logging
 from typing import Dict, Iterable
 
@@ -8,7 +9,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
-from exports import pyspark_extensions
+from exports import indexd_utils, pyspark_extensions, schemas
 from exports.builders import base_input_builder, utils
 from exports.builders.clinical_annotations import civic
 
@@ -25,27 +26,40 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         self,
         config,
         sqlContext,
+        doc_dataframe_util: indexd_utils.DataFrameUtil,
         annotation_builders: Iterable[civic.CivicBuilder],
     ):
-        super(MAFBuilder, self).__init__(config, sqlContext, "maf")
+        super().__init__(config, sqlContext, "maf")
         self.schema = self.get_schema()
         self.annotation_builders = annotation_builders
+
+        self._doc_dataframe_util = doc_dataframe_util
 
     def build_from_cache(self, df):
         return df
 
     def build_from_scratch(
-        self, gene_model_df: sql.DataFrame, **kwargs: sql.DataFrame
+        self,
+        maf_metadata_df: sql.DataFrame,
+        gene_model_df: sql.DataFrame,
+        **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """
-        Builds a master MAF dataframe by combining individual MAFs and
-        augmenting them with additional features
+        Builds a master MAF dataframe by combining individual MAFs and augmenting them
+        with additional features
 
         Args:
+            maf_metadata_df: The output of the MAFMetadataBuilder
             gene_model_df: The output of the GeneModelbuilder.
+
+        Return:
+            A data frame containing all of the required data related to MAFS
+
+            MAF {}
+            +---???
         """
 
-        df = self.combine()
+        df = self._build_document_dataframe(maf_metadata_df)
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -327,65 +341,64 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         )
         return df
 
-    def combine(self, urls=None) -> sql.DataFrame:
+    def _build_document_dataframe(
+        self, maf_metadata_df: sql.DataFrame
+    ) -> sql.DataFrame:
         """
-        Combines data frames from a list of urls
+        Builds a data frame from the data contained in the files whose ids are
+        in the maf_metadata_df
+
+        Args:
+            maf_metadata_df: a data frame containing all file ids related to MAFs
+                which need to be loaded
+
+        Return:
+            A data frame containing all data within the required MAF files.
         """
-        df = None  # type Optional[sql.DataFrame]
-        urls = urls or self.urls
-
-        if urls is None:
-            self.logger.error("Urls not passed")
-            raise Exception
-
-        for url in urls:
-            try:
-                # TODO: separate data transforms from combining multiple df into one
-                #   latter should go as a static method to base class for MAF and Gistic Builders
-                new_df = self.file_to_df(url)
-
-                new_df = pyspark_extensions.default_columns(
-                    new_df,
-                    (
-                        pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
-                        pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),
-                        pyspark_extensions.DefaultColumn(
-                            name="callers", value="FM Simple Somatic Mutation"
-                        ),
-                    ),
-                )
-
-                # ensure a consistent schema so that the union works correctly
-                # this will strip out any columns that aren't in the schema,
-                # but we should not need those columns
-                new_df = self.standardize_schema(new_df)
-
-                if self.config.debug:
-                    self.logger.info("Read {} rows from {}".format(new_df.count(), url))
-                if df is None:
-                    df = new_df
-                else:
-                    df = df.union(new_df)
-            except Exception as e:
-                self.logger.error(e)
-
-        assert df is not None
-
-        if self.config.debug:
-            self.config.nb_mutations = df.count()
-            self.logger.info(
-                "Combined {} files for a total of {} rows".format(
-                    len(urls), self.config.nb_mutations
-                )
+        files = dict(
+            itertools.groupby(
+                maf_metadata_df.select("file_id", "data_type").toLocalIterator(),
+                lambda row: row.data_type,
             )
-        self.df = df
-        return df
+        )
+        masked_somatic_mutaion = files.get("Masked Somatic Mutation", ())
+        aggregated_somatic_mutation = files.get("Aggregated Somatic Mutation", ())
 
-    def patch_url(self, url: str) -> str:
-        """
-        changes domain/bucket to bucket format
-        s3:// -> s3a://
-        """
-        url = url.replace("cleversafe.service.consul/somatic_maf", "test")
-        url = url.replace("s3://", "s3a://")
-        return url
+        masked_somatic_mutation_df = self._doc_dataframe_util.get_dataframe(
+            masked_somatic_mutaion,
+            schema=schemas.load_schema("builders/maf/masked_somatic_mutation.yaml"),
+            comment="#",
+        )
+        aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
+            self._doc_dataframe_util.get_dataframe(
+                aggregated_somatic_mutation,
+                schema=schemas.load_schema(
+                    "builders/maf/aggregated_somatic_mutation.yaml"
+                ),
+                comment="#",
+            ),
+            (
+                pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
+                pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),
+                pyspark_extensions.DefaultColumn(name="RNA_alt_count"),
+                pyspark_extensions.DefaultColumn(name="RNA_depth"),
+                pyspark_extensions.DefaultColumn(name="RNA_ref_count"),
+                pyspark_extensions.DefaultColumn(name="RNA_Support"),
+                pyspark_extensions.DefaultColumn(
+                    name="callers", value="FM Simple Somatic Mutation"
+                ),
+            ),
+        ).drop(
+            "FMI_TRANSCRIPT",
+            "FMI_GENE",
+            "src_vcf_id",
+            "FMI_FUNCTIONAL_EFFECT",
+            "ALLELE_NUM",
+            "Disease_type",
+            "MINIMISED",
+            "FMI_STATUS",
+        )
+
+        maf_df = masked_somatic_mutation_df.unionByName(aggregated_somatic_mutation_df)
+
+        return self.standardize_schema(maf_df)

@@ -1,15 +1,15 @@
 import json
 import os
 import re
+from unittest import mock
 
 import pytest
 import yaml
-from pyspark.sql import functions as F
 from pyspark.sql import types
-from exports.builders.clinical_annotations import civic
 
-from tests.integration import config
 from exports import builders
+from exports.builders.clinical_annotations import civic
+from tests.integration import config
 
 conf = config.TestConfig()
 
@@ -26,67 +26,14 @@ class TestMAFBuilder:
 
     @pytest.fixture
     def annotation_schemas(self, sqlContext):
-        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
-        return builder.get_annotation_schemas()
-
-    def test_patch_url(self, sqlContext):
-        """Test that s3 urls are patched correctly"""
-        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
-        url1 = "s3://cleversafe.service.consul/aoneuhtasoeh/aoenstuh.txt"
-        assert builder.patch_url(url1).startswith("s3a://")
-
-    def test_combine(self, sqlContext, raw_variant_caller_counts):
-        """
-        Test that mafs are combined correctly
-        """
-        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
-
-        combined_df = builder.combine(conf.maf_urls)
-
-        actual_counts = dict(combined_df.groupBy("variant_caller").count().collect())
-        assert actual_counts == raw_variant_caller_counts
-
-    def test_schema(self, sqlContext, maf_schema):
-        """
-        Test that maf has columns correctly renamed
-        """
-        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
-
-        # combine() should standardize the columns while loading the data
-        df = builder.combine(conf.maf_urls)
-
-        for field in maf_schema.keys():
-            assert field in df.columns
-
-    def test_standardize_schema_field_order(self, sqlContext, maf_schema):
-        """
-        Confirm that standardize_schema standardizes the field order
-
-        This verifies that we can safely union mafs together
-        """
-        builder = builders.MAFBuilder(conf, sqlContext, (civic.CivicBuilder(conf, sqlContext),))
-
-        # Bypass combine() so the dataframe isn't already standardized.
-        # Note that this particular input DF is missing a column, which
-        # we need to fix or else standardize_schema will reject it.
-        df = builder.file_to_df(conf.maf_urls[0]).withColumn(
-            "callers", F.lit("variant_caller")
+        builder = builders.MAFBuilder(
+            conf,
+            sqlContext,
+            mock.MagicMock(),
+            (civic.CivicBuilder(conf, sqlContext),),
         )
-        columns = df.columns
 
-        sort_df = builder.standardize_schema(df.select(*sorted(columns)))
-        assert len(sort_df.columns) == len(maf_schema.keys())
-        assert set(sort_df.columns) == maf_schema.keys()
-
-        reverse_df = builder.standardize_schema(df.select(*reversed(columns)))
-        assert reverse_df.columns == sort_df.columns
-
-        extra_columns = columns[:]
-        extra_columns.insert(0, F.lit("asdf").alias("extra"))
-        extra_columns.insert(4, F.lit(300).alias("extraneous"))
-        extra_columns.append(F.lit(None).alias("superfluous"))
-        extra_df = builder.standardize_schema(df.select(*extra_columns))
-        assert extra_df.columns == sort_df.columns
+        return builder.get_annotation_schemas()
 
     def test_ssm_id(self, maf_df):
         """
