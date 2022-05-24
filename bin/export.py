@@ -6,11 +6,12 @@ from typing import Iterator
 
 import pyspark
 import toml
+from indexclient import client
 from pyspark import sql
 
-from exports import configuration, gdc_mutation_export
-from exports.configuration import spark
 import config as old_config
+from exports import configuration, gdc_mutation_export
+from exports.configuration import elasticsearch, spark
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)
@@ -25,10 +26,23 @@ def main():
     config: configuration.Configuration = configuration.CONGIF_SCHEMA.load(
         toml.load(config_file)
     )
+    es_client = elasticsearch.Elasticsearch(
+        config.elasticsearch.connection.nodes.split(","),
+        use_ssl=config.elasticsearch.connection.use_ssl,
+        verify_certs=config.elasticsearch.connection.verify_certs,
+        http_auth=(
+            config.elasticsearch.connection.user,
+            config.elasticsearch.connection.password,
+        ),
+    )
+    indexd = client.IndexClient(
+        baseurl=f"{config.indexd.host}:{config.indexd.port}",
+        auth=(config.indexd.user, config.indexd.password),
+    )
 
     with initialize_spark(config.spark_arguments) as spark_session:
         sql_context = sql.SQLContext(spark_session.sparkContext)
-        config_adapter = old_config.ConfigAdapter(config)
+        config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
         exporter = gdc_mutation_export.GDCMutationExport(
             spark_session.sparkContext, sql_context, config_adapter
         )
