@@ -12,13 +12,16 @@ class ArgumentMixin:
     def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
         return (f"--{path}{field}", f"{value}")
 
+    def _format_field(self, field: str) -> str:
+        return field.replace("_", "-")
+
     def _get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
         fields = (
             (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()  # type: ignore
         )
 
         for field, value in fields:
-            field = _to_camel_case(field)
+            field = self._format_field(field)
 
             if isinstance(value, ArgumentMixin):
                 yield from value._get_arguments(f"{path}{field}.")
@@ -28,6 +31,9 @@ class ArgumentMixin:
 
 
 class ConfigArgumentMixin(ArgumentMixin):
+    def _format_field(self, field: str) -> str:
+        return _to_camel_case(field)
+
     def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
         return ("--conf", f"{path}{field}={value}")
 

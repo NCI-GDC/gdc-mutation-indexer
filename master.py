@@ -25,6 +25,15 @@ def get_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def merge_dict(a: dict, b: dict) -> None:
+    for key, value in b.items():
+        if isinstance(value, dict):
+            merge_dict(a.setdefault(key, {}), value)
+
+        else:
+            a[key] = value
+
+
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
     default_config = toml.loads(
         resources.read_text(configuration, "default-configuration.toml")
@@ -33,7 +42,7 @@ def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configurati
     if config_path:
         user_config = toml.load(config_path)
 
-        default_config.update(user_config)
+        merge_dict(default_config, user_config)
 
     return configuration.CONFIG_SCHEMA.load(default_config)
 
@@ -41,11 +50,11 @@ def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configurati
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
     config_file = path.join(
-        build.config_dir, f"mutation-index-config-{datetime.datetime.now()}.toml"
+        build.config_dir, f"mutation-indexer-config-{datetime.datetime.now().isoformat()}.toml"
     )
 
     with open(config_file, "w+") as f:
-        toml.dump(configuration.CONGIF_SCHEMA.dump(config), f)
+        toml.dump(configuration.CONFIG_SCHEMA.dump(config), f)
 
     yield ("--files", ",".join((config_file, "mutation-indexer.pex")))
     yield (
@@ -78,10 +87,13 @@ async def run_spark_command(config: configuration.Configuration) -> None:
 
 async def force_merge_indices(config: configuration.Configuration) -> None:
     es_client = elasticsearch.AsyncElasticsearch(
-        config.elasticsearch.nodes.split(","),
-        use_ssl=config.elasticsearch.use_ssl,
-        verify_certs=config.elasticsearch.verify_certs,
-        http_auth=(config.elasticsearch.user, config.elasticsearch.password),
+        config.elasticsearch.connection.nodes.split(","),
+        use_ssl=config.elasticsearch.connection.use_ssl,
+        verify_certs=config.elasticsearch.connection.verify_certs,
+        http_auth=(
+            config.elasticsearch.connection.user,
+            config.elasticsearch.connection.password,
+        ),
     )
     loop = asyncio.get_event_loop()
 
@@ -92,9 +104,12 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         return None
 
     tasks = asyncio.as_completed(
-        (loop.create_task(get_index(index)) for index in config.build.indices.value())
+        tuple(
+            loop.create_task(get_index(index))
+            for index in config.build.indices.values()
+        )
     )
-    indices = filter(None, (task.result for task in tasks))
+    indices = filter(None, (task.result() for task in tasks))
 
     for index in indices:
         await es_client.indices.forcemerge(index=index, max_num_segments=1)
