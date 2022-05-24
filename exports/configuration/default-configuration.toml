@@ -19,7 +19,9 @@ cores = 8
 memory = "40g"
 
 [spark.pyspark]
-python = "python3.6"
+python = "./mutation-indeder.pex"
+[spark.pyspark.driver]
+python = "python"
 
 [build]
 build_version = ""

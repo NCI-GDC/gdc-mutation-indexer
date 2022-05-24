@@ -12,7 +12,7 @@ class ArgumentMixin:
     def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
         return (f"--{path}{field}", f"{value}")
 
-    def get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
+    def _get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
         fields = (
             (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()  # type: ignore
         )
@@ -21,7 +21,7 @@ class ArgumentMixin:
             field = _to_camel_case(field)
 
             if isinstance(value, ArgumentMixin):
-                yield from value.get_arguments(f"{path}{field}.")
+                yield from value._get_arguments(f"{path}{field}.")
 
             else:
                 yield self._get_field_argument(path, field, value)
@@ -38,6 +38,9 @@ class Arguments(ArgumentMixin):
     name: str
     num_executors: int
 
+    def get_arguments(self) -> Iterable[Tuple[str, str]]:
+        return self._get_arguments()
+
 
 @dataclasses.dataclass(frozen=True)
 class Driver(ConfigArgumentMixin):
@@ -52,15 +55,20 @@ class Shuffle(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
-class Pyspark:
+class PythonDriver(ConfigArgumentMixin):
     python: str
+
+
+@dataclasses.dataclass(frozen=True)
+class Pyspark(ConfigArgumentMixin):
+    python: str
+    driver: PythonDriver
 
 
 @dataclasses.dataclass(frozen=True)
 class SQL(ConfigArgumentMixin):
     case_sensitive: bool
     shuffle: Shuffle
-    python: str
 
 
 @dataclasses.dataclass(frozen=True)
@@ -74,6 +82,7 @@ class Spark(ConfigArgumentMixin):
     driver: Driver
     sql: SQL
     executor: Executor
+    pyspark: Pyspark
 
-    def get_arguments(self, path: str = "spark.") -> Iterable[Tuple[str, str]]:
-        return super().get_arguments(path)
+    def get_arguments(self) -> Iterable[Tuple[str, str]]:
+        return self._get_arguments("spark.")

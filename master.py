@@ -48,11 +48,7 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
     with open(config_file, "w+") as f:
         toml.dump(configuration.CONGIF_SCHEMA.dump(config), f)
 
-    yield ("--files", config_file)
-    yield (
-        "--py-files",
-        ",".join(path.join(egg, build.py_dir) for egg in os.listdir(build.py_dir)),
-    )
+    yield ("--files", ",".join((config_file, "mutation-indexer.pex")))
     yield (
         "--jars",
         ",".join(path.join(jar, build.jar_dir) for jar in os.listdir(build.jar_dir)),
@@ -80,6 +76,7 @@ async def run_spark_command(config: configuration.Configuration) -> None:
 
         await process.wait()
 
+
 async def force_merge_indices(config: configuration.Configuration) -> None:
     es_client = elasticsearch.AsyncElasticsearch(
         config.elasticsearch.nodes.split(","),
@@ -95,7 +92,9 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
 
         return None
 
-    tasks = asyncio.as_completed((loop.create_task(get_index(index)) for index in config.build.indices.value()))
+    tasks = asyncio.as_completed(
+        (loop.create_task(get_index(index)) for index in config.build.indices.value())
+    )
     indices = filter(None, (task.result for task in tasks))
 
     for index in indices:
