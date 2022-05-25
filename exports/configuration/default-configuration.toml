@@ -20,7 +20,7 @@ partitions = 1024
 [spark.pyspark]
 python = "./mutation-indexer.pex"
 [spark.pyspark.driver]
-python = "python"
+python = "./mutation-indexer.pex"
 
 [build]
 build_version = ""

@@ -43,7 +43,7 @@ class Arguments(ArgumentMixin):
     deploy_mode: str
     driver_memory: str
     executor_cores: int
-    executor_memorty: str
+    executor_memory: str
     master: str
     name: str
     num_executors: int

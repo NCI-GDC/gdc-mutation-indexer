@@ -58,7 +58,12 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
 
     yield (
         "--files",
-        ",".join((path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),)),
+        ",".join(
+            (
+                f"{config_file}#config.toml",
+                path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
+            )
+        ),
     )
     yield (
         "--jars",
@@ -77,10 +82,7 @@ async def run_spark_command(config: configuration.Configuration) -> None:
     spark_command = path.join(spark_home, "bin/spark-submit")
     final_command = " ".join(
         more_itertools.value_chain(
-            spark_command,
-            arguments,
-            path.join(ROOT_DIR, "bin/export.py"),
-            config.build.config_file,
+            spark_command, arguments, path.join(ROOT_DIR, "bin/export.py")
         )
     )
     home_dir = os.environ.get("HOME", "")

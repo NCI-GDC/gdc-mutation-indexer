@@ -1,6 +1,5 @@
 import contextlib
 import logging
-import sys
 from typing import Iterator
 
 import toml
@@ -20,9 +19,8 @@ def main():
     """
     Define the spark context and parse agruments into config
     """
-    config_file = sys.argv[1]
     config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(
-        toml.load(config_file)
+        toml.load("config.toml")
     )
     es_client = elasticsearch.Elasticsearch(
         config.elasticsearch.connection.nodes.split(","),
