@@ -56,7 +56,8 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
     with open(config_file, "w+") as f:
         toml.dump(configuration.CONFIG_SCHEMA.dump(config), f)
 
-    yield ("--files", ",".join((config_file, "mutation-indexer.pex")))
+    yield ("--files", ",".join((f"{config_file}#config.toml", "/var/tungsten/services/mutation_indexer/deploy/current/mutation-indexer.pex#mutation-indexer.pex")))
+    yield ("--conf", "spark.yarn.dist.files=" + ",".join((f"{config_file}#config.toml", "/var/tungsten/services/mutation_indexer/deploy/current/mutation-indexer.pex#mutation-indexer.pex")))
     yield (
         "--jars",
         ",".join(path.join(jar, build.jar_dir) for jar in os.listdir(build.jar_dir)),
