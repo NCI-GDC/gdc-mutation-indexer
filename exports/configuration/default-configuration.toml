@@ -1,4 +1,8 @@
 [spark_arguments]
+deploy_mode = "cluster"
+driver_memory = "12g"
+executor_cores = 8
+executor_memory = "40g"
 master = "yarn"
 name = "GDC Mutation Indexer"
 num_executors = 25
@@ -7,19 +11,14 @@ num_executors = 25
 [spark.driver]
 auto_broadcast_join_threshold = -1
 max_result_size = "1g"
-memory = "12g"
 
 [spark.sql]
 case_sensitive = true
 [spark.sql.shuffle]
 partitions = 1024
 
-[spark.executor]
-cores = 8
-memory = "40g"
-
 [spark.pyspark]
-python = "./mutation-indeder.pex"
+python = "./mutation-indexer.pex"
 [spark.pyspark.driver]
 python = "python"
 

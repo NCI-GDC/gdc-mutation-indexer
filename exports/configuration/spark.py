@@ -40,6 +40,10 @@ class ConfigArgumentMixin(ArgumentMixin):
 
 @dataclasses.dataclass(frozen=True)
 class Arguments(ArgumentMixin):
+    deploy_mode: str
+    driver_memory: str
+    executor_cores: int
+    executor_memorty: str
     master: str
     name: str
     num_executors: int
@@ -52,7 +56,6 @@ class Arguments(ArgumentMixin):
 class Driver(ConfigArgumentMixin):
     auto_broadcast_join_threshold: int
     max_result_size: str
-    memory: str
 
 
 @dataclasses.dataclass(frozen=True)
@@ -78,16 +81,9 @@ class SQL(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
-class Executor(ConfigArgumentMixin):
-    cores: int
-    memory: str
-
-
-@dataclasses.dataclass(frozen=True)
 class Spark(ConfigArgumentMixin):
     driver: Driver
     sql: SQL
-    executor: Executor
     pyspark: Pyspark
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
