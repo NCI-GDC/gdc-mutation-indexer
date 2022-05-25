@@ -4,12 +4,13 @@ import sys
 from typing import Iterator
 
 import toml
+import elasticsearch
 from indexclient import client
 from pyspark import sql
 
 import config as old_config
 from exports import configuration, gdc_mutation_export
-from exports.configuration import elasticsearch, spark
+from exports.configuration import spark
 
 root = logging.getLogger()
 root.setLevel(logging.INFO)

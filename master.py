@@ -62,7 +62,7 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
     )
     yield (
         "--jars",
-        ",".join(path.join(jar, build.jar_dir) for jar in os.listdir(build.jar_dir)),
+        ",".join(path.join(build.jar_dir, jar) for jar in os.listdir(build.jar_dir)),
     )
 
 
