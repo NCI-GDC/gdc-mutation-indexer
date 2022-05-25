@@ -26,6 +26,7 @@ var/
 *.egg
 .python-version
 *.pex
+artifacts/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
