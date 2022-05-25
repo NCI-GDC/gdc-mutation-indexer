@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import datetime
 import itertools
 import os
 import pathlib
@@ -15,6 +14,9 @@ import more_itertools
 import toml
 
 from exports import configuration
+
+
+ROOT_DIR = path.dirname(__file__)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
@@ -49,15 +51,15 @@ def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configurati
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
-    config_file = path.join(
-        build.config_dir, f"mutation-indexer-config-{datetime.datetime.now().isoformat()}.toml"
-    )
+    config_file = build.config_file
 
     with open(config_file, "w+") as f:
         toml.dump(configuration.CONFIG_SCHEMA.dump(config), f)
 
-    yield ("--files", ",".join((f"{config_file}#config.toml", "/var/tungsten/services/mutation_indexer/deploy/current/mutation-indexer.pex#mutation-indexer.pex")))
-    yield ("--conf", "spark.yarn.dist.files=" + ",".join((f"{config_file}#config.toml", "/var/tungsten/services/mutation_indexer/deploy/current/mutation-indexer.pex#mutation-indexer.pex")))
+    yield (
+        "--files",
+        ",".join((path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),)),
+    )
     yield (
         "--jars",
         ",".join(path.join(jar, build.jar_dir) for jar in os.listdir(build.jar_dir)),
@@ -73,10 +75,20 @@ async def run_spark_command(config: configuration.Configuration) -> None:
     )
     spark_home = os.getenv("SPARK_HOME", "")
     spark_command = path.join(spark_home, "bin/spark-submit")
-    final_command = " ".join(more_itertools.value_chain(spark_command, arguments))
+    final_command = " ".join(
+        more_itertools.value_chain(
+            spark_command,
+            arguments,
+            path.join(ROOT_DIR, "bin/export.py"),
+            config.build.config_file,
+        )
+    )
     home_dir = os.environ.get("HOME", "")
-    output_file = path.join(tempfile.tempdir or home_dir, "mutation-indexer.log")
-    error_file = path.join(tempfile.tempdir or home_dir, "mutation-indexer-error.log")
+
+    output_file = path.join(tempfile.gettempdir() or home_dir, "mutation-indexer.log")
+    error_file = path.join(
+        tempfile.gettempdir() or home_dir, "mutation-indexer-error.log"
+    )
 
     with open(output_file, "wb+") as out_f, open(error_file, "wb+") as error_f:
         process = await asyncio.create_subprocess_shell(
@@ -120,6 +132,8 @@ async def main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args()
     config = get_config(args.config)
+
+    print(f"RUNNING BUILD: {config.build.build_id}")
 
     with halo.Halo(spinner="pong"):
         await run_spark_command(config)
