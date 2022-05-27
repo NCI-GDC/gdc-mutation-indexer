@@ -14,6 +14,7 @@ import more_itertools
 import toml
 
 from exports import configuration
+import exports
 
 
 ROOT_DIR = path.dirname(__file__)
@@ -37,9 +38,7 @@ def merge_dict(a: dict, b: dict) -> None:
 
 
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
-    default_config = toml.loads(
-        resources.read_text(configuration, "default-configuration.toml")
-    )
+    default_config = toml.loads(resources.read_text(exports, "config.toml"))
 
     if config_path:
         user_config = toml.load(config_path)
@@ -113,7 +112,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
     loop = asyncio.get_event_loop()
 
     async def get_index(index: str) -> Optional[str]:
-        if await es_client.indices.exists(index):
+        if await es_client.indices.exists(index=index):
             return index
 
         return None
