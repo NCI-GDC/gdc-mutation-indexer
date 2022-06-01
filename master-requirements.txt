@@ -48,14 +48,10 @@ jsonschema==3.2.0
     #   gdcdictionary
 pex==2.1.92
     # via -r master-requirements.in
-py4j==0.10.7
-    # via pyspark
 pyrsistent==0.17.3
     # via
     #   -c requirements.txt
     #   jsonschema
-pyspark==2.4.5
-    # via -r master-requirements.in
 python-dateutil==2.8.2
     # via
     #   -c requirements.txt
