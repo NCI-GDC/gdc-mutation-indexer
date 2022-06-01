@@ -46,6 +46,8 @@ jsonschema==3.2.0
     # via
     #   -c requirements.txt
     #   gdcdictionary
+pex==2.1.92
+    # via -r master-requirements.in
 py4j==0.10.7
     # via pyspark
 pyrsistent==0.17.3
