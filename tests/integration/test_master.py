@@ -29,8 +29,6 @@ EXPECTED_PARTIAL_SPARK_ARGS = {
     "--master",
     "spark.sql.caseSensitive=True",
     "--executor-cores",
-    "--py-files",
-    "GDC Mutation Indexer",
     "--conf",
     "--driver-memory",
     "--num-executors",
@@ -163,10 +161,8 @@ def test_get_spark_args(get_args, monkeypatch):
 
     artifacts_dir = os.path.join(tmp_dir, "artifacts")
     jars_dir = os.path.join(artifacts_dir, "jars")
-    eggs_dir = os.path.join(artifacts_dir, "eggs")
     os.mkdir(artifacts_dir)
     os.mkdir(jars_dir)
-    os.mkdir(eggs_dir)
     spark_args = master.get_spark_args(get_args)
     assert EXPECTED_PARTIAL_SPARK_ARGS < set(spark_args)
 
