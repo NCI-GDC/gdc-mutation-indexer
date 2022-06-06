@@ -958,7 +958,7 @@ class TestCaseBuilder:
 
         return sql_context
 
-    def arragne_input_dataframes(
+    def arrange_input_dataframes(
         self,
         metadata_case_ids: Iterable[str] = (),
         ascat_case_ids: Iterable[str] = (),
@@ -992,7 +992,7 @@ class TestCaseBuilder:
             excludes_fields=None,
         )
         sql_context = self.arrange_sql_context()
-        inputs = self.arragne_input_dataframes()
+        inputs = self.arrange_input_dataframes()
         builder = builders.CaseBuilder(config, sql_context)
 
         result_df = builder.build_from_scratch(**inputs)
@@ -1015,7 +1015,7 @@ class TestCaseBuilder:
         )
         case = Case()
         sql_context = self.arrange_sql_context((case,))
-        inputs = self.arragne_input_dataframes()
+        inputs = self.arrange_input_dataframes()
         builder = builders.CaseBuilder(config, sql_context)
 
         result_df = builder.build_from_scratch(**inputs)
@@ -1053,7 +1053,7 @@ class TestCaseBuilder:
         )
         case = Case(case_id="case-0")
         sql_context = self.arrange_sql_context((case,))
-        inputs = self.arragne_input_dataframes(maf_metadata_cases, ascat_cases)
+        inputs = self.arrange_input_dataframes(maf_metadata_cases, ascat_cases)
         builder = builders.CaseBuilder(config, sql_context)
 
         result_df = builder.build_from_scratch(**inputs)

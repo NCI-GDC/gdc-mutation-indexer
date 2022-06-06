@@ -45,9 +45,6 @@ class GDCMutationExport:
         )
         es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
         es_rdd_util = es_utils.RDDUtil(self.config, self.sc)
-        doc_dataframe_util = indexd_utils.DataFrameUtil(
-            self.config.indexd, self.sqlContext, logger
-        )
 
         # Load gene model
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
@@ -63,7 +60,6 @@ class GDCMutationExport:
             es_rdd_util,
         ).build()
 
-        # Load primary aliquot data
         self.sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
         maf_metadata_df = builders.MAFMetadataBuilder(
             self.config,
@@ -75,8 +71,8 @@ class GDCMutationExport:
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
         annotation_builders = (civic.CivicBuilder(self.config, self.sqlContext),)
         maf_df = builders.MAFBuilder(
-            self.config, self.sqlContext, annotation_builders
-        ).build(gene_model_df=gene_model_df)
+            self.config, self.sqlContext, doc_dataframe_util, annotation_builders
+        ).build(maf_metadata_df=maf_metadata_df, gene_model_df=gene_model_df)
 
         # Create dataframe from ASCAT data
         self.sc.setJobGroup("AscatBuilder", "Build Ascat dataframe")
