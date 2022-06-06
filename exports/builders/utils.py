@@ -1,4 +1,3 @@
-import collections
 import functools
 import logging
 import re
@@ -13,7 +12,6 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
-from exports import builders, es_utils
 
 logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
@@ -94,79 +92,6 @@ def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
         }
 
     return aliquot_clause
-
-
-def get_case_ids_from_source_es(config, sqlContext):
-    """Query source ES for case_ids that correspond to MAF aliquots.
-
-    TODO: Make this query ES through Spark instead...?
-
-    Returns:
-        A dataframe with a single ``case_id`` column listing the case IDs associated
-        with the aliquots identified by `AliquotBuilder`.
-    """
-
-    project_filter = frozenset(config.projects) if config.projects else None
-
-    # Read unique aliquots from maf headers
-    aliquot_df = builders.AliquotBuilder(config, sqlContext).build()
-
-    # Figure out which aliquots are required to be in certain projects and which
-    # could come from anywhere.
-    floating_submitter_ids = set()
-    submitter_ids_by_project = collections.defaultdict(set)
-    for aliquot in aliquot_df.toLocalIterator():
-        if aliquot.project_id:
-            # If we were configured only to build certain projects, then there's no
-            # point in tracking aliquots from other projects.
-            if (not project_filter) or aliquot.project_id in project_filter:
-                submitter_ids_by_project[aliquot.project_id].add(aliquot.submitter_id)
-        else:
-            floating_submitter_ids.add(aliquot.submitter_id)
-
-    # Build queries for those aliquot IDs with each of the projects we split out.
-    clauses = [
-        _create_aliquot_submitter_id_query(list(submitter_ids), [project_id])
-        for project_id, submitter_ids in submitter_ids_by_project.items()
-    ]
-
-    if floating_submitter_ids:
-        floating_clause = _create_aliquot_submitter_id_query(
-            list(floating_submitter_ids), config.projects
-        )
-        clauses.append(floating_clause)
-
-    query = {"_source": False, "query": {"bool": {"should": clauses}}}
-
-    results = es_utils.iterate_es_results(
-        config.source_es,
-        index_name=config.graph_case_index,
-        doc_type=config.graph_case_doc_type,
-        query=query,
-    )
-
-    cases = [{"case_id": hit["_id"]} for hit in results]
-
-    # Do a quick sanity check for the possibility of an aliquot matching multiple cases.
-    # TODO Do we want to try harder? What if some cases have multiple aliquots and
-    # that offsets problems with other cases?
-    num_aliquots = len(floating_submitter_ids) + sum(
-        len(ids) for ids in submitter_ids_by_project.values()
-    )
-    num_cases = len(cases)
-    assert num_aliquots >= num_cases, "Found {} aliquots with {} cases".format(
-        num_aliquots, num_cases
-    )
-
-    # Create a dataframe with the case IDs corresponding to the identified aliquots.
-    # Give an explicit schema in case we found nothing, as schema inference doesn't
-    # work on empty dataframes.
-    cases_df_schema = types.StructType(
-        [types.StructField("case_id", types.StringType())]
-    )
-    cases_df = sqlContext.createDataFrame(cases, schema=cases_df_schema)
-
-    return cases_df
 
 
 def ssm_label_col(

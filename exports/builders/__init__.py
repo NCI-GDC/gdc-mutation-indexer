@@ -3,7 +3,6 @@ from exports.builders.base_builder import BaseBuilder
 from exports.builders.ascat import AscatBuilder
 from exports.builders.maf_metadata import MAFMetadataBuilder
 from exports.builders.maf import MAFBuilder
-from exports.builders.aliquot import AliquotBuilder
 from exports.builders.case import CaseBuilder
 from exports.builders.gistic import GisticBuilder
 from exports.builders.gene_model import GeneModelBuilder
