@@ -133,7 +133,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         await es_client.indices.forcemerge(index=index, max_num_segments=1)
 
 
-async def master() -> None:
+async def main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args()
     config = get_config(args.config)
