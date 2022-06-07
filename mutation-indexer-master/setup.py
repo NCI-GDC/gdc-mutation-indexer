@@ -1,0 +1,39 @@
+import shlex
+import subprocess
+from os import path
+
+import setuptools
+
+root_dir = path.dirname(__file__)
+git_file = path.abspath(path.join(root_dir, "../.git"))
+git_hash = (
+    subprocess.check_output(shlex.split(f"git --git-dir={git_file} rev-parse HEAD"))
+    .decode("utf-8")
+    .strip()
+)
+
+
+setuptools.setup(
+    name="mutation-indexer-master",
+    use_scm_version={
+        "local_scheme": "dirty-tag",
+        "root": "..",
+        "relative_to": __file__,
+        "write_to": "_version.py",
+    },
+    setup_requires=["setuptools_scm<6"],
+    description="Spark driver for extracting viz indices data.",
+    license="Apache",
+    packages=setuptools.find_namespace_packages(include=["mutation_indexer.*"]),
+    include_package_data=True,
+    options=dict(egg_info=dict(tag_build=(".rev." + git_hash))),
+    install_requires=[
+        "elasticsearch[async]~=7.6",
+        "halo~=0.0.31",
+        "importlib-resources~=3.2",
+        "more-itertools~=8.9",
+        "pex~=2.1",
+        "toml~=0.10",
+        "mutation-indexer-core",
+    ],
+)

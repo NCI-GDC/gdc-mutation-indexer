@@ -1,0 +1,286 @@
+import logging
+
+from pyspark import sql
+from pyspark.sql import functions as F
+
+from mutation_indexer.core import configuration
+from mutation_indexer.core.constants import logging as logging_constants
+from mutation_indexer.driver import utils
+from mutation_indexer.viz.builders import df_builders
+
+logging.basicConfig(format=logging_constants.LOG_FORMAT)
+
+
+class ConsequenceBuilder:
+    """
+    Build transcripts for each ssm by joining in data from the gene model
+    """
+
+    def __init__(
+        self, config: configuration.ConfigAdapter, sqlContext: sql.SQLContext
+    ) -> None:
+        self.config = config
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.sqlContext = sqlContext
+
+    def build_for_ssm(
+        self,
+        maf_df: sql.DataFrame,
+        index_name: str,
+        join_gene: bool = False,
+        add_gene_aa_change: bool = False,
+    ) -> sql.DataFrame:
+        """
+        Extracts transcript_ids from the all_effects maf column for each ssm,
+        then joins transcript data from the gene model.
+        Returns arrays of transcripts keyed on ssm_id
+
+        :param maf_df: The formatted MAF dataframe from MAFBuilder
+        :param index_name: name of the index this consequence is a part of
+        :param join_gene: Whether or not to join the gene model to the
+                          consquence. SSM and SSM Occurrence have gene under
+                          consequences, while Case and Gene do not.
+        """
+
+        # => {gene_id, ssm_id, transcript_id,
+        # empty, canonical_tracript_id, is_canonical,
+        # do_not_us, consequence_type, aa_change
+        # refs_seq_accession}
+        ssm_tran = self.build_all_effects_cols(maf_df)
+
+        ann_df = utils.get_annotation_df(
+            ssm_tran,
+            index_name,
+            add_fields=["ssm_id"],
+            unique_fields=["ssm_id", "transcript_id"],
+        )
+        ann_df = ann_df.select(
+            "ssm_id",
+            "transcript_id",
+            F.struct(ann_df.drop("ssm_id").columns).alias("annotation"),
+        )
+        # => {gene_id, ssm_id, transcrpt_id,
+        # is_canonical,
+        # do_not_us, consequence_type, aa_change,
+        # refs_seq_accession}
+        tran_df = df_builders.get_transcript_df(
+            ssm_tran, index_name, add_fields=["gene_id", "ssm_id"]
+        )
+
+        # {*fields} => {*fields, annotation: {}}
+        tran_with_ann = tran_df.join(ann_df, on=["ssm_id", "transcript_id"], how="left")
+
+        # gene_aa_change cannot be added if gene is not joined:
+        if add_gene_aa_change:
+            join_gene = True
+
+        if join_gene:
+            # Build and join the gene if required
+            gene_df = self._build_gene_struct(maf_df, index_name)
+
+            # => {ssm_id, transcript_id, *transcript_fields, gene:{}}
+            tran_with_ann = tran_with_ann.join(gene_df, on="gene_id")
+
+        # => {ssm_id, consequence {transcript:
+        #       {transcript_id, *transcript_fields}}}
+        tran_with_ann = tran_with_ann.drop("gene_id").drop("empty")
+
+        # Add consequence_id, a uuid from ssm_id and transcript_id
+        tran_df = tran_with_ann.withColumn(
+            "consequence_id",
+            utils.uuid5_col(
+                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
+            ),
+        )
+        if add_gene_aa_change:
+            tran_df = tran_df.withColumn(
+                "gene_aa_change",
+                F.when(
+                    F.col("gene.symbol").isNull() | F.col("aa_change").isNull(), None
+                ).otherwise(F.concat_ws(" ", tran_df.gene.symbol, tran_df.aa_change)),
+            )
+            tran_df = tran_df.select(
+                "ssm_id",
+                F.struct(
+                    "consequence_id",
+                    F.struct(
+                        *tran_df.drop("ssm_id")
+                        .drop("consequence_id")
+                        .drop("gene_aa_change")
+                    ).alias("transcript"),
+                ).alias("consequence"),
+                "gene_aa_change",
+            )
+
+            df = tran_df.groupby("ssm_id").agg(
+                F.collect_list("consequence").alias("consequence"),
+                F.collect_list("gene_aa_change").alias("gene_aa_change"),
+            )
+            df = utils.sanitize_gene_aa_change(df)
+
+        else:
+            tran_df = tran_df.select(
+                "ssm_id",
+                F.struct(
+                    "consequence_id",
+                    F.struct(*tran_df.drop("ssm_id").drop("consequence_id")).alias(
+                        "transcript"
+                    ),
+                ).alias("consequence"),
+            )
+
+            df = tran_df.groupby("ssm_id").agg(
+                F.collect_list("consequence").alias("consequence")
+            )
+
+        return df
+
+    def build_for_cnv(self, ascat_df, index_name):
+        """
+        For now this is just gene information:
+
+        consequence[]
+                |_____ gene{}
+        """
+
+        # Create gene structure
+        cons_df = (
+            ascat_df.select(
+                "cnv_id",
+                F.struct(*utils.struct_select(index_name, "consequence")).alias(
+                    "consequence"
+                ),
+            )
+            .groupby("cnv_id")
+            .agg(F.collect_set("consequence").alias("consequence"))
+        )
+
+        return cons_df
+
+    @staticmethod
+    def build_all_effects_cols(maf_df):
+        """
+        Extracts information about transcripts from the all_effects column
+
+        all_effects is formated as such:
+
+        BEFORE:
+        do_not_use,consequence_type,aa_change,transcript_id,refs_seq_accession;
+        MORN1,synonymous_variant,p.=,ENST00000378531,NM_024848.1;
+
+        NEW all_effects fields: (appended after old ones)
+        HGVSc,IMPACT,CANONICAL,SIFT,PolyPhen,Transcript_Strand
+        c.3602T>G,MODERATE,YES,tolerated(0.06),possibly_damaging(0.614),1
+
+        We need to first extract each row within this column and explode it into
+        a new row in the dataframe. We then extract each column from that row
+        using the all_effects_udf
+
+        There are some mutations that have transcripts not belonging to the
+        gene of that mutation. They can be identified by matching the
+        symbol from the mutation to the do_not_use column.
+        These should be removed.
+        """
+        # Convert all_effects column into an array.
+        # Each element corresponds to a transcript and it's effects
+        ssm_tran = maf_df.withColumn(
+            "all_effects",
+            utils.extract_rows_udf()(F.col("all_effects")).alias("all_effects"),
+        )
+
+        effects_legend = [
+            "do_not_use",
+            "consequence_type",
+            "aa_change",
+            "transcript_id",
+            "ref_seq_accession",
+            "hgvsc",
+            "vep_impact",
+            "is_canonical",
+            "sift",
+            "polyphen",
+            "transcript_strand",
+        ]
+
+        # Before exploding, let's save the transcript_id of the selected transcript
+        ssm_tran = ssm_tran.withColumn("selected_transcript_id", F.col("transcript_id"))
+
+        # Explode all_effects, to have each individual transcript data on a separate line
+        # NOTE: after exploding, missing fields for secondary transcripts will be populated
+        # with values from selected transcript (top level columns)
+        ssm_tran = ssm_tran.select(
+            F.explode("all_effects").alias("all_effects"),
+            *ssm_tran.drop("all_effects").columns
+        )
+
+        # Extract transcripts' effects from 'all_effects'
+        for idx, field in enumerate(effects_legend):
+            ssm_tran = ssm_tran.withColumn(
+                field, utils.all_effects_udf(idx)(F.col("all_effects"))
+            )
+
+        # Clear the fields that we shouldn't copy from selected transcript (top level of maf_df)
+        must_be_none_for_non_selected = [
+            "amino_acids",
+            "cdna_position",
+            "cds_end",
+            "cds_length",
+            "cds_position",
+            "cds_start",
+            "clin_sig",
+            "codons",
+            "domains",
+            "ensp",
+            "hgvsp",
+            "hgvsp_short",
+            "protein_position",
+            "swissprot",
+            "trembl",
+            "uniparc",
+        ]
+        for field in must_be_none_for_non_selected:
+            ssm_tran = ssm_tran.withColumn(
+                field,
+                F.when(
+                    F.col("transcript_id") == F.col("selected_transcript_id"),
+                    F.col(field),
+                ).otherwise(None),
+            )
+
+        # Take out the transcripts from genes that this mutation is not in
+        ssm_tran = ssm_tran.filter("symbol == do_not_use")
+
+        # get is_canonical
+        ssm_tran = ssm_tran.withColumn(
+            "is_canonical", ssm_tran.canonical_transcript_id == ssm_tran.transcript_id
+        )
+
+        ssm_tran = utils.sanitize_aa_change(ssm_tran)
+        # Get aas columns from aa_change
+        ssm_tran = utils.extract_aas_position(ssm_tran)
+        ssm_tran = utils.convert_empty_str_to_null_in_col(ssm_tran, "aa_change")
+
+        # Extract sift, polyphen columns
+        ssm_tran = utils.extract_sift_polyphen(ssm_tran)
+
+        # Drop used helper columns
+        for column in ["all_effects", "do_not_use", "symbol"]:
+            ssm_tran = ssm_tran.drop(column)
+
+        return ssm_tran
+
+    def _build_gene_struct(self, maf_df, index_name):
+        # Build and join the gene if required
+
+        to_drop = [
+            "transcripts",
+            "description",
+            "canonical_transcript_length",
+            "name",
+            "canonical_transcript_length_cds",
+            "canonical_transcript_length_genomic",
+        ]
+
+        gene_df = df_builders.get_gene_df(maf_df, index_name, drop_fields=to_drop)
+        gene_struct_df = gene_df.select("gene_id", F.struct(F.col("*")).alias("gene"))
+        return gene_struct_df

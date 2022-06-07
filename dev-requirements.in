@@ -1,5 +1,8 @@
--c requirements.txt
--c master-requirements.txt
+-c mutation-indexer-core/requirements.txt
+-c mutation-indexer-driver/requirements.txt
+-c mutation-indexer-gene-expression/requirements.txt
+-c mutation-indexer-master/requirements.txt
+-c mutation-indexer-viz/requirements.txt
 
 attrs~=21.2.0
 coverage[toml]~=5.5
