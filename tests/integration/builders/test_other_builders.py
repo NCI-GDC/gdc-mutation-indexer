@@ -1,12 +1,12 @@
 import json
 
-import pytest
-
 import deepdiff
-from tests.integration import config
+import pytest
 from exports import builders
 from pyspark import sql
 from pyspark.sql import functions as F
+
+from tests.integration import config
 
 conf = config.TestConfig()
 

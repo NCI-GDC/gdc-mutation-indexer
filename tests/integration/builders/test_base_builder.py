@@ -1,13 +1,12 @@
 import json
 from collections import Counter
-from deepdiff import DeepDiff
 
 import pytest
+from deepdiff import DeepDiff
+from exports.builders.base_builder import cast_booleans, get_all_boolean_paths
 from normalizer.mapper import ModelMapper
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import explode
-
-from exports.builders.base_builder import get_all_boolean_paths, cast_booleans
 
 
 @pytest.fixture

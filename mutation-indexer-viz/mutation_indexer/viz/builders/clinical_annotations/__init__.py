@@ -1,12 +1,14 @@
-from pyspark.sql.functions import struct, col
-from exports.builders.utils import select_mapping
-
 import logging
-logger = logging.getLogger('clinical_annotation')
+
+from exports.builders.utils import select_mapping
+from pyspark.sql.functions import col, struct
+
+logger = logging.getLogger("clinical_annotation")
 
 
-def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fields=None):
-
+def get_clinical_annotation_df(
+    index_name, input_df, drop_fields=(), unique_fields=None
+):
     def restructure(doc, parent_name):
         """
         Takes the structure from a mapping and produces arguments for a select
@@ -31,25 +33,21 @@ def get_clinical_annotation_df(index_name, input_df, drop_fields=(), unique_fiel
 
         cols = []
         for k, v in doc.items():
-            if 'type' in v and 'properties' not in v:
-                name = '{}_{}'.format(parent_name, k)
-                if 'default' in v:
-                    name = v['default']
+            if "type" in v and "properties" not in v:
+                name = "{}_{}".format(parent_name, k)
+                if "default" in v:
+                    name = v["default"]
                 cols.append(col(name).alias(k))
             else:
-                if 'properties' in v:
-                    cols.append(
-                        struct(restructure(v['properties'], k)).alias(k)
-                    )
+                if "properties" in v:
+                    cols.append(struct(restructure(v["properties"], k)).alias(k))
                 else:
-                    cols.append(
-                        struct(restructure(v, k)).alias(k)
-                    )
+                    cols.append(struct(restructure(v, k)).alias(k))
         return cols
 
-    name = 'clinical_annotations'
+    name = "clinical_annotations"
     mapping = select_mapping(index_name, name)
-    cols = ['ssm_id'] + restructure({name: mapping}, '')
+    cols = ["ssm_id"] + restructure({name: mapping}, "")
     logger.info(input_df)
     logger.info(cols)
 

@@ -5,10 +5,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
+from exports import builders, es_utils
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders, es_utils
 from tests.unit.data import schemas
 
 

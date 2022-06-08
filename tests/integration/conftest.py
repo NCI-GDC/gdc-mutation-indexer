@@ -8,12 +8,12 @@ from unittest import mock
 import elasticsearch
 import pytest
 import yaml
+from exports import builders, es_utils, indexd_utils, schemas
+from exports.builders.clinical_annotations import civic
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from exports import builders, es_utils, indexd_utils, schemas
-from exports.builders.clinical_annotations import civic
 from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
 

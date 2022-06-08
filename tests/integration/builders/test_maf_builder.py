@@ -5,10 +5,10 @@ from unittest import mock
 
 import pytest
 import yaml
-from pyspark.sql import types
-
 from exports import builders
 from exports.builders.clinical_annotations import civic
+from pyspark.sql import types
+
 from tests.integration import config
 
 conf = config.TestConfig()

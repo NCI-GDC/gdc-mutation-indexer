@@ -4,7 +4,6 @@ from pyspark.sql.functions import col, explode
 
 
 class BaseJoinsTest:
-
     @staticmethod
     def get_relationship_map(dataframe, parent_id_field, child_id_field):
         """
@@ -56,23 +55,15 @@ class BaseJoinsTest:
         if isinstance(packed_fields, str):
             packed_fields = [packed_fields]
 
-        exploded_alias = list_field.split('.')[-1]
-        child_fields = [
-            '{}.{}'.format(exploded_alias, f) for f in packed_fields
-        ]
+        exploded_alias = list_field.split(".")[-1]
+        child_fields = ["{}.{}".format(exploded_alias, f) for f in packed_fields]
 
         # this split allows deeper parent fields like "foo.bar"
-        all_fields = (
-            [f.split('.')[-1] for f in parent_fields] +
-            child_fields
-        )
+        all_fields = [f.split(".")[-1] for f in parent_fields] + child_fields
 
-        unpacked = (
-            dataframe.select(
-                explode(list_field).alias(exploded_alias),
-                *[col(f).alias(f.split('.')[-1]) for f in parent_fields]
-            )
-            .select(*all_fields)
-        )
+        unpacked = dataframe.select(
+            explode(list_field).alias(exploded_alias),
+            *[col(f).alias(f.split(".")[-1]) for f in parent_fields]
+        ).select(*all_fields)
 
         return unpacked

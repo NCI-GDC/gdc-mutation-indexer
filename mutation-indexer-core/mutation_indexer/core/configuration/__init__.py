@@ -1,9 +1,9 @@
+from typing import List, Mapping, Sequence
+
+import elasticsearch as es
 import marshmallow
 import marshmallow_dataclass
-
 from indexclient import client
-from typing import List, Mapping, Sequence
-import elasticsearch as es
 
 from mutation_indexer.core.configuration import (
     aws,

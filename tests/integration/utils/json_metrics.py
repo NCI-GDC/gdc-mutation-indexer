@@ -5,6 +5,7 @@ class BaseStats(object):
     """
     Calculates summary status for a given index
     """
+
     def __init__(self, json_file):
         # Class attributes
         # Number of projects seen in the index
@@ -45,41 +46,38 @@ class BaseStats(object):
         if type(json_file) is list:
             self.data = json_file
         else:
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 self.data = json.load(f)
 
     @staticmethod
     def get_mutation(ssm):
-        chromosome = ssm['chromosome']
-        startpos = ssm['start_position']
-        mutType = ssm['mutation_subtype']
-        refallele = ssm['reference_allele']
-        tumorall2 = ssm['tumor_allele']
+        chromosome = ssm["chromosome"]
+        startpos = ssm["start_position"]
+        mutType = ssm["mutation_subtype"]
+        refallele = ssm["reference_allele"]
+        tumorall2 = ssm["tumor_allele"]
 
-        mutation = '_'.join(str(c) for c in [chromosome,
-                                             startpos,
-                                             refallele,
-                                             tumorall2,
-                                             mutType])
+        mutation = "_".join(
+            str(c) for c in [chromosome, startpos, refallele, tumorall2, mutType]
+        )
         return mutation
 
 
 class SSMCentricStats(BaseStats):
-
     def __init__(self, json_file):
         super(SSMCentricStats, self).__init__(json_file)
 
         for h in self.data:
 
-            if '_source' in h:
-                h = h['_source']
+            if "_source" in h:
+                h = h["_source"]
 
             mutation = self.get_mutation(h)
             cases_in_ssm = []
 
-            for ocurrence in h['occurrence']:
-                project = ocurrence['case']['project']['project_id']
-                case = ocurrence['case']['submitter_id']
+            for ocurrence in h["occurrence"]:
+                project = ocurrence["case"]["project"]["project_id"]
+                case = ocurrence["case"]["submitter_id"]
 
                 if project not in self.projects:
                     self.projects.append(project)
@@ -94,22 +92,22 @@ class SSMCentricStats(BaseStats):
                 cases_in_ssm.append(case)
                 self.mutations_per_case[case] += 1
 
-            for conseq in h['consequence']:
+            for conseq in h["consequence"]:
                 for case in cases_in_ssm:
                     # Get consequences mutations
-                    mutation_case = case + '_' + mutation
+                    mutation_case = case + "_" + mutation
                     if mutation_case not in self.consequences:
                         self.consequences[mutation_case] = 1
                     else:
                         self.consequences[mutation_case] += 1
 
-                    if conseq['transcript']['is_canonical']:
-                        gene = conseq['transcript']['gene']['gene_id']
-                        gene_case = project + '_' + case + '_' + gene
+                    if conseq["transcript"]["is_canonical"]:
+                        gene = conseq["transcript"]["gene"]["gene_id"]
+                        gene_case = project + "_" + case + "_" + gene
 
                         if gene_case not in self.mutations_per_gene:
                             self.mutations_per_gene[gene_case] = 0
-                            self.genes_per_case[case]         += 1
+                            self.genes_per_case[case] += 1
 
                         self.gene_count.setdefault(gene, 0)
                         self.gene_count[gene] += 1
@@ -128,16 +126,15 @@ class SSMCentricStats(BaseStats):
 
 
 class SSMOccurrenceCentricStats(BaseStats):
-
     def __init__(self, json_file):
         super(SSMOcurrenceCentricStats, self).__init__(json_file)
 
         for h in self.data:
-            if '_source' in h:
-                h = h['_source']
+            if "_source" in h:
+                h = h["_source"]
 
-            project = h['case']['project']['project_id']
-            case = h['case']['submitter_id']
+            project = h["case"]["project"]["project_id"]
+            case = h["case"]["submitter_id"]
 
             if project not in self.projects:
                 self.projects.append(project)
@@ -151,19 +148,19 @@ class SSMOccurrenceCentricStats(BaseStats):
 
             self.mutations_per_case[case] += 1
 
-            ssm = h['ssm']
+            ssm = h["ssm"]
             mutation = self.get_mutation(ssm)
 
-            for conseq in ssm['consequence']:
+            for conseq in ssm["consequence"]:
                 # Get consequences mutations
-                mutation_case = case + '_' + mutation
+                mutation_case = case + "_" + mutation
                 if mutation_case not in self.consequences:
                     self.consequences[mutation_case] = 1
                 else:
                     self.consequences[mutation_case] += 1
 
-                gene = conseq['transcript']['gene']['gene_id']
-                gene_case = project + '_' + case + '_' + gene
+                gene = conseq["transcript"]["gene"]["gene_id"]
+                gene_case = project + "_" + case + "_" + gene
 
                 self.gene_count.setdefault(gene, 0)
                 self.gene_count[gene] += 1
@@ -188,21 +185,20 @@ class SSMOccurrenceCentricStats(BaseStats):
 
 
 class CaseCentricStats(BaseStats):
-
     def __init__(self, json_file):
         super(CaseCentricStats, self).__init__(json_file)
         self.NEmptyCases = 0
 
         for h in self.data:
 
-            if 'hits' in h:
-                h = h['hits']['hits'][0]
+            if "hits" in h:
+                h = h["hits"]["hits"][0]
 
-            if '_source' in h:
-                h = h['_source']
+            if "_source" in h:
+                h = h["_source"]
 
-            project = h['project']['project_id']
-            case = h['submitter_id']
+            project = h["project"]["project_id"]
+            case = h["submitter_id"]
 
             if project not in self.projects:
                 self.projects.append(project)
@@ -214,15 +210,15 @@ class CaseCentricStats(BaseStats):
                 self.genes_per_case[case] = 0
                 self.mutations_per_case[case] = 0
 
-            if h['gene'] is None:
+            if h["gene"] is None:
                 # There are "empty cases" in the data - cases with no mutations
                 # thus they don't have a gene also
                 self.NEmptyCases += 1
                 continue
 
-            for g in h['gene']:
-                gene = g['gene_id']
-                gene_case = project + '_' + case + '_' + gene
+            for g in h["gene"]:
+                gene = g["gene_id"]
+                gene_case = project + "_" + case + "_" + gene
 
                 self.gene_count.setdefault(gene, 0)
                 self.gene_count[gene] += 1
@@ -231,7 +227,7 @@ class CaseCentricStats(BaseStats):
                     self.mutations_per_gene[gene_case] = 0
                     self.genes_per_case[case] += 1
 
-                for ssm in g['ssm']:
+                for ssm in g["ssm"]:
                     self.mutations_per_case[case] += 1
                     self.mutations_per_gene[gene_case] += 1
 
@@ -242,8 +238,8 @@ class CaseCentricStats(BaseStats):
                     else:
                         self.uniqMutations[mutation] += 1
 
-                    mutation_case = case + '_' + mutation
-                    for conseq in ssm['consequence']:
+                    mutation_case = case + "_" + mutation
+                    for conseq in ssm["consequence"]:
                         if mutation_case not in self.consequences:
                             self.consequences[mutation_case] = 1
                         else:
@@ -257,26 +253,25 @@ class CaseCentricStats(BaseStats):
 
 
 class GeneCentricStats(BaseStats):
-
     def __init__(self, json_file):
         super(GeneCentricStats, self).__init__(json_file)
 
         for h in self.data:
 
-            if 'hits' in h:
-                h = h['hits']['hits'][0]
+            if "hits" in h:
+                h = h["hits"]["hits"][0]
 
-            if '_source' in h:
-                h = h['_source']
+            if "_source" in h:
+                h = h["_source"]
 
-            gene = h['gene_id']
+            gene = h["gene_id"]
 
             self.gene_count.setdefault(gene, 0)
             self.gene_count[gene] += 1
 
-            for c in h['case']:
-                project = c['project']['project_id']
-                case = c['submitter_id']
+            for c in h["case"]:
+                project = c["project"]["project_id"]
+                case = c["submitter_id"]
 
                 if project not in self.projects:
                     self.projects.append(project)
@@ -288,12 +283,12 @@ class GeneCentricStats(BaseStats):
                     self.genes_per_case[case] = 0
                     self.mutations_per_case[case] = 0
 
-                gene_case = project + '_' + case + '_' + gene
+                gene_case = project + "_" + case + "_" + gene
                 if gene_case not in self.mutations_per_gene:
                     self.mutations_per_gene[gene_case] = 0
                     self.genes_per_case[case] += 1
 
-                for ssm in c['ssm']:
+                for ssm in c["ssm"]:
                     self.mutations_per_case[case] += 1
                     self.mutations_per_gene[gene_case] += 1
 
@@ -304,8 +299,8 @@ class GeneCentricStats(BaseStats):
                     else:
                         self.uniqMutations[mutation] += 1
 
-                    mutation_case = case + '_' + mutation
-                    for conseq in ssm['consequence']:
+                    mutation_case = case + "_" + mutation
+                    for conseq in ssm["consequence"]:
                         if mutation_case not in self.consequences:
                             self.consequences[mutation_case] = 1
                         else:
@@ -337,13 +332,29 @@ def test(maf_data, output_data):
 
     percentage_test = dict()
 
-    percentage_test['Projects'] = get_matches(maf_data.projects, output_data.projects, maf_data.Nprojects)
-    percentage_test['Cases'] = get_matches(maf_data.cases, output_data.cases, maf_data.Ncases)
-    percentage_test['Cases per project'] = get_matches(maf_data.cases_per_project, output_data.cases_per_project, maf_data.Nprojects)
-    percentage_test['Mutations per case'] = get_matches(maf_data.mutations_per_case, output_data.mutations_per_case, maf_data.Ncases)
-    percentage_test['Genes per case'] = get_matches(maf_data.genes_per_case, output_data.genes_per_case, maf_data.Ncases)
-    percentage_test['Mutations per gene'] = get_matches(maf_data.mutations_per_gene, output_data.mutations_per_gene, maf_data.Ngenes)
-    percentage_test['Unique mutations'] = get_matches(maf_data.uniqMutations, output_data.uniqMutations, maf_data.NUniqMut)
-    percentage_test['Consequences per ssm'] = get_matches(maf_data.consequences, output_data.consequences, maf_data.Nconseq)
+    percentage_test["Projects"] = get_matches(
+        maf_data.projects, output_data.projects, maf_data.Nprojects
+    )
+    percentage_test["Cases"] = get_matches(
+        maf_data.cases, output_data.cases, maf_data.Ncases
+    )
+    percentage_test["Cases per project"] = get_matches(
+        maf_data.cases_per_project, output_data.cases_per_project, maf_data.Nprojects
+    )
+    percentage_test["Mutations per case"] = get_matches(
+        maf_data.mutations_per_case, output_data.mutations_per_case, maf_data.Ncases
+    )
+    percentage_test["Genes per case"] = get_matches(
+        maf_data.genes_per_case, output_data.genes_per_case, maf_data.Ncases
+    )
+    percentage_test["Mutations per gene"] = get_matches(
+        maf_data.mutations_per_gene, output_data.mutations_per_gene, maf_data.Ngenes
+    )
+    percentage_test["Unique mutations"] = get_matches(
+        maf_data.uniqMutations, output_data.uniqMutations, maf_data.NUniqMut
+    )
+    percentage_test["Consequences per ssm"] = get_matches(
+        maf_data.consequences, output_data.consequences, maf_data.Nconseq
+    )
 
     return percentage_test

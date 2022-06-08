@@ -1,11 +1,10 @@
 import os
 import tempfile
 
-import pytest
-
 import config
 import master
 import parsers
+import pytest
 
 REQUIRED_ARGUMENTS = [
     "--s3-host",

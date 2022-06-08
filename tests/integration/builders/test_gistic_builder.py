@@ -1,20 +1,22 @@
-import pytest
 import os
+
+import pytest
+
 # import re
 # import json
 # import yaml
 # from collections import Counter
 # from pyspark.sql.types import ArrayType, StringType
-# 
+#
 from exports.builders import GisticBuilder
+
 from tests.integration.config import TestConfig
 
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'gistic_df')
+@pytest.mark.usefixtures("sqlContext", "gistic_df")
 class TestGisticBuilder:
-
     @pytest.fixture
     def builder(self, sqlContext):
         return GisticBuilder(conf, sqlContext)
@@ -24,7 +26,7 @@ class TestGisticBuilder:
         # project: line_count
         expected_counts = {}
         for url in conf.gistic_urls:
-            project_name = os.path.basename(url).split('.')[0]
+            project_name = os.path.basename(url).split(".")[0]
 
             df = builder.file_to_df(url)
 
@@ -52,8 +54,14 @@ class TestGisticBuilder:
         Test build output format
         """
         required_fields = [
-            'cnv_change', 'gene_id', 'aliquot_id', 'case_id',
-            'cnv_id', 'consequence_id', 'observation_id', 'occurrence_id',
+            "cnv_change",
+            "gene_id",
+            "aliquot_id",
+            "case_id",
+            "cnv_id",
+            "consequence_id",
+            "observation_id",
+            "occurrence_id",
         ]
 
         assert set(required_fields) - set(gistic_df.columns) == set()
@@ -62,8 +70,7 @@ class TestGisticBuilder:
         """
         Test that cnv_change have only expected values
         """
-        distinct = gistic_df.select('cnv_change').distinct()
+        distinct = gistic_df.select("cnv_change").distinct()
         values = {r.cnv_change for r in distinct.collect()}
-        expected_values = {'Loss', 'Gain'}
+        expected_values = {"Loss", "Gain"}
         assert values == expected_values
-

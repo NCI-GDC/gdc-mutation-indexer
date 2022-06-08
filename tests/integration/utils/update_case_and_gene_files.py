@@ -4,23 +4,23 @@ import os
 
 import boto
 import boto.s3.connection
+from config import factory
 from elasticsearch import Elasticsearch
 
-from config import factory
 from tests.integration.config import TestConfig
 
 cfg_test = TestConfig()
 
-ES_HOST = os.environ['ES_HOST']
-ES_PORT = os.environ['ES_PORT']
-ES_USER = os.environ['ES_USER']
-ES_PASSWORD = os.environ['ES_PASSWORD']
+ES_HOST = os.environ["ES_HOST"]
+ES_PORT = os.environ["ES_PORT"]
+ES_USER = os.environ["ES_USER"]
+ES_PASSWORD = os.environ["ES_PASSWORD"]
 
 es = Elasticsearch(host=ES_HOST, http_auth=(ES_USER, ES_PASSWORD), port=ES_PORT)
 
-S3_HOST = os.environ['S3_HOST']
-S3_ACCESS_KEY = os.environ['S3_ACCESS_KEY']
-S3_SECRET_KEY = os.environ['S3_SECRET_KEY']
+S3_HOST = os.environ["S3_HOST"]
+S3_ACCESS_KEY = os.environ["S3_ACCESS_KEY"]
+S3_SECRET_KEY = os.environ["S3_SECRET_KEY"]
 
 
 def update_genes():
@@ -33,17 +33,17 @@ def update_genes():
     - Save resulting gene model to tests/integration/data/input/genes.json.gz
 
     """
-    print('- Downloading full gene model')
+    print("- Downloading full gene model")
     gene_model = get_full_gene_model()
 
-    print('- Extracting set of genes from test mafs')
-    genes_to_keep = get_unique_from_mafs('Gene')
+    print("- Extracting set of genes from test mafs")
+    genes_to_keep = get_unique_from_mafs("Gene")
 
-    print('- Dropping extra genes from gene model')
-    gene_model = [gene for gene in gene_model if gene['_gene_id'] in genes_to_keep]
+    print("- Dropping extra genes from gene model")
+    gene_model = [gene for gene in gene_model if gene["_gene_id"] in genes_to_keep]
 
-    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'genes.json')
-    print('- Writing gene model to {}'.format(filepath + '.gz'))
+    filepath = os.path.join(cfg_test.test_dir, "data", "input", "genes.json")
+    print("- Writing gene model to {}".format(filepath + ".gz"))
     write_to_file(gene_model, filepath)
 
 
@@ -57,51 +57,57 @@ def update_cases(es):
 
     """
 
-    print('- Extracting aliquots from headers')
+    print("- Extracting aliquots from headers")
     aliquots_in_headers = get_all_aliquots_from_mafs()
-    aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
+    aliquots_in_data = get_unique_from_mafs("Tumor_Sample_Barcode")
 
     if aliquots_in_data - aliquots_in_headers != set():
-        raise Exception('Aliquots missing from headers: {}'
-                        .format(aliquots_in_data - aliquots_in_headers))
+        raise Exception(
+            "Aliquots missing from headers: {}".format(
+                aliquots_in_data - aliquots_in_headers
+            )
+        )
     if aliquots_in_headers - aliquots_in_data == set():
-        raise Exception('No empty aliquots in test data')
+        raise Exception("No empty aliquots in test data")
 
-    print('\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data))
+    print("\tEmpty aliquots: {}".format(aliquots_in_headers - aliquots_in_data))
 
-    print('- Getting case_ids for aliquots in maf headers')
+    print("- Getting case_ids for aliquots in maf headers")
     case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
 
-    print('- Getting cases data for case_ids')
+    print("- Getting cases data for case_ids")
     cases = get_cases(es, case_ids)
 
-    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'cases.ndjson')
-    print('- Writing cases to {}'.format(filepath + '.gz'))
+    filepath = os.path.join(cfg_test.test_dir, "data", "input", "cases.ndjson")
+    print("- Writing cases to {}".format(filepath + ".gz"))
     write_to_file(cases, filepath)
 
 
 def update_files(es):
 
-    print('- Extracting aliquots from headers')
+    print("- Extracting aliquots from headers")
     aliquots_in_headers = get_all_aliquots_from_mafs()
-    aliquots_in_data = get_unique_from_mafs('Tumor_Sample_Barcode')
+    aliquots_in_data = get_unique_from_mafs("Tumor_Sample_Barcode")
 
     if aliquots_in_data - aliquots_in_headers != set():
-        raise Exception('Aliquots missing from headers: {}'
-                        .format(aliquots_in_data - aliquots_in_headers))
+        raise Exception(
+            "Aliquots missing from headers: {}".format(
+                aliquots_in_data - aliquots_in_headers
+            )
+        )
     if aliquots_in_headers - aliquots_in_data == set():
-        raise Exception('No empty aliquots in test data')
+        raise Exception("No empty aliquots in test data")
 
-    print('\tEmpty aliquots: {}'.format(aliquots_in_headers - aliquots_in_data))
+    print("\tEmpty aliquots: {}".format(aliquots_in_headers - aliquots_in_data))
 
-    print('- Getting case_ids for aliquots in maf headers')
+    print("- Getting case_ids for aliquots in maf headers")
     case_ids = get_case_ids_from_aliquots(es, aliquots_in_headers)
 
-    print('- Getting files data for case_ids')
+    print("- Getting files data for case_ids")
     files = get_files(es, case_ids)
 
-    filepath = os.path.join(cfg_test.test_dir, 'data', 'input', 'files.ndjson')
-    print('- Writing files to {}'.format(filepath + '.gz'))
+    filepath = os.path.join(cfg_test.test_dir, "data", "input", "files.ndjson")
+    print("- Writing files to {}".format(filepath + ".gz"))
     write_to_file(files, filepath)
 
 
@@ -117,23 +123,27 @@ def get_case_ids_from_aliquots(es, aliquot_ids):
         query = {
             "query": {
                 "nested": {
-                    "path": 'samples.portions.analytes.aliquots',
+                    "path": "samples.portions.analytes.aliquots",
                     "query": {
                         "bool": {
                             "must": [
-                                {"match_phrase": {'samples.portions.analytes.aliquots.submitter_id': aliquot_id}},
+                                {
+                                    "match_phrase": {
+                                        "samples.portions.analytes.aliquots.submitter_id": aliquot_id
+                                    }
+                                },
                             ]
                         }
-                    }
+                    },
                 }
             }
         }
-        res = es.search(index='graph_case', body=query)
-        assert len(res['hits']['hits']) == 1, 'Unexpected number of cases found'
+        res = es.search(index="graph_case", body=query)
+        assert len(res["hits"]["hits"]) == 1, "Unexpected number of cases found"
 
-        cases.append(res['hits']['hits'][0]['_source'])
+        cases.append(res["hits"]["hits"][0]["_source"])
 
-    return {c['case_id'] for c in cases}
+    return {c["case_id"] for c in cases}
 
 
 def get_cases(es, case_ids):
@@ -142,7 +152,7 @@ def get_cases(es, case_ids):
     """
     docs = []
     for case_id in case_ids:
-        doc = es.get(index='graph_case', id=case_id)['_source']
+        doc = es.get(index="graph_case", id=case_id)["_source"]
         docs.append(doc)
     return docs
 
@@ -153,8 +163,8 @@ def get_files(es, case_ids):
     """
     docs = []
     for case_id in case_ids:
-        case_doc = es.get(index='graph_file', id=case_id)['_source']
-        file_docs = case_doc['files'][:2]
+        case_doc = es.get(index="graph_file", id=case_id)["_source"]
+        file_docs = case_doc["files"][:2]
         docs.extend(file_docs)
     return docs
 
@@ -171,17 +181,17 @@ def get_full_gene_model():
         is_secure=True,
         validate_certs=False,
         https_connection_factory=factory,
-        calling_format=boto.s3.connection.OrdinaryCallingFormat()
+        calling_format=boto.s3.connection.OrdinaryCallingFormat(),
     )
 
     # Gene model file:
-    filename = 'genes.hg38.v2.json'
+    filename = "genes.hg38.v2.json"
 
-    bucket = conn.get_bucket('gdc-mutation-indexer')
+    bucket = conn.get_bucket("gdc-mutation-indexer")
     key = bucket.get_key(filename)
     gene_model = key.get_contents_as_string()
 
-    return (json.loads(gene) for gene in gene_model.split('\n') if gene != '')
+    return (json.loads(gene) for gene in gene_model.split("\n") if gene != "")
 
 
 def get_unique_from_mafs(column):
@@ -190,12 +200,12 @@ def get_unique_from_mafs(column):
     """
     values = set()
     for filepath in cfg_test.maf_urls:
-        with open(filepath.replace('file://', ''), 'r') as f:
+        with open(filepath.replace("file://", ""), "r") as f:
             for line in f.readlines():
-                line_values = line.split('\t')
-                if line[0] == '#':
+                line_values = line.split("\t")
+                if line[0] == "#":
                     continue
-                elif line_values[0] == 'Hugo_Symbol':
+                elif line_values[0] == "Hugo_Symbol":
                     col_id = [i for i, v in enumerate(line_values) if v == column][0]
                 else:
                     values.update([line_values[col_id]])
@@ -208,17 +218,17 @@ def get_all_aliquots_from_mafs():
     """
     aliquots = set()
     for filepath in cfg_test.maf_urls:
-        with open(filepath.replace('file://', ''), 'r') as f:
+        with open(filepath.replace("file://", ""), "r") as f:
             for line in f.readlines():
-                if line.find('#n.analyzed.samples') != -1:
+                if line.find("#n.analyzed.samples") != -1:
                     n_samples = int(line.split()[1])
-                elif line.find('#tumor.aliquots.submitter_id') != -1:
-                    al = line.split()[1].split(',')
+                elif line.find("#tumor.aliquots.submitter_id") != -1:
+                    al = line.split()[1].split(",")
                     if n_samples != len(al):
                         raise Exception(
-                            'Header is inconsistent: '
-                            'n.analyzed.samples != len(tumor.aliquots.submitter_id) '
-                            '({} != {})'.format(n_samples, len(al))
+                            "Header is inconsistent: "
+                            "n.analyzed.samples != len(tumor.aliquots.submitter_id) "
+                            "({} != {})".format(n_samples, len(al))
                         )
                     aliquots.update(al)
                     break
@@ -229,15 +239,15 @@ def write_to_file(data, filepath):
     """
     Writes list of dicts data to .gz file
     """
-    content = '\n'.join([json.dumps(l) for l in data])
-    with gzip.open(filepath + '.gz', 'wb') as f:
+    content = "\n".join([json.dumps(l) for l in data])
+    with gzip.open(filepath + ".gz", "wb") as f:
         f.write(content)
 
 
-if __name__ == '__main__':
-    print('\n\tUpdating cases.ndjson.gz:')
+if __name__ == "__main__":
+    print("\n\tUpdating cases.ndjson.gz:")
     update_cases(es)
-    print('\n\tUpdating genes.json.gz:')
+    print("\n\tUpdating genes.json.gz:")
     update_genes()
-    print('\n\tUpdating files.ndjson.gz')
+    print("\n\tUpdating files.ndjson.gz")
     update_files(es)

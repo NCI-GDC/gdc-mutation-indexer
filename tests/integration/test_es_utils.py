@@ -1,11 +1,11 @@
 from typing import Iterable
 
 import pytest
+from exports import es_utils
 from normalizer import mapper
 from pyspark import sql
 
 from tests.integration import config
-from exports import es_utils
 from tests.integration.utils import schema_validation
 
 conf = config.TestConfig()
@@ -22,9 +22,7 @@ def diagnoses_missing_field(source_es_client):
     diff = set(graph_diagnoses.keys()) - set(centric_diagnoses.keys())
 
     default_blacklist = {
-        f.split(".")[1]
-        for f in conf.case_exclude_fields
-        if f.startswith("diagnoses.")
+        f.split(".")[1] for f in conf.case_exclude_fields if f.startswith("diagnoses.")
     }
 
     diff = diff - default_blacklist

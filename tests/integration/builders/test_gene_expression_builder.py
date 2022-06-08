@@ -3,12 +3,12 @@ from unittest import mock
 
 import ndjson
 import pytest
+from exports import builders, es_utils, indexd_utils
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
 from tests.integration import config
-from exports import builders, es_utils, indexd_utils
 
 
 @pytest.fixture(scope="module")

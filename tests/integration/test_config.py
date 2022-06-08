@@ -1,16 +1,15 @@
 from collections import namedtuple
 
 import pytest
-from indexclient.client import IndexClient, Document
-
 from config import BaseConfig
+from indexclient.client import Document, IndexClient
+
 from tests.integration.config import TestConfig
 
+BOGUS_MAF_URL = "file://tmp/no.test.data.found.maf"
 
-BOGUS_MAF_URL = 'file://tmp/no.test.data.found.maf'
-
-FakeS3Key = namedtuple('FakeS3Key', 'key')
-FakeS3Key.__docs__ = 'Fake Boto S3 Key with a minimal subset of fields.'
+FakeS3Key = namedtuple("FakeS3Key", "key")
+FakeS3Key.__docs__ = "Fake Boto S3 Key with a minimal subset of fields."
 
 test_config = TestConfig()
 
@@ -27,15 +26,15 @@ class TestBaseConfig(object):
 
         Monkeypatch the config as needed to avoid querying indexd or S3.
         """
-        monkeypatch.setattr(IndexClient, 'get', self._stub_indexd_get_maf)
-        monkeypatch.setattr(BaseConfig, 'list_bucket', self._stub_list_bucket)
+        monkeypatch.setattr(IndexClient, "get", self._stub_indexd_get_maf)
+        monkeypatch.setattr(BaseConfig, "list_bucket", self._stub_list_bucket)
 
         env_dict = TestConfig.get_env_dict()
         base_config = BaseConfig(env_dict=env_dict)
 
         # Mutation indexer normally expects the MAFs to be gzipped, but the
         # test MAFs are not gzipped, so override the file filter accordingly.
-        base_config.formatted_maf_keywords = 'DR-10.0.somatic.maf'
+        base_config.formatted_maf_keywords = "DR-10.0.somatic.maf"
         return base_config
 
     @classmethod
@@ -52,9 +51,9 @@ class TestBaseConfig(object):
         cleversafe_url = matching_urls[0] if matching_urls else BOGUS_MAF_URL
 
         doc_json = {
-            'urls': [cleversafe_url],
-            'urls_metadata': {
-                cleversafe_url: {'type': 'cleversafe', 'state': 'validated'}
+            "urls": [cleversafe_url],
+            "urls_metadata": {
+                cleversafe_url: {"type": "cleversafe", "state": "validated"}
             },
         }
         return Document(client=None, did=did, json=doc_json)
@@ -78,7 +77,7 @@ class TestBaseConfig(object):
         URLs for Spark's consumption. Our test URLs use file:// rather than
         s3://, however, so expect s3a:// to have been prepended.
         """
-        return 's3a://{}'.format(url)
+        return "s3a://{}".format(url)
 
     @classmethod
     def _reformat_gistic_url(cls, url):
@@ -87,9 +86,7 @@ class TestBaseConfig(object):
         BaseConfig prepends the bucket name and scheme to the keys it finds,
         so do the same even though it results in weird-looking URLs.
         """
-        return '{bucket}{url}'.format(
-            bucket=test_config.s3_gistic_bucket, url=url
-        )
+        return "{bucket}{url}".format(bucket=test_config.s3_gistic_bucket, url=url)
 
     def test_get_maf_urls(self, base_config):
         """Confirm get_maf_urls finds all of the available test MAFs.
@@ -105,10 +102,13 @@ class TestBaseConfig(object):
         # Sort since the order of the returned URLs shouldn't matter.
         assert sorted(urls) == expected_urls
 
-    @pytest.mark.parametrize('projects, file_patterns', [
-        (['TCGA-KICH'], ['KICH']),
-        (['TCGA-KIRC', 'TCGA-KIRP'], ['KIRC', 'KIRP']),
-    ])
+    @pytest.mark.parametrize(
+        "projects, file_patterns",
+        [
+            (["TCGA-KICH"], ["KICH"]),
+            (["TCGA-KIRC", "TCGA-KIRP"], ["KIRC", "KIRP"]),
+        ],
+    )
     def test_get_maf_urls__filters_by_project(
         self, projects, file_patterns, base_config
     ):
@@ -141,10 +141,13 @@ class TestBaseConfig(object):
 
         assert sorted(urls) == expected_urls
 
-    @pytest.mark.parametrize('projects, file_patterns', [
-        (['TCGA-KICH'], ['KICH']),
-        (['TCGA-SKCM', 'TCGA-KIRP'], ['SKCM', 'KIRP']),
-    ])
+    @pytest.mark.parametrize(
+        "projects, file_patterns",
+        [
+            (["TCGA-KICH"], ["KICH"]),
+            (["TCGA-SKCM", "TCGA-KIRP"], ["SKCM", "KIRP"]),
+        ],
+    )
     def test_get_gistic_urls__filters_by_project(
         self, projects, file_patterns, base_config
     ):
@@ -165,19 +168,19 @@ class TestBaseConfig(object):
 
         Omit the "study label" and confirm index names are formatted as expected.
         """
-        base_config.build_label = 'open_index'
-        base_config.study_label = ''
+        base_config.build_label = "open_index"
+        base_config.study_label = ""
         base_config.index_types += ["gene_expression"]
 
         indices = base_config.get_index_names()
 
         assert indices == {
-            'case_centric': 'open_index__case_centric',
-            'cnv_centric': 'open_index__cnv_centric',
-            'cnv_occurrence_centric': 'open_index__cnv_occurrence_centric',
-            'gene_centric': 'open_index__gene_centric',
-            'ssm_centric': 'open_index__ssm_centric',
-            'ssm_occurrence_centric': 'open_index__ssm_occurrence_centric',
+            "case_centric": "open_index__case_centric",
+            "cnv_centric": "open_index__cnv_centric",
+            "cnv_occurrence_centric": "open_index__cnv_occurrence_centric",
+            "gene_centric": "open_index__gene_centric",
+            "ssm_centric": "open_index__ssm_centric",
+            "ssm_occurrence_centric": "open_index__ssm_occurrence_centric",
             "gene_expression": "open_index__gene_expression",
         }
 
@@ -186,18 +189,18 @@ class TestBaseConfig(object):
 
         Provide a "study label" and confirm index names are formatted as expected.
         """
-        base_config.build_label = 'dr123'
-        base_config.study_label = 'fm'
+        base_config.build_label = "dr123"
+        base_config.study_label = "fm"
 
         indices = base_config.get_index_names()
 
         assert indices == {
-            'case_centric': 'dr123__case_centric__fm__controlled',
-            'cnv_centric': 'dr123__cnv_centric__fm__controlled',
-            'cnv_occurrence_centric': 'dr123__cnv_occurrence_centric__fm__controlled',
-            'gene_centric': 'dr123__gene_centric__fm__controlled',
-            'ssm_centric': 'dr123__ssm_centric__fm__controlled',
-            'ssm_occurrence_centric': 'dr123__ssm_occurrence_centric__fm__controlled',
+            "case_centric": "dr123__case_centric__fm__controlled",
+            "cnv_centric": "dr123__cnv_centric__fm__controlled",
+            "cnv_occurrence_centric": "dr123__cnv_occurrence_centric__fm__controlled",
+            "gene_centric": "dr123__gene_centric__fm__controlled",
+            "ssm_centric": "dr123__ssm_centric__fm__controlled",
+            "ssm_occurrence_centric": "dr123__ssm_occurrence_centric__fm__controlled",
             "gene_expression": "dr123__gene_expression__fm__controlled",
         }
 
@@ -207,12 +210,12 @@ class TestBaseConfig(object):
         Make sure double underscores are reserved for formatting the final index names,
         so we can't create name collisions by configuring weird labels.
         """
-        base_config.build_label = 'open__index'
-        base_config.study_label = ''
+        base_config.build_label = "open__index"
+        base_config.study_label = ""
         with pytest.raises(ValueError):
             base_config.get_index_names()
 
-        base_config.build_label = 'dr123'
-        base_config.study_label = 'fm__controlled'
+        base_config.build_label = "dr123"
+        base_config.study_label = "fm__controlled"
         with pytest.raises(ValueError):
             base_config.get_index_names()

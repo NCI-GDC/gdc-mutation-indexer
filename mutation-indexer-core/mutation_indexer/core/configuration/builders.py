@@ -2,9 +2,8 @@ import dataclasses
 import enum
 from typing import Sequence
 
-from marshmallow import fields
-
 from exports.configuration import marshmallow_extensions
+from marshmallow import fields
 
 
 class BackupMode(enum.Enum):

@@ -8,7 +8,6 @@ from os import path
 from typing import Iterable, Optional, Tuple
 
 import elasticsearch
-import exports
 import halo
 import importlib_resources as resources
 import more_itertools
@@ -38,7 +37,9 @@ def merge_dict(a: dict, b: dict) -> None:
 
 
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
-    default_config = toml.loads(resources.read_text(exports, "config.toml"))
+    default_config = toml.loads(
+        resources.read_text("mutation_indexer.master", "config.toml")
+    )
 
     if config_path:
         user_config = toml.load(config_path)
@@ -50,6 +51,7 @@ def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configurati
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
+    pex_postfix = build.driver.module_name.replace("_", "-")
     config_file = build.config_file
 
     with open(config_file, "w+") as f:
@@ -60,7 +62,10 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
         ",".join(
             (
                 f"{config_file}#config.toml",
-                path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
+                path.join(
+                    ROOT_DIR,
+                    f"mutation-indexer-{pex_postfix}.pex#mutation-indexer.pex",
+                ),
             )
         ),
     )

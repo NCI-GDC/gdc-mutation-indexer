@@ -1,8 +1,8 @@
 import csv
 import logging
 
-import yaml
 import pkg_resources
+import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types

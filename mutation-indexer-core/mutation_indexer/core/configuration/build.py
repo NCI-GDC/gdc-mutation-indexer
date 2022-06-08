@@ -1,11 +1,12 @@
 import dataclasses
+import uuid
 from os import path
 from typing import Mapping, Sequence
-import uuid
 
 from marshmallow import fields
 
-from exports.configuration import marshmallow_extensions
+from mutation_indexer.core.configuration import marshmallow_extensions
+from mutation_indexer.core.constants import master
 
 
 @dataclasses.dataclass(frozen=True)
@@ -13,6 +14,7 @@ class Build:
     study_label: str
     data_release: str
     build_version: str
+    driver: master.Driver
     index_types: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(

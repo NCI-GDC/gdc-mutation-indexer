@@ -1,5 +1,6 @@
 from types import ModuleType
 from typing import Union
+
 import importlib_resources as resources
 import yaml
 from pyspark.sql import types

@@ -2,14 +2,14 @@ import dataclasses
 from os import path
 from typing import Dict, Tuple
 from unittest import mock
-import more_itertools
 
+import more_itertools
 import pytest
+from exports import builders
+from exports.builders import gene_model
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
-from exports.builders import gene_model
 from tests.unit import utils
 
 

@@ -3,13 +3,12 @@ from typing import Dict, Iterable, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
 import pytest
+from exports import indexd_utils
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
-
-from exports import indexd_utils
 
 
 class UrlMetadata(TypedDict):
@@ -17,7 +16,9 @@ class UrlMetadata(TypedDict):
     state: str
 
 
-def arrange_url_metadata(type: str = "cleversafe", state: str = "validated") -> UrlMetadata:
+def arrange_url_metadata(
+    type: str = "cleversafe", state: str = "validated"
+) -> UrlMetadata:
     return UrlMetadata(type=type, state=state)
 
 
@@ -53,7 +54,9 @@ class TestDataFrameUtil:
 
     def arrange_index_client(
         self,
-        documents: Iterable[Optional[Iterable[client.Document]]] = ((arrange_document(),),),
+        documents: Iterable[Optional[Iterable[client.Document]]] = (
+            (arrange_document(),),
+        ),
     ) -> mock.MagicMock:
         index_client = mock.MagicMock()
 
@@ -231,7 +234,9 @@ class TestDataFrameUtil:
     ) -> None:
         documents = (
             arrange_document(
-                urls_metadata={"file://file-0.format": arrange_url_metadata(type, state)},
+                urls_metadata={
+                    "file://file-0.format": arrange_url_metadata(type, state)
+                },
             ),
         )
 

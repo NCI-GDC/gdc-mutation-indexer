@@ -3,9 +3,9 @@ import pprint
 import deepdiff
 import pytest
 from base_joins_test import BaseJoinsTest
+from exports.builders.utils import uuid5_col
 from pyspark.sql import functions as F
 
-from exports.builders.utils import uuid5_col
 from tests.integration.config import TestConfig
 
 conf = TestConfig()
@@ -36,7 +36,9 @@ class TestSSMCentricJoins(BaseJoinsTest):
         # Consequence ~ UUID[ssm_id, transcript_id]
         df = ssm_transcript_df.withColumn(
             "consequence_id",
-            uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
+            uuid5_col(
+                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
+            ),
         )
 
         true_cps = self.get_relationship_map(df, "ssm_id", "consequence_id")

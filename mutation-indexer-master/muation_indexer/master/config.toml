@@ -26,6 +26,7 @@ python = "./mutation-indexer.pex"
 build_version = ""
 config_dir = ""
 data_release = ""
+driver = "VIZ"
 index_types = [
   "case_centric",
   "gene_centric",
@@ -33,7 +34,6 @@ index_types = [
   "ssm_occurrence_centric",
   "cnv_centric",
   "cnv_occurrence_centric",
-  "gene_expression",
 ]
 jar_dir = "artifacts/jars"
 projects = []
