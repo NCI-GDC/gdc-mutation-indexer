@@ -62,8 +62,6 @@ mutation-indexer-core
     # via mutation-indexer-master (setup.py)
 mypy-extensions==0.4.3
     # via typing-inspect
-pex==2.1.92
-    # via mutation-indexer-master (setup.py)
 six==1.16.0
     # via halo
 spinners==0.0.24

@@ -32,7 +32,6 @@ setuptools.setup(
         "halo~=0.0.31",
         "importlib-resources~=3.2",
         "more-itertools~=8.9",
-        "pex~=2.1",
         "toml~=0.10",
         "mutation-indexer-core",
     ],
