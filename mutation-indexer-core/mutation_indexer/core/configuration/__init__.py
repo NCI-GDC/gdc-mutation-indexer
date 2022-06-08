@@ -1,4 +1,5 @@
-from typing import List, Mapping, Sequence
+import uuid
+from typing import Dict, List, Mapping, Sequence
 
 import elasticsearch as es
 import marshmallow
@@ -26,7 +27,7 @@ class Configuration:
     elasticsearch: elasticsearch.Elasticsearch
 
 
-CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()
+CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()  # type: ignore
 
 
 class ConfigAdapter:
@@ -41,75 +42,75 @@ class ConfigAdapter:
         self._indexd = indexd
 
     @property
-    def maf_data_types(self) -> List[str]:  # type: ignore
+    def maf_data_types(self) -> List[str]:
         raise NotImplementedError()
 
     @property
-    def formatted_maf_keywords(self) -> str:  # type: ignore
+    def formatted_maf_keywords(self) -> str:
         raise NotImplementedError()
 
     @property
-    def protected_maf_keywords(self) -> str:  # type: ignore
+    def protected_maf_keywords(self) -> str:
         raise NotImplementedError()
 
     @property
-    def gistic_filename_string(self) -> str:  # type: ignore
+    def gistic_filename_string(self) -> str:
         raise NotImplementedError()
 
     @property
-    def mappings(self) -> Dict[str, str]:  # type: ignore
+    def mappings(self) -> Dict[str, str]:
         raise NotImplementedError()
 
     @property
-    def ssm_namespace(self) -> uuid.UUID:  # type: ignore
+    def ssm_namespace(self) -> uuid.UUID:
         raise NotImplementedError()
 
     @property
-    def gene_model_file(self) -> str:  # type: ignore
+    def gene_model_file(self) -> str:
         return self._config.builders.viz.gene_model.gene_model_file
 
     @property
-    def citobands_file(self) -> str:  # type: ignore
+    def citobands_file(self) -> str:
         return self._config.builders.viz.gene_model.citobands_file
 
     @property
-    def census_file(self) -> str:  # type: ignore
+    def census_file(self) -> str:
         return self._config.builders.viz.gene_model.census_file
 
     @property
-    def maf_path(self) -> str:  # type: ignore
+    def maf_path(self) -> str:
         return self._config.builders.viz.maf.backup.path
 
     @property
-    def gistic_path(self) -> str:  # type: ignore
+    def gistic_path(self) -> str:
         raise NotImplementedError()
 
     @property
-    def aliquot_path(self) -> str:  # type: ignore
+    def aliquot_path(self) -> str:
         raise NotImplementedError()
 
     @property
-    def gene_expression_values_path(self) -> str:  # type: ignore
+    def gene_expression_values_path(self) -> str:
         return self._config.builders.gene_expression.value.backup.path
 
     @property
-    def gene_expression_cases_path(self) -> str:  # type: ignore
+    def gene_expression_cases_path(self) -> str:
         return self._config.builders.gene_expression.case.backup.path
 
     @property
-    def primary_aliquot_path(self) -> str:  # type: ignore
+    def primary_aliquot_path(self) -> str:
         return self._config.builders.viz.primary_aliquot.backup.path
 
     @property
-    def ascat_path(self) -> str:  # type: ignore
+    def ascat_path(self) -> str:
         return self._config.builders.viz.ascat.backup.path
 
     @property
-    def gene_model_path(self) -> str:  # type: ignore
+    def gene_model_path(self) -> str:
         return self._config.builders.viz.gene_model.backup.path
 
     @property
-    def percentile_threshold(self) -> Dict[str, int]:  # type: ignore
+    def percentile_threshold(self) -> Dict[str, int]:
         return {
             "genes_per_case": self._config.builders.viz.case_centric.array_size_threshold,
             "occurrences_per_ssm": self._config.builders.viz.ssm_centric.array_size_threshold,
@@ -119,7 +120,7 @@ class ConfigAdapter:
         }
 
     @property
-    def cache_dataframes(self) -> Dict[str, bool]:  # type: ignore
+    def cache_dataframes(self) -> Dict[str, bool]:
         return {
             "mafs": self._config.builders.viz.maf.is_cached,
             "cases": self._config.builders.viz.case.is_cached,
@@ -134,7 +135,7 @@ class ConfigAdapter:
         }
 
     @property
-    def case_exclude_fields(self) -> Sequence[str]:  # type: ignore
+    def case_exclude_fields(self) -> Sequence[str]:
         raise NotImplementedError()
 
     @property
@@ -142,7 +143,7 @@ class ConfigAdapter:
         return self._config.builders.viz.case.excluded_fields
 
     @property
-    def samples_include_fields(self) -> Sequence[str]:  # type: ignore
+    def samples_include_fields(self) -> Sequence[str]:
         return self._config.builders.viz.case.included_fields
 
     @property

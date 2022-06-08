@@ -2,8 +2,9 @@ import dataclasses
 import enum
 from typing import Sequence
 
-from exports.configuration import marshmallow_extensions
 from marshmallow import fields
+
+from mutation_indexer.core.configuration import marshmallow_extensions
 
 
 class BackupMode(enum.Enum):
