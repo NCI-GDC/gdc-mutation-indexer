@@ -1,0 +1,3 @@
+recursive-include mutation_indexer/*/schemas *.yaml
+recursive-include mutation_indexer/*/schemas *.json
+include mutation_indexer/config.toml

@@ -1,2 +1,0 @@
-include mutation_indexer/gene_expression/schemas/**/*.json
-include mutation_indexer/gene_expression/schemas/**/*.yaml

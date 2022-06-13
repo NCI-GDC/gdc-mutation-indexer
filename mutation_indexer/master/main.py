@@ -38,7 +38,7 @@ def merge_dict(a: dict, b: dict) -> None:
 
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
     default_config = toml.loads(
-        resources.read_text("mutation_indexer.master", "config.toml")
+        resources.read_text("mutation_indexer", "config.toml")
     )
 
     if config_path:

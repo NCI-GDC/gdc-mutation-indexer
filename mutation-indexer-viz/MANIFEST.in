@@ -1,2 +1,0 @@
-include mutation_indexer/viz/schemas/**/*.json
-include mutation_indexer/viz/schemas/**/*.yaml
