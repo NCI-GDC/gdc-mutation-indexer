@@ -14,6 +14,7 @@ from mutation_indexer.core.configuration import (
     indexd,
     spark,
 )
+from mutation_indexer.core.constants import master
 
 
 @marshmallow_dataclass.dataclass(frozen=True)
@@ -25,6 +26,22 @@ class Configuration:
     aws: aws.AWS
     indexd: indexd.IndexD
     elasticsearch: elasticsearch.Elasticsearch
+
+    @marshmallow.validates_schema
+    def validate_builders(self, data: dict) -> None:
+        if data["build"]["driver"] == master.Driver.VIZ and not data["builders"]["viz"]:
+            raise marshmallow.ValidationError(
+                "Viz builders must be configured for VIZ driver.", "builders.viz"
+            )
+
+        if (
+            data["build"]["driver"] == master.Driver.GENE_EXPRESSION
+            and not data["builders"]["gene_expression"]
+        ):
+            raise marshmallow.ValidationError(
+                "Gene expression builders must be configured for GENE_EXPRESSION driver.",
+                "builders.gene_expression",
+            )
 
 
 CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()  # type: ignore

@@ -1,17 +1,17 @@
 import json
 
 import pytest
-from base_joins_test import BaseJoinsTest
-from exports.builders.consequence import ConsequenceBuilder
-from pyspark.sql.functions import col
+from pyspark.sql import functions as F
 
-from tests.integration.config import TestConfig
+from mutation_indexer.viz import builders
+from tests.integration import config
+from tests.integration.builders import base_joins_test
 
-conf = TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures("gistic_df", "cnv_occurrence_centric_df")
-class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
+class TestCNVOccurrenceCentricJoins(base_joins_test.BaseJoinsTest):
     """
     cnv_occurrence{}
         |
@@ -54,7 +54,7 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
         cpo = self.get_relationship_map(df, "cnv_occurrence_id", "case_id")
 
         # Observations and Cases per CNV Occurrence expected:
-        df = gistic_df.withColumn("cnv_occurrence_id", col("occurrence_id")).select(
+        df = gistic_df.withColumn("cnv_occurrence_id", F.col("occurrence_id")).select(
             "cnv_occurrence_id", "observation_id", "case_id"
         )
         true_opo = self.get_relationship_map(df, "cnv_occurrence_id", "observation_id")
@@ -86,7 +86,7 @@ class TestCNVOccurrenceCentricJoins(BaseJoinsTest):
         fields_to_unpack = ["consequence_id", "gene.gene_id"]
 
         # ssm_subtree stats expected:
-        cons_df = ConsequenceBuilder(conf, sqlContext).build_for_cnv(
+        cons_df = builders.ConsequenceBuilder(conf, sqlContext).build_for_cnv(
             gistic_df, "cnv_occurrence_centric"
         )
         df = self.unpack_df_list(cons_df, "cnv_id", "consequence", fields_to_unpack)

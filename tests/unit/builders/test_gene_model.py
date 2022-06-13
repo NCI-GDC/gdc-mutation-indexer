@@ -5,9 +5,9 @@ from unittest import mock
 import attr
 import more_itertools
 import pytest
-from exports import builders
 from pyspark import sql
 
+from mutation_indexer.driver import builders
 from tests.unit import utils
 
 

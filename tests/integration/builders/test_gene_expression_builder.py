@@ -3,11 +3,12 @@ from unittest import mock
 
 import ndjson
 import pytest
-from exports import builders, es_utils, indexd_utils
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.driver import es_utils, indexd_utils
+from mutation_indexer.viz import builders
 from tests.integration import config
 
 

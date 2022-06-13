@@ -13,7 +13,7 @@ from typing_extensions import Literal
 from mutation_indexer.core import configuration
 from mutation_indexer.core.constants import logging as logging_constants
 from mutation_indexer.driver import es_utils
-from mutation_indexer.driver import utils as driver_utils
+from mutation_indexer.driver.builders import utils as driver_utils
 
 logging.basicConfig(format=logging_constants.LOG_FORMAT)
 

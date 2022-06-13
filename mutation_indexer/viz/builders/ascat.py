@@ -6,8 +6,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer.core import configuration
-from mutation_indexer.driver import es_utils, indexd_utils, utils
-from mutation_indexer.driver.builders import bases
+from mutation_indexer.driver import es_utils, indexd_utils
+from mutation_indexer.driver.builders import bases, utils
 from mutation_indexer.viz import schemas
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")

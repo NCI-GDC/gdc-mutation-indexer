@@ -1,14 +1,14 @@
 import json
 
+import base_joins_test
 import pytest
-from base_joins_test import BaseJoinsTest
-from exports.builders.consequence import ConsequenceBuilder
-from exports.builders.utils import uuid5_col
-from pyspark.sql.functions import col, lit
+from pyspark.sql import functions as F
 
-from tests.integration.config import TestConfig
+from mutation_indexer.driver.builders import utils
+from mutation_indexer.viz import builders
+from tests.integration import config
 
-conf = TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures(
@@ -17,7 +17,7 @@ conf = TestConfig()
     "ssm_occurrence_centric_df",
     "ssm_occurrence_ssm_subtree",
 )
-class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
+class TestSSMOccurrenceCentricJoins(base_joins_test.BaseJoinsTest):
     """
     ssm_occurrence{}
           |____ ssm{}
@@ -41,9 +41,11 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         df = (
             ssm_transcript_df.withColumn(
                 "consequence_id",
-                uuid5_col(lit("ssm_consequence"), col("ssm_id"), col("transcript_id")),
+                utils.uuid5_col(
+                    F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
+                ),
             )
-            .withColumn("ssm_occurrence_id", col("occurrence_id"))
+            .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
             .select(
                 "ssm_occurrence_id",
                 "ssm_id",
@@ -78,7 +80,7 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         cpo = self.get_relationship_map(df, "ssm_occurrence_id", "case_id")
 
         # Observations and Cases per SSM Occurrence expected:
-        df = maf_df.withColumn("ssm_occurrence_id", col("occurrence_id")).select(
+        df = maf_df.withColumn("ssm_occurrence_id", F.col("occurrence_id")).select(
             "ssm_occurrence_id", "case_id", "tumor_sample_barcode"
         )
 
@@ -119,7 +121,7 @@ class TestSSMOccurrenceCentricJoins(BaseJoinsTest):
         ]
 
         # ssm_subtree stats expected:
-        cons_df = ConsequenceBuilder(conf, sqlContext).build_for_ssm(
+        cons_df = builders.ConsequenceBuilder(conf, sqlContext).build_for_ssm(
             maf_df, "ssm_occurrence_centric", join_gene=True
         )
         df = self.unpack_df_list(cons_df, "ssm_id", "consequence", fields_to_unpack)

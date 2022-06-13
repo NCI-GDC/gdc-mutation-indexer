@@ -1,10 +1,10 @@
 import random
 
 import pytest
-from exports.builders import utils
 from normalizer import mapper
 from pyspark.sql import functions as F
 
+from mutation_indexer.driver.builders import utils
 from tests.integration import config
 from tests.integration.utils import true_stats
 

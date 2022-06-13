@@ -9,11 +9,12 @@ from unittest import mock
 import more_itertools
 import pytest
 import yaml
-from exports import builders, es_utils
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+from mutation_indexer.driver import es_utils
+from mutation_indexer.viz import builders
 from tests.integration.utils import schema_validation
 from tests.unit import utils
 

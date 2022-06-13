@@ -5,11 +5,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders
-from exports.builders import gene_model
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.gene_expression import builders
 from tests.unit import utils
 
 

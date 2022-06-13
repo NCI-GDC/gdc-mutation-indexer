@@ -29,7 +29,6 @@ git_hash = (
     .decode("utf-8")
     .strip()
 )
-driver_requirements = ()
 
 setuptools.setup(
     name="mutation-indexer",
@@ -58,9 +57,7 @@ setuptools.setup(
         Packages.GDCMODELS,
     ),
     extras_require={
-        "master": (
-            Packages.HALO,
-        ),
+        "master": (Packages.HALO,),
         "gene-expression": (),
         "viz": (Packages.MUTATIONINDEXERRESOURCE,),
     },

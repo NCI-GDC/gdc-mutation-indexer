@@ -2,10 +2,10 @@ import json
 
 import deepdiff
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import functions as F
 
+from mutation_indexer.viz import builders
 from tests.integration import config
 
 conf = config.TestConfig()

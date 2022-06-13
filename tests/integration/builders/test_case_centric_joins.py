@@ -1,14 +1,10 @@
 import json
 
 import pytest
-from base_joins_test import BaseJoinsTest
-from exports.builders import (
-    ConsequenceBuilder,
-    ObservationBuilder,
-    PrimaryAliquotBuilder,
-)
 from pyspark import sql
 
+from mutation_indexer.viz import builders
+from tests.integration.builders import base_joins_test
 from tests.integration.config import TestConfig
 
 conf = TestConfig()
@@ -17,7 +13,7 @@ conf = TestConfig()
 @pytest.mark.usefixtures(
     "sqlContext", "maf_df", "gistic_df", "case_centric_df", "ssm_transcript_df"
 )
-class TestCaseCentricJoins(BaseJoinsTest):
+class TestCaseCentricJoins(base_joins_test.BaseJoinsTest):
     """
     Test case_centric index joins
 
@@ -95,8 +91,8 @@ class TestCaseCentricJoins(BaseJoinsTest):
 
             return res
 
-        observation_builder = ObservationBuilder()
-        consequence_builder = ConsequenceBuilder(conf, sqlContext)
+        observation_builder = builders.ObservationBuilder()
+        consequence_builder = builders.ConsequenceBuilder(conf, sqlContext)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, "case_centric")

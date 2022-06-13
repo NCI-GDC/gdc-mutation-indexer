@@ -1,6 +1,6 @@
 import logging
 
-from mutation_indexer.driver import utils
+from mutation_indexer.driver.builders import utils
 from mutation_indexer.viz.builders import clinical_annotations
 
 logger = logging.getLogger("df_builder")

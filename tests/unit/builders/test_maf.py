@@ -4,10 +4,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.viz import builders
 from tests.unit import utils
 from tests.unit.data import schemas
 

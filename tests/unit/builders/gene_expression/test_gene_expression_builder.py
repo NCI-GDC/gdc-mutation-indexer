@@ -4,10 +4,10 @@ from typing import Dict, Tuple
 from unittest import mock
 
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.gene_expression import builders
 from tests.unit import utils
 
 

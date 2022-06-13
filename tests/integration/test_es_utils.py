@@ -1,10 +1,10 @@
 from typing import Iterable
 
 import pytest
-from exports import es_utils
 from normalizer import mapper
 from pyspark import sql
 
+from mutation_indexer.driver import es_utils
 from tests.integration import config
 from tests.integration.utils import schema_validation
 

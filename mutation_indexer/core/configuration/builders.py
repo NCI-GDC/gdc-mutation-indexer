@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import Sequence
+from typing import Optional, Sequence
 
 from marshmallow import fields
 
@@ -78,6 +78,7 @@ class Viz:
 
 @dataclasses.dataclass(frozen=True)
 class GeneExpression:
+    gene_model: GeneModelBuilder
     case: Builder
     value: Builder
     primary_aliquot: Builder
@@ -86,5 +87,5 @@ class GeneExpression:
 
 @dataclasses.dataclass(frozen=True)
 class Builders:
-    viz: Viz
-    gene_expression: GeneExpression
+    viz: Optional[Viz]
+    gene_expression: Optional[GeneExpression]

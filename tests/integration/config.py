@@ -1,14 +1,103 @@
 import os
+from typing import Any, Optional
 
-import exports
-from config import BaseConfig
+import dataclasses
+import importlib_resources as resources
+import toml
+
+import mutation_indexer
+from mutation_indexer.core import configuration
+from mutation_indexer.core.constants import master
+from mutation_indexer.core.configuration import (
+    spark as _spark,
+    build as _build,
+    builders as _builders,
+    aws as _aws,
+    indexd as _indexd,
+    elasticsearch as _elasticsearch,
+)
 
 
-class TestConfig(BaseConfig):
+def _recursive_update(a: dict, b: dict) -> None:
+    for key, value in b.items():
+        if isinstance(value, dict) and isinstance(a.setdefault(key, {}), dict):
+            _recursive_update(a[key], value)
+        else:
+            a[key] = value
+
+
+def _update_section(default: dict, updates: Any) -> None:
+    if updates:
+        _recursive_update(default, dataclasses.asdict(updates))
+
+
+def _load_config_dict(
+    spark_arguments: Optional[_spark.Arguments],
+    spark: Optional[_spark.Spark],
+    build: Optional[_build.Build],
+    builders: Optional[_builders.Builders],
+    aws: Optional[_aws.S3],
+    indexd: Optional[_indexd.IndexD],
+    elasticsearch: Optional[_elasticsearch.Elasticsearch],
+) -> dict:
+    default_build = {
+        "data_release": "test",
+        "build_version": "v0",
+        "index_types": ("case_centric", "gene_centric"),
+        "projects": (),
+        "config_dir": "./",
+    }
+    default = toml.loads(resources.read_text(mutation_indexer, "config.toml"))
+
+    default["build"].update(default_build)
+
+    _update_section(default["spark_arguments"], spark_arguments)
+    _update_section(default["spark"], spark)
+    _update_section(default["build"], build)
+    _update_section(default["builders"], builders)
+    _update_section(default["aws"], aws)
+    _update_section(default["indexd"], indexd)
+    _update_section(default["elasticsearch"], elasticsearch)
+
+
+class Configuation(configuration.Configuration):
+    def __init__(
+        self,
+        spark_arguments: Optional[_spark.Arguments] = None,
+        spark: Optional[_spark.Spark] = None,
+        build: Optional[_build.Build] = None,
+        builders: Optional[_builders.Builders] = None,
+        aws: Optional[_aws.S3] = None,
+        indexd: Optional[_indexd.IndexD] = None,
+        elasticsearch: Optional[_elasticsearch.Elasticsearch] = None,
+    ) -> None:
+        default = _load_config_dict(
+            spark_arguments,
+            spark,
+            build,
+            builders,
+            aws,
+            indexd,
+            elasticsearch,
+        )
+        config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(default)
+
+        super().__init__(
+            config.spark_arguments,
+            config.spark,
+            config.build,
+            config.builders,
+            config.aws,
+            config.indexd,
+            config.elasticsearch,
+        )
+
+
+class TestConfig(configuration.ConfigAdapter):
     __test__ = False
 
     # Directories used for test data
-    root_dir = os.path.dirname(os.path.realpath(exports.__file__))
+    root_dir = os.path.dirname(os.path.realpath(mutation_indexer.__file__))
     test_dir = os.path.dirname(os.path.realpath(__file__))
     schemas_dir = os.path.join(root_dir, "schemas")
     data_dir = os.path.join(test_dir, "data")
@@ -70,8 +159,9 @@ class TestConfig(BaseConfig):
     }
 
     def __init__(self):
-        env = self.get_env_dict()
-        super(TestConfig, self).__init__(env_dict=env)
+        config = Configuation()
+
+        super().__init__(config=config, elasticsearch=None, indexd=None)
 
         # To make it more convenient to write tests that load in data, put the names
         # of the graph indices in a dictionary keyed by doc type.

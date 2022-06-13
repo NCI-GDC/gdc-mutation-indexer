@@ -14,17 +14,10 @@ Backend for exporting mutation indices for visualization on the GDC
 ## Architecture
 ![Indexer Architecture](architecture.png)
 
-The mutation indexer combines mutation data from MAF analysis files and metadata
-from the data model to create Elasticsearch indices that may be used for
-visualization or further analysis.
-
-## Make the docs
-
-```
-cd docs
-make html
-ghp-import build/html
-```
+Mutation Indexer is an application that combines and processes submitted data
+from multiple sources in order to create various Elasticsearch indices which can
+then be used to help visualize and find data within the GDC. Mutation Indexer 
+leverages Apache Spark as an ETL platform for processing this data.
 
 ## Tests
 ### ElasticSearch
@@ -59,7 +52,6 @@ tox -- path/to/test(s)
 ```
 
 
-
 ## Setup pre-commit hook to check for secrets
 
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
@@ -84,11 +76,3 @@ detect-secrets audit .secrets.baseline
 
 ### Internal Reference
 https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer
-
-### TODO
-- Expand background on purpose
-- Provide instructions for how to use
-
-## Contributing
-
-Read how to contribute [here](https://github.com/NCI-GDC/gdcapi/blob/master/CONTRIBUTING.md)

@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from mutation_indexer.core import configuration
 from mutation_indexer.core.constants import logging as logging_constants
-from mutation_indexer.driver import utils
+from mutation_indexer.driver.builders import utils
 from mutation_indexer.viz.builders.clinical_annotations import base
 
 logging.basicConfig(format=logging_constants.LOG_FORMAT)

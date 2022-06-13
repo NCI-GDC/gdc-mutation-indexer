@@ -4,10 +4,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.viz import builders
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -253,7 +253,7 @@ class TestAscatBuilder:
         }
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__joins_single_record(
@@ -273,7 +273,7 @@ class TestAscatBuilder:
         assert ascat_df.schema == self.final_ascat_schema
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__input_data_transformed(
@@ -359,7 +359,7 @@ class TestAscatBuilder:
         ),
     )
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__failed_joins(
@@ -379,7 +379,7 @@ class TestAscatBuilder:
         assert ascat_df.schema == self.final_ascat_schema
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__gene_id_stripped(
@@ -414,7 +414,7 @@ class TestAscatBuilder:
         ),
     )
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__copy_number_maps_to_cnv_change(
@@ -443,7 +443,7 @@ class TestAscatBuilder:
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__neutral_copy_numbers_filtered(
@@ -464,7 +464,7 @@ class TestAscatBuilder:
         assert ascat_df.count() == 0
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__uuids_generated(
@@ -501,7 +501,7 @@ class TestAscatBuilder:
         )
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__canonical_transcript_lengths_added(
@@ -532,7 +532,7 @@ class TestAscatBuilder:
         )
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__null_canonical_transcript_lengths_added(
@@ -557,7 +557,7 @@ class TestAscatBuilder:
         assert result_row.canonical_transcript_length_genomic == None
 
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__canonical_transcript_lengths_no_canonical_transcipt(
@@ -601,7 +601,7 @@ class TestAscatBuilder:
         ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
     @mock.patch(
-        "exports.es_utils.iterate_es_results",
+        "mutation_indexer.driver.es_utils.iterate_es_results",
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__filter_gene_model(

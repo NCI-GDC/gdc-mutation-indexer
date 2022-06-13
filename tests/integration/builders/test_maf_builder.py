@@ -5,10 +5,10 @@ from unittest import mock
 
 import pytest
 import yaml
-from exports import builders
-from exports.builders.clinical_annotations import civic
 from pyspark.sql import types
 
+from mutation_indexer.viz import builders
+from mutation_indexer.viz.builders.clinical_annotations import civic
 from tests.integration import config
 
 conf = config.TestConfig()

@@ -5,10 +5,11 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders, es_utils
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.driver import es_utils
+from mutation_indexer.viz import builders
 from tests.unit.data import schemas
 
 

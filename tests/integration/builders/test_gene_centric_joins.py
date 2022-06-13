@@ -1,21 +1,17 @@
 import json
 
 import pytest
-from base_joins_test import BaseJoinsTest
-from exports.builders import (
-    ConsequenceBuilder,
-    ObservationBuilder,
-    PrimaryAliquotBuilder,
-)
 from pyspark import sql
 
+from mutation_indexer.viz import builders
+from tests.integration.builders import base_joins_test
 from tests.integration.config import TestConfig
 
 conf = TestConfig()
 
 
 @pytest.mark.usefixtures("maf_df", "gistic_df", "gene_centric_df", "gene_ssm_subtree")
-class TestGeneCentricJoins(BaseJoinsTest):
+class TestGeneCentricJoins(base_joins_test.BaseJoinsTest):
     """
     Test case_centric index joins
 
@@ -93,8 +89,8 @@ class TestGeneCentricJoins(BaseJoinsTest):
 
             return res
 
-        observation_builder = ObservationBuilder()
-        consequence_builder = ConsequenceBuilder(conf, sqlContext)
+        observation_builder = builders.ObservationBuilder()
+        consequence_builder = builders.ConsequenceBuilder(conf, sqlContext)
 
         # ssm_subtree stats expected:
         cons_df = consequence_builder.build_for_ssm(maf_df, "gene_centric")

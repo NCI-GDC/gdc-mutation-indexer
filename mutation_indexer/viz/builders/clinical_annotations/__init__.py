@@ -1,7 +1,8 @@
 import logging
 
-from exports.builders.utils import select_mapping
-from pyspark.sql.functions import col, struct
+from pyspark.sql import functions as F
+
+from mutation_indexer.driver.builders import utils
 
 logger = logging.getLogger("clinical_annotation")
 
@@ -37,16 +38,16 @@ def get_clinical_annotation_df(
                 name = "{}_{}".format(parent_name, k)
                 if "default" in v:
                     name = v["default"]
-                cols.append(col(name).alias(k))
+                cols.append(F.col(name).alias(k))
             else:
                 if "properties" in v:
-                    cols.append(struct(restructure(v["properties"], k)).alias(k))
+                    cols.append(F.struct(restructure(v["properties"], k)).alias(k))
                 else:
-                    cols.append(struct(restructure(v, k)).alias(k))
+                    cols.append(F.struct(restructure(v, k)).alias(k))
         return cols
 
     name = "clinical_annotations"
-    mapping = select_mapping(index_name, name)
+    mapping = utils.select_mapping(index_name, name)
     cols = ["ssm_id"] + restructure({name: mapping}, "")
     logger.info(input_df)
     logger.info(cols)

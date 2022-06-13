@@ -3,12 +3,13 @@ from typing import Dict, Iterable, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
 import pytest
-from exports import indexd_utils
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
+
+from mutation_indexer.driver import indexd_utils
 
 
 class UrlMetadata(TypedDict):

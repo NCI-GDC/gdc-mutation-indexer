@@ -10,8 +10,8 @@ from pyspark.sql import types
 
 from mutation_indexer.core import configuration
 from mutation_indexer.core.constants import logging as logging_constants
-from mutation_indexer.driver import indexd_utils, pyspark_extensions, utils
-from mutation_indexer.driver.builders import bases
+from mutation_indexer.driver import indexd_utils, pyspark_extensions
+from mutation_indexer.driver.builders import bases, utils
 from mutation_indexer.viz import schemas
 from mutation_indexer.viz.builders.clinical_annotations import civic
 

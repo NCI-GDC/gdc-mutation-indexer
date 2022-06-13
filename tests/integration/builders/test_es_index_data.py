@@ -1,6 +1,6 @@
 import pytest
-from exports.es_utils import get_es_doc_count
 
+from mutation_indexer.driver import es_utils
 from tests.integration.config import TestConfig
 from tests.integration.utils.json_metrics import (
     CaseCentricStats,
@@ -34,7 +34,7 @@ class TestCentricCounts:
             maf_df, gistic_df, test_data, doc_type
         )["count"]
 
-        built_count = get_es_doc_count(es_client, conf.indices[doc_type])
+        built_count = es_utils.get_es_doc_count(es_client, conf.indices[doc_type])
         assert built_count == expected_count
 
 
@@ -47,7 +47,7 @@ class TestCaseCentricData:
         # NOTE: there may be cases without cnvs or ssms,
         # we need to ensure empty cases are counted as well
         # hence why we count cases differently than any other doc
-        built_count = get_es_doc_count(es_client, conf.indices[self.doc_type])
+        built_count = es_utils.get_es_doc_count(es_client, conf.indices[self.doc_type])
 
         assert built_count == len(all_cases)
 

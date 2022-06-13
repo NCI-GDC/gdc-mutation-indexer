@@ -1,21 +1,21 @@
 import itertools
 
 import pytest
-from exports.builders.consequence import ConsequenceBuilder
-from exports.builders.df_builders import (
-    get_annotation_df,
-    get_cnv_df,
-    get_gene_df,
-    get_ssm_df,
-    get_transcript_df,
-)
-from exports.builders.utils import select_mapping
-from pyspark.sql.functions import UserDefinedFunction, col
-from pyspark.sql.types import BooleanType
+from pyspark.sql import functions as F
 
-from tests.integration.config import TestConfig
+from mutation_indexer.driver.builders import utils
+from mutation_indexer.viz.builders import df_builders
+from tests.integration import config
 
-conf = TestConfig()
+BUILDERS = {
+    "annotation": df_builders.get_annotation_df,
+    "cnv": df_builders.get_cnv_df,
+    "gene": df_builders.get_gene_df,
+    "ssm": df_builders.get_ssm_df,
+    "transcript": df_builders.get_transcript_df,
+}
+
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures("maf_df", "gistic_df")
@@ -40,7 +40,7 @@ class TestDFBuildersBase:
         df_type = request.getfixturevalue("df_type")
 
         # return corresponding get_function, input_df and id_field
-        get_function = globals()["get_{}_df".format(df_type)]
+        get_function = BUILDERS[df_type]
 
         extra_inputs = {}
         if "cnv" in index_type or df_type == "cnv":
@@ -94,7 +94,7 @@ class TestDFBuildersBase:
     def assert_from_df(cls, df, row, join_by, mapping=None):
         item = row.asDict(recursive=True)
         filtered_dict = {}
-        filtered_list = df.filter(col(join_by) == item[join_by]).collect()
+        filtered_list = df.filter(F.col(join_by) == item[join_by]).collect()
         for it in filtered_list:
             filtered_dict.update(it.asDict(recursive=True))
         assert cls.is_sub(item, filtered_dict.items(), mapping)
@@ -115,7 +115,7 @@ class TestDFBuilders(TestDFBuildersBase):
         input_df = input_df.drop_duplicates(subset=[id_field])
 
         df = get_function(input_df, index_type)
-        mapping = select_mapping(index_type, df_type)["properties"]
+        mapping = utils.select_mapping(index_type, df_type)["properties"]
 
         # Do not check for unwanted keys
         stopwords = ["copy_to", "_autocomplete", "gene_aa_change"]

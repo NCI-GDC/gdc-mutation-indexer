@@ -1,15 +1,15 @@
--c mutation-indexer-core/requirements.txt
--c mutation-indexer-driver/requirements.txt
--c mutation-indexer-gene-expression/requirements.txt
--c mutation-indexer-master/requirements.txt
--c mutation-indexer-viz/requirements.txt
+-c requirements-gene-expression.txt
+-c requirements-master.txt
+-c requirements-viz.txt
 
-attrs~=21.2.0
+attrs~=21.2
+boto~=2.49
 coverage[toml]~=5.5
 dataclasses~=0.8;python_version<="3.6"
-deepdiff==3.3.0
+deepdiff~=3.3
 ghp-import==0.5.4
 jsonpath-rw~=1.4
+ndjson~=0.3
 pre-commit==1.21.0
 pytest~=6.0
 pytest-cov~=2.10

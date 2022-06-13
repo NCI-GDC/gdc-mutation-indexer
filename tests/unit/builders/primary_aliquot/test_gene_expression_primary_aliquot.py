@@ -6,10 +6,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.gene_expression import builders
 from tests.unit import utils
 
 
@@ -103,7 +103,7 @@ class TestGeneExpressionPrimaryAliquotBuilder:
         config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_es_dataframe_util()
-        builder = builders.GeneExpressionPrimaryAliquotBuilder(
+        builder = builders.PrimaryAliquotBuilder(
             config, sql_context, dataframe_util
         )
 
@@ -118,7 +118,7 @@ class TestGeneExpressionPrimaryAliquotBuilder:
         es_file = ESFile()
         es_case = es_file.cases[0]
         dataframe_util = self.arrange_es_dataframe_util((ESFile(),))
-        builder = builders.GeneExpressionPrimaryAliquotBuilder(
+        builder = builders.PrimaryAliquotBuilder(
             config, sql_context, dataframe_util
         )
 

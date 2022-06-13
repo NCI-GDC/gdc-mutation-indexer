@@ -2,17 +2,17 @@ import pprint
 
 import deepdiff
 import pytest
-from base_joins_test import BaseJoinsTest
-from exports.builders.utils import uuid5_col
 from pyspark.sql import functions as F
 
-from tests.integration.config import TestConfig
+from mutation_indexer.driver.builders import utils
+from tests.integration import config
+from tests.integration.builders import base_joins_test
 
-conf = TestConfig()
+conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures("maf_df", "ssm_centric_df", "ssm_transcript_df")
-class TestSSMCentricJoins(BaseJoinsTest):
+class TestSSMCentricJoins(base_joins_test.BaseJoinsTest):
     """
     ssm{}
       |____ consequence[]
@@ -36,7 +36,7 @@ class TestSSMCentricJoins(BaseJoinsTest):
         # Consequence ~ UUID[ssm_id, transcript_id]
         df = ssm_transcript_df.withColumn(
             "consequence_id",
-            uuid5_col(
+            utils.uuid5_col(
                 F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
             ),
         )

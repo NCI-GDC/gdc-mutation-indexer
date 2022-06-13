@@ -5,10 +5,10 @@ from unittest import mock
 
 import more_itertools
 import pytest
-from exports import builders
 from pyspark import sql
 from pyspark.sql import types
 
+from mutation_indexer.gene_expression import builders
 from tests.unit import utils
 
 
@@ -91,7 +91,7 @@ class TestGeneExpressionCaseInputBuilder:
         config = mock.MagicMock()
         sql_context = mock.MagicMock()
         inputs = self.arrange_inputs()
-        builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)
+        builder = builders.CaseBuilder(config, sql_context)
 
         result_df = builder.build_from_scratch(**inputs)
 
@@ -108,7 +108,7 @@ class TestGeneExpressionCaseInputBuilder:
         config = mock.MagicMock()
         sql_context = mock.MagicMock()
         inputs = self.arrange_inputs((primary_aliquot,))
-        builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)
+        builder = builders.CaseBuilder(config, sql_context)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
