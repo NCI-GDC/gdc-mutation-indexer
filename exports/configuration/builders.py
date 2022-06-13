@@ -56,8 +56,18 @@ class GeneModelBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class IndexBuilder(Builder):
-    array_size_threshold: int
+class CaseCentricBuilder:
+    genes_threshold: int
+
+
+@dataclasses.dataclass(frozen=True)
+class CNVCentricBuilder:
+    occurrences_threshold: int
+
+
+@dataclasses.dataclass(frozen=True)
+class SSMCentricBuilder:
+    occurrences_threshold: int
 
 
 @dataclasses.dataclass(frozen=True)
@@ -68,12 +78,12 @@ class Viz:
     maf_metadata: Builder
     maf: Builder
     primary_aliquot: Builder
-    case_centric: IndexBuilder
-    gene_centric: IndexBuilder
-    cnv_centric: IndexBuilder
-    cnv_occurrence_centric: IndexBuilder
-    ssm_centric: IndexBuilder
-    ssm_occurrence_centric: IndexBuilder
+    case_centric: CaseCentricBuilder
+    gene_centric: Builder
+    cnv_centric: CNVCentricBuilder
+    cnv_occurrence_centric: Builder
+    ssm_centric: SSMCentricBuilder
+    ssm_occurrence_centric: Builder
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,7 +91,7 @@ class GeneExpression:
     case: Builder
     value: Builder
     primary_aliquot: Builder
-    gene_expression: IndexBuilder
+    gene_expression: Builder
 
 
 @dataclasses.dataclass(frozen=True)

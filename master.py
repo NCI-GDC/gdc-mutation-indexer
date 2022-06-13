@@ -38,7 +38,7 @@ def merge_dict(a: dict, b: dict) -> None:
 
 
 def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
-    default_config = toml.loads(resources.read_text(exports, "config.toml"))
+    default_config = toml.loads(resources.read_text(exports, "configuration.toml"))
 
     if config_path:
         user_config = toml.load(config_path)
@@ -59,7 +59,7 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
         "--files",
         ",".join(
             (
-                f"{config_file}#config.toml",
+                f"{config_file}#configuration.toml",
                 path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
             )
         ),
@@ -71,11 +71,10 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
 
 
 async def run_spark_command(config: configuration.Configuration) -> None:
-    arguments = config.spark_arguments.get_arguments()
     config_arguments = config.spark.get_arguments()
     file_arguments = get_file_args(config)
     arguments = more_itertools.flatten(
-        itertools.chain(arguments, config_arguments, file_arguments)
+        itertools.chain(config_arguments, file_arguments)
     )
     spark_home = os.getenv("SPARK_HOME", "")
     spark_command = path.join(spark_home, "bin/spark-submit")

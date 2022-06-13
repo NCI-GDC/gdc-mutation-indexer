@@ -1,31 +1,33 @@
-[spark_arguments]
-deploy_mode = "cluster"
-driver_memory = "12g"
-executor_cores = 8
-executor_memory = "40g"
-master = "yarn"
-name = "GDC Mutation Indexer"
-num_executors = 25
-
 [spark]
-[spark.driver]
-auto_broadcast_join_threshold = -1
-max_result_size = "1g"
+master = "yarn"
 
-[spark.sql]
-case_sensitive = true
-[spark.sql.shuffle]
-partitions = 1024
+[spark.app]
+name = "gdc_mutation_indexer"
+
+[spark.driver]
+max_result_size = "1g"
+memory = "12g"
+
+[spark.executor]
+cores = 8
+instances = 25
+memory = "40g"
 
 [spark.pyspark]
 python = "./mutation-indexer.pex"
 [spark.pyspark.driver]
 python = "./mutation-indexer.pex"
 
+[spark.sql]
+auto_broadcast_join_threshold = -1
+case_sensitive = true
+[spark.sql.shuffle]
+partitions = 1024
+
+[spark.submit]
+deploy_mode = "cluster"
+
 [build]
-build_version = ""
-config_dir = ""
-data_release = ""
 index_types = [
   "case_centric",
   "gene_centric",
@@ -36,7 +38,6 @@ index_types = [
   "gene_expression",
 ]
 jar_dir = "artifacts/jars"
-projects = []
 study_label = ""
 
 [builders]
@@ -154,42 +155,39 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case_centric]
-array_size_threshold = 100
+genes_threshold = 100
 is_cached = true
 [builders.viz.case_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.gene_centric]
-array_size_threshold = 100
 is_cached = true
 [builders.viz.gene_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_centric]
-array_size_threshold = 100
+occurrences_threshold = 100
 is_cached = true
 [builders.viz.cnv_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_occurrence_centric]
-array_size_threshold = 100
 is_cached = true
 [builders.viz.cnv_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_centric]
-array_size_threshold = 100
+occurrences_threshold = 100
 is_cached = true
 [builders.viz.ssm_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_occurrence_centric]
-array_size_threshold = 100
 is_cached = true
 [builders.viz.ssm_occurrence_centric.backup]
 mode = "NEITHER"
@@ -214,7 +212,6 @@ mode = "NEITHER"
 path = ""
 
 [builders.gene_expression.gene_expression]
-array_size_threshold = 100
 is_cached = true
 [builders.gene_expression.gene_expression.backup]
 mode = "NEITHER"

@@ -20,7 +20,7 @@ def main():
     Define the spark context and parse agruments into config
     """
     config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(
-        toml.load("config.toml")
+        toml.load("configuration.toml")
     )
     es_client = elasticsearch.Elasticsearch(
         config.elasticsearch.connection.nodes.split(","),

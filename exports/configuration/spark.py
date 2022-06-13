@@ -8,12 +8,12 @@ def _to_camel_case(value: str) -> str:
     return f"{parts[0].lower()}{''.join(part.title() for part in parts[1:])}"
 
 
-class ArgumentMixin:
-    def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
-        return (f"--{path}{field}", f"{value}")
-
+class ConfigArgumentMixin:
     def _format_field(self, field: str) -> str:
-        return field.replace("_", "-")
+        return _to_camel_case(field)
+
+    def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
+        return ("--conf", f"{path}{field}={value}")
 
     def _get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
         fields = (
@@ -23,39 +23,17 @@ class ArgumentMixin:
         for field, value in fields:
             field = self._format_field(field)
 
-            if isinstance(value, ArgumentMixin):
+            if isinstance(value, ConfigArgumentMixin):
                 yield from value._get_arguments(f"{path}{field}.")
 
             else:
                 yield self._get_field_argument(path, field, value)
 
 
-class ConfigArgumentMixin(ArgumentMixin):
-    def _format_field(self, field: str) -> str:
-        return _to_camel_case(field)
-
-    def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
-        return ("--conf", f"{path}{field}={value}")
-
-
-@dataclasses.dataclass(frozen=True)
-class Arguments(ArgumentMixin):
-    deploy_mode: str
-    driver_memory: str
-    executor_cores: int
-    executor_memory: str
-    master: str
-    name: str
-    num_executors: int
-
-    def get_arguments(self) -> Iterable[Tuple[str, str]]:
-        return self._get_arguments()
-
-
 @dataclasses.dataclass(frozen=True)
 class Driver(ConfigArgumentMixin):
-    auto_broadcast_join_threshold: int
     max_result_size: str
+    memory: str
 
 
 @dataclasses.dataclass(frozen=True)
@@ -76,15 +54,37 @@ class Pyspark(ConfigArgumentMixin):
 
 @dataclasses.dataclass(frozen=True)
 class SQL(ConfigArgumentMixin):
+    auto_broadcast_join_threshold: int
     case_sensitive: bool
     shuffle: Shuffle
 
 
 @dataclasses.dataclass(frozen=True)
+class Executor(ConfigArgumentMixin):
+    memory: str
+    cores: int
+    instances: int
+
+
+@dataclasses.dataclass(frozen=True)
+class App(ConfigArgumentMixin):
+    name: str
+
+
+@dataclasses.dataclass(frozen=True)
+class Submit(ConfigArgumentMixin):
+    deploy_mode: str
+
+
+@dataclasses.dataclass(frozen=True)
 class Spark(ConfigArgumentMixin):
+    master: str
+    app: App
     driver: Driver
-    sql: SQL
+    executor: Executor
     pyspark: Pyspark
+    sql: SQL
+    submit: Submit
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
         return self._get_arguments("spark.")

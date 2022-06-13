@@ -583,11 +583,11 @@ class ConfigAdapter(BaseConfig):
     @property
     def percentile_threshold(self) -> Dict[str, int]:  # type: ignore
         return {
-            "genes_per_case": self._config.builders.viz.case_centric.array_size_threshold,
-            "occurrences_per_ssm": self._config.builders.viz.ssm_centric.array_size_threshold,
+            "genes_per_case": self._config.builders.viz.case_centric.genes_threshold,
+            "occurrences_per_ssm": self._config.builders.viz.ssm_centric.occurrences_threshold,
             "consequences_per_ssm": 100,
             "observations_per_ssm": 100,
-            "occurrences_per_cnv": self._config.builders.viz.cnv_centric.array_size_threshold,
+            "occurrences_per_cnv": self._config.builders.viz.cnv_centric.occurrences_threshold,
         }
 
     @property
