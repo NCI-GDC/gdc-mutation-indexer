@@ -56,17 +56,17 @@ class GeneModelBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class CaseCentricBuilder:
+class CaseCentricBuilder(Builder):
     genes_threshold: int
 
 
 @dataclasses.dataclass(frozen=True)
-class CNVCentricBuilder:
+class CNVCentricBuilder(Builder):
     occurrences_threshold: int
 
 
 @dataclasses.dataclass(frozen=True)
-class SSMCentricBuilder:
+class SSMCentricBuilder(Builder):
     occurrences_threshold: int
 
 
