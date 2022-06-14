@@ -1,3 +1,8 @@
+[environment]
+java_home = ""
+spark_home = ""
+yarn_conf_dir = ""
+
 [spark]
 master = "yarn"
 
@@ -190,6 +195,15 @@ path = ""
 [builders.viz.ssm_occurrence_centric]
 is_cached = true
 [builders.viz.ssm_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_expression.gene_model]
+census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
+citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
+is_cached = true
+[builders.gene_expression.gene_model.backup]
 mode = "NEITHER"
 path = ""
 

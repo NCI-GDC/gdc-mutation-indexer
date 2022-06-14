@@ -88,6 +88,7 @@ class Viz:
 
 @dataclasses.dataclass(frozen=True)
 class GeneExpression:
+    gene_model: GeneModelBuilder
     case: Builder
     value: Builder
     primary_aliquot: Builder
