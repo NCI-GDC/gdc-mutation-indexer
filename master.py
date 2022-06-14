@@ -15,7 +15,7 @@ import toml
 
 import exports
 from exports import configuration
-from exports.configuration import environment
+from exports.configuration import build, environment
 
 ROOT_DIR = path.dirname(__file__)
 
@@ -48,9 +48,17 @@ def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configurati
     return configuration.CONFIG_SCHEMA.load(default_config)
 
 
+def get_config_dir(config: build.Build) -> str:
+    config_file = config.config_dir
+
+    os.makedirs(config_file, exist_ok=True)
+
+    return config_file
+
+
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
-    config_file = build.config_file
+    config_file = get_config_dir(build)
 
     with open(config_file, "w+") as f:
         toml.dump(configuration.CONFIG_SCHEMA.dump(config), f)
