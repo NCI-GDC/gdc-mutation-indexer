@@ -107,7 +107,7 @@ async def run_spark_command(config: configuration.Configuration) -> None:
 
 
 async def force_merge_indices(config: configuration.Configuration) -> None:
-    es_client = elasticsearch.AsyncElasticsearch(
+    async with elasticsearch.AsyncElasticsearch(
         config.elasticsearch.connection.nodes.split(","),
         use_ssl=config.elasticsearch.connection.use_ssl,
         verify_certs=config.elasticsearch.connection.verify_certs,
@@ -115,25 +115,15 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             config.elasticsearch.connection.user,
             config.elasticsearch.connection.password,
         ),
-    )
-    loop = asyncio.get_event_loop()
-
-    async def get_index(index: str) -> Optional[str]:
-        if await es_client.indices.exists(index=index):
-            return index
-
-        return None
-
-    tasks = asyncio.as_completed(
-        tuple(
-            loop.create_task(get_index(index))
+    ) as es_client:
+        indices = (
+            index
             for index in config.build.indices.values()
+            if await es_client.indices.exists(index=index)
         )
-    )
-    indices = filter(None, (task.result() for task in tasks))
 
-    for index in indices:
-        await es_client.indices.forcemerge(index=index, max_num_segments=1)
+        async for index in indices:
+            await es_client.indices.forcemerge(index=index, max_num_segments=1)
 
 
 def set_environment_variables(env: environment.Environment) -> None:
