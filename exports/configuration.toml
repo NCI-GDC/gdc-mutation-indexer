@@ -246,9 +246,9 @@ user = ""
 [elasticsearch.connection]
 nodes = "localhost:9200"
 password = ""
-use_ssl = false
+use_ssl = true
 user = ""
-verify_certs = true
+verify_certs = false
 [elasticsearch.read]
 case_index = "graph_case"
 file_index = "graph_file"
