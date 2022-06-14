@@ -13,9 +13,9 @@ import importlib_resources as resources
 import more_itertools
 import toml
 
-from exports import configuration
 import exports
-
+from exports import configuration
+from exports.configuration import environment
 
 ROOT_DIR = path.dirname(__file__)
 
@@ -128,12 +128,19 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         await es_client.indices.forcemerge(index=index, max_num_segments=1)
 
 
+def set_environment_variables(env: environment.Environment) -> None:
+    os.environ["JAVA_HOME"] = env.java_home
+    os.environ["SPARK_HOME"] = env.spark_home
+    os.environ["YARN_CONF_DIR"] = env.yarn_conf_dir
+
+
 async def main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args()
     config = get_config(args.config)
 
     print(f"RUNNING BUILD: {config.build.build_id}")
+    set_environment_variables(config.environment)
 
     with halo.Halo(spinner="pong"):
         await run_spark_command(config)

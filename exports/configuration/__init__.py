@@ -1,18 +1,26 @@
 import marshmallow
 import marshmallow_dataclass
 
-from exports.configuration import aws, build, builders, elasticsearch, indexd, spark
+from exports.configuration import (
+    aws,
+    build,
+    builders,
+    elasticsearch,
+    environment,
+    indexd,
+    spark,
+)
 
 
 @marshmallow_dataclass.dataclass(frozen=True)
 class Configuration:
-    spark_arguments: spark.Arguments
-    spark: spark.Spark
+    aws: aws.AWS
     build: build.Build
     builders: builders.Builders
-    aws: aws.AWS
-    indexd: indexd.IndexD
     elasticsearch: elasticsearch.Elasticsearch
+    environment: environment.Environment
+    indexd: indexd.IndexD
+    spark: spark.Spark
 
 
 CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()
