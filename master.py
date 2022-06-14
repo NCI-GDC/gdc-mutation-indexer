@@ -53,7 +53,7 @@ def get_config_dir(config: build.Build) -> str:
 
     os.makedirs(config_file, exist_ok=True)
 
-    return config_file
+    return config.config_file
 
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
