@@ -593,6 +593,7 @@ class ConfigAdapter(BaseConfig):
     @property
     def cache_dataframes(self) -> Dict[str, bool]:  # type: ignore
         return {
+            "maf_metadata": self._config.builders.viz.maf_metadata.is_cached,
             "mafs": self._config.builders.viz.maf.is_cached,
             "cases": self._config.builders.viz.case.is_cached,
             "case_centric": self._config.builders.viz.case_centric.is_cached,
@@ -624,6 +625,10 @@ class ConfigAdapter(BaseConfig):
     @property
     def index_types(self) -> Sequence[str]:
         return self._config.build.index_types
+
+    @property
+    def maf_metadata_backup(self) -> str:
+        return self._config.builders.viz.maf_metadata.backup.mode.name.lower()
 
     @property
     def maf_backup(self) -> str:
