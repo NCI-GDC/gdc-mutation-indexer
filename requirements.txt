@@ -85,7 +85,7 @@ importlib-metadata==2.1.1
     # via jsonschema
 importlib-resources==3.2.1
     # via gdc-mutation-indexer (setup.py)
-indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.0.0
+indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.1.0-rc.5
     # via gdc-mutation-indexer (setup.py)
 jmespath==0.10.0
     # via
