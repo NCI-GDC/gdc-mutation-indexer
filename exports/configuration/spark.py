@@ -77,6 +77,20 @@ class Submit(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class Env(ConfigArgumentMixin):
+    pex_python: str
+    pex_root: str
+
+    def _format_field(self, field: str) -> str:
+        return field.upper()
+
+
+@dataclasses.dataclass(frozen=True)
+class Yarn(ConfigArgumentMixin):
+    app_master_env: Env
+
+
+@dataclasses.dataclass(frozen=True)
 class Spark(ConfigArgumentMixin):
     master: str
     app: App
@@ -85,6 +99,7 @@ class Spark(ConfigArgumentMixin):
     pyspark: Pyspark
     sql: SQL
     submit: Submit
+    yarn: Yarn
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
         return self._get_arguments("spark.")

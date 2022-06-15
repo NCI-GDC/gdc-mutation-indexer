@@ -80,9 +80,6 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
 
 async def run_spark_command(config: configuration.Configuration) -> None:
     config_arguments = config.spark.get_arguments()
-    config_arguments = itertools.chain(
-        config_arguments, (("--conf", 'spark.yarn.appMasterEnv.PEX_ROOT="./.pex"'),)
-    )
     file_arguments = get_file_args(config)
     arguments = more_itertools.flatten(
         itertools.chain(config_arguments, file_arguments)

@@ -32,6 +32,10 @@ partitions = 1024
 [spark.submit]
 deploy_mode = "cluster"
 
+[spark.yarn.app_master_env]
+pex_python = "python3.6"
+pex_root = '"./pex"'
+
 [build]
 index_types = [
   "case_centric",
@@ -173,8 +177,8 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_centric]
-occurrences_threshold = 100
 is_cached = true
+occurrences_threshold = 100
 [builders.viz.cnv_centric.backup]
 mode = "NEITHER"
 path = ""
@@ -186,8 +190,8 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_centric]
-occurrences_threshold = 100
 is_cached = true
+occurrences_threshold = 100
 [builders.viz.ssm_centric.backup]
 mode = "NEITHER"
 path = ""
