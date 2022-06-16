@@ -1,6 +1,7 @@
-import copy
 import typing
-from marshmallow import utils, fields, exceptions, validate
+
+import marshmallow
+from marshmallow import exceptions, fields, utils
 
 
 class ArbitraryLengthTuple(fields.List):
@@ -27,3 +28,19 @@ class ArbitraryLengthTuple(fields.List):
             raise self.make_error("invalid")
 
         return tuple(self._deserialize_values(value, **kwargs))
+
+
+class SecretString(str):
+    ...
+
+
+class SecretStringField(fields.String):
+    def _serialize(self, value, attr, obj, **kwargs) -> typing.Optional[str]:
+        if self.root.context.get("is_obfuscated"):
+            value = "*" * len(value)
+
+        return super()._serialize(value, attr, obj, **kwargs)
+
+
+class ExtendedSchema(marshmallow.Schema):
+    TYPE_MAPPING = {SecretString: SecretStringField}

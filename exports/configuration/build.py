@@ -1,7 +1,6 @@
 import dataclasses
-from os import path
-from typing import Mapping, Sequence
 import uuid
+from typing import Mapping, Sequence
 
 from marshmallow import fields
 
@@ -29,6 +28,7 @@ class Build:
     )
     jar_dir: str
     config_dir: str
+    config_file: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
 
     def _get_index_template(self) -> str:
@@ -44,7 +44,3 @@ class Build:
         return {
             index_type: template.format(index_type) for index_type in self.index_types
         }
-
-    @property
-    def config_file(self) -> str:
-        return path.join(self.config_dir, f"config-{self.build_id}.toml")

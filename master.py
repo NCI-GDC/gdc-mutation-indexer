@@ -1,11 +1,12 @@
 import argparse
 import asyncio
+import datetime
 import itertools
 import os
 import pathlib
 import tempfile
 from os import path
-from typing import Iterable, Optional, Tuple
+from typing import Any, ContextManager, Iterable, Mapping, Optional, Tuple
 
 import elasticsearch
 import halo
@@ -15,7 +16,7 @@ import toml
 
 import exports
 from exports import configuration
-from exports.configuration import build, environment
+from exports.configuration import environment
 
 ROOT_DIR = path.dirname(__file__)
 
@@ -37,37 +38,53 @@ def merge_dict(a: dict, b: dict) -> None:
             a[key] = value
 
 
-def get_config(config_path: Optional[pathlib.Path]) -> configuration.Configuration:
+def load_config_data(config_path: str, temp_config_file: str) -> Mapping[str, Any]:
     default_config = toml.loads(resources.read_text(exports, "configuration.toml"))
+    default_config["build"]["config_file"] = temp_config_file
 
     if config_path:
         user_config = toml.load(config_path)
 
         merge_dict(default_config, user_config)
 
-    return configuration.CONFIG_SCHEMA.load(default_config)
+    return default_config
 
 
-def get_config_dir(config: build.Build) -> str:
-    config_file = config.config_dir
+def write_manifest(config: configuration.Configuration) -> None:
+    file_name = path.join(
+        config.build.config_dir,
+        f"{config.build.build_id}-{datetime.datetime.now().isoformat()}.toml",
+    )
+    data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
 
-    os.makedirs(config_file, exist_ok=True)
+    os.makedirs(config.build.config_dir, exist_ok=True)
 
-    return config.config_file
+    with open(file_name, "w+") as f:
+        toml.dump(data, f)
+
+
+def get_config(
+    config_path: Optional[pathlib.Path],
+) -> ContextManager[configuration.Configuration]:
+    with tempfile.NamedTemporaryFile("w+") as f:
+        config_data = load_config_data(config_path, f.name)
+        config = configuration.CONFIG_SCHEMA.load(config_data)
+
+        toml.dump(configuration.CONFIG_SCHEMA.dump(), f)
+
+        yield config
+
+    write_manifest(config)
 
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
-    config_file = get_config_dir(build)
-
-    with open(config_file, "w+") as f:
-        toml.dump(configuration.CONFIG_SCHEMA.dump(config), f)
 
     yield (
         "--files",
         ",".join(
             (
-                f"{config_file}#configuration.toml",
+                f"{config.build.config_file}#configuration.toml",
                 path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
             )
         ),
@@ -135,14 +152,14 @@ def set_environment_variables(env: environment.Environment) -> None:
 async def main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args()
-    config = get_config(args.config)
 
-    print(f"RUNNING BUILD: {config.build.build_id}")
-    set_environment_variables(config.environment)
+    with get_config(args.config) as config:
+        print(f"RUNNING BUILD: {config.build.build_id}")
+        set_environment_variables(config.environment)
 
-    with halo.Halo(spinner="pong"):
-        await run_spark_command(config)
-        await force_merge_indices(config)
+        with halo.Halo(spinner="pong"):
+            await run_spark_command(config)
+            await force_merge_indices(config)
 
 
 if __name__ == "__main__":

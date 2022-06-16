@@ -1,11 +1,13 @@
 import dataclasses
 
+from exports.configuration import marshmallow_extensions
+
 
 @dataclasses.dataclass(frozen=True)
 class Connection:
     nodes: str
     user: str
-    password: str
+    password: marshmallow_extensions.SecretString
     use_ssl: bool
     verify_certs: bool
 
