@@ -1,12 +1,13 @@
 import argparse
 import asyncio
+import contextlib
 import datetime
 import itertools
 import os
 import pathlib
 import tempfile
 from os import path
-from typing import Any, ContextManager, Iterable, Mapping, Optional, Tuple
+from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
 
 import elasticsearch
 import halo
@@ -63,9 +64,10 @@ def write_manifest(config: configuration.Configuration) -> None:
         toml.dump(data, f)
 
 
+@contextlib.contextmanager
 def get_config(
     config_path: Optional[pathlib.Path],
-) -> ContextManager[configuration.Configuration]:
+) -> Iterator[configuration.Configuration]:
     with tempfile.NamedTemporaryFile("w+") as f:
         config_data = load_config_data(config_path, f.name)
         config = configuration.CONFIG_SCHEMA.load(config_data)
