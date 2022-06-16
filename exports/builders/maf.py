@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Mapping
 import more_itertools
 
 import yaml
@@ -356,7 +356,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         Return:
             A data frame containing all data within the required MAF files.
         """
-        files = dict(
+        files: Mapping[str, Iterable[str]] = dict(
             more_itertools.groupby_transform(
                 maf_metadata_df.select("file_id", "data_type").toLocalIterator(),
                 keyfunc=lambda row: row.data_type,

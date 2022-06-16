@@ -512,6 +512,9 @@ class ConfigAdapter(BaseConfig):
         self._elasticsearch = elasticsearch
         self._indexd = indexd
 
+        self.graph_case_doc_type = None
+        self.graph_file_doc_type = None
+
     @property
     def maf_data_types(self) -> List[str]:  # type: ignore
         raise NotImplementedError()
@@ -637,6 +640,10 @@ class ConfigAdapter(BaseConfig):
     @property
     def gistic_backup(self) -> str:
         raise NotImplementedError()
+
+    @property
+    def gene_expression_values_backup(self) -> str:
+        return self._config.builders.gene_expression.value.backup.mode.name.lower()
 
     @property
     def gene_expression_cases_backup(self) -> str:
