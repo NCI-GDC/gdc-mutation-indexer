@@ -7,6 +7,7 @@ import subprocess
 from typing import Callable, Iterable, List, Sequence
 
 import elasticsearch
+import more_itertools
 import psqlgraph
 from gdcdatamodel import models
 from gdcmodels import esutils
@@ -138,12 +139,9 @@ def get_spark_args(args: argparse.Namespace) -> Iterable[str]:
     """
     # Get list of eggs and jars to upload
     jars_dir = os.path.join(config.ROOT_DIR, "artifacts", "jars")
-    eggs_dir = os.path.join(config.ROOT_DIR, "artifacts", "eggs")
-    jars = [os.path.join(jars_dir, j) for j in os.listdir(jars_dir)]
-    eggs = [os.path.join(eggs_dir, e) for e in os.listdir(eggs_dir)]
-    app_egg = f"gdc_mutation_indexer-{config.VERSION}-py{config.PYTHON_VERSION}.egg"
-    eggs.append(os.path.join(config.ROOT_DIR, "dist", app_egg))
-    spark_args = ["--py-files", ",".join(eggs), "--jars", ",".join(jars)]
+    jars = ",".join(os.path.join(jars_dir, j) for j in os.listdir(jars_dir))
+    files = os.path.join(config.ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex")
+    spark_args = ["--jars", jars, "--files", files]
 
     # Add other spark arguments
     for key, value in parsers.SparkArgs().iter_args(args):
@@ -185,8 +183,9 @@ def get_config_args(args: argparse.Namespace) -> Iterable[str]:
                 ("--conf", f'spark.yarn.appMasterEnv.{varname}="{value}"')
             )
             config_args.extend(("--conf", f'spark.executorEnv.{varname}="{value}"'))
+    config_args.extend(("--conf", f"spark.pyspark.python=./mutation-indexer.pex"))
     config_args.extend(
-        ("--conf", f"spark.pyspark.python=python{config.PYTHON_VERSION}")
+        ("--conf", f"spark.pyspark.driver.python=./mutation-indexer.pex")
     )
 
     return config_args
