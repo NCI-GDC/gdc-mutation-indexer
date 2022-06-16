@@ -92,3 +92,4 @@ elasticsearch-*
 spark-2.*
 /_version.py
 /.env
+.configs/

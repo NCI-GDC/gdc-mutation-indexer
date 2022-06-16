@@ -34,9 +34,13 @@ deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
 pex_python = "python3.6"
-pex_root = '"./pex"'
+pex_root = '"./.pex"'
 
 [build]
+build_version = "v0"
+config_dir = "./.configs"
+config_file = "./.configs/test-config.toml"
+data_release = "test"
 index_types = [
   "case_centric",
   "gene_centric",
@@ -47,6 +51,7 @@ index_types = [
   "gene_expression",
 ]
 jar_dir = "artifacts/jars"
+projects = []
 study_label = ""
 
 [builders]

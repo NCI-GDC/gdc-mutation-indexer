@@ -24,7 +24,7 @@ setup(
         "local_scheme": "dirty-tag",
         "write_to": "_version.py",
     },
-    setup_requires=["setuptools_scm<6"],
+    setup_requires=["setuptools_scm<6", "gitdb2>=2.0.0"],
     description="ETL for mutation elasticsearch indices",
     long_description=long_description,
     long_description_content_type="text/markdown",
