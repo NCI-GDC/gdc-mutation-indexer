@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Iterable, Iterator, List, NamedTuple, Optional, Union
+from typing import Iterable, Iterator, NamedTuple, Optional, Union
 
 import more_itertools
 from indexclient import client
@@ -63,18 +63,10 @@ class DataFrameUtil:
         self._sql_context = sql_context
         self._logger = logger
 
-    def _bulk_request(self, dids: List[str]) -> Optional[Iterable[client.Document]]:
-        if not dids:
-            return ()
-
-        return self._indexd.bulk_request(dids) or ()
-
-    def _get_doc_urls(
-        self, doc_ids: Iterable[str], batch_size: int
-    ) -> Iterator[DocumentUrl]:
+    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
-            self._bulk_request(list(dids)) for dids in batches
+            self._indexd.bulk_request(list(dids)) or () for dids in batches
         )
 
         for doc in docs:

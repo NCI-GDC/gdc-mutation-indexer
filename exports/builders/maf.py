@@ -1,6 +1,7 @@
 import itertools
 import logging
 from typing import Dict, Iterable
+import more_itertools
 
 import yaml
 from pkg_resources import resource_filename
@@ -356,9 +357,10 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
             A data frame containing all data within the required MAF files.
         """
         files = dict(
-            itertools.groupby(
+            more_itertools.groupby_transform(
                 maf_metadata_df.select("file_id", "data_type").toLocalIterator(),
-                lambda row: row.data_type,
+                keyfunc=lambda row: row.data_type,
+                valuefunc=lambda row: row.file_id
             )
         )
         masked_somatic_mutaion = files.get("Masked Somatic Mutation", ())
