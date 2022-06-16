@@ -68,11 +68,11 @@ def write_manifest(config: configuration.Configuration) -> None:
 def get_config(
     config_path: Optional[pathlib.Path],
 ) -> Iterator[configuration.Configuration]:
-    with tempfile.NamedTemporaryFile("w+") as f:
+    with tempfile.NamedTemporaryFile("w+", suffix=".toml") as f:
         config_data = load_config_data(config_path, f.name)
         config = configuration.CONFIG_SCHEMA.load(config_data)
 
-        toml.dump(configuration.CONFIG_SCHEMA.dump(), f)
+        toml.dump(config_data, f)
 
         yield config
 
