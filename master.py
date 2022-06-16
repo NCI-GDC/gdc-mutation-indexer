@@ -39,9 +39,9 @@ def merge_dict(a: dict, b: dict) -> None:
             a[key] = value
 
 
-def load_config_data(config_path: str, temp_config_file: str) -> Mapping[str, Any]:
+def load_config_data(config_path: str, config_file: str) -> Mapping[str, Any]:
     default_config = toml.loads(resources.read_text(exports, "configuration.toml"))
-    default_config["build"]["config_file"] = temp_config_file
+    default_config["build"]["config_file"] = config_file
 
     if config_path:
         user_config = toml.load(config_path)
@@ -68,11 +68,13 @@ def write_manifest(config: configuration.Configuration) -> None:
 def get_config(
     config_path: Optional[pathlib.Path],
 ) -> Iterator[configuration.Configuration]:
-    with tempfile.NamedTemporaryFile("w+", suffix=".toml") as f:
-        config_data = load_config_data(config_path, f.name)
+    with tempfile.TemporaryDirectory() as temp_directory:
+        config_file = path.join(temp_directory, "configuration.toml")
+        config_data = load_config_data(config_path, config_file)
         config = configuration.CONFIG_SCHEMA.load(config_data)
 
-        toml.dump(config_data, f)
+        with open(config_file, "w+") as f:
+            toml.dump(config_data, f)
 
         yield config
 
