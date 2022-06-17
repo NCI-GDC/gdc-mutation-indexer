@@ -83,15 +83,16 @@ def get_config(
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
     build = config.build
+    files = ",".join(
+        (
+            f"{config.build.config_file}#configuration.toml",
+            path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
+        )
+    )
 
     yield (
-        "--spark.yarn.dist.files",
-        ",".join(
-            (
-                f"{config.build.config_file}#configuration.toml",
-                path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
-            )
-        ),
+        "--conf",
+        f"spark.yarn.dist.files={files}",
     )
     yield (
         "--jars",

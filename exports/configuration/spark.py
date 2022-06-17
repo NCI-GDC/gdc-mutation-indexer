@@ -88,6 +88,7 @@ class Env(ConfigArgumentMixin):
 @dataclasses.dataclass(frozen=True)
 class Yarn(ConfigArgumentMixin):
     app_master_env: Env
+    executor_env: Env
 
 
 @dataclasses.dataclass(frozen=True)
