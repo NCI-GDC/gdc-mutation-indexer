@@ -29,7 +29,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="Apache",
-    packages=find_packages(),
+    packages=find_packages(exclude=("tests.*", "tests")),
     py_modules=["config"],
     include_package_data=True,
     options=dict(egg_info=dict(tag_build=(".rev." + git_hash))),
