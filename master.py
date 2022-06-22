@@ -6,12 +6,12 @@ import itertools
 import os
 import pathlib
 import tempfile
+from importlib import resources
 from os import path
 from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
 
 import elasticsearch
 import halo
-import importlib_resources as resources
 import more_itertools
 import toml
 

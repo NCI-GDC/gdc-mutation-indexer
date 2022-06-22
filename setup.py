@@ -36,7 +36,6 @@ setup(
     install_requires=[
         "boto==2.49.0",
         "elasticsearch[async]~=7.6",
-        "importlib-resources~=3.2",
         "ndjson~=0.3",
         "networkx<=2.4",
         "marshmallow-dataclass~=8.5",
