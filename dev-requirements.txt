@@ -33,7 +33,9 @@ coverage[toml]==5.5
     #   -r dev-requirements.in
     #   pytest-cov
 dataclasses==0.8 ; python_version <= "3.6"
-    # via -r dev-requirements.in
+    # via
+    #   -c requirements.txt
+    #   -r dev-requirements.in
 decorator==5.0.9
     # via
     #   -c requirements.txt
@@ -133,6 +135,7 @@ sphinx==1.5.2
     # via -r dev-requirements.in
 toml==0.10.2
     # via
+    #   -c requirements.txt
     #   coverage
     #   pre-commit
     #   pytest

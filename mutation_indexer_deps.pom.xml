@@ -10,7 +10,7 @@
 
   <properties>
     <gdc.mutationIndexer.artifactDir>artifacts/jars</gdc.mutationIndexer.artifactDir>
-    <gdc.mutationIndexer.scalaVersion>2.11</gdc.mutationIndexer.scalaVersion>
+    <gdc.mutationIndexer.scalaVersion>2.13</gdc.mutationIndexer.scalaVersion>
   </properties>
 
   <build>
@@ -39,20 +39,9 @@
   <!-- TODO Review some of these deps... -->
   <dependencies>
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk</artifactId>
-      <version>1.7.4</version>
-    </dependency>
-    <dependency>
-      <groupId>com.databricks</groupId>
-      <artifactId>spark-csv_${gdc.mutationIndexer.scalaVersion}</artifactId>
-      <version>1.5.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-spark-20_${gdc.mutationIndexer.scalaVersion}</artifactId>
       <version>7.6.2</version>
     </dependency>
   </dependencies>
 </project>
-

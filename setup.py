@@ -42,7 +42,7 @@ setup(
         "marshmallow-dataclass~=8.5",
         "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
-        "pyspark==2.4.5",
+        "pyspark==3.2.1",
         "python-dateutil~=2.8",
         "PyYaml>=3.11,<6",
         "requests~=2.7",
