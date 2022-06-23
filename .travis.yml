@@ -1,17 +1,15 @@
-dist: xenial
+dist: bionic
 
 language: python
 
 python:
   - "3.6"
 
-jdk:
-  - openjdk8
-
 addons:
   apt:
     packages:
       - libyaml-dev
+      - openjdk-8-jdk
 
 cache: pip
 

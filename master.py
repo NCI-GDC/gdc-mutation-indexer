@@ -7,9 +7,6 @@ import subprocess
 from typing import Callable, Iterable, List, Sequence
 
 import elasticsearch
-import more_itertools
-import psqlgraph
-from gdcdatamodel import models
 from gdcmodels import esutils
 
 import config
@@ -19,25 +16,6 @@ from exports import es_utils
 logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
-
-
-def get_release_info():
-    """
-    Lookup release candidate name and version in postgres
-    """
-    postgres_driver = psqlgraph.PsqlGraphDriver(
-        os.environ["PG_HOST"],
-        os.environ["PG_USER"],
-        os.environ["PG_PASS"],
-        os.environ["PG_NAME"],
-    )
-    with postgres_driver.session_scope():
-        release_node = (
-            postgres_driver.nodes(models.DataRelease).props(released=False).first()
-        )
-    release_name = release_node.name
-    version = [release_node.major_version, release_node.minor_version]
-    return release_name, version
 
 
 def parse_args() -> argparse.Namespace:
