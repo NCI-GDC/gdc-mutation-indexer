@@ -35,6 +35,7 @@ setup(
     options=dict(egg_info=dict(tag_build=(".rev." + git_hash))),
     install_requires=[
         "boto==2.49.0",
+        "boto3~=1.23",
         "elasticsearch~=7.6",
         "importlib-resources~=3.2.0",
         "ndjson~=0.3",

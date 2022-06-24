@@ -12,6 +12,12 @@ backports.weakref==1.0.post1
     # via backports.tempfile
 boto==2.49.0
     # via gdc-mutation-indexer (setup.py)
+boto3==1.23.10
+    # via gdc-mutation-indexer (setup.py)
+botocore==1.26.10
+    # via
+    #   boto3
+    #   s3transfer
 certifi==2022.6.15
     # via
     #   elasticsearch
@@ -52,6 +58,10 @@ importlib-resources==3.2.1
     # via gdc-mutation-indexer (setup.py)
 indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.0.0
     # via gdc-mutation-indexer (setup.py)
+jmespath==0.10.0
+    # via
+    #   boto3
+    #   botocore
 jsonschema==3.2.0
     # via
     #   gdcdatamodel
@@ -77,7 +87,9 @@ pyrsistent==0.18.0
 pyspark==2.4.5
     # via gdc-mutation-indexer (setup.py)
 python-dateutil==2.8.2
-    # via gdc-mutation-indexer (setup.py)
+    # via
+    #   botocore
+    #   gdc-mutation-indexer (setup.py)
 pytz==2020.5
     # via gdcdatamodel
 pyyaml==5.4.1
@@ -92,6 +104,8 @@ requests==2.27.1
     #   indexclient
 rstr==2.2.6
     # via psqlgraph
+s3transfer==0.5.2
+    # via boto3
 six==1.15.0
     # via
     #   gdc-mutation-indexer (setup.py)
@@ -112,6 +126,7 @@ typing-extensions==4.1.1
     #   importlib-metadata
 urllib3==1.26.9
     # via
+    #   botocore
     #   elasticsearch
     #   requests
 xlocal==0.5
