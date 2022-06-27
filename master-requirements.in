@@ -2,5 +2,3 @@
 -c requirements.txt
 
 pex~=2.1
-git+https://github.com/NCI-GDC/cdisutils.git@1.7.0#egg=cdisutils
-git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary

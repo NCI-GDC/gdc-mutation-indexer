@@ -3,21 +3,48 @@ import logging
 import types
 from typing import (
     AbstractSet,
+    Any,
+    Container,
     ContextManager,
     DefaultDict,
     Iterable,
     Optional,
     Set,
     Type,
+    TypeVar,
 )
 
 import elasticsearch
-from cdisutils import dictionary
 from elasticsearch import helpers
 from normalizer import mapper
 
 from tests.integration import config
 from tests.integration.utils import true_stats
+
+T = TypeVar("T")
+
+
+def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:
+    if isinstance(tree, dict):
+        return {
+            key: _remove_keys_from_dict(tree[key], remove_keys)
+            for key in tree
+            if key not in remove_keys
+        }
+    elif isinstance(tree, list):
+        return [_remove_keys_from_dict(element, remove_keys) for element in tree]
+    else:
+        return tree
+
+
+def remove_keys_from_dict(tree: dict, remove_keys: Optional[Container[str]]) -> dict:
+    """
+    Recursively remove keys from dictionary tree
+    """
+    if not remove_keys:
+        return tree
+
+    return _remove_keys_from_dict(tree, remove_keys)
 
 
 class IndexManager(ContextManager["IndexManager"]):
@@ -125,7 +152,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
                     _file.pop("cases", None)
 
         # TODO: temp fix
-        docs = dictionary.remove_keys_from_dict(docs, ["file_state"])
+        docs = remove_keys_from_dict(docs, {"file_state"})
 
         self._logger.info(
             "Bulk loading {} docs to the ES... {}".format(doc_type, len(docs))
