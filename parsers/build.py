@@ -63,6 +63,11 @@ class BuildArgs(BaseParser):
                     "gene_expression",
                 ],
             },
+            "maf-metadata-backup": {
+                "help": "Whether to read maf_df from backup or rebuild and write or do nothing",
+                "choices": ["read", "write", "neither"],
+                "default": "neither",
+            },
             "maf-backup": {
                 "help": "Whether to read maf_df from backup or rebuild and write or do nothing",
                 "choices": ["read", "write", "neither"],
