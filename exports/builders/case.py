@@ -5,6 +5,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 import config
+from exports import es_utils
 from exports.builders import base_input_builder, utils
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -18,8 +19,15 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
     Builds a case dataframe by loading case documents from gdc_from_graph
     """
 
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext) -> None:
+    def __init__(
+        self,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
+        es_dataframe_util: es_utils.DataFrameUtil,
+    ) -> None:
         super().__init__(config, sqlContext, "case")
+
+        self._es_dataframe_util = es_dataframe_util
 
     def build_from_scratch(
         self,
@@ -58,29 +66,10 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
         self.logger.info("Exclude fields: {}".format(self.config.exclude_fields))
 
         # Load cases from graph index
-        # TODO: DEV-1132 Switch to use the es_utils.DataFrameUtil
-        if self.config.graph_case_doc_type:
-            es_source = "{}/{}".format(
-                self.config.graph_case_index, self.config.graph_case_doc_type
-            )
-        else:
-            es_source = self.config.graph_case_index
-
-        df = (
-            self.sqlContext.read.format("es")
-            .option("es.nodes", self.config.source_es_nodes)
-            .option("es.net.http.auth.user", self.config.source_es_user)
-            .option("es.net.http.auth.pass", self.config.source_es_pass)
-            .option("es.nodes.wan.only", "true")
-            .option("es.net.ssl", self.config.es_use_ssl)
-            .option(
-                "es.net.ssl.cert.allow.self.signed", self.config.disable_es_verify_certs
-            )
-            .option("es.nodes.resolve.hostname", "false")
-            .option("es.query", query)
-            .option("es.read.field.exclude", ",".join(self.config.exclude_fields))
-            .option("es.resource.read", es_source)
-            .load(es_source)
+        df = self._es_dataframe_util.get_dataframe(
+            es_utils.Index.Case,
+            exclude_fields=self.config.exclude_fields,
+            query=query,
         )
 
         # Get all the cases that have been tested for ssm
