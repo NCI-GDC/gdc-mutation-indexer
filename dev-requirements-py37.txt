@@ -10,20 +10,20 @@ aspy-yaml==1.3.0
     # via pre-commit
 attrs==21.4.0
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   -r dev-requirements.in
     #   pytest
 babel==2.10.3
     # via sphinx
 certifi==2022.6.15
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   requests
 cfgv==3.3.1
     # via pre-commit
-charset-normalizer==2.0.12
+charset-normalizer==2.1.0
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   requests
 coverage[toml]==5.5
     # via
@@ -31,7 +31,7 @@ coverage[toml]==5.5
     #   pytest-cov
 decorator==5.1.1
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   jsonpath-rw
 deepdiff==3.3.0
     # via -r dev-requirements.in
@@ -47,13 +47,13 @@ identify==2.5.1
     # via pre-commit
 idna==3.3
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   requests
 imagesize==1.3.0
     # via sphinx
-importlib-metadata==4.8.3
+importlib-metadata==4.12.0
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   jsonpickle
     #   pluggy
     #   pre-commit
@@ -95,20 +95,20 @@ pytest-cov==2.12.1
     # via -r dev-requirements.in
 pytz==2020.5
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   babel
 pyyaml==5.4.1
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   aspy-yaml
     #   pre-commit
-requests==2.27.1
+requests==2.28.1
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   sphinx
 six==1.15.0
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   jsonpath-rw
     #   pre-commit
     #   sphinx
@@ -125,17 +125,17 @@ toml==0.10.2
     #   pytest-cov
 typing-extensions==4.1.1
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   importlib-metadata
 urllib3==1.26.9
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   requests
 virtualenv==20.15.1
     # via pre-commit
-zipp==3.6.0
+zipp==3.8.0
     # via
-    #   -c requirements.txt
+    #   -c requirements-py37.txt
     #   importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
