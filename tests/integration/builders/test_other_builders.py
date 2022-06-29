@@ -4,7 +4,7 @@ import pytest
 
 import deepdiff
 from tests.integration import config
-from exports import builders
+from exports import builders, es_utils
 from pyspark import sql
 from pyspark.sql import functions as F
 
@@ -492,7 +492,8 @@ class TestCaseBuilder:
         local_conf = config.TestConfig()
         local_conf.projects = projects
 
-        df = builders.CaseBuilder(local_conf, sqlContext).build(
+        es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext)
+        df = builders.CaseBuilder(local_conf, sqlContext, es_dataframe_util).build(
             maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
         )
 
