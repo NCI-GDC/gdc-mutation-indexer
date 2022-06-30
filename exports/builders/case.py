@@ -56,11 +56,9 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
 
         # Only load cases from the requested projects
         if self.config.projects:
-            query = json.dumps(
-                {"query": {"terms": {"project.project_id": self.config.projects}}}
-            )
+            query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
-            query = json.dumps({"query": {"match_all": {}}})
+            query = {"query": {"match_all": {}}}
 
         # Only retrieve the fields we want
         self.logger.info("Exclude fields: {}".format(self.config.exclude_fields))
