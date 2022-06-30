@@ -12,7 +12,7 @@ import config
 class BaseInputBuilder(abc.ABC):
     def __init__(
         self, config: config.BaseConfig, sqlContext: sql.SQLContext, input_type: str
-    ):
+    ) -> None:
         """
 
         Args:
