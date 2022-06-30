@@ -84,6 +84,7 @@ class BaseConfig(object):
     census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
 
     # The location to save the combined maf and gistic dataframes
+    maf_metadata_path = "maf_metadata_df.parquet"
     maf_path = "maf_df.parquet"
     gistic_path = "gistic_df.parquet"
     aliquot_path = "aliquot_df.parquet"
