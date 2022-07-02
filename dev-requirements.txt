@@ -29,10 +29,6 @@ coverage[toml]==5.5
     # via
     #   -r dev-requirements.in
     #   pytest-cov
-dataclasses==0.8 ; python_version <= "3.6"
-    # via
-    #   -c requirements.txt
-    #   -r dev-requirements.in
 decorator==5.1.1
     # via
     #   -c requirements.txt

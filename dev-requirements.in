@@ -3,7 +3,6 @@
 
 attrs~=21.4
 coverage[toml]~=5.5
-dataclasses~=0.8;python_version<="3.6"
 deepdiff==3.3.0
 ghp-import==0.5.4
 jsonpath-rw~=1.4
