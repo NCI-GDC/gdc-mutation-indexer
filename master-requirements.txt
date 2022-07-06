@@ -10,7 +10,7 @@ halo==0.0.31
     # via -r master-requirements.in
 log-symbols==0.0.14
     # via halo
-pex==2.1.93
+pex==2.1.94
     # via -r master-requirements.in
 six==1.15.0
     # via
