@@ -1,24 +1,12 @@
 import dataclasses
-import enum
 from typing import Sequence
 
-
-class BackupMode(enum.Enum):
-    READ = enum.auto()
-    WRITE = enum.auto()
-    NEITHER = enum.auto()
-    BOTH = enum.auto()
-
-    def is_write(self) -> bool:
-        return self == BackupMode.WRITE or self == BackupMode.BOTH
-
-    def is_read(self) -> bool:
-        return self == BackupMode.READ or self == BackupMode.BOTH
+from exports.constants import build
 
 
 @dataclasses.dataclass(frozen=True)
 class Backup:
-    mode: BackupMode
+    mode: build.BackupMode
     path: str
 
 

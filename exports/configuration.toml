@@ -42,19 +42,19 @@ pex_root = '"./.pex"'
 
 [build]
 build_version = "v0"
-config_dir = "./.configs"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
-  "case_centric",
-  "gene_centric",
-  "ssm_centric",
-  "ssm_occurrence_centric",
-  "cnv_centric",
-  "cnv_occurrence_centric",
-  "gene_expression",
+  "CASE_CENTRIC",
+  "CNV_CENTRIC",
+  "CNV_OCCURRENCE_CENTRIC",
+  "GENE_CENTRIC",
+  "SSM_CENTRIC",
+  "SSM_OCCURRENCE_CENTRIC",
+  "GENE_EXPRESSION",
 ]
 jar_dir = "artifacts/jars"
+manifest_dir = "./.manifests"
 projects = []
 study_label = ""
 

@@ -1,6 +1,8 @@
 import dataclasses
+from typing import Mapping
 
 from exports.configuration import marshmallow_extensions
+from exports.constants import build
 
 
 @dataclasses.dataclass(frozen=True)
@@ -22,6 +24,7 @@ class Read:
 class Write:
     batch_size_bytes: str
     batch_size_entities: int
+    indices: Mapping[build.IndexType, str]
 
 
 @dataclasses.dataclass(frozen=True)

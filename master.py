@@ -7,6 +7,7 @@ import logging
 import os
 import pathlib
 import tempfile
+import uuid
 from os import path
 from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
 
@@ -55,14 +56,19 @@ def load_config_data(config_path: str, config_file: str) -> Mapping[str, Any]:
     return default_config
 
 
-def write_manifest(config: configuration.Configuration) -> None:
-    file_name = path.join(
-        config.build.config_dir,
-        f"{datetime.datetime.now().isoformat()}-{config.build.build_id}.toml",
+def get_manifest_file(manifest_dir: str, build_id: uuid.UUID) -> str:
+    return path.join(
+        manifest_dir,
+        f"{datetime.datetime.now().isoformat()}-{build_id}.toml",
     )
+
+
+def write_manifest(config: configuration.Configuration) -> None:
+    build = config.build
+    file_name = get_manifest_file(build.manifest_dir, build.build_id)
     data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
 
-    os.makedirs(config.build.config_dir, exist_ok=True)
+    os.makedirs(build.manifest_dir, exist_ok=True)
 
     with open(file_name, "w+") as f:
         toml.dump(data, f)
@@ -167,11 +173,16 @@ async def main() -> None:
         set_environment_variables(config.environment)
 
         with halo.Halo(spinner="pong") as spinner:
-            spinner.text = "Running spark-submit"
-            await run_spark_command(config)
-            spinner.text = "Merging indices"
-            await force_merge_indices(config)
-            spinner.succeed("Indices built")
+            try:
+                spinner.text = "Running spark-submit"
+                await run_spark_command(config)
+                spinner.text = "Merging indices"
+                await force_merge_indices(config)
+            except:
+                spinner.warn("Process Failed")
+                raise
+            else:
+                spinner.succeed("Indices built")
 
 
 if __name__ == "__main__":

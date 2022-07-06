@@ -598,8 +598,8 @@ class ConfigAdapter(BaseConfig):
     def cache_dataframes(self) -> Dict[str, bool]:  # type: ignore
         return {
             "maf_metadata": self._config.builders.viz.maf_metadata.is_cached,
-            "mafs": self._config.builders.viz.maf.is_cached,
-            "cases": self._config.builders.viz.case.is_cached,
+            "maf": self._config.builders.viz.maf.is_cached,
+            "case": self._config.builders.viz.case.is_cached,
             "case_centric": self._config.builders.viz.case_centric.is_cached,
             "gene_centric": self._config.builders.viz.gene_centric.is_cached,
             "ssm_centric": self._config.builders.viz.ssm_centric.is_cached,
@@ -628,7 +628,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def index_types(self) -> Sequence[str]:
-        return self._config.build.index_types
+        return (typ.name.lower() for typ in self._config.build.index_types)
 
     @property
     def maf_metadata_backup(self) -> str:
@@ -714,7 +714,10 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def indices(self) -> Mapping[str, str]:
-        return self._config.build.indices
+        return {
+            k.name.lower(): v
+            for k, v in self._config.elasticsearch.write.indices.items()
+        }
 
     @property
     def es_nodes(self) -> str:
