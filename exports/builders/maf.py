@@ -97,10 +97,6 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         self.logger.info("Repartitioning MAF dataframe")
         df = df.repartition(self.config.df_repartition, "ssm_id")
 
-        if self.config.cache_dataframes["mafs"]:
-            self.logger.info("Caching repartitioned MAF dataframe")
-            df.cache().count()
-
         return df
 
     def get_annotation_schemas(self):
