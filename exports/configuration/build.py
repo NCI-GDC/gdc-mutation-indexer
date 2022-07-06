@@ -2,8 +2,8 @@ import dataclasses
 import uuid
 from typing import Sequence
 
-from marshmallow import fields
 import marshmallow_enum
+from marshmallow import fields
 
 from exports.configuration import marshmallow_extensions
 from exports.constants import build
