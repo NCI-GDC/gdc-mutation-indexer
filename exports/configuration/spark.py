@@ -99,10 +99,16 @@ class Key(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class Proxy(ConfigArgumentMixin):
+    host: str
+    port: int
+
+
+@dataclasses.dataclass(frozen=True)
 class S3A(ConfigArgumentMixin):
     access: Key
     secret: Key
-    endpoint: str
+    proxy: Proxy
 
 
 @dataclasses.dataclass(frozen=True)
