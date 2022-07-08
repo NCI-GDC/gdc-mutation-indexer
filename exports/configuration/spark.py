@@ -102,6 +102,7 @@ class Key(ConfigArgumentMixin):
 class S3A(ConfigArgumentMixin):
     access: Key
     secret: Key
+    endpoint: str
 
 
 @dataclasses.dataclass(frozen=True)
