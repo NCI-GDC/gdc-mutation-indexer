@@ -104,8 +104,8 @@ class BaseConfig(object):
     }
 
     cache_dataframes = {
-        "mafs": True,
-        "cases": True,
+        "maf": True,
+        "case": True,
         "case_centric": True,
         "gene_centric": True,
         "ssm_centric": True,
