@@ -111,6 +111,11 @@ class FS(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class Hadoop(ConfigArgumentMixin):
+    fs: FS
+
+
+@dataclasses.dataclass(frozen=True)
 class Spark(ConfigArgumentMixin):
     master: str
     app: App
@@ -120,7 +125,7 @@ class Spark(ConfigArgumentMixin):
     sql: SQL
     submit: Submit
     yarn: Yarn
-    fs: FS
+    hadoop: Hadoop
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
         """
