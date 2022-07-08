@@ -628,7 +628,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def index_types(self) -> Sequence[str]:
-        return (typ.name.lower() for typ in self._config.build.index_types)
+        return tuple(typ.name.lower() for typ in self._config.build.index_types)
 
     @property
     def maf_metadata_backup(self) -> str:
