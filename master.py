@@ -61,9 +61,6 @@ def get_manifest_file(manifest_dir: str, build_id: uuid.UUID) -> str:
         manifest_dir,
         f"{datetime.datetime.now().isoformat()}-{build_id}.toml",
     )
-    data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
-
-    os.makedirs(config.build.config_dir, exist_ok=True)
 
 
 def write_manifest(config: configuration.Configuration) -> None:
@@ -132,26 +129,6 @@ async def run_spark_command(config: configuration.Configuration) -> None:
     error_file = path.join(
         tempfile.gettempdir() or home_dir, "mutation-indexer-error.log"
     )
-    yield (
-        "--jars",
-        ",".join(path.join(build.jar_dir, jar) for jar in os.listdir(build.jar_dir)),
-    )
-
-
-async def run_spark_command(config: configuration.Configuration) -> None:
-    config_arguments = config.spark.get_arguments()
-    file_arguments = get_file_args(config)
-    arguments = more_itertools.flatten(
-        itertools.chain(config_arguments, file_arguments)
-    )
-    spark_home = os.getenv("SPARK_HOME", "")
-    spark_command = path.join(spark_home, "bin/spark-submit")
-    final_command = " ".join(
-        more_itertools.value_chain(
-            spark_command, arguments, path.join(ROOT_DIR, "bin/export.py")
-        )
-    )
-    home_dir = os.environ.get("HOME", "")
 
     with open(output_file, "wb+") as out_f, open(error_file, "wb+") as error_f:
         process = await asyncio.create_subprocess_shell(
