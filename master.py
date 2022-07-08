@@ -150,7 +150,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
     ) as es_client:
         indices = (
             index
-            for index in config.build.indices.values()
+            for index in config.elasticsearch.write.indices.values()
             if await es_client.indices.exists(index=index)
         )
 
