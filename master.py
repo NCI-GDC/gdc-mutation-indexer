@@ -179,7 +179,7 @@ async def main() -> None:
                 spinner.text = "Merging indices"
                 await force_merge_indices(config)
             except:
-                spinner.warn("Process Failed")
+                spinner.fail("Process Failed")
                 raise
             else:
                 spinner.succeed("Indices built")
