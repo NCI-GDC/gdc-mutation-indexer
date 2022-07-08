@@ -698,11 +698,11 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def df_repartition(self) -> int:
-        return self._config.elasticsearch.write.repartition_size
+        return self._config.builders.viz.case_centric.repartition_size
 
     @property
     def df_coalesce(self) -> int:
-        return self._config.elasticsearch.write.coalesce_size
+        return self._config.builders.viz.case_centric.coalesce_size
 
     @property
     def graph_file_index(self) -> str:
