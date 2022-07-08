@@ -101,10 +101,21 @@ class Key(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class SSL(ConfigArgumentMixin):
+    enabled: bool
+
+
+@dataclasses.dataclass(frozen=True)
+class Connection(ConfigArgumentMixin):
+    ssl: SSL
+
+
+@dataclasses.dataclass(frozen=True)
 class S3A(ConfigArgumentMixin):
     access: Key
     secret: Key
     endpoint: str
+    connection: Connection
 
 
 @dataclasses.dataclass(frozen=True)
