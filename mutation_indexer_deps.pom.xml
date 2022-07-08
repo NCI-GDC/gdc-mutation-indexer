@@ -38,7 +38,7 @@
   <dependencies>
     <dependency>
       <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-spark-20_2.12</artifactId>
+      <artifactId>elasticsearch-hadoop</artifactId>
       <version>7.6.2</version>
     </dependency>
     <dependency>
