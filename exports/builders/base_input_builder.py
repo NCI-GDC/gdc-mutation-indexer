@@ -137,12 +137,8 @@ class BaseInputBuilder(abc.ABC):
         """
         if data_format in ["csv", "tsv"]:
             delimiter = "\t" if data_format == "tsv" else ","
-            return (
-                self.sqlContext.read.format("com.databricks.spark.csv")
-                .options(comment="#")
-                .options(delimiter=delimiter)
-                .options(codec="org.apache.hadoop.io.compress.GzipCodec")
-                .load(url, header=header, schema=schema)
+            return self.sqlContext.read.csv(
+                url, comment="#", delimiter=delimiter, header=header, schema=schema
             )
         elif data_format == "parquet":
             return self.sqlContext.read.parquet(url)
