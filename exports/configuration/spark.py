@@ -36,6 +36,7 @@ class ConfigArgumentMixin:
 class Driver(ConfigArgumentMixin):
     max_result_size: str
     memory: str
+    extra_java_options: str
 
 
 @dataclasses.dataclass(frozen=True)
@@ -66,6 +67,7 @@ class Executor(ConfigArgumentMixin):
     memory: str
     cores: int
     instances: int
+    extra_java_options: str
 
 
 @dataclasses.dataclass(frozen=True)
