@@ -109,6 +109,7 @@ class S3A(ConfigArgumentMixin):
     access: Key
     secret: Key
     proxy: Proxy
+    endpoint: str
 
 
 @dataclasses.dataclass(frozen=True)
