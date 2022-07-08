@@ -1,6 +1,8 @@
 import dataclasses
 from typing import Any, Iterable, Tuple
 
+from exports.configuration import marshmallow_extensions
+
 
 def _to_camel_case(value: str) -> str:
     parts = value.split("_")
@@ -92,6 +94,23 @@ class Yarn(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
+class Key(ConfigArgumentMixin):
+    key: marshmallow_extensions.SecretString
+
+
+@dataclasses.dataclass(frozen=True)
+class S3A(ConfigArgumentMixin):
+    access: Key
+    secret: Key
+    endpoint: str
+
+
+@dataclasses.dataclass(frozen=True)
+class FS(ConfigArgumentMixin):
+    s3a: S3A
+
+
+@dataclasses.dataclass(frozen=True)
 class Spark(ConfigArgumentMixin):
     master: str
     app: App
@@ -101,6 +120,7 @@ class Spark(ConfigArgumentMixin):
     sql: SQL
     submit: Submit
     yarn: Yarn
+    fs: FS
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
         """
