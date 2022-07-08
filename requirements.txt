@@ -107,11 +107,11 @@ psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0
     # via gdcdatamodel
 psycopg2==2.8.6
     # via psqlgraph
-py4j==0.10.9.3
+py4j==0.10.9
     # via pyspark
 pyrsistent==0.18.0
     # via jsonschema
-pyspark==3.2.1
+pyspark==3.0.1
     # via gdc-mutation-indexer (setup.py)
 python-dateutil==2.8.2
     # via gdc-mutation-indexer (setup.py)
