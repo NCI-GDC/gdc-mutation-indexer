@@ -63,5 +63,7 @@ def initialize_spark() -> Iterator[sql.SparkSession]:
 
 
 if __name__ == "__main__":
-    # Execute Main functionality
-    main()
+    try:
+        main()
+    except:
+        root.critical("Driver failed.", exc_info=True)

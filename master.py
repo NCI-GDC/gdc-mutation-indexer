@@ -3,15 +3,17 @@ import asyncio
 import contextlib
 import datetime
 import itertools
+import logging
 import os
 import pathlib
 import tempfile
-from importlib import resources
+import uuid
 from os import path
 from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
 
 import elasticsearch
 import halo
+import importlib_resources as resources
 import more_itertools
 import toml
 
@@ -20,6 +22,9 @@ from exports import configuration
 from exports.configuration import environment
 
 ROOT_DIR = path.dirname(__file__)
+
+root = logging.getLogger()
+root.setLevel(logging.INFO)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
@@ -51,14 +56,22 @@ def load_config_data(config_path: str, config_file: str) -> Mapping[str, Any]:
     return default_config
 
 
-def write_manifest(config: configuration.Configuration) -> None:
-    file_name = path.join(
-        config.build.config_dir,
-        f"{config.build.build_id}-{datetime.datetime.now().isoformat()}.toml",
+def get_manifest_file(manifest_dir: str, build_id: uuid.UUID) -> str:
+    return path.join(
+        manifest_dir,
+        f"{datetime.datetime.now().isoformat()}-{build_id}.toml",
     )
     data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
 
     os.makedirs(config.build.config_dir, exist_ok=True)
+
+
+def write_manifest(config: configuration.Configuration) -> None:
+    build = config.build
+    file_name = get_manifest_file(build.manifest_dir, build.build_id)
+    data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
+
+    os.makedirs(build.manifest_dir, exist_ok=True)
 
     with open(file_name, "w+") as f:
         toml.dump(data, f)
@@ -119,6 +132,26 @@ async def run_spark_command(config: configuration.Configuration) -> None:
     error_file = path.join(
         tempfile.gettempdir() or home_dir, "mutation-indexer-error.log"
     )
+    yield (
+        "--jars",
+        ",".join(path.join(build.jar_dir, jar) for jar in os.listdir(build.jar_dir)),
+    )
+
+
+async def run_spark_command(config: configuration.Configuration) -> None:
+    config_arguments = config.spark.get_arguments()
+    file_arguments = get_file_args(config)
+    arguments = more_itertools.flatten(
+        itertools.chain(config_arguments, file_arguments)
+    )
+    spark_home = os.getenv("SPARK_HOME", "")
+    spark_command = path.join(spark_home, "bin/spark-submit")
+    final_command = " ".join(
+        more_itertools.value_chain(
+            spark_command, arguments, path.join(ROOT_DIR, "bin/export.py")
+        )
+    )
+    home_dir = os.environ.get("HOME", "")
 
     with open(output_file, "wb+") as out_f, open(error_file, "wb+") as error_f:
         process = await asyncio.create_subprocess_shell(
@@ -140,7 +173,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
     ) as es_client:
         indices = (
             index
-            for index in config.build.indices.values()
+            for index in config.elasticsearch.write.indices.values()
             if await es_client.indices.exists(index=index)
         )
 
@@ -162,12 +195,22 @@ async def main() -> None:
         print(f"RUNNING BUILD: {config.build.build_id}")
         set_environment_variables(config.environment)
 
-        with halo.Halo(spinner="pong"):
-            await run_spark_command(config)
-            await force_merge_indices(config)
+        with halo.Halo(spinner="pong") as spinner:
+            try:
+                spinner.text = "Running spark-submit"
+                await run_spark_command(config)
+                spinner.text = "Merging indices"
+                await force_merge_indices(config)
+            except:
+                spinner.fail("Process Failed")
+                raise
+            else:
+                spinner.succeed("Indices built")
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-
-    loop.run_until_complete(main())
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
+    except:
+        root.critical("Appliction failed.", exc_info=True)

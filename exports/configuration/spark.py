@@ -103,4 +103,8 @@ class Spark(ConfigArgumentMixin):
     yarn: Yarn
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
+        """
+        Converts the values in this object to a series of cli arguments (name, value)
+        which should be included with the `spark-submit` command.
+        """
         return self._get_arguments("spark.")

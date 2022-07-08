@@ -61,7 +61,7 @@ class BaseInputBuilder(abc.ABC):
         # write
         self.write(df)
 
-        return df
+        return df.cache() if self.config.cache_dataframes.get(self.input_type) else df
 
     def build_from_cache(self, df):
         """Perform additional processing on a built DF read from the cache.
@@ -137,8 +137,12 @@ class BaseInputBuilder(abc.ABC):
         """
         if data_format in ["csv", "tsv"]:
             delimiter = "\t" if data_format == "tsv" else ","
-            return self.sqlContext.read.csv(
-                url, schema=schema, sep=delimiter, comment="#", header=header
+            return (
+                self.sqlContext.read.format("com.databricks.spark.csv")
+                .options(comment="#")
+                .options(delimiter=delimiter)
+                .options(codec="org.apache.hadoop.io.compress.GzipCodec")
+                .load(url, header=header, schema=schema)
             )
         elif data_format == "parquet":
             return self.sqlContext.read.parquet(url)

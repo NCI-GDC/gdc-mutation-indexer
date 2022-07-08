@@ -95,11 +95,6 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
         self.logger.info("Repartitioning case dataframe")
         df = df.repartition(self.config.df_repartition, "case_id")
 
-        # TODO: DEV-1131 Move this functionality into the base class
-        if self.config.cache_dataframes["cases"]:
-            self.logger.info("Caching repartitioned case dataframe")
-            df = df.cache()
-
         return df
 
     def populate_available_variation_data(

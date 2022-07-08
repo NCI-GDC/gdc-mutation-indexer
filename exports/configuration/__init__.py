@@ -1,3 +1,7 @@
+import itertools
+import types
+from typing import Any, Optional
+
 import marshmallow
 import marshmallow_dataclass
 
@@ -8,13 +12,28 @@ from exports.configuration import (
     elasticsearch,
     environment,
     indexd,
-    marshmallow_extensions,
     spark,
 )
 
-@marshmallow_dataclass.dataclass(
-    frozen=True, base_schema=marshmallow_extensions.ExtendedSchema
-)
+_DEFAULT_DICT = {}
+
+
+def _get_index_template(build: dict) -> Optional[str]:
+    if "data_release" not in build or "build_version" not in build:
+        return None
+
+    data_release = build["data_release"]
+    build_version = build["build_version"]
+
+    if build.get("study_label"):
+        study_label = build["study_label"]
+
+        return f"{data_release}_viz_closed_{build_version}__{{}}__{study_label}__controlled"
+
+    return f"{data_release}_viz_open_{build_version}__{{}}"
+
+
+@marshmallow_dataclass.dataclass(frozen=True)
 class Configuration:
     aws: aws.AWS
     build: build.Build
@@ -24,5 +43,40 @@ class Configuration:
     indexd: indexd.IndexD
     spark: spark.Spark
 
+    @marshmallow.pre_load
+    def _add_projects_to_builders(self, data: dict, **kwargs: Any) -> dict:
+        builders = itertools.chain(
+            data.get("builders", _DEFAULT_DICT).get("viz", _DEFAULT_DICT).values(),
+            data.get("builders", _DEFAULT_DICT)
+            .get("gene_expression", _DEFAULT_DICT)
+            .values(),
+        )
+        projects = tuple(data.get("build", _DEFAULT_DICT).get("projects", ()))
+
+        for builder in builders:
+            builder["projects"] = projects
+
+        return data
+
+    @marshmallow.pre_load
+    def _add_es_write_indices(self, data: dict, **kwargs: Any) -> dict:
+        build = data.get("build", _DEFAULT_DICT)
+        index_types = build.get("index_types", ())
+        template = _get_index_template(build)
+        es_write = data.get("elasticsearch", _DEFAULT_DICT).get("write", {})
+
+        if template:
+            es_write["indices"] = types.MappingProxyType(
+                {
+                    index_type: template.format(index_type.lower())
+                    for index_type in index_types
+                }
+            )
+
+        return data
+
+
 CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema()
-OBFUSCATED_CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(context={"is_obfuscated": True})
+OBFUSCATED_CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(
+    context={"is_obfuscated": True}
+)

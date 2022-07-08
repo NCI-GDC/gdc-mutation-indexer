@@ -85,6 +85,7 @@ class BaseConfig(object):
     census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
 
     # The location to save the combined maf and gistic dataframes
+    maf_metadata_path = "maf_metadata_df.parquet"
     maf_path = "maf_df.parquet"
     gistic_path = "gistic_df.parquet"
     aliquot_path = "aliquot_df.parquet"
@@ -103,8 +104,8 @@ class BaseConfig(object):
     }
 
     cache_dataframes = {
-        "mafs": True,
-        "cases": True,
+        "maf": True,
+        "case": True,
         "case_centric": True,
         "gene_centric": True,
         "ssm_centric": True,
@@ -597,8 +598,8 @@ class ConfigAdapter(BaseConfig):
     def cache_dataframes(self) -> Dict[str, bool]:  # type: ignore
         return {
             "maf_metadata": self._config.builders.viz.maf_metadata.is_cached,
-            "mafs": self._config.builders.viz.maf.is_cached,
-            "cases": self._config.builders.viz.case.is_cached,
+            "maf": self._config.builders.viz.maf.is_cached,
+            "case": self._config.builders.viz.case.is_cached,
             "case_centric": self._config.builders.viz.case_centric.is_cached,
             "gene_centric": self._config.builders.viz.gene_centric.is_cached,
             "ssm_centric": self._config.builders.viz.ssm_centric.is_cached,
@@ -619,7 +620,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def samples_include_fields(self) -> Sequence[str]:  # type: ignore
-        return self._config.builders.viz.case.included_fields
+        return ()
 
     @property
     def projects(self) -> Sequence[str]:
@@ -627,7 +628,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def index_types(self) -> Sequence[str]:
-        return self._config.build.index_types
+        return (typ.name.lower() for typ in self._config.build.index_types)
 
     @property
     def maf_metadata_backup(self) -> str:
@@ -697,11 +698,11 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def df_repartition(self) -> int:
-        return self._config.elasticsearch.write.repartition_size
+        return self._config.builders.viz.case_centric.repartition_size
 
     @property
     def df_coalesce(self) -> int:
-        return self._config.elasticsearch.write.coalesce_size
+        return self._config.builders.viz.case_centric.coalesce_size
 
     @property
     def graph_file_index(self) -> str:
@@ -713,7 +714,10 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def indices(self) -> Mapping[str, str]:
-        return self._config.build.indices
+        return {
+            k.name.lower(): v
+            for k, v in self._config.elasticsearch.write.indices.items()
+        }
 
     @property
     def es_nodes(self) -> str:

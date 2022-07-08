@@ -1,8 +1,7 @@
-import itertools
 import logging
-from typing import Dict, Iterable, Mapping
-import more_itertools
+from typing import Dict, Iterable, cast
 
+import more_itertools
 import yaml
 from pkg_resources import resource_filename
 from pyspark import sql
@@ -97,10 +96,6 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
 
         self.logger.info("Repartitioning MAF dataframe")
         df = df.repartition(self.config.df_repartition, "ssm_id")
-
-        if self.config.cache_dataframes["mafs"]:
-            self.logger.info("Caching repartitioned MAF dataframe")
-            df.cache().count()
 
         return df
 
@@ -356,13 +351,12 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         Return:
             A data frame containing all data within the required MAF files.
         """
-        files: Mapping[str, Iterable[str]] = dict(
-            more_itertools.groupby_transform(
-                maf_metadata_df.select("file_id", "data_type").toLocalIterator(),
-                keyfunc=lambda row: row.data_type,
-                valuefunc=lambda row: row.file_id
-            )
+        files = more_itertools.map_reduce(
+            maf_metadata_df.select("file_id", "data_type").distinct().toLocalIterator(),
+            keyfunc=lambda row: cast(str, row.data_type),
+            valuefunc=lambda row: cast(str, row.file_id),
         )
+
         masked_somatic_mutaion = files.get("Masked Somatic Mutation", ())
         aggregated_somatic_mutation = files.get("Aggregated Somatic Mutation", ())
 

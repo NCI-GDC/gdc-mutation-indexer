@@ -36,21 +36,25 @@ deploy_mode = "cluster"
 pex_python = "python3.6"
 pex_root = '"./.pex"'
 
+[spark.yarn.executor_env]
+pex_python = "python3.6"
+pex_root = '"./.pex"'
+
 [build]
 build_version = "v0"
-config_dir = "./.configs"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
-  "case_centric",
-  "gene_centric",
-  "ssm_centric",
-  "ssm_occurrence_centric",
-  "cnv_centric",
-  "cnv_occurrence_centric",
-  "gene_expression",
+  "CASE_CENTRIC",
+  "CNV_CENTRIC",
+  "CNV_OCCURRENCE_CENTRIC",
+  "GENE_CENTRIC",
+  "SSM_CENTRIC",
+  "SSM_OCCURRENCE_CENTRIC",
+  "GENE_EXPRESSION",
 ]
 jar_dir = "artifacts/jars"
+manifest_dir = "./.manifests"
 projects = []
 study_label = ""
 
@@ -133,10 +137,8 @@ excluded_fields = [
   "diagnoses.eln_risk_classification",
   "diagnoses.pathology_details.necrosis_present",
 ]
-included_fields = [
-  "samples.sample_type",
-]
 is_cached = true
+repartition_size = 2048
 [builders.viz.case.backup]
 mode = "NEITHER"
 path = ""
@@ -158,6 +160,7 @@ path = ""
 
 [builders.viz.maf]
 is_cached = true
+repartition_size = 2048
 [builders.viz.maf.backup]
 mode = "NEITHER"
 path = ""
@@ -169,40 +172,52 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case_centric]
+coalesce_size = 12
 genes_threshold = 100
 is_cached = true
+repartition_size = 2048
 [builders.viz.case_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.gene_centric]
+coalesce_size = 12
 is_cached = true
+repartition_size = 2048
 [builders.viz.gene_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_centric]
+coalesce_size = 12
 is_cached = true
 occurrences_threshold = 100
+repartition_size = 2048
 [builders.viz.cnv_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_occurrence_centric]
+coalesce_size = 12
 is_cached = true
+repartition_size = 2048
 [builders.viz.cnv_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_centric]
+coalesce_size = 12
 is_cached = true
 occurrences_threshold = 100
+repartition_size = 2048
 [builders.viz.ssm_centric.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_occurrence_centric]
+coalesce_size = 12
 is_cached = true
+repartition_size = 2048
 [builders.viz.ssm_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
@@ -235,7 +250,9 @@ mode = "NEITHER"
 path = ""
 
 [builders.gene_expression.gene_expression]
+coalesce_size = 12
 is_cached = true
+repartition_size = 2048
 [builders.gene_expression.gene_expression.backup]
 mode = "NEITHER"
 path = ""
@@ -264,5 +281,3 @@ file_index = "graph_file"
 [elasticsearch.write]
 batch_size_bytes = "16mb"
 batch_size_entities = 1000
-coalesce_size = 12
-repartition_size = 2048
