@@ -81,8 +81,13 @@ class GeneModelBuilder(base_input_builder.BaseInputBuilder):
         Reads the gene model, cytobands and census files into Spark
         dataframes
         """
-        cytobands_df = self.sqlContext.read.csv(
-            self.config.citobands_file, sep="\t", header=True
+        spark_csv_path = "org.apache.spark.sql.execution.datasources.csv.CSVFileFormat"
+
+        cytobands_df = (
+            self.sqlContext.read.format(spark_csv_path)
+            .option("delimiter", "\t")
+            .option("header", "true")
+            .load(self.config.citobands_file)
         )
 
         # Turn the cytoband column into an array of cytobands
@@ -94,8 +99,11 @@ class GeneModelBuilder(base_input_builder.BaseInputBuilder):
             ).otherwise(F.split("cytoband", ",")),
         )
 
-        census_df = self.sqlContext.read.csv(
-            self.config.census_file, sep="\t", header=True
+        census_df = (
+            self.sqlContext.read.format(spark_csv_path)
+            .option("delimiter", "\t")
+            .option("header", "true")
+            .load(self.config.census_file)
         )
 
         gene_model_df = self.sqlContext.read.json(self.config.gene_model_file)
