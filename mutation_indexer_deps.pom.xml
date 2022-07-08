@@ -8,7 +8,7 @@
 
   <properties>
     <gdc.mutationIndexer.artifactDir>artifacts/jars</gdc.mutationIndexer.artifactDir>
-    <gdc.mutationIndexer.scalaVersion>2.13</gdc.mutationIndexer.scalaVersion>
+    <gdc.mutationIndexer.scalaVersion>2.12</gdc.mutationIndexer.scalaVersion>
   </properties>
 
   <build>
@@ -38,7 +38,7 @@
   <dependencies>
     <dependency>
       <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-spark-20_${gdc.mutationIndexer.scalaVersion}</artifactId>
+      <artifactId>elasticsearch-spark-20_2.12</artifactId>
       <version>7.6.2</version>
     </dependency>
     <dependency>

@@ -40,6 +40,8 @@ pex_root = '"./.pex"'
 pex_python = "python3.6"
 pex_root = '"./.pex"'
 
+[spark.hadoop.fs.s3a]
+endpoint = ""
 [spark.hadoop.fs.s3a.access]
 key = ""
 [spark.hadoop.fs.s3a.secret]
