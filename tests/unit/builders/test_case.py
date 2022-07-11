@@ -947,16 +947,16 @@ class TestCaseBuilder:
         self.case_schema = case_schema
         self.final_schema = final_schema
 
-    def arrange_sql_context(self, cases: Iterable[Case] = (Case(),)) -> mock.MagicMock:
-        sql_context = mock.MagicMock()
-        sql_context.read = sql_context
-        sql_context.format.return_value = sql_context
-        sql_context.option.return_value = sql_context
-        sql_context.load.return_value = self.spark_session.createDataFrame(
+    def arrange_es_dataframe_util(
+        self, cases: Iterable[Case] = (Case(),)
+    ) -> mock.MagicMock():
+        util = mock.MagicMock()
+
+        util.get_dataframe.return_value = self.spark_session.createDataFrame(
             cases, schema=self.case_schema
         )
 
-        return sql_context
+        return util
 
     def arrange_input_dataframes(
         self,
@@ -991,9 +991,10 @@ class TestCaseBuilder:
             disable_es_verify_certs=None,
             excludes_fields=None,
         )
-        sql_context = self.arrange_sql_context()
+        sql_context = mock.MagicMock()
+        es_dataframe_util = self.arrange_es_dataframe_util()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, sql_context)
+        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util)
 
         result_df = builder.build_from_scratch(**inputs)
 
@@ -1014,9 +1015,10 @@ class TestCaseBuilder:
             excludes_fields=None,
         )
         case = Case()
-        sql_context = self.arrange_sql_context((case,))
+        sql_context = mock.MagicMock()
+        es_dataframe_util = self.arrange_es_dataframe_util((case,))
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, sql_context)
+        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -1052,9 +1054,10 @@ class TestCaseBuilder:
             excludes_fields=None,
         )
         case = Case(case_id="case-0")
-        sql_context = self.arrange_sql_context((case,))
+        sql_context = mock.MagicMock()
+        es_dataframe_util = self.arrange_es_dataframe_util((case,))
         inputs = self.arrange_input_dataframes(maf_metadata_cases, ascat_cases)
-        builder = builders.CaseBuilder(config, sql_context)
+        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util)
 
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
