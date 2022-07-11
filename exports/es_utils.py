@@ -8,6 +8,8 @@ from elasticsearch import helpers
 from normalizer import mapper
 from pyspark import sql
 
+from exports.constants import build
+
 
 def iterate_es_results(es_client, index_name, doc_type=None, query=None):
     """
@@ -196,19 +198,14 @@ def get_non_null_fields(config, blacklist=None):
     return paths_with_data
 
 
-class Index(enum.IntEnum):
-    File = 1
-    Case = 2
-
-
-def _get_index_name(config, index: Index) -> str:
-    if index == Index.File:
+def _get_index(config, index_type: build.IndexType) -> str:
+    if index_type == build.IndexType.FILE:
         return str(config.graph_file_index)
 
-    if index == Index.Case:
+    if index_type == build.IndexType.CASE:
         return str(config.graph_case_index)
 
-    raise ValueError("Invalid index: {}".format(index))
+    raise ValueError(f"Invalid index: {index_type}")
 
 
 class DataFrameUtil:
@@ -216,12 +213,12 @@ class DataFrameUtil:
         self._config = config
         self._sql_context = sql_context
 
-    def _index_to_str(self, index: Index) -> str:
-        return _get_index_name(self._config, index)
+    def _get_index(self, index_type: build.IndexType) -> str:
+        return _get_index(self._config, index_type)
 
     def get_dataframe(
         self,
-        index: Index,
+        index_type: build.IndexType,
         include_fields: Union[Iterable[str], bool] = True,
         exclude_fields: Iterable[str] = (),
         include_as_arrays: Iterable[str] = (),
@@ -267,7 +264,7 @@ class DataFrameUtil:
                 "es.read.field.as.array.include", ",".join(include_as_arrays)
             )
 
-        return reader.load(self._index_to_str(index))
+        return reader.load(self._get_index(index_type))
 
 
 class RDDUtil:
@@ -283,12 +280,12 @@ class RDDUtil:
         self._config = config
         self._spark_context = spark_context
 
-    def _index_to_str(self, index: Index) -> str:
-        return _get_index_name(self._config, index)
+    def _get_index(self, index_type: build.IndexType) -> str:
+        return _get_index(self._config, index_type)
 
     def get_rdd(
         self,
-        index: Index,
+        index_type: build.IndexType,
         include_fields: Union[Iterable[str], bool] = True,
         exclude_fields: Optional[Iterable[str]] = None,
         include_as_arrays: Iterable[str] = (),
@@ -326,7 +323,7 @@ class RDDUtil:
                 self._config.disable_es_verify_certs
             ),
             "es.nodes.resolve.hostname": str(False),
-            "es.resource": self._index_to_str(index),
+            "es.resource": self._get_index(index_type),
         }
 
         if query:

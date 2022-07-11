@@ -4,8 +4,9 @@ import pytest
 from normalizer import mapper
 from pyspark import sql
 
-from tests.integration import config
 from exports import es_utils
+from exports.constants import build
+from tests.integration import config
 from tests.integration.utils import schema_validation
 
 conf = config.TestConfig()
@@ -22,9 +23,7 @@ def diagnoses_missing_field(source_es_client):
     diff = set(graph_diagnoses.keys()) - set(centric_diagnoses.keys())
 
     default_blacklist = {
-        f.split(".")[1]
-        for f in conf.case_exclude_fields
-        if f.startswith("diagnoses.")
+        f.split(".")[1] for f in conf.case_exclude_fields if f.startswith("diagnoses.")
     }
 
     diff = diff - default_blacklist
@@ -86,7 +85,7 @@ def test_get_dataframe_from_es(
     validator = schema_validation.PysparkSchemaValidator()
 
     inputs = load_data_from_file(input_file)
-    index = inputs["index"]
+    index = inputs["index"].upper()
     doc_id = inputs["document_id"]
     kwargs = inputs["kwargs"]
 
@@ -97,7 +96,7 @@ def test_get_dataframe_from_es(
     dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
 
     # Act
-    result_df = dataframe_util.get_dataframe(es_utils.Index[index], **kwargs)
+    result_df = dataframe_util.get_dataframe(build.IndexType[index], **kwargs)
 
     # Assert
     validator.validate_schema(result_df.schema, expected_schema)
@@ -124,7 +123,7 @@ def test_get_rdd_from_es(spark_session: sql.SparkSession):
 
     # Act
     result = rdd_util.get_rdd(
-        es_utils.Index.File, include_fields=included_fields, query=query
+        build.IndexType.FILE, include_fields=included_fields, query=query
     ).first()
 
     # Assert
