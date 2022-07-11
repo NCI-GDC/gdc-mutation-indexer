@@ -275,7 +275,8 @@ def case_df(
     maf_df: sql.DataFrame,
     gistic_df: sql.DataFrame,
 ) -> sql.DataFrame:
-    return builders.CaseBuilder(conf, sqlContext).build(
+    es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
+    return builders.CaseBuilder(conf, sqlContext, es_dataframe_util).build(
         maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
     )
 
