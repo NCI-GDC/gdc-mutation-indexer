@@ -8,7 +8,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.configuration.builders import viz
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -228,7 +229,12 @@ class TestAscatBuilder:
         es_files: Tuple[ESFile, ...],
         ascat_documents: Tuple[AscatDocument, ...] = DEFAULT_ASCAT_DOCUMENTS,
     ) -> builders.AscatBuilder:
-        config = mock.MagicMock(spec=viz.AscatBuilder)
+        config = viz.AscatBuilder(
+            is_cached=True,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+            omit_cnv_data=False
+        )
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)
