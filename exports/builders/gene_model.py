@@ -4,10 +4,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports.builders import base_input_builder
+from exports.configuration.builders import common
+from exports.constants import application
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=application.LOG_FORMAT)
 
 
 def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
@@ -29,12 +30,12 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     return gene_df
 
 
-class GeneModelBuilder(base_input_builder.BaseInputBuilder):
+class GeneModelBuilder(base_input_builder.BaseInputBuilder[common.Builder]):
     """
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config: common.Builder, sqlContext: sql.SQLContext) -> None:
         super().__init__(config, sqlContext, "gene_model")
 
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -76,7 +77,7 @@ class GeneModelBuilder(base_input_builder.BaseInputBuilder):
 
         return gene_df
 
-    def read_gene_model_files(self):
+    def read_gene_model_files(self) -> sql.DataFrame:
         """
         Reads the gene model, cytobands and census files into Spark
         dataframes

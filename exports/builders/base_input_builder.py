@@ -1,17 +1,24 @@
 import abc
 import logging
+from typing import Generic, Optional, TypeVar, Union
 
 from pyspark import sql
-from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType
-from pyspark.sql.utils import AnalysisException
+from pyspark.sql import functions as F
+from pyspark.sql import types, utils
+from typing_extensions import Literal
 
-import config
+from exports.configuration.builders import common
+
+TConfig = TypeVar("TConfig", bound=common.Builder)
 
 
-class BaseInputBuilder(abc.ABC):
+class BaseInputBuilder(Generic[TConfig], abc.ABC):
+    @property
+    def config(self) -> TConfig:
+        return self._config
+
     def __init__(
-        self, config: config.BaseConfig, sqlContext: sql.SQLContext, input_type: str
+        self, config: TConfig, sqlContext: sql.SQLContext, input_type: str
     ) -> None:
         """
 
@@ -29,15 +36,9 @@ class BaseInputBuilder(abc.ABC):
         """
         self.input_type = input_type
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.config = config
         self.sqlContext = sqlContext
 
-    @property
-    def urls(self):
-        config_urls = getattr(self.config, "{}_urls".format(self.input_type), None)
-        if config_urls is not None:
-            return config_urls
-        return self.get_urls()
+        self._config = config
 
     def build(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
@@ -50,7 +51,7 @@ class BaseInputBuilder(abc.ABC):
         """
 
         # read
-        df = self.read()
+        df = self._read()
 
         # if reading not applicable, build from files
         if df:
@@ -59,9 +60,9 @@ class BaseInputBuilder(abc.ABC):
             df = self.build_from_scratch(**kwargs)
 
         # write
-        self.write(df)
+        self._write(df)
 
-        return df.cache() if self.config.cache_dataframes.get(self.input_type) else df
+        return df.cache() if self.config.is_cached else df
 
     def build_from_cache(self, df):
         """Perform additional processing on a built DF read from the cache.
@@ -75,63 +76,44 @@ class BaseInputBuilder(abc.ABC):
     def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         pass
 
-    def get_urls(self):
-        """Look up the input URLs if not already given in the config.
+    def _write(self, df: sql.DataFrame) -> None:
+        if not self.config.backup.mode.is_write():
+            df.write.parquet(path=self.config.backup.path, mode="overwrite")
 
-        By default, return None to indicate that no URLs were configured. Subclasses
-        may override this if appropriate.
-        """
-        return None
-
-    def write(self, df):
-        mode = getattr(self.config, "{}_backup".format(self.input_type))
-        if mode == "write":
-            url = getattr(self.config, "{}_path".format(self.input_type))
-            self.df_to_s3(df, url)
-
-    def df_to_s3(self, df, url):
-        """
-        Writes the combined input dataframe to s3 in .parquet format
-        """
-        writer = df.write.format("parquet")
-        writer = writer.mode("overwrite")
-        writer = writer.options(header="true").save(url)
-
-    def read(self):
+    def _read(self) -> Optional[sql.DataFrame]:
         """
         Loads previously built and saved input into dataframe
         if we are in read mode
         """
-        # to return
+        if not self.config.backup.mode.is_read():
+            return None
+
         df = None
+        saved_path = self.config.backup.path
 
-        mode = getattr(self.config, "{}_backup".format(self.input_type))
+        self.logger.info("Loading file from s3 instead of building")
 
-        if mode == "read":
-
-            # Load stored built input into dataframe
-            saved_path = getattr(self.config, "{}_path".format(self.input_type))
-            self.logger.info("Loading file from s3 instead of building")
-
-            try:
-                df = self.file_to_df(saved_path, data_format="parquet")
-            except IOError:
-                self.logger.info("File not found in {}".format(saved_path))
-            except AnalysisException:
-                # TODO: is this the best way to catch this error?
-                #   or is checking the path first acceptable?
-                self.logger.info(
-                    "Something went wrong in spark when trying to"
-                    " get existing df from path "
-                    "{}".format(saved_path)
-                )
-            else:
-                # Store loaded dataframe count in config
-                setattr(self.config, "{}_count".format(self.input_type), df.count())
+        try:
+            df = self.file_to_df(saved_path, data_format="parquet")
+        except IOError:
+            self.logger.info(f"File not found in {saved_path}")
+        except utils.AnalysisException:
+            # TODO: is this the best way to catch this error?
+            #   or is checking the path first acceptable?
+            self.logger.info(
+                "Something went wrong in spark when trying to get existing df from "
+                f"path {saved_path}"
+            )
 
         return df
 
-    def file_to_df(self, url, data_format="tsv", header=True, schema=None):
+    def file_to_df(
+        self,
+        url: str,
+        data_format: Literal["tsv", "csv", "parquet"] = "tsv",
+        header: bool = True,
+        schema: Optional[Union[str, types.StructType]] = None,
+    ) -> sql.DataFrame:
         """
         Read a single file from the given s3 url and return as dataframe
         """
@@ -150,14 +132,14 @@ class BaseInputBuilder(abc.ABC):
             raise ValueError("Unknown read format: {}".format(data_format))
 
     @staticmethod
-    def add_canonical_transcript_lengths(df):
+    def add_canonical_transcript_lengths(df: sql.DataFrame) -> sql.DataFrame:
         """
         Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
         """
 
         def integer_udf(function):
             """Spark IntegerType udf decorator"""
-            return udf(function, IntegerType())
+            return F.udf(function, types.IntegerType())
 
         @integer_udf
         def len_udf(transcripts):

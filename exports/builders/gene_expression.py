@@ -6,16 +6,19 @@ from pyspark.sql import functions as F
 import config
 from exports import indexd_utils, schemas
 from exports.builders import base_builder, base_input_builder
+from exports.configuration.builders import gene_expression
 
 
-class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
+class GeneExpressionValueInputBuilder(
+    base_input_builder.BaseInputBuilder[gene_expression.Builder]
+):
     """
     An input builder class for loading gene expression values.
     """
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: gene_expression.Builder,
         sqlContext: sql.SQLContext,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
     ):
@@ -93,12 +96,14 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
         )
 
 
-class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
+class GeneExpressionCaseInputBuilder(
+    base_input_builder.BaseInputBuilder[gene_expression.Builder]
+):
     """
     An input builder class for loading case data related to gene expression.
     """
 
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext):
+    def __init__(self, config: gene_expression.Builder, sqlContext: sql.SQLContext):
         super().__init__(config, sqlContext, "gene_expression_cases")
 
     def build_from_scratch(

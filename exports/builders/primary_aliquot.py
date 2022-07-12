@@ -8,9 +8,9 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Literal
 
-import config
 from exports import es_utils, schemas
 from exports.builders import base_input_builder
+from exports.configuration.builders import gene_expression, viz
 
 
 def _is_main_url(metadata: dict):
@@ -144,10 +144,12 @@ GeneExpressionPrimaryAliquotData = NamedTuple(
 )
 
 
-class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
+class BasePrimaryAliquotBuilder(
+    base_input_builder.BaseInputBuilder[base_input_builder.TConfig]
+):
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: base_input_builder.TConfig,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         input_type: str,
@@ -192,11 +194,11 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
     ) -> sql.DataFrame:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
-        criteria in the query and includes the fields given in include_fields. 
-        
-        NOTE: Override this method if any manipulation of the data frame needs to 
+        criteria in the query and includes the fields given in include_fields.
+
+        NOTE: Override this method if any manipulation of the data frame needs to
         happen before the standard primary aliquot selection begins. E.g. use it to
-        alias fields that have special characters that cannot be utilized in 
+        alias fields that have special characters that cannot be utilized in
         additional_selections
 
         Args:
@@ -345,10 +347,12 @@ def _get_gene_expression_filters(projects: Optional[List[str]]) -> List[dict]:
     return filters
 
 
-class GeneExpressionPrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
+class GeneExpressionPrimaryAliquotBuilder(
+    BasePrimaryAliquotBuilder[gene_expression.Builder]
+):
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: gene_expression.Builder,
         sql_context: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:
@@ -423,12 +427,12 @@ class GeneExpressionPrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
         )
 
 
-class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
+class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder[viz.Builder]):
     FILE_URL_BATCH_SIZE = 1000
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: viz.Builder,
         sql_context: sql.SQLContext,
         indexd: client.IndexClient,
         es_dataframe_util: es_utils.DataFrameUtil,

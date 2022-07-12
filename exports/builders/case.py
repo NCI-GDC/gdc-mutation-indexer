@@ -7,21 +7,23 @@ from pyspark.sql import functions as F
 import config
 from exports import es_utils
 from exports.builders import base_input_builder, utils
+from exports.configuration.builders import viz
+from exports.constants import application
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=application.LOG_FORMAT)
 
 
 AVAILABLE_VARIATION_DATA = "available_variation_data"
 
 
-class CaseBuilder(base_input_builder.BaseInputBuilder):
+class CaseBuilder(base_input_builder.BaseInputBuilder[viz.CaseBuilder]):
     """
     Builds a case dataframe by loading case documents from gdc_from_graph
     """
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: viz.CaseBuilder,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:
@@ -61,12 +63,12 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
             query = {"query": {"match_all": {}}}
 
         # Only retrieve the fields we want
-        self.logger.info("Exclude fields: {}".format(self.config.exclude_fields))
+        self.logger.info("Exclude fields: {}".format(self.config.excluded_fields))
 
         # Load cases from graph index
         df = self._es_dataframe_util.get_dataframe(
             es_utils.Index.Case,
-            exclude_fields=self.config.exclude_fields,
+            exclude_fields=self.config.excluded_fields,
             query=query,
         )
 
@@ -80,7 +82,7 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
         df = df.join(maf_and_ascat_df, on=["case_id"], how="left")
 
         self.logger.info("Repartitioning case dataframe")
-        df = df.repartition(self.config.df_repartition, "case_id")
+        df = df.repartition(self.config.repartition_size, "case_id")
 
         return df
 

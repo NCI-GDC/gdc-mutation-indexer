@@ -5,9 +5,9 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports import es_utils, indexd_utils, schemas
 from exports.builders import base_input_builder, utils
+from exports.configuration.builders import viz
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
 
@@ -165,10 +165,10 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     ).na.drop(subset=["cnv_change"])
 
 
-class AscatBuilder(base_input_builder.BaseInputBuilder):
+class AscatBuilder(base_input_builder.BaseInputBuilder[viz.AscatBuilder]):
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: viz.AscatBuilder,
         sqlContext: sql.SQLContext,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
@@ -357,6 +357,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         |---variant_caller
         +---variant_status
         """
+        if self.config.omit_cnv_data:
+            return load_empty_ascat_data()
+
         dids = self._get_document_ids()
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")

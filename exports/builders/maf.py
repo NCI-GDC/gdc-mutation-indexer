@@ -8,15 +8,16 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports import indexd_utils, pyspark_extensions, schemas
 from exports.builders import base_input_builder, utils
 from exports.builders.clinical_annotations import civic
+from exports.configuration.builders import viz
+from exports.constants import application
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=application.LOG_FORMAT)
 
 
-class MAFBuilder(base_input_builder.BaseInputBuilder):
+class MAFBuilder(base_input_builder.BaseInputBuilder[viz.MAFBuilder]):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
@@ -24,19 +25,16 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
 
     def __init__(
         self,
-        config,
-        sqlContext,
+        config: viz.MAFBuilder,
+        sqlContext: sql.SQLContext,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
         annotation_builders: Iterable[civic.CivicBuilder],
-    ):
+    ) -> None:
         super().__init__(config, sqlContext, "maf")
         self.schema = self.get_schema()
         self.annotation_builders = annotation_builders
 
         self._doc_dataframe_util = doc_dataframe_util
-
-    def build_from_cache(self, df):
-        return df
 
     def build_from_scratch(
         self,
@@ -95,7 +93,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
             df = builder.merge_with_maf(df)
 
         self.logger.info("Repartitioning MAF dataframe")
-        df = df.repartition(self.config.df_repartition, "ssm_id")
+        df = df.repartition(self.config.repartition_size, "ssm_id")
 
         return df
 

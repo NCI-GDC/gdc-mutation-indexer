@@ -4,12 +4,12 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Literal
 
-import config
 from exports import es_utils
 from exports.builders import primary_aliquot
+from exports.configuration.builders import viz
 
 
-class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
+class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder[viz.Builder]):
     """
     An input builder for collecting the metadata associated with the MAF
     data that will be loaded as part of the build process.
@@ -17,7 +17,7 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: viz.Builder,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
     ):

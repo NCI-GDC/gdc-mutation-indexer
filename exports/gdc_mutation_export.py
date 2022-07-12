@@ -5,11 +5,11 @@ import pyspark
 from pyspark import sql
 
 import config
-from exports import builders, es_utils, indexd_utils
-from exports.builders import ascat
+from exports import builders, configuration, es_utils, indexd_utils
 from exports.builders.clinical_annotations import civic
+from exports.constants import application
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=application.LOG_FORMAT)
 
 logger = logging.getLogger("exports")
 
@@ -32,66 +32,70 @@ class GDCMutationExport:
         self,
         sc: pyspark.SparkContext,
         sqlContext: sql.SQLContext,
-        config: config.BaseConfig,
+        old_config: config.BaseConfig,
+        config: configuration.Configuration,
     ) -> None:
-        self.config = config
+        self._old_config = old_config
+        self._config = config
         self.logger = logger
         self.sc = sc
         self.sqlContext = sqlContext
 
     def build_input_data_frames(self) -> BuilderInputs:
+        builder_configs = self._config.builders.viz
         doc_dataframe_util = indexd_utils.DataFrameUtil(
-            self.config.indexd, self.sqlContext, self.logger
+            self._old_config.indexd, self.sqlContext, self.logger
         )
-        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
-        es_rdd_util = es_utils.RDDUtil(self.config, self.sc)
+        es_dataframe_util = es_utils.DataFrameUtil(self._old_config, self.sqlContext)
+        es_rdd_util = es_utils.RDDUtil(self._old_config, self.sc)
 
         # Load gene model
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
-        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
+        gene_model_df = builders.GeneModelBuilder(
+            builder_configs.gene_model, self.sqlContext
+        ).build()
 
         # Load primary aliquot data
         self.sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe")
         primary_aliquot_df = builders.PrimaryAliquotBuilder(
-            self.config,
+            builder_configs.primary_aliquot,
             self.sqlContext,
-            self.config.indexd,
+            self._old_config.indexd,
             es_dataframe_util,
             es_rdd_util,
         ).build()
 
         self.sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
         maf_metadata_df = builders.MAFMetadataBuilder(
-            self.config,
+            builder_configs.maf_metadata,
             self.sqlContext,
             es_dataframe_util,
         ).build()
 
         # Combine MAFs into one DataFrame
         self.sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
-        annotation_builders = (civic.CivicBuilder(self.config, self.sqlContext),)
+        annotation_builders = (civic.CivicBuilder(self._old_config, self.sqlContext),)
         maf_df = builders.MAFBuilder(
-            self.config, self.sqlContext, doc_dataframe_util, annotation_builders
+            builder_configs.maf,
+            self.sqlContext,
+            doc_dataframe_util,
+            annotation_builders,
         ).build(maf_metadata_df=maf_metadata_df, gene_model_df=gene_model_df)
 
         # Create dataframe from ASCAT data
         self.sc.setJobGroup("AscatBuilder", "Build Ascat dataframe")
-        ascat_df = (
-            ascat.load_empty_ascat_data(self.sqlContext)
-            if self.config.omit_cnv_data
-            else builders.AscatBuilder(
-                self.config,
-                self.sqlContext,
-                doc_dataframe_util,
-                es_dataframe_util,
-                self.config.es,
-            ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
-        )
+        ascat_df = builders.AscatBuilder(
+            builder_configs.ascat,
+            self.sqlContext,
+            doc_dataframe_util,
+            es_dataframe_util,
+            self._old_config.es,
+        ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
 
         # Use maf_df and ascat_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
         case_df = builders.CaseBuilder(
-            self.config, self.sqlContext, es_dataframe_util
+            builder_configs.case, self.sqlContext, es_dataframe_util
         ).build(maf_metadata_df=maf_metadata_df, ascat_df=ascat_df)
         sub_case_df = case_df.drop("summary")
         sub_case_df.persist()
@@ -104,42 +108,47 @@ class GDCMutationExport:
         """
         Runs the importing, building, and uploading of the gene expression data into elasticsearch.
         """
-        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        builder_configs = self._config.builders.gene_expression
+        es_dataframe_util = es_utils.DataFrameUtil(self._old_config, self.sqlContext)
         doc_dataframe_util = indexd_utils.DataFrameUtil(
-            self.config.indexd, self.sqlContext, logger
+            self._old_config.indexd, self.sqlContext, logger
         )
 
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model df")
-        gene_model_df = builders.GeneModelBuilder(self.config, self.sqlContext).build()
+        gene_model_df = builders.GeneModelBuilder(
+            builder_configs.gene_model, self.sqlContext
+        ).build()
 
         self.sc.setJobGroup(
             "GeneExpressionPrimaryAliquotBuilder", "Build GE Primary Aliquot df"
         )
         primary_aliquot_df = builders.GeneExpressionPrimaryAliquotBuilder(
-            self.config, self.sqlContext, es_dataframe_util
+            builder_configs.primary_aliquot, self.sqlContext, es_dataframe_util
         ).build()
 
         self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = builders.GeneExpressionCaseInputBuilder(
-            self.config, self.sqlContext
+            builder_configs.case, self.sqlContext
         ).build(gene_expression_primary_aliquot_df=primary_aliquot_df)
 
         self.sc.setJobGroup("GeneExpressionValueInputBuilder", "Build GE ValueInput df")
         ge_values_df = builders.GeneExpressionValueInputBuilder(
-            self.config, self.sqlContext, doc_dataframe_util
+            builder_configs.value, self.sqlContext, doc_dataframe_util
         ).build(
             gene_model_df=gene_model_df,
             gene_expression_primary_aliquot_df=primary_aliquot_df,
         )
 
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))
-        builders.GeneExpressionBuilder(self.config, self.sqlContext).build(
+        builders.GeneExpressionBuilder(self._old_config, self.sqlContext).build(
             ge_case_df, ge_values_df
         ).load()
 
     def run_core_exports(self, index_names: Iterable[str]) -> None:
         inputs = self.build_input_data_frames()
-        consequence_builder = builders.ConsequenceBuilder(self.config, self.sqlContext)
+        consequence_builder = builders.ConsequenceBuilder(
+            self._old_config, self.sqlContext
+        )
         observation_builder = builders.ObservationBuilder()
 
         for index_name in index_names:
@@ -147,7 +156,7 @@ class GDCMutationExport:
 
             if index_name == "case_centric":
                 builders.CaseCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -160,7 +169,7 @@ class GDCMutationExport:
 
             elif index_name == "ssm_centric":
                 builders.SSMCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -170,7 +179,7 @@ class GDCMutationExport:
 
             elif index_name == "ssm_occurrence_centric":
                 builders.SSMOccurrenceCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -180,7 +189,7 @@ class GDCMutationExport:
 
             elif index_name == "cnv_centric":
                 builders.CNVCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -188,7 +197,7 @@ class GDCMutationExport:
 
             elif index_name == "cnv_occurrence_centric":
                 builders.CNVOccurrenceCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -196,7 +205,7 @@ class GDCMutationExport:
 
             elif index_name == "gene_centric":
                 builders.GeneCentricBuilder(
-                    self.config,
+                    self._old_config,
                     self.sqlContext,
                     consequence_builder,
                     observation_builder,
@@ -213,7 +222,7 @@ class GDCMutationExport:
                 )
 
     def run_export(self) -> None:
-        index_names = self.config.index_types  # type: Iterable[str]
+        index_names = self._old_config.index_types  # type: Iterable[str]
 
         if any(index_name == "gene_expression" for index_name in index_names):
             self.run_gene_expression_export()
