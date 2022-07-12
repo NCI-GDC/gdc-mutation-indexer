@@ -30,12 +30,12 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     return gene_df
 
 
-class GeneModelBuilder(base_input_builder.BaseInputBuilder[common.Builder]):
+class GeneModelBuilder(base_input_builder.BaseInputBuilder[common.GeneModelBuilder]):
     """
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(self, config: common.Builder, sqlContext: sql.SQLContext) -> None:
+    def __init__(self, config: common.GeneModelBuilder, sqlContext: sql.SQLContext) -> None:
         super().__init__(config, sqlContext, "gene_model")
 
         self.logger = logging.getLogger(self.__class__.__name__)

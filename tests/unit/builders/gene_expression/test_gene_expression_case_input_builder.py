@@ -9,6 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.configuration.builders import common, gene_expression
+from exports.constants import build
 from tests.unit import utils
 
 
@@ -87,8 +89,15 @@ class TestGeneExpressionCaseInputBuilder:
             "gene_expression_primary_aliquot_df": primary_aliquot_df,
         }
 
+    def arrange_config(self) -> gene_expression.Builder:
+        return gene_expression.Builder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+        )
+
     def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         inputs = self.arrange_inputs()
         builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)
@@ -105,7 +114,7 @@ class TestGeneExpressionCaseInputBuilder:
             demographic=demographic, diagnoses=(diagnosis,)
         )
 
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         inputs = self.arrange_inputs((primary_aliquot,))
         builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)

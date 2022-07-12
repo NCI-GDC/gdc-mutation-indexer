@@ -1,8 +1,11 @@
 import json
+from unittest import mock
 
 import pytest
 
 import deepdiff
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.integration import config
 from exports import builders, es_utils
 from pyspark import sql
@@ -489,11 +492,69 @@ class TestCaseBuilder:
         Confirm that the expected number of cases are extracted and that
         all cases are in one of the expected projects.
         """
-        local_conf = config.TestConfig()
-        local_conf.projects = projects
+        config = viz.CaseBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+            excluded_fields=[
+                "annotations",
+                "case_autocomplete",
+                "family_histories",
+                "files",
+                "follow_ups",
+                "project.disease_type",
+                "project.primary_site",
+                "*_ids",
+                "diagnoses.annotations",
+                "*.updated_datetime",
+                "*.created_datetime",
+                "project.releasable",
+                "project.released",
+                "project.state",
+                "samples.sample_ordinal",
+                "samples.updated_datetime",
+                "samples.preservation_method",
+                "samples.growth_rate",
+                "samples.state",
+                "samples.longest_dimension",
+                "samples.intermediate_dimension",
+                "samples.passage_count",
+                "samples.freezing_method",
+                "samples.biospecimen_laterality",
+                "samples.sample_id",
+                "samples.annotations",
+                "samples.tissue_type",
+                "samples.catalog_reference",
+                "samples.submitter_id",
+                "samples.time_between_excision_and_freezing",
+                "samples.created_datetime",
+                "samples.tumor_descriptor",
+                "samples.time_between_clamping_and_freezing",
+                "samples.tumor_code_id",
+                "samples.shortest_dimension",
+                "samples.distance_normal_to_tumor",
+                "samples.biospecimen_anatomic_site",
+                "samples.method_of_sample_procurement",
+                "samples.diagnosis_pathologically_confirmed",
+                "samples.tumor_code",
+                "samples.sample_type_id",
+                "samples.tissue_collection_type",
+                "samples.pathology_report_uuid",
+                "samples.days_to_sample_procurement",
+                "samples.days_to_collection",
+                "samples.oct_embedded",
+                "samples.is_ffpe",
+                "samples.initial_weight",
+                "samples.composition",
+                "samples.portions",
+                "samples.distributor_reference",
+                "samples.current_weight",
+            ],
+            repartition_size=2048,
+        )
 
-        es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext)
-        df = builders.CaseBuilder(local_conf, sqlContext, es_dataframe_util).build(
+        es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
+        df = builders.CaseBuilder(config, sqlContext, es_dataframe_util).build(
             maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
         )
 

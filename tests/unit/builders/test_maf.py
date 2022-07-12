@@ -8,15 +8,10 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
-
-DEFAULT_CONFIG_VALUES = {
-    "maf_urls": ("fake_url0",),
-    "cache_dataframes": {"mafs": False},
-    "df_repartition": 2048,
-    "debug": False,
-}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -278,14 +273,6 @@ def final_maf_schema() -> types.StructType:
     return schemas.load_schema("builders/maf/final_maf.json")
 
 
-def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
-    values = dict(DEFAULT_CONFIG_VALUES)
-
-    values.update(config_values or {})
-
-    return mock.MagicMock(**values)
-
-
 def assert_domains_equal(result_domain: sql.Row, domain: Domain) -> None:
     assert result_domain.description == domain.description
     assert result_domain.end == domain.end
@@ -435,7 +422,6 @@ class TestMAFBuilder:
         self,
         masked_somatic_mutation_mafs: Tuple[MAF, ...] = (MAF(),),
         aggregated_somatic_mutation_mafs: Tuple[MAF, ...] = (),
-        config_values: Optional[Dict[str, Any]] = None,
         annotation_builders: Iterable[mock.MagicMock] = (),
     ) -> builders.MAFBuilder:
         masked_somatic_mutation_df = self.spark_session.createDataFrame(
@@ -447,7 +433,12 @@ class TestMAFBuilder:
             schema=self.aggregated_somatic_mutation_schema,
         )
 
-        config = arrange_config(config_values)
+        config = viz.MAFBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+            repartition_size=2048,
+        )
         sql_context = mock.MagicMock()
 
         doc_dataframe_util = mock.MagicMock()

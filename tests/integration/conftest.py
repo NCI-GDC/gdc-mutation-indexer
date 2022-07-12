@@ -6,6 +6,7 @@ from typing import Generator, Iterable
 from unittest import mock
 
 import elasticsearch
+import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -14,6 +15,8 @@ from pyspark.sql import types
 
 from exports import builders, es_utils, indexd_utils, schemas
 from exports.builders.clinical_annotations import civic
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
 
@@ -148,7 +151,21 @@ def test_data():
 
 @pytest.fixture(scope="session")
 def gene_model_df(sqlContext) -> sql.DataFrame:
-    return builders.GeneModelBuilder(conf, sqlContext).build()
+    with resources.as_file(
+        resources.files("tests.integration").joinpath("data/input")
+    ) as inputs:
+        config = viz.GeneModelBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+            citobands_file=inputs.joinpath("genes.cytobands.tsv.gz").as_posix(),
+            census_file=inputs.joinpath("cancer_gene_census_set.tsv.gz").as_posix(),
+            gene_model_file=inputs.joinpath("genes.ndjson.gz").as_posix(),
+        )
+
+        print(config)
+
+        return builders.GeneModelBuilder(config, sqlContext).build()
 
 
 @pytest.fixture(scope="session")
@@ -244,19 +261,27 @@ def maf_df(sqlContext: sql.SQLContext, gene_model_df) -> sql.DataFrame:
     )
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
+    config = viz.MAFBuilder(
+        is_cached=False,
+        backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+        projects=(),
+        repartition_size=2048,
+    )
 
     return builders.MAFBuilder(
-        conf, sqlContext, doc_dataframe_util, (civic.CivicBuilder(conf, sqlContext),)
+        config, sqlContext, doc_dataframe_util, (civic.CivicBuilder(conf, sqlContext),)
     ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())
 
 
 @pytest.fixture(scope="session")
-def gistic_df(sqlContext, gene_model_df):
+def gistic_df(sqlContext: sql.SQLContext):
     """
     Builds combined gistic dataframe once. Reused throughout test suite
     """
-    log.info("\n\n\tBUILDING GISTIC_DF\n\n")
-    return builders.GisticBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
+    with resources.as_file(
+        resources.files("tests.integration").joinpath("data/input/gistic.parquet")
+    ) as gistic_path:
+        return sqlContext.read.parquet(gistic_path.as_posix())
 
 
 @pytest.fixture(scope="session")
@@ -270,13 +295,74 @@ def maf_metadata_df(
 
 @pytest.fixture(scope="session")
 def case_df(
-    sqlContext,
+    sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     gistic_df: sql.DataFrame,
 ) -> sql.DataFrame:
+    config = viz.CaseBuilder(
+        is_cached=False,
+        backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+        projects=(),
+        excluded_fields=[
+            "annotations",
+            "case_autocomplete",
+            "family_histories",
+            "files",
+            "follow_ups",
+            "project.disease_type",
+            "project.primary_site",
+            "*_ids",
+            "diagnoses.annotations",
+            "*.updated_datetime",
+            "*.created_datetime",
+            "project.releasable",
+            "project.released",
+            "project.state",
+            "samples.sample_ordinal",
+            "samples.updated_datetime",
+            "samples.preservation_method",
+            "samples.growth_rate",
+            "samples.state",
+            "samples.longest_dimension",
+            "samples.intermediate_dimension",
+            "samples.passage_count",
+            "samples.freezing_method",
+            "samples.biospecimen_laterality",
+            "samples.sample_id",
+            "samples.annotations",
+            "samples.tissue_type",
+            "samples.catalog_reference",
+            "samples.submitter_id",
+            "samples.time_between_excision_and_freezing",
+            "samples.created_datetime",
+            "samples.tumor_descriptor",
+            "samples.time_between_clamping_and_freezing",
+            "samples.tumor_code_id",
+            "samples.shortest_dimension",
+            "samples.distance_normal_to_tumor",
+            "samples.biospecimen_anatomic_site",
+            "samples.method_of_sample_procurement",
+            "samples.diagnosis_pathologically_confirmed",
+            "samples.tumor_code",
+            "samples.sample_type_id",
+            "samples.tissue_collection_type",
+            "samples.pathology_report_uuid",
+            "samples.days_to_sample_procurement",
+            "samples.days_to_collection",
+            "samples.oct_embedded",
+            "samples.is_ffpe",
+            "samples.initial_weight",
+            "samples.composition",
+            "samples.portions",
+            "samples.distributor_reference",
+            "samples.current_weight",
+        ],
+        repartition_size=2048,
+    )
+
     es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
-    return builders.CaseBuilder(conf, sqlContext, es_dataframe_util).build(
+    return builders.CaseBuilder(config, sqlContext, es_dataframe_util).build(
         maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
     )
 

@@ -6,6 +6,8 @@ import pytest
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
+from exports.configuration.builders import common, gene_expression
+from exports.constants import build
 
 from tests.integration import config
 from exports import builders, es_utils, indexd_utils
@@ -25,6 +27,11 @@ def ge_primary_aliquot_df(
     ge_conf: config.BaseConfig, sqlContext: sql.SQLContext
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
+    config = gene_expression.Builder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+        )
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
         ge_conf, sqlContext, es_dataframe_util
     )
@@ -40,9 +47,14 @@ def ge_builder(sqlContext, ge_conf):
 
 
 @pytest.fixture(scope="module")
-def ge_cases_df(sqlContext, ge_conf, ge_primary_aliquot_df):
+def ge_cases_df(sqlContext, ge_primary_aliquot_df):
+    config = gene_expression.Builder(
+        is_cached=False,
+        backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+        projects=(),
+    )
     cases_df = builders.GeneExpressionCaseInputBuilder(
-        ge_conf,
+        config,
         sqlContext,
     ).build(gene_expression_primary_aliquot_df=ge_primary_aliquot_df)
 
@@ -72,9 +84,14 @@ def ge_values_df(sqlContext, ge_conf, ge_primary_aliquot_df):
     doc_dataframe_util = indexd_utils.DataFrameUtil(
         ge_conf.indexd, sqlContext, mock.MagicMock()
     )
+    config = gene_expression.Builder(
+        is_cached=False,
+        backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+        projects=(),
+    )
 
     return builders.GeneExpressionValueInputBuilder(
-        ge_conf, sqlContext, doc_dataframe_util
+        config, sqlContext, doc_dataframe_util
     ).build(
         gene_model_df=gene_model_df,
         gene_expression_primary_aliquot_df=ge_primary_aliquot_df,

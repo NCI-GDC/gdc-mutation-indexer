@@ -9,6 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.unit.data import schemas
 
 
@@ -60,10 +62,17 @@ class TestMAFMetadataBuilder:
         self.file_schema = file_schema
         self.final_schema = final_schema
 
+    def arrange_config(self) -> viz.Builder:
+        return viz.Builder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+        )
+
     def arrange_builder(
         self, files: Tuple[ESFile, ...] = (ESFile(),)
     ) -> builders.MAFMetadataBuilder:
-        conf = mock.MagicMock()
+        conf = self.arrange_config()
         sql_context = mock.MagicMock(spec=sql.SQLContext)
         es_dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 

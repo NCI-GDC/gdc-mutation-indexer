@@ -2,7 +2,7 @@ from pyspark import sql
 import pytest
 import json
 
-from exports.builders import ConsequenceBuilder, ObservationBuilder, PrimaryAliquotBuilder
+from exports.builders import ConsequenceBuilder, ObservationBuilder
 from tests.integration.config import TestConfig
 from base_joins_test import BaseJoinsTest
 

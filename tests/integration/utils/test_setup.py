@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import logging
 import types
 from typing import (
@@ -10,6 +11,7 @@ from typing import (
     Iterable,
     Optional,
     Set,
+    Tuple,
     Type,
     TypeVar,
 )
@@ -167,3 +169,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         self._documents[doc_type].update(ids)
 
         return ids
+
+
+def to_spec(dataclass: Type) -> Tuple[str, ...]:
+    return tuple(f.name for f in dataclasses.fields(dataclass))

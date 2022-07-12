@@ -9,6 +9,8 @@ from pyspark.sql import types
 
 from exports import builders
 from exports.builders.clinical_annotations import civic
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.integration import config
 
 conf = config.TestConfig()
@@ -26,8 +28,14 @@ class TestMAFBuilder:
 
     @pytest.fixture
     def annotation_schemas(self, sqlContext):
+        config = viz.MAFBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+            repartition_size=2048,
+        )
         builder = builders.MAFBuilder(
-            conf,
+            config,
             sqlContext,
             mock.MagicMock(),
             (civic.CivicBuilder(conf, sqlContext),),

@@ -12,6 +12,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders
+from exports.configuration.builders import common, viz
+from exports.constants import build
 from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
@@ -979,17 +981,11 @@ class TestCaseBuilder:
         }
 
     def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
+        config = viz.CaseBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            excluded_fields=(),
+            repartition_size=2048
         )
         sql_context = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util()
@@ -1002,17 +998,11 @@ class TestCaseBuilder:
         assert result_df.schema == self.final_schema
 
     def test__build_from_scratch__data_translated(self) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
+        config = viz.CaseBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            excluded_fields=(),
+            repartition_size=2048
         )
         case = Case()
         sql_context = mock.MagicMock()
@@ -1041,17 +1031,11 @@ class TestCaseBuilder:
         ascat_cases: Iterable[str],
         available_variation_data: FrozenSet[str],
     ) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
+        config = viz.CaseBuilder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            excluded_fields=(),
+            repartition_size=2048
         )
         case = Case(case_id="case-0")
         sql_context = mock.MagicMock()

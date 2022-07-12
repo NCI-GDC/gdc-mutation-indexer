@@ -9,6 +9,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 from exports import builders
+from exports.configuration.builders import common, gene_expression
+from exports.constants import build
 
 from tests.unit import utils
 
@@ -85,8 +87,12 @@ class TestGeneExpressionPrimaryAliquotBuilder:
 
     def arrange_config(
         self, projects: Optional[Tuple[str, ...]] = None
-    ) -> mock.MagicMock:
-        return mock.MagicMock(projects=projects)
+    ) -> gene_expression.Builder:
+        return gene_expression.Builder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=projects,
+        )
 
     def arrange_es_dataframe_util(
         self, data: Tuple[ESFile, ...] = (ESFile(),)

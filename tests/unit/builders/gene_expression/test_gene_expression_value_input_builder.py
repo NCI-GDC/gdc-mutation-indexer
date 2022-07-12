@@ -10,6 +10,8 @@ from pyspark.sql import types
 
 from exports import builders
 from exports.builders import gene_model
+from exports.configuration.builders import common, gene_expression
+from exports.constants import build
 from tests.unit import utils
 
 
@@ -95,8 +97,15 @@ class TestGeneExpressionValueInputBuilder:
             "gene_expression_primary_aliquot_df": primary_aliquot_df,
         }
 
+    def arrange_config(self) -> gene_expression.Builder:
+        return gene_expression.Builder(
+            is_cached=False,
+            backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
+            projects=(),
+        )
+
     def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util()
         inputs = self.arrange_inputs()
@@ -113,7 +122,7 @@ class TestGeneExpressionValueInputBuilder:
         star_count_data = STARCountsData()
         gene_model = GeneModel()
 
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util((star_count_data,))
         inputs = self.arrange_inputs(gene_model=(gene_model,))
@@ -135,7 +144,7 @@ class TestGeneExpressionValueInputBuilder:
     def test__build_from_scratch__gene_id_stripped(self) -> None:
         star_counts = (STARCountsData(gene_id="ESF4003032.4"),)
 
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs()
@@ -163,7 +172,7 @@ class TestGeneExpressionValueInputBuilder:
         star_counts = (STARCountsData(gene_type=gene_type),)
         gene_model = (GeneModel(biotype=biotype),)
 
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs(gene_model=gene_model)
@@ -182,7 +191,7 @@ class TestGeneExpressionValueInputBuilder:
         )
         gene_model = (GeneModel("gene-0"), GeneModel("gene-1"))
 
-        config = mock.MagicMock()
+        config = self.arrange_config()
         sql_context = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs(gene_model=gene_model)

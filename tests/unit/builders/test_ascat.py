@@ -8,6 +8,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.configuration.builders import viz
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -227,7 +228,7 @@ class TestAscatBuilder:
         es_files: Tuple[ESFile, ...],
         ascat_documents: Tuple[AscatDocument, ...] = DEFAULT_ASCAT_DOCUMENTS,
     ) -> builders.AscatBuilder:
-        config = mock.MagicMock()
+        config = mock.MagicMock(spec=viz.AscatBuilder)
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)

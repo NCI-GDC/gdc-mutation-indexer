@@ -77,7 +77,7 @@ class BaseInputBuilder(Generic[TConfig], abc.ABC):
         pass
 
     def _write(self, df: sql.DataFrame) -> None:
-        if not self.config.backup.mode.is_write():
+        if self.config.backup.mode.is_write():
             df.write.parquet(path=self.config.backup.path, mode="overwrite")
 
     def _read(self) -> Optional[sql.DataFrame]:
