@@ -155,7 +155,7 @@ def gene_model_df(sqlContext) -> sql.DataFrame:
         resources.files("tests.integration").joinpath("data/input")
     ) as inputs:
         config = viz.GeneModelBuilder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             projects=(),
             citobands_file=inputs.joinpath("genes.cytobands.tsv.gz").as_posix(),
@@ -262,7 +262,7 @@ def maf_df(sqlContext: sql.SQLContext, gene_model_df) -> sql.DataFrame:
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
     config = viz.MAFBuilder(
-        is_cached=False,
+        is_cached=True,
         backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
         projects=(),
         repartition_size=2048,
@@ -301,7 +301,7 @@ def case_df(
     gistic_df: sql.DataFrame,
 ) -> sql.DataFrame:
     config = viz.CaseBuilder(
-        is_cached=False,
+        is_cached=True,
         backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
         projects=(),
         excluded_fields=[

@@ -64,7 +64,7 @@ class TestMAFMetadataBuilder:
 
     def arrange_config(self) -> viz.Builder:
         return viz.Builder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             projects=(),
         )

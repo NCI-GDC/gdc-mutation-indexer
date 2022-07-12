@@ -99,7 +99,7 @@ class TestGeneExpressionValueInputBuilder:
 
     def arrange_config(self) -> gene_expression.Builder:
         return gene_expression.Builder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             projects=(),
         )

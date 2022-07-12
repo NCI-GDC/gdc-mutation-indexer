@@ -150,7 +150,7 @@ class TestPrimaryAliquotBuilder:
     ) -> builders.PrimaryAliquotBuilder:
         aliquot_data = es_files if aliquot_data is None else aliquot_data
         config = viz.Builder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             projects=(),
         )

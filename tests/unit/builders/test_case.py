@@ -982,7 +982,7 @@ class TestCaseBuilder:
 
     def test__build_from_scratch__single_row(self) -> None:
         config = viz.CaseBuilder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             excluded_fields=(),
             repartition_size=2048
@@ -999,7 +999,7 @@ class TestCaseBuilder:
 
     def test__build_from_scratch__data_translated(self) -> None:
         config = viz.CaseBuilder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             excluded_fields=(),
             repartition_size=2048
@@ -1032,7 +1032,7 @@ class TestCaseBuilder:
         available_variation_data: FrozenSet[str],
     ) -> None:
         config = viz.CaseBuilder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             excluded_fields=(),
             repartition_size=2048

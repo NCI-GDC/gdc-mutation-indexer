@@ -29,7 +29,7 @@ class TestMAFBuilder:
     @pytest.fixture
     def annotation_schemas(self, sqlContext):
         config = viz.MAFBuilder(
-            is_cached=False,
+            is_cached=True,
             backup=common.Backup(mode=build.BackupMode.NEITHER, path=""),
             projects=(),
             repartition_size=2048,
