@@ -8,7 +8,7 @@ import config
 from exports import es_utils
 from exports.builders import base_input_builder, utils
 from exports.configuration.builders import viz
-from exports.constants import application
+from exports.constants import application, build
 
 logging.basicConfig(format=application.LOG_FORMAT)
 
@@ -67,7 +67,7 @@ class CaseBuilder(base_input_builder.BaseInputBuilder[viz.CaseBuilder]):
 
         # Load cases from graph index
         df = self._es_dataframe_util.get_dataframe(
-            es_utils.Index.Case,
+            build.IndexType.CASE,
             exclude_fields=self.config.excluded_fields,
             query=query,
         )

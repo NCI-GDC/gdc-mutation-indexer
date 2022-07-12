@@ -8,6 +8,7 @@ from pyspark.sql import types
 from exports import es_utils, indexd_utils, schemas
 from exports.builders import base_input_builder, utils
 from exports.configuration.builders import viz
+from exports.constants import build
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
 
@@ -207,7 +208,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder[viz.AscatBuilder]):
         body = {"query": {"terms": {"file_id": list(file_ids)}}}
 
         return (
-            self._es_dataframe_util.get_dataframe(es_utils.Index.File, query=body)
+            self._es_dataframe_util.get_dataframe(build.IndexType.FILE, query=body)
             .select(
                 "file_id",
                 F.explode("cases").alias("case"),

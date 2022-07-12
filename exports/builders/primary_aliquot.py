@@ -1,8 +1,6 @@
-import itertools
 import logging
 from typing import AbstractSet, Iterable, List, NamedTuple, Optional, Union
 
-import more_itertools
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -11,6 +9,7 @@ from typing_extensions import Literal
 from exports import es_utils, schemas
 from exports.builders import base_input_builder
 from exports.configuration.builders import gene_expression, viz
+from exports.constants import build
 
 
 def _sample_weight_col() -> sql.Column:
@@ -177,7 +176,7 @@ class BasePrimaryAliquotBuilder(
             The data frame created in the above process.
         """
         return self._es_dataframe_util.get_dataframe(
-            es_utils.Index.File,
+            build.IndexType.FILE,
             include_fields=include_fields,
             query=query,
         )
@@ -469,7 +468,7 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder[viz.Builder]):
 
         aliquot_df = _expand_aliquots(
             self._es_rdd_util.get_rdd(
-                es_utils.Index.File, include_fields=included_fields, query=query
+                build.IndexType.FILE, include_fields=included_fields, query=query
             )
             .toDF(aliquot_data_schema)
             .select("_source.*")

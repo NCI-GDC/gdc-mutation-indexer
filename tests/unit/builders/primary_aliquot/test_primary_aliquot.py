@@ -1,14 +1,11 @@
-import collections
-import unittest
 import dataclasses
 import datetime
 from os import path
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple
 from unittest import mock
 
 import more_itertools
 import pytest
-import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -17,7 +14,6 @@ from exports import builders, es_utils
 from exports.configuration.builders import common, viz
 from exports.constants import build
 from tests.unit import utils
-from tests.integration.utils import schema_validation
 
 
 @dataclasses.dataclass(frozen=True)

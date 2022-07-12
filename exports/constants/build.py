@@ -2,6 +2,8 @@ import enum
 
 
 class IndexType(enum.IntEnum):
+    FILE = enum.auto()
+    CASE = enum.auto()
     CASE_CENTRIC = enum.auto()
     CNV_CENTRIC = enum.auto()
     CNV_OCCURRENCE_CENTRIC = enum.auto()
