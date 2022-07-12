@@ -173,13 +173,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder[viz.AscatBuilder]):
         sqlContext: sql.SQLContext,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
-        es_client: elasticsearch.Elasticsearch,
+        es_helper: es_utils.Helper,
     ) -> None:
         super().__init__(config, sqlContext, "ascat")
 
         self._document_dataframe_util = document_dataframe_util
         self._es_dataframe_util = es_dataframe_util
-        self._es_client = es_client
+        self._es_helper = es_helper
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
@@ -301,11 +301,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder[viz.AscatBuilder]):
                 }
             )
 
-        hits = es_utils.iterate_es_results(
-            self._es_client,
-            index_name=self.config.graph_file_index,
-            doc_type=self.config.graph_file_doc_type,
-            query=body,
+        hits = self._es_helper.scan(
+            index_type=build.IndexType.FILE,
+            body=body,
         )
 
         return tuple(hit["_source"]["file_id"] for hit in hits)

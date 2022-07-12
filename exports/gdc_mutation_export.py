@@ -48,6 +48,7 @@ class GDCMutationExport:
         )
         es_dataframe_util = es_utils.DataFrameUtil(self._old_config, self.sqlContext)
         es_rdd_util = es_utils.RDDUtil(self._old_config, self.sc)
+        es_helper = es_utils.Helper(self._old_config, self._old_config.es)
 
         # Load gene model
         self.sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
@@ -89,7 +90,7 @@ class GDCMutationExport:
             self.sqlContext,
             doc_dataframe_util,
             es_dataframe_util,
-            self._old_config.es,
+            es_helper,
         ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
 
         # Use maf_df and ascat_df to build case DataFrame

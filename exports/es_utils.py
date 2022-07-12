@@ -1,8 +1,8 @@
-import enum
 import json
 import re
-from typing import Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
+import elasticsearch
 import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
@@ -208,6 +208,31 @@ def _get_index(config, index_type: build.IndexType) -> str:
     raise ValueError(f"Invalid index: {index_type}")
 
 
+class Helper:
+    def __init__(self, config, es_client: elasticsearch.Elasticsearch) -> None:
+        self._config = config
+        self._es_client = es_client
+
+    def scan(
+        self, index_type: build.IndexType, body: Optional[dict] = None
+    ) -> Iterable[Any]:
+        """
+        Scans an index using the given search body.
+
+        Args:
+            - index_type: The index type associated with the index being searched
+            - body: The body of the search api request
+
+        Returns:
+            An iterator containing all of the results of the search's hits.
+        """
+        index = _get_index(self._config, index_type)
+
+        return iterate_es_results(
+            es_client=self._es_client, index_name=index, query=body
+        )
+
+
 class DataFrameUtil:
     def __init__(self, config, sql_context: sql.SQLContext) -> None:
         self._config = config
@@ -255,7 +280,7 @@ class DataFrameUtil:
 
         if include_fields and isinstance(include_fields, Iterable):
             reader = reader.option("es.read.field.include", ",".join(include_fields))
-        
+
         if exclude_fields and isinstance(exclude_fields, Iterable):
             reader = reader.option("es.read.field.exclude", ",".join(exclude_fields))
 

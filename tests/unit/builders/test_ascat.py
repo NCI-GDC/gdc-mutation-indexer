@@ -238,10 +238,10 @@ class TestAscatBuilder:
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)
-        es_client = mock.MagicMock()
+        es_helper = mock.MagicMock()
 
         return builders.AscatBuilder(
-            config, mock_sql_context, doc_dataframe_util, es_dataframe_util, es_client
+            config, mock_sql_context, doc_dataframe_util, es_dataframe_util, es_helper
         )
 
     def _arrange_input_dataframes(
