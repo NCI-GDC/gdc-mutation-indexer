@@ -141,10 +141,20 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
             "bool": {
                 "should": [
                     {
-                        "term": {"experimental_strategy": strategy},
-                        "nested": {
-                            "path": "cases",
-                            "query": {"terms": {"cases.project.project_id": projects}},
+                        "bool": {
+                            "must": [
+                                {"term": {"experimental_strategy": strategy}},
+                                {
+                                    "nested": {
+                                        "path": "cases",
+                                        "query": {
+                                            "terms": {
+                                                "cases.project.project_id": projects
+                                            }
+                                        },
+                                    }
+                                },
+                            ]
                         },
                     }
                     for strategy, projects in projects_by_strategy.items()
