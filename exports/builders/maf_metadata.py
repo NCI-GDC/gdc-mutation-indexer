@@ -1,12 +1,39 @@
-from typing import Any, Dict, Iterable, List, Union
+import logging
+from typing import Any, Dict, Iterable, List, NamedTuple, Sequence, Tuple, Union
 
+import elasticsearch
+import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal
+from typing_extensions import Literal, TypedDict
 
 import config
 from exports import es_utils
 from exports.builders import primary_aliquot
+
+logger = logging.getLogger(__name__)
+
+
+class _ExperimentalStrategiesBucket(TypedDict):
+    key: str
+    doc_count: int
+
+
+class _ExperimentalStrategies(TypedDict):
+    doc_count_error_upper_bound: int
+    sum_other_doc_count: int
+    buckets: Iterable[_ExperimentalStrategiesBucket]
+
+
+class _Files(TypedDict):
+    doc_count: int
+    experimental_strategies: _ExperimentalStrategies
+
+
+class _ProjectBucket(TypedDict):
+    key: str
+    doc_count: int
+    files: _Files
 
 
 class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
@@ -20,6 +47,7 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
         config: config.BaseConfig,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
+        es_client: elasticsearch.Elasticsearch,
     ):
         """
         Args:
@@ -35,6 +63,95 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
             input_type="maf_metadata",
             additional_selections=("data_type", "workflow_type"),
         )
+
+        self._es_client = es_client
+
+    def _get_project_strategy_aggregations(
+        self, filters: Sequence[dict]
+    ) -> Sequence[_ProjectBucket]:
+        size = len(self.config.projects) if self.config.projects else 10_000
+        aggs = {
+            "cases": {
+                "nested": {"path": "cases"},
+                "aggs": {
+                    "projects": {
+                        "terms": {
+                            "field": "cases.project.project_id",
+                            "size": size,
+                        },
+                        "aggs": {
+                            "files": {
+                                "reverse_nested": {},
+                                "aggs": {
+                                    "experimental_strategies": {
+                                        "terms": {"field": "experimental_strategy"}
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        if self.config.projects:
+            filters = list(filters)
+            projects_filter = {
+                "nested": {
+                    "path": "cases",
+                    "query": {
+                        "terms": {"cases.project.project_id": self.config.projects}
+                    },
+                }
+            }
+
+            filters.append(projects_filter)
+
+        return self._es_client.search(
+            index=self.config.graph_file_index,
+            size=0,
+            aggs=aggs,
+            query={"bool": {"must": filters}},
+        )["aggregations"]["cases"]["projects"]["buckets"]
+
+    def _build_experimental_strategy_filter(self, filters: Sequence[dict]) -> dict:
+        def get_strategy(project: _ProjectBucket) -> str:
+            strategies = frozenset(
+                strategy["key"]
+                for strategy in project["files"]["experimental_strategies"]["buckets"]
+            )
+
+            if "WXS" in strategies:
+                return "WXS"
+
+            elif "Targeted Sequencing" in strategies:
+                return "Targeted Sequencing"
+
+            logger.warning(
+                f"Project: {project['key']} has MAFs that are associated with unknown experimental strategies: {', '.join(strategies)}"
+            )
+            return "UNKNOWN"
+
+        projects = self._get_project_strategy_aggregations(filters)
+        projects_by_strategy = more_itertools.map_reduce(
+            projects, keyfunc=get_strategy, valuefunc=lambda project: project["key"]
+        )
+
+        return {
+            "bool": {
+                "should": [
+                    {
+                        "term": {"experimental_strategy": strategy},
+                        "nested": {
+                            "path": "cases",
+                            "query": {"terms": {"cases.project.project_id": projects}},
+                        },
+                    }
+                    for strategy, projects in projects_by_strategy.items()
+                    if strategy in ("WXS", "Targeted Sequencing")
+                ]
+            }
+        }
 
     def _build_file_filters(self) -> List[Dict[str, Any]]:
         aesvmm_workflow = {
@@ -64,20 +181,9 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
             }
         }
         filters: List[dict] = [{"bool": {"should": [aesvmm_workflow, fvam_workflow]}}]
+        strategy_filter = self._build_experimental_strategy_filter(filters)
 
-        if self.config.projects:
-            filters.append(
-                {
-                    "nested": {
-                        "path": "cases",
-                        "query": {
-                            "terms": {
-                                "cases.project.project_id": list(self.config.projects)
-                            }
-                        },
-                    }
-                },
-            )
+        filters.append(strategy_filter)
 
         return filters
 
