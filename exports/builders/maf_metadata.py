@@ -184,6 +184,7 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
         strategy_filter = self._build_experimental_strategy_filter(filters)
 
         filters.append(strategy_filter)
+        logger.info(f"MAF Metadata ran filters: {filters}")
 
         return filters
 
