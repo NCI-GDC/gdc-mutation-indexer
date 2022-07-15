@@ -62,9 +62,7 @@ class GDCMutationExport:
 
         self.sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
         maf_metadata_df = builders.MAFMetadataBuilder(
-            self.config,
-            self.sqlContext,
-            es_dataframe_util,
+            self.config, self.sqlContext, es_dataframe_util, self.config.es
         ).build()
 
         # Combine MAFs into one DataFrame
