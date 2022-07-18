@@ -7,6 +7,7 @@ from pyspark.sql import functions as F
 import config
 from exports import es_utils
 from exports.builders import base_input_builder, utils
+from exports.constants import build
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
@@ -65,7 +66,7 @@ class CaseBuilder(base_input_builder.BaseInputBuilder):
 
         # Load cases from graph index
         df = self._es_dataframe_util.get_dataframe(
-            es_utils.Index.Case,
+            build.IndexType.CASE,
             exclude_fields=self.config.exclude_fields,
             query=query,
         )

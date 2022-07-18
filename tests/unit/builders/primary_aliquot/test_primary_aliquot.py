@@ -14,6 +14,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from exports.constants import build
 from tests.unit import utils
 from tests.integration.utils import schema_validation
 
@@ -580,7 +581,7 @@ class TestPrimaryAliquotBuilderOLD(unittest.TestCase):
         # Assert
         # Check External Calls
         es_dataframe_util.get_dataframe.assert_called_once_with(
-            es_utils.Index.File,
+            build.IndexType.FILE,
             include_fields=expected_es_include_fields,
             query=expected_es_query,
         )

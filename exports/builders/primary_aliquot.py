@@ -11,6 +11,7 @@ from typing_extensions import Literal
 import config
 from exports import es_utils, schemas
 from exports.builders import base_input_builder
+from exports.constants import build
 
 
 def _is_main_url(metadata: dict):
@@ -192,11 +193,11 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
     ) -> sql.DataFrame:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
-        criteria in the query and includes the fields given in include_fields. 
-        
-        NOTE: Override this method if any manipulation of the data frame needs to 
+        criteria in the query and includes the fields given in include_fields.
+
+        NOTE: Override this method if any manipulation of the data frame needs to
         happen before the standard primary aliquot selection begins. E.g. use it to
-        alias fields that have special characters that cannot be utilized in 
+        alias fields that have special characters that cannot be utilized in
         additional_selections
 
         Args:
@@ -208,7 +209,7 @@ class BasePrimaryAliquotBuilder(base_input_builder.BaseInputBuilder):
             The data frame created in the above process.
         """
         return self._es_dataframe_util.get_dataframe(
-            es_utils.Index.File,
+            build.IndexType.FILE,
             include_fields=include_fields,
             query=query,
         )
@@ -620,7 +621,7 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
 
         aliquot_df = _expand_aliquots(
             self._es_rdd_util.get_rdd(
-                es_utils.Index.File, include_fields=included_fields, query=query
+                build.IndexType.FILE, include_fields=included_fields, query=query
             )
             .toDF(aliquot_data_schema)
             .select("_source.*")
