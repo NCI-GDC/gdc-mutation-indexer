@@ -1,5 +1,6 @@
+import contextlib
 import logging
-from typing import Iterable, NamedTuple
+from typing import Iterable, Iterator, NamedTuple
 
 import pyspark
 from pyspark import sql
@@ -39,7 +40,8 @@ class GDCMutationExport:
         self.sc = sc
         self.sqlContext = sqlContext
 
-    def build_input_data_frames(self) -> BuilderInputs:
+    @contextlib.contextmanager
+    def build_input_data_frames(self) -> Iterator[BuilderInputs]:
         doc_dataframe_util = indexd_utils.DataFrameUtil(
             self.config.indexd, self.sqlContext, self.logger
         )
@@ -92,11 +94,16 @@ class GDCMutationExport:
             self.config, self.sqlContext, es_dataframe_util
         ).build(maf_metadata_df=maf_metadata_df, ascat_df=ascat_df)
         sub_case_df = case_df.drop("summary")
-        sub_case_df.persist()
+        sub_case_df.cache()
 
-        return BuilderInputs(
+        inputs = BuilderInputs(
             gene_model_df, maf_df, ascat_df, case_df, sub_case_df, primary_aliquot_df
         )
+
+        yield inputs
+
+        for df in inputs:
+            df.unpersist(blocking=False)
 
     def run_gene_expression_export(self) -> None:
         """
@@ -136,11 +143,10 @@ class GDCMutationExport:
         ).load()
 
     def run_core_exports(self, index_names: Iterable[str]) -> None:
-        inputs = self.build_input_data_frames()
         consequence_builder = builders.ConsequenceBuilder(self.config, self.sqlContext)
         observation_builder = builders.ObservationBuilder()
 
-        try:
+        with self.build_input_data_frames() as inputs:
             for index_name in index_names:
                 self.sc.setJobGroup(index_name, "Build {}".format(index_name))
 
@@ -210,9 +216,6 @@ class GDCMutationExport:
                     raise NotImplementedError(
                         "No builder is configured for index: {}".format(index_name)
                     )
-        finally:
-            for df in inputs:
-                df.unpersist(blocking=False)
 
     def run_export(self) -> None:
         index_names = self.config.index_types  # type: Iterable[str]
