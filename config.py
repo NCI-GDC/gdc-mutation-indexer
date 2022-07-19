@@ -103,16 +103,16 @@ class BaseConfig(object):
     }
 
     cache_dataframes = {
-        "maf": True,
-        "case": True,
-        "case_centric": True,
-        "gene_centric": True,
-        "ssm_centric": True,
-        "ssm_occurrence_centric": True,
-        "cnv_centric": True,
-        "cnv_occurrence_centric": True,
-        "primary_aliquot": True,
-        "gene_model": True,
+        "maf": False,
+        "case": False,
+        "case_centric": False,
+        "gene_centric": False,
+        "ssm_centric": False,
+        "ssm_occurrence_centric": False,
+        "cnv_centric": False,
+        "cnv_occurrence_centric": False,
+        "primary_aliquot": False,
+        "gene_model": False,
     }
 
     # Case load settings

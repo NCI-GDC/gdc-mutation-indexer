@@ -140,75 +140,79 @@ class GDCMutationExport:
         consequence_builder = builders.ConsequenceBuilder(self.config, self.sqlContext)
         observation_builder = builders.ObservationBuilder()
 
-        for index_name in index_names:
-            self.sc.setJobGroup(index_name, "Build {}".format(index_name))
+        try:
+            for index_name in index_names:
+                self.sc.setJobGroup(index_name, "Build {}".format(index_name))
 
-            if index_name == "case_centric":
-                builders.CaseCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(
-                    inputs.maf_df,
-                    inputs.ascat_df,
-                    inputs.case_df,
-                    inputs.primary_aliquot_df,
-                ).load()
+                if index_name == "case_centric":
+                    builders.CaseCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(
+                        inputs.maf_df,
+                        inputs.ascat_df,
+                        inputs.case_df,
+                        inputs.primary_aliquot_df,
+                    ).load()
 
-            elif index_name == "ssm_centric":
-                builders.SSMCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(
-                    inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
-                ).load()
+                elif index_name == "ssm_centric":
+                    builders.SSMCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(
+                        inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
+                    ).load()
 
-            elif index_name == "ssm_occurrence_centric":
-                builders.SSMOccurrenceCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(
-                    inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
-                ).load()
+                elif index_name == "ssm_occurrence_centric":
+                    builders.SSMOccurrenceCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(
+                        inputs.maf_df, inputs.sub_case_df, inputs.primary_aliquot_df
+                    ).load()
 
-            elif index_name == "cnv_centric":
-                builders.CNVCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(inputs.ascat_df, inputs.sub_case_df).load()
+                elif index_name == "cnv_centric":
+                    builders.CNVCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(inputs.ascat_df, inputs.sub_case_df).load()
 
-            elif index_name == "cnv_occurrence_centric":
-                builders.CNVOccurrenceCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(inputs.ascat_df, inputs.sub_case_df).load()
+                elif index_name == "cnv_occurrence_centric":
+                    builders.CNVOccurrenceCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(inputs.ascat_df, inputs.sub_case_df).load()
 
-            elif index_name == "gene_centric":
-                builders.GeneCentricBuilder(
-                    self.config,
-                    self.sqlContext,
-                    consequence_builder,
-                    observation_builder,
-                ).build(
-                    inputs.maf_df,
-                    inputs.ascat_df,
-                    inputs.sub_case_df,
-                    inputs.primary_aliquot_df,
-                ).load()
+                elif index_name == "gene_centric":
+                    builders.GeneCentricBuilder(
+                        self.config,
+                        self.sqlContext,
+                        consequence_builder,
+                        observation_builder,
+                    ).build(
+                        inputs.maf_df,
+                        inputs.ascat_df,
+                        inputs.sub_case_df,
+                        inputs.primary_aliquot_df,
+                    ).load()
 
-            else:
-                raise NotImplementedError(
-                    "No builder is configured for index: {}".format(index_name)
-                )
+                else:
+                    raise NotImplementedError(
+                        "No builder is configured for index: {}".format(index_name)
+                    )
+        finally:
+            for df in inputs:
+                df.unpersist(blocking=False)
 
     def run_export(self) -> None:
         index_names = self.config.index_types  # type: Iterable[str]
