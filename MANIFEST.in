@@ -5,3 +5,4 @@ include exports/gdc-models/es-models/gene_centric/*.yaml
 include exports/gdc-models/es-models/case_centric/*.yaml
 include exports/gdc-models/es-models/ssm_centric/*.yaml
 include exports/gdc-models/es-models/ssm_occurrence_centric/*.yaml
+include exports/configuration.toml
