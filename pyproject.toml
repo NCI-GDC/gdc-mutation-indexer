@@ -17,5 +17,8 @@ markers = [
 minversion = "6.0"
 testpaths = [
   "tests/unit",
-  "tests/integration"
+  "tests/integration",
 ]
+
+[tool.mypy]
+plugins = ["marshmallow_dataclass.mypy"]

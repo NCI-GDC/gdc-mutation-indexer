@@ -1,207 +1,271 @@
 import argparse
-import functools
+import asyncio
+import contextlib
+import datetime
+import itertools
 import logging
 import os
-import pprint
-import subprocess
-from typing import Callable, Iterable, List, Sequence
+import tempfile
+import uuid
+from os import path
+from typing import Any, Iterable, Iterator, Mapping, Tuple
 
 import elasticsearch
-from gdcmodels import esutils
+import halo
+import importlib_resources as resources
+import more_itertools
+import toml
 
-import config
-import parsers
-from exports import es_utils
+import exports
+from exports import configuration
+from exports.configuration import environment
 
-logging.basicConfig(format=config.LOG_FORMAT)
-logger = logging.getLogger(__file__)
+ROOT_DIR = path.dirname(__file__)
+
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def parse_args() -> argparse.Namespace:
+def get_argument_parser() -> argparse.ArgumentParser:
     """
-    Parse mutation indexer arguments
+    Get the argument parser for the client application.
+
+    Returns:
+        An argument parser with the required parameters to run the client application.
     """
-    parser = parsers.ParserBuilder.build(
-        config.ALL_PARSERS, description="Mutation Indexer"
-    )
-    args = parser.parse_args()
-    return args
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-c", "--config", type=str, default=None)
+
+    return parser
 
 
-def no_op() -> None:
+def merge_dict(a: dict, b: dict) -> None:
     """
-    Callable that does nothing
-    """
-    pass
+    Merges the dictionary values from b into a. Any dictionary values in b will be
+    recursively merged into the value for a.
 
-
-def raise_on_decline() -> None:
+    Args:
+        a: The target dictionary to be updated
+        b: The dictionary containing the values to be merged into a
     """
-    Raise a generic exception
-    """
-    raise Exception("User refused to continue")
+    for key, value in b.items():
+        if isinstance(value, dict):
+            merge_dict(a.setdefault(key, {}), value)
 
-
-def user_confirm(
-    prompt: str,
-    log: logging.Logger,
-    on_confirm: Callable[[], None] = no_op,
-    on_decline: Callable[[], None] = raise_on_decline,
-) -> None:
-    """
-    Prompt user confirmation to proceed
-
-    :param prompt_string: prompt string
-    :param log: logging instance
-    :param on_confirm: callable to invoke when user confirms
-    :param on_decline: callable to invoke when user declines
-    """
-    while True:
-        log.info(prompt)
-        ans = input().lower()
-        if ans in ["y", "yes"]:
-            return on_confirm()
-        elif ans in ["n", "no"]:
-            return on_decline()
         else:
-            log.error(f"Invalid answer: {ans}")
+            a[key] = value
 
 
-def confirm_args(args: argparse.Namespace) -> config.BaseConfig:
+def load_config_data(user_config_file: str, final_config_file: str) -> Mapping[str, Any]:
     """
-    Confirm with user that args and index names are as expected
+    Loads the user provided configuration and updates it with any required default
+    values.
+
+    Args:
+        user_config_file: the configuration file provided by the user
+        final_config_file: the file into which the final configuration data will be
+            persisted into.
+
+    Returns:
+        the final configuration data as a mapping.
     """
-    # Log arguments
-    parsers.ParserBuilder.log_args(args, config.ALL_PARSERS, logger)
+    default_config = toml.loads(resources.read_text(exports, "configuration.toml"))
+    default_config["build"]["config_file"] = final_config_file
+    user_config = toml.load(user_config_file)
 
-    # Initialize config with environment variables (the way spark worker will see it)
-    env_dict = parsers.ParserBuilder.get_environment_dict(args, config.ALL_PARSERS)
-    configuration = config.BaseConfig(env_dict=env_dict)
+    merge_dict(default_config, user_config)
 
-    # Confirm with user
-    user_confirm(
-        f"Will build indices:\n{pprint.pformat(configuration.indices)}\nContinue?",
-        logger,
+    return default_config
+
+
+def get_manifest_file(manifest_dir: str, build_id: uuid.UUID) -> str:
+    """
+    Returns:
+        the path to the manifest file into which the build's configuration will be
+        recorded.
+    """
+    return path.join(
+        manifest_dir,
+        f"{datetime.datetime.now().isoformat()}-{build_id}.toml",
     )
 
-    logger.info("Validating differences in mappings...")
 
-    if "gene_expression" in configuration.indices and len(configuration.indices) == 1:
-        return configuration
+def write_manifest(config: configuration.Configuration) -> None:
+    """
+    Writes the configuration data into the manifest with all secret values obfuscated.
 
-    non_null_fields = es_utils.get_non_null_fields(configuration)
+    Args:
+        config: the configuration with which the build was run.
+    """
+    build = config.build
+    file_name = get_manifest_file(build.manifest_dir, build.build_id)
+    data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
 
-    if not non_null_fields:
-        logger.info("No new breaking differences were found.")
-        return configuration
+    os.makedirs(build.manifest_dir, exist_ok=True)
 
-    user_confirm(
+    with open(file_name, "w+") as f:
+        toml.dump(data, f)
+
+
+@contextlib.contextmanager
+def get_config(
+    user_config_file: str,
+) -> Iterator[configuration.Configuration]:
+    """
+    Loads the configuration data and persists the raw data into a temporary file which
+    can be uploaded with the spark-submit command. The context manager returned insures
+    that the temporary file is removed and that the data is obfuscated and stored in the
+    manifest file.
+
+    Args:
+        user_config_file: The path to the user provided configuration file.
+
+    Returns:
+        A context manager which in turn provides the configuration object with which to 
+        run the application.
+    """
+    with tempfile.TemporaryDirectory() as temp_directory:
+        config_file = path.join(temp_directory, "configuration.toml")
+        config_data = load_config_data(user_config_file, config_file)
+        config = configuration.CONFIG_SCHEMA.load(config_data)
+
+        with open(config_file, "w+") as f:
+            toml.dump(config_data, f)
+
+        yield config
+
+    write_manifest(config)
+
+
+def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
+    """
+    Sets the spark-submit config values as well as jars params.
+
+    Yields:
+        a tuple of argument flag and value.
+    """
+    build = config.build
+    files = ",".join(
         (
-            "\nThe following fields have new values and are missing from the "
-            "case_centric mappings:\n\n{}\n\nWould you like to extend the "
-            "blacklist? NOTE: Skipping expand might result in ES index upload "
-            "failure.\n".format("\n".join(non_null_fields))
+            f"{config.build.config_file}#configuration.toml",
+            path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
+        )
+    )
+
+    yield (
+        "--conf",
+        f"spark.yarn.dist.files={files}",
+    )
+    yield (
+        "--jars",
+        ",".join(path.join(build.jar_dir, jar) for jar in os.listdir(build.jar_dir)),
+    )
+
+
+async def run_spark_command(config: configuration.Configuration) -> None:
+    """
+    Runs the spark-submit command which will spwan the spark application. The spark
+    application will build the desired indices.
+
+    Args:
+        config: the configuration for the build.
+    """
+    config_arguments = config.spark.get_arguments()
+    file_arguments = get_file_args(config)
+    arguments = more_itertools.flatten(
+        itertools.chain(config_arguments, file_arguments)
+    )
+    spark_home = os.getenv("SPARK_HOME", "")
+    spark_command = path.join(spark_home, "bin/spark-submit")
+    final_command = " ".join(
+        more_itertools.value_chain(
+            spark_command, arguments, path.join(ROOT_DIR, "bin/export.py")
+        )
+    )
+    home_dir = os.environ.get("HOME", "")
+
+    output_file = path.join(tempfile.gettempdir() or home_dir, "mutation-indexer.log")
+    error_file = path.join(
+        tempfile.gettempdir() or home_dir, "mutation-indexer-error.log"
+    )
+
+    with open(output_file, "wb+") as out_f, open(error_file, "wb+") as error_f:
+        process = await asyncio.create_subprocess_shell(
+            final_command, stdout=out_f, stderr=error_f
+        )
+
+        await process.wait()
+
+
+async def force_merge_indices(config: configuration.Configuration) -> None:
+    """
+    Performs a force merge on the indices that have been created.
+
+    Args:
+        config: The configuration with which the build was run.
+    """
+    async with elasticsearch.AsyncElasticsearch(
+        config.elasticsearch.connection.nodes.split(","),
+        use_ssl=config.elasticsearch.connection.use_ssl,
+        verify_certs=config.elasticsearch.connection.verify_certs,
+        http_auth=(
+            config.elasticsearch.connection.user,
+            config.elasticsearch.connection.password,
         ),
-        logger,
-        on_confirm=functools.partial(args.blacklist_fields.extend, non_null_fields),
-        on_decline=no_op,
-    )
+    ) as es_client:
+        indices = frozenset(
+            [
+                index
+                for index in config.elasticsearch.write.indices.values()
+                if await es_client.indices.exists(index=index)
+            ]
+        )
+        missing_indices = config.elasticsearch.write.indices.keys() - indices
 
-    return configuration
+        if missing_indices:
+            logger.warning(f"Build failed to build indices: {missing_indices}.")
+
+        async for index in indices:
+            await es_client.indices.forcemerge(index=index, max_num_segments=1)
 
 
-def get_spark_args(args: argparse.Namespace) -> Iterable[str]:
+def set_environment_variables(env: environment.Environment) -> None:
     """
-    Returns list of spark related command line arguments and values for `spark-submit`
+    Sets the environmental variables needed to run spark submit.
+
+    Args:
+        env: the configured values for the environmental variables.
     """
-    # Get list of eggs and jars to upload
-    jars_dir = os.path.join(config.ROOT_DIR, "artifacts", "jars")
-    jars = ",".join(os.path.join(jars_dir, j) for j in os.listdir(jars_dir))
-    files = os.path.join(config.ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex")
-    spark_args = ["--jars", jars, "--files", files]
-
-    # Add other spark arguments
-    for key, value in parsers.SparkArgs().iter_args(args):
-        name = f"--{key}"
-        spark_args.extend((name, str(value)))
-
-    for key, value in parsers.SparkConfArgs().iter_args(args):
-        name = key.replace("-", ".")
-        spark_args.extend(("--conf", f"{name}={value}"))
-
-    spark_args.extend(("--conf", "spark.sql.caseSensitive=True"))
-
-    return spark_args
+    os.environ["JAVA_HOME"] = env.java_home
+    os.environ["SPARK_HOME"] = env.spark_home
+    os.environ["YARN_CONF_DIR"] = env.yarn_conf_dir
 
 
-def get_config_args(args: argparse.Namespace) -> Iterable[str]:
-    """
-    Returns list of configuration arguments and values for `spark-submit`
-    """
-    config_args: List[str] = []
-    for parser_cls in config.ALL_PARSERS:
-        parser = parser_cls()  # type: ignore
-        for key, value in parser.iter_args(args):
-            info = parser.arguments[key]
+async def main() -> None:
+    parser = get_argument_parser()
+    args = parser.parse_args()
 
-            varname = key.upper().replace("-", "_")
-            if isinstance(value, list):
-                value = ",".join(map(str, value))
+    with get_config(args.config) as config:
+        print(f"RUNNING BUILD: {config.build.build_id}")
+        set_environment_variables(config.environment)
 
-            arg_action = info.get("action")
-            # Do not pass bool flags if not needed
-            # If default is True and value is True
-            if arg_action == "store_false" and value == "True":
-                continue
-            # If default is False and value is False
-            if arg_action == "store_true" and value == "False":
-                continue
-            config_args.extend(
-                ("--conf", f'spark.yarn.appMasterEnv.{varname}="{value}"')
-            )
-            config_args.extend(("--conf", f'spark.executorEnv.{varname}="{value}"'))
-    config_args.extend(("--conf", f"spark.pyspark.python=./mutation-indexer.pex"))
-    config_args.extend(
-        ("--conf", f"spark.pyspark.driver.python=./mutation-indexer.pex")
-    )
-
-    return config_args
-
-
-def get_submit_command(args: argparse.Namespace) -> Sequence[str]:
-    """
-    Builds command to run to submit spark job
-    """
-    SPARK_HOME = os.getenv("SPARK_HOME")
-    command = [f"{SPARK_HOME}/bin/spark-submit"]
-    command.extend(get_spark_args(args))
-    command.extend(get_config_args(args))
-    command.append(os.path.join(config.ROOT_DIR, "bin/export.py"))
-    return command
-
-
-def get_created_indices(
-    es: elasticsearch.Elasticsearch, indices: Iterable[str]
-) -> List[str]:
-    return [index for index in indices if es.indices.exists(index)]
+        with halo.Halo(spinner="pong") as spinner:
+            try:
+                spinner.text = "Running spark-submit"
+                await run_spark_command(config)
+                spinner.text = "Merging indices"
+                await force_merge_indices(config)
+            except:
+                spinner.fail("Process Failed")
+                raise
+            else:
+                spinner.succeed("Indices built")
 
 
 if __name__ == "__main__":
-    # Parse and confirm arguments
-    args = parse_args()
-    configuration = confirm_args(args)
-    # Assemble and run the command
-    command = get_submit_command(args)
-    subprocess.call(command)
-    es = configuration.es
-    # mutation indexer might have failed after building a subset of the indices
-    # but the ones that were built might still be good, so we want to force-merge
-    # whatever we have, force merge will fail if non exist index name in the list
-    indices = get_created_indices(es, configuration.indices.values())
-
-    if not indices:
-        logger.info("No indices were built. Nothing to force merge")
-        exit(0)
-
-    esutils.force_merge_elasticsearch_indices(es, indices)
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
+    except:
+        logger.critical("Appliction failed.", exc_info=True)

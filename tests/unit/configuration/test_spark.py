@@ -1,0 +1,121 @@
+from exports.configuration import spark
+
+
+class TestSpark:
+    def test__get_arguments__flat(self) -> None:
+        config = spark.Spark(
+            master="name",
+            app=None,
+            driver=None,
+            executor=None,
+            pyspark=None,
+            sql=None,
+            submit=None,
+            yarn=None,
+        )
+
+        args = frozenset(config.get_arguments())
+
+        assert args == frozenset(
+            (
+                ("--conf", "spark.master=name"),
+                ("--conf", "spark.app=None"),
+                ("--conf", "spark.driver=None"),
+                ("--conf", "spark.executor=None"),
+                ("--conf", "spark.pyspark=None"),
+                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.submit=None"),
+                ("--conf", "spark.yarn=None"),
+            )
+        )
+
+    def test__get_arguments__nested(self) -> None:
+        config = spark.Spark(
+            master="name",
+            app=None,
+            driver=None,
+            executor=None,
+            pyspark=spark.Pyspark(
+                python="python3.X", driver=spark.PythonDriver(python="python3")
+            ),
+            sql=None,
+            submit=None,
+            yarn=None,
+        )
+
+        args = frozenset(config.get_arguments())
+
+        assert args == frozenset(
+            (
+                ("--conf", "spark.master=name"),
+                ("--conf", "spark.app=None"),
+                ("--conf", "spark.driver=None"),
+                ("--conf", "spark.executor=None"),
+                ("--conf", "spark.pyspark.python=python3.X"),
+                ("--conf", "spark.pyspark.driver.python=python3"),
+                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.submit=None"),
+                ("--conf", "spark.yarn=None"),
+            )
+        )
+
+    def test__get_arguments__camel_case(self) -> None:
+        config = spark.Spark(
+            master="name",
+            app=None,
+            driver=spark.Driver(max_result_size="10g", memory="40g"),
+            executor=None,
+            pyspark=None,
+            sql=None,
+            submit=None,
+            yarn=None,
+        )
+
+        args = frozenset(config.get_arguments())
+
+        assert args == frozenset(
+            (
+                ("--conf", "spark.master=name"),
+                ("--conf", "spark.app=None"),
+                ("--conf", "spark.driver.maxResultSize=10g"),
+                ("--conf", "spark.driver.memory=40g"),
+                ("--conf", "spark.executor=None"),
+                ("--conf", "spark.pyspark=None"),
+                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.submit=None"),
+                ("--conf", "spark.yarn=None"),
+            )
+        )
+
+    def test__get_arguments__env(self) -> None:
+        config = spark.Spark(
+            master="name",
+            app=None,
+            driver=None,
+            executor=None,
+            pyspark=None,
+            sql=None,
+            submit=None,
+            yarn=spark.Yarn(
+                app_master_env=spark.Env(pex_python="python3", pex_root="pex"),
+                executor_env=spark.Env(pex_python="python3.X", pex_root=".pex"),
+            ),
+        )
+
+        args = frozenset(config.get_arguments())
+
+        assert args == frozenset(
+            (
+                ("--conf", "spark.master=name"),
+                ("--conf", "spark.app=None"),
+                ("--conf", "spark.driver=None"),
+                ("--conf", "spark.executor=None"),
+                ("--conf", "spark.pyspark=None"),
+                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.submit=None"),
+                ("--conf", "spark.yarn.appMasterEnv.PEX_PYTHON=python3"),
+                ("--conf", "spark.yarn.appMasterEnv.PEX_ROOT=pex"),
+                ("--conf", "spark.yarn.executorEnv.PEX_PYTHON=python3.X"),
+                ("--conf", "spark.yarn.executorEnv.PEX_ROOT=.pex"),
+            )
+        )
