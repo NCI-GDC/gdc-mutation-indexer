@@ -7,12 +7,12 @@ from tests.integration.config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gistic_df', 'all_cases', 'all_maf_cases',
+@pytest.mark.usefixtures('maf_df', 'cnv_df', 'all_cases', 'all_maf_cases',
                          'case_centric_df', 'test_data')
 class TestCaseCentricOther:
     """ Other case centric tests """
 
-    def test_empty_cases(self, case_centric_df, maf_df, gistic_df,
+    def test_empty_cases(self, case_centric_df, maf_df, cnv_df,
                          test_data, all_cases, all_maf_cases):
         """
         Test "empty cases"
@@ -21,7 +21,7 @@ class TestCaseCentricOther:
         This is necessary for the portal to visualize such cases.
         """
         cases_built = {c.case_id for c in case_centric_df.collect()}
-        stats = TestDataStats.get_stats(maf_df, gistic_df, test_data,
+        stats = TestDataStats.get_stats(maf_df, cnv_df, test_data,
                                         'case_centric')
 
         empty_cases = {
@@ -35,7 +35,7 @@ class TestCaseCentricOther:
         # check that all cases were built (even empty ones)
         assert all_cases - cases_built == set()
 
-    def test_available_variation_data(self, case_centric_df, maf_df, gistic_df,
+    def test_available_variation_data(self, case_centric_df, maf_df, cnv_df,
                                       all_cases, all_maf_cases, test_data):
         """
         Test that available_variation_data is correctly populated:
@@ -47,7 +47,7 @@ class TestCaseCentricOther:
 
         assert 'available_variation_data' in case_centric_df.columns
 
-        gistic_cases = {r.case_id for r in gistic_df.collect()}
+        gistic_cases = {r.case_id for r in cnv_df.collect()}
         maf_cases = all_maf_cases  # includes cases in maf header without ssms
 
         common_cases = gistic_cases & maf_cases

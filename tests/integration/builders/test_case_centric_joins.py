@@ -9,7 +9,7 @@ from base_joins_test import BaseJoinsTest
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'case_centric_df', 'ssm_transcript_df')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'cnv_df', 'case_centric_df', 'ssm_transcript_df')
 class TestCaseCentricJoins(BaseJoinsTest):
     """
     Test case_centric index joins
@@ -24,7 +24,7 @@ class TestCaseCentricJoins(BaseJoinsTest):
 
     """
 
-    def test_genes_per_case(self, maf_df, gistic_df, case_centric_df):
+    def test_genes_per_case(self, maf_df, cnv_df, case_centric_df):
         # Genes per case built:
         df = self.unpack_df_list(case_centric_df, 'case_id', 'gene', 'gene_id')
         gpc = self.get_relationship_map(df, 'case_id', 'gene_id')
@@ -32,7 +32,7 @@ class TestCaseCentricJoins(BaseJoinsTest):
         # Genes per case expected:
         df = (
             maf_df.select('case_id', 'gene_id')
-            .union(gistic_df.select('case_id', 'gene_id'))
+            .union(cnv_df.select('case_id', 'gene_id'))
         ).distinct()
         true_gpc = self.get_relationship_map(df, 'case_id', 'gene_id')
 

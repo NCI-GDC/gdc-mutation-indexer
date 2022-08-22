@@ -56,7 +56,7 @@ def test_struct_select_with_selector(sqlContext, index, selector):
         assert stmt
 
 
-@pytest.mark.usefixtures('sqlContext', 'maf_df', 'gistic_df', 'source_es_client')
+@pytest.mark.usefixtures('sqlContext', 'maf_df', 'cnv_df', 'source_es_client')
 class TestMiscFunctions:
 
     def test_es_adapter(self, sqlContext):
@@ -218,12 +218,12 @@ class TestMiscFunctions:
         assert ssm_occ_id == 'f4222c55-fea2-5b23-a204-482f33492800'
 
     @pytest.mark.parametrize('index', conf.indices)
-    def test_test_data_stats(self, maf_df, gistic_df, index):
+    def test_test_data_stats(self, maf_df, cnv_df, index):
         """
         Test that TestDataStats loads test data and returns stats
         """
         data = true_stats.TestDataStats.load_test_data(conf.input_dir)
-        stats = true_stats.TestDataStats.get_stats(maf_df, gistic_df, data, index)
+        stats = true_stats.TestDataStats.get_stats(maf_df, cnv_df, data, index)
 
         if index in ["gene_expression"]:
             assert stats is None

@@ -56,7 +56,7 @@ class TestDataStats:
         return docs
 
     @classmethod
-    def get_stats(cls, maf_df, gistic_df, test_data, doc_type):
+    def get_stats(cls, maf_df, cnv_df, test_data, doc_type):
         """
         Returns true stats for :doc_type
         """
@@ -65,11 +65,11 @@ class TestDataStats:
 
         # Get index-specific stats:
         function_name = '{}_stats'.format(doc_type)
-        stats = getattr(cls, function_name)(maf_df, gistic_df, test_data)
+        stats = getattr(cls, function_name)(maf_df, cnv_df, test_data)
 
         # Add maf and gistic info:
         maf_data = maf_df.select('case_id', 'gene_id').collect()
-        gistic_data = gistic_df.select('case_id', 'gene_id').collect()
+        gistic_data = cnv_df.select('case_id', 'gene_id').collect()
 
         stats['ssm_cases'] = {r.case_id for r in maf_data}
         stats['cnv_cases'] = {r.case_id for r in gistic_data}
@@ -80,7 +80,7 @@ class TestDataStats:
         return stats
 
     @staticmethod
-    def case_centric_stats(maf_df, gistic_df, data):
+    def case_centric_stats(maf_df, cnv_df, data):
         """
         case{}
              |___ gene[]
@@ -96,14 +96,14 @@ class TestDataStats:
                            |
                            |___ observation[]
         """
-        # Number of cases in maf_df and gistic_df
+        # Number of cases in maf_df and cnv_df
         count = (
-            maf_df.select('case_id').union(gistic_df.select('case_id'))
+            maf_df.select('case_id').union(cnv_df.select('case_id'))
         ).distinct().count()
         return {'count': count}
 
     @staticmethod
-    def gene_centric_stats(maf_df, gistic_df, data):
+    def gene_centric_stats(maf_df, cnv_df, data):
         """
         gene{}
              |___ case[]
@@ -121,13 +121,13 @@ class TestDataStats:
         """
         count = (
             maf_df.select('gene_id').union(
-                gistic_df.select('gene_id')
+                cnv_df.select('gene_id')
             ).distinct().count()
         )
         return {'count': count}
 
     @staticmethod
-    def ssm_centric_stats(maf_df, gistic_df, data):
+    def ssm_centric_stats(maf_df, cnv_df, data):
         """
         ssm{}
           |____ consequence[]
@@ -142,7 +142,7 @@ class TestDataStats:
         return {'count': ssm_count}
 
     @staticmethod
-    def ssm_occurrence_centric_stats(maf_df, gistic_df, data):
+    def ssm_occurrence_centric_stats(maf_df, cnv_df, data):
         """
         ssm_occurrence{}
               |____ ssm{}
@@ -157,7 +157,7 @@ class TestDataStats:
         return {'count': count}
 
     @staticmethod
-    def cnv_centric_stats(maf_df, gistic_df, data):
+    def cnv_centric_stats(maf_df, cnv_df, data):
         """
         cnv{}
             |____ consequence[]
@@ -166,11 +166,11 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
-        count = gistic_df.select('cnv_id').distinct().count()
+        count = cnv_df.select('cnv_id').distinct().count()
         return {'count': count}
 
     @staticmethod
-    def cnv_occurrence_centric_stats(maf_df, gistic_df, data):
+    def cnv_occurrence_centric_stats(maf_df, cnv_df, data):
         """
         cnv{}
             |____ consequence[]
@@ -179,6 +179,6 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
-        count = gistic_df.select('cnv_id', 'case_id').distinct().count()
+        count = cnv_df.select('cnv_id', 'case_id').distinct().count()
         return {'count': count}
 

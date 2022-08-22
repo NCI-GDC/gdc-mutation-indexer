@@ -16,7 +16,7 @@ from tests.integration.config import TestConfig
 conf = TestConfig()
 
 
-@pytest.mark.usefixtures('maf_df', 'gistic_df')
+@pytest.mark.usefixtures('maf_df', 'cnv_df')
 class TestDFBuildersBase:
     """
     Code to reuse throughout all tests in this file
@@ -31,7 +31,7 @@ class TestDFBuildersBase:
     }
 
     @pytest.fixture(scope='function')
-    def get_inputs(self, maf_df, gistic_df, request):
+    def get_inputs(self, maf_df, cnv_df, request):
 
         # get parameter values from the test using this fixture:
         index_type = request.getfixturevalue('index_type')
@@ -42,7 +42,7 @@ class TestDFBuildersBase:
 
         extra_inputs = {}
         if 'cnv' in index_type or df_type == 'cnv':
-            input_df = gistic_df
+            input_df = cnv_df
             extra_inputs['fields_to_delete'] = ['cnv_id', 'cnv_change']
         else:
             input_df = maf_df
