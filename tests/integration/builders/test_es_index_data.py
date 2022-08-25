@@ -15,7 +15,7 @@ conf = TestConfig()
 
 @pytest.mark.usefixtures(
     "maf_df",
-    "gistic_df",
+    "cnv_df",
     "test_data",
     "es_client",
     "cnv_occurrence_centric_df",
@@ -29,9 +29,9 @@ class TestCentricCounts:
     @pytest.mark.parametrize(
         "doc_type", ["cnv_centric", "cnv_occurrence_centric", "gene_centric"]
     )
-    def test_centric_count(self, doc_type, maf_df, gistic_df, test_data, es_client):
+    def test_centric_count(self, doc_type, maf_df, cnv_df, test_data, es_client):
         expected_count = TestDataStats.get_stats(
-            maf_df, gistic_df, test_data, doc_type
+            maf_df, cnv_df, test_data, doc_type
         )["count"]
 
         built_count = get_es_doc_count(es_client, conf.indices[doc_type])
@@ -77,7 +77,7 @@ class TestCaseCentricData:
 
 
 @pytest.mark.usefixtures(
-    "maf_df", "gistic_df", "test_data", "gene_centric_df", "es_client"
+    "maf_df", "cnv_df", "test_data", "gene_centric_df", "es_client"
 )
 class TestGeneCentricData:
     @pytest.mark.parametrize(
@@ -98,7 +98,7 @@ class TestGeneCentricData:
 
 
 @pytest.mark.usefixtures(
-    "maf_df", "gistic_df", "test_data", "ssm_centric_df", "es_client"
+    "maf_df", "cnv_df", "test_data", "ssm_centric_df", "es_client"
 )
 class TestSSMCentricData:
     @pytest.mark.parametrize(
@@ -119,7 +119,7 @@ class TestSSMCentricData:
 
 
 @pytest.mark.usefixtures(
-    "maf_df", "gistic_df", "test_data", "ssm_occurrence_centric_df", "es_client"
+    "maf_df", "cnv_df", "test_data", "ssm_occurrence_centric_df", "es_client"
 )
 class TestSSMOccurrenceCentricData:
     @pytest.mark.parametrize(

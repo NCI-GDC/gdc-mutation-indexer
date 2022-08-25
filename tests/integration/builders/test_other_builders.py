@@ -11,14 +11,14 @@ from pyspark.sql import functions as F
 conf = config.TestConfig()
 
 
-@pytest.mark.usefixtures("maf_df", "gistic_df")
+@pytest.mark.usefixtures("maf_df", "cnv_df")
 class TestOtherBase:
     """
     Code to reuse throughout all tests in this file
     """
 
     @pytest.fixture(scope="function")
-    def get_inputs(self, maf_df, gistic_df, request):
+    def get_inputs(self, maf_df, cnv_df, request):
         """
         Returns (build_function, input_df, id_field) according to build_type
         NOTE: build_type is inferred from argument of the test function where
@@ -31,7 +31,7 @@ class TestOtherBase:
         if build_type == "ssm":
             input_df = maf_df
         else:
-            input_df = gistic_df
+            input_df = cnv_df
         return build_function, input_df, id_field
 
     @classmethod
@@ -53,7 +53,7 @@ class TestOtherBase:
         return [(index_name, "cnv") for index_name in conf.cnv_indices]
 
 
-@pytest.mark.usefixtures("maf_df", "gistic_df")
+@pytest.mark.usefixtures("maf_df", "cnv_df")
 class TestObservationBuilder:
     """Test intermediate result from the observation builder"""
 
@@ -87,9 +87,9 @@ class TestObservationBuilder:
         self,
         index_name: str,
         builder: builders.ObservationBuilder,
-        gistic_df: sql.DataFrame,
+        cnv_df: sql.DataFrame,
     ):
-        result_df = builder.build_for_cnv(gistic_df, index_name)
+        result_df = builder.build_for_cnv(cnv_df, index_name)
 
         assert set(result_df.columns) == {
             "case_id",
@@ -123,9 +123,9 @@ class TestObservationBuilder:
         self,
         index_name: str,
         builder: builders.ObservationBuilder,
-        gistic_df: sql.DataFrame,
+        cnv_df: sql.DataFrame,
     ):
-        result_df = builder.build_for_cnv(gistic_df, index_name)
+        result_df = builder.build_for_cnv(cnv_df, index_name)
 
         assert "observation_id" in (
             result_df.select(F.explode("observation").alias("observation"))
@@ -156,11 +156,11 @@ class TestObservationBuilder:
         self,
         index_name: str,
         builder: builders.ObservationBuilder,
-        gistic_df: sql.DataFrame,
+        cnv_df: sql.DataFrame,
     ):
-        observation_count = gistic_df.select("case_id", "cnv_id").distinct().count()
+        observation_count = cnv_df.select("case_id", "cnv_id").distinct().count()
 
-        result_df = builder.build_for_cnv(gistic_df, index_name)
+        result_df = builder.build_for_cnv(cnv_df, index_name)
 
         assert result_df.count() == observation_count
 
@@ -195,14 +195,14 @@ class TestObservationBuilder:
         self,
         index_name: str,
         builder: builders.ObservationBuilder,
-        gistic_df: sql.DataFrame,
+        cnv_df: sql.DataFrame,
     ):
         expected_opservations = map(
             json.loads,
-            (gistic_df.select("case_id", "cnv_id").distinct().toJSON().collect()),
+            (cnv_df.select("case_id", "cnv_id").distinct().toJSON().collect()),
         )
 
-        result_df = builder.build_for_cnv(gistic_df, index_name)
+        result_df = builder.build_for_cnv(cnv_df, index_name)
 
         actual_observations = map(
             json.loads, (result_df.select("case_id", "cnv_id").toJSON().collect())
@@ -482,7 +482,7 @@ class TestCaseBuilder:
         ],
     )
     def test_project_filter(
-        self, projects, expected_count, sqlContext, maf_metadata_df, maf_df, gistic_df
+        self, projects, expected_count, sqlContext, maf_metadata_df, maf_df, cnv_df
     ):
         """Test filtering the projects included in the case DF.
 
@@ -494,7 +494,7 @@ class TestCaseBuilder:
 
         es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext)
         df = builders.CaseBuilder(local_conf, sqlContext, es_dataframe_util).build(
-            maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
+            maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
         )
 
         assert df.count() == expected_count

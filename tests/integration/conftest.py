@@ -1,11 +1,13 @@
 import glob
 import logging
 import os
+import pathlib
 from os import path
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Iterator
 from unittest import mock
 
 import elasticsearch
+import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -24,6 +26,12 @@ log.setLevel(logging.INFO)
 
 
 GRAPH_INDICES = frozenset(["case", "file"])
+
+
+@pytest.fixture(scope="session")
+def data_dir() -> Iterator[pathlib.Path]:
+    with resources.as_file(resources.files("tests.integration")) as module:
+        yield module.joinpath("data")
 
 
 @pytest.fixture(scope="session")
@@ -251,12 +259,18 @@ def maf_df(sqlContext: sql.SQLContext, gene_model_df) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def gistic_df(sqlContext, gene_model_df):
+def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path):
     """
-    Builds combined gistic dataframe once. Reused throughout test suite
+    Builds combined cnv dataframe once. Reused throughout test suite
     """
-    log.info("\n\n\tBUILDING GISTIC_DF\n\n")
-    return builders.GisticBuilder(conf, sqlContext).build(gene_model_df=gene_model_df)
+    cnv_dir = data_dir.joinpath("input/cnv")
+
+    with open(cnv_dir.joinpath("schema.yaml"), "r") as f:
+        schema = types.StructType.fromJson(yaml.safe_load(f))
+
+    return spark_session.read.json(
+        str(cnv_dir.joinpath("data.ndjson.gz")), schema=schema
+    )
 
 
 @pytest.fixture(scope="session")
@@ -273,11 +287,11 @@ def case_df(
     sqlContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
-    gistic_df: sql.DataFrame,
+    cnv_df: sql.DataFrame,
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
     return builders.CaseBuilder(conf, sqlContext, es_dataframe_util).build(
-        maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=gistic_df
+        maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
     )
 
 
@@ -342,7 +356,7 @@ def observation_builder():
 def case_centric_df(
     sqlContext,
     maf_df,
-    gistic_df,
+    cnv_df,
     case_df,
     primary_aliquot_df,
     consequence_builder,
@@ -357,7 +371,7 @@ def case_centric_df(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(maf_df, gistic_df, case_df, primary_aliquot_df)
+    builder.build(maf_df, cnv_df, case_df, primary_aliquot_df)
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
     builder.load()
@@ -369,7 +383,7 @@ def case_centric_df(
 def gene_centric_df(
     sqlContext,
     maf_df,
-    gistic_df,
+    cnv_df,
     case_df,
     primary_aliquot_df,
     consequence_builder,
@@ -385,7 +399,7 @@ def gene_centric_df(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(maf_df, gistic_df, sub_case_df, primary_aliquot_df)
+    builder.build(maf_df, cnv_df, sub_case_df, primary_aliquot_df)
 
     log.info("\n\n\tLOADING GENE_CENTRIC_DF\n\n")
     builder.load()
@@ -449,7 +463,7 @@ def ssm_occurrence_centric_df(
 
 @pytest.fixture(scope="session")
 def cnv_centric_df(
-    sqlContext, gistic_df, case_df, consequence_builder, observation_builder
+    sqlContext, cnv_df, case_df, consequence_builder, observation_builder
 ):
     """
     Builds cnv centric dataframe
@@ -460,7 +474,7 @@ def cnv_centric_df(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(gistic_df, sub_case_df)
+    builder.build(cnv_df, sub_case_df)
 
     log.info("\n\n\tLOADING CNV_CENTRIC_DF\n\n")
     builder.load()
@@ -470,7 +484,7 @@ def cnv_centric_df(
 
 @pytest.fixture(scope="session")
 def cnv_occurrence_centric_df(
-    sqlContext, gistic_df, case_df, consequence_builder, observation_builder
+    sqlContext, cnv_df, case_df, consequence_builder, observation_builder
 ):
     """
     Builds cnv occurrence centric dataframe
@@ -481,7 +495,7 @@ def cnv_occurrence_centric_df(
         conf, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(gistic_df, sub_case_df)
+    builder.build(cnv_df, sub_case_df)
 
     log.info("\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n")
     builder.load()
