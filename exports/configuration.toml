@@ -154,6 +154,10 @@ path = ""
 
 [builders.viz.maf_metadata]
 is_cached = true
+prioritized_experimental_strategies = [
+  "WXS",
+  "Targeted Sequencing",
+]
 [builders.viz.maf_metadata.backup]
 mode = "NEITHER"
 path = ""

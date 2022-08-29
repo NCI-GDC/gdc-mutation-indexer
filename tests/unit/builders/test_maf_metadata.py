@@ -9,6 +9,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from exports.builders import maf_metadata
 from tests.unit.data import schemas
 
 
@@ -60,12 +61,20 @@ class TestMAFMetadataBuilder:
         self.file_schema = file_schema
         self.final_schema = final_schema
 
+    def arrange_filter_factory(self) -> maf_metadata.MAFFileFilterFactory:
+        filter_builder = mock.MagicMock(spec=maf_metadata.MAFFileFilterFactory)
+
+        filter_builder.get_filters.return_value = []
+
+        return filter_builder
+
     def arrange_builder(
         self, files: Tuple[ESFile, ...] = (ESFile(),)
     ) -> builders.MAFMetadataBuilder:
         conf = mock.MagicMock()
         sql_context = mock.MagicMock(spec=sql.SQLContext)
         es_dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
+        filter_factory = self.arrange_filter_factory()
 
         conf.projects = None
 
@@ -73,7 +82,9 @@ class TestMAFMetadataBuilder:
             self.spark_session.createDataFrame(files, schema=self.file_schema)
         )
 
-        return builders.MAFMetadataBuilder(conf, sql_context, es_dataframe_util)
+        return builders.MAFMetadataBuilder(
+            conf, sql_context, es_dataframe_util, filter_factory
+        )
 
     def test__build_from_scratch__single_row(self) -> None:
         builder = self.arrange_builder()

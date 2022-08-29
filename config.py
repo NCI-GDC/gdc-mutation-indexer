@@ -2,8 +2,8 @@ import http.client
 import os
 import ssl
 import sys
-from typing import List, Mapping, Sequence, Dict
 import uuid
+from typing import Dict, List, Mapping, Sequence
 
 import elasticsearch
 import pkg_resources
@@ -137,6 +137,8 @@ class BaseConfig(object):
     ]
 
     samples_include_fields = ["samples.sample_type"]
+
+    maf_prioritized_experimental_strategies = ()
 
     def __init__(self, env_dict=None):
         """
@@ -519,6 +521,10 @@ class ConfigAdapter(BaseConfig):
 
         self.graph_case_doc_type = None
         self.graph_file_doc_type = None
+
+    @property
+    def maf_prioritized_experimental_strategies(self) -> Sequence[str]:
+        return self._config.builders.viz.maf_metadata.prioritized_experimental_strategies
 
     @property
     def maf_data_types(self) -> List[str]:  # type: ignore
