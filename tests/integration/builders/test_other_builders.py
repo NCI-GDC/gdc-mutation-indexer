@@ -339,7 +339,7 @@ class TestConsequenceBuilder(TestOtherBase):
 
     @pytest.mark.parametrize("index_name", conf.ssm_indices)
     def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
-        cons_df = builder.build_for_ssm(maf_df, index_name, add_gene_aa_change=True)
+        cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True, add_gene_aa_change=True)
 
         assert "gene_aa_change" in cons_df.columns
 
