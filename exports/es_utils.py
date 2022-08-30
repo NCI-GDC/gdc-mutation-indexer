@@ -1,7 +1,7 @@
-import enum
+import functools
 import json
 import re
-from typing import Iterable, Optional, Union
+from typing import Any, Container, Dict, Iterable, Optional, Set, Union
 
 import pyspark
 from elasticsearch import helpers
@@ -198,6 +198,93 @@ def get_non_null_fields(config, blacklist=None):
     return paths_with_data
 
 
+class MappingsLoader:
+    def load_mappings(self, index_type: build.IndexType) -> dict:
+        index_name, doc_type = index_type.get_mappings_details()
+        model_mapper = mapper.ModelMapper(index_name, doc_type)
+
+        return model_mapper.get_normalized_mappings()["mappings"]
+
+
+def _flatten_properties(
+    properties: Dict[str, Any], excluded_fields: Container[str], path: str = ""
+) -> Iterable[str]:
+    expanded_properties = (
+        (f"{path}{name}", details) for name, details in properties.items()
+    )
+    expanded_properties = filter(
+        lambda item: item[0] not in excluded_fields, expanded_properties
+    )
+
+    for name, details in expanded_properties:
+        if "properties" in details:
+            yield from _flatten_properties(
+                details["properties"], excluded_fields, f"{name}."
+            )
+        else:
+            yield name
+
+
+def _format_case_field(field_prefix: str, field: str) -> str:
+    if not field_prefix:
+        return field
+
+    if field.startswith(field_prefix):
+        return re.sub(fr"{field_prefix}\.?", "", field)
+
+    return ""
+
+
+def _load_case_fields(
+    field_prefix: str, excluded_fields: Container[str], mappings: dict
+) -> Iterable[str]:
+    properties = mappings["properties"]
+    fields = tuple(_flatten_properties(properties, excluded_fields))
+    format_field = functools.partial(_format_case_field, field_prefix)
+
+    return filter(None, map(format_field, fields))
+
+
+class CaseFieldSelector:
+    CASE_PREFIXES = {
+        build.IndexType.CASE_CENTRIC: "",
+        build.IndexType.CNV_CENTRIC: "occurrence.case",
+        build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
+        build.IndexType.SSM_CENTRIC: "occurrence.case",
+        build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
+    }
+
+    def __init__(self, mappings_loader: MappingsLoader = MappingsLoader()) -> None:
+        self._mapping_loader = mappings_loader
+
+    def _select_fields(
+        self, index_type: build.IndexType, excluded_fields: Container[str]
+    ) -> Set[str]:
+        if index_type not in self.CASE_PREFIXES:
+            raise ValueError(f"Index: {index_type} is not supported.")
+
+        field_prefix = self.CASE_PREFIXES[index_type]
+        mappings = self._mapping_loader.load_mappings(index_type)
+        fields = _load_case_fields(field_prefix, excluded_fields, mappings)
+
+        return frozenset(fields)
+
+    def select_for(
+        self,
+        *index_types: build.IndexType,
+        excluded_fields: Container[str] = (),
+        included_fields: Iterable[str] = ("case_id",),
+    ) -> Iterable[str]:
+        field_sets = (
+            self._select_fields(index_type, excluded_fields)
+            for index_type in index_types
+        )
+
+        return functools.reduce(lambda set0, set1: set0 & set1, field_sets) | frozenset(
+            included_fields
+        )
+
+
 def _get_index(config, index_type: build.IndexType) -> str:
     if index_type == build.IndexType.FILE:
         return str(config.graph_file_index)
@@ -255,7 +342,7 @@ class DataFrameUtil:
 
         if include_fields and isinstance(include_fields, Iterable):
             reader = reader.option("es.read.field.include", ",".join(include_fields))
-        
+
         if exclude_fields and isinstance(exclude_fields, Iterable):
             reader = reader.option("es.read.field.exclude", ",".join(exclude_fields))
 
