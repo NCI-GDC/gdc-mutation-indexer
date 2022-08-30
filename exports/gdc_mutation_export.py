@@ -6,7 +6,7 @@ from pyspark import sql
 
 import config
 from exports import builders, es_utils, indexd_utils
-from exports.builders import ascat
+from exports.builders import ascat, maf_metadata
 from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -65,6 +65,7 @@ class GDCMutationExport:
             self.config,
             self.sqlContext,
             es_dataframe_util,
+            maf_metadata.MAFFileFilterFactory(self.config, self.config.es),
         ).build()
 
         # Combine MAFs into one DataFrame

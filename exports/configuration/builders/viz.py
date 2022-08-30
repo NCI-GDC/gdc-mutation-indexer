@@ -22,6 +22,7 @@ class AscatBuilder(Builder):
     """
     Configuration values for running the ascat builder
     """
+
     omit_cnv_data: bool
 
 
@@ -30,6 +31,7 @@ class CaseBuilder(Builder):
     """
     Configuration values for running the case builder
     """
+
     excluded_fields: Sequence[str] = dataclasses.field(
         metadata={
             "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
@@ -45,7 +47,23 @@ class MAFBuilder(Builder):
     """
     Configuration values for running the MAF builder
     """
+
     repartition_size: int
+
+
+@dataclasses.dataclass(frozen=True)
+class MAFMetadataBuilder(Builder):
+    """
+    Configuration values for running the MAF metadata builder
+    """
+
+    prioritized_experimental_strategies: Sequence[str] = dataclasses.field(
+        metadata={
+            "marshmallow_filed": marshmallow_extensions.ArbitraryLengthTuple(
+                fields.String()
+            )
+        }
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,6 +71,7 @@ class CaseCentricBuilder(CentricBuilder):
     """
     Configuration values for running the case centric builder
     """
+
     genes_threshold: int
 
 
@@ -61,6 +80,7 @@ class CNVCentricBuilder(CentricBuilder):
     """
     Configuration values for running the case builder
     """
+
     occurrences_threshold: int
 
 
@@ -69,6 +89,7 @@ class SSMCentricBuilder(CentricBuilder):
     """
     Configuration values for running the SSM centric builder
     """
+
     occurrences_threshold: int
 
 
@@ -77,10 +98,11 @@ class Viz:
     """
     Configuration values for running the export of the viz indices
     """
+
     ascat: AscatBuilder
     case: CaseBuilder
     gene_model: GeneModelBuilder
-    maf_metadata: Builder
+    maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder
     primary_aliquot: Builder
     case_centric: CaseCentricBuilder
