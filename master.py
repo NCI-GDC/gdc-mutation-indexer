@@ -57,7 +57,9 @@ def merge_dict(a: dict, b: dict) -> None:
             a[key] = value
 
 
-def load_config_data(user_config_file: str, final_config_file: str) -> Mapping[str, Any]:
+def load_config_data(
+    user_config_file: str, final_config_file: str
+) -> Mapping[str, Any]:
     """
     Loads the user provided configuration and updates it with any required default
     values.
@@ -122,7 +124,7 @@ def get_config(
         user_config_file: The path to the user provided configuration file.
 
     Returns:
-        A context manager which in turn provides the configuration object with which to 
+        A context manager which in turn provides the configuration object with which to
         run the application.
     """
     with tempfile.TemporaryDirectory() as temp_directory:
@@ -214,20 +216,15 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             config.elasticsearch.connection.password,
         ),
     ) as es_client:
-        indices = frozenset(
-            [
-                index
-                for index in config.elasticsearch.write.indices.values()
-                if await es_client.indices.exists(index=index)
-            ]
-        )
-        missing_indices = config.elasticsearch.write.indices.keys() - indices
+        to_merge = []
 
-        if missing_indices:
-            logger.warning(f"Build failed to build indices: {missing_indices}.")
+        for index in config.elasticsearch.write.indices.values():
+            if await es_client.indices.exists(index=index):
+                to_merge.append(index)
+            else:
+                logger.warning(f"Build failed to build index: {index}.")
 
-        async for index in indices:
-            await es_client.indices.forcemerge(index=index, max_num_segments=1)
+        await es_client.indices.forcemerge(index=",".join(to_merge), max_num_segments=1)
 
 
 def set_environment_variables(env: environment.Environment) -> None:
