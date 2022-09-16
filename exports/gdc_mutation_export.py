@@ -43,7 +43,9 @@ class GDCMutationExport:
         doc_dataframe_util = indexd_utils.DataFrameUtil(
             self.config.indexd, self.sqlContext, self.logger
         )
-        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        es_dataframe_util = es_utils.DataFrameUtil(
+            self.config, self.sqlContext, self.config.es
+        )
         es_rdd_util = es_utils.RDDUtil(self.config, self.sc)
 
         # Load gene model
@@ -105,7 +107,9 @@ class GDCMutationExport:
         """
         Runs the importing, building, and uploading of the gene expression data into elasticsearch.
         """
-        es_dataframe_util = es_utils.DataFrameUtil(self.config, self.sqlContext)
+        es_dataframe_util = es_utils.DataFrameUtil(
+            self.config, self.sqlContext, self.config.es
+        )
         doc_dataframe_util = indexd_utils.DataFrameUtil(
             self.config.indexd, self.sqlContext, logger
         )
