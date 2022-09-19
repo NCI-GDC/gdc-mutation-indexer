@@ -1,14 +1,15 @@
 import os
 from unittest import mock
 
+import elasticsearch
 import ndjson
 import pytest
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
-from tests.integration import config
 from exports import builders, es_utils, indexd_utils
+from tests.integration import config
 
 
 @pytest.fixture(scope="module")
@@ -22,9 +23,11 @@ def ge_conf():
 
 @pytest.fixture(scope="module")
 def ge_primary_aliquot_df(
-    ge_conf: config.BaseConfig, sqlContext: sql.SQLContext
+    ge_conf: config.BaseConfig,
+    sqlContext: sql.SQLContext,
+    es_client: elasticsearch.Elasticsearch,
 ) -> sql.DataFrame:
-    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext)
+    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext, es_client)
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
         ge_conf, sqlContext, es_dataframe_util
     )
