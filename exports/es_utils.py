@@ -2,8 +2,9 @@ import functools
 import itertools
 import json
 import re
-from typing import Any, Container, Dict, Iterable, Optional, Set, Union
+from typing import Any, Callable, Container, Dict, Iterable, Optional, Set, Union
 
+import elasticsearch
 import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
@@ -344,18 +345,39 @@ def _get_index(config, index_type: build.IndexType) -> str:
     if index_type == build.IndexType.CASE:
         return str(config.graph_case_index)
 
-    raise ValueError(f"Invalid index: {index_type}")
+    type_key = index_type.name.lower()
+
+    if type_key in config.indices:
+        return config.indices[type_key]
+
+    raise ValueError(f"Index not configured: {index_type.name}")
+
+
+def _model_mapper_factory(index_type: str) -> mapper.ModelMapper:
+    return mapper.ModelMapper(index=index_type)
 
 
 class DataFrameUtil:
-    def __init__(self, config, sql_context: sql.SQLContext) -> None:
+    ES_FORMAT = "org.elasticsearch.spark.sql"
+
+    def __init__(
+        self,
+        config,
+        sql_context: sql.SQLContext,
+        es_client: elasticsearch.Elasticsearch,
+        model_mapper_factory: Callable[
+            [str], mapper.ModelMapper
+        ] = _model_mapper_factory,
+    ) -> None:
         self._config = config
         self._sql_context = sql_context
+        self._es_client = es_client
+        self._model_mapper_factory = model_mapper_factory
 
     def _get_index(self, index_type: build.IndexType) -> str:
         return _get_index(self._config, index_type)
 
-    def get_dataframe(
+    def read(
         self,
         index_type: build.IndexType,
         include_fields: Union[Iterable[str], bool] = True,
@@ -365,18 +387,22 @@ class DataFrameUtil:
         read_metadata: bool = False,
     ) -> sql.DataFrame:
         """
-        A utility for loading data from ES natively into spark.
+        A utility for reading data from ES natively into spark.
 
         Args:
-            index: The index from which the data will be loaded
-            include_fields: The fields which will be included when read
+            index_type: The index from which the data will be loaded
+            include_fields: The fields which will be included when reading
+            exclude_fields: The fields which will not be included when reading
             include_as_arrays: The fields which need to be read as arrays and not
                 simple types (e.g. field: ["this", "is", "example"])
                 NOTE: This does NOT apply to arrays of objects
             query: The query to use in ES to limit the records returned
+
+        Returns:
+            A data frame containing the data from the elasticsearch index
         """
         reader = (
-            self._sql_context.read.format("org.elasticsearch.spark.sql")
+            self._sql_context.read.format(self.ES_FORMAT)
             .option("es.read.metadata", read_metadata)
             .option("es.nodes", self._config.source_es_nodes)
             .option("es.net.http.auth.user", self._config.source_es_user)
@@ -404,6 +430,65 @@ class DataFrameUtil:
             )
 
         return reader.load(self._get_index(index_type))
+
+    get_dataframe = read
+
+    def _create_index(self, index: str, index_type: build.IndexType) -> None:
+        """
+        Creates the index based on the mapping associated with the given index
+        type.
+
+        Args:
+            index: the name of the index to be created
+            index_type: the index type correlating to the mapping for the new index
+        """
+        if self._es_client.indices.exists(index=index):
+            raise Exception(
+                f"Index: {index} already exists. Cannot overwrite existing index."
+            )
+
+        index_mapper = self._model_mapper_factory(index_type.name.lower())
+        body = index_mapper.get_normalized_mappings()
+
+        self._es_client.indices.create(index=index, body=body)
+
+    def write(
+        self, df: sql.DataFrame, index_type: build.IndexType, id_field: str
+    ) -> None:
+        """
+        A utility for writing data from a data frame into elasticsearch.
+
+        Args:
+            df: the data frame which will be writen to elasticsearch for indexing
+            index_type: the index type i.e. ssm_centric_index which the data will be
+                written to
+        """
+        index = self._get_index(index_type)
+
+        self._create_index(index, index_type)
+        (
+            df.write.format(self.ES_FORMAT)
+            .option("es.nodes", self._config.es_nodes)
+            .option("es.net.http.auth.user", self._config.source_es_user)
+            .option("es.net.http.auth.pass", self._config.es_pass)
+            .option("es.net.ssl", self._config.es_use_ssl)
+            .option(
+                "es.net.ssl.cert.allow.self.signed",
+                self._config.disable_es_verify_certs,
+            )
+            .option("es.nodes.wan.only", "true")
+            .option("es.nodes.resolve.hostname", "false")
+            .option("es.resource.write", index)
+            .option("es.http.timeout", "20m")
+            .option("es.http.retries", "-1")
+            .option("es.batch.write.retry.count", "-1")
+            .option("es.batch.write.retry.wait", "10m")
+            .option("es.batch.size.bytes", self._config.batch_size_bytes)
+            .option("es.batch.size.entries", self._config.batch_size_entries)
+            .option("es.batch.write.refresh", True)
+            .option("es.mapping.id", id_field)
+            .save(index)
+        )
 
 
 class RDDUtil:

@@ -1,12 +1,14 @@
 import json
-
-import pytest
+from typing import Sequence
 
 import deepdiff
-from tests.integration import config
-from exports import builders, es_utils
+import elasticsearch
+import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
+
+from exports import builders, es_utils
+from tests.integration import config
 
 conf = config.TestConfig()
 
@@ -482,8 +484,15 @@ class TestCaseBuilder:
         ],
     )
     def test_project_filter(
-        self, projects, expected_count, sqlContext, maf_metadata_df, maf_df, cnv_df
-    ):
+        self,
+        projects: Sequence[str],
+        expected_count: int,
+        sqlContext: sql.SQLContext,
+        maf_metadata_df: sql.DataFrame,
+        maf_df: sql.DataFrame,
+        cnv_df: sql.DataFrame,
+        es_client: elasticsearch.Elasticsearch,
+    ) -> None:
         """Test filtering the projects included in the case DF.
 
         Confirm that the expected number of cases are extracted and that
@@ -492,7 +501,7 @@ class TestCaseBuilder:
         local_conf = config.TestConfig()
         local_conf.projects = projects
 
-        es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext)
+        es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext, es_client)
         df = builders.CaseBuilder(local_conf, sqlContext, es_dataframe_util).build(
             maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
         )
