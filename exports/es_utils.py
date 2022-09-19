@@ -1,4 +1,5 @@
 import functools
+import itertools
 import json
 import re
 from typing import Any, Container, Dict, Iterable, Optional, Set, Union
@@ -199,7 +200,16 @@ def get_non_null_fields(config, blacklist=None):
 
 
 class MappingsLoader:
+    """A class for loading the elasticsearch mapping for any given index."""
+
     def load_mappings(self, index_type: build.IndexType) -> dict:
+        """
+        Loads the mapping for the given index.
+
+        Args:
+            index_type: the index type associated with the elasticsearch mapping to
+                load.
+        """
         index_name, doc_type = index_type.get_mappings_details()
         model_mapper = mapper.ModelMapper(index_name, doc_type)
 
@@ -209,8 +219,17 @@ class MappingsLoader:
 def _flatten_properties(
     properties: Dict[str, Any], excluded_fields: Container[str], path: str = ""
 ) -> Iterable[str]:
-    expanded_properties = (
-        (f"{path}{name}", details) for name, details in properties.items()
+    """
+    Flattens the properties found in an elasticsearch mapping into individual fields.
+
+    Args:
+        properties: the properties node of an elasticsearch mapping.
+        excluded_fields: the fields which should be excluded.
+        path: the current path to the given properties. If the top level of the mapping,
+            use the given empty string.
+    """
+    expanded_properties = itertools.starmap(
+        lambda name, details: (f"{path}{name}", details), properties.items()
     )
     expanded_properties = filter(
         lambda item: item[0] not in excluded_fields, expanded_properties
@@ -226,6 +245,15 @@ def _flatten_properties(
 
 
 def _format_case_field(field_prefix: str, field: str) -> str:
+    """
+    Standardizes the format of the selected field. Returning an empty string if the
+    field does not contain the given prefix and if it does, then removing the prfix
+    from the field.
+
+    Args:
+        field_prefix: the prefix found before each field.
+        field: the field name being formated.
+    """
     if not field_prefix:
         return field
 
@@ -238,6 +266,15 @@ def _format_case_field(field_prefix: str, field: str) -> str:
 def _load_case_fields(
     field_prefix: str, excluded_fields: Container[str], mappings: dict
 ) -> Iterable[str]:
+    """
+    Loads all case fields from the mapping based on the case field prefix.
+
+    Args:
+        field_prefix: the prefix for the case fields found in the mapping.
+        excluded_fields: the fields which should be excluded when loading.
+        mapping: the elasticsearch mapping from which the fields are being
+            loaded.
+    """
     properties = mappings["properties"]
     fields = tuple(_flatten_properties(properties, excluded_fields))
     format_field = functools.partial(_format_case_field, field_prefix)
@@ -246,6 +283,8 @@ def _load_case_fields(
 
 
 class CaseFieldSelector:
+    """A class for selecting the case fields in a given elasticsearch index."""
+
     CASE_PREFIXES = {
         build.IndexType.CASE_CENTRIC: "",
         build.IndexType.CNV_CENTRIC: "occurrence.case",
@@ -275,6 +314,19 @@ class CaseFieldSelector:
         excluded_fields: Container[str] = (),
         included_fields: Iterable[str] = ("case_id",),
     ) -> Iterable[str]:
+        """
+        Selects all common case fields found in the given indices.
+
+        Args:
+            *index_types: any indecies which should be included when selecting the case
+                fields. Valid types: CASE_CENTRIC, CNV_CENTRIC, CNV_OCCURRENCE_CENTRIC,
+                SSM_CENTRIC, and SSM_OCCURRENCE_CENTRIC
+            excluded_fields: any fields which should be excluded in the selection. If
+                a parent field is excluded then all of its children will be eg. if the
+                exclusion is samples, then samples.sample_id is automatically excluded.
+            included_fields: restricts the select to only included a subset of fields.
+                this is useful when slecting fields nested under a particular parent.
+        """
         field_sets = (
             self._select_fields(index_type, excluded_fields)
             for index_type in index_types
