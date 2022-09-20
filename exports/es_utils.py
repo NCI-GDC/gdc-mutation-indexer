@@ -1,10 +1,21 @@
+import collections
 import functools
-import itertools
 import json
 import re
-from typing import Any, Callable, Container, Dict, Iterable, Optional, Set, Union
+from typing import (
+    Callable,
+    Container,
+    Deque,
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Set,
+    Union,
+)
 
 import elasticsearch
+import more_itertools
 import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
@@ -217,70 +228,116 @@ class MappingsLoader:
         return model_mapper.get_normalized_mappings()["mappings"]
 
 
-def _flatten_properties(
-    properties: Dict[str, Any], excluded_fields: Container[str], path: str = ""
-) -> Iterable[str]:
+def _is_included_field(
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    field: str,
+) -> bool:
     """
-    Flattens the properties found in an elasticsearch mapping into individual fields.
+    Determines if the given field should be included in the returned values based on the
+    given excluded and included fields.
 
     Args:
-        properties: the properties node of an elasticsearch mapping.
-        excluded_fields: the fields which should be excluded.
-        path: the current path to the given properties. If the top level of the mapping,
-            use the given empty string.
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        field: the field in question.
+
+    Returns:
+        True if the field is a valid field and should be included in the resulting set
+        of fields.
     """
-    expanded_properties = itertools.starmap(
-        lambda name, details: (f"{path}{name}", details), properties.items()
-    )
-    expanded_properties = filter(
-        lambda item: item[0] not in excluded_fields, expanded_properties
+    if field in excluded_fields:
+        return False
+
+    return included_fields is None or any(
+        field.startswith(prefix) for prefix in included_fields
     )
 
-    for name, details in expanded_properties:
+
+def _convert_properties(
+    properties: Mapping[str, Mapping],
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    path: str = "",
+) -> Iterator[str]:
+    """
+    Converts all properties in the given mapping into flat fields which fall within the
+    given included fields as well as outside of the excluded fields.
+
+    Args:
+        properties: the properties node of a elasticsearch mapping
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        path: the current path to the given set of properties.
+
+    Returns:
+        An iterator of individual fields from the given properties mapping.
+    """
+    fields = ((f"{path}{prop}", details) for prop, details in properties.items())
+    is_included_field = functools.partial(
+        _is_included_field, excluded_fields, included_fields
+    )
+    fields = filter(lambda items: is_included_field(items[0]), fields)
+
+    for field, details in fields:
         if "properties" in details:
-            yield from _flatten_properties(
-                details["properties"], excluded_fields, f"{name}."
+            yield from _convert_properties(
+                details["properties"],
+                excluded_fields,
+                included_fields,
+                path=f"{field}.",
             )
         else:
-            yield name
+            yield field
 
 
-def _format_case_field(field_prefix: str, field: str) -> str:
+def _extract_fields(
+    properties: Mapping[str, Mapping],
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    path_to_fields: Deque[str],
+) -> Iterator[str]:
     """
-    Standardizes the format of the selected field. Returning an empty string if the
-    field does not contain the given prefix and if it does, then removing the prfix
-    from the field.
+    Extracts all fields which fall under the provided path and fall within the given
+    included fields as well as outside of the excluded fields.
 
     Args:
-        field_prefix: the prefix found before each field.
-        field: the field name being formated.
+        properties: the properties node of a elasticsearch mapping
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        path_to_fields: a series of properties which represent the path to the desired
+            fields found within the given properties.
+
+    Returns:
+        An iterator of individual fields from the given properties mapping.
     """
-    if not field_prefix:
-        return field
+    if not properties:
+        return
 
-    if field.startswith(field_prefix):
-        return re.sub(fr"{field_prefix}\.?", "", field)
+    if path_to_fields:
+        next_prop = path_to_fields.popleft()
+        properties = (
+            details.get("properties", {})
+            for prop, details in properties.items()
+            if prop == next_prop
+        )
+        properties = more_itertools.only(properties, default={})
 
-    return ""
+        yield from _extract_fields(
+            properties, excluded_fields, included_fields, path_to_fields
+        )
 
-
-def _load_case_fields(
-    field_prefix: str, excluded_fields: Container[str], mappings: dict
-) -> Iterable[str]:
-    """
-    Loads all case fields from the mapping based on the case field prefix.
-
-    Args:
-        field_prefix: the prefix for the case fields found in the mapping.
-        excluded_fields: the fields which should be excluded when loading.
-        mapping: the elasticsearch mapping from which the fields are being
-            loaded.
-    """
-    properties = mappings["properties"]
-    fields = tuple(_flatten_properties(properties, excluded_fields))
-    format_field = functools.partial(_format_case_field, field_prefix)
-
-    return filter(None, map(format_field, fields))
+    else:
+        yield from _convert_properties(properties, excluded_fields, included_fields)
 
 
 class CaseFieldSelector:
@@ -298,14 +355,22 @@ class CaseFieldSelector:
         self._mapping_loader = mappings_loader
 
     def _select_fields(
-        self, index_type: build.IndexType, excluded_fields: Container[str]
+        self,
+        index_type: build.IndexType,
+        excluded_fields: Iterable[str],
+        included_fields: Optional[Iterable[str]],
     ) -> Set[str]:
         if index_type not in self.CASE_PREFIXES:
             raise ValueError(f"Index: {index_type} is not supported.")
 
-        field_prefix = self.CASE_PREFIXES[index_type]
+        prefix = self.CASE_PREFIXES[index_type]
+        path_to_fields = (
+            collections.deque(prefix.split(".")) if prefix else collections.deque()
+        )
         mappings = self._mapping_loader.load_mappings(index_type)
-        fields = _load_case_fields(field_prefix, excluded_fields, mappings)
+        fields = _extract_fields(
+            mappings["properties"], excluded_fields, included_fields, path_to_fields
+        )
 
         return frozenset(fields)
 
@@ -313,7 +378,7 @@ class CaseFieldSelector:
         self,
         *index_types: build.IndexType,
         excluded_fields: Container[str] = (),
-        included_fields: Iterable[str] = ("case_id",),
+        included_fields: Optional[Iterable[str]] = None,
     ) -> Iterable[str]:
         """
         Selects all common case fields found in the given indices.
@@ -327,14 +392,15 @@ class CaseFieldSelector:
                 exclusion is samples, then samples.sample_id is automatically excluded.
             included_fields: restricts the select to only included a subset of fields.
                 this is useful when slecting fields nested under a particular parent.
+                The default is to include all fields.
         """
         field_sets = (
-            self._select_fields(index_type, excluded_fields)
+            self._select_fields(index_type, excluded_fields, included_fields)
             for index_type in index_types
         )
 
         return functools.reduce(lambda set0, set1: set0 & set1, field_sets) | frozenset(
-            included_fields
+            ("case_id",)
         )
 
 

@@ -48,12 +48,14 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(build.IndexType.CASE_CENTRIC, excluded_fields="field0")
+            selector.select_for(
+                build.IndexType.CASE_CENTRIC, excluded_fields=("field0",)
+            )
         )
 
         assert fields == frozenset({"case_id"})
 
-    def test__select_for__parent_field_and_all_children(self):
+    def test__select_for__exclude_parent_field_and_all_children(self):
         mapping = {
             "properties": {
                 "parent0": {"properties": {"sub_field0": {"type": "boolean"}}}
@@ -63,10 +65,92 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(build.IndexType.CASE_CENTRIC, excluded_fields="parent0")
+            selector.select_for(
+                build.IndexType.CASE_CENTRIC, excluded_fields=("parent0",)
+            )
         )
 
         assert fields == frozenset({"case_id"})
+
+    def test__select_for__exclude_prefixed_field(self):
+        mapping = {
+            "properties": {"case": {"properties": {"field0": {"type": "keyword"}}}}
+        }
+        loader = self.arrange_mappings_loader(
+            mapping, indices=(build.IndexType.CNV_OCCURRENCE_CENTRIC,)
+        )
+        selector = es_utils.CaseFieldSelector(loader)
+
+        fields = frozenset(
+            selector.select_for(
+                build.IndexType.CNV_OCCURRENCE_CENTRIC, excluded_fields=("field0",)
+            )
+        )
+
+        assert fields == frozenset({"case_id"})
+
+    def test__select_for__include_field(self):
+        mapping = {
+            "properties": {"field0": {"type": "keyword"}, "field1": {"type": "keyword"}}
+        }
+        loader = self.arrange_mappings_loader(mapping)
+        selector = es_utils.CaseFieldSelector(loader)
+
+        fields = frozenset(
+            selector.select_for(
+                build.IndexType.CASE_CENTRIC, included_fields=("field0",)
+            )
+        )
+
+        assert fields == frozenset({"case_id", "field0"})
+
+    def test__select_for__include_parent_field_and_all_children(self):
+        mapping = {
+            "properties": {
+                "parent0": {
+                    "properties": {
+                        "sub_field0": {"type": "boolean"},
+                        "sub_field1": {"type": "keyword"},
+                    }
+                }
+            }
+        }
+        loader = self.arrange_mappings_loader(mapping)
+        selector = es_utils.CaseFieldSelector(loader)
+
+        fields = frozenset(
+            selector.select_for(
+                build.IndexType.CASE_CENTRIC, included_fields=("parent0",)
+            )
+        )
+
+        assert fields == frozenset(
+            {"case_id", "parent0.sub_field0", "parent0.sub_field1"}
+        )
+
+    def test__select_for__include_prefixed_field(self):
+        mapping = {
+            "properties": {
+                "case": {
+                    "properties": {
+                        "field0": {"type": "keyword"},
+                        "field1": {"type": "integer"},
+                    }
+                }
+            }
+        }
+        loader = self.arrange_mappings_loader(
+            mapping, indices=(build.IndexType.SSM_OCCURRENCE_CENTRIC,)
+        )
+        selector = es_utils.CaseFieldSelector(loader)
+
+        fields = frozenset(
+            selector.select_for(
+                build.IndexType.SSM_OCCURRENCE_CENTRIC, included_fields=("field1",)
+            )
+        )
+
+        assert fields == frozenset({"case_id", "field1"})
 
     @pytest.mark.parametrize(
         ("index", "prefix"),
