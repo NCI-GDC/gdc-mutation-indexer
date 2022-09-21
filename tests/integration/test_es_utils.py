@@ -1,6 +1,7 @@
-from typing import FrozenSet, Iterable
-import elasticsearch
+from typing import Callable, FrozenSet, Iterable
+from unittest import mock
 
+import elasticsearch
 import more_itertools
 import pytest
 from normalizer import mapper
@@ -78,9 +79,12 @@ def test_missing_fields(diagnoses_missing_field):
     ),
     ids=("basic", "complex"),
 )
-def test_get_dataframe_from_es(
-    sqlContext, input_file, output_file, load_data_from_file
-):
+def test_data_frame_util_read(
+    sqlContext: sql.SQLContext,
+    input_file: str,
+    output_file: str,
+    load_data_from_file: Callable[[str], dict],
+) -> None:
     # Arrange
     conf = config.TestConfig()
     validator = schema_validation.PysparkSchemaValidator()
@@ -94,10 +98,10 @@ def test_get_dataframe_from_es(
     expected_schema = schema_validation.Schema(expected["expected_schema"])
     expected_data = expected["expected_data"]
 
-    dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
+    dataframe_util = es_utils.DataFrameUtil(conf, sqlContext, mock.MagicMock())
 
     # Act
-    result_df = dataframe_util.get_dataframe(build.IndexType[index], **kwargs)
+    result_df = dataframe_util.read(build.IndexType[index], **kwargs)
 
     # Assert
     validator.validate_schema(result_df.schema, expected_schema)
@@ -105,6 +109,142 @@ def test_get_dataframe_from_es(
     result_data = {row[doc_id]: row.asDict(True) for row in result_df.collect()}
 
     assert result_data == expected_data
+
+
+def test_data_frame_util_write(
+    sqlContext: sql.SQLContext, es_client: elasticsearch.Elasticsearch
+) -> None:
+    try:
+        case_mapping = {
+            "settings": {
+                "index": {
+                    "refresh_interval": "1m",
+                    "number_of_shards": 12,
+                    "number_of_replicas": 0,
+                    "mapping.total_fields.limit": 2000,
+                },
+                "analysis": {
+                    "analyzer": {
+                        "autocomplete_analyzed": {
+                            "filter": ["lowercase", "edge_ngram"],
+                            "tokenizer": "standard",
+                        },
+                        "autocomplete_prefix": {
+                            "filter": ["lowercase", "edge_ngram"],
+                            "tokenizer": "keyword",
+                        },
+                        "lowercase_keyword": {
+                            "filter": ["lowercase"],
+                            "tokenizer": "keyword",
+                        },
+                    },
+                    "filter": {
+                        "edge_ngram": {
+                            "max_gram": "20",
+                            "min_gram": "1",
+                            "side": "front",
+                            "type": "edge_ngram",
+                        }
+                    },
+                    "normalizer": {
+                        "clinical_normalizer": {
+                            "type": "custom",
+                            "char_filter": [],
+                            "filter": ["lowercase"],
+                        }
+                    },
+                },
+                "index.mapping.nested_fields.limit": 100,
+                "index.mapping.nested_objects.limit": 100000000,
+                "index.max_result_window": 100000000,
+            },
+            "mappings": {
+                "_size": {"enabled": True},
+                "_source": {"excludes": ["gene.*"]},
+                "properties": {
+                    "available_variation_data": {
+                        "type": "keyword",
+                        "normalizer": "clinical_normalizer",
+                    },
+                    "case_autocomplete": {
+                        "fields": {
+                            "analyzed": {
+                                "analyzer": "autocomplete_analyzed",
+                                "search_analyzer": "lowercase_keyword",
+                                "type": "text",
+                            },
+                            "lowercase": {
+                                "analyzer": "lowercase_keyword",
+                                "type": "text",
+                            },
+                            "prefix": {
+                                "analyzer": "autocomplete_prefix",
+                                "search_analyzer": "lowercase_keyword",
+                                "type": "text",
+                            },
+                        },
+                        "type": "keyword",
+                        "normalizer": "clinical_normalizer",
+                    },
+                    "case_id": {
+                        "copy_to": ["case_autocomplete"],
+                        "type": "keyword",
+                        "normalizer": "clinical_normalizer",
+                    },
+                    "gene": {
+                        "properties": {
+                            "gene_id": {"type": "keyword"},
+                        }
+                    },
+                    "project": {
+                        "properties": {
+                            "project_id": {
+                                "copy_to": ["case_autocomplete"],
+                                "type": "keyword",
+                            },
+                        }
+                    },
+                    "samples": {
+                        "properties": {
+                            "sample_type": {
+                                "type": "keyword",
+                                "normalizer": "clinical_normalizer",
+                            }
+                        }
+                    },
+                },
+                "dynamic": "strict",
+            },
+        }
+        model_mapper = mock.MagicMock()
+        model_mapper.get_normalized_mappings.return_value = case_mapping
+        model_mapper_factory = mock.MagicMock(return_value=model_mapper)
+        conf = config.TestConfig()
+        conf.indices = {"case_centric": "test_viz__test_case"}
+        util = es_utils.DataFrameUtil(conf, sqlContext, es_client, model_mapper_factory)
+        case_data = (
+            {
+                "available_variation_data": ["ssm", "cnv"],
+                "case_id": "case-0",
+                "gene": [{"gene_id": "gene-0"}],
+                "project": {"project_id": "GDC-TEST"},
+                "samples": [{"sample_type": "Normal"}],
+            },
+        )
+        case_df = sqlContext.createDataFrame(case_data)
+
+        util.write(case_df, build.IndexType.CASE_CENTRIC, "case_id")
+
+        assert es_client.indices.exists(index="test_viz__test_case")
+        assert (
+            es_client.count(
+                index="test_viz__test_case",
+                body={"query": {"term": {"case_id": "case-0"}}},
+            ).get("count")
+            == 1
+        )
+    finally:
+        es_client.indices.delete(index="test_viz__test_case", ignore_unavailable=True)
 
 
 @pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
