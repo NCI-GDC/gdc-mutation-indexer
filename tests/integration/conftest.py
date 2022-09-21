@@ -288,8 +288,9 @@ def case_df(
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
 ) -> sql.DataFrame:
-    es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext)
+    es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext, es_client)
     return builders.CaseBuilder(conf, sqlContext, es_dataframe_util).build(
         maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
     )
