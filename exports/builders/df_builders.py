@@ -4,6 +4,7 @@ from exports.builders.clinical_annotations import get_clinical_annotation_df
 import logging
 logger = logging.getLogger('df_builder')
 
+# TODO: Remove lists from defaults and replace with tuples (defaults should not be mutable objects)
 
 def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
     """

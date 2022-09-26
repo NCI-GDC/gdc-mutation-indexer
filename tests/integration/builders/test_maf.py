@@ -1,47 +1,33 @@
 import json
-import os
 import re
-from unittest import mock
+from typing import Dict, Iterable
 
+import importlib_resources as resources
 import pytest
 import yaml
+from pyspark import sql
 from pyspark.sql import types
-
-from exports import builders
-from exports.builders.clinical_annotations import civic
-from tests.integration import config
-
-conf = config.TestConfig()
 
 
 @pytest.mark.usefixtures("sqlContext", "maf_df")
 class TestMAFBuilder:
     @pytest.fixture
-    def maf_schema(self):
-        path = os.path.join(conf.schemas_dir, "maf.yml")
-        with open(path) as f:
-            maf_schema = yaml.safe_load(f)["maf_schema"]
-
-        return maf_schema
-
-    @pytest.fixture
-    def annotation_schemas(self, sqlContext):
-        builder = builders.MAFBuilder(
-            conf,
-            sqlContext,
-            mock.MagicMock(),
-            (civic.CivicBuilder(conf, sqlContext),),
+    def annotation_schemas(self) -> Iterable[dict]:
+        civic = (
+            resources.files("exports.schemas")
+            .joinpath("clinical_annotations", "civic.yml")
+            .read_bytes()
         )
 
-        return builder.get_annotation_schemas()
+        return (yaml.safe_load(civic).get("schema"),)
 
-    def test_ssm_id(self, maf_df):
+    def test_ssm_id(self, maf_df: sql.DataFrame) -> None:
         """
         Test that ssm_id column is created
         """
         assert "ssm_id" in maf_df.columns
 
-    def test_cosmic_id(self, maf_df):
+    def test_cosmic_id(self, maf_df: sql.DataFrame) -> None:
         """
         Test that cosmic_id column is created and is ArrayType(StringType())
         """
@@ -50,7 +36,7 @@ class TestMAFBuilder:
         assert isinstance(data_type, types.ArrayType)
         assert isinstance(data_type.elementType, types.StringType)
 
-    def test_genomic_dna_change(self, maf_df):
+    def test_genomic_dna_change(self, maf_df: sql.DataFrame) -> None:
         """
         Test that the genomic_dna_change is created correctly
         """
@@ -86,7 +72,7 @@ class TestMAFBuilder:
         # ONPs
         assert "chr3:g.38112303_38112306delinsGTGC" in labels
 
-    def test_mutation_type(self, maf_df):
+    def test_mutation_type(self, maf_df: sql.DataFrame) -> None:
         """
         Test that mutation_type is created properly
         """
@@ -100,7 +86,9 @@ class TestMAFBuilder:
             == "Simple Somatic Mutation"
         )
 
-    def test_variant_caller(self, maf_df, raw_variant_caller_counts):
+    def test_variant_caller(
+        self, maf_df: sql.DataFrame, raw_variant_caller_counts: Dict[str, int]
+    ) -> None:
         """
         Test that variant caller is created properly
         """
@@ -109,7 +97,7 @@ class TestMAFBuilder:
         actual_counts = dict(maf_df.groupBy("variant_caller").count().collect())
         assert actual_counts == raw_variant_caller_counts
 
-    def test_variant_process(self, maf_df):
+    def test_variant_process(self, maf_df: sql.DataFrame) -> None:
         """
         Test that variant process is created properly
         """
@@ -117,7 +105,7 @@ class TestMAFBuilder:
         assert "variant_process" in maf_df.columns
         assert maf_df.first()["variant_process"] == "masked"
 
-    def test_mutation_subtype(self, maf_df):
+    def test_mutation_subtype(self, maf_df: sql.DataFrame) -> None:
         """
         Test that mutation_subtype is created properly
         """
@@ -130,7 +118,7 @@ class TestMAFBuilder:
             == maf_df.select("mutation_subtype").distinct().count()
         )
 
-    def test_maf_field_types(self, maf_df):
+    def test_maf_field_types(self, maf_df: sql.DataFrame) -> None:
         """
         Test that maf_df field types correspond to maf.yml
         """
@@ -144,7 +132,7 @@ class TestMAFBuilder:
                         == types[maf_df.schema[col_info["name"]]["type"]]
                     )
 
-    def test_maf_field_pattern(self, maf_df):
+    def test_maf_field_pattern(self, maf_df: sql.DataFrame) -> None:
         """
         Test that maf_df field pattern correspond to maf.yml
         """
@@ -160,7 +148,9 @@ class TestMAFBuilder:
                         is_matching = re.search(pattern.replace("{}", ".*"), val)
                         assert is_matching
 
-    def test_annotations(self, annotation_schemas, maf_df):
+    def test_annotations(
+        self, annotation_schemas: Iterable[dict], maf_df: sql.DataFrame
+    ) -> None:
         for schema in annotation_schemas:
             for k in schema.keys():
                 assert k in maf_df.columns

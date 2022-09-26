@@ -1,13 +1,12 @@
 import gzip
 import json
 import os
-from typing import List, Dict
+from typing import Dict, List
 
 import ndjson
 
 
 class TestDataStats:
-
     @classmethod
     def load_test_data(cls, data_dir):
         """
@@ -15,35 +14,32 @@ class TestDataStats:
         """
 
         # load cases
-        cases_file = cls.filter_files(data_dir, ['cases'])[0]
+        cases_file = cls.filter_files(data_dir, ["cases"])[0]
         cases = cls.load_es_graph_dump(os.path.join(data_dir, cases_file))
 
         # load genes
-        genes_file = cls.filter_files(data_dir, ['genes', 'ndjson'])[0]
+        genes_file = cls.filter_files(data_dir, ["genes", "ndjson"])[0]
         genes = cls.load_es_graph_dump(os.path.join(data_dir, genes_file))
-        return {'case': cases, 'gene': genes}
+        return {"case": cases, "gene": genes}
 
     @staticmethod
     def filter_files(directory, keywords):
         """
         Returns files from :directory that have all of the :keywords in name
         """
-        return [
-            f for f in os.listdir(directory)
-            if all([k in f for k in keywords])
-        ]
+        return [f for f in os.listdir(directory) if all([k in f for k in keywords])]
 
     @staticmethod
     def load_tsv_table(filename):
         rows = []
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             for n, line in enumerate(f.readlines()):
-                row = line.replace('\n', '').split('\t')
+                row = line.replace("\n", "").split("\t")
                 if n == 0:
                     header = row
                     continue
                 rows.append(row)
-        return {'header': header, 'data': rows}
+        return {"header": header, "data": rows}
 
     @staticmethod
     def load_es_graph_dump(filename: str) -> List[Dict]:
@@ -64,18 +60,18 @@ class TestDataStats:
             return None
 
         # Get index-specific stats:
-        function_name = '{}_stats'.format(doc_type)
+        function_name = f"{doc_type}_stats"
         stats = getattr(cls, function_name)(maf_df, cnv_df, test_data)
 
         # Add maf and gistic info:
-        maf_data = maf_df.select('case_id', 'gene_id').collect()
-        gistic_data = cnv_df.select('case_id', 'gene_id').collect()
+        maf_data = maf_df.select("case_id", "gene_id").collect()
+        gistic_data = cnv_df.select("case_id", "gene_id").collect()
 
-        stats['ssm_cases'] = {r.case_id for r in maf_data}
-        stats['cnv_cases'] = {r.case_id for r in gistic_data}
+        stats["ssm_cases"] = {r.case_id for r in maf_data}
+        stats["cnv_cases"] = {r.case_id for r in gistic_data}
 
-        stats['ssm_genes'] = {r.gene_id for r in maf_data}
-        stats['cnv_genes'] = {r.gene_id for r in gistic_data}
+        stats["ssm_genes"] = {r.gene_id for r in maf_data}
+        stats["cnv_genes"] = {r.gene_id for r in gistic_data}
 
         return stats
 
@@ -98,9 +94,11 @@ class TestDataStats:
         """
         # Number of cases in maf_df and cnv_df
         count = (
-            maf_df.select('case_id').union(cnv_df.select('case_id'))
-        ).distinct().count()
-        return {'count': count}
+            (maf_df.select("case_id").union(cnv_df.select("case_id")))
+            .distinct()
+            .count()
+        )
+        return {"count": count}
 
     @staticmethod
     def gene_centric_stats(maf_df, cnv_df, data):
@@ -120,11 +118,9 @@ class TestDataStats:
                            |___ observation[]
         """
         count = (
-            maf_df.select('gene_id').union(
-                cnv_df.select('gene_id')
-            ).distinct().count()
+            maf_df.select("gene_id").union(cnv_df.select("gene_id")).distinct().count()
         )
-        return {'count': count}
+        return {"count": count}
 
     @staticmethod
     def ssm_centric_stats(maf_df, cnv_df, data):
@@ -138,8 +134,8 @@ class TestDataStats:
                       |_____ case{}
                                |____ observation[]
         """
-        ssm_count = maf_df.select('ssm_id').distinct().count()
-        return {'count': ssm_count}
+        ssm_count = maf_df.select("ssm_id").distinct().count()
+        return {"count": ssm_count}
 
     @staticmethod
     def ssm_occurrence_centric_stats(maf_df, cnv_df, data):
@@ -153,8 +149,8 @@ class TestDataStats:
               |____ case{}
                        |____ observation[]
         """
-        count = maf_df.select('occurrence_id').distinct().count()
-        return {'count': count}
+        count = maf_df.select("occurrence_id").distinct().count()
+        return {"count": count}
 
     @staticmethod
     def cnv_centric_stats(maf_df, cnv_df, data):
@@ -166,8 +162,8 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
-        count = cnv_df.select('cnv_id').distinct().count()
-        return {'count': count}
+        count = cnv_df.select("cnv_id").distinct().count()
+        return {"count": count}
 
     @staticmethod
     def cnv_occurrence_centric_stats(maf_df, cnv_df, data):
@@ -179,6 +175,5 @@ class TestDataStats:
                         |_____ case{}
                                     |____ observation[]
         """
-        count = cnv_df.select('cnv_id', 'case_id').distinct().count()
-        return {'count': count}
-
+        count = cnv_df.select("cnv_id", "case_id").distinct().count()
+        return {"count": count}

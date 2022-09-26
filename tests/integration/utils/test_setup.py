@@ -1,13 +1,13 @@
 import collections
+import functools
 import logging
 import types
 from typing import (
     AbstractSet,
-    Any,
+    Callable,
     Container,
     ContextManager,
     DefaultDict,
-    Iterable,
     Optional,
     Set,
     Type,
@@ -15,13 +15,25 @@ from typing import (
 )
 
 import elasticsearch
+import importlib_resources as resources
+import toml
 from elasticsearch import helpers
 from normalizer import mapper
+from typing_extensions import Literal
 
-from tests.integration import config
+from exports import configuration
 from tests.integration.utils import true_stats
 
 T = TypeVar("T")
+
+
+def load_configuraiton(
+    *pre_load: Callable[[dict], dict]
+) -> configuration.Configuration:
+    data = toml.loads(resources.read_text("exports", "configuration.toml"))
+    data = functools.reduce(lambda d, f: f(d), pre_load, data)
+
+    return configuration.CONFIG_SCHEMA.load(data)
 
 
 def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:
@@ -48,20 +60,23 @@ def remove_keys_from_dict(tree: dict, remove_keys: Optional[Container[str]]) -> 
 
 
 class IndexManager(ContextManager["IndexManager"]):
+    _doc_types = ("file", "case")
+
     def __init__(
         self,
-        config: config.TestConfig,
+        config: configuration.Configuration,
         es: elasticsearch.Elasticsearch,
         logger: logging.Logger,
-        doc_types: Iterable[str],
     ) -> None:
-        self._config = config
         self._es = es
         self._logger = logger
-        self._doc_types = doc_types
+        self._graph_indices = {
+            "file": config.elasticsearch.read.file_index,
+            "case": config.elasticsearch.read.case_index,
+        }
 
     def _create_index(self, doc_type: str) -> None:
-        index_name = self._config.graph_indices[doc_type]
+        index_name = self._graph_indices[doc_type]
         model_mapper = mapper.ModelMapper("gdc_from_graph", doc_type)
 
         if self._es.indices.exists(index_name):
@@ -72,12 +87,12 @@ class IndexManager(ContextManager["IndexManager"]):
         self._logger.info("Creating index: {}".format(index_name))
         self._es.indices.create(index=index_name, body=model_mapper.index_settings)
 
-    def create_indices(self) -> bool:
+    def __enter__(self) -> "IndexManager":
         """Creates all indices for the test suite"""
         for doc_type in self._doc_types:
             self._create_index(doc_type)
 
-        return True
+        return self
 
     def __exit__(
         self,
@@ -86,9 +101,7 @@ class IndexManager(ContextManager["IndexManager"]):
         __traceback: Optional[types.TracebackType],
     ) -> Optional[bool]:
         for doc_type in self._doc_types:
-            self._es.indices.delete(
-                index=self._config.graph_indices[doc_type], ignore=[404]
-            )
+            self._es.indices.delete(index=self._graph_indices[doc_type], ignore=[404])
 
         return None
 
@@ -96,13 +109,16 @@ class IndexManager(ContextManager["IndexManager"]):
 class DocumentLoader(ContextManager["DocumentLoader"]):
     def __init__(
         self,
-        config: config.TestConfig,
+        config: configuration.Configuration,
         es: elasticsearch.Elasticsearch,
         logger: logging.Logger,
     ) -> None:
-        self._config = config
         self._es = es
         self._logger = logger
+        self._graph_indices = {
+            "file": config.elasticsearch.read.file_index,
+            "case": config.elasticsearch.read.case_index,
+        }
         self._documents = collections.defaultdict(
             set
         )  # type: DefaultDict[str, Set[str]]
@@ -115,15 +131,13 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
     ) -> Optional[bool]:
         for doc_type, ids in self._documents.items():
             if ids:
-                index_name = self._config.graph_indices[doc_type]
+                index_name = self._graph_indices[doc_type]
                 body = {"query": {"terms": {"file_id": list(ids)}}}
                 self._es.delete_by_query(index=index_name, body=body, refresh=True)
 
         return None
 
-    def load_docs(
-        self, doc_type: str, input_path: Optional[str] = None
-    ) -> AbstractSet[str]:
+    def load_docs(self, doc_type: str, input_path: str) -> AbstractSet[str]:
         """Load documents from gzipped test data into test index.
 
         Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
@@ -131,10 +145,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         Returns:
             A set containing the IDs of the documents that were inserted.
         """
-        if not input_path:
-            input_path = self._config.doc_files[doc_type]
-
-        index_name = self._config.graph_indices[doc_type]
+        index_name = self._graph_indices[doc_type]
 
         docs = []
         for doc in true_stats.TestDataStats.load_es_graph_dump(input_path):
