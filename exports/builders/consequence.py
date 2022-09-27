@@ -34,10 +34,11 @@ class ConsequenceBuilder:
         Args:
             maf_df: The formatted MAF dataframe from MAFBuilder
             index_name: name of the index this consequence is a part of
-            join_gene: Whether or not to join the gene model to the consquence. SSM and
+            join_gene: Whether or not to join the gene data to the consquence. SSM and
                 SSM Occurrence have gene under consequences, while Case and Gene do
                 not. Must be true if add_gene_aa_change is true
-            add_gene_aa_change: TODO
+            add_gene_aa_change: Adds the gene_aa_change field to the data if set to 
+                True. Can only be set to True if join_gene is set to true also.
 
         Returns:
             An dataframe containing and an array of transcripts
