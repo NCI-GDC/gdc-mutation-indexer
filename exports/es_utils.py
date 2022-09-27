@@ -2,6 +2,7 @@ import collections
 import functools
 import json
 import re
+import types
 from typing import (
     Callable,
     Container,
@@ -15,11 +16,11 @@ from typing import (
 )
 
 import elasticsearch
-import more_itertools
 import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
 from pyspark import sql
+from typing_extensions import Final
 
 from exports.constants import build
 
@@ -214,6 +215,8 @@ def get_non_null_fields(config, blacklist=None):
 class MappingsLoader:
     """A class for loading the elasticsearch mapping for any given index."""
 
+    __slots__ = ()
+
     def load_mappings(self, index_type: build.IndexType) -> dict:
         """
         Loads the mapping for the given index.
@@ -221,6 +224,9 @@ class MappingsLoader:
         Args:
             index_type: the index type associated with the elasticsearch mapping to
                 load.
+
+        Returns:
+            A mappings dict based on the configured output of the given index type.
         """
         index_name, doc_type = index_type.get_mappings_details()
         model_mapper = mapper.ModelMapper(index_name, doc_type)
@@ -325,12 +331,7 @@ def _extract_fields(
 
     if path_to_fields:
         next_prop = path_to_fields.popleft()
-        properties = (
-            details.get("properties", {})
-            for prop, details in properties.items()
-            if prop == next_prop
-        )
-        properties = more_itertools.only(properties, default={})
+        properties = properties.get(next_prop, {}).get("properties", {})
 
         yield from _extract_fields(
             properties, excluded_fields, included_fields, path_to_fields
@@ -343,16 +344,20 @@ def _extract_fields(
 class CaseFieldSelector:
     """A class for selecting the case fields in a given elasticsearch index."""
 
-    CASE_PREFIXES = {
-        build.IndexType.CASE_CENTRIC: "",
-        build.IndexType.CNV_CENTRIC: "occurrence.case",
-        build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
-        build.IndexType.SSM_CENTRIC: "occurrence.case",
-        build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
-    }
+    __slots__ = ("_mapping_loader",)
 
-    def __init__(self, mappings_loader: MappingsLoader = MappingsLoader()) -> None:
-        self._mapping_loader = mappings_loader
+    CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = types.MappingProxyType(
+        {
+            build.IndexType.CASE_CENTRIC: "",
+            build.IndexType.CNV_CENTRIC: "occurrence.case",
+            build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
+            build.IndexType.SSM_CENTRIC: "occurrence.case",
+            build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
+        }
+    )
+
+    def __init__(self, mappings_loader: Optional[MappingsLoader] = None) -> None:
+        self._mapping_loader = mappings_loader or MappingsLoader()
 
     def _select_fields(
         self,
