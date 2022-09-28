@@ -1,12 +1,26 @@
+import collections
+import functools
 import json
 import re
-from typing import Callable, Iterable, Optional, Union
+import types
+from typing import (
+    Callable,
+    Container,
+    Deque,
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Set,
+    Union,
+)
 
 import elasticsearch
 import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
 from pyspark import sql
+from typing_extensions import Final
 
 from exports.constants import build
 
@@ -196,6 +210,203 @@ def get_non_null_fields(config, blacklist=None):
             paths_with_data.append(path)
 
     return paths_with_data
+
+
+class MappingsLoader:
+    """A class for loading the elasticsearch mapping for any given index."""
+
+    __slots__ = ()
+
+    def load_mappings(self, index_type: build.IndexType) -> dict:
+        """
+        Loads the mapping for the given index.
+
+        Args:
+            index_type: the index type associated with the elasticsearch mapping to
+                load.
+
+        Returns:
+            A mappings dict based on the configured output of the given index type.
+        """
+        index_name, doc_type = index_type.get_mappings_details()
+        model_mapper = mapper.ModelMapper(index_name, doc_type)
+
+        return model_mapper.get_normalized_mappings()["mappings"]
+
+
+def _is_included_field(
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    field: str,
+) -> bool:
+    """
+    Determines if the given field should be included in the returned values based on the
+    given excluded and included fields.
+
+    Args:
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        field: the field in question.
+
+    Returns:
+        True if the field is a valid field and should be included in the resulting set
+        of fields.
+    """
+    if field in excluded_fields:
+        return False
+
+    return included_fields is None or any(
+        field.startswith(prefix) for prefix in included_fields
+    )
+
+
+def _convert_properties(
+    properties: Mapping[str, Mapping],
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    path: str = "",
+) -> Iterator[str]:
+    """
+    Converts all properties in the given mapping into flat fields which fall within the
+    given included fields as well as outside of the excluded fields.
+
+    Args:
+        properties: the properties node of a elasticsearch mapping
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        path: the current path to the given set of properties.
+
+    Returns:
+        An iterator of individual fields from the given properties mapping.
+    """
+    fields = ((f"{path}{prop}", details) for prop, details in properties.items())
+    is_included_field = functools.partial(
+        _is_included_field, excluded_fields, included_fields
+    )
+    fields = filter(lambda items: is_included_field(items[0]), fields)
+
+    for field, details in fields:
+        if "properties" in details:
+            yield from _convert_properties(
+                details["properties"],
+                excluded_fields,
+                included_fields,
+                path=f"{field}.",
+            )
+        else:
+            yield field
+
+
+def _extract_fields(
+    properties: Mapping[str, Mapping],
+    excluded_fields: Container[str],
+    included_fields: Optional[Iterable[str]],
+    path_to_fields: Deque[str],
+) -> Iterator[str]:
+    """
+    Extracts all fields which fall under the provided path and fall within the given
+    included fields as well as outside of the excluded fields.
+
+    Args:
+        properties: the properties node of a elasticsearch mapping
+        excluded_fields: fields to excluded from the encountered otherwise valid fields.
+            Beyond excluding specific fields, this can be used to exclude all children
+            of a given property.
+        included_fields: a sub set of fields to be included from the encountered fields.
+            This is useful for retrieving all children of a given property.
+        path_to_fields: a series of properties which represent the path to the desired
+            fields found within the given properties.
+
+    Returns:
+        An iterator of individual fields from the given properties mapping.
+    """
+    if not properties:
+        return
+
+    if path_to_fields:
+        next_prop = path_to_fields.popleft()
+        properties = properties.get(next_prop, {}).get("properties", {})
+
+        yield from _extract_fields(
+            properties, excluded_fields, included_fields, path_to_fields
+        )
+
+    else:
+        yield from _convert_properties(properties, excluded_fields, included_fields)
+
+
+class CaseFieldSelector:
+    """A class for selecting the case fields in a given elasticsearch index."""
+
+    __slots__ = ("_mapping_loader",)
+
+    CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = types.MappingProxyType(
+        {
+            build.IndexType.CASE_CENTRIC: "",
+            build.IndexType.CNV_CENTRIC: "occurrence.case",
+            build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
+            build.IndexType.SSM_CENTRIC: "occurrence.case",
+            build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
+        }
+    )
+
+    def __init__(self, mappings_loader: Optional[MappingsLoader] = None) -> None:
+        self._mapping_loader = mappings_loader or MappingsLoader()
+
+    def _select_fields(
+        self,
+        index_type: build.IndexType,
+        excluded_fields: Iterable[str],
+        included_fields: Optional[Iterable[str]],
+    ) -> Set[str]:
+        if index_type not in self.CASE_PREFIXES:
+            raise ValueError(f"Index: {index_type} is not supported.")
+
+        prefix = self.CASE_PREFIXES[index_type]
+        path_to_fields = (
+            collections.deque(prefix.split(".")) if prefix else collections.deque()
+        )
+        mappings = self._mapping_loader.load_mappings(index_type)
+        fields = _extract_fields(
+            mappings["properties"], excluded_fields, included_fields, path_to_fields
+        )
+
+        return frozenset(fields)
+
+    def select_for(
+        self,
+        *index_types: build.IndexType,
+        excluded_fields: Container[str] = (),
+        included_fields: Optional[Iterable[str]] = None,
+    ) -> Iterable[str]:
+        """
+        Selects all common case fields found in the given indices.
+
+        Args:
+            *index_types: any indecies which should be included when selecting the case
+                fields. Valid types: CASE_CENTRIC, CNV_CENTRIC, CNV_OCCURRENCE_CENTRIC,
+                SSM_CENTRIC, and SSM_OCCURRENCE_CENTRIC
+            excluded_fields: any fields which should be excluded in the selection. If
+                a parent field is excluded then all of its children will be eg. if the
+                exclusion is samples, then samples.sample_id is automatically excluded.
+            included_fields: restricts the select to only included a subset of fields.
+                this is useful when slecting fields nested under a particular parent.
+                The default is to include all fields.
+        """
+        field_sets = (
+            self._select_fields(index_type, excluded_fields, included_fields)
+            for index_type in index_types
+        )
+
+        return functools.reduce(lambda set0, set1: set0 & set1, field_sets) | frozenset(
+            ("case_id",)
+        )
 
 
 def _get_index(config, index_type: build.IndexType) -> str:
