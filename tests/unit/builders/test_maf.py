@@ -275,7 +275,7 @@ def aggregated_somatic_mutation_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.json")
+    return schemas.load_schema("builders/maf/final_maf.yaml")
 
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:

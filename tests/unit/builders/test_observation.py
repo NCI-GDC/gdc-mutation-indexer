@@ -1,15 +1,13 @@
 import dataclasses
-from os import path
 from typing import Dict, Optional, Tuple
-import more_itertools
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders import observation
-from tests.unit import utils
+from tests.unit.data import schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -178,29 +176,24 @@ class PrimaryAliquot:
     experiemental_strategy: str = "WXS"
 
 
-@pytest.fixture(scope="session")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "observation")
+@pytest.fixture(scope="class")
+def maf_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/input_maf.yaml")
 
 
 @pytest.fixture(scope="class")
-def maf_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_maf.json")
+def primary_aliquot_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/input_primary_aliquot.json")
 
 
 @pytest.fixture(scope="class")
-def primary_aliquot_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_primary_aliquot.json")
+def ssm_observation_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/final_ssm_observation.json")
 
 
 @pytest.fixture(scope="class")
-def ssm_observation_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_ssm_observation.json")
-
-
-@pytest.fixture(scope="class")
-def other_ssm_observation_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_other_ssm_observation.json")
+def other_ssm_observation_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/final_other_ssm_observation.json")
 
 
 class TestObservationBuilder:
