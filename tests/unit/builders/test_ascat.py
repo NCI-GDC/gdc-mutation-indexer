@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import common_schemas, viz_schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -171,22 +171,22 @@ def _arrange_case(
 
 @pytest.fixture(scope="class")
 def input_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_ascat.yaml")
+    return viz_schemas.ASCAT.INPUT.load_schema()
 
 
 @pytest.fixture(scope="class")
 def es_file_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/es_file.json")
+    return viz_schemas.ASCAT.INPUT_ES_FILE.load_schema()
 
 
 @pytest.fixture(scope="class")
 def input_gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_gene_model.json")
+    return common_schemas.GeneModel.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/final_ascat.json")
+    return viz_schemas.ASCAT.FINAL.load_schema()
 
 
 class TestAscatBuilder:

@@ -1,16 +1,15 @@
-from unittest import mock
 import dataclasses
 import datetime
-from os import path
 from typing import Optional, Tuple
-import more_itertools
+from unittest import mock
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from exports import builders
 
-from tests.unit import utils
+from exports import builders
+from tests.unit.data.schemas import ge_schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,18 +56,13 @@ class ESFile:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "primary_aliquot")
+def input_file_schema() -> types.StructType:
+    return ge_schemas.PrimaryAliquot.INPUT_ES_FILE.load_schema()
 
 
 @pytest.fixture(scope="class")
-def input_file_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "gene_expression_input_file.json")
-
-
-@pytest.fixture(scope="class")
-def final_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_gene_expression.json")
+def final_schema() -> types.StructType:
+    return ge_schemas.PrimaryAliquot.FINAL.load_schema()
 
 
 class TestGeneExpressionPrimaryAliquotBuilder:

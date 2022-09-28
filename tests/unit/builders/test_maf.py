@@ -8,8 +8,9 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.schemas import viz_schemas as prod_viz_schemas
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import common_schemas, viz_schemas
 
 DEFAULT_CONFIG_VALUES = {
     "maf_urls": ("fake_url0",),
@@ -260,22 +261,22 @@ class GeneModel:
 
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/input_gene_model.json")
+    return common_schemas.GeneModel.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def masked_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/masked_somatic_mutation.yaml")
+    return prod_viz_schemas.MAF.MASKED_SOMATIC_MUTATION.load_schema()
 
 
 @pytest.fixture(scope="class")
 def aggregated_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+    return prod_viz_schemas.MAF.AGGREGATED_SOMATIC_MUTATION.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.json")
+    return viz_schemas.MAF.FINAL.load_schema()
 
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:

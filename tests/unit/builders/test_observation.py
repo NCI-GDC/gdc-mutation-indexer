@@ -7,7 +7,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from tests.unit.data import schemas
+from tests.unit.data.schemas import viz_schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -228,32 +228,32 @@ class ASCAT:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_maf.json")
+    return viz_schemas.MAF.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_ascat.json")
+    return viz_schemas.ASCAT.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_primary_aliquot.json")
+    return viz_schemas.PrimaryAliquot.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_ssm_observation.json")
+    return viz_schemas.Observation.FINAL_SSM.load_schema()
 
 
 @pytest.fixture(scope="class")
 def other_ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_other_ssm_observation.json")
+    return viz_schemas.Observation.FINAL_SSM_OTHER.load_schema()
 
 
 @pytest.fixture(scope="class")
 def cnv_observation_schema() -> types.StructType():
-    return schemas.load_schema("builders/observation/final_cnv_observation.yaml")
+    return viz_schemas.Observation.FINAL_CNV.load_schema()
 
 
 class TestObservationBuilder:

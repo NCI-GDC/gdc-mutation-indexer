@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import viz_schemas
 
 DECIMAL_CONTEXT = decimal.Context(prec=5)
 
@@ -214,24 +214,22 @@ class AllEffects:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/input_maf.json")
+    return viz_schemas.MAF.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence.yaml")
+    return viz_schemas.Consequence.FINAL.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_with_genes_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence_with_genes.yaml")
+    return viz_schemas.Consequence.FINAL_WITH_GENES.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_with_aa_change_schema() -> types.StructType:
-    return schemas.load_schema(
-        "builders/consequence/final_consequence_with_aa_change.yaml"
-    )
+    return viz_schemas.Consequence.FINALWITH_AA_CHANGE.load_schema()
 
 
 class TestConsequenceBuilder:

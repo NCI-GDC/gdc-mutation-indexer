@@ -15,8 +15,8 @@ from pyspark.sql import types
 
 from exports import builders, es_utils
 from exports.constants import build
-from tests.unit import utils
 from tests.integration.utils import schema_validation
+from tests.unit.data.schemas import viz_schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -101,13 +101,8 @@ class ESFile:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "primary_aliquot")
-
-
-@pytest.fixture(scope="class")
-def input_file_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_file.json")
+def input_file_schema() -> types.StructType:
+    return viz_schemas.PrimaryAliquot.INPUT_ES_FILE.load_schema()
 
 
 class TestPrimaryAliquotBuilder:

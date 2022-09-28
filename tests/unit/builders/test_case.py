@@ -12,7 +12,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders
-from tests.unit.data import schemas
+from tests.unit.data.schemas import viz_schemas
 
 CASE_ID_SCHEMA = "case_id: string"
 
@@ -383,12 +383,12 @@ class Case:
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
-    return schemas.load_schema("builders/case/input_case.yaml")
+    return viz_schemas.Case.INPUT.load_schema()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/case/final_case.yaml")
+    return viz_schemas.Case.FINAL.load_schema()
 
 
 def assert_demographics_equal(

@@ -1,4 +1,3 @@
-from os import path
 from typing import Dict, Optional, Tuple
 from unittest import mock
 
@@ -6,9 +5,10 @@ import attr
 import more_itertools
 import pytest
 from pyspark import sql
+from pyspark.sql import types
 
 from exports import builders
-from tests.unit import utils
+from tests.unit.data.schemas import common_schemas
 
 
 @attr.s(frozen=True)
@@ -113,11 +113,27 @@ class GeneModel:
     transcripts = attr.ib(type=Tuple[Transcript, ...], default=(Transcript(),))
 
 
+@pytest.fixture(scope="class")
+def input_schema() -> types.StructType:
+    return common_schemas.GeneModel.INPUT.load_schema()
+
+
+@pytest.fixture(scope="class")
+def final_schema() -> types.StructType:
+    return common_schemas.GeneModel.FINAL.load_schema()
+
+
 class TestGeneModelBuilder:
     @pytest.fixture(autouse=True)
-    def import_fixtures(self, spark_session: sql.SparkSession, data_dir: str) -> None:
+    def import_fixtures(
+        self,
+        spark_session: sql.SparkSession,
+        input_schema: types.StructType,
+        final_schema: types.StructType,
+    ) -> None:
         self.spark_session = spark_session
-        self.schema_dir = path.join(data_dir, "schemas/builders/gene_model")
+        self.input_schema = input_schema
+        self.final_schema = final_schema
 
     def _arrange_builder(
         self,
@@ -132,7 +148,7 @@ class TestGeneModelBuilder:
             census, ("cancer_gene_id", "is_cancer_gene_census")
         )
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, utils.load_schema(self.schema_dir, "raw_gene_model.json")
+            gene_model, self.input_schema
         )
         dataframes = {
             "cytobands": cytoband_df,
@@ -185,9 +201,7 @@ class TestGeneModelBuilder:
         result_df = builder.build_from_scratch()
 
         assert result_df.count() == 1
-        assert result_df.schema == utils.load_schema(
-            self.schema_dir, "final_gene_model.json"
-        )
+        assert result_df.schema == self.final_schema
 
     def test__build_from_scratch__input_data_transformed(self) -> None:
         cytoband = Cytoband()
