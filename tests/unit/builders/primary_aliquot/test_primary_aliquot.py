@@ -1,7 +1,7 @@
 import collections
-import unittest
 import dataclasses
 import datetime
+import unittest
 from os import path
 from typing import Dict, Iterable, Optional, Tuple
 from unittest import mock
