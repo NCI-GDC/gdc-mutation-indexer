@@ -838,19 +838,19 @@
             "metadata": {},
             "name": "canonical_transcript_length",
             "nullable": true,
-            "type": "integer"
+            "type": "long"
         },
         {
             "metadata": {},
             "name": "canonical_transcript_length_cds",
             "nullable": true,
-            "type": "integer"
+            "type": "long"
         },
         {
             "metadata": {},
             "name": "canonical_transcript_length_genomic",
             "nullable": true,
-            "type": "integer"
+            "type": "long"
         },
         {
             "metadata": {},
