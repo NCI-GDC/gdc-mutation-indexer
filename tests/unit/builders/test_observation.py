@@ -224,11 +224,13 @@ class ASCAT:
     uniprotkb_swissprot: Optional[Tuple[str]] = ()
     variant_caller: Optional[str] = "ASCAT"
     variant_status: Optional[str] = "Tumor Only"
+    civic_gene_id: str = "1"
+    civic_variant_id: str = "3"
 
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_maf.json")
+    return schemas.load_schema("builders/observation/input_maf.yaml")
 
 
 @pytest.fixture(scope="class")
