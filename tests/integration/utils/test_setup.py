@@ -2,16 +2,17 @@ import collections
 import logging
 import types
 from typing import (
-    AbstractSet,
-    Any,
     Container,
     ContextManager,
     DefaultDict,
     Iterable,
+    Iterator,
     Optional,
     Set,
     Type,
     TypeVar,
+    Union,
+    overload,
 )
 
 import elasticsearch
@@ -63,14 +64,19 @@ class IndexManager(ContextManager["IndexManager"]):
     def _create_index(self, doc_type: str) -> None:
         index_name = self._config.graph_indices[doc_type]
         model_mapper = mapper.ModelMapper("gdc_from_graph", doc_type)
+        normalized_mappings = model_mapper.get_normalized_mappings()
 
-        if self._es.indices.exists(index_name):
-            self._logger.info("Deleting existing index: {}".format(index_name))
+        if self._es.indices.exists(index=index_name):
+            self._logger.info(f"Deleting existing index: {index_name}")
             self._es.indices.delete(index_name)
             self._es.indices.refresh()
 
-        self._logger.info("Creating index: {}".format(index_name))
-        self._es.indices.create(index=index_name, body=model_mapper.index_settings)
+        self._logger.info(f"Creating index: {index_name}")
+        self._es.indices.create(
+            index=index_name,
+            mappings=normalized_mappings["mappings"],
+            settings=normalized_mappings["settings"],
+        )
 
     def create_indices(self) -> bool:
         """Creates all indices for the test suite"""
@@ -98,11 +104,9 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         self,
         config: config.TestConfig,
         es: elasticsearch.Elasticsearch,
-        logger: logging.Logger,
     ) -> None:
         self._config = config
         self._es = es
-        self._logger = logger
         self._documents = collections.defaultdict(
             set
         )  # type: DefaultDict[str, Set[str]]
@@ -121,49 +125,80 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
 
         return None
 
-    def load_docs(
-        self, doc_type: str, input_path: Optional[str] = None
-    ) -> AbstractSet[str]:
-        """Load documents from gzipped test data into test index.
+    def _load_doc(self, doc_type: str, doc: dict) -> str:
+        index = self._config.graph_indices[doc_type]
+        doc_id = doc[f"{doc_type}_id"]
 
-        Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
+        self._es.create(index=index, id=doc_id, document=doc, refresh=True)
 
-        Returns:
-            A set containing the IDs of the documents that were inserted.
-        """
-        if not input_path:
-            input_path = self._config.doc_files[doc_type]
+        self._documents[doc_type].add(doc_id)
 
-        index_name = self._config.graph_indices[doc_type]
+        return doc_id
 
-        docs = []
-        for doc in true_stats.TestDataStats.load_es_graph_dump(input_path):
-            to_append = {
-                "_id": doc["{}_id".format(doc_type)],
-                "_index": index_name,
+    def _create_actions(
+        self, index: str, doc_id: str, docs: Iterable[dict]
+    ) -> Iterator[dict]:
+        for doc in docs:
+            yield {
+                "_id": doc[doc_id],
+                "_index": index,
                 "_source": doc,
             }
-            docs.append(to_append)
 
-        # Remove .cases[] from underneath case.files[]
-        if doc_type == "case":
-            for doc in docs:
-                for _file in doc["_source"]["files"]:
-                    _file.pop("cases", None)
+    def _load_docs(self, doc_type: str, docs: Iterable[dict]) -> Set[str]:
+        index = self._config.graph_indices[doc_type]
+        actions = self._create_actions(index, f"{doc_type}_id", docs)
 
-        # TODO: temp fix
-        docs = remove_keys_from_dict(docs, {"file_state"})
+        helpers.bulk(self._es, actions=actions, ignore=409)
 
-        self._logger.info(
-            "Bulk loading {} docs to the ES... {}".format(doc_type, len(docs))
-        )
-        helpers.bulk(self._es, docs, ignore=409)
-
-        self._logger.info("loaded {} {} docs".format(len(docs), doc_type))
-
-        self._es.indices.refresh(index=index_name)
+        self._es.indices.refresh(index=index)
 
         ids = frozenset(doc["_id"] for doc in docs)
         self._documents[doc_type].update(ids)
 
         return ids
+
+    @overload
+    def load_docs(self, doc_type: str, data: dict) -> str:
+        pass
+
+    @overload
+    def load_docs(self, doc_type: str, data: Iterable[dict]) -> Set[str]:
+        pass
+
+    @overload
+    def load_docs(self, doc_type: str, data: str) -> Set[str]:
+        pass
+
+    def load_docs(
+        self, doc_type: str, data: Union[str, dict, Iterable[dict]]
+    ) -> Union[str, Set[str]]:
+        """Load documents from a file or directly form the data provided into the given
+        index.
+
+        Args:
+            doc_type: The index type into which the data will be interted.
+            data: The data or the path to a file containing the data which will be
+                inserted into the index assocated with the given index type.
+
+        Returns:
+            The ID(s) of the document(s) inserted.
+        """
+        if isinstance(data, dict):
+            return self._load_doc(doc_type, data)
+
+        if not isinstance(data, str):
+            return self._load_docs(doc_type, data)
+
+        docs = true_stats.TestDataStats.load_es_graph_dump(data)
+
+        # Remove .cases[] from underneath case.files[]
+        if doc_type == "case":
+            for doc in docs:
+                for _file in doc["files"]:
+                    _file.pop("cases", None)
+
+        # TODO: temp fix
+        docs = (remove_keys_from_dict(doc, {"file_state"}) for doc in docs)
+
+        return self._load_docs(doc_type, docs)

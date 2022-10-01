@@ -87,7 +87,7 @@ class GDCMutationExport:
                 self.sqlContext,
                 doc_dataframe_util,
                 es_dataframe_util,
-                self.config.es,
+                ascat.FileSelector(self.config, self.config.es),
             ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
         )
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Sequence
 
 import elasticsearch
 from pyspark import sql
@@ -166,6 +166,90 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     ).na.drop(subset=["cnv_change"])
 
 
+class FileSelector:
+    """A class for selecting the appropriate ASCAT files for the build."""
+
+    __slots__ = ("_config", "_es_client")
+
+    def __init__(
+        self, config: config.BaseConfig, es_client: elasticsearch.Elasticsearch
+    ) -> None:
+        self._config = config
+        self._es_client = es_client
+
+    def get_ids(self, projects: Sequence[str]) -> Iterable[str]:
+        """
+        Selects the appropriate ASCAT file ids associated with the given TCGA projects.
+
+        Args:
+            projects: A sequence of projects associated with the build.
+
+        Returns:
+            A collection of ASCAT file ids
+        """
+        body: Dict[str, Any] = {
+            "_source": ["file_id"],
+            "query": {
+                "bool": {
+                    "minimum_should_match": 1,
+                    "must": [
+                        {"term": {"data_type": "Gene Level Copy Number"}},
+                        {
+                            "nested": {
+                                "path": "cases",
+                                "query": {
+                                    "term": {"cases.project.program.name": "TCGA"}
+                                },
+                            }
+                        },
+                    ],
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {"term": {"experimental_strategy": "WGS"}},
+                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
+                                ]
+                            }
+                        },
+                    ],
+                }
+            },
+        }
+
+        if projects:
+            body["query"]["bool"]["must"].append(
+                {
+                    "nested": {
+                        "path": "cases",
+                        "query": {
+                            "terms": {"cases.project.project_id": list(projects)}
+                        },
+                    }
+                }
+            )
+
+        hits = es_utils.iterate_es_results(
+            self._es_client,
+            index_name=self._config.graph_file_index,
+            query=body,
+        )
+
+        return tuple(hit["_source"]["file_id"] for hit in hits)
+
+
 class AscatBuilder(base_input_builder.BaseInputBuilder):
     def __init__(
         self,
@@ -173,13 +257,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         sqlContext: sql.SQLContext,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
-        es_client: elasticsearch.Elasticsearch,
+        file_selector: FileSelector,
     ) -> None:
         super().__init__(config, sqlContext, "ascat")
 
         self._document_dataframe_util = document_dataframe_util
         self._es_dataframe_util = es_dataframe_util
-        self._es_client = es_client
+        self._file_selector = file_selector
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
@@ -240,76 +324,6 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def _get_document_ids(self) -> Iterable[str]:
-        body: Dict[str, Any] = {
-            "_source": ["file_id"],
-            "query": {
-                "bool": {
-                    "must": [
-                        {"term": {"data_type": "Gene Level Copy Number"}},
-                    ],
-                    "should": [
-                        {
-                            "bool": {
-                                "must": [
-                                    {
-                                        "term": {
-                                            "experimental_strategy": "Genotyping Array"
-                                        }
-                                    },
-                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
-                                ]
-                            }
-                        },
-                        {
-                            "bool": {
-                                "must": [
-                                    {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
-                                ]
-                            }
-                        },
-                    ],
-                }
-            },
-        }
-
-        if self.config.projects:
-            body["query"]["bool"]["must"].append(
-                {
-                    "nested": {
-                        "path": "cases",
-                        "query": {
-                            "terms": {
-                                "cases.project.project_id": list(
-                                    project
-                                    for project in self.config.projects
-                                    if project.startswith("TCGA")
-                                )
-                            }
-                        },
-                    }
-                }
-            )
-        else:
-            body["query"]["bool"]["must"].append(
-                {
-                    "nested": {
-                        "path": "cases",
-                        "query": {"term": {"cases.project.program.name": "TCGA"}},
-                    }
-                }
-            )
-
-        hits = es_utils.iterate_es_results(
-            self._es_client,
-            index_name=self.config.graph_file_index,
-            doc_type=self.config.graph_file_doc_type,
-            query=body,
-        )
-
-        return tuple(hit["_source"]["file_id"] for hit in hits)
-
     def build_from_scratch(
         self,
         primary_aliquot_df: sql.DataFrame,
@@ -358,7 +372,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         |---variant_caller
         +---variant_status
         """
-        dids = self._get_document_ids()
+        dids = self._file_selector.get_ids(self.config.projects)
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")

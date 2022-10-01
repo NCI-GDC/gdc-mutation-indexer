@@ -38,13 +38,13 @@ def data_dir() -> Iterator[pathlib.Path]:
 def setup_graph_indices() -> Generator[bool, None, None]:
     """Create graph indices with required docs."""
     manager = test_setup.IndexManager(conf, conf.es, log, GRAPH_INDICES)
-    loader = test_setup.DocumentLoader(conf, conf.es, log)
+    loader = test_setup.DocumentLoader(conf, conf.es)
 
     with manager, loader:
         manager.create_indices()
 
         for doc_type in GRAPH_INDICES:
-            loader.load_docs(doc_type)
+            loader.load_docs(doc_type, conf.doc_files[doc_type])
 
         yield True
 

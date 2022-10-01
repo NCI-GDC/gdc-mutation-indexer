@@ -8,6 +8,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.builders import ascat
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -222,6 +223,12 @@ class TestAscatBuilder:
 
         return _arrange_dataframe_util(es_file_df)
 
+    def _arrange_file_selctor(self, es_files: Iterable[ESFile]) -> ascat.FileSelector:
+        selector = mock.MagicMock(spec=ascat.FileSelector)
+        selector.get_ids.return_value = tuple(f.file_id for f in es_files)
+
+        return selector
+
     def _arrange_builder(
         self,
         es_files: Tuple[ESFile, ...],
@@ -231,10 +238,14 @@ class TestAscatBuilder:
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)
-        es_client = mock.MagicMock()
+        file_selector = self._arrange_file_selctor(es_files)
 
         return builders.AscatBuilder(
-            config, mock_sql_context, doc_dataframe_util, es_dataframe_util, es_client
+            config,
+            mock_sql_context,
+            doc_dataframe_util,
+            es_dataframe_util,
+            file_selector,
         )
 
     def _arrange_input_dataframes(
