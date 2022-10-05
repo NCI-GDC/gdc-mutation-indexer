@@ -57,7 +57,6 @@ class GDCMutationExport:
         primary_aliquot_df = builders.PrimaryAliquotBuilder(
             self.config,
             self.sqlContext,
-            self.config.indexd,
             es_dataframe_util,
             es_rdd_util,
         ).build()
