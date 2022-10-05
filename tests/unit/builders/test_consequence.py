@@ -175,6 +175,8 @@ class MAF:
     variant_process: str = "masked"
     variant_type: str = "SNP"
     vep_impact: str = "MODERATE"
+    civic_gene_id: str = "1"
+    civic_variant_id: str = "3"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -214,7 +216,7 @@ class AllEffects:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/input_maf.json")
+    return schemas.load_schema("builders/consequence/input_maf.yaml")
 
 
 @pytest.fixture(scope="class")
