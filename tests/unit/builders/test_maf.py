@@ -5,9 +5,11 @@ from unittest import mock
 import more_itertools
 import pytest
 from pyspark import sql
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders
+from exports.builders.clinical_annotations import civic
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -275,7 +277,7 @@ def aggregated_somatic_mutation_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.json")
+    return schemas.load_schema("builders/maf/final_maf.yaml")
 
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
@@ -431,13 +433,28 @@ class TestMAFBuilder:
         self.aggregated_somatic_mutation_schema = aggregated_somatic_mutation_schema
         self.final_maf_schema = final_maf_schema
 
+    def arrange_civic_builder(self) -> civic.CivicBuilder:
+        builder = mock.MagicMock(spec=civic.CivicBuilder)
+        builder.merge_with_maf.side_effect = lambda df: df.select(
+            "*",
+            F.lit(None).cast(types.StringType()).alias("civic_gene_id"),
+            F.lit(None).cast(types.StringType()).alias("civic_variant_id"),
+        )
+
+        return builder
+
     def arrange_builder(
         self,
         masked_somatic_mutation_mafs: Tuple[MAF, ...] = (MAF(),),
         aggregated_somatic_mutation_mafs: Tuple[MAF, ...] = (),
         config_values: Optional[Dict[str, Any]] = None,
-        annotation_builders: Iterable[mock.MagicMock] = (),
+        annotation_builders: Optional[Iterable[civic.CivicBuilder]] = None,
     ) -> builders.MAFBuilder:
+        annotation_builders = (
+            (self.arrange_civic_builder(),)
+            if annotation_builders is None
+            else annotation_builders
+        )
         masked_somatic_mutation_df = self.spark_session.createDataFrame(
             tuple(maf.to_sql_row() for maf in masked_somatic_mutation_mafs),
             schema=self.masked_somatic_mutation_schema,
