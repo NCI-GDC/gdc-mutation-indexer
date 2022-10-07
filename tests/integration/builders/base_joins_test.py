@@ -1,12 +1,16 @@
-from collections import defaultdict
+import collections
+import itertools
+from typing import Dict, Iterable, Set, Union
 
-from pyspark.sql.functions import col, explode
+from pyspark import sql
+from pyspark.sql import functions as F
 
 
 class BaseJoinsTest:
-
     @staticmethod
-    def get_relationship_map(dataframe, parent_id_field, child_id_field):
+    def get_relationship_map(
+        dataframe: sql.DataFrame, parent_id_field: str, child_id_field: str
+    ) -> Dict[str, Set[str]]:
         """
         TODO: support arbitrary depth relationships:
               (parent, child, grandchild, ...)
@@ -16,7 +20,7 @@ class BaseJoinsTest:
         Returns:
             dict(): {parent_value: {child_value_1, ..., child_value_N}
         """
-        relationships = defaultdict(set)
+        relationships = collections.defaultdict(set)
         for row in dataframe.collect():
             child_id = row[child_id_field]
             parent_id = row[parent_id_field]
@@ -25,7 +29,12 @@ class BaseJoinsTest:
         return relationships
 
     @staticmethod
-    def unpack_df_list(dataframe, parent_fields, list_field, packed_fields):
+    def unpack_df_list(
+        df: sql.DataFrame,
+        parent_fields: Union[str, Iterable[str]],
+        list_field: str,
+        packed_fields: Union[str, Iterable[str]],
+    ) -> sql.DataFrame:
         """
         Explodes packed into a list fields in :dataframe
         Returns flat dataframe with only :parent_fields and :packed_fields
@@ -51,28 +60,19 @@ class BaseJoinsTest:
 
         """
         if isinstance(parent_fields, str):
-            parent_fields = [parent_fields]
+            parent_fields = (parent_fields,)
 
         if isinstance(packed_fields, str):
-            packed_fields = [packed_fields]
+            packed_fields = (packed_fields,)
 
-        exploded_alias = list_field.split('.')[-1]
-        child_fields = [
-            '{}.{}'.format(exploded_alias, f) for f in packed_fields
-        ]
+        exploded_alias = list_field.split(".")[-1]
+        child_fields = (f"{exploded_alias}.{f}" for f in packed_fields)
+        parent_field_aliases = {f: f.split(".")[-1] for f in parent_fields}
+        all_fields = itertools.chain(parent_field_aliases.values(), child_fields)
 
-        # this split allows deeper parent fields like "foo.bar"
-        all_fields = (
-            [f.split('.')[-1] for f in parent_fields] +
-            child_fields
-        )
+        unpacked_df = df.select(
+            F.explode(list_field).alias(exploded_alias),
+            *(F.col(f).alias(a) for f, a in parent_field_aliases.items()),
+        ).select(*all_fields)
 
-        unpacked = (
-            dataframe.select(
-                explode(list_field).alias(exploded_alias),
-                *[col(f).alias(f.split('.')[-1]) for f in parent_fields]
-            )
-            .select(*all_fields)
-        )
-
-        return unpacked
+        return unpacked_df
