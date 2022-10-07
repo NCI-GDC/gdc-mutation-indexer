@@ -2,13 +2,7 @@
     "fields": [
         {
             "metadata": {},
-            "name": "entity",
-            "nullable": true,
-            "type": "string"
-        },
-        {
-            "metadata": {},
-            "name": "entity_id",
+            "name": "aliquot_id",
             "nullable": true,
             "type": "string"
         },
@@ -20,19 +14,25 @@
         },
         {
             "metadata": {},
-            "name": "file_id",
-            "nullable": true,
+            "name": "entity",
+            "nullable": false,
             "type": "string"
         },
         {
             "metadata": {},
-            "name": "aliquot_id",
+            "name": "entity_id",
             "nullable": true,
             "type": "string"
         },
         {
             "metadata": {},
             "name": "experimental_strategy",
+            "nullable": true,
+            "type": "string"
+        },
+        {
+            "metadata": {},
+            "name": "file_id",
             "nullable": true,
             "type": "string"
         }

@@ -1,5 +1,7 @@
 import collections
 import functools
+import gzip
+import json
 import logging
 import types
 from typing import (
@@ -8,6 +10,8 @@ from typing import (
     Container,
     ContextManager,
     DefaultDict,
+    Iterable,
+    Iterator,
     Optional,
     Set,
     Type,
@@ -16,13 +20,12 @@ from typing import (
 
 import elasticsearch
 import importlib_resources as resources
+import ndjson
 import toml
 from elasticsearch import helpers
 from normalizer import mapper
-from typing_extensions import Literal
 
 from exports import configuration
-from tests.integration.utils import true_stats
 
 T = TypeVar("T")
 
@@ -96,9 +99,9 @@ class IndexManager(ContextManager["IndexManager"]):
 
     def __exit__(
         self,
-        __exc_type: Optional[Type[BaseException]],
-        __exc_value: Optional[BaseException],
-        __traceback: Optional[types.TracebackType],
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[types.TracebackType],
     ) -> Optional[bool]:
         for doc_type in self._doc_types:
             self._es.indices.delete(index=self._graph_indices[doc_type], ignore=[404])
@@ -119,15 +122,13 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
             "file": config.elasticsearch.read.file_index,
             "case": config.elasticsearch.read.case_index,
         }
-        self._documents = collections.defaultdict(
-            set
-        )  # type: DefaultDict[str, Set[str]]
+        self._documents = collections.defaultdict(set)
 
     def __exit__(
         self,
-        __exc_type: Optional[Type[BaseException]],
-        __exc_value: Optional[BaseException],
-        __traceback: Optional[types.TracebackType],
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[types.TracebackType],
     ) -> Optional[bool]:
         for doc_type, ids in self._documents.items():
             if ids:
@@ -136,6 +137,34 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
                 self._es.delete_by_query(index=index_name, body=body, refresh=True)
 
         return None
+
+    def _load_file(self, filename: str) -> Iterable[dict]:
+        loader = ndjson if ".ndjson" in filename else json
+        open_fn = gzip.open if filename.endswith(".gz") else open
+
+        with open_fn(filename, "rt", encoding="utf-8") as f:
+            docs = loader.load(f)
+
+        return docs
+
+    def _create_actions(
+        self, filename: str, index_name: str, doc_type: str
+    ) -> Iterator[dict]:
+        doc_id = f"{doc_type}_id"
+
+        for doc in self._load_file(filename):
+            doc = remove_keys_from_dict(doc, {"file_state"})
+            action = {
+                "_id": doc[doc_id],
+                "_index": index_name,
+                "_source": doc,
+            }
+
+            if doc_type == "case":
+                for _file in doc["files"]:
+                    _file.pop("cases", None)
+
+            yield action
 
     def load_docs(self, doc_type: str, input_path: str) -> AbstractSet[str]:
         """Load documents from gzipped test data into test index.
@@ -146,35 +175,14 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
             A set containing the IDs of the documents that were inserted.
         """
         index_name = self._graph_indices[doc_type]
+        actions = tuple(self._create_actions(input_path, index_name, doc_type))
 
-        docs = []
-        for doc in true_stats.TestDataStats.load_es_graph_dump(input_path):
-            to_append = {
-                "_id": doc["{}_id".format(doc_type)],
-                "_index": index_name,
-                "_source": doc,
-            }
-            docs.append(to_append)
-
-        # Remove .cases[] from underneath case.files[]
-        if doc_type == "case":
-            for doc in docs:
-                for _file in doc["_source"]["files"]:
-                    _file.pop("cases", None)
-
-        # TODO: temp fix
-        docs = remove_keys_from_dict(docs, {"file_state"})
-
-        self._logger.info(
-            "Bulk loading {} docs to the ES... {}".format(doc_type, len(docs))
-        )
-        helpers.bulk(self._es, docs, ignore=409)
-
-        self._logger.info("loaded {} {} docs".format(len(docs), doc_type))
+        self._logger.info(f"Bulk loading {doc_type} docs to the ES...")
+        helpers.bulk(self._es, actions, ignore=409)
 
         self._es.indices.refresh(index=index_name)
 
-        ids = frozenset(doc["_id"] for doc in docs)
+        ids = frozenset(doc["_id"] for doc in actions)
         self._documents[doc_type].update(ids)
 
         return ids

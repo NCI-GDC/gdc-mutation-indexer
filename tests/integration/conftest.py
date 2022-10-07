@@ -16,7 +16,7 @@ from typing_extensions import Literal
 import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
 from exports.builders.clinical_annotations import civic
-from tests.integration.utils import test_setup, true_stats
+from tests.integration.utils import test_setup
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -213,11 +213,6 @@ def all_cases(
     )
 
     return {hit["_source"]["case_id"] for hit in hits}
-
-
-@pytest.fixture(scope="session")
-def test_data(input_dir) -> Dict[str, List[Dict]]:
-    return true_stats.TestDataStats.load_test_data(str(input_dir))
 
 
 @pytest.fixture(scope="session")

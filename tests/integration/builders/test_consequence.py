@@ -158,7 +158,9 @@ class TestConsequenceBuilder:
         maf_df: sql.DataFrame,
         index_name: str,
     ) -> None:
-        cons_df = builder.build_for_ssm(maf_df, index_name, add_gene_aa_change=True)
+        cons_df = builder.build_for_ssm(
+            maf_df, index_name, add_gene_aa_change=True, join_gene=True
+        )
 
         assert "gene_aa_change" in cons_df.columns
 

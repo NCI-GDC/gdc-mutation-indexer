@@ -1,15 +1,13 @@
 import dataclasses
-from os import path
 from typing import Dict, Optional, Tuple
-import more_itertools
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders import observation
-from tests.unit import utils
+from tests.unit.data import schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -178,29 +176,86 @@ class PrimaryAliquot:
     experiemental_strategy: str = "WXS"
 
 
-@pytest.fixture(scope="session")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "observation")
+@dataclasses.dataclass(frozen=True)
+class ASCAT:
+    _id: Optional[dict] = dataclasses.field(
+        default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
+    )
+    aliquot_id: Optional[str] = "aliquot-0"
+    available_variation_data: Optional[str] = "cnv"
+    biotype: Optional[str] = "protein_coding"
+    canonical_transcript_id: Optional[str] = "ENST00000456328"
+    canonical_transcript_length: Optional[int] = None
+    canonical_transcript_length_cds: Optional[int] = None
+    canonical_transcript_length_genomic: Optional[int] = None
+    case_id: Optional[str] = "case-0"
+    chromosome: Optional[str] = "1"
+    cnv_change: Optional[str] = "Gain"
+    cnv_id: Optional[str] = "e9ea684a-d522-5baf-9b1a-a515b589cb7f"
+    consequence_id: Optional[str] = "377b6f05-34e8-51d0-81a6-3a8781032253"
+    cytoband: Optional[Tuple[str, ...]] = ("1p36.33",)
+    description: Optional[
+        str
+    ] = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    end_position: Optional[int] = 14409
+    entrez_gene: Optional[Tuple[str, ...]] = (
+        "100287596",
+        "100287102",
+        "727856",
+        "84771",
+    )
+    gene_chromosome: Optional[str] = "1"
+    gene_end: Optional[int] = 14409
+    gene_id: Optional[str] = "ENSG00000238009"
+    gene_level_cn: Optional[bool] = True
+    gene_start: Optional[int] = 11869
+    gene_strand: Optional[int] = 1
+    hgnc: Optional[Tuple[str, ...]] = ("HGNC:37102",)
+    is_cancer_gene_census: Optional[str] = "true"
+    name: Optional[str] = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
+    ncbi_build: Optional[str] = "GRCh38"
+    observation_id: Optional[str] = "b1627f65-d28b-568c-9f76-1a24bd4fe82d"
+    occurrence_id: Optional[str] = "2d7b55e0-9122-5a30-9a42-81c06fe5183f"
+    omim_gene: Optional[Tuple[str, ...]] = ()
+    start_position: Optional[int] = 11869
+    symbol: Optional[str] = "DDX11L1"
+    synonyms: Optional[Tuple[str, ...]] = ()
+    transcripts: Optional[Tuple[Transcript, ...]] = (Transcript(),)
+    uniprotkb_swissprot: Optional[Tuple[str]] = ()
+    variant_caller: Optional[str] = "ASCAT"
+    variant_status: Optional[str] = "Tumor Only"
+    civic_gene_id: str = "1"
+    civic_variant_id: str = "3"
 
 
 @pytest.fixture(scope="class")
-def maf_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_maf.json")
+def maf_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/input_maf.yaml")
 
 
 @pytest.fixture(scope="class")
-def primary_aliquot_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_primary_aliquot.json")
+def ascat_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/input_ascat.json")
 
 
 @pytest.fixture(scope="class")
-def ssm_observation_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_ssm_observation.json")
+def primary_aliquot_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/input_primary_aliquot.json")
 
 
 @pytest.fixture(scope="class")
-def other_ssm_observation_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_other_ssm_observation.json")
+def ssm_observation_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/final_ssm_observation.json")
+
+
+@pytest.fixture(scope="class")
+def other_ssm_observation_schema() -> types.StructType:
+    return schemas.load_schema("builders/observation/final_other_ssm_observation.json")
+
+
+@pytest.fixture(scope="class")
+def cnv_observation_schema() -> types.StructType():
+    return schemas.load_schema("builders/observation/final_cnv_observation.yaml")
 
 
 class TestObservationBuilder:
@@ -209,20 +264,27 @@ class TestObservationBuilder:
         self,
         spark_session: sql.SparkSession,
         maf_schema: types.StructType,
+        ascat_schema: types.StructType,
         primary_aliquot_schema: types.StructType,
         ssm_observation_schema: types.StructType,
         other_ssm_observation_schema: types.StructType,
+        cnv_observation_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.maf_schema = maf_schema
+        self.ascat_schema = ascat_schema
         self.primary_aliquot_schema = primary_aliquot_schema
         self.ssm_schemas = {
             "ssm": ssm_observation_schema,
             "other": other_ssm_observation_schema,
         }
+        self.cnv_observation_schema = cnv_observation_schema
 
-    def arrange_maf_df(self, mafs: Tuple[object, ...] = (MAF(),)) -> sql.DataFrame:
+    def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
         return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+
+    def arrange_ascat_df(self, ascats: Tuple[ASCAT, ...] = (ASCAT(),)) -> sql.DataFrame:
+        return self.spark_session.createDataFrame(ascats, schema=self.ascat_schema)
 
     def arrange_primary_aliquot_df(
         self, primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),)
@@ -237,10 +299,12 @@ class TestObservationBuilder:
     @pytest.mark.parametrize(
         ("index_name", "selector", "final_schema"),
         (
-            ("case_centric", "ssm", "other"),
-            ("gene_centric", "ssm", "other"),
-            ("ssm_centric", None, "ssm"),
-            ("ssm_occurrence_centric", None, "ssm"),
+            pytest.param("case_centric", "ssm", "other", id="case_centric"),
+            pytest.param("gene_centric", "ssm", "other", id="gene_centric"),
+            pytest.param("ssm_centric", None, "ssm", id="ssm_centric"),
+            pytest.param(
+                "ssm_occurrence_centric", None, "ssm", id="ssm_occurrence_centric"
+            ),
         ),
     )
     def test__build_for_ssm__final_schema(
@@ -301,3 +365,104 @@ class TestObservationBuilder:
             observation.variant_calling.variant_caller == "somaticsniper"
             for observation in result_row.observation
         )
+
+    @pytest.mark.parametrize(
+        ("index", "selector"),
+        (
+            pytest.param("case_centric", "cnv", id="case_centric"),
+            pytest.param("cnv_centric", None, id="cnv_centric"),
+            pytest.param("cnv_occurrence_centric", None, id="cnv_occurrence_centric"),
+            pytest.param("gene_centric", "cnv", id="gene_centric"),
+        ),
+    )
+    def test__build_for_cnv__final_schema(
+        self, index: str, selector: Optional[str]
+    ) -> None:
+        ascat_df = self.arrange_ascat_df()
+        builder = self.arrange_builder()
+
+        result_df = builder.build_for_cnv(ascat_df, index, selector)
+
+        assert result_df.count() == 1
+        assert result_df.schema == self.cnv_observation_schema
+
+    def test__build_for_cnv__data_translated(self) -> None:
+        ascat = ASCAT()
+        ascat_df = self.arrange_ascat_df((ascat,))
+        builder = self.arrange_builder()
+
+        result_df = builder.build_for_cnv(ascat_df, "cnv_centric")
+        result_row = more_itertools.one(result_df.collect())
+        result_observation = more_itertools.one(result_row.observation)
+
+        assert result_row.cnv_id == ascat.cnv_id
+        assert result_row.case_id == ascat.case_id
+        assert result_row.occurrence_id == ascat.occurrence_id
+        assert result_observation.observation_id == ascat.observation_id
+        assert result_observation.variant_calling.variant_caller == ascat.variant_caller
+        assert result_observation.variant_status == ascat.variant_status
+
+    def test__build_for_cnv__observation_grouped_by_cnv_case_occurence_ids(
+        self,
+    ) -> None:
+        base_group = ("cnv-0", "case-0", "occ-0")
+        cnv_group = ("cnv-1", "case-0", "occ-0")
+        case_group = ("cnv-0", "case-1", "occ-0")
+        occ_group = ("cnv-0", "case-0", "occ-1")
+        ascats = (
+            ASCAT(
+                cnv_id="cnv-0",
+                case_id="case-0",
+                occurrence_id="occ-0",
+                variant_status="other-0",
+            ),
+            ASCAT(
+                cnv_id="cnv-0",
+                case_id="case-0",
+                occurrence_id="occ-0",
+                variant_status="other-1",
+            ),
+            ASCAT(cnv_id="cnv-1", case_id="case-0", occurrence_id="occ-0"),
+            ASCAT(cnv_id="cnv-0", case_id="case-1", occurrence_id="occ-0"),
+            ASCAT(cnv_id="cnv-0", case_id="case-0", occurrence_id="occ-1"),
+        )
+        ascat_df = self.arrange_ascat_df(ascats)
+        builder = self.arrange_builder()
+
+        result_df = builder.build_for_cnv(ascat_df, "cnv_centric")
+        result_rows = {
+            (r.cnv_id, r.case_id, r.occurrence_id): r for r in result_df.collect()
+        }
+
+        assert len(result_rows) == 4
+        assert base_group in result_rows
+        assert cnv_group in result_rows
+        assert case_group in result_rows
+        assert occ_group in result_rows
+        assert len(result_rows[base_group].observation) == 2
+        assert len(result_rows[cnv_group].observation) == 1
+        assert len(result_rows[case_group].observation) == 1
+        assert len(result_rows[occ_group].observation) == 1
+
+    def test__build_for_cnv__observation_aggregates_no_duplicates(self) -> None:
+        ascats = (
+            ASCAT(
+                cnv_id="cnv-0",
+                case_id="case-0",
+                occurrence_id="occ-0",
+                variant_status="other-0",
+            ),
+            ASCAT(
+                cnv_id="cnv-0",
+                case_id="case-0",
+                occurrence_id="occ-0",
+                variant_status="other-0",
+            ),
+        )
+        ascat_df = self.arrange_ascat_df(ascats)
+        builder = self.arrange_builder()
+
+        result_df = builder.build_for_cnv(ascat_df, "cnv_centric")
+        result_rows = result_df.collect()
+
+        assert len(result_rows) == 1

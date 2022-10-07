@@ -2,8 +2,6 @@ import abc
 import logging
 
 from pyspark import sql
-from pyspark.sql.functions import udf
-from pyspark.sql.types import IntegerType
 from pyspark.sql.utils import AnalysisException
 
 import config
@@ -148,46 +146,3 @@ class BaseInputBuilder(abc.ABC):
             return self.sqlContext.read.parquet(url)
         else:
             raise ValueError("Unknown read format: {}".format(data_format))
-
-    @staticmethod
-    def add_canonical_transcript_lengths(df):
-        """
-        Adds canonical_transcript_length{'','cds','genomic'} fields to a dataframe
-        """
-
-        def integer_udf(function):
-            """Spark IntegerType udf decorator"""
-            return udf(function, IntegerType())
-
-        @integer_udf
-        def len_udf(transcripts):
-            for t in transcripts:
-                if t["is_canonical"]:
-                    if "length" in t:
-                        return t["length"]
-                    else:
-                        return None
-
-        @integer_udf
-        def len_cds_udf(transcripts):
-            for t in transcripts:
-                if t["is_canonical"]:
-                    if "length_cds" in t:
-                        return t["length_cds"]
-                    else:
-                        return None
-
-        @integer_udf
-        def len_gen_udf(transcripts):
-            for t in transcripts:
-                if t["is_canonical"]:
-                    return int(t["end"]) - int(t["start"]) + 1
-
-        df = df.withColumn("canonical_transcript_length", len_udf(df.transcripts))
-        df = df.withColumn(
-            "canonical_transcript_length_cds", len_cds_udf(df.transcripts)
-        )
-        df = df.withColumn(
-            "canonical_transcript_length_genomic", len_gen_udf(df.transcripts)
-        )
-        return df

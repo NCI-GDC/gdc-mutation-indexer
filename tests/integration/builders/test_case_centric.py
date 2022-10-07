@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Set
+from typing import Any, Dict, Set
 
 import elasticsearch
 import pytest
@@ -8,7 +8,58 @@ from pyspark import sql
 from exports import builders, configuration, es_utils
 from exports.constants import build
 from tests.integration.builders import base_joins_test
-from tests.integration.utils import true_stats
+
+
+def get_generic_stats(
+    maf_df: sql.DataFrame,
+    cnv_df: sql.DataFrame,
+) -> Dict[str, Set[str]]:
+    """
+    Returns true stats for :doc_type
+    """
+    stats = {}
+
+    # Add maf and gistic info:
+    maf_data = maf_df.select("case_id", "gene_id").collect()
+    gistic_data = cnv_df.select("case_id", "gene_id").collect()
+
+    stats["ssm_cases"] = frozenset({r.case_id for r in maf_data})
+    stats["cnv_cases"] = frozenset({r.case_id for r in gistic_data})
+
+    stats["ssm_genes"] = frozenset({r.gene_id for r in maf_data})
+    stats["cnv_genes"] = frozenset({r.gene_id for r in gistic_data})
+
+    return stats
+
+
+def get_case_centric_stats(
+    maf_df: sql.DataFrame, cnv_df: sql.DataFrame
+) -> Dict[str, Any]:
+    """
+    case{}
+            |___ gene[]
+                    |___ ssm[]
+                    |     |___ consequence[]
+                    |     |             |_____ transcript{}
+                    |     |                          |_____ annotation{}
+                    |     |___ observation[]
+                    |
+                    |___ cnv[]
+                        |___ consequence[]
+                        |            |_____ gene{}
+                        |
+                        |___ observation[]
+    """
+    # Number of cases in maf_df and cnv_df
+    count = (
+        (maf_df.select("case_id").union(cnv_df.select("case_id"))).distinct().count()
+    )
+    stats = {"count": count}
+    generic_stats = get_generic_stats(maf_df, cnv_df)
+
+    stats.update(generic_stats)
+
+    return stats
 
 
 @pytest.mark.usefixtures(
@@ -142,7 +193,6 @@ class TestCaseCentricJoins(base_joins_test.BaseJoinsTest):
     "all_cases",
     "all_maf_cases",
     "case_centric_df",
-    "test_data",
 )
 class TestCaseCentricOther:
     """Other case centric tests"""
@@ -152,7 +202,6 @@ class TestCaseCentricOther:
         case_centric_df: sql.DataFrame,
         maf_df: sql.DataFrame,
         cnv_df: sql.DataFrame,
-        test_data: Dict[str, List[Dict]],
         all_cases: Set[str],
         all_maf_cases: Set[str],
     ) -> None:
@@ -163,9 +212,7 @@ class TestCaseCentricOther:
         This is necessary for the portal to visualize such cases.
         """
         cases_built = {c.case_id for c in case_centric_df.collect()}
-        stats = true_stats.TestDataStats.get_stats(
-            maf_df, cnv_df, test_data, "case_centric"
-        )
+        stats = get_case_centric_stats(maf_df, cnv_df)
 
         empty_cases = {
             c

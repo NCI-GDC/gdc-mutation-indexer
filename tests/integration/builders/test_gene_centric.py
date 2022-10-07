@@ -146,7 +146,7 @@ def test_gene_centric_paths_exist(gene_centric_df: sql.DataFrame) -> None:
     assert transcript_columns.issuperset(("is_canonical", "exons", "domains"))
 
 
-@pytest.mark.usefixtures("gene_centric_df", "test_data")
+@pytest.mark.usefixtures("gene_centric_df")
 def test_gene_centric_count(
     default_config: configuration.Configuration,
     es_client: sql.DataFrame,

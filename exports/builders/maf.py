@@ -82,7 +82,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, "inner")
         df = df.drop("_gene_id")
         df = self.add_null(df)
-        df = self.add_canonical_transcript_lengths(df)
+        df = utils.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
         df = self.map_transform(df)
         df = df.withColumn("variant_process", F.lit("masked"))
