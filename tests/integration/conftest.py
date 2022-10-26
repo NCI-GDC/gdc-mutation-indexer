@@ -35,6 +35,11 @@ def data_dir() -> Iterator[pathlib.Path]:
 
 
 @pytest.fixture(scope="session")
+def input_dir(data_dir: pathlib.Path) -> pathlib.Path:
+    return data_dir.joinpath("input")
+
+
+@pytest.fixture(scope="session")
 def setup_graph_indices() -> Generator[bool, None, None]:
     """Create graph indices with required docs."""
     manager = test_setup.IndexManager(conf, conf.es, log, GRAPH_INDICES)
