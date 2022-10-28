@@ -341,7 +341,9 @@ class TestConsequenceBuilder(TestOtherBase):
 
     @pytest.mark.parametrize("index_name", conf.ssm_indices)
     def test_consequence_with_gene_aa_change(self, builder, maf_df, index_name):
-        cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True, add_gene_aa_change=True)
+        cons_df = builder.build_for_ssm(
+            maf_df, index_name, join_gene=True, add_gene_aa_change=True
+        )
 
         assert "gene_aa_change" in cons_df.columns
 
@@ -502,9 +504,9 @@ class TestCaseBuilder:
         local_conf.projects = projects
 
         es_dataframe_util = es_utils.DataFrameUtil(local_conf, sqlContext, es_client)
-        df = builders.CaseBuilder(local_conf, sqlContext, es_dataframe_util).build(
-            maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
-        )
+        df = builders.CaseBuilder(
+            local_conf, sqlContext, es_dataframe_util, es_utils.CaseFieldSelector()
+        ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
 
         assert df.count() == expected_count
         for row in df.collect():

@@ -68,6 +68,10 @@ class TestConfig(BaseConfig):
         "cnv_centric": True,
         "cnv_occurrence_centric": True,
     }
+    case_include_as_arrays = (
+        "project.disease_type",
+        "project.primary_site",
+    )
 
     def __init__(self):
         env = self.get_env_dict()
