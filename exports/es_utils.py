@@ -4,6 +4,7 @@ import json
 import re
 import types
 from typing import (
+    AbstractSet,
     Callable,
     Container,
     Deque,
@@ -11,7 +12,6 @@ from typing import (
     Iterator,
     Mapping,
     Optional,
-    Set,
     Union,
 )
 
@@ -282,8 +282,8 @@ def _convert_properties(
             This is useful for retrieving all children of a given property.
         path: the current path to the given set of properties.
 
-    Returns:
-        An iterator of individual fields from the given properties mapping.
+    Yields:
+        Individual fields from the given properties mapping.
     """
     fields = ((f"{path}{prop}", details) for prop, details in properties.items())
     is_included_field = functools.partial(
@@ -323,8 +323,8 @@ def _extract_fields(
         path_to_fields: a series of properties which represent the path to the desired
             fields found within the given properties.
 
-    Returns:
-        An iterator of individual fields from the given properties mapping.
+    Yields:
+        Individual fields from the given properties mapping.
     """
     if not properties:
         return
@@ -348,6 +348,7 @@ class CaseFieldSelector:
 
     CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = types.MappingProxyType(
         {
+            build.IndexType.CASE: "",
             build.IndexType.CASE_CENTRIC: "",
             build.IndexType.CNV_CENTRIC: "occurrence.case",
             build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
@@ -362,9 +363,9 @@ class CaseFieldSelector:
     def _select_fields(
         self,
         index_type: build.IndexType,
-        excluded_fields: Iterable[str],
+        excluded_fields: Container[str],
         included_fields: Optional[Iterable[str]],
-    ) -> Set[str]:
+    ) -> AbstractSet[str]:
         if index_type not in self.CASE_PREFIXES:
             raise ValueError(f"Index: {index_type} is not supported.")
 
@@ -454,7 +455,7 @@ class DataFrameUtil:
         include_fields: Union[Iterable[str], bool] = True,
         exclude_fields: Iterable[str] = (),
         include_as_arrays: Iterable[str] = (),
-        query: dict = None,
+        query: Optional[dict] = None,
         read_metadata: bool = False,
     ) -> sql.DataFrame:
         """
@@ -585,7 +586,7 @@ class RDDUtil:
         exclude_fields: Optional[Iterable[str]] = None,
         include_as_arrays: Iterable[str] = (),
         exclude_as_arrays: Iterable[str] = (),
-        query: dict = None,
+        query: Optional[dict] = None,
         read_metadata: bool = False,
     ) -> pyspark.RDD:
         """
