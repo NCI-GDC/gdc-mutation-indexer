@@ -167,7 +167,6 @@ class TestCaseFieldSelector:
             reversed(prefix.split(".")),
             {"properties": {"prop": {"type": "double"}}},
         )
-        print(mapping)
 
         loader = self.arrange_mappings_loader(mapping, indices=(index,))
         selector = es_utils.CaseFieldSelector(loader)
@@ -195,7 +194,6 @@ class TestCaseFieldSelector:
         "index",
         (
             pytest.param(build.IndexType.FILE),
-            pytest.param(build.IndexType.CASE),
             pytest.param(build.IndexType.GENE_CENTRIC),
             pytest.param(build.IndexType.GENE_EXPRESSION),
         ),

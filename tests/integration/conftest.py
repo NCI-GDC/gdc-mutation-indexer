@@ -291,9 +291,9 @@ def case_df(
     es_client: elasticsearch.Elasticsearch,
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(conf, sqlContext, es_client)
-    return builders.CaseBuilder(conf, sqlContext, es_dataframe_util).build(
-        maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
-    )
+    return builders.CaseBuilder(
+        conf, sqlContext, es_dataframe_util, es_utils.CaseFieldSelector()
+    ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
 
 
 @pytest.fixture(scope="session")
@@ -355,24 +355,31 @@ def observation_builder():
 
 @pytest.fixture(scope="session")
 def case_centric_df(
-    sqlContext,
-    maf_df,
-    cnv_df,
-    case_df,
-    primary_aliquot_df,
-    consequence_builder,
-    observation_builder,
-):
+    sqlContext: sql.SQLContext,
+    maf_metadata_df: sql.DataFrame,
+    maf_df: sql.DataFrame,
+    cnv_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
+    es_client: elasticsearch.Elasticsearch,
+) -> sql.DataFrame:
     """
     Builds case centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
     log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
     builder = builders.CaseCentricBuilder(
-        conf, sqlContext, consequence_builder, observation_builder
+        conf,
+        sqlContext,
+        es_utils.DataFrameUtil(conf, sqlContext, es_client),
+        es_utils.RDDUtil(conf, sqlContext.sparkSession.sparkContext),
+        es_utils.CaseFieldSelector(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(maf_df, cnv_df, case_df, primary_aliquot_df)
+    builder.build(maf_metadata_df, maf_df, cnv_df, primary_aliquot_df)
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
     builder.load()
@@ -506,14 +513,25 @@ def cnv_occurrence_centric_df(
 
 @pytest.fixture(scope="session")
 def case_ssm_subtree(
-    sqlContext, maf_df, primary_aliquot_df, consequence_builder, observation_builder
-):
+    sqlContext: sql.SQLContext,
+    maf_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
+) -> sql.DataFrame:
     """
     Builds case centric ssm subtree dataframe
     """
     log.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
     builder = builders.CaseCentricBuilder(
-        conf, sqlContext, consequence_builder, observation_builder
+        conf,
+        sqlContext,
+        es_utils.DataFrameUtil(conf, sqlContext, es_client),
+        es_utils.RDDUtil(conf, sqlContext.sparkSession.sparkContext),
+        es_utils.CaseFieldSelector(),
+        consequence_builder,
+        observation_builder,
     )
 
     return builder.build_ssm_subtree(maf_df, primary_aliquot_df)

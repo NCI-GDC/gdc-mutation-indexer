@@ -32,11 +32,13 @@ class CaseBuilder(Builder):
     Configuration values for running the case builder
     """
 
-    excluded_fields: Sequence[str] = dataclasses.field(
+    include_as_arrays: Sequence[str] = dataclasses.field(
         metadata={
-            "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                fields.String()
-            )
+            "metadata": {
+                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
+                    fields.String()
+                )
+            }
         }
     )
     repartition_size: int
@@ -73,6 +75,15 @@ class CaseCentricBuilder(CentricBuilder):
     """
 
     genes_threshold: int
+    include_as_arrays: Sequence[str] = dataclasses.field(
+        metadata={
+            "metadata": {
+                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
+                    fields.String()
+                )
+            }
+        }
+    )
 
 
 @dataclasses.dataclass(frozen=True)

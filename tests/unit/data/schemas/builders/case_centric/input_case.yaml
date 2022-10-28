@@ -12,6 +12,10 @@ fields:
   nullable: true
   type: long
 - metadata: {}
+  name: days_to_lost_to_followup
+  nullable: true
+  type: long
+- metadata: {}
   name: demographic
   nullable: true
   type:
@@ -137,6 +141,10 @@ fields:
         nullable: true
         type: string
       - metadata: {}
+        name: best_overall_response
+        nullable: true
+        type: string
+      - metadata: {}
         name: burkitt_lymphoma_clinical_variant
         nullable: true
         type: string
@@ -148,6 +156,14 @@ fields:
         name: cog_renal_stage
         nullable: true
         type: string
+      - metadata: {}
+        name: cog_rhabdomyosarcoma_risk_group
+        nullable: true
+        type: string
+      - metadata: {}
+        name: days_to_best_overall_response
+        nullable: true
+        type: long
       - metadata: {}
         name: days_to_diagnosis
         nullable: true
@@ -166,6 +182,10 @@ fields:
         type: double
       - metadata: {}
         name: diagnosis_id
+        nullable: true
+        type: string
+      - metadata: {}
+        name: eln_risk_classification
         nullable: true
         type: string
       - metadata: {}
@@ -206,6 +226,10 @@ fields:
         type: string
       - metadata: {}
         name: international_prognostic_index
+        nullable: true
+        type: string
+      - metadata: {}
+        name: irs_group
         nullable: true
         type: string
       - metadata: {}
@@ -328,6 +352,10 @@ fields:
               nullable: true
               type: string
             - metadata: {}
+              name: necrosis_present
+              nullable: true
+              type: string
+            - metadata: {}
               name: non_nodal_regional_disease
               nullable: true
               type: string
@@ -426,6 +454,10 @@ fields:
         nullable: true
         type: string
       - metadata: {}
+        name: satellite_nodule_present
+        nullable: true
+        type: string
+      - metadata: {}
         name: secondary_gleason_grade
         nullable: true
         type: string
@@ -477,6 +509,10 @@ fields:
               nullable: true
               type: long
             - metadata: {}
+              name: reason_treatment_ended
+              nullable: true
+              type: string
+            - metadata: {}
               name: regimen_or_line_of_therapy
               nullable: true
               type: string
@@ -527,7 +563,19 @@ fields:
             type: struct
           type: array
       - metadata: {}
+        name: tumor_confined_to_organ_of_origin
+        nullable: true
+        type: string
+      - metadata: {}
+        name: tumor_focality
+        nullable: true
+        type: string
+      - metadata: {}
         name: tumor_grade
+        nullable: true
+        type: string
+      - metadata: {}
+        name: wilms_tumor_histologic_subtype
         nullable: true
         type: string
       - metadata: {}
@@ -572,11 +620,23 @@ fields:
         nullable: true
         type: string
       - metadata: {}
+        name: exposure_type
+        nullable: true
+        type: string
+      - metadata: {}
         name: pack_years_smoked
         nullable: true
         type: double
       - metadata: {}
+        name: parent_with_radiation_exposure
+        nullable: true
+        type: string
+      - metadata: {}
         name: radon_exposure
+        nullable: true
+        type: string
+      - metadata: {}
+        name: secondhand_smoke_as_child
         nullable: true
         type: string
       - metadata: {}
@@ -597,6 +657,14 @@ fields:
         type: long
       - metadata: {}
         name: tobacco_smoking_status
+        nullable: true
+        type: string
+      - metadata: {}
+        name: type_of_smoke_exposure
+        nullable: true
+        type: string
+      - metadata: {}
+        name: type_of_tobacco_used
         nullable: true
         type: string
       - metadata: {}
@@ -637,6 +705,432 @@ fields:
         nullable: true
         type: string
       - metadata: {}
+        name: relatives_with_cancer_history_count
+        nullable: true
+        type: long
+      - metadata: {}
+        name: submitter_id
+        nullable: true
+        type: string
+      type: struct
+    type: array
+- metadata: {}
+  name: follow_ups
+  nullable: true
+  type:
+    containsNull: true
+    elementType:
+      fields:
+      - metadata: {}
+        name: adverse_event
+        nullable: true
+        type: string
+      - metadata: {}
+        name: adverse_event_grade
+        nullable: true
+        type: string
+      - metadata: {}
+        name: aids_risk_factors
+        nullable: true
+        type: string
+      - metadata: {}
+        name: barretts_esophagus_goblet_cells_present
+        nullable: true
+        type: string
+      - metadata: {}
+        name: bmi
+        nullable: true
+        type: double
+      - metadata: {}
+        name: body_surface_area
+        nullable: true
+        type: double
+      - metadata: {}
+        name: cause_of_response
+        nullable: true
+        type: string
+      - metadata: {}
+        name: cd4_count
+        nullable: true
+        type: double
+      - metadata: {}
+        name: cdc_hiv_risk_factors
+        nullable: true
+        type: string
+      - metadata: {}
+        name: comorbidity
+        nullable: true
+        type: string
+      - metadata: {}
+        name: comorbidity_method_of_diagnosis
+        nullable: true
+        type: string
+      - metadata: {}
+        name: days_to_adverse_event
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_comorbidity
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_follow_up
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_imaging
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_progression
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_progression_free
+        nullable: true
+        type: long
+      - metadata: {}
+        name: days_to_recurrence
+        nullable: true
+        type: long
+      - metadata: {}
+        name: diabetes_treatment_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: disease_response
+        nullable: true
+        type: string
+      - metadata: {}
+        name: dlco_ref_predictive_percent
+        nullable: true
+        type: double
+      - metadata: {}
+        name: ecog_performance_status
+        nullable: true
+        type: string
+      - metadata: {}
+        name: evidence_of_recurrence_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: eye_color
+        nullable: true
+        type: string
+      - metadata: {}
+        name: fev1_fvc_post_bronch_percent
+        nullable: true
+        type: double
+      - metadata: {}
+        name: fev1_fvc_pre_bronch_percent
+        nullable: true
+        type: double
+      - metadata: {}
+        name: fev1_ref_post_bronch_percent
+        nullable: true
+        type: double
+      - metadata: {}
+        name: fev1_ref_pre_bronch_percent
+        nullable: true
+        type: double
+      - metadata: {}
+        name: follow_up_id
+        nullable: true
+        type: string
+      - metadata: {}
+        name: haart_treatment_indicator
+        nullable: true
+        type: string
+      - metadata: {}
+        name: height
+        nullable: true
+        type: double
+      - metadata: {}
+        name: hepatitis_sustained_virological_response
+        nullable: true
+        type: string
+      - metadata: {}
+        name: history_of_tumor
+        nullable: true
+        type: string
+      - metadata: {}
+        name: history_of_tumor_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hiv_viral_load
+        nullable: true
+        type: double
+      - metadata: {}
+        name: hormonal_contraceptive_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hormonal_contraceptive_use
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hormone_replacement_therapy_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hpv_positive_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hysterectomy_margins_involved
+        nullable: true
+        type: string
+      - metadata: {}
+        name: hysterectomy_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: imaging_result
+        nullable: true
+        type: string
+      - metadata: {}
+        name: imaging_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: immunosuppressive_treatment_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: karnofsky_performance_status
+        nullable: true
+        type: string
+      - metadata: {}
+        name: menopause_status
+        nullable: true
+        type: string
+      - metadata: {}
+        name: molecular_tests
+        nullable: true
+        type:
+          containsNull: true
+          elementType:
+            fields:
+            - metadata: {}
+              name: aa_change
+              nullable: true
+              type: string
+            - metadata: {}
+              name: antigen
+              nullable: true
+              type: string
+            - metadata: {}
+              name: biospecimen_type
+              nullable: true
+              type: string
+            - metadata: {}
+              name: biospecimen_volume
+              nullable: true
+              type: double
+            - metadata: {}
+              name: blood_test_normal_range_lower
+              nullable: true
+              type: double
+            - metadata: {}
+              name: blood_test_normal_range_upper
+              nullable: true
+              type: double
+            - metadata: {}
+              name: cell_count
+              nullable: true
+              type: long
+            - metadata: {}
+              name: chromosome
+              nullable: true
+              type: string
+            - metadata: {}
+              name: clonality
+              nullable: true
+              type: string
+            - metadata: {}
+              name: copy_number
+              nullable: true
+              type: double
+            - metadata: {}
+              name: cytoband
+              nullable: true
+              type: string
+            - metadata: {}
+              name: days_to_test
+              nullable: true
+              type: long
+            - metadata: {}
+              name: exon
+              nullable: true
+              type: string
+            - metadata: {}
+              name: gene_symbol
+              nullable: true
+              type: string
+            - metadata: {}
+              name: histone_family
+              nullable: true
+              type: string
+            - metadata: {}
+              name: histone_variant
+              nullable: true
+              type: string
+            - metadata: {}
+              name: intron
+              nullable: true
+              type: string
+            - metadata: {}
+              name: laboratory_test
+              nullable: true
+              type: string
+            - metadata: {}
+              name: loci_abnormal_count
+              nullable: true
+              type: long
+            - metadata: {}
+              name: loci_count
+              nullable: true
+              type: long
+            - metadata: {}
+              name: locus
+              nullable: true
+              type: string
+            - metadata: {}
+              name: mismatch_repair_mutation
+              nullable: true
+              type: string
+            - metadata: {}
+              name: mitotic_count
+              nullable: true
+              type: double
+            - metadata: {}
+              name: mitotic_total_area
+              nullable: true
+              type: double
+            - metadata: {}
+              name: molecular_analysis_method
+              nullable: true
+              type: string
+            - metadata: {}
+              name: molecular_consequence
+              nullable: true
+              type: string
+            - metadata: {}
+              name: molecular_test_id
+              nullable: true
+              type: string
+            - metadata: {}
+              name: pathogenicity
+              nullable: true
+              type: string
+            - metadata: {}
+              name: ploidy
+              nullable: true
+              type: string
+            - metadata: {}
+              name: second_exon
+              nullable: true
+              type: string
+            - metadata: {}
+              name: second_gene_symbol
+              nullable: true
+              type: string
+            - metadata: {}
+              name: specialized_molecular_test
+              nullable: true
+              type: string
+            - metadata: {}
+              name: submitter_id
+              nullable: true
+              type: string
+            - metadata: {}
+              name: test_analyte_type
+              nullable: true
+              type: string
+            - metadata: {}
+              name: test_result
+              nullable: true
+              type: string
+            - metadata: {}
+              name: test_units
+              nullable: true
+              type: string
+            - metadata: {}
+              name: test_value
+              nullable: true
+              type: double
+            - metadata: {}
+              name: transcript
+              nullable: true
+              type: string
+            - metadata: {}
+              name: variant_origin
+              nullable: true
+              type: string
+            - metadata: {}
+              name: variant_type
+              nullable: true
+              type: string
+            - metadata: {}
+              name: zygosity
+              nullable: true
+              type: string
+            type: struct
+          type: array
+      - metadata: {}
+        name: nadir_cd4_count
+        nullable: true
+        type: double
+      - metadata: {}
+        name: pancreatitis_onset_year
+        nullable: true
+        type: long
+      - metadata: {}
+        name: pregnancy_outcome
+        nullable: true
+        type: string
+      - metadata: {}
+        name: procedures_performed
+        nullable: true
+        type: string
+      - metadata: {}
+        name: progression_or_recurrence
+        nullable: true
+        type: string
+      - metadata: {}
+        name: progression_or_recurrence_anatomic_site
+        nullable: true
+        type: string
+      - metadata: {}
+        name: progression_or_recurrence_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: recist_targeted_regions_number
+        nullable: true
+        type: long
+      - metadata: {}
+        name: recist_targeted_regions_sum
+        nullable: true
+        type: double
+      - metadata: {}
+        name: reflux_treatment_type
+        nullable: true
+        type: string
+      - metadata: {}
+        name: risk_factor
+        nullable: true
+        type: string
+      - metadata: {}
+        name: risk_factor_treatment
+        nullable: true
+        type: string
+      - metadata: {}
+        name: scan_tracer_used
+        nullable: true
+        type: string
+      - metadata: {}
         name: state
         nullable: true
         type: string
@@ -644,6 +1138,38 @@ fields:
         name: submitter_id
         nullable: true
         type: string
+      - metadata: {}
+        name: undescended_testis_corrected
+        nullable: true
+        type: string
+      - metadata: {}
+        name: undescended_testis_corrected_age
+        nullable: true
+        type: long
+      - metadata: {}
+        name: undescended_testis_corrected_laterality
+        nullable: true
+        type: string
+      - metadata: {}
+        name: undescended_testis_corrected_method
+        nullable: true
+        type: string
+      - metadata: {}
+        name: undescended_testis_history
+        nullable: true
+        type: string
+      - metadata: {}
+        name: undescended_testis_history_laterality
+        nullable: true
+        type: string
+      - metadata: {}
+        name: viral_hepatitis_serologies
+        nullable: true
+        type: string
+      - metadata: {}
+        name: weight
+        nullable: true
+        type: double
       type: struct
     type: array
 - metadata: {}
@@ -713,19 +1239,6 @@ fields:
       type: string
     type: struct
 - metadata: {}
-  name: samples
-  nullable: true
-  type:
-    containsNull: true
-    elementType:
-      fields:
-      - metadata: {}
-        name: sample_type
-        nullable: true
-        type: string
-      type: struct
-    type: array
-- metadata: {}
   name: state
   nullable: true
   type: string
@@ -733,6 +1246,54 @@ fields:
   name: submitter_id
   nullable: true
   type: string
+- metadata: {}
+  name: summary
+  nullable: true
+  type:
+    fields:
+    - metadata: {}
+      name: data_categories
+      nullable: true
+      type:
+        containsNull: true
+        elementType:
+          fields:
+          - metadata: {}
+            name: data_category
+            nullable: true
+            type: string
+          - metadata: {}
+            name: file_count
+            nullable: true
+            type: long
+          type: struct
+        type: array
+    - metadata: {}
+      name: experimental_strategies
+      nullable: true
+      type:
+        containsNull: true
+        elementType:
+          fields:
+          - metadata: {}
+            name: experimental_strategy
+            nullable: true
+            type: string
+          - metadata: {}
+            name: file_count
+            nullable: true
+            type: long
+          type: struct
+        type: array
+    - metadata: {}
+      name: file_count
+      nullable: true
+      type: long
+    - metadata: {}
+      name: file_size
+      nullable: true
+      type: long
+    type: struct
 - metadata: {}
   name: tissue_source_site
   nullable: true
@@ -759,11 +1320,4 @@ fields:
       nullable: true
       type: string
     type: struct
-- metadata: {}
-  name: available_variation_data
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
 type: struct

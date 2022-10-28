@@ -3,11 +3,12 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
-from exports import builders
-from exports.builders import df_builders
+from exports import builders, es_utils, schemas
+from exports.builders import case, df_builders
+from exports.constants import build
 
 
-class CaseCentricBuilder(builders.BaseBuilder):
+class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
     """
     Builds case-centric dataframe given case and maf dataframes::
 
@@ -33,19 +34,64 @@ class CaseCentricBuilder(builders.BaseBuilder):
         self,
         config: config.BaseConfig,
         sqlContext: sql.SQLContext,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        es_rdd_util: es_utils.RDDUtil,
+        field_selector: es_utils.CaseFieldSelector,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 
+        self._es_dataframe_util = es_dataframe_util
+        self._es_rdd_util = es_rdd_util
+        self._field_selector = field_selector
+
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
+    def _load_es_case_data(self) -> sql.DataFrame:
+        if False and self.config.projects:  # TODO: Restore func w/ new config specific projects
+            query = {"query": {"terms": {"project.project_id": self.config.projects}}}
+        else:
+            query = {"query": {"match_all": {}}}
+
+        fields = self._field_selector.select_for(
+            build.IndexType.CASE,
+            build.IndexType.CASE_CENTRIC,
+            excluded_fields=("samples",),
+        )
+        sample_fields = self._field_selector.select_for(
+            build.IndexType.CASE,
+            build.IndexType.CASE_CENTRIC,
+            included_fields=("samples",),
+        )
+
+        self.logger.info(f"Included case fields: {fields}")
+        self.logger.info(f"Included sample fields: {sample_fields}")
+
+        case_df = self._es_dataframe_util.get_dataframe(
+            build.IndexType.CASE,
+            include_fields=fields,
+            include_as_arrays=self.config.case_include_as_arrays,
+            query=query,
+        )
+        sample_df = (
+            self._es_rdd_util.get_rdd(
+                build.IndexType.CASE,
+                include_fields=sample_fields,
+                query=query,
+            )
+            .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
+            .select("_source.*")
+        )
+
+        return case_df.join(sample_df, on="case_id", how="left")
+
     def build(
         self,
+        maf_metadata_df: sql.DataFrame,
         maf_df: sql.DataFrame,
         ascat_df: sql.DataFrame,
-        case_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
     ) -> "CaseCentricBuilder":
         """
@@ -57,6 +103,10 @@ class CaseCentricBuilder(builders.BaseBuilder):
             self.case_centric = self.load_raw()
             if self.case_centric is not None:
                 return self
+
+        case_df = self._load_cases(
+            maf_metadata_df, ascat_df, self.config.df_repartition
+        )
 
         self.log("Building Gene subtree")
         gene_subtree = self.build_gene_subtree(maf_df, ascat_df, primary_aliquot_df)
@@ -202,9 +252,7 @@ class CaseCentricBuilder(builders.BaseBuilder):
         )
 
         # Build the final cnv dataframe
-        cnv_df = df_builders.build_cnv_subtree(
-            ascat_df, self.index_name, obs_df=obs_df
-        )
+        cnv_df = df_builders.build_cnv_subtree(ascat_df, self.index_name, obs_df=obs_df)
 
         # Aggregate CNV
         self.log("Aggregating cnv by case_id and gene_id")

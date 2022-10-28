@@ -8,7 +8,7 @@ import os
 import tempfile
 import uuid
 from os import path
-from typing import Any, Iterable, Iterator, Mapping, Tuple
+from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
 
 import elasticsearch
 import halo
@@ -57,7 +57,9 @@ def merge_dict(a: dict, b: dict) -> None:
             a[key] = value
 
 
-def load_config_data(user_config_file: str, final_config_file: str) -> Mapping[str, Any]:
+def load_config_data(
+    user_config_file: str, final_config_file: str
+) -> Mapping[str, Any]:
     """
     Loads the user provided configuration and updates it with any required default
     values.
@@ -100,7 +102,7 @@ def write_manifest(config: configuration.Configuration) -> None:
     """
     build = config.build
     file_name = get_manifest_file(build.manifest_dir, build.build_id)
-    data = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)
+    data: dict = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)  # type: ignore
 
     os.makedirs(build.manifest_dir, exist_ok=True)
 
@@ -122,20 +124,25 @@ def get_config(
         user_config_file: The path to the user provided configuration file.
 
     Returns:
-        A context manager which in turn provides the configuration object with which to 
+        A context manager which in turn provides the configuration object with which to
         run the application.
     """
-    with tempfile.TemporaryDirectory() as temp_directory:
-        config_file = path.join(temp_directory, "configuration.toml")
-        config_data = load_config_data(user_config_file, config_file)
-        config = configuration.CONFIG_SCHEMA.load(config_data)
+    config = None
 
-        with open(config_file, "w+") as f:
-            toml.dump(config_data, f)
+    try:
+        with tempfile.TemporaryDirectory() as temp_directory:
+            config_file = path.join(temp_directory, "configuration.toml")
+            config_data = load_config_data(user_config_file, config_file)
+            config: Any = configuration.CONFIG_SCHEMA.load(config_data) # type: ignore
 
-        yield config
+            with open(config_file, "w+") as f:
+                toml.dump(config_data, f)
 
-    write_manifest(config)
+            yield config
+
+    finally:
+        if config is not None:
+            write_manifest(config)
 
 
 def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
@@ -226,8 +233,10 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         if missing_indices:
             logger.warning(f"Build failed to build indices: {missing_indices}.")
 
-        async for index in indices:
-            await es_client.indices.forcemerge(index=index, max_num_segments=1)
+        try:
+            await es_client.indices.forcemerge(index=",".join(indices), max_num_segments=1)
+        except Exception as ex:
+            logger.warn(f"Error occurred while merging: {ex}.")
 
 
 def set_environment_variables(env: environment.Environment) -> None:

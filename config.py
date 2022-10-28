@@ -137,6 +137,7 @@ class BaseConfig(object):
     ]
 
     samples_include_fields = ["samples.sample_type"]
+    case_include_as_arrays = ()
 
     maf_prioritized_experimental_strategies = ()
 
@@ -621,12 +622,8 @@ class ConfigAdapter(BaseConfig):
         }
 
     @property
-    def case_exclude_fields(self) -> Sequence[str]:  # type: ignore
-        raise NotImplementedError()
-
-    @property
-    def exclude_fields(self) -> Sequence[str]:
-        return self._config.builders.viz.case.excluded_fields
+    def case_include_as_arrays(self) -> Sequence[str]:
+        return self._config.builders.viz.case.include_as_arrays
 
     @property
     def samples_include_fields(self) -> Sequence[str]:  # type: ignore
