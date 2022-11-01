@@ -4,7 +4,7 @@ spark_home = ""
 yarn_conf_dir = ""
 
 [spark]
-master = "yarn"
+master = "local[*]"
 
 [spark.app]
 name = "gdc_mutation_indexer"
@@ -27,7 +27,7 @@ python = "./mutation-indexer.pex"
 auto_broadcast_join_threshold = -1
 case_sensitive = true
 [spark.sql.shuffle]
-partitions = 1024
+partitions = 200
 
 [spark.submit]
 deploy_mode = "cluster"
@@ -212,9 +212,9 @@ user = ""
 
 [elasticsearch]
 [elasticsearch.connection]
-nodes = "localhost:9200"
+nodes = "http://localhost:9200"
 password = ""
-use_ssl = true
+use_ssl = false
 user = ""
 verify_certs = false
 [elasticsearch.read]

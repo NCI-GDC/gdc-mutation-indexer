@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from os import path
-from typing import Generator, Iterable, Iterator
+from typing import Any, Callable, Generator, Iterable, Iterator, List
 from unittest import mock
 
 import elasticsearch
@@ -13,9 +13,11 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import Literal
 
-from exports import builders, es_utils, indexd_utils, schemas
+from exports import builders, configuration, es_utils, indexd_utils, schemas
 from exports.builders.clinical_annotations import civic
+from exports.constants import build
 from tests.integration import config
 from tests.integration.utils import maf_metrics, test_setup, true_stats
 
@@ -25,9 +27,6 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 
-GRAPH_INDICES = frozenset(["case", "file"])
-
-
 @pytest.fixture(scope="session")
 def data_dir() -> Iterator[pathlib.Path]:
     with resources.as_file(resources.files("tests.integration")) as module:
@@ -35,22 +34,48 @@ def data_dir() -> Iterator[pathlib.Path]:
 
 
 @pytest.fixture(scope="session")
-def setup_graph_indices() -> Generator[bool, None, None]:
-    """Create graph indices with required docs."""
-    manager = test_setup.IndexManager(conf, conf.es, log, GRAPH_INDICES)
-    loader = test_setup.DocumentLoader(conf, conf.es, log)
-
-    with manager, loader:
-        manager.create_indices()
-
-        for doc_type in GRAPH_INDICES:
-            loader.load_docs(doc_type)
-
-        yield True
+def input_dir(data_dir: pathlib.Path) -> pathlib.Path:
+    return data_dir.joinpath("input")
 
 
 @pytest.fixture(scope="session")
-def es_client(setup_graph_indices):
+def maf_urls(input_dir: pathlib.Path) -> List[str]:
+    return [str(p) for p in input_dir.joinpath("maf").glob("**/*.maf")]
+
+
+@pytest.fixture(scope="session")
+def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
+    citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
+    census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
+    gene_model_file = str(input_dir.joinpath("genes.ndjson.gz"))
+
+    def pre_load(
+        data: dict,
+        drivers: Iterable[Literal["viz", "gene_expression"]] = (
+            "viz",
+            "gene_expression",
+        ),
+    ) -> dict:
+
+        for driver in drivers:
+            data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
+            data["builders"][driver]["gene_model"]["census_file"] = census_file
+            data["builders"][driver]["gene_model"]["gene_model_file"] = gene_model_file
+
+        return data
+
+    return pre_load
+
+
+@pytest.fixture(scope="session")
+def default_config(
+    configure_gene_model: Callable[[dict], dict]
+) -> configuration.Configuration:
+    return test_setup.load_configuraiton(configure_gene_model)
+
+
+@pytest.fixture(scope="session")
+def es_client() -> elasticsearch.Elasticsearch:
     # The test config already sets up an ES client that we can just reuse.
     # TODO Probably refactor the way we use the test config so the test modules
     # don't create new ES clients upon import.
@@ -58,29 +83,43 @@ def es_client(setup_graph_indices):
 
 
 @pytest.fixture(scope="session")
-def source_es_client(setup_graph_indices):
+def source_es_client():
     # TODO Again, reorganizing these ES clients would be cooool.
     return conf.source_es
 
 
-@pytest.fixture
-def index_cases_with_duplicate_aliquots(source_es_client):
-    """Add cases with duplicate aliquot submitter IDs to the index.
+@pytest.fixture(scope="session")
+def setup_graph_indices(
+    default_config: configuration.Configuration,
+    es_client: elasticsearch.Elasticsearch,
+    input_dir: pathlib.Path,
+) -> Iterator[Any]:
+    """Create graph indices with required docs."""
+    manager = test_setup.IndexManager(default_config, es_client, log)
+    loader = test_setup.DocumentLoader(default_config, es_client, log)
+    data = {
+        build.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
+        build.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
+    }
 
-    Remove them after the test completes.
-    """
-    input_path = os.path.join(conf.input_dir, "cases_with_duplicate_aliquots.ndjson")
+    with manager, loader:
+        for index_type, input_file in data.items():
+            loader.load_docs(index_type, input_file)
 
-    with test_setup.DocumentLoader(conf, source_es_client, log) as loader:
-        yield loader.load_docs("case", input_path=input_path)
+        yield True
 
 
 @pytest.fixture(scope="class")
-def files_with_linked_cases(source_es_client):
-    input_path = os.path.join(conf.input_dir, "files_with_linked_cases.ndjson")
+def files_with_linked_cases(
+    setup_graph_indices: Any,  # Required to insure file index has been initialized.
+    default_config: configuration.Configuration,
+    es_client: elasticsearch.Elasticsearch,
+    input_dir: pathlib.Path,
+) -> Iterator[Any]:
+    input_path = input_dir.joinpath("files_with_linked_cases.ndjson")
 
-    with test_setup.DocumentLoader(conf, source_es_client, log) as loader:
-        yield loader.load_docs("file", input_path=input_path)
+    with test_setup.DocumentLoader(default_config, es_client, log) as loader:
+        yield loader.load_docs(build.IndexType.FILE, input_path)
 
 
 @pytest.fixture(scope="session")
