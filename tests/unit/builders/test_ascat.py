@@ -252,14 +252,7 @@ class TestAscatBuilder:
             "gene_model_df": gene_model_df,
         }
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__joins_single_record(
-        self,
-        iterate_es_results: mock.MagicMock,
-    ) -> None:
+    def test__build_from_scratch__joins_single_record(self) -> None:
         es_files = (ESFile(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = (GeneModel(),)
@@ -267,19 +260,16 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
 
         assert ascat_df.count() == 1
         assert ascat_df.schema == self.final_ascat_schema
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__input_data_transformed(
-        self,
-        iterate_es_results: mock.MagicMock,
-    ) -> None:
+    def test__build_from_scratch__input_data_transformed(self) -> None:
         es_file = ESFile()
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = GeneModel()
@@ -287,7 +277,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder((es_file,))
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
+
         ascat_row = more_itertools.one(ascat_df.collect())
 
         assert ascat_row.biotype == gene_model.biotype
@@ -358,13 +353,8 @@ class TestAscatBuilder:
             "missing_gene_model_record",
         ),
     )
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
     def test__build_from_scratch__failed_joins(
         self,
-        iterate_es_results: mock.MagicMock,
         es_files: Tuple[ESFile, ...],
         ascat_documents: Tuple[AscatDocument, ...],
         primary_aliquots: Tuple[PrimaryAliquot, ...],
@@ -373,18 +363,16 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
 
         assert ascat_df.count() == 0
         assert ascat_df.schema == self.final_ascat_schema
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__gene_id_stripped(
-        self, iterate_es_results: mock.MagicMock
-    ) -> None:
+    def test__build_from_scratch__gene_id_stripped(self) -> None:
         es_files = (ESFile(),)
         ascat_documents = (
             AscatDocument(gene_id="ENSG00000238009.9"),
@@ -397,7 +385,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
+
         ascat_row = more_itertools.one(ascat_df.collect())
 
         assert ascat_row.gene_id == "ENSG00000238009"
@@ -413,13 +406,8 @@ class TestAscatBuilder:
             ((1, 2, 2, 3, 3), "Loss"),
         ),
     )
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
     def test__build_from_scratch__copy_number_maps_to_cnv_change(
         self,
-        iterate_es_results: mock.MagicMock,
         copy_numbers: Tuple[int, ...],
         cnv_change: str,
     ) -> None:
@@ -433,7 +421,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
+
         ascat_row = more_itertools.one(ascat_df.collect())
 
         assert ascat_row.cnv_change == cnv_change
@@ -442,12 +435,8 @@ class TestAscatBuilder:
         "copy_numbers",
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
     def test__build_from_scratch__neutral_copy_numbers_filtered(
-        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[str]
+        self, copy_numbers: Iterable[str]
     ) -> None:
         es_files = (ESFile(),)
         primary_aliquots = (PrimaryAliquot(),)
@@ -459,17 +448,15 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
 
         assert ascat_df.count() == 0
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__uuids_generated(
-        self, iterate_es_results: mock.MagicMock
-    ) -> None:
+    def test__build_from_scratch__uuids_generated(self) -> None:
         es_files = (ESFile(),)
         primary_aliquots = (PrimaryAliquot(),)
         gene_model = GeneModel()
@@ -477,7 +464,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder(es_files)
 
-        ascat_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            ascat_df = builder.build_from_scratch(**inputs)
+
         ascat_row = more_itertools.one(ascat_df.collect())
         cnv_id = utils.generate_uuid5(
             gene_model.chromosome,
@@ -500,13 +492,7 @@ class TestAscatBuilder:
             cnv_id, es_files[0].cases[0].case_id, primary_aliquots[0].aliquot_id
         )
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__canonical_transcript_lengths_added(
-        self, iterate_es_results: mock.MagicMock
-    ) -> None:
+    def test__build_from_scratch__canonical_transcript_lengths_added(self) -> None:
         canonical_transcript = Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
@@ -518,7 +504,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
 
-        result_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            result_df = builder.build_from_scratch(**inputs)
+
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == canonical_transcript.length
@@ -531,13 +522,7 @@ class TestAscatBuilder:
             == canonical_transcript.end - canonical_transcript.start + 1
         )
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
-    def test__build_from_scratch__null_canonical_transcript_lengths_added(
-        self, iterate_es_results: mock.MagicMock
-    ) -> None:
+    def test__build_from_scratch__null_canonical_transcript_lengths_added(self) -> None:
         canonical_transcript = Transcript(
             length=None, length_cds=None, end=None, start=None, is_canonical=True
         )
@@ -549,19 +534,20 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
 
-        result_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            result_df = builder.build_from_scratch(**inputs)
+
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == None
         assert result_row.canonical_transcript_length_cds == None
         assert result_row.canonical_transcript_length_genomic == None
 
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
     def test__build_from_scratch__canonical_transcript_lengths_no_canonical_transcipt(
-        self, iterate_es_results: mock.MagicMock
+        self,
     ) -> None:
         transcript = Transcript(length=10, length_cds=3, end=122, start=100)
         es_files = (ESFile(),)
@@ -571,7 +557,12 @@ class TestAscatBuilder:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
 
-        result_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            result_df = builder.build_from_scratch(**inputs)
+
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == None
@@ -600,19 +591,18 @@ class TestAscatBuilder:
         ),
         ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
-    @mock.patch(
-        "exports.es_utils.iterate_es_results",
-        return_value=_arrange_iterate_es_results_return(("file-0",)),
-    )
     def test__build_from_scratch__filter_gene_model(
         self,
-        iterate_es_results: mock.MagicMock,
         gene_model: GeneModel,
         ascat_documents: Tuple[AscatDocument, ...],
     ) -> None:
         inputs = self._arrange_input_dataframes((PrimaryAliquot(),), (gene_model,))
         builder = self._arrange_builder((ESFile(),), ascat_documents)
 
-        result_df = builder.build_from_scratch(**inputs)
+        with utils.patch(
+            "exports.es_utils.iterate_es_results",
+            return_value=_arrange_iterate_es_results_return(("file-0",)),
+        ):
+            result_df = builder.build_from_scratch(**inputs)
 
         assert result_df.count() == 0

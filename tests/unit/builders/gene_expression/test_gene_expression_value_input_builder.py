@@ -74,7 +74,7 @@ class TestGeneExpressionValueInputBuilder:
         )
         dataframe_util = mock.MagicMock()
 
-        dataframe_util.get_dataframe.return_value = star_counts_df
+        dataframe_util.get_dataframe.side_effect = lambda i, **_: tuple(i) and star_counts_df
 
         return dataframe_util
 
