@@ -32,7 +32,7 @@ jobs:
         - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
         - export PATH="${JAVA_HOME}/bin:${PATH}"
       script:
-        - tox -e unit
+        - tox -e unit-py36
       
     - stage: integration-tests
       name: Integration Tests
@@ -53,4 +53,4 @@ jobs:
         - sudo chown elasticsearch /etc/default/elasticsearch
         - sudo service elasticsearch restart
       script:
-        - tox -e integration
+        - tox -e integration-py36

@@ -2,12 +2,12 @@
 -c master-requirements.txt
 
 attrs~=21.4
-coverage[toml]~=5.5
+coverage[toml]~=6.0
 dataclasses~=0.8;python_version<="3.6"
 deepdiff==3.3.0
 ghp-import==0.5.4
 jsonpath-rw~=1.4
 pre-commit==1.21.0
 pytest~=6.0
-pytest-cov~=2.10
+pytest-parallel~=0.1
 Sphinx==1.5.2

@@ -1,20 +1,28 @@
 import contextlib
 import csv
-import functools
-from pprint import pprint
 import dataclasses
+import functools
 import io
-from typing import Any, Callable, ContextManager, Iterable, Iterator, Optional, Tuple
+from typing import (
+    IO,
+    Any,
+    Callable,
+    ContextManager,
+    Iterable,
+    Iterator,
+    Optional,
+    Tuple,
+)
 from unittest import mock
-import importlib_resources as resources
 
+import importlib_resources as resources
 import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-
 from exports.builders.clinical_annotations import civic
+from tests.unit import utils
 from tests.unit.data import schemas
 
 
@@ -226,7 +234,7 @@ def create_mock_tsv(keys: Iterable[str], data: Iterable[Any]) -> io.StringIO:
 
 def mock_open(
     dna: Tuple[DNACivic, ...], prot: Tuple[ProtCivic, ...], path: str, mode: str = "r"
-) -> io.FileIO:
+) -> IO[Any]:
     if path.endswith("civic.yml"):
         return open(path, mode)
 
@@ -282,8 +290,9 @@ class TestCivicBuilder:
         dna: Tuple[DNACivic, ...] = (DNACivic(),),
         prot: Tuple[ProtCivic, ...] = (ProtCivic(),),
     ) -> ContextManager[mock.MagicMock]:
-        return mock.patch(
-            "builtins.open", side_effect=functools.partial(mock_open, dna, prot)
+        return utils.patch(
+            "exports.builders.clinical_annotations.civic.open",
+            side_effect=functools.partial(mock_open, dna, prot),
         )
 
     def arrange_pkg_resources(self) -> ContextManager[contextlib.ExitStack]:
@@ -291,7 +300,9 @@ class TestCivicBuilder:
 
         resource_filename = stack.enter_context(arrange_mock_resource_filename())
         _ = stack.enter_context(
-            mock.patch("pkg_resources.resource_filename", side_effect=resource_filename)
+            utils.patch(
+                "pkg_resources.resource_filename", side_effect=resource_filename
+            )
         )
 
         return stack

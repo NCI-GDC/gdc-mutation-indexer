@@ -25,10 +25,8 @@ charset-normalizer==2.0.12
     # via
     #   -c requirements.txt
     #   requests
-coverage[toml]==5.5
-    # via
-    #   -r dev-requirements.in
-    #   pytest-cov
+coverage[toml]==6.2
+    # via -r dev-requirements.in
 dataclasses==0.8 ; python_version <= "3.6"
     # via
     #   -c requirements.txt
@@ -99,8 +97,8 @@ pyparsing==3.0.9
 pytest==6.2.5
     # via
     #   -r dev-requirements.in
-    #   pytest-cov
-pytest-cov==2.12.1
+    #   pytest-parallel
+pytest-parallel==0.1.1
     # via -r dev-requirements.in
 pytz==2020.5
     # via
@@ -127,13 +125,15 @@ snowballstemmer==2.2.0
     # via sphinx
 sphinx==1.5.2
     # via -r dev-requirements.in
+tblib==1.7.0
+    # via pytest-parallel
 toml==0.10.2
     # via
     #   -c requirements.txt
-    #   coverage
     #   pre-commit
     #   pytest
-    #   pytest-cov
+tomli==1.2.3
+    # via coverage
 typing-extensions==4.1.1
     # via
     #   -c requirements.txt
