@@ -1,35 +1,33 @@
 import os
-from typing import Generator
+import threading
+from typing import Optional
 
-from pyspark import sql
 import pytest
+from pyspark import sql
 
-_spark_session = None
-
-
-def pytest_sessionstart(session: pytest.Session) -> None:
-    global _spark_session
-
-    _spark_session = (
-        sql.SparkSession.builder.master("local[*]")
-        .appName("sqlContextFixture")
-        .config("spark.sql.shuffle.partitions", 1)
-        .config("spark.ui.showConsoleProgress", False)
-        .config("spark.ui.enabled", False)
-        .config("spark.driver.memory", "2g")
-        .getOrCreate()
-    )
-    _spark_session.sparkContext.setLogLevel("FATAL")
-    _spark_session.sql("set spark.sql.caseSensitive=true")
+_spark_session: Optional[sql.SparkSession] = None
+_session_lock = threading.Lock()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def spark_session() -> sql.SparkSession:
     global _spark_session
 
-    assert _spark_session, "Spark session not initialized"
+    with _session_lock:
+        if not _spark_session:
+            _spark_session = (
+                sql.SparkSession.builder.master("local[*]")
+                .appName("sqlContextFixture")
+                .config("spark.sql.shuffle.partitions", 1)
+                .config("spark.ui.showConsoleProgress", False)
+                .config("spark.ui.enabled", False)
+                .config("spark.driver.memory", "2g")
+                .getOrCreate()
+            )
+            _spark_session.sparkContext.setLogLevel("FATAL")
+            _spark_session.sql("set spark.sql.caseSensitive=true")
 
-    return _spark_session
+        return _spark_session
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
