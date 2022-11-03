@@ -10,9 +10,14 @@ from pyspark import sql
 def spark_session() -> Generator[sql.SparkSession, None, None]:
     with sql.SparkSession.builder.master("local[*]").appName(
         "sqlContextFixture"
+    ).config("spark.sql.shuffle.partitions", 1).config(
+        "spark.ui.showConsoleProgress", False
+    ).config(
+        "spark.ui.enabled", False
+    ).config(
+        "spark.driver.memory", "2g"
     ).getOrCreate() as spark_session:
         spark_session.sparkContext.setLogLevel("FATAL")
-        spark_session.sql("set spark.sql.shuffle.partitions=200")
         spark_session.sql("set spark.sql.caseSensitive=true")
 
         yield spark_session
@@ -27,7 +32,6 @@ def data_dir():
 
 @pytest.fixture
 def fake_hits_and_expectations(data_dir):
-
     def load_hits_from_file(filename):
         with open(os.path.join(data_dir, filename)) as f:
             contents = yaml.safe_load(f)
