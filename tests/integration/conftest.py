@@ -801,14 +801,3 @@ def exploded_variant_caller_counts() -> Mapping[str, int]:
         "pindel": 3,
         "varscan": 3,
     }
-
-
-@pytest.fixture(scope="function")
-def load_data_from_file(
-    data_dir: pathlib.Path,
-) -> Callable[[Union[str, pathlib.Path]], Any]:
-    def load(filename: Union[str, pathlib.Path]):
-        with open(data_dir.joinpath(filename)) as f:
-            return yaml.safe_load(f)
-
-    return load

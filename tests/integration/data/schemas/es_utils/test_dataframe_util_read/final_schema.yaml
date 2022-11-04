@@ -1,0 +1,79 @@
+fields:
+  - metadata: {}
+    name: acl
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: cases
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - metadata: {}
+            name: demographic
+            nullable: true
+            type:
+              fields:
+                - metadata: {}
+                  name: year_of_birth
+                  nullable: true
+                  type: long
+              type: struct
+          - metadata: {}
+            name: diagnoses
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - metadata: {}
+                    name: treatments
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType:
+                        fields:
+                          - metadata: {}
+                            name: state
+                            nullable: true
+                            type: string
+                        type: struct
+                      type: array
+                type: struct
+              type: array
+          - metadata: {}
+            name: project
+            nullable: true
+            type:
+              fields:
+                - metadata: {}
+                  nullable: true
+                  name: primary_site
+                  type:
+                    containsNull: true
+                    elementType: string
+                    type: array
+              type: struct
+        type: struct
+      type: array
+  - &string_type
+    metadata: {}
+    name: file_id
+    nullable: true
+    type: string
+  - <<: *string_type
+    name: updated_datetime
+
+  - metadata: {}
+    name: _metadata
+    nullable: true
+    type:
+      keyType: string
+      valueType: string
+      valueContainsNull: true
+      type: map
+type: struct
