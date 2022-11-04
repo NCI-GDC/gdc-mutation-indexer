@@ -8,6 +8,7 @@ deepdiff==3.3.0
 ghp-import==0.5.4
 jsonpath-rw~=1.4
 pre-commit==1.21.0
+pyspark-stubs~=2.4.0.post12
 pytest~=6.0
 pytest-cov~=2.10
 Sphinx==1.5.2
