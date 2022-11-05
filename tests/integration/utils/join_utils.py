@@ -5,16 +5,15 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
+    Mapping,
     NamedTuple,
     Tuple,
     Union,
-    Mapping,
 )
-import more_itertools
 
+import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-
 
 RelationshipMapping = Mapping[str, Union[AbstractSet[str], "RelationshipMapping"]]
 
@@ -26,6 +25,19 @@ class Relationship(NamedTuple):
 
 
 def _follow_path(path: str) -> Callable[[sql.Row], Iterable[sql.Row]]:
+    """
+    Creates a function to follow the given path within the input row. This will return
+    all rows encountered including those in an array. Hence, the return will always be a
+    series of rows.
+
+    Args:
+        path: The path within the row that need be traversed when the resulting function
+            is called.
+
+    Returns:
+        A function which will return all rows related to the input row via the given
+        path.
+    """
     if not path:
         return lambda r: (r,)
 
@@ -55,6 +67,17 @@ def _relationship_reduce(
     [Iterable[Iterable[sql.Row]]],
     Union[AbstractSet[str], RelationshipMapping],
 ]:
+    """
+    The reduce functionality to build the remaining relationships in the given paremeter.
+
+    Args:
+        relationships: The remaining relationships which need to be consturcted into
+            sub-RelationshipMappings
+
+    Returns:
+        A callable which will take in groups of rows and return the constructed
+        sub-mapping.
+    """
     relationship = more_itertools.first(relationships)
 
     return lambda groups: _get_relationship_map(
@@ -67,6 +90,21 @@ def _get_relationship_map(
     relationships: Iterator[Relationship],
     rows: Iterable[sql.Row],
 ) -> RelationshipMapping:
+    """
+    Builds a RelationshipMapping defined in the relationship based on the data in the
+    rows. This will also produce any further submappings defined in any further
+    relationships.
+
+    Args:
+        relationship: The current relationship for which a mapping needs to be build.
+        relationships: Any further submapping which will be found in the values of the
+            mapping being constructed by the given relationship.
+        rows: The rows within which the data from the mapping may be found.
+
+    Returns:
+        A RelationshipMapping relating keys: parent identifier to values: either further
+        submappings or a set of child values collected as a set.
+    """
     next_relationship = more_itertools.first(relationships, default=None)
 
     if next_relationship:
@@ -94,6 +132,19 @@ def _get_relationship_map(
 
 
 def _get_relationships(path: Iterable[str]) -> Iterator[Relationship]:
+    """
+    Converts a path describing parent -> child -> grandchild into Relationship objects
+    which are a more explicit and detailed rendering of the relationships described in
+    the path.
+
+    Args:
+        path: A path describing a series of relationships parent, to child, to
+            grandchild.
+
+    Returns:
+        A series of Relationship objects each defining a parent to child relationship.
+    """
+
     def _split_path(path: str) -> Tuple[str, str]:
         split = path.split(".")
 
@@ -126,8 +177,8 @@ def get_relationship_map(
 
             Note: all child fields can be a path through structures but the terminal key
                 must relate to a scalar value in the data.
-                e.g. `this.is.in.a.nested.object.obj_id`: this would reteive all child
-                obj_ids values found nested object.
+                e.g. `these.nested.objects.obj_id`: this would reteive all child
+                obj_ids values found in the nested object.
 
     Returns:
         A mapping in which the key is the ID of the parent object and the values is a
