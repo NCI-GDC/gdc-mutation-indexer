@@ -1,58 +1,65 @@
-import os
+import logging
+import pathlib
+from typing import Any, Iterable, Iterator, Optional
 from unittest import mock
 
 import elasticsearch
-import ndjson
 import pytest
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders, es_utils, indexd_utils
+from exports import builders, configuration, es_utils, indexd_utils
+from exports.constants import build
 from tests.integration import config
+from tests.integration.utils import test_setup
 
-
-@pytest.fixture(scope="module")
-def ge_conf():
-    conf = config.TestConfig()
-    conf.index_types = ["gene_expression"]
-    conf.indices = conf.get_index_names()
-
-    return conf
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
 def ge_primary_aliquot_df(
-    ge_conf: config.BaseConfig,
+    default_old_config: config.BaseConfig,
     sqlContext: sql.SQLContext,
     es_client: elasticsearch.Elasticsearch,
+    ge_file_docs: Any,
 ) -> sql.DataFrame:
-    es_dataframe_util = es_utils.DataFrameUtil(ge_conf, sqlContext, es_client)
+    es_dataframe_util = es_utils.DataFrameUtil(
+        default_old_config, sqlContext, es_client
+    )
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
-        ge_conf, sqlContext, es_dataframe_util
+        default_old_config, sqlContext, es_dataframe_util
     )
 
     return primary_aliquot_builder.build()
 
 
 @pytest.fixture
-def ge_builder(sqlContext, ge_conf):
-    builder = builders.GeneExpressionBuilder(ge_conf, sqlContext)
+def ge_builder(
+    default_old_config: config.BaseConfig, sqlContext: sql.SQLContext
+) -> builders.GeneExpressionBuilder:
+    builder = builders.GeneExpressionBuilder(default_old_config, sqlContext)
 
     return builder
 
 
 @pytest.fixture(scope="module")
-def ge_cases_df(sqlContext, ge_conf, ge_primary_aliquot_df):
+def ge_cases_df(
+    default_old_config: config.BaseConfig,
+    sqlContext: sql.SQLContext,
+    ge_primary_aliquot_df: sql.DataFrame,
+) -> sql.DataFrame:
     cases_df = builders.GeneExpressionCaseInputBuilder(
-        ge_conf,
+        default_old_config,
         sqlContext,
     ).build(gene_expression_primary_aliquot_df=ge_primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
         [
             types.StructField(
-                "age_at_diagnosis", types.ArrayType(types.LongType(), True), True
+                "age_at_diagnosis",
+                types.ArrayType(types.LongType(), True),  # type: ignore
+                True,
             ),
             types.StructField("case_id", types.StringType(), True),
             types.StructField("days_to_death", types.LongType(), True),
@@ -69,29 +76,33 @@ def ge_cases_df(sqlContext, ge_conf, ge_primary_aliquot_df):
     return cases_df
 
 
-@pytest.fixture
-def ge_values_df(sqlContext, ge_conf, ge_primary_aliquot_df):
-    gene_model_df = builders.GeneModelBuilder(ge_conf, sqlContext).build()
+@pytest.fixture(scope="function")
+def ge_values_df(
+    default_old_config: config.BaseConfig,
+    sqlContext: sql.SQLContext,
+    indexd: client.IndexClient,
+    ge_primary_aliquot_df: sql.DataFrame,
+) -> sql.DataFrame:
+    gene_model_df = builders.GeneModelBuilder(default_old_config, sqlContext).build()
     doc_dataframe_util = indexd_utils.DataFrameUtil(
-        ge_conf.indexd, sqlContext, mock.MagicMock()
+        indexd, sqlContext, mock.MagicMock()
     )
 
     return builders.GeneExpressionValueInputBuilder(
-        ge_conf, sqlContext, doc_dataframe_util
+        default_old_config, sqlContext, doc_dataframe_util
     ).build(
         gene_model_df=gene_model_df,
         gene_expression_primary_aliquot_df=ge_primary_aliquot_df,
     )
 
 
-@pytest.fixture
-def mock_indexd_requests(monkeypatch, ge_conf):
-    path = os.path.join(ge_conf.input_dir, "ge")
+@pytest.fixture(scope="function")
+def indexd(input_dir: pathlib.Path) -> client.IndexClient:
+    path = input_dir / "ge"
+    existing_files = frozenset(p.name for p in path.glob("**/*"))
 
-    existing_files = os.listdir(path)
-
-    def make_document(file_id, filename):
-        url = "file://" + os.path.join(path, filename)
+    def make_document(file_id: str, filename: str) -> client.Document:
+        url = "file://" + str(path / filename)
         urls = [url]
         urls_metadata = {url: {"type": "cleversafe", "state": "validated"}}
         return client.Document(
@@ -100,14 +111,14 @@ def mock_indexd_requests(monkeypatch, ge_conf):
             json={"urls": urls, "urls_metadata": urls_metadata},
         )
 
-    def mock_get(_, file_id):
+    def mock_get(file_id: str) -> Optional[client.Document]:
         filename = file_id + ".txt"
         if filename not in existing_files:
             return None
 
         return make_document(file_id, filename)
 
-    def mock_bulk_request(_, dids):
+    def mock_bulk_request(dids: Iterable[str]) -> Iterable[client.Document]:
         results = []
         for file_id in dids:
             filename = file_id + ".txt"
@@ -118,45 +129,50 @@ def mock_indexd_requests(monkeypatch, ge_conf):
             results.append(make_document(file_id, filename))
         return results
 
-    monkeypatch.setattr(client.IndexClient, "get", mock_get)
-    monkeypatch.setattr(client.IndexClient, "bulk_request", mock_bulk_request)
+    indexd = mock.MagicMock(spec=client.IndexClient)
+    indexd.get.side_effect = mock_get
+    indexd.bulk_request.side_effect = mock_bulk_request
+
+    return indexd
 
 
-@pytest.fixture
-def ge_file_docs(source_es_client, ge_conf):
-    path = os.path.join(ge_conf.input_dir, "ge-files.ndjson")
-    with open(path) as f:
-        docs = ndjson.load(f)
+@pytest.fixture(scope="module")
+def ge_file_docs(
+    default_config: configuration.Configuration,
+    input_dir: pathlib.Path,
+    es_client: elasticsearch.Elasticsearch,
+    setup_graph_indices: Any,
+) -> Iterator[Any]:
+    ge_data_file = input_dir / "ge-files.ndjson"
 
-    for doc in docs:
-        source_es_client.index(
-            index=ge_conf.graph_file_index,
-            doc_type=ge_conf.graph_file_doc_type,
-            id=doc["file_id"],
-            body=doc,
-        )
-
-    source_es_client.indices.refresh(ge_conf.graph_file_index)
-
-    yield docs
-
-    for doc in docs:
-        source_es_client.delete(
-            index=ge_conf.graph_file_index,
-            doc_type=ge_conf.graph_file_doc_type,
-            id=doc["file_id"],
-        )
+    with test_setup.IndexManager(
+        default_config,
+        es_client,
+        logger,
+        index_types=(build.IndexType.GENE_EXPRESSION,),
+        skip_creation=True,
+    ):
+        with test_setup.DocumentLoader(default_config, es_client, logger) as loader:
+            yield loader.load_docs(build.IndexType.FILE, ge_data_file)
 
 
-@pytest.mark.usefixtures("ge_file_docs", "mock_indexd_requests")
+@pytest.mark.usefixtures("ge_file_docs")
 def test_gene_expression_builder(
-    ge_builder, es_client, ge_conf, ge_cases_df, ge_values_df
-):
+    default_config: configuration.Configuration,
+    ge_builder: builders.GeneExpressionBuilder,
+    es_client: elasticsearch.Elasticsearch,
+    ge_cases_df: sql.DataFrame,
+    ge_values_df: sql.DataFrame,
+) -> None:
+    ge_index = default_config.elasticsearch.write.indices[
+        build.IndexType.GENE_EXPRESSION
+    ]
+
     ge_builder.build(ge_cases_df, ge_values_df).load()
 
     es_client.indices.refresh()
 
-    response = es_client.search(index=ge_conf.indices["gene_expression"])
+    response = es_client.search(index=ge_index)
     hits = response["hits"]
 
     assert hits["total"] == {"relation": "eq", "value": 5}
@@ -175,9 +191,7 @@ def test_gene_expression_builder(
         }
     }
 
-    agg_response = es_client.search(
-        index=ge_conf.indices["gene_expression"], body={"size": 0, "aggs": aggs}
-    )
+    agg_response = es_client.search(index=ge_index, body={"size": 0, "aggs": aggs})
     gene_counts = agg_response["aggregations"]["genes"]
 
     # Make sure that only protein_coding genes have been selected (mock data contains only 10)

@@ -1,40 +1,10 @@
 import json
-import os
 import re
-from unittest import mock
 
-import pytest
-import yaml
 from pyspark.sql import types
 
-from exports import builders
-from exports.builders.clinical_annotations import civic
-from tests.integration import config
 
-conf = config.TestConfig()
-
-
-@pytest.mark.usefixtures("sqlContext", "maf_df")
 class TestMAFBuilder:
-    @pytest.fixture
-    def maf_schema(self):
-        path = os.path.join(conf.schemas_dir, "maf.yml")
-        with open(path) as f:
-            maf_schema = yaml.safe_load(f)["maf_schema"]
-
-        return maf_schema
-
-    @pytest.fixture
-    def annotation_schemas(self, sqlContext):
-        builder = builders.MAFBuilder(
-            conf,
-            sqlContext,
-            mock.MagicMock(),
-            (civic.CivicBuilder(conf, sqlContext),),
-        )
-
-        return builder.get_annotation_schemas()
-
     def test_ssm_id(self, maf_df):
         """
         Test that ssm_id column is created
@@ -159,8 +129,3 @@ class TestMAFBuilder:
                         val = row[colname]
                         is_matching = re.search(pattern.replace("{}", ".*"), val)
                         assert is_matching
-
-    def test_annotations(self, annotation_schemas, maf_df):
-        for schema in annotation_schemas:
-            for k in schema.keys():
-                assert k in maf_df.columns
