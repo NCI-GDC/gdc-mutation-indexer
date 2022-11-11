@@ -1,17 +1,17 @@
-import json
-import re
+from typing import Mapping
 
+from pyspark import sql
 from pyspark.sql import types
 
 
 class TestMAFBuilder:
-    def test_ssm_id(self, maf_df):
+    def test_ssm_id(self, maf_df: sql.DataFrame) -> None:
         """
         Test that ssm_id column is created
         """
         assert "ssm_id" in maf_df.columns
 
-    def test_cosmic_id(self, maf_df):
+    def test_cosmic_id(self, maf_df: sql.DataFrame) -> None:
         """
         Test that cosmic_id column is created and is ArrayType(StringType())
         """
@@ -20,7 +20,7 @@ class TestMAFBuilder:
         assert isinstance(data_type, types.ArrayType)
         assert isinstance(data_type.elementType, types.StringType)
 
-    def test_genomic_dna_change(self, maf_df):
+    def test_genomic_dna_change(self, maf_df: sql.DataFrame) -> None:
         """
         Test that the genomic_dna_change is created correctly
         """
@@ -56,7 +56,7 @@ class TestMAFBuilder:
         # ONPs
         assert "chr3:g.38112303_38112306delinsGTGC" in labels
 
-    def test_mutation_type(self, maf_df):
+    def test_mutation_type(self, maf_df: sql.DataFrame) -> None:
         """
         Test that mutation_type is created properly
         """
@@ -70,7 +70,9 @@ class TestMAFBuilder:
             == "Simple Somatic Mutation"
         )
 
-    def test_variant_caller(self, maf_df, raw_variant_caller_counts):
+    def test_variant_caller(
+        self, maf_df: sql.DataFrame, raw_variant_caller_counts: Mapping[str, int]
+    ) -> None:
         """
         Test that variant caller is created properly
         """
@@ -79,7 +81,7 @@ class TestMAFBuilder:
         actual_counts = dict(maf_df.groupBy("variant_caller").count().collect())
         assert actual_counts == raw_variant_caller_counts
 
-    def test_variant_process(self, maf_df):
+    def test_variant_process(self, maf_df: sql.DataFrame) -> None:
         """
         Test that variant process is created properly
         """
@@ -87,7 +89,7 @@ class TestMAFBuilder:
         assert "variant_process" in maf_df.columns
         assert maf_df.first()["variant_process"] == "masked"
 
-    def test_mutation_subtype(self, maf_df):
+    def test_mutation_subtype(self, maf_df: sql.DataFrame) -> None:
         """
         Test that mutation_subtype is created properly
         """
@@ -99,33 +101,3 @@ class TestMAFBuilder:
             maf_df.select("variant_type").distinct().count()
             == maf_df.select("mutation_subtype").distinct().count()
         )
-
-    def test_maf_field_types(self, maf_df):
-        """
-        Test that maf_df field types correspond to maf.yml
-        """
-        types = {"int": "integer", "bool": "boolean", "float": "float"}
-        for col in maf_df.schema:
-            col_info = json.loads(col.json())
-            if col_info["name"] in maf_df.schema:
-                if "type" in maf_df.schema[col_info["name"]]:
-                    assert (
-                        col_info["type"]
-                        == types[maf_df.schema[col_info["name"]]["type"]]
-                    )
-
-    def test_maf_field_pattern(self, maf_df):
-        """
-        Test that maf_df field pattern correspond to maf.yml
-        """
-        for col in maf_df.schema:
-            col_info = json.loads(col.json())
-            colname = col_info["name"]
-            if colname in maf_df.schema:
-                if "pattern" in maf_df.schema[colname]:
-                    pattern = maf_df.schema[colname]["pattern"]
-                    values = maf_df.select(colname)
-                    for row in values.collect():
-                        val = row[colname]
-                        is_matching = re.search(pattern.replace("{}", ".*"), val)
-                        assert is_matching
