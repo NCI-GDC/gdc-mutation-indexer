@@ -1,5 +1,3 @@
-import json
-
 import pytest
 from pyspark import sql
 
@@ -64,23 +62,6 @@ def test_ssm_subtree(
     primary_aliquot_df: sql.DataFrame,
     gene_ssm_subtree: sql.DataFrame,
 ) -> None:
-    def get_stats(dataframe):
-        """
-        Extracts ssm, consequence, transcript relationships from a flat dataframe
-        """
-        res = {}
-        for row in dataframe.toJSON().collect():
-            row = json.loads(row)
-            sid = row["ssm_id"]
-            oid = row["observation_id"]
-            cid = row["consequence_id"]
-
-            res.setdefault(sid, {"consequences": set(), "observations": set()})
-            res[sid]["consequences"].update([cid])
-            res[sid]["observations"].update([oid])
-
-        return res
-
     observation_builder = builders.ObservationBuilder()
     consequence_builder = builders.ConsequenceBuilder()
 
