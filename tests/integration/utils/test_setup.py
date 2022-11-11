@@ -75,6 +75,7 @@ class IndexManager(ContextManager["IndexManager"]):
             build.IndexType.FILE,
             build.IndexType.CASE,
         ),
+        skip_creation: bool = False,
     ) -> None:
         self._es = es
         self._logger = logger
@@ -84,6 +85,7 @@ class IndexManager(ContextManager["IndexManager"]):
             **config.elasticsearch.write.indices,
         }
         self._index_types = index_types
+        self._skip_creation = skip_creation
 
     def _create_index(self, index_type: build.IndexType) -> None:
         index_name = self._graph_indices[index_type]
@@ -96,10 +98,17 @@ class IndexManager(ContextManager["IndexManager"]):
             self._es.indices.refresh()
 
         self._logger.info(f"Creating index: {index_name}")
-        self._es.indices.create(index=index_name, settings=mappings["settings"], mappings=mappings["mappings"])
+        self._es.indices.create(
+            index=index_name,
+            settings=mappings["settings"],
+            mappings=mappings["mappings"],
+        )
 
     def __enter__(self) -> "IndexManager":
         """Creates all indices for the test suite"""
+        if self._skip_creation:
+            return self
+
         for index_type in self._index_types:
             self._create_index(index_type)
 
@@ -163,7 +172,10 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         return docs
 
     def _create_actions(
-        self, filename: Union[str, pathlib.Path], index_name: str, index_type: build.IndexType
+        self,
+        filename: Union[str, pathlib.Path],
+        index_name: str,
+        index_type: build.IndexType,
     ) -> Iterator[dict]:
         doc_id = self._id_fields[index_type]
 
