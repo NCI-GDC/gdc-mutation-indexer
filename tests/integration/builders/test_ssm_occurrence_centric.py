@@ -22,7 +22,9 @@ from tests.integration.utils import join_utils
         "ssm.consequence.transcript.annotation",
     ),
 )
-def test_ssm_occurrence_centric_path_exists(ssm_occurrence_centric_df, path):
+def test_ssm_occurrence_centric_path_exists(
+    ssm_occurrence_centric_df: sql.DataFrame, path: str
+) -> None:
     """
     Chosen paths that have to be present to merge branch
     """
