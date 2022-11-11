@@ -1,67 +1,20 @@
-from typing import Callable, FrozenSet, Iterable
+import logging
+import pathlib
+from typing import Any, Callable, Iterable
 from unittest import mock
 
 import elasticsearch
-import more_itertools
 import pytest
-from normalizer import mapper
+import yaml
 from pyspark import sql
+from pyspark.sql import types
 
+import config
 from exports import es_utils
 from exports.constants import build
-from tests.integration import config
-from tests.integration.utils import schema_validation
+from tests.integration.utils import test_setup
 
-conf = config.TestConfig()
-
-
-@pytest.fixture
-def diagnoses_missing_field(source_es_client: elasticsearch.Elasticsearch):
-    graph_mapper = mapper.ModelMapper("gdc_from_graph", "case")
-    centric_mapper = mapper.ModelMapper("case_centric")
-
-    graph_diagnoses = graph_mapper.select_mapping("diagnoses")["properties"]
-    centric_diagnoses = centric_mapper.select_mapping("diagnoses")["properties"]
-
-    diff: FrozenSet[str] = frozenset(graph_diagnoses.keys()) - frozenset(
-        centric_diagnoses.keys()
-    )
-
-    default_blacklist = {
-        f.split(".")[1] for f in conf.case_exclude_fields if f.startswith("diagnoses.")
-    }
-
-    diff = diff - default_blacklist
-
-    target_field = more_itertools.first_true(
-        (f for f in diff), pred=lambda f: graph_diagnoses[f]["type"] == "keyword"
-    )
-
-    assert target_field
-
-    dummy_document = {"case_id": "foo", "diagnoses": {target_field: "dummy-value"}}
-
-    index_name = conf.graph_case_index
-    result = source_es_client.index(index=index_name, id="foo", body=dummy_document)
-    source_es_client.indices.refresh(index_name)
-
-    assert result["result"] == "created"
-
-    yield dummy_document
-
-    source_es_client.delete(index=index_name, id=result["_id"])
-    source_es_client.indices.refresh(index_name)
-
-
-@pytest.mark.usefixtures("setup_graph_indices")
-def test_missing_fields(diagnoses_missing_field):
-    result = es_utils.get_non_null_fields(conf)
-
-    field, _ = diagnoses_missing_field["diagnoses"].popitem()
-    expected_field = "diagnoses.{}".format(field)
-
-    assert result
-    assert set(result) == {expected_field}
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
@@ -77,34 +30,34 @@ def test_missing_fields(diagnoses_missing_field):
             "output/es_utils/test_get_dataframe_from_es_complex.yaml",
         ),
     ),
-    ids=("basic", "complex"),
+    ids=("base", "complex"),
 )
 def test_data_frame_util_read(
     sqlContext: sql.SQLContext,
     input_file: str,
     output_file: str,
-    load_data_from_file: Callable[[str], dict],
+    load_data_from_file: Callable[[str], Any],
+    default_old_config: config.BaseConfig,
 ) -> None:
     # Arrange
-    conf = config.TestConfig()
-    validator = schema_validation.PysparkSchemaValidator()
-
     inputs = load_data_from_file(input_file)
     index = inputs["index"].upper()
     doc_id = inputs["document_id"]
     kwargs = inputs["kwargs"]
 
     expected = load_data_from_file(output_file)
-    expected_schema = schema_validation.Schema(expected["expected_schema"])
+    expected_schema = types.StructType.fromJson(expected["expected_schema"])
     expected_data = expected["expected_data"]
 
-    dataframe_util = es_utils.DataFrameUtil(conf, sqlContext, mock.MagicMock())
+    dataframe_util = es_utils.DataFrameUtil(
+        default_old_config, sqlContext, mock.MagicMock()
+    )
 
     # Act
     result_df = dataframe_util.read(build.IndexType[index], **kwargs)
 
     # Assert
-    validator.validate_schema(result_df.schema, expected_schema)
+    assert result_df.schema == expected_schema
 
     result_data = {row[doc_id]: row.asDict(True) for row in result_df.collect()}
 
@@ -112,145 +65,63 @@ def test_data_frame_util_read(
 
 
 def test_data_frame_util_write(
-    sqlContext: sql.SQLContext, es_client: elasticsearch.Elasticsearch
+    input_dir: pathlib.Path,
+    sqlContext: sql.SQLContext,
+    es_client: elasticsearch.Elasticsearch,
 ) -> None:
-    try:
-        case_mapping = {
-            "settings": {
-                "index": {
-                    "refresh_interval": "1m",
-                    "number_of_shards": 12,
-                    "number_of_replicas": 0,
-                    "mapping.total_fields.limit": 2000,
-                },
-                "analysis": {
-                    "analyzer": {
-                        "autocomplete_analyzed": {
-                            "filter": ["lowercase", "edge_ngram"],
-                            "tokenizer": "standard",
-                        },
-                        "autocomplete_prefix": {
-                            "filter": ["lowercase", "edge_ngram"],
-                            "tokenizer": "keyword",
-                        },
-                        "lowercase_keyword": {
-                            "filter": ["lowercase"],
-                            "tokenizer": "keyword",
-                        },
-                    },
-                    "filter": {
-                        "edge_ngram": {
-                            "max_gram": "20",
-                            "min_gram": "1",
-                            "side": "front",
-                            "type": "edge_ngram",
-                        }
-                    },
-                    "normalizer": {
-                        "clinical_normalizer": {
-                            "type": "custom",
-                            "char_filter": [],
-                            "filter": ["lowercase"],
-                        }
-                    },
-                },
-                "index.mapping.nested_fields.limit": 100,
-                "index.mapping.nested_objects.limit": 100000000,
-                "index.max_result_window": 100000000,
-            },
-            "mappings": {
-                "_size": {"enabled": True},
-                "_source": {"excludes": ["gene.*"]},
-                "properties": {
-                    "available_variation_data": {
-                        "type": "keyword",
-                        "normalizer": "clinical_normalizer",
-                    },
-                    "case_autocomplete": {
-                        "fields": {
-                            "analyzed": {
-                                "analyzer": "autocomplete_analyzed",
-                                "search_analyzer": "lowercase_keyword",
-                                "type": "text",
-                            },
-                            "lowercase": {
-                                "analyzer": "lowercase_keyword",
-                                "type": "text",
-                            },
-                            "prefix": {
-                                "analyzer": "autocomplete_prefix",
-                                "search_analyzer": "lowercase_keyword",
-                                "type": "text",
-                            },
-                        },
-                        "type": "keyword",
-                        "normalizer": "clinical_normalizer",
-                    },
-                    "case_id": {
-                        "copy_to": ["case_autocomplete"],
-                        "type": "keyword",
-                        "normalizer": "clinical_normalizer",
-                    },
-                    "gene": {
-                        "properties": {
-                            "gene_id": {"type": "keyword"},
-                        }
-                    },
-                    "project": {
-                        "properties": {
-                            "project_id": {
-                                "copy_to": ["case_autocomplete"],
-                                "type": "keyword",
-                            },
-                        }
-                    },
-                    "samples": {
-                        "properties": {
-                            "sample_type": {
-                                "type": "keyword",
-                                "normalizer": "clinical_normalizer",
-                            }
-                        }
-                    },
-                },
-                "dynamic": "strict",
-            },
-        }
-        model_mapper = mock.MagicMock()
-        model_mapper.get_normalized_mappings.return_value = case_mapping
-        model_mapper_factory = mock.MagicMock(return_value=model_mapper)
-        conf = config.TestConfig()
-        conf.indices = {"case_centric": "test_viz__test_case"}
-        util = es_utils.DataFrameUtil(conf, sqlContext, es_client, model_mapper_factory)
-        case_data = (
-            {
-                "available_variation_data": ["ssm", "cnv"],
-                "case_id": "case-0",
-                "gene": [{"gene_id": "gene-0"}],
-                "project": {"project_id": "GDC-TEST"},
-                "samples": [{"sample_type": "Normal"}],
-            },
-        )
-        case_df = sqlContext.createDataFrame(case_data)
+    def load_config(data: dict) -> dict:
+        data["build"]["data_release"] = "test_data_frame_util_write"
+        data["build"]["index_types"] = ("CASE_CENTRIC",)
 
+        return data
+
+    case_mapping_file = input_dir / "es_utils/test_data_frame_util_write.yaml"
+
+    with open(case_mapping_file, "r") as f:
+        case_mapping = yaml.safe_load(f)
+
+    conf = test_setup.load_configuraiton(load_config)
+    old_conf = config.ConfigAdapter(conf, es_client, mock.MagicMock())
+    case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
+    model_mapper = mock.MagicMock()
+    model_mapper.get_normalized_mappings.return_value = case_mapping
+    model_mapper_factory = mock.MagicMock(return_value=model_mapper)
+    util = es_utils.DataFrameUtil(old_conf, sqlContext, es_client, model_mapper_factory)
+    case_data = (
+        {
+            "available_variation_data": ["ssm", "cnv"],
+            "case_id": "case-0",
+            "gene": [{"gene_id": "gene-0"}],
+            "project": {"project_id": "GDC-TEST"},
+            "samples": [{"sample_type": "Normal"}],
+        },
+    )
+    case_df = sqlContext.createDataFrame(case_data)  # type: ignore
+
+    with test_setup.IndexManager(
+        conf,
+        es_client,
+        logger,
+        index_types=(build.IndexType.CASE_CENTRIC,),
+        skip_creation=True,
+    ):
         util.write(case_df, build.IndexType.CASE_CENTRIC, "case_id")
 
-        assert es_client.indices.exists(index="test_viz__test_case")
+        assert es_client.indices.exists(index=case_index)
         assert (
             es_client.count(
-                index="test_viz__test_case",
+                index=case_index,
                 body={"query": {"term": {"case_id": "case-0"}}},
             ).get("count")
             == 1
         )
-    finally:
-        es_client.indices.delete(index="test_viz__test_case", ignore_unavailable=True)
 
 
 @pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
-def test_get_rdd_from_es(spark_session: sql.SparkSession):
+def test_get_rdd_from_es(
+    spark_session: sql.SparkSession, default_old_config: config.BaseConfig
+) -> None:
     # Arrange
-    conf = config.TestConfig()
     included_fields = (
         "file_id",
         "cases.case_id",
@@ -260,7 +131,7 @@ def test_get_rdd_from_es(spark_session: sql.SparkSession):
             "nested": {"path": "cases", "query": {"exists": {"field": "cases.case_id"}}}
         }
     }
-    rdd_util = es_utils.RDDUtil(conf, spark_session.sparkContext)
+    rdd_util = es_utils.RDDUtil(default_old_config, spark_session.sparkContext)
 
     # Act
     result = rdd_util.get_rdd(
