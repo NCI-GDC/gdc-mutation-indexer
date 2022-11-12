@@ -30,7 +30,7 @@ import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
 from exports.builders.clinical_annotations import civic
 from exports.constants import build
-from tests.integration.utils import maf_metrics, test_setup, true_stats
+from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
@@ -233,11 +233,6 @@ def all_cases(
     )
 
     return {hit["_source"]["case_id"] for hit in hits}
-
-
-@pytest.fixture(scope="session")
-def test_data(input_dir: pathlib.Path) -> dict:
-    return true_stats.TestDataStats.load_test_data(input_dir)
 
 
 @pytest.fixture(scope="session")
@@ -762,12 +757,6 @@ def ssm_occurrence_ssm_subtree(
     )
 
     return builder.build_ssm_subtree(maf_df)
-
-
-@pytest.fixture(scope="module")
-def maf_stats(maf_urls: List[str]) -> Any:
-    # TODO: REMOVE WITH SKIPPED TESTS
-    return maf_metrics.MAFStats(maf_urls)
 
 
 @pytest.fixture(scope="module")
