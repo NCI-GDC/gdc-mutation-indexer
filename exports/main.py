@@ -221,7 +221,6 @@ def main():
         config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
             toml.load("configuration.toml")
         )
-        indexd = get_index_client(config.indexd)
 
         with get_es_client(
             config.elasticsearch.connection
