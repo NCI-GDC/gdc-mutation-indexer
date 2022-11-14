@@ -42,13 +42,15 @@ class GDCMutationExport(Generic[TInputs], abc.ABC):
     The main entry point into the index export process for the mutation indices
     """
 
+    __slots__ = ("_spark_context", "_index_types", "_input_builders", "_index_builders")
+
     def __init__(
         self,
-        sc: pyspark.SparkContext,
+        spark_context: pyspark.SparkContext,
         index_types: Collection[build.IndexType],
         builders: Builders,
     ) -> None:
-        self._sc = sc
+        self._spark_context = spark_context
         self._index_types = index_types
         self._input_builders = builders.input_builders
         self._index_builders = builders.index_builders
@@ -68,7 +70,7 @@ class GDCMutationExport(Generic[TInputs], abc.ABC):
                     f"No builder is configured for index: {index_type}"
                 )
 
-            self._sc.setJobGroup(index_type.name, f"Build {index_type}")
+            self._spark_context.setJobGroup(index_type.name, f"Build {index_type}")
             self._index_builders[index_type].build(**inputs).load()
 
         logger.info("Mutation Indexer finished successfully")
@@ -85,32 +87,38 @@ class VizExport(GDCMutationExport[VizInputs]):
 
     def build_input_data_frames(self) -> VizInputs:
         # Load gene model
-        self._sc.setJobGroup("GeneModelBuilder", "Build Gene Model Dataframe")
+        self._spark_context.setJobGroup(
+            "GeneModelBuilder", "Build Gene Model Dataframe"
+        )
         gene_model_df = self._input_builders[build.DataFrame.GENE_MODEL].build()
 
         # Load primary aliquot data
-        self._sc.setJobGroup("PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe")
+        self._spark_context.setJobGroup(
+            "PrimaryAliquotBuilder", "Build Primary Aliquot Dataframe"
+        )
         primary_aliquot_df = self._input_builders[
             build.DataFrame.PRIMARY_ALIQUOT
         ].build()
 
-        self._sc.setJobGroup("MAFMetadataBuilder", "Build MAF Metadata Dataframe")
+        self._spark_context.setJobGroup(
+            "MAFMetadataBuilder", "Build MAF Metadata Dataframe"
+        )
         maf_metadata_df = self._input_builders[build.DataFrame.MAF_METADATA].build()
 
         # Combine MAFs into one DataFrame
-        self._sc.setJobGroup("MAFBuilder", "Build MAF dataframe")
+        self._spark_context.setJobGroup("MAFBuilder", "Build MAF dataframe")
         maf_df = self._input_builders[build.DataFrame.MAF].build(
             maf_metadata_df=maf_metadata_df, gene_model_df=gene_model_df
         )
 
         # Create dataframe from ASCAT data
-        self._sc.setJobGroup("AscatBuilder", "Build Ascat dataframe")
+        self._spark_context.setJobGroup("AscatBuilder", "Build Ascat dataframe")
         ascat_df = self._input_builders[build.DataFrame.ASCAT].build(
             primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df
         )
 
         # Use maf_df and ascat_df to build case DataFrame
-        self._sc.setJobGroup("CaseBuilder", "Build Case dataframe")
+        self._spark_context.setJobGroup("CaseBuilder", "Build Case dataframe")
         case_df = self._input_builders[build.DataFrame.CASE].build(
             maf_metadata_df=maf_metadata_df, ascat_df=ascat_df
         )
@@ -135,22 +143,24 @@ class GEExport(GDCMutationExport[GEInputs]):
         super().__init__(sc, index_types, builders)
 
     def build_input_data_frames(self) -> GEInputs:
-        self._sc.setJobGroup("GeneModelBuilder", "Build Gene Model df")
+        self._spark_context.setJobGroup("GeneModelBuilder", "Build Gene Model df")
         gene_model_df = self._input_builders[build.DataFrame.GENE_MODEL].build()
 
-        self._sc.setJobGroup(
+        self._spark_context.setJobGroup(
             "GeneExpressionPrimaryAliquotBuilder", "Build GE Primary Aliquot df"
         )
         primary_aliquot_df = self._input_builders[
             build.DataFrame.PRIMARY_ALIQUOT
         ].build()
 
-        self._sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
+        self._spark_context.setJobGroup(
+            "GeneExpressionCaseInputBuilder", "Build GE CaseInput df"
+        )
         case_df = self._input_builders[build.DataFrame.CASE].build(
             gene_expression_primary_aliquot_df=primary_aliquot_df
         )
 
-        self._sc.setJobGroup(
+        self._spark_context.setJobGroup(
             "GeneExpressionValueInputBuilder", "Build GE ValueInput df"
         )
         value_df = self._input_builders[build.DataFrame.EXPRESION_VALUE].build(
