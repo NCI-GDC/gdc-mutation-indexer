@@ -5,9 +5,9 @@ from unittest import mock
 
 import elasticsearch
 import pytest
-import config
 from elasticsearch import helpers
 
+import config
 from exports.builders import maf_metadata
 
 FILE_SETTINGS = {

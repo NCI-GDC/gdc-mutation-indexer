@@ -4,7 +4,7 @@ spark_home = ""
 yarn_conf_dir = ""
 
 [spark]
-master = "yarn"
+master = "local[*]"
 
 [spark.app]
 name = "gdc_mutation_indexer"
@@ -27,7 +27,7 @@ python = "./mutation-indexer.pex"
 auto_broadcast_join_threshold = -1
 case_sensitive = true
 [spark.sql.shuffle]
-partitions = 1024
+partitions = 200
 
 [spark.submit]
 deploy_mode = "cluster"
@@ -67,75 +67,9 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case]
-excluded_fields = [
-  "annotations",
-  "case_autocomplete",
-  "family_histories",
-  "files",
-  "follow_ups",
+include_as_arrays = [
   "project.disease_type",
   "project.primary_site",
-  "*_ids",
-  "diagnoses.annotations",
-  "*.updated_datetime",
-  "*.created_datetime",
-  "project.releasable",
-  "project.released",
-  "project.state",
-  "samples.updated_datetime",
-  "samples.shortest_dimension",
-  "samples.freezing_method",
-  "samples.biospecimen_laterality",
-  "samples.tissue_type",
-  "samples.created_datetime",
-  "samples.intermediate_dimension",
-  "samples.oct_embedded",
-  "samples.tumor_code",
-  "samples.is_ffpe",
-  "samples.days_to_sample_procurement",
-  "samples.sample_type_id",
-  "samples.growth_rate",
-  "samples.method_of_sample_procurement",
-  "samples.preservation_method",
-  "samples.pathology_report_uuid",
-  "samples.longest_dimension",
-  "samples.distributor_reference",
-  "samples.tumor_code_id",
-  "samples.catalog_reference",
-  "samples.biospecimen_anatomic_site",
-  "samples.state",
-  "samples.time_between_excision_and_freezing",
-  "samples.submitter_id",
-  "samples.sample_id",
-  "samples.time_between_clamping_and_freezing",
-  "samples.sample_ordinal",
-  "samples.annotations",
-  "samples.days_to_collection",
-  "samples.tumor_descriptor",
-  "samples.distance_normal_to_tumor",
-  "samples.current_weight",
-  "samples.composition",
-  "samples.tissue_collection_type",
-  "samples.portions",
-  "samples.initial_weight",
-  "samples.diagnosis_pathologically_confirmed",
-  "samples.passage_count",
-  "exposures.exposure_type",
-  "diagnoses.wilms_tumor_histologic_subtype",
-  "exposures.alcohol_drinks_per_day",
-  "exposures.parent_with_radiation_exposure",
-  "diagnoses.tumor_confined_to_organ_of_origin",
-  "diagnoses.best_overall_response",
-  "exposures.type_of_tobacco_used",
-  "diagnoses.tumor_focality",
-  "exposures.secondhand_smoke_as_child",
-  "diagnoses.irs_group",
-  "exposures.type_of_smoke_exposure",
-  "diagnoses.satellite_nodule_present",
-  "diagnoses.cog_rhabdomyosarcoma_risk_group",
-  "diagnoses.days_to_best_overall_response",
-  "diagnoses.eln_risk_classification",
-  "diagnoses.pathology_details.necrosis_present",
 ]
 is_cached = true
 repartition_size = 2048
@@ -178,6 +112,10 @@ path = ""
 [builders.viz.case_centric]
 coalesce_size = 12
 genes_threshold = 100
+include_as_arrays = [
+  "project.disease_type",
+  "project.primary_site",
+]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case_centric.backup]
@@ -274,9 +212,9 @@ user = ""
 
 [elasticsearch]
 [elasticsearch.connection]
-nodes = "localhost:9200"
+nodes = "http://localhost:9200"
 password = ""
-use_ssl = true
+use_ssl = false
 user = ""
 verify_certs = false
 [elasticsearch.read]

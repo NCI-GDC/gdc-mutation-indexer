@@ -68,6 +68,10 @@ class TestConfig(BaseConfig):
         "cnv_centric": True,
         "cnv_occurrence_centric": True,
     }
+    case_include_as_arrays = (
+        "project.disease_type",
+        "project.primary_site",
+    )
 
     def __init__(self):
         env = self.get_env_dict()
@@ -75,10 +79,14 @@ class TestConfig(BaseConfig):
 
         # To make it more convenient to write tests that load in data, put the names
         # of the graph indices in a dictionary keyed by doc type.
-        self.graph_indices = {
-            "case": self.graph_case_index,
-            "file": self.graph_file_index,
-        }
+        self.indices = {
+            "case_centric": "test_viz_open_v0__case_centric",
+            "gene_centric": "test_viz_open_v0__gene_centric",
+            "ssm_centric": "test_viz_open_v0__ssm_centric",
+            "ssm_occurrence_centric": "test_viz_open_v0__ssm_occurrence_centric",
+            "cnv_centric": "test_viz_open_v0__cnv_centric",
+            "cnv_occurrence_centric": "test_viz_open_v0__cnv_occurrence_centric",
+        } 
 
     def validate_indices(self, indices):
         existing_indices = self.es.indices.get_alias().keys()
