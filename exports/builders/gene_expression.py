@@ -27,7 +27,7 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
     def build_from_scratch(
         self,
         gene_model_df: sql.DataFrame,
-        gene_expression_primary_aliquot_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
         **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -54,7 +54,7 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
         ).select(F.col("_gene_id").alias("gene_id"), "symbol")
 
         ge_values_df = self.load_gene_expression_files(
-            gene_expression_primary_aliquot_df
+            primary_aliquot_df
         )
 
         ge_values_df = (
@@ -103,7 +103,7 @@ class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
         super().__init__(config, sqlContext, "gene_expression_cases")
 
     def build_from_scratch(
-        self, gene_expression_primary_aliquot_df: sql.DataFrame, **kwargs: sql.DataFrame
+        self, primary_aliquot_df: sql.DataFrame, **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """
         Creates a data frame containing the case data associated with the aliquots in the ge
@@ -127,7 +127,7 @@ class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
             |---submitter_id
             +---vital_status
         """
-        initial_df = gene_expression_primary_aliquot_df
+        initial_df = primary_aliquot_df
 
         # NOTE: diagnoses is a nested document, so we are flattening it by
         #   simply aggregating age_at_diagnosis values into an array

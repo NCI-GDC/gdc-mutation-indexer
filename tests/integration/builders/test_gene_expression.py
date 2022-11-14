@@ -18,7 +18,17 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def ge_primary_aliquot_df(
+def ge_config() -> configuration.Configuration:
+    def pre_load(data: dict) -> dict:
+        data["build"]["index_types"] = ["GENE_EXPRESSION"]
+
+        return data
+
+    return test_setup.load_configuraiton(pre_load)
+
+
+@pytest.fixture(scope="module")
+def primary_aliquot_df(
     default_old_config: config.BaseConfig,
     sqlContext: sql.SQLContext,
     es_client: elasticsearch.Elasticsearch,
@@ -36,23 +46,26 @@ def ge_primary_aliquot_df(
 
 @pytest.fixture
 def ge_builder(
-    default_old_config: config.BaseConfig, sqlContext: sql.SQLContext
+    ge_config: configuration.Configuration,
+    sqlContext: sql.SQLContext,
+    es_client: elasticsearch.Elasticsearch,
 ) -> builders.GeneExpressionBuilder:
-    builder = builders.GeneExpressionBuilder(default_old_config, sqlContext)
+    adapter = config.ConfigAdapter(ge_config, es_client, mock.MagicMock())
+    builder = builders.GeneExpressionBuilder(adapter, sqlContext)
 
     return builder
 
 
 @pytest.fixture(scope="module")
-def ge_cases_df(
+def case_df(
     default_old_config: config.BaseConfig,
     sqlContext: sql.SQLContext,
-    ge_primary_aliquot_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
     cases_df = builders.GeneExpressionCaseInputBuilder(
         default_old_config,
         sqlContext,
-    ).build(gene_expression_primary_aliquot_df=ge_primary_aliquot_df)
+    ).build(gene_expression_primary_aliquot_df=primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
         [
@@ -77,7 +90,7 @@ def ge_cases_df(
 
 
 @pytest.fixture(scope="function")
-def ge_values_df(
+def expression_value_df(
     default_old_config: config.BaseConfig,
     sqlContext: sql.SQLContext,
     indexd: client.IndexClient,
@@ -138,7 +151,7 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
 
 @pytest.fixture(scope="module")
 def ge_file_docs(
-    default_config: configuration.Configuration,
+    ge_config: configuration.Configuration,
     input_dir: pathlib.Path,
     es_client: elasticsearch.Elasticsearch,
     setup_graph_indices: Any,
@@ -146,29 +159,27 @@ def ge_file_docs(
     ge_data_file = input_dir / "ge-files.ndjson"
 
     with test_setup.IndexManager(
-        default_config,
+        ge_config,
         es_client,
         logger,
         index_types=(build.IndexType.GENE_EXPRESSION,),
         skip_creation=True,
     ):
-        with test_setup.DocumentLoader(default_config, es_client, logger) as loader:
+        with test_setup.DocumentLoader(ge_config, es_client, logger) as loader:
             yield loader.load_docs(build.IndexType.FILE, ge_data_file)
 
 
 @pytest.mark.usefixtures("ge_file_docs")
 def test_gene_expression_builder(
-    default_config: configuration.Configuration,
+    ge_config: configuration.Configuration,
     ge_builder: builders.GeneExpressionBuilder,
     es_client: elasticsearch.Elasticsearch,
-    ge_cases_df: sql.DataFrame,
-    ge_values_df: sql.DataFrame,
+    case_df: sql.DataFrame,
+    expression_value_df: sql.DataFrame,
 ) -> None:
-    ge_index = default_config.elasticsearch.write.indices[
-        build.IndexType.GENE_EXPRESSION
-    ]
+    ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
 
-    ge_builder.build(ge_cases_df, ge_values_df).load()
+    ge_builder.build(case_df, expression_value_df).load()
 
     es_client.indices.refresh()
 
