@@ -2,6 +2,7 @@ from typing import Iterable, Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
+from typing_extensions import Self
 
 import config
 from exports import indexd_utils, schemas
@@ -177,8 +178,11 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
         self.gene_expression_backup = "neither"
 
     def build(
-        self, case_df: sql.DataFrame, ge_values_df: sql.DataFrame
-    ) -> "GeneExpressionBuilder":
+        self,
+        case_df: sql.DataFrame,
+        value_df: sql.DataFrame,
+        **kwargs: sql.DataFrame
+    ) -> Self:
         """
         Combines the ge case data and the ge expression value data based on the
         file they are associated with.
@@ -208,7 +212,7 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
 
         # NOTE: the default join strategy is 'inner', so any extra cases/expression
         #   values will be dropped, which is expected
-        self.gene_expression = case_df.join(ge_values_df, "file_id").select(
+        self.gene_expression = case_df.join(value_df, "file_id").select(
             "age_at_diagnosis",
             "case_id",
             "days_to_death",

@@ -5,11 +5,11 @@ import logging
 
 from normalizer.mapper import ModelMapper
 from pyspark.sql.functions import col, size
-from pyspark.sql.types import StructType, ArrayType, MapType, BooleanType
+from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
+from typing_extensions import Self
 
 from config import LOG_FORMAT
 from exports.builders.utils import percentile
-
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -85,7 +85,7 @@ class BaseBuilder(object):
         self.debug = config.debug
 
     @abc.abstractmethod
-    def build(self, *args, **kwargs):
+    def build(self, **kwargs) -> Self:
         """
         Contains the ETL logic to construct a spark dataframe of
         the same structure as the required output index.

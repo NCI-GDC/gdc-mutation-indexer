@@ -358,6 +358,9 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         |---variant_caller
         +---variant_status
         """
+        if self.config.omit_cnv_data:
+            return load_empty_ascat_data(self.sqlContext)
+
         dids = self._get_document_ids()
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")

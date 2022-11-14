@@ -39,7 +39,7 @@ class CNVCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, ascat_df, case_df):
+    def build(self, ascat_df, case_df, **kwargs):
         """
         Builds CNV Centric index
         """

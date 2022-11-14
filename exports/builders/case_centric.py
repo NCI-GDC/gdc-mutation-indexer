@@ -1,6 +1,7 @@
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import Self
 
 import config
 from exports import builders, es_utils, schemas
@@ -93,7 +94,8 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         maf_df: sql.DataFrame,
         ascat_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
-    ) -> "CaseCentricBuilder":
+        **kwargs: sql.DataFrame
+    ) -> Self:
         """
         Builds Case Centric index
         """
