@@ -180,7 +180,7 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
     def build(
         self,
         case_df: sql.DataFrame,
-        value_df: sql.DataFrame,
+        expression_value_df: sql.DataFrame,
         **kwargs: sql.DataFrame
     ) -> Self:
         """
@@ -212,7 +212,7 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
 
         # NOTE: the default join strategy is 'inner', so any extra cases/expression
         #   values will be dropped, which is expected
-        self.gene_expression = case_df.join(value_df, "file_id").select(
+        self.gene_expression = case_df.join(expression_value_df, "file_id").select(
             "age_at_diagnosis",
             "case_id",
             "days_to_death",
