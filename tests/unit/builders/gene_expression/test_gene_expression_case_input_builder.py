@@ -2,8 +2,8 @@ import dataclasses
 from os import path
 from typing import Dict, Tuple
 from unittest import mock
-import more_itertools
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
@@ -80,11 +80,12 @@ class TestGeneExpressionCaseInputBuilder:
         primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
     ) -> Dict[str, sql.DataFrame]:
         primary_aliquot_df = self.spark_session.createDataFrame(
-            primary_aliquots, schema=self.primary_aliquot_schema
+            primary_aliquots,  # type: ignore
+            schema=self.primary_aliquot_schema,
         )
 
         return {
-            "gene_expression_primary_aliquot_df": primary_aliquot_df,
+            "primary_aliquot_df": primary_aliquot_df,
         }
 
     def test__build_from_scratch__single_row(self) -> None:

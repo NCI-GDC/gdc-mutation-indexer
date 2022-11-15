@@ -77,10 +77,16 @@ class TestGeneExpressionBuilder:
     def arrange_inputs(
         self, values: Tuple[File, ...] = (File(),), cases: Tuple[Case, ...] = (Case(),)
     ) -> Dict[str, sql.DataFrame]:
-        value_df = self.spark_session.createDataFrame(values, schema=self.values_schema)
-        case_df = self.spark_session.createDataFrame(cases, schema=self.cases_schema)
+        value_df = self.spark_session.createDataFrame(
+            values,  # type: ignore
+            schema=self.values_schema,
+        )
+        case_df = self.spark_session.createDataFrame(
+            cases,  # type: ignore
+            schema=self.cases_schema,
+        )
 
-        return {"ge_values_df": value_df, "case_df": case_df}
+        return {"expression_value_df": value_df, "case_df": case_df}
 
     def test__build__single_row(self) -> None:
         config = mock.MagicMock()
