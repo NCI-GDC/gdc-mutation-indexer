@@ -1,70 +1,84 @@
-string_type: &string_type
-  class_name: StringType
+string_field: &string_field
+  metadata: {}
+  nullable: true
+  type: string
 
-long_type: &long_type
-  class_name: LongType
-
-struct_type: &struct_type
-  class_name: StructType
-  fields: []
-
-array_type: &array_type
-  class_name: ArrayType
-  elementType: null
-
-map_type: &map_type
-  class_name: MapType
-  keyType: null
-  valueType: null
+long_field: &long_field
+  <<: *string_field
+  type: long
 
 expected_schema:
-  - name: file_id
-    dataType: *string_type
-  - name: updated_datetime
-    dataType: *string_type
-  - name: acl
-    dataType:
-      <<: *array_type
-      elementType: *string_type
-  - name: cases
-    dataType:
-      <<: *array_type
-      elementType:
-        <<: *struct_type
-        fields:
-          - name: demographic
-            dataType:
-              <<: *struct_type
-              fields:
-                - name: year_of_birth
-                  dataType: *long_type
-          - name: project
-            dataType:
-              <<: *struct_type
-              fields:
-                - name: primary_site
-                  dataType:
-                    <<: *array_type
-                    elementType: *string_type
-          - name: diagnoses
-            dataType:
-              <<: *array_type
-              elementType:
-                <<: *struct_type
+  fields:
+    - metadata: {}
+      name: acl
+      nullable: true
+      type:
+        containsNull: true
+        elementType: string
+        type: array
+    - metadata: {}
+      name: cases
+      nullable: true
+      type:
+        containsNull: true
+        elementType:
+          fields:
+            - metadata: {}
+              name: demographic
+              nullable: true
+              type:
                 fields:
-                  - name: treatments
-                    dataType:
-                      <<: *array_type
-                      elementType:
-                        <<: *struct_type
-                        fields:
-                          - name: state
-                            dataType: *string_type
-  - name: _metadata
-    dataType:
-      <<: *map_type
-      keyType: *string_type
-      valueType: *string_type
+                  - <<: *long_field
+                    name: year_of_birth
+                type: struct
+            - metadata: {}
+              name: diagnoses
+              nullable: true
+              type:
+                containsNull: true
+                elementType:
+                  fields:
+                    - metadata: {}
+                      name: treatments
+                      nullable: true
+                      type:
+                        containsNull: true
+                        elementType:
+                          fields:
+                            - <<: *string_field
+                              name: state
+                          type: struct
+                        type: array
+                  type: struct
+                type: array
+            - metadata: {}
+              name: project
+              nullable: true
+              type:
+                fields:
+                  - metadata: {}
+                    name: primary_site
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                type: struct  
+          type: struct
+        type: array
+    - <<: *string_field
+      name: file_id
+    - <<: *string_field
+      name: updated_datetime              
+    - metadata: {}
+      name: _metadata
+      nullable: true
+      type:
+        keyType: string
+        valueType: string
+        valueContainsNull: true
+        type: map
+  type: struct
 
 expected_data:
   213fd6e3-9462-492f-8917-56967be8fc9d:

@@ -1,0 +1,83 @@
+mappings:
+  _size:
+    enabled: true
+  _source:
+    excludes:
+    - gene.*
+  dynamic: strict
+  properties:
+    available_variation_data:
+      normalizer: clinical_normalizer
+      type: keyword
+    case_autocomplete:
+      fields:
+        analyzed:
+          analyzer: autocomplete_analyzed
+          search_analyzer: lowercase_keyword
+          type: text
+        lowercase:
+          analyzer: lowercase_keyword
+          type: text
+        prefix:
+          analyzer: autocomplete_prefix
+          search_analyzer: lowercase_keyword
+          type: text
+      normalizer: clinical_normalizer
+      type: keyword
+    case_id:
+      copy_to:
+      - case_autocomplete
+      normalizer: clinical_normalizer
+      type: keyword
+    gene:
+      properties:
+        gene_id:
+          type: keyword
+    project:
+      properties:
+        project_id:
+          copy_to:
+          - case_autocomplete
+          type: keyword
+    samples:
+      properties:
+        sample_type:
+          normalizer: clinical_normalizer
+          type: keyword
+settings:
+  analysis:
+    analyzer:
+      autocomplete_analyzed:
+        filter:
+        - lowercase
+        - edge_ngram
+        tokenizer: standard
+      autocomplete_prefix:
+        filter:
+        - lowercase
+        - edge_ngram
+        tokenizer: keyword
+      lowercase_keyword:
+        filter:
+        - lowercase
+        tokenizer: keyword
+    filter:
+      edge_ngram:
+        max_gram: '20'
+        min_gram: '1'
+        side: front
+        type: edge_ngram
+    normalizer:
+      clinical_normalizer:
+        char_filter: []
+        filter:
+        - lowercase
+        type: custom
+  index:
+    mapping.total_fields.limit: 2000
+    number_of_replicas: 0
+    number_of_shards: 12
+    refresh_interval: 1m
+  index.mapping.nested_fields.limit: 100
+  index.mapping.nested_objects.limit: 100000000
+  index.max_result_window: 100000000

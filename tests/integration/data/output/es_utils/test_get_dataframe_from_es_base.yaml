@@ -1,13 +1,17 @@
-string_type: &string_type
-  class_name: StringType
+string_field: &string_field
+  metadata: {}
+  nullable: true
+  type: string
 
 expected_schema:
-  - name: case_id
-    dataType: *string_type
-  - name: submitter_id
-    dataType: *string_type
-  - name: state
-    dataType: *string_type
+  fields:
+    - <<: *string_field
+      name: case_id
+    - <<: *string_field
+      name: state
+    - <<: *string_field
+      name: submitter_id
+  type: struct
 
 expected_data:
   a20aeafc-9a68-4af0-87ea-532ee835ebb2:
