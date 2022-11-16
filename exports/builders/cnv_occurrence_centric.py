@@ -1,16 +1,13 @@
 import logging
 
+from pyspark import sql
 from pyspark.sql import SQLContext
-from pyspark.sql.functions import (
-    struct,
-)
+from pyspark.sql.functions import struct
+from typing_extensions import Self
 
+from config import LOG_FORMAT, BaseConfig
 from exports import builders
-from exports.builders.df_builders import (
-    build_cnv_subtree,
-)
-
-from config import BaseConfig, LOG_FORMAT
+from exports.builders.df_builders import build_cnv_subtree
 
 logging.basicConfig(format=LOG_FORMAT)
 
@@ -30,27 +27,29 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
                             |_____ gene{}
     """
 
-    index_name = 'cnv_occurrence_centric'
-    id_field = 'cnv_occurrence_id'
+    index_name = "cnv_occurrence_centric"
+    id_field = "cnv_occurrence_id"
 
     def __init__(
         self,
         config: BaseConfig,
         sqlContext: SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder
+        observation_builder: builders.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(self, ascat_df, case_df):
+    def build(
+        self, ascat_df: sql.DataFrame, case_df: sql.DataFrame, **kwargs: sql.DataFrame
+    ) -> Self:
         """
         Builds CNV Occurrence Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.output_raw == 'read':
+        if self.config.output_raw == "read":
             self.cnv_occurrence_centric = self.load_raw()
             if self.cnv_occurrence_centric is not None:
                 return self
@@ -63,20 +62,19 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
         # Case subtree
         case_subtree = self.build_case_subtree(ascat_df, case_df)
 
-        self.log('Joining cnv with case')
+        self.log("Joining cnv with case")
 
-        cnv_occurrence_centric = (cnv_df.join(case_subtree,
-                                              on=['case_id', 'cnv_id'],
-                                              how='inner')
-                                        .withColumnRenamed('occurrence_id',
-                                                           'cnv_occurrence_id')
-                                        .drop('case_id')
-                                        .drop('cnv_id'))
+        cnv_occurrence_centric = (
+            cnv_df.join(case_subtree, on=["case_id", "cnv_id"], how="inner")
+            .withColumnRenamed("occurrence_id", "cnv_occurrence_id")
+            .drop("case_id")
+            .drop("cnv_id")
+        )
 
         self.log_count(cnv_occurrence_centric)
 
         self.cnv_occurrence_centric = cnv_occurrence_centric
-        self.log('Build finished')
+        self.log("Build finished")
 
         # Save the resulting dataframe to s3
         self.write()
@@ -85,42 +83,44 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
 
     def build_cnv_subtree(self, ascat_df):
         """
-            cnv{}
-                |____ consequence[]
-                            |_____ gene{}
+        cnv{}
+            |____ consequence[]
+                        |_____ gene{}
         """
 
         # Consequence
         cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name)
 
-        cnv_df = build_cnv_subtree(ascat_df, self.index_name,
-                                   cons_df=cons_df,
-                                   add_fields=['case_id'])
+        cnv_df = build_cnv_subtree(
+            ascat_df, self.index_name, cons_df=cons_df, add_fields=["case_id"]
+        )
 
-        cnv_subtree = cnv_df.select('cnv_id', 'case_id',
-                                    struct('consequence',
-                                           *cnv_df.drop('consequence')
-                                                  .drop('case_id').columns)
-                                    .alias('cnv'))
+        cnv_subtree = cnv_df.select(
+            "cnv_id",
+            "case_id",
+            struct(
+                "consequence", *cnv_df.drop("consequence").drop("case_id").columns
+            ).alias("cnv"),
+        )
 
         return cnv_subtree
 
     def build_case_subtree(self, ascat_df, case_df):
         """
-            case{}
-                |____ observation[]
+        case{}
+            |____ observation[]
         """
-        self.log('Building case subtree')
+        self.log("Building case subtree")
 
         # Observation
         obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name)
 
-        self.log('Join observation with case')
-        case_obs_df = (case_df.join(obs_df, on='case_id', how='left')
-                              .select('case_id', 'occurrence_id', 'cnv_id',
-                                      struct('observation',
-                                             *case_df.columns)
-                                      .alias('case')))
+        self.log("Join observation with case")
+        case_obs_df = case_df.join(obs_df, on="case_id", how="left").select(
+            "case_id",
+            "occurrence_id",
+            "cnv_id",
+            struct("observation", *case_df.columns).alias("case"),
+        )
         self.log_count(case_obs_df)
         return case_obs_df
-

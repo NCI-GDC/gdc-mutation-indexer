@@ -2,8 +2,8 @@ import dataclasses
 from os import path
 from typing import Dict, Tuple
 from unittest import mock
-import more_itertools
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
@@ -70,7 +70,8 @@ class TestGeneExpressionValueInputBuilder:
         self, star_counts: Tuple[STARCountsData, ...] = (STARCountsData(),)
     ) -> mock.MagicMock:
         star_counts_df = self.spark_session.createDataFrame(
-            star_counts, schema=self.star_counts_schema
+            star_counts,  # type: ignore
+            schema=self.star_counts_schema,
         )
         dataframe_util = mock.MagicMock()
 
@@ -84,15 +85,17 @@ class TestGeneExpressionValueInputBuilder:
         primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
     ) -> Dict[str, sql.DataFrame]:
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, schema="_gene_id: string, biotype: string, symbol: string"
+            gene_model,  # type: ignore
+            schema="_gene_id: string, biotype: string, symbol: string",
         )
         primary_aliquot_df = self.spark_session.createDataFrame(
-            primary_aliquots, schema="file_id: string"
+            primary_aliquots,  # type: ignore
+            schema="file_id: string",
         )
 
         return {
             "gene_model_df": gene_model_df,
-            "gene_expression_primary_aliquot_df": primary_aliquot_df,
+            "primary_aliquot_df": primary_aliquot_df,
         }
 
     def test__build_from_scratch__single_row(self) -> None:

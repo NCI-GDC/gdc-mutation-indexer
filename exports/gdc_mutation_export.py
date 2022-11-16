@@ -6,7 +6,7 @@ from pyspark import sql
 
 import config
 from exports import builders, es_utils, indexd_utils
-from exports.builders import ascat, maf_metadata
+from exports.builders import maf_metadata
 from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -80,17 +80,13 @@ class GDCMutationExport:
 
         # Create dataframe from ASCAT data
         self.sc.setJobGroup("AscatBuilder", "Build Ascat dataframe")
-        ascat_df = (
-            ascat.load_empty_ascat_data(self.sqlContext)
-            if self.config.omit_cnv_data
-            else builders.AscatBuilder(
-                self.config,
-                self.sqlContext,
-                self._doc_dataframe_util,
-                self._es_dataframe_util,
-                self.config.es,
-            ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
-        )
+        ascat_df = builders.AscatBuilder(
+            self.config,
+            self.sqlContext,
+            self._doc_dataframe_util,
+            self._es_dataframe_util,
+            self.config.es,
+        ).build(primary_aliquot_df=primary_aliquot_df, gene_model_df=gene_model_df)
 
         # Use maf_df and ascat_df to build case DataFrame
         self.sc.setJobGroup("CaseBuilder", "Build Case dataframe")
@@ -127,14 +123,14 @@ class GDCMutationExport:
         self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
         ge_case_df = builders.GeneExpressionCaseInputBuilder(
             self.config, self.sqlContext
-        ).build(gene_expression_primary_aliquot_df=primary_aliquot_df)
+        ).build(primary_aliquot_df=primary_aliquot_df)
 
         self.sc.setJobGroup("GeneExpressionValueInputBuilder", "Build GE ValueInput df")
         ge_values_df = builders.GeneExpressionValueInputBuilder(
             self.config, self.sqlContext, self._doc_dataframe_util
         ).build(
             gene_model_df=gene_model_df,
-            gene_expression_primary_aliquot_df=primary_aliquot_df,
+            primary_aliquot_df=primary_aliquot_df,
         )
 
         self.sc.setJobGroup("gene_expression", "Build {}".format("gene_expression"))

@@ -52,7 +52,7 @@ def ge_cases_df(
     cases_df = builders.GeneExpressionCaseInputBuilder(
         default_old_config,
         sqlContext,
-    ).build(gene_expression_primary_aliquot_df=ge_primary_aliquot_df)
+    ).build(primary_aliquot_df=ge_primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
         [
@@ -92,7 +92,7 @@ def ge_values_df(
         default_old_config, sqlContext, doc_dataframe_util
     ).build(
         gene_model_df=gene_model_df,
-        gene_expression_primary_aliquot_df=ge_primary_aliquot_df,
+        primary_aliquot_df=ge_primary_aliquot_df,
     )
 
 

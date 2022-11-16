@@ -2,6 +2,7 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
+from typing_extensions import Self
 
 import config
 from exports import builders
@@ -50,7 +51,8 @@ class GeneCentricBuilder(builders.BaseBuilder):
         ascat_df: sql.DataFrame,
         case_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
-    ) -> "GeneCentricBuilder":
+        **kwargs: sql.DataFrame,
+    ) -> Self:
         """
         Builds Gene Centric index
         """
@@ -196,9 +198,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         )
 
         # Build the final cnv dataframe
-        cnv_df = df_builders.build_cnv_subtree(
-            ascat_df, self.index_name, obs_df=obs_df
-        )
+        cnv_df = df_builders.build_cnv_subtree(ascat_df, self.index_name, obs_df=obs_df)
 
         # Aggregate CNV
         self.log("Aggregating cnv by case_id and gene_id")
