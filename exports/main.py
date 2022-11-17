@@ -178,7 +178,7 @@ def get_ge_input_builders(
             build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
                 config, sql_context
             ),
-            build.DataFrame.EXPRESION_VALUE: builders.GeneExpressionValueInputBuilder(
+            build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
                 config, sql_context, doc_dataframe_util
             ),
         }

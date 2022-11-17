@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 class DataFrame(enum.IntEnum):
     ASCAT = enum.auto()
     CASE = enum.auto()
-    EXPRESION_VALUE = enum.auto()
+    EXPRESSION_VALUE = enum.auto()
     GENE_MODEL = enum.auto()
     MAF = enum.auto()
     MAF_METADATA = enum.auto()

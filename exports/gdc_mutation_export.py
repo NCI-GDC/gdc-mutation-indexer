@@ -109,5 +109,5 @@ class GEExport(GDCMutationExport):
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
             build.DataFrame.CASE,
-            build.DataFrame.EXPRESION_VALUE,
+            build.DataFrame.EXPRESSION_VALUE,
         )

@@ -1,3 +1,4 @@
+import uuid
 from typing import Iterable
 
 import pytest
@@ -56,3 +57,35 @@ class TestIndexTypesValidator:
 
         with pytest.raises(validate.ValidationError):
             validator(indices)
+
+
+class TestBuild:
+    def test__is_viz_build__true_if_no_gene_expression(self) -> None:
+        viz_build = build_config.Build(
+            study_label="",
+            data_release="",
+            build_version="",
+            index_types=(build.IndexType.GENE_CENTRIC,),
+            projects=(),
+            jar_dir="",
+            manifest_dir="",
+            config_file="",
+            build_id=uuid.uuid4(),
+        )
+
+        assert viz_build.is_viz_build()
+
+    def test__is_viz_build__false_if_gene_expression(self) -> None:
+        ge_build = build_config.Build(
+            study_label="",
+            data_release="",
+            build_version="",
+            index_types=(build.IndexType.GENE_EXPRESSION,),
+            projects=(),
+            jar_dir="",
+            manifest_dir="",
+            config_file="",
+            build_id=uuid.uuid4(),
+        )
+
+        assert not ge_build.is_viz_build()
