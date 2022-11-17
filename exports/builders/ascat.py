@@ -359,7 +359,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         +---variant_status
         """
         if self.config.omit_cnv_data:
-            load_empty_ascat_data(self.sqlContext)
+            return load_empty_ascat_data(self.sqlContext)
 
         dids = self._get_document_ids()
         primary_aliquot_df = primary_aliquot_df.where(

@@ -209,7 +209,7 @@ class TestAscatBuilder:
         self, ascat_document_data: Tuple[AscatDocument, ...]
     ) -> mock.MagicMock:
         ascat_document_df = self.spark_session.createDataFrame(
-            ascat_document_data,
+            ascat_document_data,  # type: ignore
             self.input_ascat_schema,
         )
 
@@ -218,7 +218,10 @@ class TestAscatBuilder:
     def _arrange_es_dataframe_util(
         self, es_files: Tuple[ESFile, ...]
     ) -> mock.MagicMock:
-        es_file_df = self.spark_session.createDataFrame(es_files, self.es_file_schema)
+        es_file_df = self.spark_session.createDataFrame(
+            es_files,  # type: ignore
+            self.es_file_schema,
+        )
 
         return _arrange_dataframe_util(es_file_df)
 
@@ -227,7 +230,7 @@ class TestAscatBuilder:
         es_files: Tuple[ESFile, ...],
         ascat_documents: Tuple[AscatDocument, ...] = DEFAULT_ASCAT_DOCUMENTS,
     ) -> builders.AscatBuilder:
-        config = mock.MagicMock()
+        config = mock.MagicMock(omit_cnv_data=False)
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
         es_dataframe_util = self._arrange_es_dataframe_util(es_files)
@@ -242,9 +245,10 @@ class TestAscatBuilder:
         primary_aliquots: Tuple[PrimaryAliquot, ...],
         gene_model: Tuple[GeneModel, ...],
     ) -> Mapping[str, sql.DataFrame]:
-        primary_aliquot_df = self.spark_session.createDataFrame(primary_aliquots)
+        primary_aliquot_df = self.spark_session.createDataFrame(primary_aliquots)  # type: ignore
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, self.input_gene_model_schema
+            gene_model,  # type: ignore
+            self.input_gene_model_schema,
         )
 
         return {
@@ -447,7 +451,7 @@ class TestAscatBuilder:
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__neutral_copy_numbers_filtered(
-        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[str]
+        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[int]
     ) -> None:
         es_files = (ESFile(),)
         primary_aliquots = (PrimaryAliquot(),)
@@ -526,6 +530,7 @@ class TestAscatBuilder:
             result_row.canonical_transcript_length_cds
             == canonical_transcript.length_cds
         )
+        assert canonical_transcript.end is not None and canonical_transcript.start is not None
         assert (
             result_row.canonical_transcript_length_genomic
             == canonical_transcript.end - canonical_transcript.start + 1
