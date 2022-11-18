@@ -50,7 +50,7 @@ gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcdatamodel
-gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/dev-1225-include-case-ids
+gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.10.0-rc.2
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer
