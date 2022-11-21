@@ -2,6 +2,23 @@ import enum
 from typing import Optional, Tuple
 
 
+class DataFrame(enum.IntEnum):
+    ASCAT = enum.auto()
+    CASE = enum.auto()
+    EXPRESSION_VALUE = enum.auto()
+    GENE_MODEL = enum.auto()
+    MAF = enum.auto()
+    MAF_METADATA = enum.auto()
+    PRIMARY_ALIQUOT = enum.auto()
+
+    def to_param(self) -> str:
+        return f"{self.name}_df".lower()
+
+    @classmethod
+    def from_param(cls, param: str) -> "DataFrame":
+        return cls[param[:-3].upper()]
+
+
 class IndexType(enum.IntEnum):
     FILE = enum.auto()
     CASE = enum.auto()
