@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Iterable, cast
+from typing import Dict, cast
 
 import more_itertools
 import yaml
@@ -16,6 +16,27 @@ from exports.builders.clinical_annotations import civic
 logging.basicConfig(format=config.LOG_FORMAT)
 
 
+def _add_civic_data(
+    maf_df: sql.DataFrame, civic_dna_df: sql.DataFrame, civic_prot_df: sql.DataFrame
+) -> sql.DataFrame:
+    civic_prot_df = civic_prot_df.withColumnRenamed(
+        "civic_gene_id", "_civic_gene_id"
+    ).withColumnRenamed("civic_variant_id", "_civic_variant_id")
+    civic_df = maf_df.join(
+        civic_dna_df,
+        on=["chromosome", "start_position", "reference_allele", "tumor_allele"],
+        how="left",
+    )
+    civic_df = civic_df.join(civic_prot_df, on=["name", "hgvsp_short"], how="left")
+    civic_df = civic_df.withColumn(
+        "civic_gene_id", F.coalesce("civic_gene_id", "_civic_gene_id")
+    ).withColumn(
+        "civic_variant_id", F.coalesce("civic_variant_id", "_civic_variant_id")
+    )
+
+    return civic_df.drop("_civic_gene_id", "_civic_variant_id")
+
+
 class MAFBuilder(base_input_builder.BaseInputBuilder):
     """
     Class responsible for assembling maf files into a single dataframe with
@@ -27,11 +48,9 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         config,
         sqlContext,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
-        annotation_builders: Iterable[civic.CivicBuilder],
     ):
         super().__init__(config, sqlContext, "maf")
         self.schema = self.get_schema()
-        self.annotation_builders = annotation_builders
 
         self._doc_dataframe_util = doc_dataframe_util
 
@@ -42,6 +61,8 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         self,
         maf_metadata_df: sql.DataFrame,
         gene_model_df: sql.DataFrame,
+        civic_dna_df: sql.DataFrame,
+        civic_prot_df: sql.DataFrame,
         **kwargs: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -91,16 +112,12 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         df = df.withColumn(
             "domains", F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", "")
         )
-        for builder in self.annotation_builders:
-            df = builder.merge_with_maf(df)
+        df = _add_civic_data(df, civic_dna_df, civic_prot_df)
 
         self.logger.info("Repartitioning MAF dataframe")
         df = df.repartition(self.config.df_repartition, "ssm_id")
 
         return df
-
-    def get_annotation_schemas(self):
-        return [ann.schema for ann in self.annotation_builders]
 
     def map_transform(self, df: sql.DataFrame) -> sql.DataFrame:
         """
