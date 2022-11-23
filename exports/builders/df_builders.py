@@ -1,28 +1,44 @@
-from exports.builders.utils import struct_select
-from exports.builders.clinical_annotations import get_clinical_annotation_df
-
+import itertools
 import logging
-logger = logging.getLogger('df_builder')
+from typing import Container, Iterable, Iterator, List, Optional
+
+import more_itertools
+from pyspark import sql
+from pyspark.sql import functions as F
+
+from exports.builders import utils
+
+logger = logging.getLogger("df_builder")
 
 
-def build_ssm_subtree(maf_df, cons_df, index_name, obs_df=None):
+def build_ssm_subtree(
+    maf_df: sql.DataFrame,
+    cons_df: sql.DataFrame,
+    index_name: str,
+    obs_df: Optional[sql.DataFrame] = None,
+) -> sql.DataFrame:
     """
     ssm[]
        |___ consequence[]
        |             |_____...
        |___ observation[]
     """
-    ssm_df = get_ssm_df(maf_df, index_name, add_fields=['gene_id', 'case_id'])
+    ssm_df = get_ssm_df(maf_df, index_name, add_fields=["gene_id", "case_id"])
 
-    df = ssm_df.join(cons_df, on='ssm_id', how='left')
+    df = ssm_df.join(cons_df, on="ssm_id", how="left")
     if obs_df:
-        df = df.join(obs_df, on=['ssm_id', 'case_id'], how='left')
+        df = df.join(obs_df, on=["ssm_id", "case_id"], how="left")
 
     return df
 
 
-def build_cnv_subtree(ascat_df, index_name, cons_df=None, obs_df=None,
-                      add_fields=['gene_id', 'case_id']):
+def build_cnv_subtree(
+    ascat_df: sql.DataFrame,
+    index_name: str,
+    cons_df: Optional[sql.DataFrame] = None,
+    obs_df: Optional[sql.DataFrame] = None,
+    add_fields: Iterable[str] = ("gene_id", "case_id"),
+) -> sql.DataFrame:
     """
     cnv[]
        |___ consequence[]
@@ -31,56 +47,157 @@ def build_cnv_subtree(ascat_df, index_name, cons_df=None, obs_df=None,
        |___ observation[]
 
     """
-    cnv_df = get_cnv_df(ascat_df, index_name,
-                        add_fields=add_fields,
-                        drop_fields=['occurrence_id'])
+    cnv_df = get_cnv_df(
+        ascat_df, index_name, add_fields=add_fields, drop_fields=["occurrence_id"]
+    )
 
-    df = cnv_df.join(cons_df, on='cnv_id', how='left') if cons_df else cnv_df
+    df = cnv_df.join(cons_df, on="cnv_id", how="left") if cons_df else cnv_df
     if obs_df:
-        df = df.join(obs_df, on=['cnv_id', 'case_id'], how='left')
+        df = df.join(obs_df, on=["cnv_id", "case_id"], how="left")
 
-    df = df.drop('occurrence_id')
+    df = df.drop("occurrence_id")
 
     return df
 
 
-def get_annotation_df(input_df, index_name, add_fields=[], drop_fields=[],
-                      unique_fields=None, ignore=[]):
-    return get_single_df(input_df, index_name, 'annotation', add_fields,
-                         drop_fields, unique_fields, ignore)
+def get_annotation_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = (),
+) -> sql.DataFrame:
+    return get_single_df(
+        input_df,
+        index_name,
+        "annotation",
+        add_fields,
+        drop_fields,
+        unique_fields,
+        ignore,
+    )
 
 
-def get_gene_df(input_df, index_name, add_fields=[], drop_fields=[],
-                unique_fields=None, ignore=['transcripts']):
-    return get_single_df(input_df, index_name, 'gene', add_fields,
-                         drop_fields, unique_fields, ignore)
+def get_gene_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = ("transcripts",),
+):
+    return get_single_df(
+        input_df, index_name, "gene", add_fields, drop_fields, unique_fields, ignore
+    )
 
 
-def get_ssm_df(input_df, index_name, add_fields=[], drop_fields=[],
-               unique_fields=None, ignore=[]):
-    clinical_anno_df = get_clinical_annotation_df(index_name, input_df)
-    df = get_single_df(input_df, index_name, 'ssm',
-                       add_fields,  [], unique_fields, ignore)
-    df = df.join(clinical_anno_df, on='ssm_id', how='left')
+def _get_clinical_annotation_df(
+    index_name: str,
+    input_df: sql.DataFrame,
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+) -> sql.DataFrame:
+    def restructure(doc: dict, parent_name: str) -> Iterator[sql.Column]:
+        """
+        Takes the structure from a mapping and produces arguments for a select
+        to reorganize a flat dataframe of clinical annotations into the desired structure.
+        Eg:
+        Given the mapping:
+        ```
+        properties:
+          clinical_annotations:
+            properties:
+              civic:
+                properties:
+                  gene_id:
+                    type: keyword
+                  variant_id:
+                    type: keyword
+        ```
+        """
+        for k, v in doc.items():
+            if "properties" in v:
+                yield F.struct(*restructure(v["properties"], k)).alias(k)
+            elif "type" in v:
+                name = v.get("default", f"{parent_name}_{k}")
+
+                yield F.col(name).alias(k)
+            else:
+                yield F.struct(*restructure(v, k)).alias(k)
+
+    name = "clinical_annotations"
+    mapping = utils.select_mapping(index_name, name)
+    cols = more_itertools.value_chain("ssm_id", restructure({name: mapping}, ""))
+
+    df = input_df.select(*cols)
+    df = df.drop_duplicates(subset=unique_fields)
+
+    return df.select(*(column for column in df.columns if column not in drop_fields))
+
+
+def get_ssm_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = (),
+) -> sql.DataFrame:
+    clinical_anno_df = _get_clinical_annotation_df(index_name, input_df)
+    df = get_single_df(
+        input_df, index_name, "ssm", add_fields, [], unique_fields, ignore
+    )
+    df = df.join(clinical_anno_df, on="ssm_id", how="left")
     return df.select([column for column in df.columns if column not in drop_fields])
 
 
-def get_cnv_df(input_df, index_name, add_fields=[], drop_fields=[],
-               unique_fields=None, ignore=[]):
-    return get_single_df(input_df, index_name, 'cnv',
-                         add_fields, drop_fields, unique_fields, ignore)
+def get_cnv_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = (),
+) -> sql.DataFrame:
+    return get_single_df(
+        input_df, index_name, "cnv", add_fields, drop_fields, unique_fields, ignore
+    )
 
 
-def get_transcript_df(input_df, index_name, add_fields=[], drop_fields=[],
-                      unique_fields=None, ignore=[]):
-    return get_single_df(input_df, index_name, 'transcript', add_fields,
-                         drop_fields, unique_fields, ignore)
+def get_transcript_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = (),
+) -> sql.DataFrame:
+    return get_single_df(
+        input_df,
+        index_name,
+        "transcript",
+        add_fields,
+        drop_fields,
+        unique_fields,
+        ignore,
+    )
 
 
-def get_single_df(input_df, index_name, mapping_name,
-                  add_fields=[], drop_fields=[], unique_fields=None, ignore=[]):
+def get_single_df(
+    input_df: sql.DataFrame,
+    index_name: str,
+    mapping_name: str,
+    add_fields: Iterable[str] = (),
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[List[str]] = None,
+    ignore: Container[str] = (),
+) -> sql.DataFrame:
     df = input_df.select(
-        *(add_fields + struct_select(index_name, mapping_name, ignore=ignore)))
+        *itertools.chain(
+            add_fields, utils.struct_select(index_name, mapping_name, ignore=ignore)
+        )
+    )
 
     df = df.drop_duplicates(subset=unique_fields)
     return df.select([column for column in df.columns if column not in drop_fields])
