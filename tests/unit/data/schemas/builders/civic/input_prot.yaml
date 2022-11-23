@@ -1,0 +1,17 @@
+fields:
+  - &string_field
+    metadata: {}
+    name: civic_gene_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: civic_var_id
+  - <<: *string_field
+    name: gene
+  - <<: *string_field
+    name: hgvsp
+  - <<: *string_field
+    name: hugo_symbol
+  - <<: *string_field
+    name: source
+type: struct

@@ -45,6 +45,16 @@ class CaseBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
+class CivicDNABuilder(Builder):
+    dna_file: str
+
+
+@dataclasses.dataclass(frozen=True)
+class CivicProtBuilder(Builder):
+    prot_file: str
+
+
+@dataclasses.dataclass(frozen=True)
 class MAFBuilder(Builder):
     """
     Configuration values for running the MAF builder
@@ -112,6 +122,8 @@ class Viz:
 
     ascat: AscatBuilder
     case: CaseBuilder
+    civic_dna: CivicDNABuilder
+    civic_prot: CivicProtBuilder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder

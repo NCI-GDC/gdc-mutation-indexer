@@ -1,0 +1,17 @@
+fields:
+  - &string_field
+    metadata: {}
+    name: chromosome
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: start_position
+  - <<: *string_field
+    name: reference_allele
+  - <<: *string_field
+    name: tumor_allele
+  - <<: *string_field
+    name: civic_gene_id
+  - <<: *string_field
+    name: civic_variant_id
+type: struct
