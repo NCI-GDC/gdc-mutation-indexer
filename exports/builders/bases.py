@@ -27,7 +27,7 @@ class Builder(Protocol):
     def inputs(self) -> Iterable[build.DataFrame]:  # type: ignore
         pass
 
-    def build(self, *arg_dfs: sql.DataFrame, **kwarg_dfs: sql.DataFrame) -> sql.DataFrame:  # type: ignore
+    def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:  # type: ignore
         pass
 
 
