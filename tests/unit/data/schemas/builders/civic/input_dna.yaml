@@ -1,0 +1,30 @@
+fields:
+- metadata: {}
+  name: alternative_allele
+  nullable: true
+  type: string
+- metadata: {}
+  name: chromosome
+  nullable: true
+  type: string
+- metadata: {}
+  name: civic_gene_id
+  nullable: true
+  type: string
+- metadata: {}
+  name: civic_var_id
+  nullable: true
+  type: string
+- metadata: {}
+  name: reference_allele
+  nullable: true
+  type: string
+- metadata: {}
+  name: source
+  nullable: true
+  type: string
+- metadata: {}
+  name: start_position
+  nullable: true
+  type: string
+type: struct

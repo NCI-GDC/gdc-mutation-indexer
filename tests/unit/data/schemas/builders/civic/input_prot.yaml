@@ -1,0 +1,26 @@
+fields:
+- metadata: {}
+  name: civic_gene_id
+  nullable: true
+  type: string
+- metadata: {}
+  name: civic_var_id
+  nullable: true
+  type: string
+- metadata: {}
+  name: gene
+  nullable: true
+  type: string
+- metadata: {}
+  name: hgvsp
+  nullable: true
+  type: string
+- metadata: {}
+  name: hugo_symbol
+  nullable: true
+  type: string
+- metadata: {}
+  name: source
+  nullable: true
+  type: string
+type: struct

@@ -10,7 +10,6 @@ from pyspark.sql import types
 from exports.builders import civic
 from exports.configuration.builders import viz
 from exports.constants import build
-from tests.unit import utils
 from tests.unit.data import schemas
 
 
@@ -26,8 +25,13 @@ class CivicDNA:
 
 
 @pytest.fixture(scope="class")
+def input_dna_schema() -> types.StructType:
+    return schemas.load_schema("builders/civic/input_dna.yaml")
+
+
+@pytest.fixture(scope="class")
 def final_dna_schema() -> types.StructType:
-    return schemas.load_schema("builders/civic/final_civic_dna.yaml")
+    return schemas.load_schema("builders/civic/final_dna.yaml")
 
 
 class TestCivicDNABuilder:
@@ -35,9 +39,11 @@ class TestCivicDNABuilder:
     def initialize_fixtures(
         self,
         spark_session: sql.SparkSession,
+        input_dna_schema: types.StructType,
         final_dna_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
+        self.input_schema = input_dna_schema
         self.final_schema = final_dna_schema
 
     def arrange_config(self) -> viz.CivicDNABuilder:
@@ -52,7 +58,8 @@ class TestCivicDNABuilder:
     ) -> sql.SparkSession:
         session = mock.MagicMock(spec=sql.SparkSession)
         session.read.csv.return_value = self.spark_session.createDataFrame(
-            utils.to_rows(data)
+            data,  # type: ignore
+            self.input_schema,
         )
 
         return session
@@ -85,8 +92,13 @@ class CivicProt:
 
 
 @pytest.fixture(scope="class")
+def input_prot_schema() -> types.StructType:
+    return schemas.load_schema("builders/civic/input_prot.yaml")
+
+
+@pytest.fixture(scope="class")
 def final_prot_schema() -> types.StructType:
-    return schemas.load_schema("builders/civic/final_civic_prot.yaml")
+    return schemas.load_schema("builders/civic/final_prot.yaml")
 
 
 class TestCivicProtBuilder:
@@ -94,9 +106,11 @@ class TestCivicProtBuilder:
     def initialize_fixtures(
         self,
         spark_session: sql.SparkSession,
+        input_prot_schema: types.StructType,
         final_prot_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
+        self.input_schema = input_prot_schema
         self.final_schema = final_prot_schema
 
     def arrange_config(self) -> viz.CivicProtBuilder:
@@ -111,7 +125,8 @@ class TestCivicProtBuilder:
     ) -> sql.SparkSession:
         session = mock.MagicMock(spec=sql.SparkSession)
         session.read.csv.return_value = self.spark_session.createDataFrame(
-            utils.to_rows(data)
+            data,  # type: ignore
+            self.input_schema,
         )
 
         return session

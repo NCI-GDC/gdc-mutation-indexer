@@ -122,6 +122,8 @@ class Viz:
 
     ascat: AscatBuilder
     case: CaseBuilder
+    civic_dna: CivicDNABuilder
+    civic_prot: CivicProtBuilder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder
