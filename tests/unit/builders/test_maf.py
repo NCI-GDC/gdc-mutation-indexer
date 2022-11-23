@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from unittest import mock
 
 import more_itertools
@@ -9,7 +9,6 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders.clinical_annotations import civic
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -260,6 +259,24 @@ class GeneModel:
     transcripts: Tuple[Transcript, ...] = (Transcript(),)
 
 
+@dataclasses.dataclass(frozen=True)
+class CivicDNA:
+    civic_variant_id: Optional[str] = "dna"
+    civic_gene_id: Optional[str] = "dna"
+    chromosome: str = "chr2"
+    start_position: str = "33772590"
+    reference_allele: str = "C"
+    tumor_allele: str = "A"
+
+
+@dataclasses.dataclass(frozen=True)
+class CivicProt:
+    civic_variant_id: str = "prot"
+    civic_gene_id: str = "prot"
+    name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
+    hgvsp_short: str = "~p.A569S"
+
+
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
     return schemas.load_schema("builders/maf/input_gene_model.json")
@@ -273,6 +290,16 @@ def masked_somatic_mutation_schema() -> types.StructType:
 @pytest.fixture(scope="class")
 def aggregated_somatic_mutation_schema() -> types.StructType:
     return schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+
+
+@pytest.fixture(scope="class")
+def civic_dna_schema() -> types.StructType:
+    return schemas.load_schema("builders/maf/civic_dna.yaml")
+
+
+@pytest.fixture(scope="class")
+def civic_prot_schema() -> types.StructType:
+    return schemas.load_schema("builders/maf/civic_prot.yaml")
 
 
 @pytest.fixture(scope="class")
@@ -425,36 +452,24 @@ class TestMAFBuilder:
         gene_model_schema: types.StructType,
         masked_somatic_mutation_schema: types.StructType,
         aggregated_somatic_mutation_schema: types.StructType,
+        civic_dna_schema: types.StructType,
+        civic_prot_schema: types.StructType,
         final_maf_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.gene_model_schema = gene_model_schema
         self.masked_somatic_mutation_schema = masked_somatic_mutation_schema
         self.aggregated_somatic_mutation_schema = aggregated_somatic_mutation_schema
+        self.civic_dna_schema = civic_dna_schema
+        self.civic_prot_schema = civic_prot_schema
         self.final_maf_schema = final_maf_schema
-
-    def arrange_civic_builder(self) -> civic.CivicBuilder:
-        builder = mock.MagicMock(spec=civic.CivicBuilder)
-        builder.merge_with_maf.side_effect = lambda df: df.select(
-            "*",
-            F.lit(None).cast(types.StringType()).alias("civic_gene_id"),
-            F.lit(None).cast(types.StringType()).alias("civic_variant_id"),
-        )
-
-        return builder
 
     def arrange_builder(
         self,
         masked_somatic_mutation_mafs: Tuple[MAF, ...] = (MAF(),),
         aggregated_somatic_mutation_mafs: Tuple[MAF, ...] = (),
         config_values: Optional[Dict[str, Any]] = None,
-        annotation_builders: Optional[Iterable[civic.CivicBuilder]] = None,
     ) -> builders.MAFBuilder:
-        annotation_builders = (
-            (self.arrange_civic_builder(),)
-            if annotation_builders is None
-            else annotation_builders
-        )
         masked_somatic_mutation_df = self.spark_session.createDataFrame(
             tuple(maf.to_sql_row() for maf in masked_somatic_mutation_mafs),
             schema=self.masked_somatic_mutation_schema,
@@ -473,19 +488,34 @@ class TestMAFBuilder:
             aggregated_somatic_mutation_df,
         )
 
-        return builders.MAFBuilder(
-            config, sql_context, doc_dataframe_util, annotation_builders
-        )
+        return builders.MAFBuilder(config, sql_context, doc_dataframe_util)
 
     def arrange_inputs(
-        self, gene_model: Tuple[GeneModel, ...] = (GeneModel(),)
+        self,
+        gene_model: Tuple[GeneModel, ...] = (GeneModel(),),
+        civic_dna: Tuple[CivicDNA, ...] = (),
+        civic_prot: Tuple[CivicProt, ...] = (),
     ) -> Dict[str, sql.DataFrame]:
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, self.gene_model_schema
+            gene_model,  # type: ignore
+            self.gene_model_schema,
         )
         maf_metadata_df = mock.MagicMock()
+        civic_dna_df = self.spark_session.createDataFrame(
+            civic_dna,  # type: ignore
+            self.civic_dna_schema,
+        )
+        civic_prot_df = self.spark_session.createDataFrame(
+            civic_prot,  # type: ignore
+            self.civic_prot_schema,
+        )
 
-        return {"gene_model_df": gene_model_df, "maf_metadata_df": maf_metadata_df}
+        return {
+            "gene_model_df": gene_model_df,
+            "maf_metadata_df": maf_metadata_df,
+            "civic_dna_df": civic_dna_df,
+            "civic_prot_df": civic_prot_df,
+        }
 
     def test__build_from_scratch__joins_succeed(self) -> None:
         inputs = self.arrange_inputs()
@@ -654,7 +684,7 @@ class TestMAFBuilder:
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        result_row.mutation_type == mutation_type
+        assert result_row.mutation_type == mutation_type
 
     @pytest.mark.parametrize(
         ("variant_type", "mutation_subtype"),
@@ -900,24 +930,51 @@ class TestMAFBuilder:
 
         assert result_row.cosmic_id == cosmic_id
 
-    def test__build_from_scratch__annotation_builders_called(self) -> None:
-        def pass_through(df: sql.DataFrame) -> sql.DataFrame:
-            return df
+    @pytest.mark.parametrize(
+        ("civic_dna", "civic_prot", "expected_civic_data"),
+        (
+            (CivicDNA(), CivicProt(), (None, None)),
+            (
+                CivicDNA(chromosome="chr1"),
+                CivicProt(hgvsp_short="p.A569S"),
+                ("dna", "dna"),
+            ),
+            (
+                CivicDNA(chromosome="chr1", civic_gene_id=None),
+                CivicProt(hgvsp_short="p.A569S"),
+                ("prot", "dna"),
+            ),
+            (
+                CivicDNA(chromosome="chr1", civic_variant_id=None),
+                CivicProt(hgvsp_short="p.A569S"),
+                ("dna", "prot"),
+            ),
+            (CivicDNA(), CivicProt(hgvsp_short="p.A569S"), ("prot", "prot")),
+        ),
+        ids=(
+            "not_dna_or_prot",
+            "both_dna_and_prot",
+            "dna_with_missing_gene_id",
+            "dna_with_missing_variant_id",
+            "only_prot",
+        ),
+    )
+    def test__build_from_scratch__civic_data_added(
+        self,
+        civic_dna: CivicDNA,
+        civic_prot: CivicProt,
+        expected_civic_data: Tuple[Optional[str], Optional[str]],
+    ) -> None:
+        inputs = self.arrange_inputs(civic_dna=(civic_dna,), civic_prot=(civic_prot,))
+        builder = self.arrange_builder()
 
-        annotation_builder0 = mock.MagicMock()
-        annotation_builder0.merge_with_maf.side_effect = pass_through
-        annotation_builder1 = mock.MagicMock()
-        annotation_builder1.merge_with_maf.side_effect = pass_through
+        result_df = builder.build_from_scratch(**inputs)
+        result_row = more_itertools.one(result_df.toLocalIterator())
 
-        inputs = self.arrange_inputs()
-        builder = self.arrange_builder(
-            annotation_builders=(annotation_builder0, annotation_builder1)
-        )
-
-        _ = builder.build_from_scratch(**inputs)
-
-        annotation_builder0.merge_with_maf.assert_called_once()
-        annotation_builder1.merge_with_maf.assert_called_once()
+        assert (
+            result_row.civic_gene_id,
+            result_row.civic_variant_id,
+        ) == expected_civic_data
 
     def test__build_from_scratch__strip_domains(self) -> None:
         inputs = self.arrange_inputs()

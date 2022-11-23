@@ -11,7 +11,6 @@ from pyspark.sql import types
 import config
 from exports import indexd_utils, pyspark_extensions, schemas
 from exports.builders import base_input_builder, utils
-from exports.builders.clinical_annotations import civic
 
 logging.basicConfig(format=config.LOG_FORMAT)
 
@@ -99,7 +98,7 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         df = utils.extract_sift_polyphen(df)
 
         cols_to_drop = frozenset(gene_model_df.columns)
-        df = df.select(*[c for c in df.columns if c not in cols_to_drop])
+        df = df.select(*(c for c in df.columns if c not in cols_to_drop))
         df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, "inner")
         df = df.drop("_gene_id")
         df = self.add_null(df)
