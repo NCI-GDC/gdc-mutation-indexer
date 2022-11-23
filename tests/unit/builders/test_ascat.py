@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -171,22 +171,22 @@ def _arrange_case(
 
 @pytest.fixture(scope="class")
 def input_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_ascat.yaml")
+    return schemas.Input.ASCAT.load()
 
 
 @pytest.fixture(scope="class")
 def es_file_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/es_file.json")
+    return schemas.Input.ASCAT_ES.load()
 
 
 @pytest.fixture(scope="class")
 def input_gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_gene_model.json")
+    return schemas.Final.GENE_MODEL.load()
 
 
 @pytest.fixture(scope="class")
 def final_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/final_ascat.json")
+    return schemas.Final.ASCAT.load()
 
 
 class TestAscatBuilder:
@@ -209,7 +209,7 @@ class TestAscatBuilder:
         self, ascat_document_data: Tuple[AscatDocument, ...]
     ) -> mock.MagicMock:
         ascat_document_df = self.spark_session.createDataFrame(
-            ascat_document_data,
+            ascat_document_data,  # type: ignore
             self.input_ascat_schema,
         )
 
@@ -218,7 +218,10 @@ class TestAscatBuilder:
     def _arrange_es_dataframe_util(
         self, es_files: Tuple[ESFile, ...]
     ) -> mock.MagicMock:
-        es_file_df = self.spark_session.createDataFrame(es_files, self.es_file_schema)
+        es_file_df = self.spark_session.createDataFrame(
+            es_files,  # type: ignore
+            self.es_file_schema,
+        )
 
         return _arrange_dataframe_util(es_file_df)
 
@@ -242,9 +245,12 @@ class TestAscatBuilder:
         primary_aliquots: Tuple[PrimaryAliquot, ...],
         gene_model: Tuple[GeneModel, ...],
     ) -> Mapping[str, sql.DataFrame]:
-        primary_aliquot_df = self.spark_session.createDataFrame(primary_aliquots)
+        primary_aliquot_df = self.spark_session.createDataFrame(
+            primary_aliquots  # type: ignore
+        )
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, self.input_gene_model_schema
+            gene_model,  # type: ignore
+            self.input_gene_model_schema,
         )
 
         return {
@@ -447,7 +453,7 @@ class TestAscatBuilder:
         return_value=_arrange_iterate_es_results_return(("file-0",)),
     )
     def test__build_from_scratch__neutral_copy_numbers_filtered(
-        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[str]
+        self, iterate_es_results: mock.MagicMock, copy_numbers: Iterable[int]
     ) -> None:
         es_files = (ESFile(),)
         primary_aliquots = (PrimaryAliquot(),)
@@ -525,6 +531,10 @@ class TestAscatBuilder:
         assert (
             result_row.canonical_transcript_length_cds
             == canonical_transcript.length_cds
+        )
+        assert (
+            canonical_transcript.end is not None
+            and canonical_transcript.start is not None
         )
         assert (
             result_row.canonical_transcript_length_genomic

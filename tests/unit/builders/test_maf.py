@@ -11,7 +11,7 @@ from pyspark.sql import types
 from exports import builders
 from exports.builders.clinical_annotations import civic
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import builders as schemas
 
 DEFAULT_CONFIG_VALUES = {
     "maf_urls": ("fake_url0",),
@@ -262,22 +262,22 @@ class GeneModel:
 
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/input_gene_model.json")
+    return schemas.Final.GENE_MODEL.load()
 
 
 @pytest.fixture(scope="class")
 def masked_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/masked_somatic_mutation.yaml")
+    return schemas.Input.MASKED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def aggregated_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+    return schemas.Input.AGGREGATED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.yaml")
+    return schemas.Final.MAF.load()
 
 
 def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
@@ -481,7 +481,8 @@ class TestMAFBuilder:
         self, gene_model: Tuple[GeneModel, ...] = (GeneModel(),)
     ) -> Dict[str, sql.DataFrame]:
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, self.gene_model_schema
+            gene_model,  # type: ignore
+            self.gene_model_schema,
         )
         maf_metadata_df = mock.MagicMock()
 
@@ -654,7 +655,7 @@ class TestMAFBuilder:
         result_df = builder.build_from_scratch(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        result_row.mutation_type == mutation_type
+        assert result_row.mutation_type == mutation_type
 
     @pytest.mark.parametrize(
         ("variant_type", "mutation_subtype"),

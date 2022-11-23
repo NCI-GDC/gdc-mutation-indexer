@@ -1,5 +1,4 @@
 import dataclasses
-from os import path
 from typing import Dict, Tuple
 from unittest import mock
 
@@ -9,8 +8,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders import gene_model
 from tests.unit import utils
+from tests.unit.data.schemas.builders import gene_expression as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -40,18 +39,13 @@ class GeneModel:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "gene_expression", "value")
+def star_counts_schema() -> types.StructType:
+    return schemas.Input.STAR_COUNTS.load()
 
 
 @pytest.fixture(scope="class")
-def star_counts_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_star_counts.json")
-
-
-@pytest.fixture(scope="class")
-def final_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_value.json")
+def final_schema() -> types.StructType:
+    return schemas.Final.EXPRESSION_VALUE.load()
 
 
 class TestGeneExpressionValueInputBuilder:

@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit import utils
-from tests.unit.data import schemas
+from tests.unit.data.schemas import builders as schemas
 
 DECIMAL_CONTEXT = decimal.Context(prec=5)
 
@@ -97,7 +97,7 @@ class MAF:
     cdna_position: str = "1734/13108"
     cds_end: int = 12169
     cds_length: int = 10464
-    cds_position: int = "1705/10464"
+    cds_position: str = "1705/10464"
     cds_start: int = 1705
     center: str = "BI"
     chromosome: str = "chr1"
@@ -216,24 +216,22 @@ class AllEffects:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/input_maf.yaml")
+    return schemas.Final.MAF.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence.yaml")
+    return schemas.Final.CONSEQUENCE.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_genes_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence_with_genes.yaml")
+    return schemas.Final.CONSEQUENCE_GENES.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_aa_change_schema() -> types.StructType:
-    return schemas.load_schema(
-        "builders/consequence/final_consequence_with_aa_change.yaml"
-    )
+    return schemas.Final.CONSEQUENCE_AA_CHANGE.load()
 
 
 class TestConsequenceBuilder:
@@ -256,7 +254,10 @@ class TestConsequenceBuilder:
         }
 
     def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+        return self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
 
     @pytest.mark.parametrize(
         ("index_name", "join_gene", "add_gene_aa_change"),

@@ -1,21 +1,29 @@
 import contextlib
 import csv
-import functools
-from pprint import pprint
 import dataclasses
+import functools
 import io
-from typing import Any, Callable, ContextManager, Iterable, Iterator, Optional, Tuple
+from typing import (
+    IO,
+    Any,
+    Callable,
+    ContextManager,
+    Iterable,
+    Iterator,
+    Optional,
+    Tuple,
+)
 from unittest import mock
-import importlib_resources as resources
 
+import importlib_resources as resources
 import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-
 from exports.builders.clinical_annotations import civic
-from tests.unit.data import schemas
+from tests.unit import utils
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -226,7 +234,7 @@ def create_mock_tsv(keys: Iterable[str], data: Iterable[Any]) -> io.StringIO:
 
 def mock_open(
     dna: Tuple[DNACivic, ...], prot: Tuple[ProtCivic, ...], path: str, mode: str = "r"
-) -> io.FileIO:
+) -> IO:
     if path.endswith("civic.yml"):
         return open(path, mode)
 
@@ -257,12 +265,12 @@ def arrange_mock_resource_filename() -> Iterator[Callable[[Any, str], str]]:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/clinical_annotations/civic/input_maf.yaml")
+    return schemas.Input.CIVIC.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/clinical_annotations/civic/final_maf.yaml")
+    return schemas.Final.CIVIC.load()
 
 
 class TestCivicBuilder:
@@ -297,7 +305,10 @@ class TestCivicBuilder:
         return stack
 
     def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+        return self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
 
     def test__merge_with_maf__single_row(self) -> None:
         config = mock.MagicMock()

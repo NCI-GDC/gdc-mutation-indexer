@@ -1,5 +1,4 @@
 import dataclasses
-from os import path
 from typing import Dict, Tuple
 from unittest import mock
 
@@ -10,6 +9,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit import utils
+from tests.unit.data.schemas.builders import gene_expression as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -49,18 +49,13 @@ class PrimaryAliquot:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "gene_expression", "case")
+def primary_aliquot_schema() -> types.StructType:
+    return schemas.Final.PRIMARY_ALIQUOT.load()
 
 
 @pytest.fixture(scope="class")
-def primary_aliquot_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "input_primary_aliquot.json")
-
-
-@pytest.fixture(scope="class")
-def final_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_case.json")
+def final_schema() -> types.StructType:
+    return schemas.Final.CASE.load()
 
 
 class TestGeneExpressionCaseInputBuilder:

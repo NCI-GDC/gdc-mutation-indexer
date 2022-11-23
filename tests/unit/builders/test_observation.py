@@ -7,7 +7,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from tests.unit.data import schemas
+from tests.unit import utils
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -86,7 +87,7 @@ class MAF:
     cdna_position: str = "1734/13108"
     cds_end: int = 12169
     cds_length: int = 10464
-    cds_position: int = "1705/10464"
+    cds_position: str = "1705/10464"
     cds_start: int = 1705
     center: str = "BI"
     chromosome: str = "chr1"
@@ -221,7 +222,7 @@ class ASCAT:
     symbol: Optional[str] = "DDX11L1"
     synonyms: Optional[Tuple[str, ...]] = ()
     transcripts: Optional[Tuple[Transcript, ...]] = (Transcript(),)
-    uniprotkb_swissprot: Optional[Tuple[str]] = ()
+    uniprotkb_swissprot: Optional[Tuple[str, ...]] = ()
     variant_caller: Optional[str] = "ASCAT"
     variant_status: Optional[str] = "Tumor Only"
     civic_gene_id: str = "1"
@@ -230,32 +231,32 @@ class ASCAT:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_maf.yaml")
+    return schemas.Final.MAF.load()
 
 
 @pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_ascat.json")
+    return schemas.Final.ASCAT.load()
 
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_primary_aliquot.json")
+    return schemas.Final.PRIMARY_ALIQUOT.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_ssm_observation.json")
+    return schemas.Final.OBSERVATION_SSM.load()
 
 
 @pytest.fixture(scope="class")
 def other_ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_other_ssm_observation.json")
+    return schemas.Final.OBSERVATION_SSM_OTHER.load()
 
 
 @pytest.fixture(scope="class")
-def cnv_observation_schema() -> types.StructType():
-    return schemas.load_schema("builders/observation/final_cnv_observation.yaml")
+def cnv_observation_schema() -> types.StructType:
+    return schemas.Final.OBSERVATION_CNV.load()
 
 
 class TestObservationBuilder:
@@ -281,16 +282,23 @@ class TestObservationBuilder:
         self.cnv_observation_schema = cnv_observation_schema
 
     def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+        return self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
 
     def arrange_ascat_df(self, ascats: Tuple[ASCAT, ...] = (ASCAT(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(ascats, schema=self.ascat_schema)
+        return self.spark_session.createDataFrame(
+            ascats,  # type: ignore
+            schema=self.ascat_schema,
+        )
 
     def arrange_primary_aliquot_df(
         self, primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),)
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
-            primary_aliquots, schema=self.primary_aliquot_schema
+            primary_aliquots,  # type: ignore
+            schema=self.primary_aliquot_schema,
         )
 
     def arrange_builder(self) -> builders.ObservationBuilder:

@@ -12,7 +12,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
-from tests.unit.data import schemas
+from tests.unit import utils
+from tests.unit.data.schemas import builders as schemas
 
 CASE_ID_SCHEMA = "case_id: string"
 
@@ -303,12 +304,12 @@ class Case:
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
-    return schemas.load_schema("builders/case/input_case.yaml")
+    return schemas.Input.CASE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/case/final_case.yaml")
+    return schemas.Final.CASE.load()
 
 
 def assert_demographics_equal(
@@ -742,11 +743,12 @@ class TestCaseBuilder:
 
     def arrange_es_dataframe_util(
         self, cases: Iterable[Case] = (Case(),)
-    ) -> mock.MagicMock():
-        util = mock.MagicMock()
+    ) -> es_utils.DataFrameUtil:
+        util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
         util.get_dataframe.return_value = self.spark_session.createDataFrame(
-            cases, schema=self.case_schema
+            cases,  # type: ignore
+            schema=self.case_schema
         )
 
         return util

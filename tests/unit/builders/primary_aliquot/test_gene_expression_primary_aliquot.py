@@ -1,16 +1,15 @@
-from unittest import mock
 import dataclasses
 import datetime
-from os import path
 from typing import Optional, Tuple
-import more_itertools
+from unittest import mock
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from exports import builders
 
-from tests.unit import utils
+from exports import builders
+from tests.unit.data.schemas.builders import gene_expression as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,18 +56,13 @@ class ESFile:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "primary_aliquot")
+def input_file_schema() -> types.StructType:
+    return schemas.Input.PRIMARY_ALIQUOT_FILE.load()
 
 
 @pytest.fixture(scope="class")
-def input_file_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "gene_expression_input_file.json")
-
-
-@pytest.fixture(scope="class")
-def final_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_gene_expression.json")
+def final_schema() -> types.StructType:
+    return schemas.Final.PRIMARY_ALIQUOT.load()
 
 
 class TestGeneExpressionPrimaryAliquotBuilder:
@@ -94,7 +88,8 @@ class TestGeneExpressionPrimaryAliquotBuilder:
         dataframe_util = mock.MagicMock()
 
         dataframe_util.get_dataframe.return_value = self.spark_session.createDataFrame(
-            data, schema=self.input_file_schema
+            data,  # type: ignore
+            schema=self.input_file_schema,
         )
 
         return dataframe_util

@@ -1,10 +1,22 @@
-import yaml
+import abc
+import enum
+from os import path
 
 import importlib_resources as resources
+import yaml
 from pyspark.sql import types
 
 
-def load_schema(schema_filename: str) -> types.StructType:
-    schema = resources.files(__name__).joinpath(schema_filename).read_text()
+class Schema(enum.Enum):
+    @property
+    @abc.abstractmethod
+    def _prefix(self) -> str:
+        pass
 
-    return types.StructType.fromJson(yaml.safe_load(schema))
+    def filename(self) -> str:
+        return path.join(self._prefix, self.value)
+
+    def load(self) -> types.StructType:
+        schema_data = resources.files(__name__).joinpath(self.filename()).read_text()
+
+        return types.StructType.fromJson(yaml.safe_load(schema_data))

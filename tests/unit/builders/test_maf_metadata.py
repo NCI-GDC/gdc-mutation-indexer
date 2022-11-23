@@ -10,7 +10,8 @@ from pyspark.sql import types
 
 from exports import builders, es_utils
 from exports.builders import maf_metadata
-from tests.unit.data import schemas
+from tests.unit import utils
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -41,12 +42,12 @@ class ESFile:
 
 @pytest.fixture(scope="class")
 def file_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf_metadata/es_file.yaml")
+    return schemas.Input.MAF_FILE_ES.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf_metadata/final_maf_metadata.yaml")
+    return schemas.Final.MAF_METADATA.load()
 
 
 class TestMAFMetadataBuilder:
@@ -79,7 +80,10 @@ class TestMAFMetadataBuilder:
         conf.projects = None
 
         es_dataframe_util.get_dataframe.return_value = (
-            self.spark_session.createDataFrame(files, schema=self.file_schema)
+            self.spark_session.createDataFrame(
+                files,  # type: ignore
+                schema=self.file_schema,
+            )
         )
 
         return builders.MAFMetadataBuilder(

@@ -12,7 +12,7 @@ from typing_extensions import TypedDict
 import config
 from exports import builders, es_utils
 from tests.unit.builders.case_centric.inputs import ascat, case, cnv, maf, sample, ssm
-from tests.unit.data import schemas
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -34,47 +34,47 @@ class Inputs(TypedDict):
 
 @pytest.fixture(scope="class")
 def maf_metadata_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_maf_metadata.yaml")
+    return schemas.Final.MAF_METADATA.load()
 
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_maf.yaml")
+    return schemas.Final.MAF.load()
 
 
 @pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ascat.json")
+    return schemas.Final.ASCAT.load()
 
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_primary_aliquot.json")
+    return schemas.Final.PRIMARY_ALIQUOT.load()
 
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_case.yaml")
+    return schemas.Input.CASE_CENTRIC_CASE.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ssm_observation.json")
+    return schemas.Final.OBSERVATION_SSM_OTHER.load()
 
 
 @pytest.fixture(scope="class")
 def cnv_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_cnv_observation.yaml")
+    return schemas.Final.OBSERVATION_CNV.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_consequence_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ssm_consequence.yaml")
+    return schemas.Final.CONSEQUENCE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/final_case_centric.yaml")
+    return schemas.Final.CASE_CENTRIC.load()
 
 
 class TestCaseCentricBuilder:
@@ -121,14 +121,17 @@ class TestCaseCentricBuilder:
     def arrange_dataframe_util(
         self, cases: Tuple[case.Case, ...] = (case.Case(),)
     ) -> es_utils.DataFrameUtil:
-        case_df = self.spark_session.createDataFrame(cases, schema=self.case_schema)
+        case_df = self.spark_session.createDataFrame(
+            cases,  # type: ignore
+            schema=self.case_schema,
+        )
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         dataframe_util.get_dataframe.return_value = case_df
 
         return dataframe_util
 
     def arrange_rdd_util(
-        self, cases: Tuple[sample.Hit, ...] = (sample.Hit,)
+        self, cases: Tuple[sample.Hit, ...] = (sample.Hit(),)
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
@@ -153,11 +156,13 @@ class TestCaseCentricBuilder:
         cnv_observations: Tuple[cnv.Observations, ...] = (cnv.Observations(),),
     ) -> builders.ObservationBuilder:
         ssm_observation_df = self.spark_session.createDataFrame(
-            ssm_observations, self.ssm_observation_schema
+            ssm_observations,  # type: ignore
+            self.ssm_observation_schema,
         )
         build_for_ssm = mock.MagicMock(return_value=ssm_observation_df)
         cnv_observation_df = self.spark_session.createDataFrame(
-            cnv_observations, self.cnv_observation_schema
+            cnv_observations,  # type: ignore
+            self.cnv_observation_schema,
         )
         build_for_cnv = mock.MagicMock(return_value=cnv_observation_df)
 
@@ -171,7 +176,8 @@ class TestCaseCentricBuilder:
         self, consequences: Tuple[ssm.Consequences, ...] = (ssm.Consequences(),)
     ) -> builders.ConsequenceBuilder:
         consequence_df = self.spark_session.createDataFrame(
-            consequences, schema=self.ssm_consequence_schema
+            consequences,  # type: ignore
+            schema=self.ssm_consequence_schema,
         )
         build_for_ssm = mock.MagicMock(return_value=consequence_df)
 
@@ -187,12 +193,20 @@ class TestCaseCentricBuilder:
         primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
     ) -> Inputs:
         maf_metadata_df = self.spark_session.createDataFrame(
-            maf_metadata, schema=self.maf_metadata_schema
+            maf_metadata,  # type: ignore
+            schema=self.maf_metadata_schema,
         )
-        maf_df = self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
-        ascat_df = self.spark_session.createDataFrame(ascats, schema=self.ascat_schema)
+        maf_df = self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
+        ascat_df = self.spark_session.createDataFrame(
+            ascats,  # type: ignore
+            schema=self.ascat_schema,
+        )
         primary_aliquot_df = self.spark_session.createDataFrame(
-            primary_aliquots, schema=self.primary_aliquot_schema
+            primary_aliquots,  # type: ignore
+            schema=self.primary_aliquot_schema,
         )
 
         return Inputs(
@@ -260,6 +274,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
         maf_gene = more_itertools.one(
             g for g in result_case.gene if g.gene_id == "MAFGENE"
@@ -315,6 +330,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
         result_available_variations = frozenset(result_case.available_variation_data)
 
@@ -378,6 +394,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == expected_count
@@ -406,6 +423,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert result_case.gene is None
@@ -436,6 +454,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == 1
@@ -468,6 +487,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == 1
@@ -514,6 +534,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == 1
@@ -548,6 +569,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == 1
@@ -581,6 +603,7 @@ class TestCaseCentricBuilder:
 
         builder.build(**inputs)
 
+        assert isinstance(builder.case_centric, sql.DataFrame)
         result_case = more_itertools.one(builder.case_centric.collect())
 
         assert len(result_case.gene) == 1

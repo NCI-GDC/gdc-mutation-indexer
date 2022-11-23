@@ -10,7 +10,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
-from tests.unit.data import schemas
+from tests.unit import utils
+from tests.unit.data.schemas import builders as schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -96,12 +97,12 @@ class ESFile:
 
 @pytest.fixture(scope="class")
 def input_file_schema() -> types.StructType:
-    return schemas.load_schema("builders/primary_aliquot/input_file.json")
+    return schemas.Input.PRIMARY_ALIQUOT_FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/primary_aliquot/final_primary_aliquot.json")
+    return schemas.Final.PRIMARY_ALIQUOT.load()
 
 
 class TestPrimaryAliquotBuilder:
@@ -133,7 +134,8 @@ class TestPrimaryAliquotBuilder:
         files = files if isinstance(files, tuple) else tuple(files)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         file_df = self.spark_session.createDataFrame(
-            files, schema=self.input_file_schema
+            files,  # type: ignore
+            schema=self.input_file_schema,
         )
 
         dataframe_util.get_dataframe.return_value = file_df
@@ -161,7 +163,7 @@ class TestPrimaryAliquotBuilder:
         ids=("aliquot_exists", "no_aliquots"),
     )
     def test__build_from_scratch__positive_joins(
-        self, files: Iterable[ESFile], aliquot_data: Iterable[ESFile]
+        self, files: Tuple[ESFile, ...], aliquot_data: Tuple[ESFile, ...]
     ) -> None:
         builder = self._arrange_builder(files, aliquot_data)
 
