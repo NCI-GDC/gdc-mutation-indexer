@@ -66,13 +66,24 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case]
-include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
-]
+include_as_arrays = ["project.disease_type", "project.primary_site"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.civic_dna]
+dna_file = ""
+is_cached = true
+[builders.viz.civic_dna.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.civic_prot]
+is_cached = true
+prot_file = ""
+[builders.viz.civic_prot.backup]
 mode = "NEITHER"
 path = ""
 
@@ -87,10 +98,7 @@ path = ""
 
 [builders.viz.maf_metadata]
 is_cached = true
-prioritized_experimental_strategies = [
-  "WXS",
-  "Targeted Sequencing",
-]
+prioritized_experimental_strategies = ["WXS", "Targeted Sequencing"]
 [builders.viz.maf_metadata.backup]
 mode = "NEITHER"
 path = ""
@@ -111,10 +119,7 @@ path = ""
 [builders.viz.case_centric]
 coalesce_size = 12
 genes_threshold = 100
-include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
-]
+include_as_arrays = ["project.disease_type", "project.primary_site"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case_centric.backup]

@@ -1,26 +1,17 @@
 fields:
-- metadata: {}
-  name: civic_gene_id
-  nullable: true
-  type: string
-- metadata: {}
-  name: civic_var_id
-  nullable: true
-  type: string
-- metadata: {}
-  name: gene
-  nullable: true
-  type: string
-- metadata: {}
-  name: hgvsp
-  nullable: true
-  type: string
-- metadata: {}
-  name: hugo_symbol
-  nullable: true
-  type: string
-- metadata: {}
-  name: source
-  nullable: true
-  type: string
+  - &string_field
+    metadata: {}
+    name: civic_gene_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: civic_var_id
+  - <<: *string_field
+    name: gene
+  - <<: *string_field
+    name: hgvsp
+  - <<: *string_field
+    name: hugo_symbol
+  - <<: *string_field
+    name: source
 type: struct

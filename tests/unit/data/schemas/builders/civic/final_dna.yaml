@@ -1,26 +1,17 @@
 fields:
-- metadata: {}
-  name: chromosome
-  nullable: true
-  type: string
-- metadata: {}
-  name: start_position
-  nullable: true
-  type: string
-- metadata: {}
-  name: reference_allele
-  nullable: true
-  type: string
-- metadata: {}
-  name: tumor_allele
-  nullable: true
-  type: string
-- metadata: {}
-  name: civic_gene_id
-  nullable: true
-  type: string
-- metadata: {}
-  name: civic_variant_id
-  nullable: true
-  type: string
+  - &string_field
+    metadata: {}
+    name: chromosome
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: start_position
+  - <<: *string_field
+    name: reference_allele
+  - <<: *string_field
+    name: tumor_allele
+  - <<: *string_field
+    name: civic_gene_id
+  - <<: *string_field
+    name: civic_variant_id
 type: struct
