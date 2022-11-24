@@ -10,7 +10,7 @@ from pyspark import sql
 
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
-from exports.builders import base_builder, base_input_builder, maf_metadata
+from exports.builders import ascat, base_builder, base_input_builder, maf_metadata
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
@@ -61,7 +61,8 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 
 def get_viz_input_builders(
-    config: old_config.BaseConfig,
+    old_config: old_config.BaseConfig,
+    es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
@@ -69,26 +70,33 @@ def get_viz_input_builders(
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
 ) -> Mapping[build.DataFrame, base_input_builder.BaseInputBuilder]:
-    annotation_builders = (civic.CivicBuilder(config, sql_context),)
-    file_filter_factory = maf_metadata.MAFFileFilterFactory(config, es_client)
+    annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
+    file_filter_factory = maf_metadata.MAFFileFilterFactory(old_config, es_client)
+    ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
     return types.MappingProxyType(
         {
-            build.DataFrame.ASCAT: builders.AscatBuilder(
-                config, sql_context, doc_dataframe_util, es_dataframe_util, es_client
+            build.DataFrame.ASCAT: builders.ASCATBuilder(
+                old_config,
+                sql_context,
+                doc_dataframe_util,
+                es_dataframe_util,
+                ascat_doc_resolver,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
-                config, sql_context, es_dataframe_util, case_field_selector
+                old_config, sql_context, es_dataframe_util, case_field_selector
             ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.MAF: builders.MAFBuilder(
-                config, sql_context, doc_dataframe_util, annotation_builders
+                old_config, sql_context, doc_dataframe_util, annotation_builders
             ),
             build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
-                config, sql_context, es_dataframe_util, file_filter_factory
+                old_config, sql_context, es_dataframe_util, file_filter_factory
             ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.PrimaryAliquotBuilder(
-                config, sql_context, es_dataframe_util, es_rdd_util
+                old_config, sql_context, es_dataframe_util, es_rdd_util
             ),
         }
     )
@@ -149,6 +157,7 @@ def get_viz_builders(
 
     viz_input_builders = get_viz_input_builders(
         config_adapter,
+        config.elasticsearch,
         sql_context,
         es_client,
         es_dataframe_util,
