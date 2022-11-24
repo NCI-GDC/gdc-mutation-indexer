@@ -5,10 +5,10 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports import es_utils, indexd_utils, schemas
-from exports.builders import base_input_builder, utils
+from exports.builders import bases, utils
 from exports.configuration import elasticsearch as es_config
+from exports.configuration.builders import viz
 from exports.constants import build
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
@@ -253,16 +253,16 @@ class DocumentResolver:
         return tuple(hit["_source"]["file_id"] for hit in hits)
 
 
-class ASCATBuilder(base_input_builder.BaseInputBuilder):
+class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder]):
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: viz.ASCATBuilder,
+        spark_session: sql.SparkSession,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
         doc_resolver: DocumentResolver,
     ) -> None:
-        super().__init__(config, sqlContext, "ascat")
+        super().__init__(config, spark_session, build.DataFrame.ASCAT)
 
         self._document_dataframe_util = document_dataframe_util
         self._es_dataframe_util = es_dataframe_util
@@ -327,11 +327,11 @@ class ASCATBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def build_from_scratch(
+    def _build_from_scratch(
         self,
         primary_aliquot_df: sql.DataFrame,
         gene_model_df: sql.DataFrame,
-        **kwargs: sql.DataFrame
+        **_: sql.DataFrame
     ) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
@@ -375,10 +375,10 @@ class ASCATBuilder(base_input_builder.BaseInputBuilder):
         |---variant_caller
         +---variant_status
         """
-        if self.config.omit_cnv_data:
-            return load_empty_ascat_data(self.sqlContext)
+        if self._config.omit_cnv_data:
+            return load_empty_ascat_data(self._spark_session)
 
-        dids = self._doc_resolver.get_ids(self.config.projects)
+        dids = self._doc_resolver.get_ids(self._config.projects)
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
@@ -466,7 +466,7 @@ class ASCATBuilder(base_input_builder.BaseInputBuilder):
         )
 
 
-def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
+def load_empty_ascat_data(spark_session: sql.SparkSession) -> sql.DataFrame:
     """
     Creates and empty dataframe with no data for omitting all cnv data from the
     output indices.
@@ -475,4 +475,4 @@ def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
     """
     schema = schemas.load_schema("builders/ascat/final_ascat.json")
 
-    return sql_context.createDataFrame((), schema=schema)
+    return spark_session.createDataFrame((), schema=schema)

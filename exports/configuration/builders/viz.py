@@ -18,7 +18,7 @@ from exports.configuration.builders.common import (
 
 
 @dataclasses.dataclass(frozen=True)
-class AscatBuilder(Builder):
+class ASCATBuilder(Builder):
     """
     Configuration values for running the ascat builder
     """
@@ -110,7 +110,7 @@ class Viz:
     Configuration values for running the export of the viz indices
     """
 
-    ascat: AscatBuilder
+    ascat: ASCATBuilder
     case: CaseBuilder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
