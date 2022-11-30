@@ -51,7 +51,6 @@ index_types = [
   "GENE_CENTRIC",
   "SSM_CENTRIC",
   "SSM_OCCURRENCE_CENTRIC",
-  "GENE_EXPRESSION",
 ]
 jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
