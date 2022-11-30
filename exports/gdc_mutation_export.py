@@ -1,12 +1,12 @@
 import abc
 import logging
-from typing import Collection, Dict, Iterable, Mapping, NamedTuple
+from typing import Collection, Dict, Iterable, Mapping, NamedTuple, Union
 
 import pyspark
 from pyspark import sql
 
 import config
-from exports.builders import base_builder, base_input_builder
+from exports.builders import base_builder, base_input_builder, bases
 from exports.constants import build
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class Builders(NamedTuple):
-    input_builders: Mapping[build.DataFrame, base_input_builder.BaseInputBuilder]
+    input_builders: Mapping[
+        build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+    ]
     index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
 
 
@@ -64,7 +66,7 @@ class GDCMutationExport(abc.ABC):
             self._spark_context.setJobGroup(data_frame.name, f"Build {data_frame}")
 
             df = self._input_builders[data_frame].build(**inputs)
-            inputs[f"{data_frame.name.lower()}_df"] = df
+            inputs[data_frame.to_param()] = df
 
         return inputs
 
