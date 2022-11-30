@@ -43,6 +43,15 @@ def initialize_spark() -> Iterator[sql.SparkSession]:
 
 
 def get_index_client(config: indexd.IndexD) -> client.IndexClient:
+    """
+    Builds the index client with the given configuration values.
+
+    Args:
+        config: The connection configuration for setting up the client.
+
+    Returns:
+        An indexd client
+    """
     return client.IndexClient(
         baseurl=f"{config.host}:{config.port}",
         auth=(config.user, config.password),
@@ -52,6 +61,9 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
 def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     """
     builds the elastic search client based on the configuration.
+
+    Args:
+        config: The connection configuration for setting up the client.
 
     Returns:
         An elasticsearch client
@@ -81,6 +93,29 @@ def get_viz_input_builders(
 ) -> Mapping[
     build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
 ]:
+    """
+    Builds the input builders required for the viz export process.
+
+    Args:
+        old_config: The old god configuration object with all of the configuration
+            values needed to run any and all builders.
+        config: The configuration object for the builders.
+        es_config: The elasticsearch configuration.
+        sql_context: The SQLContext for the current spark run.
+        spark_session: The SparkSession for the current spark run.
+        es_client: The client for interacting with the elasticsearch cluster.
+        es_dataframe_util: A utility for loading and writing data frames to and from
+            elasticsearch to be used by the builders.
+        es_rdd_util: A utility for loading rdd objects from the elasticsearch cluster.
+        doc_dataframe_util: A utility for reading document data from documents found in
+            the indexd store.
+        case_field_selector: A utility for loading the required case fields for a given
+            index or set of indices.
+
+    Returns:
+        A mapping of the build.DataFrame to the builder which will produce said data
+        frame.
+    """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(old_config, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
@@ -114,19 +149,36 @@ def get_viz_input_builders(
 
 
 def get_viz_index_builders(
-    config: old_config.BaseConfig,
+    old_config: old_config.BaseConfig,
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     case_field_selector: es_utils.CaseFieldSelector,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
+    """
+    Builds the index builders required for the viz export process.
+
+    Args:
+        old_config: The old god configuration object with all of the configuration
+            values needed to run any and all builders.
+        sql_context: The SQLContext for the current spark run.
+        es_dataframe_util: A utility for loading and writing data frames to and from
+            elasticsearch to be used by the builders.
+        es_rdd_util: A utility for loading rdd objects from the elasticsearch cluster.
+        case_field_selector: A utility for loading the required case fields for a given
+            index or set of indices.
+
+    Returns:
+        A mapping of the build.IndexType to the builder which will build and then load
+        the said index into es.
+    """
     consequence_builder = builders.ConsequenceBuilder()
     observation_builder = builders.ObservationBuilder()
 
     return types.MappingProxyType(
         {
             build.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(
-                config,
+                old_config,
                 sql_context,
                 es_dataframe_util,
                 es_rdd_util,
@@ -135,19 +187,19 @@ def get_viz_index_builders(
                 observation_builder,
             ),
             build.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
-                config, sql_context, consequence_builder, observation_builder
+                old_config, sql_context, consequence_builder, observation_builder
             ),
             build.IndexType.CNV_OCCURRENCE_CENTRIC: builders.CNVOccurrenceCentricBuilder(
-                config, sql_context, consequence_builder, observation_builder
+                old_config, sql_context, consequence_builder, observation_builder
             ),
             build.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
-                config, sql_context, consequence_builder, observation_builder
+                old_config, sql_context, consequence_builder, observation_builder
             ),
             build.IndexType.SSM_CENTRIC: builders.SSMCentricBuilder(
-                config, sql_context, consequence_builder, observation_builder
+                old_config, sql_context, consequence_builder, observation_builder
             ),
             build.IndexType.SSM_OCCURRENCE_CENTRIC: builders.SSMOccurrenceCentricBuilder(
-                config, sql_context, consequence_builder, observation_builder
+                old_config, sql_context, consequence_builder, observation_builder
             ),
         }
     )
@@ -158,6 +210,18 @@ def get_viz_builders(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> gdc_mutation_export.Builders:
+    """
+    Builds the exporters Builders object with the required builders for the viz process.
+
+    Args:
+        config: The old master configuration with all subconfigurations for builders and
+            services.
+        spark_session: The SparkSession for the current spark run.
+        es_client: The client for interacting with the elasticsearch cluster.
+
+    Returns:
+        The Builders object to used by the export process.
+    """
     indexd = get_index_client(config.indexd)
     config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
@@ -186,35 +250,67 @@ def get_viz_builders(
 
 
 def get_ge_input_builders(
-    config: old_config.BaseConfig,
+    old_config: old_config.BaseConfig,
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[build.DataFrame, base_input_builder.BaseInputBuilder]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
+    """
+    Builds the input builders required for the gene expression export process.
+
+    Args:
+        old_config: The old god configuration object with all of the configuration
+            values needed to run any and all builders.
+        sql_context: The SQLContext for the current spark run.
+        es_dataframe_util: A utility for loading and writing data frames to and from
+            elasticsearch to be used by the builders.
+        doc_dataframe_util: A utility for reading document data from documents found in
+            the indexd store.
+
+    Returns:
+        A mapping of the build.DataFrame to the builder which will produce said data
+        frame.
+    """
     return types.MappingProxyType(
         {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
-                config, sql_context, es_dataframe_util
+                old_config, sql_context, es_dataframe_util
             ),
             build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
-                config, sql_context
+                old_config, sql_context
             ),
             build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
-                config, sql_context, doc_dataframe_util
+                old_config, sql_context, doc_dataframe_util
             ),
         }
     )
 
 
 def get_ge_index_builders(
-    config: old_config.BaseConfig,
+    old_config: old_config.BaseConfig,
     sql_context: sql.SQLContext,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
+    """
+    Builds the index builders required for the gene expression export process.
+
+    Args:
+        old_config: The old god configuration object with all of the configuration
+            values needed to run any and all builders.
+        sql_context: The SQLContext for the current spark run.
+
+    Returns:
+        A mapping of the build.IndexType to the builder which will build and then load
+        the said index into es.
+    """
     return types.MappingProxyType(
         {
             build.IndexType.GENE_EXPRESSION: builders.GeneExpressionBuilder(
-                config, sql_context
+                old_config, sql_context
             )
         }
     )
@@ -225,6 +321,18 @@ def get_ge_builders(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> gdc_mutation_export.Builders:
+    """
+    Builds the exporters Builders object with the required builders for the viz process.
+
+    Args:
+        config: The old master configuration with all subconfigurations for builders and
+            services.
+        spark_session: The SparkSession for the current spark run.
+        es_client: The client for interacting with the elasticsearch cluster.
+
+    Returns:
+        The Builders object to used by the export process.
+    """
     indexd = get_index_client(config.indexd)
     config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
