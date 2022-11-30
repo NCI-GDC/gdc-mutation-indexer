@@ -40,9 +40,19 @@ class GDCMutationExport(abc.ABC):
     @property
     @abc.abstractmethod
     def _input_data_frames(self) -> Iterable[build.DataFrame]:
+        """
+        An ordered iteration of the required data frames for the export process.
+        """
         pass
 
-    def build_input_data_frames(self) -> Dict[str, sql.DataFrame]:
+    def _build_input_data_frames(self) -> Dict[str, sql.DataFrame]:
+        """
+        Builds the input data frames given by the input data frames prop using their
+        related input builder.
+
+        Returns:
+            All data frames output by the input data frame builders.
+        """
         inputs: Dict[str, sql.DataFrame] = {}
 
         for data_frame in self._input_data_frames:
@@ -61,7 +71,10 @@ class GDCMutationExport(abc.ABC):
     def run_export(
         self,
     ) -> None:
-        inputs = self.build_input_data_frames()
+        """
+        Executes the export configured data by running the required builders.
+        """
+        inputs = self._build_input_data_frames()
 
         for index_type in self._index_types:
             if index_type not in self._index_builders:
