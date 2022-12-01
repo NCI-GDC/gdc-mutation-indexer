@@ -173,13 +173,18 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
 
     def _create_actions(
         self,
-        filename: Union[str, pathlib.Path],
+        inputs: Union[str, pathlib.Path, Iterable[dict]],
         index_name: str,
         index_type: build.IndexType,
     ) -> Iterator[dict]:
         doc_id = self._id_fields[index_type]
+        docs = (
+            self._load_file(str(inputs))
+            if isinstance(inputs, (str, pathlib.Path))
+            else inputs
+        )
 
-        for doc in self._load_file(str(filename)):
+        for doc in docs:
             doc = remove_keys_from_dict(doc, {"file_state"})
             action = {
                 "_id": doc[doc_id],
@@ -194,7 +199,9 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
             yield action
 
     def load_docs(
-        self, index_type: build.IndexType, input_path: Union[str, pathlib.Path]
+        self,
+        index_type: build.IndexType,
+        inputs: Union[str, pathlib.Path, Iterable[dict]],
     ) -> AbstractSet[str]:
         """Load documents from gzipped test data into test index.
         Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
@@ -202,7 +209,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
             A set containing the IDs of the documents that were inserted.
         """
         index_name = self._graph_indices[index_type]
-        actions = tuple(self._create_actions(input_path, index_name, index_type))
+        actions = tuple(self._create_actions(inputs, index_name, index_type))
 
         self._logger.info(f"Bulk loading {index_type} docs to the ES...")
         helpers.bulk(self._es, actions, ignore=409)

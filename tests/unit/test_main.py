@@ -20,7 +20,7 @@ def test__get_viz_builders__all_builders() -> None:
         )
     )
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.ASCAT], builders.AscatBuilder
+        viz_builders.input_builders[build.DataFrame.ASCAT], builders.ASCATBuilder
     )
     assert isinstance(
         viz_builders.input_builders[build.DataFrame.CASE], builders.CaseBuilder
