@@ -88,6 +88,7 @@ def get_viz_input_builders(
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        es_config: The configurations for connecting to the elasticsearch cluster.
         sql_context: The SQLContext for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
