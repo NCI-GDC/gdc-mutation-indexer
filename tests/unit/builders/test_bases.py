@@ -295,3 +295,22 @@ class TestInputBuilder:
         assert result_df is df
         df.write.parquet.assert_not_called()
         spark_session.read.parquet.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "is_cached", (True, False), ids=("is_cached", "is_not_cached")
+    )
+    def test__build__caching(self, is_cached: bool) -> None:
+        cached_df = mock.MagicMock(spec=sql.DataFrame)
+        df = mock.MagicMock(spec=sql.DataFrame)
+        df.cache.return_value = cached_df
+        expected_df = cached_df if is_cached else df
+        config = mock.MagicMock(
+            spec=common.Builder,
+            is_cached=is_cached,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER),
+        )
+        builder = TestInputBuilder.Builder0(config, scratch_df=df)
+
+        result_df = builder.build()
+
+        assert result_df is expected_df
