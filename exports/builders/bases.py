@@ -12,13 +12,13 @@ from typing import (
 )
 
 from pyspark import sql
-from typing_extensions import Protocol, TypedDict, TypeGuard
+from typing_extensions import Protocol, TypeGuard
 
 from exports.configuration.builders import common
 from exports.constants import build
 
 TConfig = TypeVar("TConfig", bound=common.Builder)
-TInputDFs = TypeVar("TInputDFs", bound=TypedDict)
+TInputDFs = TypeVar("TInputDFs", bound=dict)
 
 logger = logging.getLogger(__name__)
 
