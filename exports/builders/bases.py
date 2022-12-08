@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class Builder(Protocol):
+    """A class which can its defined output dataframe from its required inputs."""
+
     @property
     def output(self) -> build.DataFrame:  # type: ignore
         """The data frame which will be produced by this builder."""
