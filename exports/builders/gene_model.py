@@ -48,7 +48,7 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
             output=build.DataFrame.GENE_MODEL,
         )
 
-    def _build_from_scratch(self, **_: sql.DataFrame) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: GeneModelInputs) -> sql.DataFrame:
         """
         Builds Gene Model dataframe
         """
