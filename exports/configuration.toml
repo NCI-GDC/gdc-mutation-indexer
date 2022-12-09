@@ -172,9 +172,9 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
-[builders.gene_expression.value]
+[builders.gene_expression.expression_value]
 is_cached = true
-[builders.gene_expression.value.backup]
+[builders.gene_expression.expression_value.backup]
 mode = "NEITHER"
 path = ""
 
