@@ -10,15 +10,10 @@ from pyspark.sql import types
 
 from exports import builders
 from exports.builders.clinical_annotations import civic
+from exports.configuration.builders import viz
+from exports.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
-
-DEFAULT_CONFIG_VALUES = {
-    "maf_urls": ("fake_url0",),
-    "cache_dataframes": {"mafs": False},
-    "df_repartition": 2048,
-    "debug": False,
-}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -280,12 +275,13 @@ def final_maf_schema() -> types.StructType:
     return schemas.load_schema("builders/maf/final_maf.yaml")
 
 
-def arrange_config(config_values: Optional[Dict[str, Any]]) -> mock.MagicMock:
-    values = dict(DEFAULT_CONFIG_VALUES)
-
-    values.update(config_values or {})
-
-    return mock.MagicMock(**values)
+def arrange_config() -> viz.MAFBuilder:
+    return mock.MagicMock(
+        spec=viz.MAFBuilder,
+        is_cached=False,
+        repartition_size=1,
+        backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+    )
 
 
 def assert_domains_equal(result_domain: sql.Row, domain: Domain) -> None:
@@ -447,7 +443,6 @@ class TestMAFBuilder:
         self,
         masked_somatic_mutation_mafs: Tuple[MAF, ...] = (MAF(),),
         aggregated_somatic_mutation_mafs: Tuple[MAF, ...] = (),
-        config_values: Optional[Dict[str, Any]] = None,
         annotation_builders: Optional[Iterable[civic.CivicBuilder]] = None,
     ) -> builders.MAFBuilder:
         annotation_builders = (
@@ -464,7 +459,7 @@ class TestMAFBuilder:
             schema=self.aggregated_somatic_mutation_schema,
         )
 
-        config = arrange_config(config_values)
+        config = arrange_config()
         sql_context = mock.MagicMock()
 
         doc_dataframe_util = mock.MagicMock()
@@ -481,28 +476,29 @@ class TestMAFBuilder:
         self, gene_model: Tuple[GeneModel, ...] = (GeneModel(),)
     ) -> Dict[str, sql.DataFrame]:
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, self.gene_model_schema
+            gene_model,  # type: ignore
+            self.gene_model_schema,
         )
         maf_metadata_df = mock.MagicMock()
 
         return {"gene_model_df": gene_model_df, "maf_metadata_df": maf_metadata_df}
 
-    def test__build_from_scratch__joins_succeed(self) -> None:
+    def test__build__joins_succeed(self) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder()
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_maf_schema
 
-    def test__build_from_scratch__masked_somatic_mutation_maf_transformed(self) -> None:
+    def test__build__masked_somatic_mutation_maf_transformed(self) -> None:
         gene_model = GeneModel()
         maf = MAF()
         inputs = self.arrange_inputs(gene_model=(gene_model,))
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert_core_maf_transformed(result_row, maf, gene_model)
@@ -511,7 +507,7 @@ class TestMAFBuilder:
         assert result_row.tumor_bam_uuid == maf.tumor_bam_uuid
         assert result_row.variant_caller == maf.callers
 
-    def test__build_from_scratch__aggregated_somatic_mutation_maf_transformed(
+    def test__build__aggregated_somatic_mutation_maf_transformed(
         self,
     ) -> None:
         gene_model = GeneModel()
@@ -521,7 +517,7 @@ class TestMAFBuilder:
             masked_somatic_mutation_mafs=(), aggregated_somatic_mutation_mafs=(maf,)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert_core_maf_transformed(result_row, maf, gene_model)
@@ -530,12 +526,12 @@ class TestMAFBuilder:
         assert result_row.tumor_bam_uuid is None
         assert result_row.variant_caller == "FM Simple Somatic Mutation"
 
-    def test__build_from_scratch__cast_str_to_int(self) -> None:
+    def test__build__cast_str_to_int(self) -> None:
         maf = MAF()
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.end_position == int(maf.End_Position)
@@ -550,25 +546,25 @@ class TestMAFBuilder:
         (("True", True), ("False", False), ("", None), (None, None)),
         ids=("true", "false", "empty", "null"),
     )
-    def test__build_from_scratch__cast_str_to_bool(
+    def test__build__cast_str_to_bool(
         self, bool_value: Optional[str], expected_value: Optional[bool]
     ) -> None:
         maf = MAF(CANONICAL=bool_value)
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.is_canonical == expected_value
 
-    def test__build_from_scratch__joins_fail(self) -> None:
+    def test__build__joins_fail(self) -> None:
         inputs = self.arrange_inputs((GeneModel(),))
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(MAF(Gene="GENE0"),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 0
 
@@ -587,7 +583,7 @@ class TestMAFBuilder:
             "only_case_id",
         ),
     )
-    def test__build_from_scratch__available_variation_data_added(
+    def test__build__available_variation_data_added(
         self,
         tumor_sample_barcode: Optional[str],
         case_id: Optional[str],
@@ -600,7 +596,7 @@ class TestMAFBuilder:
             )
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.available_variation_data == available_variation_data
@@ -618,7 +614,7 @@ class TestMAFBuilder:
         ),
         ids=("SNP", "DNP", "TNP", "ONP", "DEL", "INS", "OTHER"),
     )
-    def test__build_from_scratch__genomic_dna_change(
+    def test__build__genomic_dna_change(
         self, variant_type: str, genomic_dna_change: str
     ) -> None:
         maf = MAF(
@@ -632,7 +628,7 @@ class TestMAFBuilder:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.genomic_dna_change == genomic_dna_change
@@ -644,17 +640,17 @@ class TestMAFBuilder:
             ("Normal", None),
         ),
     )
-    def test__build_from_scratch__mutation_type(
+    def test__build__mutation_type(
         self, mutation_status: str, mutation_type: Optional[str]
     ) -> None:
         maf = MAF(Mutation_Status=mutation_status)
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        result_row.mutation_type == mutation_type
+        assert result_row.mutation_type == mutation_type
 
     @pytest.mark.parametrize(
         ("variant_type", "mutation_subtype"),
@@ -669,7 +665,7 @@ class TestMAFBuilder:
         ),
         ids=("SNP", "DNP", "TNP", "ONP", "DEL", "INS", "OTHER"),
     )
-    def test__build_from_scratch__mutation_subtype(
+    def test__build__mutation_subtype(
         self, variant_type: str, mutation_subtype: str
     ) -> None:
         maf = MAF(
@@ -678,18 +674,18 @@ class TestMAFBuilder:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.mutation_subtype == mutation_subtype
 
-    def test__build_from_scratch__uuids_generated(self):
+    def test__build__uuids_generated(self):
         maf = MAF()
 
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
         ssm_id = utils.generate_uuid5(
             "ssm",
@@ -726,7 +722,7 @@ class TestMAFBuilder:
             "null",
         ),
     )
-    def test__build_from_scratch__cds_lengths(
+    def test__build__cds_lengths(
         self, cds_position: str, cds_start: int, cds_end: int, cds_length: int
     ) -> None:
         inputs = self.arrange_inputs()
@@ -734,7 +730,7 @@ class TestMAFBuilder:
             masked_somatic_mutation_mafs=(MAF(CDS_position=cds_position),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.cds_start == cds_start
@@ -751,7 +747,7 @@ class TestMAFBuilder:
         ),
         ids=("decimal", "whole_number", "empty", "null"),
     )
-    def test__build_from_scratch__polyphen_impact_and_score(
+    def test__build__polyphen_impact_and_score(
         self,
         polyphen: Optional[str],
         polyphen_impact: Optional[str],
@@ -762,7 +758,7 @@ class TestMAFBuilder:
             masked_somatic_mutation_mafs=(MAF(PolyPhen=polyphen),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.polyphen_impact == polyphen_impact
@@ -778,7 +774,7 @@ class TestMAFBuilder:
         ),
         ids=("decimal", "whole_number", "empty", "null"),
     )
-    def test__build_from_scratch__sift_impact_and_score(
+    def test__build__sift_impact_and_score(
         self,
         sift: Optional[str],
         sift_impact: Optional[str],
@@ -787,13 +783,13 @@ class TestMAFBuilder:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(MAF(SIFT=sift),))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.sift_impact == sift_impact
         assert result_row.sift_score == sift_score
 
-    def test__build_from_scratch__canonical_transcript_lengths_added(self) -> None:
+    def test__build__canonical_transcript_lengths_added(self) -> None:
         canonical_transcript = Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
@@ -803,7 +799,7 @@ class TestMAFBuilder:
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = self.arrange_builder()
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == canonical_transcript.length
@@ -816,7 +812,7 @@ class TestMAFBuilder:
             == canonical_transcript.end - canonical_transcript.start + 1
         )
 
-    def test__build_from_scratch__canonical_transcript_lengths_no_canonical_transcipt(
+    def test__build__canonical_transcript_lengths_no_canonical_transcipt(
         self,
     ) -> None:
         other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
@@ -825,54 +821,54 @@ class TestMAFBuilder:
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = self.arrange_builder()
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == None
         assert result_row.canonical_transcript_length_cds == None
         assert result_row.canonical_transcript_length_genomic == None
 
-    def test__build_from_scratch__normal_genotype(self) -> None:
+    def test__build__normal_genotype(self) -> None:
         maf = MAF()
 
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.normal_genotype.allele_id == utils.generate_uuid5(
             maf.Match_Norm_Seq_Allele1, maf.Match_Norm_Seq_Allele2
         )
 
-    def test__build_from_scratch__static_fields(self) -> None:
+    def test__build__static_fields(self) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder()
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.variant_process == "masked"
         assert result_row.empty == None
 
-    def test__build_from_scratch__gene_chromosome(self) -> None:
+    def test__build__gene_chromosome(self) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(MAF(Chromosome="chr1"),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.gene_chromosome == "1"
 
-    def test__build_from_scratch__chromosome(self) -> None:
+    def test__build__chromosome(self) -> None:
         inputs = self.arrange_inputs(gene_model=(GeneModel(chromosome="1"),))
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(MAF(Chromosome="chr1"),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.chromosome == "chr1"
@@ -887,7 +883,7 @@ class TestMAFBuilder:
         ),
         ids=("multiple", "single", "empty", "null"),
     )
-    def test__build_from_scratch__cosmic_id(
+    def test__build__cosmic_id(
         self, cosmic: Optional[str], cosmic_id: Optional[List[str]]
     ) -> None:
         inputs = self.arrange_inputs()
@@ -895,12 +891,12 @@ class TestMAFBuilder:
             masked_somatic_mutation_mafs=(MAF(COSMIC=cosmic),)
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.cosmic_id == cosmic_id
 
-    def test__build_from_scratch__annotation_builders_called(self) -> None:
+    def test__build__annotation_builders_called(self) -> None:
         def pass_through(df: sql.DataFrame) -> sql.DataFrame:
             return df
 
@@ -914,12 +910,12 @@ class TestMAFBuilder:
             annotation_builders=(annotation_builder0, annotation_builder1)
         )
 
-        _ = builder.build_from_scratch(**inputs)
+        _ = builder.build(**inputs)
 
         annotation_builder0.merge_with_maf.assert_called_once()
         annotation_builder1.merge_with_maf.assert_called_once()
 
-    def test__build_from_scratch__strip_domains(self) -> None:
+    def test__build__strip_domains(self) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(
@@ -929,7 +925,7 @@ class TestMAFBuilder:
             )
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert (
