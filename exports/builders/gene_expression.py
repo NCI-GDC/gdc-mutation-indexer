@@ -2,11 +2,13 @@ from typing import Iterable, Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
+from typing_extensions import Self, TypedDict
 
 import config
 from exports import indexd_utils, schemas
-from exports.builders import base_builder, base_input_builder
+from exports.builders import base_builder, base_input_builder, bases
+from exports.configuration.builders import gene_expression
+from exports.constants import build
 
 
 class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
@@ -28,7 +30,7 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
         self,
         gene_model_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame
+        **kwargs: sql.DataFrame,
     ) -> sql.DataFrame:
         """
         Creates a data frame containing the gene expression values contained within
@@ -92,23 +94,29 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
         )
 
 
-class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
+class CaseInputs(TypedDict):
+    primary_aliquot_df: sql.DataFrame
+
+
+class CaseBuilder(bases.InputBuilder[gene_expression.Builder, CaseInputs]):
     """
     An input builder class for loading case data related to gene expression.
     """
 
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext):
-        super().__init__(config, sqlContext, "gene_expression_cases")
+    def __init__(
+        self, config: gene_expression.Builder, spark_session: sql.SparkSession
+    ) -> None:
+        super().__init__(
+            config, spark_session, input_type=CaseInputs, output=build.DataFrame.CASE
+        )
 
-    def build_from_scratch(
-        self, primary_aliquot_df: sql.DataFrame, **kwargs: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
         """
         Creates a data frame containing the case data associated with the aliquots in the ge
         primary aliquot data and their related file_id.
 
         Args:
-            gene_expression_primary_aliquot_df: the output of the GeneExpressionPrimaryAliquotBuilder
+            input_dfs: contains the output of the primary aliquot data for the build.
 
         Returns:
             a data frame of gene expression cases
@@ -125,7 +133,7 @@ class GeneExpressionCaseInputBuilder(base_input_builder.BaseInputBuilder):
             |---submitter_id
             +---vital_status
         """
-        initial_df = primary_aliquot_df
+        initial_df = input_dfs["primary_aliquot_df"]
 
         # NOTE: diagnoses is a nested document, so we are flattening it by
         #   simply aggregating age_at_diagnosis values into an array
