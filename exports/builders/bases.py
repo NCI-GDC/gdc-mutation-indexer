@@ -235,6 +235,8 @@ def _add_required_include_fields(
 class PrimaryAliquotBuilder(
     Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
 ):
+    __slots__ = ("_es_dataframe_util", "_additional_selections")
+
     def __init__(
         self,
         config: TConfig,
