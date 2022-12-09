@@ -359,7 +359,8 @@ class PrimaryAliquotBuilder(
                 spark. Use to include extra fields in the returned case mapping.
 
         Returns:
-            a dataframe with the file data associated with the most relevant sample for each case.
+            a dataframe with the file data associated with the most relevant sample for
+            each case.
 
             file_id
             created_datetime
