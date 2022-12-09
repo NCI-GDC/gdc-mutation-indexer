@@ -25,6 +25,16 @@ TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
 
+BASE_PRIMARY_ALIQUOT_FIELDS = frozenset(
+    (
+        "file_id",
+        "created_datetime",
+        "cases.case_id",
+        "cases.samples.sample_id",
+        "cases.samples.sample_type",
+    )
+)
+
 
 class Builder(Protocol):
     """A class which can build its defined output dataframe from its required inputs."""
@@ -227,7 +237,7 @@ def _add_required_include_fields(
     include_fields: Union[Iterable[str], Literal[True]]
 ) -> Union[Iterable[str], Literal[True]]:
     if include_fields is not True:
-        return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)  # type: ignore
+        return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
 
     return include_fields
 
