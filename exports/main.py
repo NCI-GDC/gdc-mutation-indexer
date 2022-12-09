@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import types
-from typing import Iterator, Mapping
+from typing import Iterator, Mapping, Union
 
 import elasticsearch
 import toml
@@ -10,7 +10,7 @@ from pyspark import sql
 
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
-from exports.builders import base_builder, base_input_builder, maf_metadata
+from exports.builders import base_builder, base_input_builder, bases, maf_metadata
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
@@ -80,7 +80,7 @@ def get_viz_input_builders(
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[build.DataFrame, base_input_builder.BaseInputBuilder]:
+) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
     """
     Builds the input builders required for the viz export process.
 
@@ -229,7 +229,7 @@ def get_ge_input_builders(
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[build.DataFrame, base_input_builder.BaseInputBuilder]:
+) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
     """
     Builds the input builders required for the gene expression export process.
 
