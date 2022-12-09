@@ -1,17 +1,19 @@
-import logging
-
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import TypedDict
 
-import config
-from exports.builders import base_input_builder
-
-logging.basicConfig(format=config.LOG_FORMAT)
+from exports.builders import bases
+from exports.configuration.builders import viz
+from exports.constants import build
 
 
 def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     # Rename transcripts.id to transcripts.transcript_id
+    assert isinstance(gene_model_df.schema["transcripts"].dataType, types.ArrayType)
+    assert isinstance(
+        gene_model_df.schema["transcripts"].dataType.elementType, types.StructType
+    )
     tr_schema = gene_model_df.schema["transcripts"].dataType.elementType
 
     fields = []
@@ -20,7 +22,7 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
             field = types.StructField("transcript_id", types.StringType(), True)
         fields.append(field)
 
-    new_schema = types.ArrayType(types.StructType(fields))
+    new_schema = types.ArrayType(types.StructType(fields))  # type: ignore
     gene_df = gene_model_df.select(
         F.col("transcripts").cast(new_schema),
         *gene_model_df.drop("transcripts").columns
@@ -29,17 +31,24 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     return gene_df
 
 
-class GeneModelBuilder(base_input_builder.BaseInputBuilder):
+class GeneModelInputs(TypedDict):
+    pass
+
+
+class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]):
     """
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(self, config, sqlContext):
-        super().__init__(config, sqlContext, "gene_model")
+    def __init__(self, config: viz.GeneModelBuilder, spark_session: sql.SparkSession):
+        super().__init__(
+            config,
+            spark_session,
+            input_type=GeneModelInputs,
+            output=build.DataFrame.GENE_MODEL,
+        )
 
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
+    def _build_from_scratch(self, **_: sql.DataFrame) -> sql.DataFrame:
         """
         Builds Gene Model dataframe
         """
@@ -81,13 +90,8 @@ class GeneModelBuilder(base_input_builder.BaseInputBuilder):
         Reads the gene model, cytobands and census files into Spark
         dataframes
         """
-        spark_csv_path = "org.apache.spark.sql.execution.datasources.csv.CSVFileFormat"
-
-        cytobands_df = (
-            self.sqlContext.read.format(spark_csv_path)
-            .option("delimiter", "\t")
-            .option("header", "true")
-            .load(self.config.citobands_file)
+        cytobands_df = self._spark_session.read.csv(
+            self._config.citobands_file, sep="\t", header=True
         )
 
         # Turn the cytoband column into an array of cytobands
@@ -99,14 +103,11 @@ class GeneModelBuilder(base_input_builder.BaseInputBuilder):
             ).otherwise(F.split("cytoband", ",")),
         )
 
-        census_df = (
-            self.sqlContext.read.format(spark_csv_path)
-            .option("delimiter", "\t")
-            .option("header", "true")
-            .load(self.config.census_file)
+        census_df = self._spark_session.read.csv(
+            self._config.census_file, sep="\t", header=True
         )
 
-        gene_model_df = self.sqlContext.read.json(self.config.gene_model_file)
+        gene_model_df = self._spark_session.read.json(self._config.gene_model_file)
 
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(

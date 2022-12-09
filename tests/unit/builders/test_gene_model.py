@@ -1,123 +1,131 @@
-from os import path
+import dataclasses
 from typing import Dict, Optional, Tuple
 from unittest import mock
 
-import attr
 import more_itertools
 import pytest
 from pyspark import sql
+from pyspark.sql import types
 
 from exports import builders
-from tests.unit import utils
+from exports.configuration.builders import viz
+from exports.constants import build
+from tests.unit.data import schemas
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Cytoband:
-    ens_gene_id = attr.ib(type=str, default="ENSG00000223972")
-    cytoband = attr.ib(type=Optional[str], default="1p36.33")
+    ens_gene_id: str = "ENSG00000223972"
+    cytoband: Optional[str] = "1p36.33"
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Census:
-    cancer_gene_id = attr.ib(type=str, default="ENSG00000223972")
-    is_cancer_gene_census = attr.ib(type=str, default="True")
+    cancer_gene_id: str = "ENSG00000223972"
+    is_cancer_gene_census: str = "True"
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Domain:
-    description = attr.ib(
-        type=str, default="G protein-coupled receptor, rhodopsin-like"
-    )
-    end = attr.ib(type=int, default=280)
-    gff_source = attr.ib(type=str, default="pfam")
-    hit_name = attr.ib(type=str, default="PF00001")
-    interpro_id = attr.ib(type=str, default="IPR000276")
-    start = attr.ib(type=int, default=34)
+    description: str = "G protein-coupled receptor, rhodopsin-like"
+    end: int = 280
+    gff_source: str = "pfam"
+    hit_name: str = "PF00001"
+    interpro_id: str = "IPR000276"
+    start: int = 34
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Exon:
-    cdna_coding_end = attr.ib(type=int, default=0)
-    cdna_coding_start = attr.ib(type=int, default=0)
-    cdna_end = attr.ib(type=int, default=359)
-    cdna_start = attr.ib(type=int, default=1)
-    end = attr.ib(type=int, default=12227)
-    end_phase = attr.ib(type=int, default=-1)
-    genomic_coding_end = attr.ib(type=int, default=0)
-    genomic_coding_stairt = attr.ib(type=int, default=0)
-    genomic_coding_start = attr.ib(type=int, default=0)
-    start = attr.ib(type=int, default=11869)
-    start_phase = attr.ib(type=int, default=-1)
+    cdna_coding_end: int = 0
+    cdna_coding_start: int = 0
+    cdna_end: int = 359
+    cdna_start: int = 1
+    end: int = 12227
+    end_phase: int = -1
+    genomic_coding_end: int = 0
+    genomic_coding_stairt: int = 0
+    genomic_coding_start: int = 0
+    start: int = 11869
+    start_phase: int = -1
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Transcript:
-    biotype = attr.ib(type=str, default="processed_transcript")
-    cdna_coding_end = attr.ib(type=int, default=0)
-    cdna_coding_start = attr.ib(type=int, default=0)
-    coding_region_end = attr.ib(type=int, default=0)
-    coding_region_start = attr.ib(type=int, default=0)
-    domains = attr.ib(type=Tuple[Domain, ...], default=(Domain(),))
-    end = attr.ib(type=int, default=14409)
-    end_exon = attr.ib(type=Optional[int], default=None)
-    exons = attr.ib(type=Tuple[Exon, ...], default=(Exon(),))
-    id = attr.ib(type=str, default="ENST00000456328")
-    is_canonical = attr.ib(type=bool, default=False)
-    length = attr.ib(type=int, default=1657)
-    length_amino_acid = attr.ib(type=Optional[int], default=None)
-    length_cds = attr.ib(type=Optional[int], default=None)
-    name = attr.ib(type=str, default="DDX11L1-002")
-    number_of_exons = attr.ib(type=int, default=6)
-    seq_exon_end = attr.ib(type=Optional[int], default=None)
-    seq_exon_start = attr.ib(type=Optional[int], default=None)
-    start = attr.ib(type=int, default=11869)
-    start_exon = attr.ib(type=Optional[int], default=None)
-    translation_id = attr.ib(type=Optional[str], default=None)
+    biotype: str = "processed_transcript"
+    cdna_coding_end: int = 0
+    cdna_coding_start: int = 0
+    coding_region_end: int = 0
+    coding_region_start: int = 0
+    domains: Tuple[Domain, ...] = (Domain(),)
+    end: int = 14409
+    end_exon: Optional[int] = None
+    exons: Tuple[Exon, ...] = (Exon(),)
+    id: str = "ENST00000456328"
+    is_canonical: bool = False
+    length: int = 1657
+    length_amino_acid: Optional[int] = None
+    length_cds: Optional[int] = None
+    name: str = "DDX11L1-002"
+    number_of_exons: int = 6
+    seq_exon_end: Optional[int] = None
+    seq_exon_start: Optional[int] = None
+    start: int = 11869
+    start_exon: Optional[int] = None
+    translation_id: Optional[str] = None
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ExternalIDs:
-    entrez_gene = attr.ib(
-        type=Tuple[str, ...], default=("100287596", "100287102", "727856", "84771")
-    )
-    hgnc = attr.ib(type=Tuple[str, ...], default=("HGNC:37102",))
-    omim_gene = attr.ib(type=Tuple[str, ...], default=())
-    uniprotkb_swissprot = attr.ib(type=Tuple[str, ...], default=())
+    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
+    hgnc: Tuple[str, ...] = ("HGNC:37102",)
+    omim_gene: Tuple[str, ...] = ()
+    uniprotkb_swissprot: Tuple[str, ...] = ()
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GeneModel:
-    _gene_id = attr.ib(type=str, default="ENSG00000223972")
-    _id = attr.ib(
-        type=Dict[str, str],
-        default=attr.Factory(lambda: {"$oid": "589c87ca0ef75875ed614a40"}),
+    _gene_id: str = "ENSG00000223972"
+    _id: Dict[str, str] = dataclasses.field(
+        default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
     )
-    biotype = attr.ib(type=str, default="transcribed_unprocessed_pseudogene")
-    cancer_gene_id = attr.ib(type=str, default="de652d52-4579-4cd9-beb3-776f3bd6f039")
-    canonical_transcript_id = attr.ib(type=str, default="ENST00000456328")
-    chromosome = attr.ib(type=str, default="1")
-    description = attr.ib(
-        type=str,
-        default="DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation.",
-    )
-    end = attr.ib(type=int, default=14409)
-    ens_gene_id = attr.ib(type=str, default="de652d52-4579-4cd9-beb3-776f3bd6f039")
-    external_db_ids = attr.ib(type=ExternalIDs, default=ExternalIDs())
-    name = attr.ib(
-        type=str, default="DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
-    )
-    start = attr.ib(type=int, default=11869)
-    strand = attr.ib(type=int, default=1)
-    symbol = attr.ib(type=str, default="DDX11L1")
-    synonyms = attr.ib(type=Tuple[str, ...], default=())
-    transcripts = attr.ib(type=Tuple[Transcript, ...], default=(Transcript(),))
+    biotype: str = "transcribed_unprocessed_pseudogene"
+    cancer_gene_id: str = "de652d52-4579-4cd9-beb3-776f3bd6f039"
+    canonical_transcript_id: str = "ENST00000456328"
+    chromosome: str = "1"
+    description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    end: int = 14409
+    ens_gene_id: str = "de652d52-4579-4cd9-beb3-776f3bd6f039"
+    external_db_ids: ExternalIDs = ExternalIDs()
+    name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
+    start: int = 11869
+    strand: int = 1
+    symbol: str = "DDX11L1"
+    synonyms: Tuple[str, ...] = ()
+    transcripts: Tuple[Transcript, ...] = (Transcript(),)
+
+
+@pytest.fixture(scope="class")
+def input_schema() -> types.StructType:
+    return schemas.load_schema("builders/gene_model/raw_gene_model.json")
+
+
+@pytest.fixture(scope="class")
+def final_schema() -> types.StructType:
+    return schemas.load_schema("builders/gene_model/final_gene_model.json")
 
 
 class TestGeneModelBuilder:
     @pytest.fixture(autouse=True)
-    def import_fixtures(self, spark_session: sql.SparkSession, data_dir: str) -> None:
+    def import_fixtures(
+        self,
+        spark_session: sql.SparkSession,
+        input_schema: types.StructType,
+        final_schema: types.StructType,
+    ) -> None:
         self.spark_session = spark_session
-        self.schema_dir = path.join(data_dir, "schemas/builders/gene_model")
+        self.input_schema = input_schema
+        self.final_schema = final_schema
 
     def _arrange_builder(
         self,
@@ -126,13 +134,15 @@ class TestGeneModelBuilder:
         gene_model: Tuple[GeneModel, ...],
     ) -> builders.GeneModelBuilder:
         cytoband_df = self.spark_session.createDataFrame(
-            cytobands, "ens_gene_id: string, cytoband: string"
+            cytobands,  # type: ignore
+            "ens_gene_id: string, cytoband: string",
         )
         census_df = self.spark_session.createDataFrame(
-            census, ("cancer_gene_id", "is_cancer_gene_census")
+            census, ("cancer_gene_id", "is_cancer_gene_census")  # type: ignore
         )
         gene_model_df = self.spark_session.createDataFrame(
-            gene_model, utils.load_schema(self.schema_dir, "raw_gene_model.json")
+            gene_model,  # type: ignore
+            self.input_schema,
         )
         dataframes = {
             "cytobands": cytoband_df,
@@ -141,16 +151,18 @@ class TestGeneModelBuilder:
         }
 
         dataframe_reader = mock.MagicMock()
-        dataframe_reader.option.return_value = dataframe_reader
-        dataframe_reader.format.return_value = dataframe_reader
-        dataframe_reader.load.side_effect = dataframes.get
+        dataframe_reader.csv.side_effect = lambda path, **_: dataframes.get(path)
         dataframe_reader.json.side_effect = dataframes.get
 
         sql_context = mock.MagicMock(
             read=dataframe_reader,
         )
 
+        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         config = mock.MagicMock(
+            spec=viz.GeneModelBuilder,
+            backup=backup,
+            is_cached=False,
             citobands_file="cytobands",
             census_file="census",
             gene_model_file="gene_model",
@@ -173,23 +185,19 @@ class TestGeneModelBuilder:
             "neither_cytoband_or_census_exist",
         ),
     )
-    def test__build_from_scratch__joins(
-        self, cytoband_gene_id: str, census_gene_id: str
-    ) -> None:
+    def test__build__joins(self, cytoband_gene_id: str, census_gene_id: str) -> None:
         builder = self._arrange_builder(
             (Cytoband(ens_gene_id=cytoband_gene_id),),
             (Census(cancer_gene_id=census_gene_id),),
             (GeneModel(),),
         )
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
 
         assert result_df.count() == 1
-        assert result_df.schema == utils.load_schema(
-            self.schema_dir, "final_gene_model.json"
-        )
+        assert result_df.schema == self.final_schema
 
-    def test__build_from_scratch__input_data_transformed(self) -> None:
+    def test__build__input_data_transformed(self) -> None:
         cytoband = Cytoband()
         census = Census()
         gene_model = GeneModel()
@@ -200,7 +208,7 @@ class TestGeneModelBuilder:
             (gene_model,),
         )
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row._id.asDict() == gene_model._id
@@ -226,57 +234,88 @@ class TestGeneModelBuilder:
         for row_transcript, model_transcript in zip(
             result_row.transcripts, gene_model.transcripts
         ):
-            row_transcript = row_transcript.asDict(recursive=True)
-            model_transcript = attr.asdict(model_transcript, recurse=True)
 
-            row_transcript.pop("transcript_id", None)
-            model_transcript.pop("id", None)
+            assert row_transcript.transcript_id == model_transcript.id
+            assert row_transcript.biotype == model_transcript.biotype
+            assert row_transcript.cdna_coding_end == model_transcript.cdna_coding_end
+            assert (
+                row_transcript.cdna_coding_start == model_transcript.cdna_coding_start
+            )
+            assert (
+                row_transcript.coding_region_end == model_transcript.coding_region_end
+            )
+            assert (
+                row_transcript.coding_region_start
+                == model_transcript.coding_region_start
+            )
+            assert row_transcript.end == model_transcript.end
+            assert row_transcript.end == model_transcript.end
+            assert row_transcript.end_exon == model_transcript.end_exon
+            assert row_transcript.is_canonical == model_transcript.is_canonical
+            assert row_transcript.length == model_transcript.length
+            assert (
+                row_transcript.length_amino_acid == model_transcript.length_amino_acid
+            )
+            assert row_transcript.length_cds == model_transcript.length_cds
+            assert row_transcript.name == model_transcript.name
+            assert row_transcript.number_of_exons == model_transcript.number_of_exons
+            assert row_transcript.seq_exon_end == model_transcript.seq_exon_end
+            assert row_transcript.seq_exon_start == model_transcript.seq_exon_start
+            assert row_transcript.start == model_transcript.start
+            assert row_transcript.start_exon == model_transcript.start_exon
+            assert row_transcript.translation_id == model_transcript.translation_id
 
-            assert row_transcript == model_transcript
+            for row_domain, domain in more_itertools.zip_equal(
+                row_transcript.domains, model_transcript.domains
+            ):
+                assert row_domain.description == domain.description
+                assert row_domain.end == domain.end
+                assert row_domain.gff_source == domain.gff_source
+                assert row_domain.hit_name == domain.hit_name
+                assert row_domain.interpro_id == domain.interpro_id
+                assert row_domain.start == domain.start
 
-    def test__build_from_scratch__trascript_id_renamed(self):
-        transcript = Transcript()
-
-        builder = self._arrange_builder(
-            (Cytoband(),),
-            (Census(),),
-            (GeneModel(transcripts=(transcript,)),),
-        )
-
-        result_df = builder.build_from_scratch()
-        result_row = more_itertools.one(result_df.collect())
-        result_transcript = more_itertools.one(result_row.transcripts)
-
-        assert result_transcript.transcript_id == transcript.id
+            for row_exon, exon in more_itertools.zip_equal(
+                row_transcript.exons, model_transcript.exons
+            ):
+                assert row_exon.cdna_coding_end == exon.cdna_coding_end
+                assert row_exon.cdna_coding_start == exon.cdna_coding_start
+                assert row_exon.cdna_end == exon.cdna_end
+                assert row_exon.cdna_start == exon.cdna_start
+                assert row_exon.end == exon.end
+                assert row_exon.end_phase == exon.end_phase
+                assert row_exon.genomic_coding_end == exon.genomic_coding_end
+                assert row_exon.genomic_coding_stairt == exon.genomic_coding_stairt
+                assert row_exon.genomic_coding_start == exon.genomic_coding_start
+                assert row_exon.start == exon.start
+                assert row_exon.start_phase == exon.start_phase
 
     @pytest.mark.parametrize(("cytobands",), (("8di",), ("123,456",)))
-    def test__build_from_scratch__cytobands_split(self, cytobands: str) -> None:
+    def test__build__cytobands_split(self, cytobands: str) -> None:
         builder = self._arrange_builder(
             (Cytoband(cytoband=cytobands),), (Census(),), (GeneModel(),)
         )
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.cytoband == cytobands.split(",")
 
     @pytest.mark.parametrize(("cytobands",), (("",), (None,)), ids=("Empty", "None"))
-    def test__build_from_scratch__cytobands_null_or_empty(
-        self, cytobands: Optional[str]
-    ) -> None:
+    def test__build__cytobands_null_or_empty(self, cytobands: Optional[str]) -> None:
         builder = self._arrange_builder(
             (Cytoband(cytoband=cytobands),), (Census(),), (GeneModel(),)
         )
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.cytoband == [cytobands]
 
-    def test__build_from_scratch__is_cancer_gene_census_lowwered(self) -> None:
+    def test__build__is_cancer_gene_census_lowwered(self) -> None:
         builder = self._arrange_builder((Cytoband(),), (Census(),), (GeneModel(),))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.is_cancer_gene_census == "true"

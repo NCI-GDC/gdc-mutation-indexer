@@ -251,11 +251,13 @@ def dataframe_writer(
 
 @pytest.fixture(scope="session")
 def gene_model_df(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
-    df = builders.GeneModelBuilder(default_old_config, sqlContext).build()
+    df = builders.GeneModelBuilder(
+        default_config.builders.viz.gene_model, spark_session
+    ).build()
 
     return dataframe_writer(df)
 

@@ -14,6 +14,7 @@ from exports.builders import base_builder, base_input_builder, bases, maf_metada
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
+from exports.configuration.builders import gene_expression, viz
 from exports.constants import app, build
 
 logger = logging.getLogger("exports")
@@ -74,13 +75,17 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 def get_viz_input_builders(
     old_config: old_config.BaseConfig,
+    config: viz.Viz,
     sql_context: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the viz export process.
 
@@ -96,7 +101,6 @@ def get_viz_input_builders(
             the indexd store.
         case_field_selector: A utility for loading the required case fields for a given
             index or set of indices.
-
     Returns:
         A mapping of the build.DataFrame to the builder which will produce said data
         frame.
@@ -107,12 +111,18 @@ def get_viz_input_builders(
     return types.MappingProxyType(
         {
             build.DataFrame.ASCAT: builders.AscatBuilder(
-                old_config, sql_context, doc_dataframe_util, es_dataframe_util, es_client
+                old_config,
+                sql_context,
+                doc_dataframe_util,
+                es_dataframe_util,
+                es_client,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
                 old_config, sql_context, es_dataframe_util, case_field_selector
             ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                config.gene_model, spark_session
+            ),
             build.DataFrame.MAF: builders.MAFBuilder(
                 old_config, sql_context, doc_dataframe_util, annotation_builders
             ),
@@ -210,7 +220,9 @@ def get_viz_builders(
 
     viz_input_builders = get_viz_input_builders(
         config_adapter,
+        config.builders.viz,
         sql_context,
+        spark_session,
         es_client,
         es_dataframe_util,
         es_rdd_util,
@@ -226,10 +238,14 @@ def get_viz_builders(
 
 def get_ge_input_builders(
     old_config: old_config.BaseConfig,
+    config: gene_expression.GeneExpression,
     sql_context: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the gene expression export process.
 
@@ -248,7 +264,9 @@ def get_ge_input_builders(
     """
     return types.MappingProxyType(
         {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                config.gene_model, spark_session
+            ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
                 old_config, sql_context, es_dataframe_util
             ),
@@ -312,7 +330,12 @@ def get_ge_builders(
 
     return gdc_mutation_export.Builders(
         get_ge_input_builders(
-            config_adapter, sql_context, es_dataframe_util, doc_dataframe_util
+            config_adapter,
+            config.builders.gene_expression,
+            sql_context,
+            spark_session,
+            es_dataframe_util,
+            doc_dataframe_util,
         ),
         get_ge_index_builders(config_adapter, sql_context),
     )
