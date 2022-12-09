@@ -14,6 +14,7 @@ from exports.builders import base_builder, base_input_builder, bases, maf_metada
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
+from exports.configuration.builders import viz
 from exports.constants import app, build
 
 logger = logging.getLogger("exports")
@@ -74,20 +75,26 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 def get_viz_input_builders(
     old_config: old_config.BaseConfig,
+    config: viz.Viz,
     sql_context: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the viz export process.
 
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        config: The configuration for the builder objects.
         sql_context: The SQLContext for the current spark run.
+        spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
             elasticsearch to be used by the builders.
@@ -107,12 +114,18 @@ def get_viz_input_builders(
     return types.MappingProxyType(
         {
             build.DataFrame.ASCAT: builders.AscatBuilder(
-                old_config, sql_context, doc_dataframe_util, es_dataframe_util, es_client
+                old_config,
+                sql_context,
+                doc_dataframe_util,
+                es_dataframe_util,
+                es_client,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
-                old_config, sql_context, es_dataframe_util, case_field_selector
+                config.case, spark_session, es_dataframe_util, case_field_selector
             ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.MAF: builders.MAFBuilder(
                 old_config, sql_context, doc_dataframe_util, annotation_builders
             ),
@@ -210,7 +223,9 @@ def get_viz_builders(
 
     viz_input_builders = get_viz_input_builders(
         config_adapter,
+        config.builders.viz,
         sql_context,
+        spark_session,
         es_client,
         es_dataframe_util,
         es_rdd_util,
@@ -229,7 +244,9 @@ def get_ge_input_builders(
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the gene expression export process.
 
@@ -248,7 +265,9 @@ def get_ge_input_builders(
     """
     return types.MappingProxyType(
         {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
                 old_config, sql_context, es_dataframe_util
             ),

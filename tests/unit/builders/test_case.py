@@ -12,6 +12,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from exports.configuration.builders import viz
+from exports.constants import build
 from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
@@ -740,13 +742,26 @@ class TestCaseBuilder:
         self.case_schema = case_schema
         self.final_schema = final_schema
 
+    def arrange_conifg(self) -> viz.CaseBuilder:
+        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
+
+        return mock.MagicMock(
+            spec=viz.CaseBuilder,
+            projects=(),
+            repartition_size=1,
+            include_as_arrays=(),
+            is_cached=False,
+            backup=backup,
+        )
+
     def arrange_es_dataframe_util(
         self, cases: Iterable[Case] = (Case(),)
-    ) -> mock.MagicMock():
-        util = mock.MagicMock()
+    ) -> es_utils.DataFrameUtil:
+        util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
         util.get_dataframe.return_value = self.spark_session.createDataFrame(
-            cases, schema=self.case_schema
+            cases,  # type: ignore
+            schema=self.case_schema,
         )
 
         return util
@@ -777,51 +792,29 @@ class TestCaseBuilder:
 
         return selector
 
-    def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
-        )
-        sql_context = mock.MagicMock()
+    def test__build__single_row(self) -> None:
+        config = self.arrange_conifg()
+        spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util()
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_schema
 
-    def test__build_from_scratch__data_translated(self) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
-        )
+    def test__build__data_translated(self) -> None:
+        config = self.arrange_conifg()
         case = Case()
-        sql_context = mock.MagicMock()
+        spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert_cases_equal(result_row, case)
@@ -836,32 +829,21 @@ class TestCaseBuilder:
         ),
         ids=("neither", "only-in-metadata", "only-in-ascat", "metadata-and-ascat"),
     )
-    def test__build_from_scratch__available_variation_data(
+    def test__build__available_variation_data(
         self,
         maf_metadata_cases: Iterable[str],
         ascat_cases: Iterable[str],
         available_variation_data: FrozenSet[str],
     ) -> None:
-        config = mock.MagicMock(
-            projects=None,
-            graph_case_doc_type=None,
-            df_repartition=1,
-            cache_dataframes={"cases": True},
-            source_es_nodes=None,
-            source_es_user=None,
-            source_es_pass=None,
-            es_use_ssl=None,
-            disable_es_verify_certs=None,
-            excludes_fields=None,
-        )
+        config = self.arrange_conifg()
         case = Case(case_id="case-0")
-        sql_context = mock.MagicMock()
+        spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes(maf_metadata_cases, ascat_cases)
-        builder = builders.CaseBuilder(config, sql_context, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert (

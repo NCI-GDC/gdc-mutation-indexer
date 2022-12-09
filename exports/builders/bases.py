@@ -12,7 +12,7 @@ from typing import (
 )
 
 from pyspark import sql
-from typing_extensions import Protocol, TypeGuard
+from typing_extensions import Protocol, TypedDict, TypeGuard
 
 from exports.configuration.builders import common
 from exports.constants import build
