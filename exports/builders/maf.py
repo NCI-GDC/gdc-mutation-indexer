@@ -29,6 +29,8 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
     uniform features
     """
 
+    __slots__ = ("schema", "annotation_builders", "_doc_dataframe_util")
+
     def __init__(
         self,
         config: viz.MAFBuilder,
@@ -39,9 +41,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         super().__init__(
             config, spark_session, input_type=MAFInputs, output=build.DataFrame.MAF
         )
+
         self.schema = self.get_schema()
         self.annotation_builders = annotation_builders
-
         self._doc_dataframe_util = doc_dataframe_util
 
     def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
