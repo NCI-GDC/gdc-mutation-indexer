@@ -20,6 +20,6 @@ class GeneExpression:
     """
     gene_model: GeneModelBuilder
     case: Builder
-    value: Builder
+    expression_value: Builder
     primary_aliquot: Builder
     gene_expression: CentricBuilder

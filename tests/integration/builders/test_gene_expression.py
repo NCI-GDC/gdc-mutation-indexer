@@ -92,7 +92,9 @@ def case_df(
 @pytest.fixture(scope="function")
 def expression_value_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     indexd: client.IndexClient,
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
@@ -102,7 +104,9 @@ def expression_value_df(
     )
 
     return builders.GeneExpressionValueInputBuilder(
-        default_old_config, sqlContext, doc_dataframe_util
+        default_config.builders.gene_expression.expression_value,
+        spark_session,
+        doc_dataframe_util,
     ).build(
         gene_model_df=gene_model_df,
         primary_aliquot_df=primary_aliquot_df,

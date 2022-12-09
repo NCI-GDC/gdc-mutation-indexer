@@ -20,5 +20,5 @@ from exports.builders.cnv_occurrence_centric import CNVOccurrenceCentricBuilder
 from exports.builders.gene_expression import (
     GeneExpressionBuilder,
     GeneExpressionCaseInputBuilder,
-    GeneExpressionValueInputBuilder
+    ExpressionValueBuilder as GeneExpressionValueInputBuilder
 )

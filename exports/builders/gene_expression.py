@@ -1,35 +1,47 @@
+import logging
 from typing import Iterable, Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
+from typing_extensions import Self, TypedDict
 
 import config
 from exports import indexd_utils, schemas
-from exports.builders import base_builder, base_input_builder
+from exports.builders import base_builder, base_input_builder, bases
+from exports.configuration.builders import gene_expression
+from exports.constants import build
 
 
-class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
+class ExpressionValueInputs(TypedDict):
+    gene_model_df: sql.DataFrame
+    primary_aliquot_df: sql.DataFrame
+
+
+class ExpressionValueBuilder(
+    bases.InputBuilder[gene_expression.Builder, ExpressionValueInputs]
+):
     """
     An input builder class for loading gene expression values.
     """
 
+    __slots__ = ("_doc_dataframe_util",)
+
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: gene_expression.Builder,
+        spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
     ):
-        super().__init__(config, sqlContext, "gene_expression_values")
+        super().__init__(
+            config,
+            spark_session,
+            input_type=ExpressionValueInputs,
+            output=build.DataFrame.EXPRESSION_VALUE,
+        )
 
         self._doc_dataframe_util = doc_dataframe_util
 
-    def build_from_scratch(
-        self,
-        gene_model_df: sql.DataFrame,
-        primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: ExpressionValueInputs) -> sql.DataFrame:
         """
         Creates a data frame containing the gene expression values contained within
         each file of the ge primary aliquot data. This excludes any expression values
@@ -49,6 +61,9 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
                 |---gene_id
                 +---symbol
         """
+        gene_model_df = input_dfs["gene_model_df"]
+        primary_aliquot_df = input_dfs["primary_aliquot_df"]
+
         pc_genes_df = gene_model_df.filter(
             F.col("biotype") == F.lit("protein_coding")
         ).select(F.col("_gene_id").alias("gene_id"), "symbol")
@@ -75,7 +90,6 @@ class GeneExpressionValueInputBuilder(base_input_builder.BaseInputBuilder):
             primary_aliquot_df: The dataframe of primary aliquot data for all
                 "STAR - Counts files"
         """
-        self.logger.info("Loading gene expression files")
         file_ids: Iterable[str] = (
             row.file_id
             for row in primary_aliquot_df.select("file_id").distinct().toLocalIterator()
