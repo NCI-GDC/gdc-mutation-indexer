@@ -263,7 +263,9 @@ def gene_model_df(
 @pytest.fixture(scope="session")
 def maf_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     maf_urls: List[str],
     gene_model_df: sql.DataFrame,
     dataframe_writer: DataFrameWriter,
@@ -361,8 +363,8 @@ def maf_df(
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
     df = builders.MAFBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.viz.maf,
+        spark_session,
         doc_dataframe_util,
         (civic.CivicBuilder(default_old_config, sqlContext),),
     ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())

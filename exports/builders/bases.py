@@ -12,18 +12,20 @@ from typing import (
 )
 
 from pyspark import sql
-from typing_extensions import Protocol, TypedDict, TypeGuard
+from typing_extensions import Protocol, TypeGuard
 
 from exports.configuration.builders import common
 from exports.constants import build
 
 TConfig = TypeVar("TConfig", bound=common.Builder)
-TInputDFs = TypeVar("TInputDFs", bound=TypedDict)
+TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
 
 
 class Builder(Protocol):
+    """A class which can build its defined output dataframe from its required inputs."""
+
     @property
     def output(self) -> build.DataFrame:  # type: ignore
         """The data frame which will be produced by this builder."""
@@ -156,7 +158,6 @@ class InputBuilder(Generic[TConfig, TInputDFs], Builder, abc.ABC):
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
             df.write.parquet(self._config.backup.path, mode="overwrite")
-            self._has_written_backup = True
 
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()

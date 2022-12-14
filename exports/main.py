@@ -83,8 +83,8 @@ def get_viz_input_builders(
     old_config: old_config.BaseConfig,
     config: viz.Viz,
     es_config: es_config.Elasticsearch,
-    spark_session: sql.SparkSession,
     sql_context: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
@@ -136,7 +136,7 @@ def get_viz_input_builders(
                 old_config, sql_context
             ),
             build.DataFrame.MAF: builders.MAFBuilder(
-                old_config, sql_context, doc_dataframe_util, annotation_builders
+                config.maf, spark_session, doc_dataframe_util, annotation_builders
             ),
             build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
                 old_config, sql_context, es_dataframe_util, file_filter_factory
@@ -234,8 +234,8 @@ def get_viz_builders(
         config_adapter,
         config.builders.viz,
         config.elasticsearch,
-        spark_session,
         sql_context,
+        spark_session,
         es_client,
         es_dataframe_util,
         es_rdd_util,
