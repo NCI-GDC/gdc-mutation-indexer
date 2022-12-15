@@ -157,7 +157,9 @@ class InputBuilder(Generic[TConfig, TInputDFs], Builder, abc.ABC):
         """
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
-            df.repartition(750).write.parquet(self._config.backup.path, mode="overwrite")
+            df.repartition(self._config.backup.partition_size).write.parquet(
+                self._config.backup.path, mode="overwrite"
+            )
 
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()

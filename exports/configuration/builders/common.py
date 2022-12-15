@@ -15,6 +15,7 @@ class Backup:
     """
     mode: build.BackupMode
     path: str
+    partition_size: int = 200
 
 
 @dataclasses.dataclass(frozen=True)
