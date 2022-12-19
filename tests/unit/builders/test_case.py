@@ -742,7 +742,7 @@ class TestCaseBuilder:
         self.case_schema = case_schema
         self.final_schema = final_schema
 
-    def arrange_conifg(self) -> viz.CaseBuilder:
+    def arrange_config(self) -> viz.CaseBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
@@ -793,7 +793,7 @@ class TestCaseBuilder:
         return selector
 
     def test__build__single_row(self) -> None:
-        config = self.arrange_conifg()
+        config = self.arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util()
         selector = self.arrange_case_field_selector()
@@ -806,7 +806,7 @@ class TestCaseBuilder:
         assert result_df.schema == self.final_schema
 
     def test__build__data_translated(self) -> None:
-        config = self.arrange_conifg()
+        config = self.arrange_config()
         case = Case()
         spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
@@ -835,7 +835,7 @@ class TestCaseBuilder:
         ascat_cases: Iterable[str],
         available_variation_data: FrozenSet[str],
     ) -> None:
-        config = self.arrange_conifg()
+        config = self.arrange_config()
         case = Case(case_id="case-0")
         spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
