@@ -99,8 +99,10 @@ def get_viz_input_builders(
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        config: The configuration for the builder objects.
         es_config: The configurations for connecting to the elasticsearch cluster.
         sql_context: The SQLContext for the current spark run.
+        spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
             elasticsearch to be used by the builders.
@@ -127,7 +129,7 @@ def get_viz_input_builders(
                 ascat_doc_resolver,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
-                old_config, sql_context, es_dataframe_util, case_field_selector
+                config.case, spark_session, es_dataframe_util, case_field_selector
             ),
             build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
                 config.gene_model, spark_session

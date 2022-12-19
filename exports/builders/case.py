@@ -3,13 +3,14 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
+from typing_extensions import TypedDict
 
-import config
 from exports import es_utils
-from exports.builders import base_input_builder
+from exports.builders import bases
+from exports.configuration.builders import viz
 from exports.constants import build
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logger = logging.getLogger(__name__)
 
 
 AVAILABLE_VARIATION_DATA = "available_variation_data"
@@ -58,22 +59,31 @@ class CaseLoaderMixin(abc.ABC):
         return case_df.repartition(repartition_size, "case_id")
 
 
-class CaseBuilder(base_input_builder.BaseInputBuilder, CaseLoaderMixin):
+class CaseInputs(TypedDict):
+    maf_metadata_df: sql.DataFrame
+    ascat_df: sql.DataFrame
+
+
+class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMixin):
+    __slots__ = ("_es_dataframe_util", "_field_selector")
+
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: viz.CaseBuilder,
+        spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         field_selector: es_utils.CaseFieldSelector,
     ) -> None:
-        super().__init__(config, sqlContext, "case")
+        super().__init__(
+            config, spark_session, input_type=CaseInputs, output=build.DataFrame.CASE
+        )
 
         self._es_dataframe_util = es_dataframe_util
         self._field_selector = field_selector
 
     def _load_es_case_data(self) -> sql.DataFrame:
-        if self.config.projects:  # type: ignore
-            query = {"query": {"terms": {"project.project_id": self.config.projects}}}  # type: ignore
+        if self._config.projects:
+            query = {"query": {"terms": {"project.project_id": self._config.projects}}}
         else:
             query = {"query": {"match_all": {}}}
 
@@ -86,24 +96,19 @@ class CaseBuilder(base_input_builder.BaseInputBuilder, CaseLoaderMixin):
         )
 
         # Only retrieve the fields we want
-        self.logger.info(f"Included fields: {fields}")
+        logger.debug(f"Included fields: {fields}")
 
         # Load cases from graph index
         return self._es_dataframe_util.get_dataframe(
             build.IndexType.CASE,
             include_fields=fields,
-            include_as_arrays=self.config.case_include_as_arrays,
+            include_as_arrays=self._config.include_as_arrays,
             query=query,
         )
 
-    def build_from_scratch(
-        self,
-        maf_metadata_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
         return self._load_cases(
-            maf_metadata_df,
-            ascat_df,
-            self.config.df_repartition,  # type: ignore
+            input_dfs["maf_metadata_df"],
+            input_dfs["ascat_df"],
+            self._config.repartition_size,
         )

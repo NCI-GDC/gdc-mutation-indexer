@@ -399,7 +399,9 @@ def maf_metadata_df(
 @pytest.fixture(scope="session")
 def case_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -411,7 +413,10 @@ def case_df(
         default_old_config, sqlContext, es_client
     )
     df = builders.CaseBuilder(
-        default_old_config, sqlContext, es_dataframe_util, es_utils.CaseFieldSelector()
+        default_config.builders.viz.case,
+        spark_session,
+        es_dataframe_util,
+        es_utils.CaseFieldSelector(),
     ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
 
     return dataframe_writer(df)
