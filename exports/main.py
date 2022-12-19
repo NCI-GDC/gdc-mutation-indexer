@@ -10,7 +10,13 @@ from pyspark import sql
 
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
-from exports.builders import base_builder, base_input_builder, bases, maf_metadata
+from exports.builders import (
+    ascat,
+    base_builder,
+    base_input_builder,
+    bases,
+    maf_metadata,
+)
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
@@ -74,19 +80,23 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 def get_viz_input_builders(
     old_config: old_config.BaseConfig,
+    es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the viz export process.
 
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        es_config: The configurations for connecting to the elasticsearch cluster.
         sql_context: The SQLContext for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
@@ -103,16 +113,23 @@ def get_viz_input_builders(
     """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(old_config, es_client)
+    ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
     return types.MappingProxyType(
         {
-            build.DataFrame.ASCAT: builders.AscatBuilder(
-                old_config, sql_context, doc_dataframe_util, es_dataframe_util, es_client
+            build.DataFrame.ASCAT: builders.ASCATBuilder(
+                old_config,
+                sql_context,
+                doc_dataframe_util,
+                es_dataframe_util,
+                ascat_doc_resolver,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
                 old_config, sql_context, es_dataframe_util, case_field_selector
             ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.MAF: builders.MAFBuilder(
                 old_config, sql_context, doc_dataframe_util, annotation_builders
             ),
@@ -210,6 +227,7 @@ def get_viz_builders(
 
     viz_input_builders = get_viz_input_builders(
         config_adapter,
+        config.elasticsearch,
         sql_context,
         es_client,
         es_dataframe_util,
@@ -229,7 +247,9 @@ def get_ge_input_builders(
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]]:
+) -> Mapping[
+    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+]:
     """
     Builds the input builders required for the gene expression export process.
 
@@ -248,7 +268,9 @@ def get_ge_input_builders(
     """
     return types.MappingProxyType(
         {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(old_config, sql_context),
+            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
+                old_config, sql_context
+            ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
                 old_config, sql_context, es_dataframe_util
             ),
