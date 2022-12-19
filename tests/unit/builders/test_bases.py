@@ -9,7 +9,7 @@ from exports.builders import bases
 from exports.configuration.builders import common
 from exports.constants import build
 
-TInputs = TypeVar("TInputs", bound=TypedDict)
+TInputs = TypeVar("TInputs", bound=Mapping[str, object])
 
 
 class EmptyInputs(TypedDict):

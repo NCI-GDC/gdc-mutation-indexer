@@ -10,7 +10,13 @@ from pyspark import sql
 
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
-from exports.builders import base_builder, base_input_builder, bases, maf_metadata
+from exports.builders import (
+    ascat,
+    base_builder,
+    base_input_builder,
+    bases,
+    maf_metadata,
+)
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
@@ -76,6 +82,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 def get_viz_input_builders(
     old_config: old_config.BaseConfig,
     config: viz.Viz,
+    es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
@@ -92,6 +99,7 @@ def get_viz_input_builders(
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        es_config: The configurations for connecting to the elasticsearch cluster.
         sql_context: The SQLContext for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
@@ -107,15 +115,16 @@ def get_viz_input_builders(
     """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(old_config, es_client)
+    ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
     return types.MappingProxyType(
         {
-            build.DataFrame.ASCAT: builders.AscatBuilder(
+            build.DataFrame.ASCAT: builders.ASCATBuilder(
                 old_config,
                 sql_context,
                 doc_dataframe_util,
                 es_dataframe_util,
-                es_client,
+                ascat_doc_resolver,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
                 old_config, sql_context, es_dataframe_util, case_field_selector
@@ -221,6 +230,7 @@ def get_viz_builders(
     viz_input_builders = get_viz_input_builders(
         config_adapter,
         config.builders.viz,
+        config.elasticsearch,
         sql_context,
         spark_session,
         es_client,
@@ -252,7 +262,9 @@ def get_ge_input_builders(
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        config: The configuration for the gene expression builders.
         sql_context: The SQLContext for the current spark run.
+        spark_session: The SparkSession for the current spark run.
         es_dataframe_util: A utility for loading and writing data frames to and from
             elasticsearch to be used by the builders.
         doc_dataframe_util: A utility for reading document data from documents found in
