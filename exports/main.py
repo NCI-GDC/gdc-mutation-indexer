@@ -20,6 +20,7 @@ from exports.builders import (
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
+from exports.configuration.builders import viz
 from exports.constants import app, build
 
 logger = logging.getLogger("exports")
@@ -80,8 +81,10 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 def get_viz_input_builders(
     old_config: old_config.BaseConfig,
+    config: viz.Viz,
     es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
@@ -96,8 +99,10 @@ def get_viz_input_builders(
     Args:
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
+        config: The configuration for the builder objects.
         es_config: The configurations for connecting to the elasticsearch cluster.
         sql_context: The SQLContext for the current spark run.
+        spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
             elasticsearch to be used by the builders.
@@ -125,7 +130,7 @@ def get_viz_input_builders(
                 ascat_doc_resolver,
             ),
             build.DataFrame.CASE: builders.CaseBuilder(
-                old_config, sql_context, es_dataframe_util, case_field_selector
+                config.case, spark_session, es_dataframe_util, case_field_selector
             ),
             build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
                 old_config, sql_context
@@ -227,8 +232,10 @@ def get_viz_builders(
 
     viz_input_builders = get_viz_input_builders(
         config_adapter,
+        config.builders.viz,
         config.elasticsearch,
         sql_context,
+        spark_session,
         es_client,
         es_dataframe_util,
         es_rdd_util,
