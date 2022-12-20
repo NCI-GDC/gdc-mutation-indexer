@@ -92,11 +92,15 @@ def case_df(
 @pytest.fixture(scope="function")
 def expression_value_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     indexd: client.IndexClient,
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
-    gene_model_df = builders.GeneModelBuilder(default_old_config, sqlContext).build()
+    gene_model_df = builders.GeneModelBuilder(
+        default_config.builders.gene_expression.gene_model, spark_session
+    ).build()
     doc_dataframe_util = indexd_utils.DataFrameUtil(
         indexd, sqlContext, mock.MagicMock()
     )
