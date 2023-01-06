@@ -135,7 +135,7 @@ def get_viz_input_builders(
                 config.gene_model, spark_session
             ),
             build.DataFrame.MAF: builders.MAFBuilder(
-                old_config, sql_context, doc_dataframe_util, annotation_builders
+                config.maf, spark_session, doc_dataframe_util, annotation_builders
             ),
             build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
                 old_config, sql_context, es_dataframe_util, file_filter_factory
