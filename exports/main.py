@@ -122,8 +122,8 @@ def get_viz_input_builders(
     return types.MappingProxyType(
         {
             build.DataFrame.ASCAT: builders.ASCATBuilder(
-                old_config,
-                sql_context,
+                config.ascat,
+                spark_session,
                 doc_dataframe_util,
                 es_dataframe_util,
                 ascat_doc_resolver,
@@ -341,7 +341,6 @@ def get_ge_builders(
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     es_dataframe_util = es_utils.DataFrameUtil(config_adapter, sql_context, es_client)
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
-
     return gdc_mutation_export.Builders(
         get_ge_input_builders(
             config_adapter,
