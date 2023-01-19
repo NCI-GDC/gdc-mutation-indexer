@@ -1,13 +1,15 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Sequence
 
 import elasticsearch
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import TypedDict
 
-import config
 from exports import es_utils, indexd_utils, schemas
-from exports.builders import base_input_builder, utils
+from exports.builders import bases, utils
+from exports.configuration import elasticsearch as es_config
+from exports.configuration.builders import viz
 from exports.constants import build
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
@@ -166,20 +168,115 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     ).na.drop(subset=["cnv_change"])
 
 
-class AscatBuilder(base_input_builder.BaseInputBuilder):
+class DocumentResolver:
+    """
+    A class for resolving the document IDs associated with the ASCAT documents in
+    ES/Indexd.
+    """
+
+    def __init__(
+        self, config: es_config.Read, es_client: elasticsearch.Elasticsearch
+    ) -> None:
+        self._config = config
+        self._es_client = es_client
+
+    def get_ids(self, projects: Sequence[str]) -> Sequence[str]:
+        """
+        Gets all document/file IDs for the TCGA ASCAT documents in the file index.
+
+        Args:
+            projects: A collection of projects by which the results should be further
+                restricted. An empty sequence means all projects will match.
+
+        Return:
+            A sequence of ASCAT file/document IDs.
+        """
+        body: Dict[str, Any] = {
+            "_source": ["file_id"],
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {"data_type": "Gene Level Copy Number"}},
+                        {
+                            "nested": {
+                                "path": "cases",
+                                "query": {
+                                    "term": {"cases.project.program.name": "TCGA"}
+                                },
+                            }
+                        },
+                    ],
+                    "minimum_should_match": 1,
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {"term": {"experimental_strategy": "WGS"}},
+                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
+                                ]
+                            }
+                        },
+                    ],
+                }
+            },
+        }
+
+        if projects:
+            body["query"]["bool"]["must"].append(
+                {
+                    "nested": {
+                        "path": "cases",
+                        "query": {
+                            "terms": {"cases.project.project_id": list(projects)}
+                        },
+                    }
+                }
+            )
+
+        hits = es_utils.iterate_es_results(
+            self._es_client,
+            index_name=self._config.file_index,
+            query=body,
+        )
+
+        return tuple(hit["_source"]["file_id"] for hit in hits)
+
+
+class ASCATInputs(TypedDict):
+    primary_aliquot_df: sql.DataFrame
+    gene_model_df: sql.DataFrame
+
+
+class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
+    __slots__ = ("_document_dataframe_util", "_es_dataframe_util", "_doc_resolver")
+
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: viz.ASCATBuilder,
+        spark_session: sql.SparkSession,
         document_dataframe_util: indexd_utils.DataFrameUtil,
         es_dataframe_util: es_utils.DataFrameUtil,
-        es_client: elasticsearch.Elasticsearch,
+        doc_resolver: DocumentResolver,
     ) -> None:
-        super().__init__(config, sqlContext, "ascat")
+        super().__init__(
+            config, spark_session, input_type=ASCATInputs, output=build.DataFrame.ASCAT
+        )
 
         self._document_dataframe_util = document_dataframe_util
         self._es_dataframe_util = es_dataframe_util
-        self._es_client = es_client
+        self._doc_resolver = doc_resolver
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
@@ -240,82 +337,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
             )
         )
 
-    def _get_document_ids(self) -> Iterable[str]:
-        body: Dict[str, Any] = {
-            "_source": ["file_id"],
-            "query": {
-                "bool": {
-                    "must": [
-                        {"term": {"data_type": "Gene Level Copy Number"}},
-                    ],
-                    "should": [
-                        {
-                            "bool": {
-                                "must": [
-                                    {
-                                        "term": {
-                                            "experimental_strategy": "Genotyping Array"
-                                        }
-                                    },
-                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
-                                ]
-                            }
-                        },
-                        {
-                            "bool": {
-                                "must": [
-                                    {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
-                                ]
-                            }
-                        },
-                    ],
-                }
-            },
-        }
-
-        if self.config.projects:
-            body["query"]["bool"]["must"].append(
-                {
-                    "nested": {
-                        "path": "cases",
-                        "query": {
-                            "terms": {
-                                "cases.project.project_id": list(
-                                    project
-                                    for project in self.config.projects
-                                    if project.startswith("TCGA")
-                                )
-                            }
-                        },
-                    }
-                }
-            )
-        else:
-            body["query"]["bool"]["must"].append(
-                {
-                    "nested": {
-                        "path": "cases",
-                        "query": {"term": {"cases.project.program.name": "TCGA"}},
-                    }
-                }
-            )
-
-        hits = es_utils.iterate_es_results(
-            self._es_client,
-            index_name=self.config.graph_file_index,
-            doc_type=self.config.graph_file_doc_type,
-            query=body,
-        )
-
-        return tuple(hit["_source"]["file_id"] for hit in hits)
-
-    def build_from_scratch(
-        self,
-        primary_aliquot_df: sql.DataFrame,
-        gene_model_df: sql.DataFrame,
-        **kwargs: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
         ascat {}
@@ -358,10 +380,13 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         |---variant_caller
         +---variant_status
         """
-        if self.config.omit_cnv_data:
-            return load_empty_ascat_data(self.sqlContext)
+        if self._config.omit_cnv_data:
+            return load_empty_ascat_data(self._spark_session)
 
-        dids = self._get_document_ids()
+        primary_aliquot_df = input_dfs["primary_aliquot_df"]
+        gene_model_df = input_dfs["gene_model_df"]
+
+        dids = self._doc_resolver.get_ids(self._config.projects)
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
@@ -449,7 +474,7 @@ class AscatBuilder(base_input_builder.BaseInputBuilder):
         )
 
 
-def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
+def load_empty_ascat_data(spark_session: sql.SparkSession) -> sql.DataFrame:
     """
     Creates and empty dataframe with no data for omitting all cnv data from the
     output indices.
@@ -458,4 +483,4 @@ def load_empty_ascat_data(sql_context: sql.SQLContext) -> sql.DataFrame:
     """
     schema = schemas.load_schema("builders/ascat/final_ascat.json")
 
-    return sql_context.createDataFrame((), schema=schema)
+    return spark_session.createDataFrame((), schema=schema)

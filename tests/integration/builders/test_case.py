@@ -50,6 +50,7 @@ class TestCaseBuilder:
         self,
         projects: List[str],
         expected_count: int,
+        spark_session: sql.SparkSession,
         sqlContext: sql.SQLContext,
         maf_metadata_df: sql.DataFrame,
         maf_df: sql.DataFrame,
@@ -69,7 +70,7 @@ class TestCaseBuilder:
         conf_adapter = config.ConfigAdapter(conf, mock.MagicMock(), mock.MagicMock())
         es_dataframe_util = es_utils.DataFrameUtil(conf_adapter, sqlContext, es_client)
         field_selector = es_utils.CaseFieldSelector()
-        df = builders.CaseBuilder(conf_adapter, sqlContext, es_dataframe_util, field_selector).build(
+        df = builders.CaseBuilder(conf.builders.viz.case, spark_session, es_dataframe_util, field_selector).build(
             maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
         )
 
