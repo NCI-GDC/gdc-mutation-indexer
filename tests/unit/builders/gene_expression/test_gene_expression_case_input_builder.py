@@ -9,6 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
+from exports.configuration.builders import gene_expression
+from exports.constants import build
 from tests.unit import utils
 
 
@@ -75,6 +77,12 @@ class TestGeneExpressionCaseInputBuilder:
         self.primary_aliquot_schema = primary_aliquot_schema
         self.final_schema = final_schema
 
+    def arrange_config(self) -> gene_expression.Builder:
+        return mock.MagicMock(
+            is_cached=False,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+        )
+
     def arrange_inputs(
         self,
         primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
@@ -88,30 +96,30 @@ class TestGeneExpressionCaseInputBuilder:
             "primary_aliquot_df": primary_aliquot_df,
         }
 
-    def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+    def test__build__single_row(self) -> None:
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         inputs = self.arrange_inputs()
-        builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)
+        builder = builders.GeneExpressionCaseInputBuilder(config, spark_session)
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_schema
 
-    def test__build_from_scratch__data_transformed(self) -> None:
+    def test__build__data_transformed(self) -> None:
         demographic = Demographic()
         diagnosis = Diagnosis()
         primary_aliquot = PrimaryAliquot(
             demographic=demographic, diagnoses=(diagnosis,)
         )
 
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         inputs = self.arrange_inputs((primary_aliquot,))
-        builder = builders.GeneExpressionCaseInputBuilder(config, sql_context)
+        builder = builders.GeneExpressionCaseInputBuilder(config, spark_session)
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.case_id == primary_aliquot.case_id

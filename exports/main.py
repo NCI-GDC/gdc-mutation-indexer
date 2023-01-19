@@ -285,7 +285,7 @@ def get_ge_input_builders(
                 old_config, sql_context, es_dataframe_util
             ),
             build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
-                old_config, sql_context
+                config.case, spark_session
             ),
             build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
                 old_config, sql_context, doc_dataframe_util

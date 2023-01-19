@@ -58,13 +58,13 @@ def ge_builder(
 
 @pytest.fixture(scope="module")
 def case_df(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
     cases_df = builders.GeneExpressionCaseInputBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.gene_expression.case,
+        spark_session,
     ).build(primary_aliquot_df=primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
