@@ -251,11 +251,13 @@ def dataframe_writer(
 
 @pytest.fixture(scope="session")
 def gene_model_df(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
-    df = builders.GeneModelBuilder(default_old_config, sqlContext).build()
+    df = builders.GeneModelBuilder(
+        default_config.builders.viz.gene_model, spark_session
+    ).build()
 
     return dataframe_writer(df)
 
@@ -263,7 +265,9 @@ def gene_model_df(
 @pytest.fixture(scope="session")
 def maf_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     maf_urls: List[str],
     gene_model_df: sql.DataFrame,
     dataframe_writer: DataFrameWriter,
@@ -361,8 +365,8 @@ def maf_df(
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
     df = builders.MAFBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.viz.maf,
+        spark_session,
         doc_dataframe_util,
         (civic.CivicBuilder(default_old_config, sqlContext),),
     ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())
@@ -397,7 +401,9 @@ def maf_metadata_df(
 @pytest.fixture(scope="session")
 def case_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -409,7 +415,10 @@ def case_df(
         default_old_config, sqlContext, es_client
     )
     df = builders.CaseBuilder(
-        default_old_config, sqlContext, es_dataframe_util, es_utils.CaseFieldSelector()
+        default_config.builders.viz.case,
+        spark_session,
+        es_dataframe_util,
+        es_utils.CaseFieldSelector(),
     ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
 
     return dataframe_writer(df)

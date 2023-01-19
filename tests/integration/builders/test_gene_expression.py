@@ -58,13 +58,13 @@ def ge_builder(
 
 @pytest.fixture(scope="module")
 def case_df(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
     cases_df = builders.GeneExpressionCaseInputBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.gene_expression.case,
+        spark_session,
     ).build(primary_aliquot_df=primary_aliquot_df)
 
     assert cases_df.schema == types.StructType(
@@ -98,7 +98,9 @@ def expression_value_df(
     indexd: client.IndexClient,
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
-    gene_model_df = builders.GeneModelBuilder(default_old_config, sqlContext).build()
+    gene_model_df = builders.GeneModelBuilder(
+        default_config.builders.gene_expression.gene_model, spark_session
+    ).build()
     doc_dataframe_util = indexd_utils.DataFrameUtil(
         indexd, sqlContext, mock.MagicMock()
     )

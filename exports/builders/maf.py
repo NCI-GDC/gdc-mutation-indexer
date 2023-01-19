@@ -7,43 +7,46 @@ from pkg_resources import resource_filename
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import TypedDict
 
-import config
 from exports import indexd_utils, pyspark_extensions, schemas
-from exports.builders import base_input_builder, utils
+from exports.builders import bases, utils
 from exports.builders.clinical_annotations import civic
+from exports.configuration.builders import viz
+from exports.constants import build
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logger = logging.getLogger(__name__)
 
 
-class MAFBuilder(base_input_builder.BaseInputBuilder):
+class MAFInputs(TypedDict):
+    maf_metadata_df: sql.DataFrame
+    gene_model_df: sql.DataFrame
+
+
+class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
     """
 
+    __slots__ = ("schema", "annotation_builders", "_doc_dataframe_util")
+
     def __init__(
         self,
-        config,
-        sqlContext,
+        config: viz.MAFBuilder,
+        spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
         annotation_builders: Iterable[civic.CivicBuilder],
     ):
-        super().__init__(config, sqlContext, "maf")
+        super().__init__(
+            config, spark_session, input_type=MAFInputs, output=build.DataFrame.MAF
+        )
+
         self.schema = self.get_schema()
         self.annotation_builders = annotation_builders
-
         self._doc_dataframe_util = doc_dataframe_util
 
-    def build_from_cache(self, df):
-        return df
-
-    def build_from_scratch(
-        self,
-        maf_metadata_df: sql.DataFrame,
-        gene_model_df: sql.DataFrame,
-        **kwargs: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and augmenting them
         with additional features
@@ -58,6 +61,8 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
             MAF {}
             +---???
         """
+        gene_model_df = input_dfs["gene_model_df"]
+        maf_metadata_df = input_dfs["maf_metadata_df"]
 
         df = self._build_document_dataframe(maf_metadata_df)
 
@@ -94,13 +99,10 @@ class MAFBuilder(base_input_builder.BaseInputBuilder):
         for builder in self.annotation_builders:
             df = builder.merge_with_maf(df)
 
-        self.logger.info("Repartitioning MAF dataframe")
-        df = df.repartition(self.config.df_repartition, "ssm_id")
+        logger.info("Repartitioning MAF dataframe")
+        df = df.repartition(self._config.repartition_size, "ssm_id")
 
         return df
-
-    def get_annotation_schemas(self):
-        return [ann.schema for ann in self.annotation_builders]
 
     def map_transform(self, df: sql.DataFrame) -> sql.DataFrame:
         """
