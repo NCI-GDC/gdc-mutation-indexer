@@ -577,7 +577,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def gene_expression_values_path(self) -> str:  # type: ignore
-        return self._config.builders.gene_expression.value.backup.path
+        return self._config.builders.gene_expression.expression_value.backup.path
 
     @property
     def gene_expression_cases_path(self) -> str:  # type: ignore
@@ -651,7 +651,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def gene_expression_values_backup(self) -> str:
-        return self._config.builders.gene_expression.value.backup.mode.name.lower()
+        return self._config.builders.gene_expression.expression_value.backup.mode.name.lower()
 
     @property
     def gene_expression_cases_backup(self) -> str:

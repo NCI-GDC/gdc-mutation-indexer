@@ -9,7 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from exports import builders
-from exports.builders import gene_model
+from exports.configuration.builders import gene_expression
+from exports.constants import build
 from tests.unit import utils
 
 
@@ -79,6 +80,13 @@ class TestGeneExpressionValueInputBuilder:
 
         return dataframe_util
 
+    def arrange_config(self) -> gene_expression.Builder:
+        return mock.MagicMock(
+            spec=gene_expression.Builder,
+            is_cached=False,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+        )
+
     def arrange_inputs(
         self,
         gene_model: Tuple[GeneModel, ...] = (GeneModel(),),
@@ -98,33 +106,33 @@ class TestGeneExpressionValueInputBuilder:
             "primary_aliquot_df": primary_aliquot_df,
         }
 
-    def test__build_from_scratch__single_row(self) -> None:
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+    def test__build__single_row(self) -> None:
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util()
         inputs = self.arrange_inputs()
         builder = builders.GeneExpressionValueInputBuilder(
-            config, sql_context, dataframe_util
+            config, spark_session, dataframe_util
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_schema
 
-    def test__build_from_scratch__data_transformed(self) -> None:
+    def test__build__data_transformed(self) -> None:
         star_count_data = STARCountsData()
         gene_model = GeneModel()
 
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util((star_count_data,))
         inputs = self.arrange_inputs(gene_model=(gene_model,))
         builder = builders.GeneExpressionValueInputBuilder(
-            config, sql_context, dataframe_util
+            config, spark_session, dataframe_util
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.file_id == star_count_data.did
@@ -135,18 +143,18 @@ class TestGeneExpressionValueInputBuilder:
             assert gene.expression_value == star_count_data.fpkm_uq_unstranded
             assert gene.symbol == gene_model.symbol
 
-    def test__build_from_scratch__gene_id_stripped(self) -> None:
+    def test__build__gene_id_stripped(self) -> None:
         star_counts = (STARCountsData(gene_id="ESF4003032.4"),)
 
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs()
         builder = builders.GeneExpressionValueInputBuilder(
-            config, sql_context, dataframe_util
+            config, spark_session, dataframe_util
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
         result_gene = more_itertools.one(result_row.genes)
 
@@ -160,40 +168,40 @@ class TestGeneExpressionValueInputBuilder:
         ),
         ids=("bad_star_count_data", "bad_gene_model_data"),
     )
-    def test__build_from_scratch__filter_non_protein_coding(
+    def test__build__filter_non_protein_coding(
         self, biotype: str, gene_type: str
     ) -> None:
         star_counts = (STARCountsData(gene_type=gene_type),)
         gene_model = (GeneModel(biotype=biotype),)
 
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = builders.GeneExpressionValueInputBuilder(
-            config, sql_context, dataframe_util
+            config, spark_session, dataframe_util
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
 
         assert result_df.count() == 0
 
-    def test__build_from_scratch__genes_aggregated_by_file_id(self) -> None:
+    def test__build__genes_aggregated_by_file_id(self) -> None:
         star_counts = (
             STARCountsData(gene_id="gene-0"),
             STARCountsData(gene_id="gene-1"),
         )
         gene_model = (GeneModel("gene-0"), GeneModel("gene-1"))
 
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
         dataframe_util = self.arrange_indexd_dataframe_util(star_counts)
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = builders.GeneExpressionValueInputBuilder(
-            config, sql_context, dataframe_util
+            config, spark_session, dataframe_util
         )
 
-        result_df = builder.build_from_scratch(**inputs)
+        result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.file_id == "file-0"

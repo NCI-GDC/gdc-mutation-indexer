@@ -288,7 +288,7 @@ def get_ge_input_builders(
                 config.case, spark_session
             ),
             build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
-                old_config, sql_context, doc_dataframe_util
+                config.expression_value, spark_session, doc_dataframe_util
             ),
         }
     )
