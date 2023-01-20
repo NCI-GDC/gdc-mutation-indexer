@@ -1,3 +1,5 @@
+import functools
+import logging
 from typing import Iterable, List, Sequence, Union
 
 import elasticsearch
@@ -8,7 +10,14 @@ from typing_extensions import Literal, TypedDict
 
 import config
 from exports import es_utils
-from exports.builders import primary_aliquot
+from exports.builders import bases, primary_aliquot
+from exports.configuration import elasticsearch as es_config
+from exports.configuration.builders import viz
+from exports.constants import build
+
+logger = logging.getLogger(__name__)
+
+_UNPRIORITIZED_STRATEGY = "__UNPRIORITIZED_STRATEGY__"
 
 
 class _ExperimentalStrategiesBucket(TypedDict):
@@ -33,12 +42,9 @@ class _ProjectBucket(TypedDict):
     files: _Files
 
 
-_UNPRIORITIZED_STRATEGY = "__UNPRIORITIZED_STRATEGY__"
-
-
 class MAFFileFilterFactory:
     def __init__(
-        self, config: config.BaseConfig, es_client: elasticsearch.Elasticsearch
+        self, config: es_config.Read, es_client: elasticsearch.Elasticsearch
     ) -> None:
         self._config = config
         self._es_client = es_client
@@ -96,13 +102,17 @@ class MAFFileFilterFactory:
             filters.append(projects_filter)
 
         return self._es_client.search(
-            index=self._config.graph_file_index,
+            index=self._config.file_index,
             size=0,
             aggs=aggs,
             query={"bool": {"must": filters}},
         )["aggregations"]["cases"]["projects"]["buckets"]
 
-    def _select_experimental_strategy(self, project: _ProjectBucket) -> str:
+    def _select_experimental_strategy(
+        self,
+        prioritized_experimental_strategies: Iterable[str],
+        project: _ProjectBucket,
+    ) -> str:
         """
         Finds the highest priority experimental strategy associated with the project.
 
@@ -119,20 +129,23 @@ class MAFFileFilterFactory:
         )
         # selects the first and thus highest priority experimental stategy
         strategy = more_itertools.first_true(
-            self._config.maf_prioritized_experimental_strategies,
+            prioritized_experimental_strategies,
             pred=lambda s: s in strategies,
             default=_UNPRIORITIZED_STRATEGY,
         )
 
         if strategy == _UNPRIORITIZED_STRATEGY:
-            self.logger.warning(
+            logger.warning(
                 f"Project: {project['key']} only has MAFs that are associated with unprioritized experimental strategies: {', '.join(strategies)}"
             )
 
         return strategy
 
     def _build_experimental_strategy_filter(
-        self, filters: Sequence[dict], projects: Sequence[str]
+        self,
+        filters: Sequence[dict],
+        projects: Sequence[str],
+        prioritized_experimental_strategies: Iterable[str],
     ) -> dict:
         """
         Creates an elasticsearch filter for selecting the correct MAFs for each project
@@ -145,16 +158,21 @@ class MAFFileFilterFactory:
         Returns:
             An elasticsearch query
         """
-        projects = self._get_project_strategy_aggregations(filters, projects)
+        strategy_selector = functools.partial(
+            self._select_experimental_strategy, prioritized_experimental_strategies
+        )
+        project_buckets = self._get_project_strategy_aggregations(filters, projects)
         projects_by_strategy = more_itertools.map_reduce(
-            projects,
-            keyfunc=self._select_experimental_strategy,
+            project_buckets,
+            keyfunc=strategy_selector,
             valuefunc=lambda project: project["key"],
         )
         _ = projects_by_strategy.pop(_UNPRIORITIZED_STRATEGY, None)
 
         if not projects_by_strategy:
-            raise RuntimeError("Invalid Data: No projects associated with any MAF files.")
+            raise RuntimeError(
+                "Invalid Data: No projects associated with any MAF files."
+            )
 
         return {
             "bool": {
@@ -181,7 +199,11 @@ class MAFFileFilterFactory:
             }
         }
 
-    def get_filters(self, projects: Sequence[str]) -> List[dict]:
+    def get_filters(
+        self,
+        projects: Sequence[str],
+        prioritized_experimental_strategies: Iterable[str],
+    ) -> List[dict]:
         """
         Builds the elasticsearch query filters to be used to select the MAF documents
         from the file index.
@@ -216,40 +238,51 @@ class MAFFileFilterFactory:
             }
         }
         filters: List[dict] = [{"bool": {"should": [aesvmm_workflow, fvam_workflow]}}]
-        strategy_filter = self._build_experimental_strategy_filter(filters, projects)
+        strategy_filter = self._build_experimental_strategy_filter(
+            filters, projects, prioritized_experimental_strategies
+        )
 
         filters.append(strategy_filter)
 
         return filters
 
 
-class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
+class MAFMetadataInputs:
+    pass
+
+
+class MAFMetadataBuilder(
+    bases.PrimaryAliquotBuilder[viz.MAFMetadataBuilder, MAFMetadataInputs]
+):
     """
     An input builder for collecting the metadata associated with the MAF
     data that will be loaded as part of the build process.
     """
 
+    __slots__ = ("_file_filter_factory",)
+
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: viz.MAFMetadataBuilder,
+        spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         file_filter_factory: MAFFileFilterFactory,
     ):
         """
         Args:
             config: The app configuration object
-            sqlContext: The sql context object for the current pyspark run
+            spark_session: The spark session object for the current pyspark run
             es_dataframe_util: The util for creating dataframes from data in
                 elasticsearch
             es_client: The elasticsearch client for accessing the file index
         """
         super().__init__(
             config,
-            sqlContext,
-            es_dataframe_util,
-            input_type="maf_metadata",
+            spark_session,
+            es_dataframe_util=es_dataframe_util,
             additional_selections=("data_type", "workflow_type"),
+            input_type=MAFMetadataInputs,
+            output=build.DataFrame.MAF_METADATA,
         )
 
         self._file_filter_factory = file_filter_factory
@@ -263,7 +296,7 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
             .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
         )
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: MAFMetadataInputs) -> sql.DataFrame:
         """
         Gets the maf file data (file_id, workflow_type, and data_type) and its
         associated case id.
@@ -277,7 +310,9 @@ class MAFMetadataBuilder(primary_aliquot.BasePrimaryAliquotBuilder):
             |---file_id
             +---workflow_type
         """
-        filters = self._file_filter_factory.get_filters(self.config.projects)
+        filters = self._file_filter_factory.get_filters(
+            self._config.projects, self._config.prioritized_experimental_strategies
+        )
 
         return self._get_primary_aliquot_df(
             filters,

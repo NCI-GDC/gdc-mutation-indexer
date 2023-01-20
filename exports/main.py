@@ -116,7 +116,7 @@ def get_viz_input_builders(
         frame.
     """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
-    file_filter_factory = maf_metadata.MAFFileFilterFactory(old_config, es_client)
+    file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
     return types.MappingProxyType(
@@ -138,7 +138,10 @@ def get_viz_input_builders(
                 config.maf, spark_session, doc_dataframe_util, annotation_builders
             ),
             build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
-                old_config, sql_context, es_dataframe_util, file_filter_factory
+                config.maf_metadata,
+                spark_session,
+                es_dataframe_util,
+                file_filter_factory,
             ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.PrimaryAliquotBuilder(
                 old_config, sql_context, es_dataframe_util, es_rdd_util
