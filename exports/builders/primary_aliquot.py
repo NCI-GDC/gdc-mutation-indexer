@@ -3,11 +3,12 @@ from typing import AbstractSet, Iterable, List, Optional, Union
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal
+from typing_extensions import Literal, TypedDict
 
 import config
 from exports import es_utils, schemas
-from exports.builders import base_input_builder
+from exports.builders import base_input_builder, bases
+from exports.configuration.builders import viz
 from exports.constants import build
 
 
@@ -382,13 +383,21 @@ class GeneExpressionPrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
         )
 
 
-class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
+class PrimaryAliquotInputs(TypedDict):
+    pass
+
+
+class PrimaryAliquotBuilder(
+    bases.PrimaryAliquotBuilder[viz.Builder, PrimaryAliquotInputs]
+):
+    __slots__ = ("_es_rdd_util",)
+
     FILE_URL_BATCH_SIZE = 1000
 
     def __init__(
         self,
-        config: config.BaseConfig,
-        sql_context: sql.SQLContext,
+        config: viz.Builder,
+        spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
     ) -> None:
@@ -401,14 +410,13 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
         """
         super().__init__(
             config,
-            sql_context,
-            es_dataframe_util,
-            "primary_aliquot",
+            spark_session,
+            es_dataframe_util=es_dataframe_util,
+            input_type=PrimaryAliquotInputs,
+            output=build.DataFrame.PRIMARY_ALIQUOT,
             additional_selections=("experimental_strategy",),
         )
-        self._sql_context = sql_context
         self._es_rdd_util = es_rdd_util
-        self._logger = logging.getLogger(self.__class__.__name__)
 
     def _get_aliquot_level_df(self) -> sql.DataFrame:
         query = {
@@ -440,12 +448,12 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
             "builders/primary_aliquot/aliquot_data.json"
         )
 
-        if self.config.projects:
+        if self._config.projects:
             project_clause = {
                 "nested": {
                     "path": "cases",
                     "query": {
-                        "terms": {"cases.project.project_id": self.config.projects}
+                        "terms": {"cases.project.project_id": self._config.projects}
                     },
                 }
             }
@@ -470,7 +478,7 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
 
         return aliquot_df
 
-    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: PrimaryAliquotInputs) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)
@@ -492,12 +500,12 @@ class PrimaryAliquotBuilder(BasePrimaryAliquotBuilder):
                     "nested": {
                         "path": "cases",
                         "query": {
-                            "terms": {"cases.project.project_id": self.config.projects}
+                            "terms": {"cases.project.project_id": self._config.projects}
                         },
                     }
                 }
             ]
-            if self.config.projects
+            if self._config.projects
             else [{"match_all": {}}]
         )
 
