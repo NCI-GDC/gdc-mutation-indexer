@@ -41,12 +41,12 @@ class ESFile:
 
 @pytest.fixture(scope="class")
 def file_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf_metadata/es_file.yaml")
+    return schemas.Viz.Builders.MAFMetadata.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf_metadata/final_maf_metadata.yaml")
+    return schemas.Viz.Builders.MAFMetadata.FINAL.load()
 
 
 class TestMAFMetadataBuilder:

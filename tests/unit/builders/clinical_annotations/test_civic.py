@@ -257,12 +257,12 @@ def arrange_mock_resource_filename() -> Iterator[Callable[[Any, str], str]]:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/clinical_annotations/civic/input_maf.yaml")
+    return schemas.Viz.Builders.CIVICAnnotation.MAF.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/clinical_annotations/civic/final_maf.yaml")
+    return schemas.Viz.Builders.CIVICAnnotation.FINAL.load()
 
 
 class TestCivicBuilder:

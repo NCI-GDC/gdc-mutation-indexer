@@ -96,12 +96,12 @@ class ESFile:
 
 @pytest.fixture(scope="class")
 def input_file_schema() -> types.StructType:
-    return schemas.load_schema("builders/primary_aliquot/input_file.json")
+    return schemas.Viz.Builders.PrimaryAliquot.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/primary_aliquot/final_primary_aliquot.json")
+    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
 
 
 class TestPrimaryAliquotBuilder:
@@ -161,7 +161,7 @@ class TestPrimaryAliquotBuilder:
         ids=("aliquot_exists", "no_aliquots"),
     )
     def test__build_from_scratch__positive_joins(
-        self, files: Iterable[ESFile], aliquot_data: Iterable[ESFile]
+        self, files: Tuple[ESFile, ...], aliquot_data: Tuple[ESFile, ...]
     ) -> None:
         builder = self._arrange_builder(files, aliquot_data)
 

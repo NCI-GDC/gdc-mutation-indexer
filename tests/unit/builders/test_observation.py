@@ -86,7 +86,7 @@ class MAF:
     cdna_position: str = "1734/13108"
     cds_end: int = 12169
     cds_length: int = 10464
-    cds_position: int = "1705/10464"
+    cds_position: str = "1705/10464"
     cds_start: int = 1705
     center: str = "BI"
     chromosome: str = "chr1"
@@ -221,7 +221,7 @@ class ASCAT:
     symbol: Optional[str] = "DDX11L1"
     synonyms: Optional[Tuple[str, ...]] = ()
     transcripts: Optional[Tuple[Transcript, ...]] = (Transcript(),)
-    uniprotkb_swissprot: Optional[Tuple[str]] = ()
+    uniprotkb_swissprot: Optional[Tuple[str, ...]] = ()
     variant_caller: Optional[str] = "ASCAT"
     variant_status: Optional[str] = "Tumor Only"
     civic_gene_id: str = "1"
@@ -230,32 +230,32 @@ class ASCAT:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_maf.yaml")
+    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_ascat.json")
+    return schemas.Viz.Builders.ASCAT.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/input_primary_aliquot.json")
+    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_ssm_observation.json")
+    return schemas.Viz.Builders.Observation.SSM.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def other_ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/observation/final_other_ssm_observation.json")
+    return schemas.Viz.Builders.Observation.Other.FINAL.load()
 
 
 @pytest.fixture(scope="class")
-def cnv_observation_schema() -> types.StructType():
-    return schemas.load_schema("builders/observation/final_cnv_observation.yaml")
+def cnv_observation_schema() -> types.StructType:
+    return schemas.Viz.Builders.Observation.CNV.FINAL.load()
 
 
 class TestObservationBuilder:

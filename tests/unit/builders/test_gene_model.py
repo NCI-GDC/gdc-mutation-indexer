@@ -107,12 +107,12 @@ class GeneModel:
 
 @pytest.fixture(scope="class")
 def input_schema() -> types.StructType:
-    return schemas.load_schema("builders/gene_model/raw_gene_model.json")
+    return schemas.Builders.GeneModel.RAW.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/gene_model/final_gene_model.json")
+    return schemas.Builders.GeneModel.FINAL.load()
 
 
 class TestGeneModelBuilder:
