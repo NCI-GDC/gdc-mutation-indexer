@@ -30,7 +30,9 @@ def ge_config() -> configuration.Configuration:
 @pytest.fixture(scope="module")
 def primary_aliquot_df(
     default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     ge_file_docs: Any,
 ) -> sql.DataFrame:
@@ -38,7 +40,9 @@ def primary_aliquot_df(
         default_old_config, sqlContext, es_client
     )
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
-        default_old_config, sqlContext, es_dataframe_util
+        default_config.builders.gene_expression.primary_aliquot,
+        spark_session,
+        es_dataframe_util,
     )
 
     return primary_aliquot_builder.build()
