@@ -8,9 +8,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Literal, TypedDict
 
-import config
 from exports import es_utils
-from exports.builders import bases, primary_aliquot
+from exports.builders import bases
 from exports.configuration import elasticsearch as es_config
 from exports.configuration.builders import viz
 from exports.constants import build
@@ -117,6 +116,10 @@ class MAFFileFilterFactory:
         Finds the highest priority experimental strategy associated with the project.
 
         Args:
+            prioritized_experimental_strategies: a prioritized sequence of experimental 
+                strategies the highest priority comimg first. For a MAF to be selected
+                it must be associated with the experimental strategy with the highest
+                priority which is associated with any MAF within the same project.
             project: The project bucket from the doc_type aggregation by project.
 
         Returns:
@@ -154,6 +157,11 @@ class MAFFileFilterFactory:
         Args:
             filters: all other filters that will be used to select the MAFs for all
                 projects
+            projects: The projects from which to select MAFs.
+            prioritized_experimental_strategies: a prioritized sequence of experimental 
+                strategies the highest priority comimg first. For a MAF to be selected
+                it must be associated with the experimental strategy with the highest
+                priority which is associated with any MAF within the same project.
 
         Returns:
             An elasticsearch query
@@ -208,6 +216,13 @@ class MAFFileFilterFactory:
         Builds the elasticsearch query filters to be used to select the MAF documents
         from the file index.
 
+        Args:
+            projects: The projects from which to select MAFs.
+            prioritized_experimental_strategies: a prioritized sequence of experimental 
+                strategies the highest priority comimg first. For a MAF to be selected
+                it must be associated with the experimental strategy with the highest
+                priority which is associated with any MAF within the same project.
+
         Returns:
             A list of elasticsearch queries.
         """
@@ -247,7 +262,7 @@ class MAFFileFilterFactory:
         return filters
 
 
-class MAFMetadataInputs:
+class MAFMetadataInputs(TypedDict):
     pass
 
 
