@@ -282,7 +282,7 @@ def get_ge_input_builders(
                 config.gene_model, spark_session
             ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
-                old_config, sql_context, es_dataframe_util
+                config.primary_aliquot, spark_session, es_dataframe_util
             ),
             build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
                 config.case, spark_session

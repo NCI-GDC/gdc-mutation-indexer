@@ -1,15 +1,122 @@
-import logging
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional, Sequence
 
 from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self, TypedDict
 
 import config
-from exports import indexd_utils, schemas
+from exports import es_utils, indexd_utils, schemas
 from exports.builders import base_builder, base_input_builder, bases
 from exports.configuration.builders import gene_expression
 from exports.constants import build
+
+
+def _get_primary_aliquot_filters(projects: Sequence[str]) -> List[dict]:
+    filters: List[dict] = [
+        {"terms": {"data_type": ["Gene Expression Quantification"]}},
+        {"terms": {"acl": ["open"]}},
+        {"term": {"analysis.workflow_type": "STAR - Counts"}},
+    ]
+
+    if projects:
+        project_filter = {
+            "nested": {
+                "path": "cases",
+                "query": {"terms": {"cases.project.project_id": projects}},
+            }
+        }
+
+        filters.append(project_filter)
+
+    return filters
+
+
+class PrimaryAliquotInputs(TypedDict):
+    pass
+
+
+class PrimaryAliquotBuilder(
+    bases.PrimaryAliquotBuilder[gene_expression.Builder, PrimaryAliquotInputs]
+):
+    def __init__(
+        self,
+        config: gene_expression.Builder,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+    ) -> None:
+        """
+        Args:
+            config: The app configuration object
+            sqlContext: The sql context object for the current pyspark run
+            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+        """
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util=es_dataframe_util,
+            input_type=PrimaryAliquotInputs,
+            output=build.DataFrame.PRIMARY_ALIQUOT,
+        )
+
+    def _build_from_scratch(self, input_dfs: PrimaryAliquotInputs) -> sql.DataFrame:
+        """
+        Gets the case and it's associated file data for the mutation index.
+
+        Args:
+            workflow_types: A collection of analysis workflow types to
+                filter files on.
+
+        Returns:
+            (GeneExpressionPrimaryAliquotData): An object containing the primary aliquot
+            dataframe as well as a list of all the file urls associated with the primary
+            aliquots.
+
+            primary_aliquot{}
+            |---file_id
+            |---file_url
+            |---case_id
+            |---submitter_id
+            |---demographic{}
+            |   |---days_to_death
+            |   |---ethnicity
+            |   |---gender
+            |   |---race
+            |   |---vital_status
+            |
+            |---project{}
+            |   |---project_id
+            |
+            |---diagnoses[]
+            |   |---age_at_diagnosis
+            |
+            |---samples[]
+                |---sample_type
+        """
+        filters = _get_primary_aliquot_filters(self._config.projects)
+        case_fields = [
+            "cases.submitter_id",
+            "cases.demographic.days_to_death",
+            "cases.demographic.ethnicity",
+            "cases.demographic.gender",
+            "cases.demographic.race",
+            "cases.demographic.vital_status",
+            "cases.project.project_id",
+            "cases.diagnoses.age_at_diagnosis",
+        ]
+
+        return self._get_primary_aliquot_df(
+            filters,
+            entities=frozenset(("case",)),
+            include_fields=case_fields,
+        ).select(
+            "file_id",
+            "case_id",
+            "case.submitter_id",
+            "case.demographic",
+            "case.project",
+            "case.diagnoses",
+            "case.samples",
+        )
 
 
 class ExpressionValueInputs(TypedDict):

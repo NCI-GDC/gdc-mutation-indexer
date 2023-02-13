@@ -1,16 +1,18 @@
-from unittest import mock
 import dataclasses
 import datetime
-from os import path
-from typing import Optional, Tuple
-import more_itertools
+from typing import Tuple
+from unittest import mock
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from exports import builders
 
-from tests.unit import utils
+from exports import es_utils
+from exports.builders import gene_expression
+from exports.configuration.builders import gene_expression as ge_config
+from exports.constants import build
+from tests.unit.data import schemas
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,21 +59,18 @@ class ESFile:
 
 
 @pytest.fixture(scope="class")
-def schema_dir(data_dir: str) -> str:
-    return path.join(data_dir, "schemas", "builders", "primary_aliquot")
+def input_file_schema() -> types.StructType:
+    return schemas.load_schema(
+        "builders/gene_expression/primary_aliquot/input_file.json"
+    )
 
 
 @pytest.fixture(scope="class")
-def input_file_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "gene_expression_input_file.json")
+def final_schema() -> types.StructType:
+    return schemas.load_schema("builders/gene_expression/primary_aliquot/final.json")
 
 
-@pytest.fixture(scope="class")
-def final_schema(schema_dir: str) -> types.StructType:
-    return utils.load_schema(schema_dir, "final_gene_expression.json")
-
-
-class TestGeneExpressionPrimaryAliquotBuilder:
+class TestPrimaryAliquotBuilder:
     @pytest.fixture(autouse=True)
     def initialize_fixtures(
         self,
@@ -83,46 +82,48 @@ class TestGeneExpressionPrimaryAliquotBuilder:
         self.input_file_schema = input_file_schema
         self.final_schema = final_schema
 
-    def arrange_config(
-        self, projects: Optional[Tuple[str, ...]] = None
-    ) -> mock.MagicMock:
-        return mock.MagicMock(projects=projects)
+    def arrange_config(self) -> ge_config.Builder:
+        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
+
+        return mock.MagicMock(
+            spec=ge_config.Builder, projects=(), is_cached=False, backup=backup
+        )
 
     def arrange_es_dataframe_util(
-        self, data: Tuple[ESFile, ...] = (ESFile(),)
-    ) -> mock.MagicMock:
-        dataframe_util = mock.MagicMock()
+        self, data: Tuple[ESFile, ...]
+    ) -> es_utils.DataFrameUtil:
+        dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
-        dataframe_util.get_dataframe.return_value = self.spark_session.createDataFrame(
-            data, schema=self.input_file_schema
+        dataframe_util.read.return_value = self.spark_session.createDataFrame(
+            data,  # type: ignore
+            schema=self.input_file_schema,
         )
 
         return dataframe_util
 
-    def test__build_from_scratch__single_row(self) -> None:
+    def arrange_builder(
+        self, data: Tuple[ESFile, ...] = (ESFile(),)
+    ) -> gene_expression.PrimaryAliquotBuilder:
         config = self.arrange_config()
-        sql_context = mock.MagicMock()
-        dataframe_util = self.arrange_es_dataframe_util()
-        builder = builders.GeneExpressionPrimaryAliquotBuilder(
-            config, sql_context, dataframe_util
-        )
+        util = self.arrange_es_dataframe_util(data)
+        spark_session = mock.MagicMock(spec=sql.SparkSession)
 
-        result_df = builder.build_from_scratch()
+        return gene_expression.PrimaryAliquotBuilder(config, spark_session, util)
+
+    def test__build__single_row(self) -> None:
+        builder = self.arrange_builder()
+
+        result_df = builder.build()
 
         assert result_df.schema == self.final_schema
         assert result_df.count() == 1
 
-    def test__build_from_scratch__data_translated(self) -> None:
-        config = self.arrange_config()
-        sql_context = mock.MagicMock()
+    def test__build__data_translated(self) -> None:
         es_file = ESFile()
         es_case = es_file.cases[0]
-        dataframe_util = self.arrange_es_dataframe_util((ESFile(),))
-        builder = builders.GeneExpressionPrimaryAliquotBuilder(
-            config, sql_context, dataframe_util
-        )
+        builder = self.arrange_builder((es_file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.file_id == es_file.file_id
