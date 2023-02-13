@@ -144,7 +144,7 @@ def get_viz_input_builders(
                 file_filter_factory,
             ),
             build.DataFrame.PRIMARY_ALIQUOT: builders.PrimaryAliquotBuilder(
-                old_config, sql_context, es_dataframe_util, es_rdd_util
+                config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
             ),
         }
     )
@@ -216,7 +216,7 @@ def get_viz_builders(
     Builds the exporters Builders object with the required builders for the viz process.
 
     Args:
-        config: The old master configuration with all subconfigurations for builders and
+        config: The master configuration with all subconfigurations for builders and
             services.
         spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
@@ -331,7 +331,7 @@ def get_ge_builders(
     Builds the exporters Builders object with the required builders for the viz process.
 
     Args:
-        config: The old master configuration with all subconfigurations for builders and
+        config: The master configuration with all subconfigurations for builders and
             services.
         spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.

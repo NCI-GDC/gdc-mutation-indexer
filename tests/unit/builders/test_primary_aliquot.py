@@ -10,6 +10,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from exports import builders, es_utils
+from exports.configuration.builders import viz
+from exports.constants import build
 from tests.unit.data import schemas
 
 
@@ -133,12 +135,20 @@ class TestPrimaryAliquotBuilder:
         files = files if isinstance(files, tuple) else tuple(files)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         file_df = self.spark_session.createDataFrame(
-            files, schema=self.input_file_schema
+            files,  # type: ignore
+            schema=self.input_file_schema,
         )
 
-        dataframe_util.get_dataframe.return_value = file_df
+        dataframe_util.read.return_value = file_df
 
         return dataframe_util
+
+    def _arrange_config(self) -> viz.Builder:
+        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
+
+        return mock.MagicMock(
+            spec=viz.Builder, is_cached=False, backup=backup, projects=()
+        )
 
     def _arrange_builder(
         self,
@@ -146,13 +156,13 @@ class TestPrimaryAliquotBuilder:
         aliquot_data: Optional[Tuple[ESFile, ...]] = None,
     ) -> builders.PrimaryAliquotBuilder:
         aliquot_data = es_files if aliquot_data is None else aliquot_data
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self._arrange_config()
+        spark_session = mock.MagicMock(spec=sql.SparkSession)
         dataframe_util = self._arrange_es_dataframe_util(es_files)
         rdd_util = self._arrange_es_rdd_util(aliquot_data)
 
         return builders.PrimaryAliquotBuilder(
-            config, sql_context, dataframe_util, rdd_util
+            config, spark_session, dataframe_util, rdd_util
         )
 
     @pytest.mark.parametrize(
@@ -160,8 +170,8 @@ class TestPrimaryAliquotBuilder:
         (((ESFile(),), (ESFile(),)), ((ESFile(),), ())),
         ids=("aliquot_exists", "no_aliquots"),
     )
-    def test__build_from_scratch__positive_joins(
-        self, files: Iterable[ESFile], aliquot_data: Iterable[ESFile]
+    def test__build__positive_joins(
+        self, files: Tuple[ESFile, ...], aliquot_data: Tuple[ESFile, ...]
     ) -> None:
         builder = self._arrange_builder(files, aliquot_data)
 
@@ -193,7 +203,7 @@ class TestPrimaryAliquotBuilder:
             ("Additional - New Primary", "OTHER"),
         ),
     )
-    def test__build_from_scratch__sample_type_selection(
+    def test__build__sample_type_selection(
         self, primay_sample_type: str, other_sample_type: str
     ) -> None:
         other_portions = (
@@ -217,7 +227,7 @@ class TestPrimaryAliquotBuilder:
         file = ESFile(cases=(ESCase(samples=samples),))
         builder = self._arrange_builder((file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_case_row = more_itertools.one(
             result_df.where(F.col("entity") == F.lit("case")).collect()
         )
@@ -260,7 +270,7 @@ class TestPrimaryAliquotBuilder:
         ),
         ids=("microsecond_diff", "timezone_diff"),
     )
-    def test__build_from_scratch__file_created_datetime(
+    def test__build__file_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
     ) -> None:
         files = (
@@ -275,28 +285,28 @@ class TestPrimaryAliquotBuilder:
         )
         builder = self._arrange_builder(files, ())
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(
             result_df.where(F.col("entity") == F.lit("case")).collect()
         )
 
         assert result_row.file_id == "f-1"
 
-    def test__build_from_scratch__file_id(self) -> None:
+    def test__build__file_id(self) -> None:
         files = (ESFile(file_id="f-1"), ESFile(file_id="f-0"))
         builder = self._arrange_builder(files, ())
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(
             result_df.where(F.col("entity") == F.lit("case")).collect()
         )
 
         assert result_row.file_id == "f-0"
 
-    def test__build_from_scratch__aliquot_none(self) -> None:
+    def test__build__aliquot_none(self) -> None:
         builder = self._arrange_builder((ESFile(),), ())
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_rows = result_df.collect()
 
         assert all(row.aliquot_id is None for row in result_rows)
@@ -333,7 +343,7 @@ class TestPrimaryAliquotBuilder:
         ),
         ids=("microsecond_diff", "timezone_diff"),
     )
-    def test__build_from_scratch__aliquot_created_datetime(
+    def test__build__aliquot_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
     ) -> None:
         aliquots = (
@@ -352,12 +362,12 @@ class TestPrimaryAliquotBuilder:
         file = ESFile(cases=(ESCase(samples=(sample,)),))
         builder = self._arrange_builder((file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_rows = result_df.collect()
 
         assert all(row.aliquot_id == "a-1" for row in result_rows)
 
-    def test__build_from_scratch__aliquot_id(self) -> None:
+    def test__build__aliquot_id(self) -> None:
         aliquots = (ESAliquot(aliquot_id="a-0"), ESAliquot(aliquot_id="a-1"))
         sample = ESSample(
             portions=(ESPortion(analytes=(ESAnalyte(aliquots=aliquots),)),)
@@ -365,12 +375,12 @@ class TestPrimaryAliquotBuilder:
         file = ESFile(cases=(ESCase(samples=(sample,)),))
         builder = self._arrange_builder((file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_rows = result_df.collect()
 
         assert all(row.aliquot_id == "a-0" for row in result_rows)
 
-    def test__build_from_scratch__missing_analytes(self) -> None:
+    def test__build__missing_analytes(self) -> None:
         aliquots = (ESAliquot(aliquot_id="a-0"), ESAliquot(aliquot_id="a-1"))
         sample = ESSample(
             portions=(
@@ -381,6 +391,6 @@ class TestPrimaryAliquotBuilder:
         file = ESFile(cases=(ESCase(samples=(sample,)),))
         builder = self._arrange_builder((file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
 
         assert result_df.count() == 2
