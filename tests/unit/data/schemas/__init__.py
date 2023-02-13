@@ -32,9 +32,7 @@ def _get_schama(cls: Type, schema: str) -> Schema:
 
 def _init_schemas(cls: Type) -> Type:
     annoations = getattr(cls, "__annotations__", {})
-    schemas = {
-        s: _get_schama(cls, s) for s, t in annoations.items() if issubclass(t, Schema)
-    }
+    schemas = {s: _get_schama(cls, s) for s, t in annoations.items() if t is Schema}
 
     for name, schema in schemas.items():
         setattr(cls, name, schema)
