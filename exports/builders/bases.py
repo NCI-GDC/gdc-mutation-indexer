@@ -428,3 +428,34 @@ class PrimaryAliquotBuilder(
                 *self._additional_selections,
             )
         )
+
+
+class IndexBuilder(
+    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC
+):
+    """A builder base class for constructing data to be inserted into an elasticsearch index."""
+    __slots__ = ("_es_dataframe_util", "_index_type", "_index_name", "_id_field")
+
+    def __init__(
+        self,
+        config: TConfig,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        input_type: Type[TInputDFs],
+        output: build.DataFrame,
+        id_field: str,
+    ) -> None:
+        super().__init__(config, spark_session, input_type, output)
+
+        self._es_dataframe_util = es_dataframe_util
+        self._index_type = build.IndexType[self._output.name]
+        self._index_name, _ = self._index_type.get_mappings_details()
+        self._id_field = id_field
+
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        df = super()._write(df)
+
+        logger.info(f"Writing to ES: {self.output.name}")
+        self._es_dataframe_util.write(df, self._index_type, self._id_field)
+
+        return df
