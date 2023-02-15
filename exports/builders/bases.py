@@ -434,6 +434,7 @@ class IndexBuilder(
     Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC
 ):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
+
     __slots__ = ("_es_dataframe_util", "_index_type", "_index_name", "_id_field")
 
     def __init__(
