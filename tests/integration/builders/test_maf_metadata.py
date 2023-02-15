@@ -7,8 +7,8 @@ import elasticsearch
 import pytest
 from elasticsearch import helpers
 
-import config
 from exports.builders import maf_metadata
+from exports.configuration import elasticsearch as es_config
 
 FILE_SETTINGS = {
     "index": {
@@ -83,6 +83,7 @@ FILE_MAPPINGS = {
     },
 }
 TEST_INDEX = "test_maf_metadata_builder"
+PRIORITIZED_STRATEGIES = ("WXS", "Targeted Sequencing")
 
 
 @dataclasses.dataclass
@@ -129,13 +130,10 @@ class TestMAFFileFilterFactory:
     def initialize_fixtures(self, es_client: elasticsearch.Elasticsearch) -> None:
         self.es_client = es_client
 
-    def arrange_config(
-        self, maf_prioritized_experimental_strategies=("WXS", "Targeted Sequencing")
-    ) -> config.BaseConfig:
+    def arrange_config(self) -> es_config.Read:
         return mock.MagicMock(
-            spec=config.BaseConfig,
-            graph_file_index=TEST_INDEX,
-            maf_prioritized_experimental_strategies=maf_prioritized_experimental_strategies,
+            spec=es_config.Read,
+            file_index=TEST_INDEX,
         )
 
     @contextlib.contextmanager
@@ -168,7 +166,10 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=("GDC-TEST",))
+            filters = builder.get_filters(
+                projects=("GDC-TEST",),
+                prioritized_experimental_strategies=PRIORITIZED_STRATEGIES,
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -194,7 +195,10 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=("GDC-TEST",))
+            filters = builder.get_filters(
+                projects=("GDC-TEST",),
+                prioritized_experimental_strategies=PRIORITIZED_STRATEGIES,
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -220,7 +224,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -245,7 +251,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -275,7 +283,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -300,7 +310,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -330,7 +342,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -360,7 +374,10 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=("GDC-TEST",))
+            filters = builder.get_filters(
+                projects=("GDC-TEST",),
+                prioritized_experimental_strategies=PRIORITIZED_STRATEGIES,
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -383,7 +400,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -404,7 +423,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -429,7 +450,9 @@ class TestMAFFileFilterFactory:
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
         with self.load_files(files):
-            filters = builder.get_filters(projects=())
+            filters = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )
             query = {"bool": {"must": filters}}
 
             result_ids = frozenset(
@@ -450,4 +473,6 @@ class TestMAFFileFilterFactory:
             RuntimeError,
             match=r"Invalid Data: No projects associated with any MAF files\.",
         ):
-            _ = builder.get_filters(projects=())
+            _ = builder.get_filters(
+                projects=(), prioritized_experimental_strategies=PRIORITIZED_STRATEGIES
+            )

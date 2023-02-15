@@ -10,6 +10,8 @@ from pyspark.sql import types
 
 from exports import builders, es_utils
 from exports.builders import maf_metadata
+from exports.configuration.builders import viz
+from exports.constants import build
 from tests.unit.data import schemas
 
 
@@ -71,34 +73,43 @@ class TestMAFMetadataBuilder:
     def arrange_builder(
         self, files: Tuple[ESFile, ...] = (ESFile(),)
     ) -> builders.MAFMetadataBuilder:
-        conf = mock.MagicMock()
+        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
+        conf = mock.MagicMock(
+            spec=viz.MAFMetadataBuilder,
+            backup=backup,
+            is_cached=False,
+            prioritized_experimental_strategies=(),
+        )
         sql_context = mock.MagicMock(spec=sql.SQLContext)
         es_dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         filter_factory = self.arrange_filter_factory()
 
         conf.projects = None
 
-        es_dataframe_util.get_dataframe.return_value = (
-            self.spark_session.createDataFrame(files, schema=self.file_schema)
+        es_dataframe_util.read.return_value = (
+            self.spark_session.createDataFrame(
+                files,  # type: ignore
+                schema=self.file_schema,
+            )
         )
 
         return builders.MAFMetadataBuilder(
             conf, sql_context, es_dataframe_util, filter_factory
         )
 
-    def test__build_from_scratch__single_row(self) -> None:
+    def test__build__single_row(self) -> None:
         builder = self.arrange_builder()
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_schema
 
-    def test__build_from_scratch__input_data_transformed(self) -> None:
+    def test__build__input_data_transformed(self) -> None:
         file = ESFile()
         builder = self.arrange_builder((file,))
 
-        result_df = builder.build_from_scratch()
+        result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.case_id == file.cases[0].case_id
