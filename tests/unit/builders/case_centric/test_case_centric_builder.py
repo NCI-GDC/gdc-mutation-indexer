@@ -34,47 +34,47 @@ class Inputs(TypedDict):
 
 @pytest.fixture(scope="class")
 def maf_metadata_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_maf_metadata.yaml")
+    return schemas.Viz.Builders.MAFMetadata.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_maf.yaml")
+    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ascat.json")
+    return schemas.Viz.Builders.ASCAT.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_primary_aliquot.json")
+    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_case.yaml")
+    return schemas.Viz.Builders.CaseCentric.CASE.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ssm_observation.json")
+    return schemas.Viz.Builders.Observation.Other.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def cnv_observation_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_cnv_observation.yaml")
+    return schemas.Viz.Builders.Observation.CNV.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def ssm_consequence_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/input_ssm_consequence.yaml")
+    return schemas.Viz.Builders.Consequence.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/case_centric/final_case_centric.yaml")
+    return schemas.Viz.Builders.CaseCentric.FINAL.load()
 
 
 class TestCaseCentricBuilder:
@@ -128,7 +128,7 @@ class TestCaseCentricBuilder:
         return dataframe_util
 
     def arrange_rdd_util(
-        self, cases: Tuple[sample.Hit, ...] = (sample.Hit,)
+        self, cases: Tuple[sample.Hit, ...] = (sample.Hit(),)
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(

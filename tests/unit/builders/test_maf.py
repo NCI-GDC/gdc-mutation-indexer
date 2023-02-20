@@ -257,22 +257,22 @@ class GeneModel:
 
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/input_gene_model.json")
+    return schemas.Builders.GeneModel.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def masked_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/masked_somatic_mutation.yaml")
+    return schemas.Viz.Builders.MAF.MASKED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def aggregated_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+    return schemas.Viz.Builders.MAF.AGGREGATED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.yaml")
+    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 def arrange_config() -> viz.MAFBuilder:

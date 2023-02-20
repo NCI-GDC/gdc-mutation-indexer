@@ -97,7 +97,7 @@ class MAF:
     cdna_position: str = "1734/13108"
     cds_end: int = 12169
     cds_length: int = 10464
-    cds_position: int = "1705/10464"
+    cds_position: str = "1705/10464"
     cds_start: int = 1705
     center: str = "BI"
     chromosome: str = "chr1"
@@ -216,24 +216,22 @@ class AllEffects:
 
 @pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/input_maf.yaml")
+    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence.yaml")
+    return schemas.Viz.Builders.Consequence.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_genes_schema() -> types.StructType:
-    return schemas.load_schema("builders/consequence/final_consequence_with_genes.yaml")
+    return schemas.Viz.Builders.Consequence.Gene.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_aa_change_schema() -> types.StructType:
-    return schemas.load_schema(
-        "builders/consequence/final_consequence_with_aa_change.yaml"
-    )
+    return schemas.Viz.Builders.Consequence.AAChange.FINAL.load()
 
 
 class TestConsequenceBuilder:

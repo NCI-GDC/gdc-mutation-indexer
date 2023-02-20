@@ -1,0 +1,33 @@
+fields:
+- metadata: {}
+  name: age_at_diagnosis
+  nullable: true
+  type:
+    containsNull: true
+    elementType: long
+    type: array
+- &string_field
+  metadata: {}
+  name: case_id
+  nullable: true
+  type: string
+- &long_field
+  metadata: {}
+  name: days_to_death
+  nullable: true
+  type: long
+- <<: *string_field
+  name: ethnicity
+- <<: *string_field
+  name: file_id
+- <<: *string_field
+  name: gender
+- <<: *string_field
+  name: project_id
+- <<: *string_field
+  name: race
+- <<: *string_field
+  name: submitter_id
+- <<: *string_field
+  name: vital_status
+type: struct
