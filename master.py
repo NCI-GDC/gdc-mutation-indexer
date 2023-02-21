@@ -133,7 +133,7 @@ def get_config(
         with tempfile.TemporaryDirectory() as temp_directory:
             config_file = path.join(temp_directory, "configuration.toml")
             config_data = load_config_data(user_config_file, config_file)
-            config: Any = configuration.CONFIG_SCHEMA.load(config_data) # type: ignore
+            config: Any = configuration.CONFIG_SCHEMA.load(config_data)  # type: ignore
 
             with open(config_file, "w+") as f:
                 toml.dump(config_data, f)
@@ -187,7 +187,10 @@ async def run_spark_command(config: configuration.Configuration) -> None:
     spark_command = path.join(spark_home, "bin/spark-submit")
     final_command = " ".join(
         more_itertools.value_chain(
-            spark_command, arguments, path.join(ROOT_DIR, "bin/export.py")
+            "sudo -E -u ubuntu",
+            spark_command,
+            arguments,
+            path.join(ROOT_DIR, "bin/export.py"),
         )
     )
     home_dir = os.environ.get("HOME", "")
@@ -234,9 +237,11 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             logger.warning(f"Build failed to build indices: {missing_indices}.")
 
         try:
-            await es_client.indices.forcemerge(index=",".join(indices), max_num_segments=1)
+            await es_client.indices.forcemerge(
+                index=",".join(indices), max_num_segments=1
+            )
         except Exception as ex:
-            logger.warn(f"Error occurred while merging: {ex}.")
+            logger.warning(f"Error occurred while merging: {ex}.")
 
 
 def set_environment_variables(env: environment.Environment) -> None:

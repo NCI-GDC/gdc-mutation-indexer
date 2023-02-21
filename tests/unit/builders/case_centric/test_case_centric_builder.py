@@ -123,7 +123,7 @@ class TestCaseCentricBuilder:
     ) -> es_utils.DataFrameUtil:
         case_df = self.spark_session.createDataFrame(cases, schema=self.case_schema)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
-        dataframe_util.get_dataframe.return_value = case_df
+        dataframe_util.read.return_value = case_df
 
         return dataframe_util
 

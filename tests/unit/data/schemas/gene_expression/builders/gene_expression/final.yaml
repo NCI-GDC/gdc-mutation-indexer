@@ -22,9 +22,9 @@ fields:
   name: gender
 - metadata: {}
   name: genes
-  nullable: true
+  nullable: false
   type:
-    containsNull: true
+    containsNull: false
     elementType:
       fields:
       - &double_field

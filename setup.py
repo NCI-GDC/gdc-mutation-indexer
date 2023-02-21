@@ -1,22 +1,4 @@
-import shlex
-import subprocess
-from os import path
-
 from setuptools import find_packages, setup
-
-here = path.abspath(path.dirname(__file__))
-with open(path.join(here, "README.md")) as f:
-    long_description = f.read()
-
-
-git_hash = (
-    subprocess.check_output(
-        shlex.split("git --git-dir={}/.git rev-parse HEAD".format(here))
-    )
-    .decode("utf-8")
-    .strip()
-)
-
 
 setup(
     name="gdc-mutation-indexer",
@@ -26,13 +8,11 @@ setup(
     },
     setup_requires=["setuptools_scm<6"],
     description="ETL for mutation elasticsearch indices",
-    long_description=long_description,
     long_description_content_type="text/markdown",
     license="Apache",
     packages=find_packages(exclude=("tests.*", "tests")),
     py_modules=["config"],
     include_package_data=True,
-    options=dict(egg_info=dict(tag_build=(".rev." + git_hash))),
     install_requires=[
         "boto==2.49.0",
         "elasticsearch[async]~=7.6",
@@ -42,8 +22,9 @@ setup(
         "marshmallow-dataclass~=8.5",
         "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
-        "pyspark==2.4.5",
+        "pyspark==3.3.1",
         "python-dateutil~=2.8",
+        "python-json-logger~=2.0",
         "PyYaml>=3.11,<6",
         "requests~=2.7",
         "six~=1.15.0",

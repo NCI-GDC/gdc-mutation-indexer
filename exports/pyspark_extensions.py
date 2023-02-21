@@ -1,16 +1,16 @@
-from typing import Any, Iterable
+import dataclasses
+from typing import Any, Iterable, Union
 
-import attr
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
 
-@attr.s(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class DefaultColumn:
-    name = attr.ib(type=str)
-    type = attr.ib(type=types.DataType, default=types.StringType())
-    value = attr.ib(type=Any, default=None)
+    name: str
+    type: types.DataType = types.StringType()
+    value: Any = None
 
     def col(self) -> sql.Column:
         return F.lit(self.value).cast(self.type)
@@ -37,3 +37,9 @@ def default_columns(df: sql.DataFrame, defaults: Iterable[DefaultColumn]):
         df = df.withColumn(default.name, default.col())
 
     return df
+
+
+def explode_safe(col: Union[sql.Column, str]) -> sql.Column:
+    col = col if isinstance(col, sql.Column) else F.col(col)
+
+    return F.explode(F.when(F.size(col) == 1, F.array(col[0])).otherwise(col))

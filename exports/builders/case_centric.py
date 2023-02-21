@@ -70,7 +70,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         self.logger.info(f"Included case fields: {fields}")
         self.logger.info(f"Included sample fields: {sample_fields}")
 
-        case_df = self._es_dataframe_util.get_dataframe(
+        case_df = self._es_dataframe_util.read(
             build.IndexType.CASE,
             include_fields=fields,
             include_as_arrays=self.config.case_include_as_arrays,

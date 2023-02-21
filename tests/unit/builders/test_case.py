@@ -759,7 +759,7 @@ class TestCaseBuilder:
     ) -> es_utils.DataFrameUtil:
         util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
-        util.get_dataframe.return_value = self.spark_session.createDataFrame(
+        util.read.return_value = self.spark_session.createDataFrame(
             cases,  # type: ignore
             schema=self.case_schema,
         )
@@ -798,7 +798,9 @@ class TestCaseBuilder:
         es_dataframe_util = self.arrange_es_dataframe_util()
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(
+            config, spark_session, es_dataframe_util, selector
+        )
 
         result_df = builder.build(**inputs)
 
@@ -812,7 +814,9 @@ class TestCaseBuilder:
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(
+            config, spark_session, es_dataframe_util, selector
+        )
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -841,7 +845,9 @@ class TestCaseBuilder:
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes(maf_metadata_cases, ascat_cases)
-        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
+        builder = builders.CaseBuilder(
+            config, spark_session, es_dataframe_util, selector
+        )
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())

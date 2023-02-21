@@ -10,9 +10,9 @@ fields:
   name: occurrence_id
 - metadata: {}
   name: observation
-  nullable: true
+  nullable: false
   type:
-    containsNull: true
+    containsNull: false
     elementType:
       fields:
       - <<: *string_field
@@ -99,8 +99,10 @@ fields:
         nullable: false
         type:
           fields:
-          - <<: *string_field
+          - metadata: {}
             name: variant_caller
+            nullable: false
+            type: string
           - metadata: {}
             name: variant_process
             nullable: false

@@ -254,7 +254,10 @@ class TestConsequenceBuilder:
         }
 
     def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+        return self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
 
     @pytest.mark.parametrize(
         ("index_name", "join_gene", "add_gene_aa_change"),

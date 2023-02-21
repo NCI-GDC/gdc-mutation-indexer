@@ -99,7 +99,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
         logger.debug(f"Included fields: {fields}")
 
         # Load cases from graph index
-        return self._es_dataframe_util.get_dataframe(
+        return self._es_dataframe_util.read(
             build.IndexType.CASE,
             include_fields=fields,
             include_as_arrays=self._config.include_as_arrays,

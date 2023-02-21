@@ -1,6 +1,6 @@
 import dataclasses
 import re
-import importlib_resources as resources
+from importlib import resources
 from typing import Type
 
 import yaml
@@ -18,6 +18,12 @@ class Schema:
         data = resources.read_text(self._package, self._resource)
 
         return types.StructType.fromJson(yaml.safe_load(data))
+
+    def update(self, schema: types.StructType) -> None:
+        with resources.as_file(
+            resources.files(self._package).joinpath(self._resource)
+        ) as path, open(path, "w") as f:
+            yaml.dump(schema.jsonValue(), f)
 
 
 def _get_schama(cls: Type, schema: str) -> Schema:

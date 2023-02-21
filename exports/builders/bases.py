@@ -16,7 +16,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Literal, Protocol, TypeGuard
 
-from exports import es_utils
+from exports import es_utils, pyspark_extensions
 from exports.configuration.builders import common
 from exports.constants import build
 
@@ -97,7 +97,7 @@ class InputDataFrameManger(Generic[TInputDFs]):
         return self._required_params <= inputs.keys()
 
 
-class InputBuilder(Generic[TConfig, TInputDFs], Builder, abc.ABC):
+class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
     __slots__ = ("_config", "_spark_session", "_input_manager", "_output")
 
     def __init__(
@@ -327,7 +327,7 @@ class PrimaryAliquotBuilder(
             .select(
                 "file_id",
                 F.col("created_datetime").cast("timestamp"),
-                F.explode("cases").alias("case"),
+                pyspark_extensions.explode_safe("cases").alias("case"),
                 *self._additional_selections,
             )
             .select(

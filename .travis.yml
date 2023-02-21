@@ -3,7 +3,7 @@ dist: bionic
 language: python
 
 python:
-  - "3.6"
+  - "3.9"
 
 addons:
   apt:
@@ -37,7 +37,7 @@ before_install:
   - sudo service elasticsearch restart
 
 install:
-  - pip install tox-travis
+- pip install tox-travis
 
 script:
   - java -version
