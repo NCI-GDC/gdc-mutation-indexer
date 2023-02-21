@@ -301,7 +301,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             self._es_dataframe_util.read(build.IndexType.FILE, query=body)
             .select(
                 "file_id",
-                pyspark_extensions.explode_safe("cases").alias("case"),
+                pyspark_extensions.explode_nested_doc("cases").alias("case"),
             )
             .select(
                 "file_id",

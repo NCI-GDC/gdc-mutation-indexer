@@ -327,7 +327,7 @@ class PrimaryAliquotBuilder(
             .select(
                 "file_id",
                 F.col("created_datetime").cast("timestamp"),
-                pyspark_extensions.explode_safe("cases").alias("case"),
+                pyspark_extensions.explode_nested_doc("cases").alias("case"),
                 *self._additional_selections,
             )
             .select(
