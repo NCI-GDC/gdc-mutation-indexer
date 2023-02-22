@@ -104,6 +104,7 @@ path = ""
 
 [builders.viz.case_centric]
 genes_threshold = 100
+id_field = "case_id"
 include_as_arrays = ["project.disease_type", "project.primary_site"]
 is_cached = true
 partition_size = 12
@@ -112,6 +113,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.gene_centric]
+id_field = "gene_id"
 is_cached = true
 partition_size = 12
 [builders.viz.gene_centric.backup]
@@ -119,6 +121,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_centric]
+id_field = "cnv_id"
 is_cached = true
 occurrences_threshold = 100
 partition_size = 12
@@ -127,6 +130,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.cnv_occurrence_centric]
+id_field = "cnv_occurrence_id"
 is_cached = true
 partition_size = 12
 [builders.viz.cnv_occurrence_centric.backup]
@@ -134,6 +138,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_centric]
+id_field = "ssm_id"
 is_cached = true
 occurrences_threshold = 100
 partition_size = 12
@@ -142,6 +147,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.ssm_occurrence_centric]
+id_field = "ssm_occurrence_id"
 is_cached = true
 partition_size = 12
 [builders.viz.ssm_occurrence_centric.backup]
@@ -176,6 +182,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.gene_expression.gene_expression]
+id_field = "case_id"
 is_cached = true
 partition_size = 12
 [builders.gene_expression.gene_expression.backup]

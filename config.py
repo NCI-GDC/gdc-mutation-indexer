@@ -705,11 +705,11 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def df_repartition(self) -> int:
-        return self._config.builders.viz.case_centric.repartition_size
+        return 2048
 
     @property
     def df_coalesce(self) -> int:
-        return self._config.builders.viz.case_centric.coalesce_size
+        return 12
 
     @property
     def graph_file_index(self) -> str:
