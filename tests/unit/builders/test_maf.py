@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 from unittest import mock
 
 import more_itertools
@@ -167,7 +167,7 @@ class MAF:
     FMI_TRANSCRIPT: Optional[str] = None
     FMI_FUNCTIONAL_EFFECT: Optional[str] = None
 
-    def to_sql_row(self) -> sql.Row:
+    def to_sql_row(self, fields: Iterable[types.StructField]) -> sql.Row:
         data = dataclasses.asdict(self)
 
         data["1000G_AF"] = data.pop("ThousandG_AF")
@@ -177,7 +177,7 @@ class MAF:
         data["1000G_EUR_AF"] = data.pop("ThousandG_EUR_AF")
         data["1000G_SAS_AF"] = data.pop("ThousandG_SAS_AF")
 
-        return sql.Row(**data)
+        return sql.Row(*(data[f.name] for f in fields))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -257,22 +257,22 @@ class GeneModel:
 
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/input_gene_model.json")
+    return schemas.Builders.GeneModel.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def masked_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/masked_somatic_mutation.yaml")
+    return schemas.Viz.Builders.MAF.MASKED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def aggregated_somatic_mutation_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
+    return schemas.Viz.Builders.MAF.AGGREGATED_SOMATIC_MUTATION.load()
 
 
 @pytest.fixture(scope="class")
 def final_maf_schema() -> types.StructType:
-    return schemas.load_schema("builders/maf/final_maf.yaml")
+    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 def arrange_config() -> viz.MAFBuilder:
@@ -450,13 +450,19 @@ class TestMAFBuilder:
             if annotation_builders is None
             else annotation_builders
         )
+        mafs = tuple(
+            maf.to_sql_row(self.masked_somatic_mutation_schema.fields)
+            for maf in masked_somatic_mutation_mafs
+        )
         masked_somatic_mutation_df = self.spark_session.createDataFrame(
-            tuple(maf.to_sql_row() for maf in masked_somatic_mutation_mafs),
-            schema=self.masked_somatic_mutation_schema,
+            mafs, schema=self.masked_somatic_mutation_schema
+        )
+        mafs = tuple(
+            maf.to_sql_row(self.aggregated_somatic_mutation_schema.fields)
+            for maf in aggregated_somatic_mutation_mafs
         )
         aggregated_somatic_mutation_df = self.spark_session.createDataFrame(
-            tuple(maf.to_sql_row() for maf in aggregated_somatic_mutation_mafs),
-            schema=self.aggregated_somatic_mutation_schema,
+            mafs, schema=self.aggregated_somatic_mutation_schema
         )
 
         config = arrange_config()

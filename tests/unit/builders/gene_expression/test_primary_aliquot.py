@@ -60,14 +60,12 @@ class ESFile:
 
 @pytest.fixture(scope="class")
 def input_file_schema() -> types.StructType:
-    return schemas.load_schema(
-        "builders/gene_expression/primary_aliquot/input_file.json"
-    )
+    return schemas.GeneExpression.Builders.PrimaryAliquot.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.load_schema("builders/gene_expression/primary_aliquot/final.json")
+    return schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
 
 
 class TestPrimaryAliquotBuilder:

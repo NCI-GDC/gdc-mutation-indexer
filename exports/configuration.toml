@@ -34,11 +34,13 @@ deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
 pex_python = "python3.6"
-pex_root = '"./.pex"'
+pex_root = "/mnt/tmp/.pex"
+tmpdir = "/mnt/tmp"
 
 [spark.yarn.executor_env]
 pex_python = "python3.6"
-pex_root = '"./.pex"'
+pex_root = "/mnt/tmp/.pex"
+tmpdir = "/mnt/tmp"
 
 [build]
 build_version = "v0"

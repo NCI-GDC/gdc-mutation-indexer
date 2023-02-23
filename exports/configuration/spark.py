@@ -88,6 +88,7 @@ class Submit(ConfigArgumentMixin):
 class Env(ConfigArgumentMixin):
     pex_python: str
     pex_root: str
+    tmpdir: str
 
     def _format_field(self, field: str) -> str:
         return field.upper()
@@ -104,6 +105,7 @@ class Spark(ConfigArgumentMixin):
     """
     Config values for the spark-submit/spark session.
     """
+
     master: str
     app: App
     driver: Driver

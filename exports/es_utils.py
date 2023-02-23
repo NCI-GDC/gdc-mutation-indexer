@@ -473,6 +473,7 @@ class DataFrameUtil:
         Returns:
             A data frame containing the data from the elasticsearch index
         """
+        index = self._get_index(index_type)
         reader = (
             self._sql_context.read.format(self.ES_FORMAT)
             .option("es.read.metadata", read_metadata)
@@ -480,6 +481,9 @@ class DataFrameUtil:
             .option("es.net.http.auth.user", self._config.source_es_user)
             .option("es.net.http.auth.pass", self._config.source_es_pass)
             .option("es.net.ssl", self._config.es_use_ssl)
+            .option("es.nodes.wan.only", True)
+            .option("es.nodes.resolve.hostname", False)
+            .option("es.resource.read", index)
             .option(
                 "es.net.ssl.cert.allow.self.signed",
                 self._config.disable_es_verify_certs,
@@ -501,9 +505,7 @@ class DataFrameUtil:
                 "es.read.field.as.array.include", ",".join(include_as_arrays)
             )
 
-        return reader.load(self._get_index(index_type))
-
-    get_dataframe = read
+        return reader.load(index)
 
     def _create_index(self, index: str, index_type: build.IndexType) -> None:
         """

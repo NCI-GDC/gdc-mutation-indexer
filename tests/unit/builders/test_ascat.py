@@ -170,22 +170,22 @@ def _arrange_case(
 
 @pytest.fixture(scope="class")
 def input_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_ascat.yaml")
+    return schemas.Viz.Builders.ASCAT.DOCUMENT.load()
 
 
 @pytest.fixture(scope="class")
 def es_file_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/es_file.json")
+    return schemas.Viz.Builders.ASCAT.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def input_gene_model_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/input_gene_model.json")
+    return schemas.Builders.GeneModel.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_ascat_schema() -> types.StructType:
-    return schemas.load_schema("builders/ascat/final_ascat.json")
+    return schemas.Viz.Builders.ASCAT.FINAL.load()
 
 
 class TestAscatBuilder:
@@ -221,8 +221,10 @@ class TestAscatBuilder:
             es_files,  # type: ignore
             self.es_file_schema,
         )
+        util = mock.MagicMock()
+        util.read.return_value = es_file_df
 
-        return _arrange_dataframe_util(es_file_df)
+        return util
 
     def _arrange_builder(
         self,

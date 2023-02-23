@@ -10,6 +10,7 @@ from pyspark import sql
 
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
+from exports import logging as mutation_indexer_logging
 from exports.builders import (
     ascat,
     base_builder,
@@ -21,11 +22,10 @@ from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
 from exports.configuration.builders import gene_expression, viz
-from exports.constants import app, build
+from exports.constants import build
+
 
 logger = logging.getLogger("exports")
-
-logging.basicConfig(format=app.LOG_FORMAT, level=logging.INFO)
 
 
 @contextlib.contextmanager
@@ -358,10 +358,14 @@ def get_ge_builders(
 
 
 def main():
+    mutation_indexer_logging.configure()
+    
     try:
         config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
             toml.load("configuration.toml")
         )
+
+        mutation_indexer_logging.add_build_id(config.build.build_id)
 
         with get_es_client(
             config.elasticsearch.connection

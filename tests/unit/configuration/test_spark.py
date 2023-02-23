@@ -97,25 +97,33 @@ class TestSpark:
             sql=None,
             submit=None,
             yarn=spark.Yarn(
-                app_master_env=spark.Env(pex_python="python3", pex_root="pex"),
-                executor_env=spark.Env(pex_python="python3.X", pex_root=".pex"),
+                app_master_env=spark.Env(
+                    pex_python="python3", pex_root="pex", tmpdir="/tmp"
+                ),
+                executor_env=spark.Env(
+                    pex_python="python3.X", pex_root=".pex", tmpdir="/mnt/tmp"
+                ),
             ),
         )
 
         args = frozenset(config.get_arguments())
 
+        print(args)
+
         assert args == frozenset(
             (
-                ("--conf", "spark.master=name"),
-                ("--conf", "spark.app=None"),
                 ("--conf", "spark.driver=None"),
-                ("--conf", "spark.executor=None"),
-                ("--conf", "spark.pyspark=None"),
-                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.yarn.executorEnv.TMPDIR=/mnt/tmp"),
+                ("--conf", "spark.yarn.appMasterEnv.TMPDIR=/tmp"),
                 ("--conf", "spark.submit=None"),
-                ("--conf", "spark.yarn.appMasterEnv.PEX_PYTHON=python3"),
-                ("--conf", "spark.yarn.appMasterEnv.PEX_ROOT=pex"),
-                ("--conf", "spark.yarn.executorEnv.PEX_PYTHON=python3.X"),
                 ("--conf", "spark.yarn.executorEnv.PEX_ROOT=.pex"),
+                ("--conf", "spark.yarn.appMasterEnv.PEX_PYTHON=python3"),
+                ("--conf", "spark.executor=None"),
+                ("--conf", "spark.sql=None"),
+                ("--conf", "spark.pyspark=None"),
+                ("--conf", "spark.yarn.executorEnv.PEX_PYTHON=python3.X"),
+                ("--conf", "spark.app=None"),
+                ("--conf", "spark.master=name"),
+                ("--conf", "spark.yarn.appMasterEnv.PEX_ROOT=pex"),
             )
         )
