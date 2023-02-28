@@ -33,12 +33,14 @@ partitions = 200
 deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
-pex_python = "python3.6"
-pex_root = '"./.pex"'
+pex_python = "python3.9"
+pex_root = "/mnt/tmp/.pex"
+tmpdir = "/mnt/tmp"
 
 [spark.yarn.executor_env]
-pex_python = "python3.6"
-pex_root = '"./.pex"'
+pex_python = "python3.9"
+pex_root = "/mnt/tmp/.pex"
+tmpdir = "/mnt/tmp"
 
 [build]
 build_version = "v0"
@@ -66,10 +68,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case]
-include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
-]
+include_as_arrays = ["project.disease_type", "project.primary_site"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case.backup]
@@ -87,10 +86,7 @@ path = ""
 
 [builders.viz.maf_metadata]
 is_cached = true
-prioritized_experimental_strategies = [
-  "WXS",
-  "Targeted Sequencing",
-]
+prioritized_experimental_strategies = ["Targeted Sequencing", "WXS"]
 [builders.viz.maf_metadata.backup]
 mode = "NEITHER"
 path = ""
@@ -111,10 +107,7 @@ path = ""
 [builders.viz.case_centric]
 coalesce_size = 12
 genes_threshold = 100
-include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
-]
+include_as_arrays = ["project.disease_type", "project.primary_site"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case_centric.backup]

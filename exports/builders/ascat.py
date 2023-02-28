@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Iterable, Sequence
 
 import elasticsearch
@@ -6,13 +7,15 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-from exports import es_utils, indexd_utils, schemas
+from exports import es_utils, indexd_utils, pyspark_extensions, schemas
 from exports.builders import bases, utils
 from exports.configuration import elasticsearch as es_config
 from exports.configuration.builders import viz
 from exports.constants import build
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
+
+logger = logging.getLogger(__name__)
 
 
 def _strip_gene_id() -> sql.Column:
@@ -132,31 +135,21 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         |---file_id
         +---gene_id
     """
-    ploidy_df = document_df.groupby("file_id", "copy_number").count()
-    ploidy_df = (
-        ploidy_df.groupBy("file_id", "count")
-        .agg(F.min("copy_number"), F.max("copy_number"))
-        .select(
-            "count",
-            "file_id",
-            F.col("max(copy_number)").alias("upper_ploity_number"),
-            F.col("min(copy_number)").alias("lower_ploity_number"),
-        )
+    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
+        F.count("*").alias("count")
     )
-    max_count_df = (
-        ploidy_df.groupBy("file_id")
-        .max("count")
-        .withColumnRenamed("max(count)", "count")
-    )
-    ploidy_df = ploidy_df.join(max_count_df, on=["file_id", "count"]).select(
-        "file_id", "upper_ploity_number", "lower_ploity_number"
-    )
-    document_df = document_df.select("file_id", "gene_id", "copy_number").join(
-        ploidy_df, on="file_id"
-    )
+    ploidy_window = sql.Window().partitionBy("file_id", "count")
+    mode_window = sql.Window().partitionBy("file_id").orderBy(F.col("count").desc())
+    ploidy_df = ploidy_df.select(
+        "file_id",
+        F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
+        F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
+        F.row_number().over(mode_window).alias("row_number"),
+    ).where(F.col("row_number") == 1)
+    document_df = document_df.join(ploidy_df, on="file_id")
     cnv_change = (
-        F.when(F.col("copy_number") > F.col("upper_ploity_number"), "Gain")
-        .when(F.col("copy_number") < F.col("lower_ploity_number"), "Loss")
+        F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
+        .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
         .otherwise(None)
         .alias("cnv_change")
     )
@@ -165,7 +158,7 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         cnv_change,
         "file_id",
         "gene_id",
-    ).na.drop(subset=["cnv_change"])
+    ).na.drop(subset="cnv_change")
 
 
 class DocumentResolver:
@@ -305,10 +298,10 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         body = {"query": {"terms": {"file_id": list(file_ids)}}}
 
         return (
-            self._es_dataframe_util.get_dataframe(build.IndexType.FILE, query=body)
+            self._es_dataframe_util.read(build.IndexType.FILE, query=body)
             .select(
                 "file_id",
-                F.explode("cases").alias("case"),
+                pyspark_extensions.explode_nested_doc("cases").alias("case"),
             )
             .select(
                 "file_id",

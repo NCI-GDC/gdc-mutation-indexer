@@ -27,7 +27,6 @@
             </goals>
 
             <configuration>
-              <excludeTransitive>true</excludeTransitive>
               <outputDirectory>${gdc.mutationIndexer.artifactDir}</outputDirectory>
             </configuration>
           </execution>
@@ -36,23 +35,24 @@
     </plugins>
   </build>
 
-  <!-- TODO Review some of these deps... -->
   <dependencies>
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk</artifactId>
-      <version>1.7.4</version>
-    </dependency>
-    <dependency>
-      <groupId>com.databricks</groupId>
-      <artifactId>spark-csv_${gdc.mutationIndexer.scalaVersion}</artifactId>
-      <version>1.5.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-spark-20_${gdc.mutationIndexer.scalaVersion}</artifactId>
-      <version>7.6.2</version>
+      <artifactId>elasticsearch-spark-30_2.12</artifactId>
+      <!-- This version should support 7.7.X. 
+        See: https://www.elastic.co/support/matrix#matrix_compatibility -->
+      <version>7.17.8</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-aws</artifactId>
+      <version>3.3.4</version>
     </dependency>
   </dependencies>
 </project>
-

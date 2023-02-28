@@ -221,8 +221,10 @@ class TestAscatBuilder:
             es_files,  # type: ignore
             self.es_file_schema,
         )
+        util = mock.MagicMock()
+        util.read.return_value = es_file_df
 
-        return _arrange_dataframe_util(es_file_df)
+        return util
 
     def _arrange_builder(
         self,

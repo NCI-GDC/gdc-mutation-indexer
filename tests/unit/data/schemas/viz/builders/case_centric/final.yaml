@@ -1013,14 +1013,14 @@ fields:
     name: gene
     nullable: true
     type:
-      containsNull: true
+      containsNull: false
       elementType:
         fields:
           - metadata: {}
             name: ssm
             nullable: true
             type:
-              containsNull: true
+              containsNull: false
               elementType:
                 fields:
                   - <<: *string_field
@@ -1073,7 +1073,7 @@ fields:
                     name: consequence
                     nullable: true
                     type:
-                      containsNull: true
+                      containsNull: false
                       elementType:
                         fields:
                           - <<: *string_field
@@ -1160,7 +1160,7 @@ fields:
                     name: observation
                     nullable: true
                     type:
-                      containsNull: true
+                      containsNull: false
                       elementType:
                         fields:
                           - <<: *string_field
@@ -1230,8 +1230,10 @@ fields:
                             nullable: false
                             type:
                               fields:
-                                - <<: *string_field
+                                - metadata: {}
                                   name: variant_caller
+                                  nullable: false
+                                  type: string
                                 - metadata: {}
                                   name: variant_process
                                   nullable: false
@@ -1245,7 +1247,7 @@ fields:
             name: cnv
             nullable: true
             type:
-              containsNull: true
+              containsNull: false
               elementType:
                 fields:
                   - <<: *string_field
@@ -1270,7 +1272,7 @@ fields:
                     name: observation
                     nullable: true
                     type:
-                      containsNull: true
+                      containsNull: false
                       elementType:
                         fields:
                           - <<: *string_field

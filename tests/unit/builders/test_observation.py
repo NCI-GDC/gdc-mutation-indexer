@@ -281,16 +281,23 @@ class TestObservationBuilder:
         self.cnv_observation_schema = cnv_observation_schema
 
     def arrange_maf_df(self, mafs: Tuple[MAF, ...] = (MAF(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
+        return self.spark_session.createDataFrame(
+            mafs,  # type: ignore
+            schema=self.maf_schema,
+        )
 
     def arrange_ascat_df(self, ascats: Tuple[ASCAT, ...] = (ASCAT(),)) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(ascats, schema=self.ascat_schema)
+        return self.spark_session.createDataFrame(
+            ascats,  # type: ignore
+            schema=self.ascat_schema,
+        )
 
     def arrange_primary_aliquot_df(
         self, primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),)
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
-            primary_aliquots, schema=self.primary_aliquot_schema
+            primary_aliquots,  # type: ignore
+            schema=self.primary_aliquot_schema,
         )
 
     def arrange_builder(self) -> builders.ObservationBuilder:
