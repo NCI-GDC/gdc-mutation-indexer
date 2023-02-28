@@ -1,6 +1,7 @@
 import logging
 import platform
 import uuid
+from logging import handlers
 from typing import Any, Dict
 
 from pythonjsonlogger import jsonlogger
@@ -28,9 +29,11 @@ class DatadogLogFormatter(jsonlogger.JsonFormatter):
 
         if record.exc_info:
             exc_type, exception, tb = record.exc_info
-            log_record["error.kind"] = f"{exc_type.__module__}.{exc_type.__name__}"
-            log_record["error.message"] = f"{exception}"
             log_record["error.stack"] = log_record.pop("exc_info", None)
+            
+            if exc_type and exception:
+                log_record["error.message"] = f"{exception}"
+                log_record["error.kind"] = f"{exc_type.__module__}.{exc_type.__name__}"
 
         log_record["host"] = platform.node()
 
@@ -39,7 +42,7 @@ log_formatter = DatadogLogFormatter("mutation_indexer")
 
 
 def configure() -> None:
-    log_handler = logging.FileHandler(
+    log_handler = handlers.WatchedFileHandler(
         "/var/log/python/mutation_indexer.json", mode="a+"
     )
 
