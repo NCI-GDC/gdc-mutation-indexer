@@ -154,7 +154,8 @@ def _get_viz_builders(
             config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
         ),
     )
-    input_builders = (b for b in input_builders if b.output in inputs)
+    # TODO: DEV-1256 Filter when all index builders have been moved.
+    # input_builders = (b for b in input_builders if b.output in inputs)
 
     return tuple(itertools.chain(index_builders, input_builders))
 
@@ -229,7 +230,7 @@ def get_viz_builders(
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     case_field_selector = es_utils.CaseFieldSelector()
 
-    viz_input_builders = _get_viz_builders(
+    viz_builders = _get_viz_builders(
         config_adapter,
         config.builders.viz,
         frozenset(build.DataFrame[df.name] for df in config.build.index_types),
@@ -244,7 +245,7 @@ def get_viz_builders(
     )
     viz_index_builders = get_viz_index_builders(config_adapter, sql_context)
 
-    return gdc_mutation_export.Builders(viz_input_builders, viz_index_builders)
+    return gdc_mutation_export.Builders(viz_builders, viz_index_builders)
 
 
 def get_ge_input_builders(
