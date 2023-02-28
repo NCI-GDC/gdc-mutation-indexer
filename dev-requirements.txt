@@ -25,23 +25,17 @@ charset-normalizer==2.0.12
     #   -c requirements.txt
     #   requests
 coverage[toml]==5.5
-    # via
-    #   -r dev-requirements.in
-    #   pytest-cov
-decorator==5.1.1
-    # via
-    #   -c requirements.txt
-    #   jsonpath-rw
-deepdiff==3.3.0
+    # via pytest-cov
+deepdiff==6.2.3
     # via -r dev-requirements.in
 distlib==0.3.4
     # via virtualenv
 docutils==0.18.1
     # via sphinx
+exceptiongroup==1.1.0
+    # via pytest
 filelock==3.4.1
     # via virtualenv
-ghp-import==0.5.4
-    # via -r dev-requirements.in
 identify==2.4.4
     # via pre-commit
 idna==3.3
@@ -54,35 +48,33 @@ iniconfig==1.1.1
     # via pytest
 jinja2==3.0.3
     # via sphinx
-jsonpath-rw==1.4.0
-    # via -r dev-requirements.in
-jsonpickle==2.2.0
-    # via deepdiff
 markupsafe==2.0.1
     # via jinja2
+ndjson==0.3.1
+    # via -r dev-requirements.in
 nodeenv==1.6.0
     # via pre-commit
+ordered-set==4.1.0
+    # via deepdiff
+orjson==3.8.7
+    # via deepdiff
 packaging==21.3
     # via pytest
 platformdirs==2.4.0
     # via virtualenv
 pluggy==1.0.0
     # via pytest
-ply==3.11
-    # via jsonpath-rw
 pre-commit==1.21.0
     # via -r dev-requirements.in
-py==1.11.0
-    # via pytest
 pygments==2.12.0
     # via sphinx
 pyparsing==3.0.9
     # via packaging
-pytest==6.2.5
+pytest==7.2.1
     # via
     #   -r dev-requirements.in
     #   pytest-cov
-pytest-cov==2.12.1
+pytest-cov==4.0.0
     # via -r dev-requirements.in
 pytz==2020.5
     # via
@@ -101,7 +93,6 @@ six==1.15.0
     # via
     #   -c master-requirements.txt
     #   -c requirements.txt
-    #   jsonpath-rw
     #   pre-commit
     #   sphinx
     #   virtualenv
@@ -114,8 +105,8 @@ toml==0.10.2
     #   -c requirements.txt
     #   coverage
     #   pre-commit
-    #   pytest
-    #   pytest-cov
+tomli==2.0.1
+    # via pytest
 urllib3==1.26.9
     # via
     #   -c requirements.txt

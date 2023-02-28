@@ -535,9 +535,9 @@ def case_centric_df(
         observation_builder,
     )
     inputs = {
-        "maf_metadata": maf_metadata_df,
+        "maf_metadata_df": maf_metadata_df,
         "maf_df": maf_df,
-        "cnv_df": cnv_df,
+        "ascat_df": cnv_df,
         "primary_aliquot_df": primary_aliquot_df,
     }
 

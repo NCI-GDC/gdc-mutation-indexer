@@ -8,8 +8,10 @@ from typing import (
     Dict,
     Generic,
     Iterable,
+    Literal,
     Mapping,
     Optional,
+    Protocol,
     Type,
     TypeVar,
     Union,
@@ -20,7 +22,7 @@ import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import Literal, Protocol, TypeGuard
+from typing_extensions import TypeGuard
 
 from exports import es_utils, pyspark_extensions
 from exports.configuration.builders import common
@@ -183,11 +185,11 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             return self._safe_read()
 
         return df.cache() if self._config.is_cached else df
-    
+
     def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
         """
         A wrapper method whoes base functionality is to call the `_build_from_scratch`
-        method. Override this method in a derived base class to apply any post 
+        method. Override this method in a derived base class to apply any post
         transformations that have be applied to all builders inherriting from this base.
 
         Args:
@@ -195,7 +197,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
         Returns:
             An data frame constructed from the given inputs based on the logic defined
-            in the `_build_from_scratch` with all universal transformations from the 
+            in the `_build_from_scratch` with all universal transformations from the
             base builder applied.
         """
         return self._build_from_scratch(input_dfs)
@@ -456,7 +458,7 @@ class PrimaryAliquotBuilder(
 def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:
     """
     Walks the inputs fields data type field in order to find the child field with the
-    input name. 
+    input name.
 
     Args:
         field: the field found in a parent schema/struct type.
@@ -466,7 +468,7 @@ def _walk_schema(field: types.StructField, child_name: str) -> types.StructField
         The child field with the given child_name.
 
     Raises:
-        ValueError: this is raised if the input field is NOT a struct type, an array 
+        ValueError: this is raised if the input field is NOT a struct type, an array
             with an struct type for an element type, or a map type with a value type
             which is a struct type.
     """
@@ -517,7 +519,7 @@ class IndexBuilder(
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
         return df
-    
+
     def _get_boolean_paths(self) -> Iterable[str]:
         """
         Find all the boolean field in mapping and return the paths
@@ -526,7 +528,10 @@ class IndexBuilder(
             An iterable of each path to a boolean field represented as a series of
             field names seperated by a '.'.
         """
-        def get_boolean_paths(node: Dict[str, Dict[str, Any]], path: str = "") -> Iterable[str]:
+
+        def get_boolean_paths(
+            node: Dict[str, Dict[str, Any]], path: str = ""
+        ) -> Iterable[str]:
             for key, value in node.items():
                 path = f"{path}{key}"
 
@@ -535,7 +540,9 @@ class IndexBuilder(
                 elif "properties" in value:
                     yield from get_boolean_paths(value["properties"], f"{path}.")
 
-        mappings = self._mappings_loader.load_mappings(self._index_type).get("mappings", {})
+        mappings = self._mappings_loader.load_mappings(self._index_type).get(
+            "mappings", {}
+        )
 
         return get_boolean_paths(mappings.get("properties", {}))
 
