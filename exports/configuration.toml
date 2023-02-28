@@ -33,12 +33,12 @@ partitions = 200
 deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
-pex_python = "python3.6"
+pex_python = "python3.9"
 pex_root = "/mnt/tmp/.pex"
 tmpdir = "/mnt/tmp"
 
 [spark.yarn.executor_env]
-pex_python = "python3.6"
+pex_python = "python3.9"
 pex_root = "/mnt/tmp/.pex"
 tmpdir = "/mnt/tmp"
 
