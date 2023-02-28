@@ -2,8 +2,9 @@ import functools
 import logging
 import re
 import uuid
-from typing import Any, Mapping
+from typing import Any, Dict
 
+import more_itertools
 import pkg_resources
 import yaml
 from normalizer import mapper
@@ -17,7 +18,7 @@ logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
 
 
-DEFAULT_EXCLUDE_FIELDS = {}  # type: Mapping[str, Any]
+DEFAULT_EXCLUDE_FIELDS = {}  # type: Dict[str, Any]
 
 
 def get_default_excludes(index, mapping):
@@ -147,7 +148,7 @@ def extract_impact(df, column, res_colname):
     impact = 'possibly_damaging'
     """
 
-    return df.withColumn(res_colname, F.regexp_extract(column, "(.*)\(.*\)$", 1))
+    return df.withColumn(res_colname, F.regexp_extract(column, r"(.*)\(.*\)$", 1))
 
 
 def extract_score(df, column, res_colname):
@@ -160,7 +161,7 @@ def extract_score(df, column, res_colname):
 
     return df.withColumn(
         res_colname,
-        F.regexp_extract(column, "(\w)\((\d*.?(\d?)*)\)$", 2).cast(types.DoubleType()),
+        F.regexp_extract(column, r"(\w)\((\d*.?(\d?)*)\)$", 2).cast(types.DoubleType()),
     )
 
 
@@ -411,7 +412,7 @@ def extract_aas_position(df):
     """
 
     def extract(aa_change, start=True):
-        match = re.findall(re.compile("(\d+)(?:\D+?)*(\d+)*(?:\D+)"), aa_change)
+        match = re.findall(re.compile(r"(\d+)(?:\D+?)*(\d+)*(?:\D+)"), aa_change)
         if match:
             aa_start, aa_end = match[0]
             if start or not aa_end:
@@ -512,3 +513,57 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
     )
 
     return transcripts_df.drop("canonical_transcript")
+
+
+def _get_array_size_threshold(df: sql.DataFrame, field: str, percentile: int) -> int:
+    assert 0 <= percentile <= 100, "Percentile must be between 0 and 100."
+
+    df = df.groupBy().agg(F.sort_array(F.collect_list(F.size(field))).alias("sizes"))
+
+    if percentile == 100:
+        df = df.select(F.element_at("sizes", -1).alias("threshold"))
+
+    else:
+        sizes = F.col("sizes")
+        position = F.col("position")
+        offset = F.col("offset")
+        position_value = F.col("position_value")
+        df = df.withColumn(
+            "raw_position", (F.size("sizes") - 1) * float(percentile) / 100
+        )
+        df = df.select(
+            "sizes",
+            F.floor("raw_position").alias("position"),
+            (F.col("raw_position") - F.floor("raw_position")).alias("offset"),
+        )
+        df = df.select(
+            sizes[position].alias("position_value"),
+            sizes[position + 1].alias("next_value"),
+            offset,
+        )
+        df = df.select(
+            F.floor(
+                position_value + (F.col("next_value") - position_value) * offset
+            ).alias("threshold"),
+        )
+
+    return more_itertools.one(df.toLocalIterator()).threshold
+
+
+def filter_large_arrays(
+    df: sql.DataFrame,
+    field: str,
+    size_percentile: int,
+) -> sql.DataFrame:
+    """
+    Truncates df_to_truncate to remove rows
+    where field > percentile_threshold
+    """
+    if size_percentile >= 100:
+        return df
+
+    threshold = _get_array_size_threshold(df, field, size_percentile)
+
+    logger.info(f"Removing all arrays in {field} with length greater than {threshold}.")
+
+    return df.where(F.size(field) <= threshold)

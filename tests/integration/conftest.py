@@ -3,6 +3,7 @@ import logging
 import pathlib
 import tempfile
 import uuid
+from importlib import resources
 from typing import (
     AbstractSet,
     Any,
@@ -18,7 +19,6 @@ from typing import (
 from unittest import mock
 
 import elasticsearch
-import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -35,7 +35,7 @@ from tests.integration.utils import test_setup
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
@@ -74,7 +74,6 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
             "gene_expression",
         ),
     ) -> dict:
-
         for driver in drivers:
             data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
             data["builders"][driver]["gene_model"]["census_file"] = census_file
@@ -504,7 +503,9 @@ def centric_index_finalizer(
 @pytest.fixture(scope="session")
 def case_centric_df(
     request: pytest.FixtureRequest,
+    default_config: configuration.Configuration,
     default_old_config: config.BaseConfig,
+    spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
@@ -514,7 +515,6 @@ def case_centric_df(
     observation_builder: builders.ObservationBuilder,
     es_client: elasticsearch.Elasticsearch,
     centric_index_finalizer: CentricIndexFinalizer,
-    dataframe_writer: DataFrameWriter,
     setup_graph_indices: Any,
 ) -> sql.DataFrame:
     """
@@ -522,23 +522,26 @@ def case_centric_df(
     Reused throughout test suite
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.CASE_CENTRIC))
-    log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
+    log.info("BUILDING CASE_CENTRIC_DF")
+
     builder = builders.CaseCentricBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.viz.case_centric,
+        spark_session,
         es_utils.DataFrameUtil(default_old_config, sqlContext, es_client),
+        es_utils.MappingsLoader(),
         es_utils.RDDUtil(default_old_config, sqlContext.sparkSession.sparkContext),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,
     )
+    inputs = {
+        "maf_metadata": maf_metadata_df,
+        "maf_df": maf_df,
+        "cnv_df": cnv_df,
+        "primary_aliquot_df": primary_aliquot_df,
+    }
 
-    builder.build(maf_metadata_df, maf_df, cnv_df, primary_aliquot_df)
-
-    log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.case_centric))
+    return builder.build(**inputs)
 
 
 @pytest.fixture(scope="session")
@@ -700,33 +703,6 @@ def cnv_occurrence_centric_df(
     builder.load()
 
     return dataframe_writer(cast(sql.DataFrame, builder.cnv_occurrence_centric))
-
-
-@pytest.fixture(scope="session")
-def case_ssm_subtree(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
-    maf_df: sql.DataFrame,
-    primary_aliquot_df: sql.DataFrame,
-    es_client: elasticsearch.Elasticsearch,
-    consequence_builder: builders.ConsequenceBuilder,
-    observation_builder: builders.ObservationBuilder,
-) -> sql.DataFrame:
-    """
-    Builds case centric ssm subtree dataframe
-    """
-    log.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
-    builder = builders.CaseCentricBuilder(
-        default_old_config,
-        sqlContext,
-        es_utils.DataFrameUtil(default_old_config, sqlContext, es_client),
-        es_utils.RDDUtil(default_old_config, sqlContext.sparkSession.sparkContext),
-        es_utils.CaseFieldSelector(),
-        consequence_builder,
-        observation_builder,
-    )
-
-    return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
 
 
 @pytest.fixture(scope="session")

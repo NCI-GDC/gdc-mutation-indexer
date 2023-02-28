@@ -1,15 +1,27 @@
+import logging
+from typing import TypedDict
+
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
-from typing_extensions import Self
 
-import config
 from exports import builders, es_utils, schemas
-from exports.builders import case, df_builders
+from exports.builders import bases, case, df_builders, utils
+from exports.configuration.builders import viz
 from exports.constants import build
 
+logger = logging.getLogger(__name__)
 
-class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
+
+class CaseCentricInputs(TypedDict):
+    maf_metadata_df: sql.DataFrame
+    maf_df: sql.DataFrame
+    ascat_df: sql.DataFrame
+    primary_aliquot_df: sql.DataFrame
+
+
+class CaseCentricBuilder(
+    bases.IndexBuilder[viz.CaseCentricBuilder, CaseCentricInputs], case.CaseLoaderMixin
+):
     """
     Builds case-centric dataframe given case and maf dataframes::
 
@@ -28,31 +40,41 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
                            |___ observation[]
     """
 
-    index_name = "case_centric"
-    id_field = "case_id"
+    __slots__ = (
+        "_es_rdd_util",
+        "_field_selector",
+        "_consequence_builder",
+        "_observation_builder",
+    )
 
     def __init__(
         self,
-        config: config.BaseConfig,
-        sqlContext: sql.SQLContext,
+        config: viz.CaseCentricBuilder,
+        spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
+        mappings_loader: es_utils.MappingsLoader,
         es_rdd_util: es_utils.RDDUtil,
         field_selector: es_utils.CaseFieldSelector,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
-    ):
-        super().__init__(config, sqlContext)
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            input_type=CaseCentricInputs,
+            output=build.DataFrame.CASE_CENTRIC,
+        )
 
-        self._es_dataframe_util = es_dataframe_util
         self._es_rdd_util = es_rdd_util
         self._field_selector = field_selector
-
-        self.consequence_builder = consequence_builder
-        self.observation_builder = observation_builder
+        self._consequence_builder = consequence_builder
+        self._observation_builder = observation_builder
 
     def _load_es_case_data(self) -> sql.DataFrame:
-        if False and self.config.projects:  # TODO: Restore func w/ new config specific projects
-            query = {"query": {"terms": {"project.project_id": self.config.projects}}}
+        if self._config.projects:
+            query = {"query": {"terms": {"project.project_id": self._config.projects}}}
         else:
             query = {"query": {"match_all": {}}}
 
@@ -67,13 +89,13 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
             included_fields=("samples",),
         )
 
-        self.logger.info(f"Included case fields: {fields}")
-        self.logger.info(f"Included sample fields: {sample_fields}")
+        logger.info(f"Included case fields: {fields}")
+        logger.info(f"Included sample fields: {sample_fields}")
 
         case_df = self._es_dataframe_util.read(
             build.IndexType.CASE,
             include_fields=fields,
-            include_as_arrays=self.config.case_include_as_arrays,
+            include_as_arrays=self._config.include_as_arrays,
             query=query,
         )
         sample_df = (
@@ -88,48 +110,21 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         return case_df.join(sample_df, on="case_id", how="left")
 
-    def build(
-        self,
-        maf_metadata_df: sql.DataFrame,
-        maf_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
-        primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> Self:
+    def _build_from_scratch(self, input_dfs: CaseCentricInputs) -> sql.DataFrame:
         """
         Builds Case Centric index
         """
-        self.log("Building CaseCentric")
-        # Check if we should load a pre-built dataframe
-        if self.config.output_raw == "load":
-            self.case_centric = self.load_raw()
-            if self.case_centric is not None:
-                return self
-
-        case_df = self._load_cases(
-            maf_metadata_df, ascat_df, self.config.df_repartition
+        ascat_df = input_dfs["ascat_df"]
+        case_df = self._load_cases(input_dfs["maf_metadata_df"], ascat_df, 2048)
+        gene_subtree_df = self._build_gene_subtree(
+            input_dfs["maf_df"], ascat_df, input_dfs["primary_aliquot_df"]
         )
+        case_centric_df = case_df.join(gene_subtree_df, on=["case_id"], how="left")
+        case_centric_df = self._final_transform(case_centric_df)
 
-        self.log("Building Gene subtree")
-        gene_subtree = self.build_gene_subtree(maf_df, ascat_df, primary_aliquot_df)
+        return case_centric_df
 
-        self.log("Join Case with Gene subtree [left, case_id]")
-        case_centric = case_df.join(gene_subtree, on=["case_id"], how="left")
-        self.log_count(case_centric)
-
-        self.log("Finalizing case_centric build")
-        case_centric = self._final_transform(case_centric)
-        self.log_count(case_centric)
-
-        self.case_centric = case_centric
-        self.log("Build finished")
-
-        # Save the resulting dataframe to s3
-        self.write()
-
-        return self
-
-    def build_gene_subtree(
+    def _build_gene_subtree(
         self,
         maf_df: sql.DataFrame,
         ascat_df: sql.DataFrame,
@@ -140,12 +135,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         - build_cnv_subtree
         - join them together
         """
-
-        # TODO Refactor with gene centric.
-        self.log("Building Gene from MAF and ASCAT")
-        gene_df = df_builders.get_gene_df(
+        maf_gene_df = df_builders.get_gene_df(
             maf_df,
-            self.index_name,
+            self._index_name,
             add_fields=["case_id"],
             drop_fields=[
                 "canonical_transcript_length",
@@ -153,10 +145,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
                 "canonical_transcript_length_genomic",
             ],
         )
-
         ascat_gene_df = df_builders.get_gene_df(
             ascat_df,
-            self.index_name,
+            self._index_name,
             add_fields=["case_id"],
             drop_fields=[
                 "canonical_transcript_length",
@@ -164,38 +155,25 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
                 "canonical_transcript_length_genomic",
             ],
         )
+        gene_df = maf_gene_df.union(ascat_gene_df).distinct()
 
-        gene_df = gene_df.union(ascat_gene_df).distinct()
-        self.log_count(gene_df)
+        ssm_df = self._build_ssm_subtree(maf_df, primary_aliquot_df)
+        cnv_df = self._build_cnv_subtree(ascat_df)
 
-        self.log("Building SSM subtree")
-        ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
-        self.log_count(ssm_df)
-
-        self.log("Building CNV subtree")
-        cnv_df = self.build_cnv_subtree(ascat_df)
-        self.log_count(cnv_df)
-
-        self.log("Join SSM and CNV subtrees to Gene [left, gene_id, case_id]")
         gene_ssm_cnv_df = gene_df.join(
             ssm_df, on=["gene_id", "case_id"], how="left"
         ).join(cnv_df, on=["gene_id", "case_id"], how="left")
-        self.log_count(gene_ssm_cnv_df)
-
-        self.log("Grouping SSM and CNV subtrees under Gene")
         gene_ssm_cnv_df = gene_ssm_cnv_df.select(
             "case_id",
             F.struct("ssm", "cnv", *gene_df.drop("case_id").columns).alias("gene"),
         )
-        self.log_count(gene_df)
-
-        self.log('Grouping by case_id and aggregating to list under "gene"')
         gene_ssm_cnv_df = gene_ssm_cnv_df.groupBy(gene_ssm_cnv_df.case_id).agg(
             F.collect_list("gene").alias("gene")
         )
+
         return gene_ssm_cnv_df
 
-    def build_ssm_subtree(
+    def _build_ssm_subtree(
         self, maf_df: sql.DataFrame, primary_aliquot_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -207,26 +185,25 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         """
         # Consequence
-        cons_df = self.consequence_builder.build_for_ssm(
-            maf_df, self.index_name, join_gene=False
+        cons_df = self._consequence_builder.build_for_ssm(
+            maf_df, self._index_name, join_gene=False
         )
 
         # Observation
-        obs_df = self.observation_builder.build_for_ssm(
+        obs_df = self._observation_builder.build_for_ssm(
             maf_df,
             primary_aliquot_df,
-            self.index_name,
+            self._index_name,
             selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
         # SSM
         ssm_df = df_builders.build_ssm_subtree(
-            maf_df, cons_df, self.index_name, obs_df=obs_df
+            maf_df, cons_df, self._index_name, obs_df=obs_df
         )
 
         # Aggregate SSM
-        self.log("Aggregating ssm by case_id and gene_id")
         ssm_df = (
             ssm_df.select(
                 "gene_id",
@@ -239,25 +216,20 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         return ssm_df
 
-    def build_cnv_subtree(self, ascat_df):
+    def _build_cnv_subtree(self, ascat_df: sql.DataFrame) -> sql.DataFrame:
         """
         cnv[]
            |___ observation[]
 
         """
-
-        # Observation
-        obs_df = self.observation_builder.build_for_cnv(
+        observation_df = self._observation_builder.build_for_cnv(
             ascat_df,
-            self.index_name,
+            self._index_name,
             selector="cnv",
         )
-
-        # Build the final cnv dataframe
-        cnv_df = df_builders.build_cnv_subtree(ascat_df, self.index_name, obs_df=obs_df)
-
-        # Aggregate CNV
-        self.log("Aggregating cnv by case_id and gene_id")
+        cnv_df = df_builders.build_cnv_subtree(
+            ascat_df, self._index_name, obs_df=observation_df
+        )
         cnv_df = (
             cnv_df.select(
                 "gene_id",
@@ -270,7 +242,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         return cnv_df
 
-    def _final_transform(self, case_centric):
+    def _final_transform(self, case_centric_df: sql.DataFrame) -> sql.DataFrame:
         """
         Final case_centric dataframe transformation:
 
@@ -278,15 +250,12 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         - truncate outliers
         """
         # Coerce any cases that didn't have variation data from None to []
-        case_centric = case_centric.withColumn(
+        case_centric_df = case_centric_df.withColumn(
             "available_variation_data",
-            F.udf(
-                lambda x: [] if (x is None) else x, types.ArrayType(types.StringType())
-            )(F.col("available_variation_data")),
+            F.coalesce("available_variation_data", F.array()),
+        )
+        case_centric_df = utils.filter_large_arrays(
+            case_centric_df, "gene", self._config.genes_threshold
         )
 
-        # Truncate outliers
-        threshold = self.config.percentile_threshold["genes_per_case"]
-        case_centric = self.truncate_df_at_percentile(case_centric, "gene", threshold)
-
-        return case_centric
+        return case_centric_df

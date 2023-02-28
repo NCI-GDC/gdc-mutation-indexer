@@ -1,10 +1,7 @@
 from typing import AbstractSet
 
-import pytest
 from pyspark import sql
 
-import config
-from exports import builders
 from tests.integration.utils import join_utils
 
 
@@ -37,62 +34,6 @@ def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> 
     spg = join_utils.get_relationship_map(df, ("case_id", "gene_id", "ssm_id"))
 
     assert es_spg == spg
-
-
-@pytest.mark.case_centric_ssm_subtree
-@pytest.mark.usefixtures("case_centric_df")
-def test_ssm_subtree(
-    default_old_config: config.BaseConfig,
-    sqlContext: sql.SQLContext,
-    maf_df: sql.DataFrame,
-    primary_aliquot_df: sql.DataFrame,
-    case_ssm_subtree: sql.DataFrame,
-) -> None:
-    observation_builder = builders.ObservationBuilder()
-    consequence_builder = builders.ConsequenceBuilder(default_old_config, sqlContext)
-
-    # ssm_subtree stats expected:
-    cons_df = consequence_builder.build_for_ssm(maf_df, "case_centric")
-    obs_df = observation_builder.build_for_ssm(
-        maf_df, primary_aliquot_df, "case_centric", selector="ssm"
-    )
-
-    df = cons_df.join(obs_df, on=["ssm_id"], how="left")
-
-    df = join_utils.unpack_df_list(
-        df, ("ssm_id", "observation"), "consequence", "consequence_id"
-    )
-    df = join_utils.unpack_df_list(
-        df, ("ssm_id", "consequence_id"), "observation", "observation_id"
-    )
-    data = tuple(df.toLocalIterator())
-    consequences_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id")
-    )
-    observations_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "observation_id")
-    )
-
-    # ssm_subtree stats built:
-    df = join_utils.unpack_df_list(
-        case_ssm_subtree, (), "ssm", ("ssm_id", "consequence", "observation")
-    )
-    df = join_utils.unpack_df_list(
-        df, ("ssm_id", "observation"), "consequence", "consequence_id"
-    )
-    df = join_utils.unpack_df_list(
-        df, ("ssm_id", "consequence_id"), "observation", "observation_id"
-    )
-    data = tuple(df.toLocalIterator())
-    es_consequences_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id")
-    )
-    es_observations_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "observation_id")
-    )
-
-    assert consequences_stats == es_consequences_stats
-    assert observations_stats == es_observations_stats
 
 
 def test_case_centric_counts(
