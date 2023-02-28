@@ -20,7 +20,7 @@ backports-weakref==1.0.post1
     # via backports-tempfile
 boto==2.49.0
     # via gdc-mutation-indexer (setup.py)
-certifi==2022.6.15
+certifi==2022.12.7
     # via
     #   elasticsearch
     #   requests
