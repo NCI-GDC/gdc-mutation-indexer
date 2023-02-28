@@ -1,4 +1,5 @@
 import logging
+from logging import handlers
 import platform
 import uuid
 from typing import Any, Dict
@@ -39,7 +40,7 @@ log_formatter = DatadogLogFormatter("mutation_indexer")
 
 
 def configure() -> None:
-    log_handler = logging.FileHandler(
+    log_handler = handlers.WatchedFileHandler(
         "/var/log/python/mutation_indexer.json", mode="a+"
     )
 
