@@ -72,11 +72,6 @@ class Viz:
             CASE: Schema
             SAMPLE: Schema
 
-        @_init_schemas
-        class CIVICAnnotation:
-            FINAL: Schema
-            MAF: Schema
-
         class CIVIC:
             @_init_schemas
             class DNA:
