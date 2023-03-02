@@ -6,7 +6,7 @@ from typing_extensions import Self, TypedDict
 
 import config
 from exports import es_utils, indexd_utils, schemas
-from exports.builders import base_builder, base_input_builder, bases
+from exports.builders import base_builder, bases
 from exports.configuration.builders import gene_expression
 from exports.constants import build
 

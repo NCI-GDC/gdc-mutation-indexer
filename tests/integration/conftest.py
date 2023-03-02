@@ -28,7 +28,7 @@ from typing_extensions import Literal
 
 import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
-from exports.builders.clinical_annotations import civic
+from exports.builders import civic
 from exports.constants import build
 from tests.integration.utils import test_setup
 
@@ -74,7 +74,6 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
             "gene_expression",
         ),
     ) -> dict:
-
         for driver in drivers:
             data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
             data["builders"][driver]["gene_model"]["census_file"] = census_file
@@ -361,6 +360,12 @@ def maf_df(
     fm_ad_maf_df = sqlContext.createDataFrame(
         (), schema=schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
     )
+    dna_df = civic.DNABuilder(
+        default_config.builders.viz.civic_dna, spark_session
+    ).build()
+    prot_df = civic.PROTBuilder(
+        default_config.builders.viz.civic_prot, spark_session
+    ).build()
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
@@ -368,8 +373,12 @@ def maf_df(
         default_config.builders.viz.maf,
         spark_session,
         doc_dataframe_util,
-        (civic.CivicBuilder(default_old_config, sqlContext),),
-    ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())
+    ).build(
+        gene_model_df=gene_model_df,
+        maf_metadata_df=mock.MagicMock(),
+        civic_dna_df=dna_df,
+        civic_prot_df=prot_df,
+    )
 
     return dataframe_writer(df)
 

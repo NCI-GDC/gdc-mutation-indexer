@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Iterable, cast
+from typing import Dict, cast
 
 import more_itertools
 import yaml
@@ -11,7 +11,6 @@ from typing_extensions import TypedDict
 
 from exports import indexd_utils, pyspark_extensions, schemas
 from exports.builders import bases, utils
-from exports.builders.clinical_annotations import civic
 from exports.configuration.builders import viz
 from exports.constants import build
 
@@ -21,6 +20,8 @@ logger = logging.getLogger(__name__)
 class MAFInputs(TypedDict):
     maf_metadata_df: sql.DataFrame
     gene_model_df: sql.DataFrame
+    civic_prot_df: sql.DataFrame
+    civic_dna_df: sql.DataFrame
 
 
 class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
@@ -29,22 +30,47 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
     uniform features
     """
 
-    __slots__ = ("schema", "annotation_builders", "_doc_dataframe_util")
+    __slots__ = ("schema", "_doc_dataframe_util")
 
     def __init__(
         self,
         config: viz.MAFBuilder,
         spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
-        annotation_builders: Iterable[civic.CivicBuilder],
     ):
         super().__init__(
             config, spark_session, input_type=MAFInputs, output=build.DataFrame.MAF
         )
 
         self.schema = self.get_schema()
-        self.annotation_builders = annotation_builders
         self._doc_dataframe_util = doc_dataframe_util
+
+    def _join_civic_data(
+        self, input_dfs: MAFInputs, maf_df: sql.DataFrame
+    ) -> sql.DataFrame:
+        civic_dna_df = input_dfs["civic_dna_df"]
+        civic_prot_df = input_dfs["civic_prot_df"]
+        maf_df = maf_df.join(
+            civic_dna_df,
+            on=["chromosome", "start_position", "reference_allele", "tumor_allele"],
+            how="left",
+        ).join(civic_prot_df, on=["name", "hgvsp_short"], how="left")
+        maf_df = maf_df.select(
+            "*",
+            F.coalesce("dna_civic_gene_id", "prot_civic_gene_id").alias(
+                "civic_gene_id"
+            ),
+            F.coalesce("dna_civic_var_id", "prot_civic_var_id").alias(
+                "civic_variant_id"
+            ),
+        )
+
+        return maf_df.drop(
+            "dna_civic_gene_id",
+            "dna_civic_var_id",
+            "prot_civic_gene_id",
+            "prot_civic_var_id",
+        )
 
     def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
         """
@@ -96,8 +122,8 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         df = df.withColumn(
             "domains", F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", "")
         )
-        for builder in self.annotation_builders:
-            df = builder.merge_with_maf(df)
+
+        df = self._join_civic_data(input_dfs, df)
 
         logger.info("Repartitioning MAF dataframe")
         df = df.repartition(self._config.repartition_size, "ssm_id")
