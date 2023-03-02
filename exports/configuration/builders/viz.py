@@ -124,6 +124,8 @@ class Viz:
 
     ascat: ASCATBuilder
     case: CaseBuilder
+    civic_dna: DNABuilder
+    civic_prot: PROTBuilder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder
@@ -134,5 +136,3 @@ class Viz:
     cnv_occurrence_centric: CentricBuilder
     ssm_centric: SSMCentricBuilder
     ssm_occurrence_centric: CentricBuilder
-    civic_annotation_prot: PROTBuilder
-    civic_annotation_dna: DNABuilder

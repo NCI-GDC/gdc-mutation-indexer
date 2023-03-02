@@ -75,6 +75,22 @@ repartition_size = 2048
 mode = "NEITHER"
 path = ""
 
+[builders.viz.civic_dna]
+data_package = "mutation-indexer-resource.annotation.civic"
+data_resource = "dna.tsv.7z"
+is_cached = true
+[builders.viz.civic_dna.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.civic_prot]
+data_package = "mutation-indexer-resource.annotation.civic"
+data_resource = "prot.tsv.7z"
+is_cached = true
+[builders.viz.civic_prot.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
 citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
