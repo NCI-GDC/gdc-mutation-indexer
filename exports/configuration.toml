@@ -76,16 +76,16 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_dna]
-data_package = "mutation-indexer-resource.annotation.civic"
-data_resource = "dna.tsv.7z"
+data_package = "mutation_indexer_resource.annotation.civic"
+data_resource = "dna.tsv.gz"
 is_cached = true
 [builders.viz.civic_dna.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_prot]
-data_package = "mutation-indexer-resource.annotation.civic"
-data_resource = "prot.tsv.7z"
+data_package = "mutation_indexer_resource.annotation.civic"
+data_resource = "prot.tsv.gz"
 is_cached = true
 [builders.viz.civic_prot.backup]
 mode = "NEITHER"
