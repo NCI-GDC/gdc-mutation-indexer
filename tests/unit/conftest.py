@@ -1,9 +1,10 @@
 import os
-from typing import Generator
+from typing import Any, Callable, Generator, Iterable
 
 import pytest
 import yaml
 from pyspark import sql
+from pyspark.sql import types
 
 
 @pytest.fixture(scope="session")
@@ -21,6 +22,18 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         spark_session.sql("set spark.sql.caseSensitive=true")
 
         yield spark_session
+
+
+@pytest.fixture(scope="session")
+def create_dataframe(
+    spark_session: sql.SparkSession,
+) -> Callable[[Iterable[Any], types.StructType], sql.DataFrame]:
+    def _create_dataframe(
+        data: Iterable[Any], schema: types.StructType
+    ) -> sql.DataFrame:
+        return spark_session.sparkContext.parallelize(data, 1).toDF(schema=schema)
+
+    return _create_dataframe
 
 
 @pytest.fixture(scope="session")

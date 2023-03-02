@@ -1,0 +1,13 @@
+fields:
+- &string_field
+  metadata: {}
+  name: hgvsp_short
+  nullable: true
+  type: string
+- <<: *string_field
+  name: name
+- <<: *string_field
+  name: prot_civic_gene_id
+- <<: *string_field
+  name: prot_civic_var_id
+type: struct

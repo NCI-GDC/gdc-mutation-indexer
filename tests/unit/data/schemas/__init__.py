@@ -77,6 +77,18 @@ class Viz:
             FINAL: Schema
             MAF: Schema
 
+        class CIVIC:
+            @_init_schemas
+            class DNA:
+                INPUT: Schema
+                FINAL: Schema
+
+
+            @_init_schemas
+            class PROT:
+                INPUT: Schema
+                FINAL: Schema
+
         @_init_schemas
         class Consequence:
             FINAL: Schema

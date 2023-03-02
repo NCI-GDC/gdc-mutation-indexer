@@ -1,0 +1,20 @@
+fields:
+- &string_field
+  metadata: {}
+  name: chromosome
+  nullable: true
+  type: string
+- <<: *string_field
+  name: dna_civic_gene_id
+- <<: *string_field
+  name: dna_civic_var_id
+- <<: *string_field
+  name: reference_allele
+- &integer_field
+  metadata: {}
+  name: start_position
+  nullable: true
+  type: integer
+- <<: *string_field
+  name: tumor_allele
+type: struct

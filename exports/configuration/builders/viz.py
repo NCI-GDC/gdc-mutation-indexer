@@ -69,6 +69,18 @@ class MAFMetadataBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
+class PROTBuilder(Builder):
+    data_package: str
+    data_resource: str
+
+
+@dataclasses.dataclass(frozen=True)
+class DNABuilder(Builder):
+    data_package: str
+    data_resource: str
+
+
+@dataclasses.dataclass(frozen=True)
 class CaseCentricBuilder(CentricBuilder):
     """
     Configuration values for running the case centric builder
@@ -122,3 +134,5 @@ class Viz:
     cnv_occurrence_centric: CentricBuilder
     ssm_centric: SSMCentricBuilder
     ssm_occurrence_centric: CentricBuilder
+    civic_annotation_prot: PROTBuilder
+    civic_annotation_dna: DNABuilder

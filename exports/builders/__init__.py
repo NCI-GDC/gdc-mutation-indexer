@@ -6,11 +6,13 @@ from exports.builders.maf_metadata import MAFMetadataBuilder
 from exports.builders.maf import MAFBuilder
 from exports.builders.case import CaseBuilder
 from exports.builders.gene_model import GeneModelBuilder
+from exports.builders.civic import DNABuilder, PROTBuilder
 
 # Utility builders
 from exports.builders.consequence import ConsequenceBuilder
 from exports.builders.observation import ObservationBuilder
 from exports.builders.primary_aliquot import PrimaryAliquotBuilder
+
 # Centric builders
 from exports.builders.case_centric import CaseCentricBuilder
 from exports.builders.gene_centric import GeneCentricBuilder
