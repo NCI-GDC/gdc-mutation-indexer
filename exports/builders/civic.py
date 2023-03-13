@@ -17,6 +17,8 @@ class PROTInputs(TypedDict):
 class PROTBuilder(
     bases.InputBuilder[viz.PROTBuilder, PROTInputs]
 ):
+    __slots__ = ()
+
     def __init__(
         self, config: viz.PROTBuilder, spark_session: sql.SparkSession
     ) -> None:
@@ -50,6 +52,8 @@ class DNAInputs(TypedDict):
 class DNABuilder(
     bases.InputBuilder[viz.DNABuilder, DNAInputs]
 ):
+    __slots__ = ()
+
     def __init__(
         self, config: viz.DNABuilder, spark_session: sql.SparkSession
     ) -> None:
