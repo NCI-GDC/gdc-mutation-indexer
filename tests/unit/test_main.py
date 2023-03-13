@@ -1,6 +1,7 @@
 from unittest import mock
 
 from exports import builders, main
+from exports.builders import civic
 from exports.constants import build
 
 
@@ -19,6 +20,8 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.MAF,
             build.DataFrame.MAF_METADATA,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.CIVIC_DNA,
+            build.DataFrame.CIVIC_PROT,
         )
     )
     assert isinstance(viz_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
@@ -36,6 +39,8 @@ def test__get_viz_builders__all_builders() -> None:
         viz_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.PrimaryAliquotBuilder,
     )
+    assert isinstance(viz_builders[build.DataFrame.CIVIC_DNA], civic.DNABuilder)
+    assert isinstance(viz_builders[build.DataFrame.CIVIC_PROT], civic.PROTBuilder)
 
     assert index_builders.keys() == frozenset(
         (
