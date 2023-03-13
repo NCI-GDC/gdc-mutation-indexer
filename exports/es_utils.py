@@ -34,17 +34,15 @@ def iterate_es_results(
     """
     Returns iterator over elasticsearch query results
     """
-    if query is None:
-        query = {}
-
     doc_iterator = helpers.scan(
         es_client,
         index=index_name,
         doc_type=doc_type,
         scroll="2m",
         size=100,
-        query=query,
+        query=query or {},
     )
+
     return doc_iterator
 
 
