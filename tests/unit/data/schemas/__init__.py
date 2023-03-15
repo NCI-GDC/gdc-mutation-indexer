@@ -96,6 +96,10 @@ class Viz:
             class Gene:
                 FINAL: Schema
 
+            @_init_schemas
+            class CNV:
+                FINAL: Schema
+
         @_init_schemas
         class MAF:
             FINAL: Schema

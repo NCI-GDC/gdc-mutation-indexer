@@ -7,11 +7,13 @@ class DataFrame(enum.IntEnum):
     CASE = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROT = enum.auto()
+    CNV_CONSEQUENCE = enum.auto()
     EXPRESSION_VALUE = enum.auto()
     GENE_MODEL = enum.auto()
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
+    SSM_CONSEQUENCE = enum.auto()
 
     def to_param(self) -> str:
         return f"{self.name}_df".lower()

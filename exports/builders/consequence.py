@@ -1,13 +1,54 @@
-import logging
-from typing import Any
+from typing import Any, TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import config
-from exports.builders import df_builders, utils
+from exports.builders import bases, df_builders, utils
+from exports.configuration.builders import viz
+from exports.constants import build
 
-logging.basicConfig(format=config.LOG_FORMAT)
+
+class CNVConsequenceInputs(TypedDict):
+    ascat_df: sql.DataFrame
+
+
+class CNVConsequenceBuilder(bases.InputBuilder[viz.Builder, CNVConsequenceInputs]):
+    def __init__(self, config: viz.Builder, spark_session: sql.SparkSession) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            input_type=CNVConsequenceInputs,
+            output=build.DataFrame.CNV_CONSEQUENCE,
+        )
+
+    def _gene_struct(self) -> sql.Column:
+        """The gene structure found in the CNV consequence structure."""
+        return F.struct("biotype", "gene_id", "is_cancer_gene_census", "symbol")
+
+    def _build_from_scratch(self, input_dfs: CNVConsequenceInputs) -> sql.DataFrame:
+        """
+        cnv_consequence
+        |---cnv_id
+        +---consequence [{}]
+            |---consequence_id
+            +---gene {}
+                |---biotype
+                |---gene_id
+                |---is_cancer_gene_census
+                +---symbol
+        """
+        return (
+            input_dfs["ascat_df"]
+            .select(
+                "cnv_id",
+                F.struct(
+                    "consequence_id",
+                    self._gene_struct().alias("gene"),
+                ).alias("consequence"),
+            )
+            .groupby("cnv_id")
+            .agg(F.collect_set("consequence").alias("consequence"))
+        )
 
 
 class ConsequenceBuilder:
@@ -37,7 +78,7 @@ class ConsequenceBuilder:
             join_gene: Whether or not to join the gene data to the consquence. SSM and
                 SSM Occurrence have gene under consequences, while Case and Gene do
                 not. Must be true if add_gene_aa_change is true
-            add_gene_aa_change: Adds the gene_aa_change field to the data if set to 
+            add_gene_aa_change: Adds the gene_aa_change field to the data if set to
                 True. Can only be set to True if join_gene is set to true also.
 
         Returns:

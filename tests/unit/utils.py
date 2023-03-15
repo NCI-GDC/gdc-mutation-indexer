@@ -1,8 +1,14 @@
 import decimal
 import uuid
-from typing import Any, Optional
+from typing import Any, Callable, Iterable, Optional
+
+from pyspark import sql
+from pyspark.sql import types
 
 DECIMAL_CONTEXT = decimal.Context(prec=10)
+
+DataFrameCreator = Callable[[Iterable[Any], types.StructType], sql.DataFrame]
+
 
 def generate_uuid5(*args: Any) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, "\t".join(str(arg) for arg in args)))
