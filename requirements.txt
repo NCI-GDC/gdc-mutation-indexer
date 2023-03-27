@@ -46,7 +46,7 @@ gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcdatamodel
-gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@db4e72584856aafff306a2b180c740ea96f1da7b
+gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.10.0-rc.2
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer
@@ -125,6 +125,7 @@ rstr==2.2.6
 six==1.15.0
     # via
     #   gdc-mutation-indexer (setup.py)
+    #   gdcmodels
     #   jsonschema
     #   psqlgraph
     #   python-dateutil
