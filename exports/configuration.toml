@@ -68,22 +68,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case]
-include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
-  "aliquot_ids",
-  "analyte_ids",
-  "diagnosis_ids",
-  "portion_ids",
-  "sample_ids",
-  "slide_ids",
-  "submitter_aliquot_ids",
-  "submitter_analyte_ids",
-  "submitter_diagnosis_ids",
-  "submitter_portion_ids",
-  "submitter_sample_ids",
-  "submitter_slide_ids",
-]
+include_as_arrays = ["project.disease_type", "project.primary_site", "*_ids"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case.backup]
