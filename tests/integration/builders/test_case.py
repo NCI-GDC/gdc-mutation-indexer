@@ -51,7 +51,6 @@ class TestCaseBuilder:
         projects: List[str],
         expected_count: int,
         spark_session: sql.SparkSession,
-        sqlContext: sql.SQLContext,
         maf_metadata_df: sql.DataFrame,
         maf_df: sql.DataFrame,
         cnv_df: sql.DataFrame,
@@ -67,12 +66,13 @@ class TestCaseBuilder:
             return data
 
         conf = test_setup.load_configuraiton(load_config)
-        conf_adapter = config.ConfigAdapter(conf, mock.MagicMock(), mock.MagicMock())
-        es_dataframe_util = es_utils.DataFrameUtil(conf_adapter, sqlContext, es_client)
-        field_selector = es_utils.CaseFieldSelector()
-        df = builders.CaseBuilder(conf.builders.viz.case, spark_session, es_dataframe_util, field_selector).build(
-            maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df
+        es_dataframe_util = es_utils.DataFrameUtil(
+            conf.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
         )
+        field_selector = es_utils.CaseFieldSelector()
+        df = builders.CaseBuilder(
+            conf.builders.viz.case, spark_session, es_dataframe_util, field_selector
+        ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
 
         assert df.count() == expected_count
         for row in df.collect():

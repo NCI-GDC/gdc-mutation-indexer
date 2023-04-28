@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Mapping,
     Union,
     cast,
@@ -24,7 +25,6 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import Literal
 
 import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
@@ -74,7 +74,6 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
             "gene_expression",
         ),
     ) -> dict:
-
         for driver in drivers:
             data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
             data["builders"][driver]["gene_model"]["census_file"] = census_file
@@ -400,9 +399,7 @@ def maf_metadata_df(
 
 @pytest.fixture(scope="session")
 def case_df(
-    default_old_config: config.BaseConfig,
     default_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
@@ -412,7 +409,10 @@ def case_df(
     setup_graph_indices: Any,
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(
-        default_old_config, sqlContext, es_client
+        default_config.elasticsearch,
+        spark_session,
+        es_client,
+        es_utils.MappingsLoader(),
     )
     df = builders.CaseBuilder(
         default_config.builders.viz.case,
@@ -504,7 +504,9 @@ def centric_index_finalizer(
 @pytest.fixture(scope="session")
 def case_centric_df(
     request: pytest.FixtureRequest,
+    default_config: configuration.Configuration,
     default_old_config: config.BaseConfig,
+    spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
@@ -526,8 +528,15 @@ def case_centric_df(
     builder = builders.CaseCentricBuilder(
         default_old_config,
         sqlContext,
-        es_utils.DataFrameUtil(default_old_config, sqlContext, es_client),
-        es_utils.RDDUtil(default_old_config, sqlContext.sparkSession.sparkContext),
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+        ),
+        es_utils.RDDUtil(
+            default_config.elasticsearch, sqlContext.sparkSession.sparkContext
+        ),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,
@@ -704,7 +713,9 @@ def cnv_occurrence_centric_df(
 
 @pytest.fixture(scope="session")
 def case_ssm_subtree(
+    default_config: configuration.Configuration,
     default_old_config: config.BaseConfig,
+    spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
@@ -719,8 +730,15 @@ def case_ssm_subtree(
     builder = builders.CaseCentricBuilder(
         default_old_config,
         sqlContext,
-        es_utils.DataFrameUtil(default_old_config, sqlContext, es_client),
-        es_utils.RDDUtil(default_old_config, sqlContext.sparkSession.sparkContext),
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+        ),
+        es_utils.RDDUtil(
+            default_config.elasticsearch, sqlContext.sparkSession.sparkContext
+        ),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,

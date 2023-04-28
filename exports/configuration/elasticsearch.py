@@ -36,7 +36,7 @@ class Write:
     Configuration values for writing to elasticsearch
     """
     batch_size_bytes: str
-    batch_size_entities: int
+    batch_size_entries: int
     indices: Mapping[build.IndexType, str]
 
 

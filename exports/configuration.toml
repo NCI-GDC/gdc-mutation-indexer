@@ -214,4 +214,4 @@ case_index = "graph_case"
 file_index = "graph_file"
 [elasticsearch.write]
 batch_size_bytes = "16mb"
-batch_size_entities = 1000
+batch_size_entries = 1000
