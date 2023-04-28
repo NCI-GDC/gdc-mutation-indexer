@@ -183,22 +183,6 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             return self._safe_read()
 
         return df.cache() if self._config.is_cached else df
-    
-    def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
-        """
-        A wrapper method whoes base functionality is to call the `_build_from_scratch`
-        method. Override this method in a derived base class to apply any post 
-        transformations that have be applied to all builders inherriting from this base.
-
-        Args:
-            input_dfs: The required data frames to construct the output data frame.
-
-        Returns:
-            An data frame constructed from the given inputs based on the logic defined
-            in the `_build_from_scratch` with all universal transformations from the 
-            base builder applied.
-        """
-        return self._build_from_scratch(input_dfs)
 
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
         assert self._input_manager.check(inputs), "Missing required inputs."
@@ -208,7 +192,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         if not df:
             logger.info(f"Building: {self.output.name}")
 
-            df = self._build(inputs)
+            df = self._build_from_scratch(inputs)
 
         return self._write(df)
 
@@ -456,7 +440,7 @@ class PrimaryAliquotBuilder(
 def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:
     """
     Walks the inputs fields data type field in order to find the child field with the
-    input name. 
+    input name.
 
     Args:
         field: the field found in a parent schema/struct type.
@@ -466,7 +450,7 @@ def _walk_schema(field: types.StructField, child_name: str) -> types.StructField
         The child field with the given child_name.
 
     Raises:
-        ValueError: this is raised if the input field is NOT a struct type, an array 
+        ValueError: this is raised if the input field is NOT a struct type, an array
             with an struct type for an element type, or a map type with a value type
             which is a struct type.
     """
@@ -509,15 +493,6 @@ class IndexBuilder(
         self._index_type = build.IndexType[self._output.name]
         self._index_name, _ = self._index_type.get_mappings_details()
 
-    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = super()._write(df)
-        df = df.repartition(self._config.partition_size, self._config.id_field)
-
-        logger.info(f"Writing to ES: {self.output.name}")
-        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
-
-        return df
-    
     def _get_boolean_paths(self) -> Iterable[str]:
         """
         Find all the boolean field in mapping and return the paths
@@ -526,7 +501,10 @@ class IndexBuilder(
             An iterable of each path to a boolean field represented as a series of
             field names seperated by a '.'.
         """
-        def get_boolean_paths(node: Dict[str, Dict[str, Any]], path: str = "") -> Iterable[str]:
+
+        def get_boolean_paths(
+            node: Dict[str, Dict[str, Any]], path: str = ""
+        ) -> Iterable[str]:
             for key, value in node.items():
                 path = f"{path}{key}"
 
@@ -535,7 +513,9 @@ class IndexBuilder(
                 elif "properties" in value:
                     yield from get_boolean_paths(value["properties"], f"{path}.")
 
-        mappings = self._mappings_loader.load_mappings(self._index_type).get("mappings", {})
+        mappings = self._mappings_loader.load_mappings(self._index_type).get(
+            "mappings", {}
+        )
 
         return get_boolean_paths(mappings.get("properties", {}))
 
@@ -560,7 +540,12 @@ class IndexBuilder(
 
         return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
 
-    def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
-        df = super()._build(input_dfs)
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        df = self._cast_booleans(df)
+        df = super()._write(df)
+        df = df.repartition(self._config.partition_size, self._config.id_field)
 
-        return self._cast_booleans(df)
+        logger.info(f"Writing to ES: {self.output.name}")
+        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+
+        return df
