@@ -1,0 +1,16 @@
+gene_id	gene_name   gene_type	unstranded	stranded_first	stranded_second	tpm_unstranded	fpkm_unstranded	fpkm_uq_unstranded
+ENSG00000084652.2	NAME	protein_coding	0	0	0	0.0	0.0	0.0
+ENSG00000077232.3	NAME	protein_coding	0	0	0	0.0	0.0	285.190817968
+ENSG00000008226.15	NAME	protein_coding	0	0	0	0.0	0.0	48063.333388
+ENSG00000145113.1	NAME	protein_coding	0	0	0	0.0	0.0	0.0
+ENSG00000013810.5	NAME	protein_coding	0	0	0	0.0	0.0	121328.519938
+ENSG00000073331.10	NAME	protein_coding	0	0	0	0.0	0.0	625239.299062
+ENSG00000082074.4	NAME	protein_coding	0	0	0	0.0	0.0	1724.96621222
+ENSG00000070814.12	NAME	protein_coding	0	0	0	0.0	0.0	2763.86631731
+ENSG00000079841.12	NAME	protein_coding	0	0	0	0.0	0.0	3021994.20612
+ENSG00000029363.1	NAME	protein_coding	0	0	0	0.0	0.0	1261.84298793
+ENSG00000231981.3	NAME	protein_coding	0	0	0	0.0	0.0	0.0
+ENSG00000269475.2	NAME	protein_coding	0	0	0	0.0	0.0	0.0
+ENSG00000201788.1	NAME	protein_coding	0	0	0	0.0	0.0	4769.0242338
+ENSG00000134108.11	NAME	protein_coding	0	0	0	0.0	0.0	701774.718753
+ENSG00000263089.1	NAME	protein_coding	0	0	0	0.0	0.0	3408.83301925

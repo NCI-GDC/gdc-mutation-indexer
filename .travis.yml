@@ -1,24 +1,22 @@
-dist: xenial
+dist: bionic
 
 language: python
 
 python:
-  - "2.7"
-
-jdk:
-  - openjdk8
+  - "3.9"
 
 addons:
   apt:
     packages:
       - libyaml-dev
+      - openjdk-8-jdk
 
 cache: pip
 
 env:
   global:
     - SPARK_VERSION="2.4.5"
-    - ES_VERSION="7.6.2"
+    - ES_VERSION="7.7.1"
     - BOTO_CONFIG=/dev/null
 
 before_install:
@@ -27,8 +25,7 @@ before_install:
   # The official Spark builds are compiled on Java 8.
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
-  - wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - wget https://artifacts.elastic.co/downloads/elasticsearch-hadoop/elasticsearch-hadoop-${ES_VERSION}.zip
+  - sudo rm -rf /var/lib/elasticsearch
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
@@ -40,18 +37,10 @@ before_install:
   - sudo service elasticsearch restart
 
 install:
-  - pip install -r requirements.txt
-  - pip install -r dev-requirements.txt
-  - python setup.py install
-  - tar -xzvf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-  - unzip elasticsearch-hadoop-${ES_VERSION}.zip
-  - export SPARK_HOME=`pwd`/spark-${SPARK_VERSION}-bin-hadoop2.7;
-  - export PYTHONPATH=$SPARK_HOME/python/:$PYTHONPATH
-  - export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.7-src.zip:$PYTHONPATH
-  - cp `pwd`/elasticsearch-hadoop-${ES_VERSION}/dist/elasticsearch-spark-20_2.11-${ES_VERSION}.jar $SPARK_HOME/jars
+  - pip install tox-travis
 
 script:
   - java -version
   - curl http://localhost:9200/
   - sudo cat /etc/elasticsearch/jvm.options
-  - "py.test tests -vvv -m 'not do_not_collect'"  # this will not show tests that are marked "do_not_collect" in pytest output
+  - tox

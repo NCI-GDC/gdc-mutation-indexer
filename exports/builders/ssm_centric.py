@@ -1,22 +1,17 @@
 import logging
 
-from pyspark.sql.functions import struct, collect_list
+from pyspark import sql
+from pyspark.sql import functions as F
+from typing_extensions import Self
 
-from exports.builders import (
-    ConsequenceBuilder,
-    ObservationBuilder
-)
-from exports.builders import BaseBuilder
-from exports.builders.df_builders import (
-    get_ssm_df
-)
+import config
+from exports import builders
+from exports.builders import df_builders
 
-from config import LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=config.LOG_FORMAT)
 
 
-class SSMCentricBuilder(BaseBuilder):
+class SSMCentricBuilder(builders.BaseBuilder):
     """
     Builds ssm-centric dataframe given case and maf dataframes::
 
@@ -30,36 +25,55 @@ class SSMCentricBuilder(BaseBuilder):
                                |____ observation[]
     """
 
-    index_name = 'ssm_centric'
-    id_field = 'ssm_id'
+    index_name = "ssm_centric"
+    id_field = "ssm_id"
 
-    def build(self, maf_df, case_df):
+    def __init__(
+        self,
+        config: config.BaseConfig,
+        sqlContext: sql.SQLContext,
+        consequence_builder: builders.ConsequenceBuilder,
+        observation_builder: builders.ObservationBuilder,
+    ):
+        super().__init__(config, sqlContext)
+
+        self.consequence_builder = consequence_builder
+        self.observation_builder = observation_builder
+
+    def build(
+        self,
+        maf_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+        **kwargs: sql.DataFrame,
+    ) -> Self:
         """
         Builds SSM Centric index
         """
         # Check if we should load a pre-built dataframe
-        if self.config.output_raw == 'read':
+        if self.config.output_raw == "read":
             self.ssm_centric = self.load_raw()
             if self.ssm_centric is not None:
                 return self
 
-        ssm_df = get_ssm_df(maf_df, self.index_name, unique_fields=['ssm_id'])
+        ssm_df = df_builders.get_ssm_df(
+            maf_df, self.index_name, unique_fields=["ssm_id"]
+        )
 
         cons_df = self.build_consequence(maf_df)
 
-        occurrence_df = self.build_occurrence(maf_df, case_df)
+        occurrence_df = self.build_occurrence(maf_df, case_df, primary_aliquot_df)
 
-        self.log('Final join SSM + Consequence + Occurrence')
-        ssm_centric = ssm_df.join(cons_df, on='ssm_id')\
-                            .join(occurrence_df, on='ssm_id')
+        self.log("Final join SSM + Consequence + Occurrence")
+        ssm_centric = ssm_df.join(cons_df, on="ssm_id").join(occurrence_df, on="ssm_id")
 
         # Truncate outliers
-        treshold = self.config.percentile_threshold['occurrences_per_ssm']
-        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric,
-                                                          'occurrence',
-                                                          treshold)
+        treshold = self.config.percentile_threshold["occurrences_per_ssm"]
+        self.ssm_centric = self.truncate_df_at_percentile(
+            ssm_centric, "occurrence", treshold
+        )
         self.log_count(self.ssm_centric)
-        self.log('Build finished')
+        self.log("Build finished")
 
         # Save the resulting dataframe to s3
         self.write()
@@ -67,26 +81,39 @@ class SSMCentricBuilder(BaseBuilder):
         return self
 
     def build_consequence(self, maf_df):
-        cons_df = (ConsequenceBuilder(self.config, self.sqlContext)
-                   .build_for_ssm(maf_df,
-                                  self.index_name,
-                                  join_gene=True,
-                                  add_gene_aa_change=True))
+        cons_df = self.consequence_builder.build_for_ssm(
+            maf_df, self.index_name, join_gene=True, add_gene_aa_change=True
+        )
+
         return cons_df
 
-    def build_occurrence(self, maf_df, case_df):
+    def build_occurrence(
+        self,
+        maf_df: sql.DataFrame,
+        case_df: sql.DataFrame,
+        primary_aliquot_df: sql.DataFrame,
+    ) -> sql.DataFrame:
         # Observation
-        self.log('Aggregating Observation from MAF')
-        obs_df = ObservationBuilder().build_for_ssm(maf_df, self.index_name)
+        self.log("Aggregating Observation from MAF")
+        obs_df = self.observation_builder.build_for_ssm(
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
+        )
 
-        self.log('Joining Cases with Observation, [right, case_id]')
-        occurrence_df = (case_df.join(obs_df, on=['case_id'], how='right')
-                         .select('ssm_id',
-                                 struct('occurrence_id',
-                                        struct('observation',
-                                               *case_df.columns).alias('case'))
-                                 .alias('occurrence'))
-                         .groupby('ssm_id')
-                         .agg(collect_list('occurrence').alias('occurrence')))
+        self.log("Joining Cases with Observation, [right, case_id]")
+        occurrence_df = (
+            case_df.join(obs_df, on=["case_id"], how="right")
+            .select(
+                "ssm_id",
+                F.struct(
+                    "occurrence_id",
+                    F.struct("observation", *case_df.columns).alias("case"),
+                ).alias("occurrence"),
+            )
+            .groupby("ssm_id")
+            .agg(F.collect_list("occurrence").alias("occurrence"))
+        )
         self.log_count(occurrence_df)
+
         return occurrence_df

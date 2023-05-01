@@ -1,133 +1,114 @@
-import json
+import abc
 import logging
 
-from pyspark.sql.functions import collect_set, lit
+from pyspark import sql
+from pyspark.sql import functions as F
+from typing_extensions import TypedDict
 
-from utils import get_case_ids_from_source_es, standardize_schema
+from exports import es_utils
+from exports.builders import bases
+from exports.configuration.builders import viz
+from exports.constants import build
 
-from config import LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
+logger = logging.getLogger(__name__)
 
 
-class CaseBuilder(object):
+AVAILABLE_VARIATION_DATA = "available_variation_data"
+
+
+def _load_available_variation_data(
+    maf_metadata_df: sql.DataFrame, ascat_df: sql.DataFrame
+) -> sql.DataFrame:
+    ssm_data_df = maf_metadata_df.select(
+        "case_id", F.lit("ssm").alias(AVAILABLE_VARIATION_DATA)
+    )
+    cnv_data_df = ascat_df.select("case_id", AVAILABLE_VARIATION_DATA)
+    available_variation_df = ssm_data_df.union(cnv_data_df)
+
+    # Finally, group by case
+    return available_variation_df.groupby("case_id").agg(
+        F.collect_set(AVAILABLE_VARIATION_DATA).alias(AVAILABLE_VARIATION_DATA)
+    )
+
+
+class CaseLoaderMixin(abc.ABC):
     """
     Builds a case dataframe by loading case documents from gdc_from_graph
     """
 
-    def __init__(self, config, sqlContext):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+    @abc.abstractmethod
+    def _load_es_case_data(self) -> sql.DataFrame:
+        pass
 
-    def build(self, maf_df, gistic_df):
+    def _load_cases(
+        self,
+        maf_metadata_df: sql.DataFrame,
+        ascat_df: sql.DataFrame,
+        repartition_size: int,
+    ) -> sql.DataFrame:
         """
         Builds Case dataframe
         """
-        df = self.load_into_df(maf_df, gistic_df)
-
-        # Select only columns that are in case mapping:
-        df = standardize_schema(df, 'case_centric', 'case')
-
-        return df
-
-    def load_into_df(self, maf_df, gistic_df):
-        """
-        Loads case docs from the gdc_from_graph index into a dataframe
-        """
-
-        # Only load cases from the requested projects
-        if self.config.projects:
-            query = json.dumps({
-                'query': {
-                    'terms': {'project.project_id': self.config.projects}
-                }
-            })
-        else:
-            query = json.dumps({'query': {'match_all': {}}})
-
-        # Only retrieve the fields we want
-        self.logger.info('Exclude fields: {}'.format(self.config.exclude_fields))
-
-        # Load cases from graph index
-        if self.config.graph_case_doc_type:
-            es_source = '{}/{}'.format(
-                self.config.graph_case_index, self.config.graph_case_doc_type
-            )
-        else:
-            es_source = self.config.graph_case_index
-
-        df = (
-            self.sqlContext.read.format("es")
-            .option('es.nodes', self.config.source_es_nodes)
-            .option('es.net.http.auth.user', self.config.source_es_user)
-            .option('es.net.http.auth.pass', self.config.source_es_pass)
-            .option('es.nodes.wan.only', 'true')
-            .option('es.net.ssl', self.config.es_use_ssl)
-            .option('es.net.ssl.cert.allow.self.signed', self.config.disable_es_verify_certs)
-            .option('es.nodes.resolve.hostname', 'false')
-            .option('es.query', query)
-            .option('es.read.field.exclude', ','.join(self.config.exclude_fields))
-            .option('es.resource.read', es_source)
-            .load(es_source)
+        case_df = self._load_es_case_data()
+        available_variation_df = _load_available_variation_data(
+            maf_metadata_df, ascat_df
         )
 
-        # Get all the cases that have been tested for ssm
-        # (from aliquots in maf_df headers)
-        all_maf_cases = get_case_ids_from_source_es(self.config,
-                                                    self.sqlContext)
+        case_df = case_df.join(available_variation_df, on=["case_id"], how="left")
 
-        maf_and_gistic_df = self.populate_available_variation_data(maf_df,
-                                                                   all_maf_cases,
-                                                                   gistic_df)
+        return case_df.repartition(repartition_size, "case_id")
 
-        df = df.join(maf_and_gistic_df, on=['case_id'], how='left')
 
-        self.logger.info('Repartitioning case dataframe')
-        df = df.repartition(self.config.df_repartition, 'case_id')
+class CaseInputs(TypedDict):
+    maf_metadata_df: sql.DataFrame
+    ascat_df: sql.DataFrame
 
-        if self.config.cache_dataframes['cases']:
-            self.logger.info('Caching repartitioned case dataframe')
-            df.cache().count()
 
-        return df
+class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMixin):
+    __slots__ = ("_es_dataframe_util", "_field_selector")
 
-    def populate_available_variation_data(self, maf_df, all_maf_cases, gistic_df):
-        """
-        This function calculates the value of the column
-        "available_variation_data."
+    def __init__(
+        self,
+        config: viz.CaseBuilder,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        field_selector: es_utils.CaseFieldSelector,
+    ) -> None:
+        super().__init__(
+            config, spark_session, input_type=CaseInputs, output=build.DataFrame.CASE
+        )
 
-        We retrieve a set of cases from graph_index
-        and add "ssm" for both those cases and the cases in the maf_df,
-        "cnv" if that case id is present in the gistic_df,
-        ["ssm", "cnv"] if both.
+        self._es_dataframe_util = es_dataframe_util
+        self._field_selector = field_selector
 
-        """
+    def _load_es_case_data(self) -> sql.DataFrame:
+        if self._config.projects:
+            query = {"query": {"terms": {"project.project_id": self._config.projects}}}
+        else:
+            query = {"query": {"match_all": {}}}
 
-        avd = 'available_variation_data'
+        fields = self._field_selector.select_for(
+            build.IndexType.CASE,
+            build.IndexType.CNV_CENTRIC,
+            build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.SSM_CENTRIC,
+            build.IndexType.SSM_OCCURRENCE_CENTRIC,
+        )
 
-        # Get set of "tested cases" from maf_df
-        maf_data = (maf_df.select('case_id', avd)
-                          .dropDuplicates(
-                              subset=['case_id',
-                                      avd]))
+        # Only retrieve the fields we want
+        logger.debug(f"Included fields: {fields}")
 
-        # Add empty rows to input_data corresponding to "empty cases"
-        maf_data = all_maf_cases.join(maf_data, on=['case_id'], how='left')
+        # Load cases from graph index
+        return self._es_dataframe_util.read(
+            build.IndexType.CASE,
+            include_fields=fields,
+            include_as_arrays=self._config.include_as_arrays,
+            query=query,
+        )
 
-        # the original maf_data is in array form ['ssm'] and we need 'ssm'
-        maf_data = maf_data.drop(avd)
-        # Set all cases in maf_data to "tested"
-        # i.e., 'available_variation_data' == 'ssm'
-        maf_data = (maf_data.withColumn(avd, lit('ssm')))
-
-        # Stack with gistic data
-        maf_and_gistic_data = maf_data.union((
-                                gistic_df.select('case_id', avd)))
-
-        # Finally, group by case
-        maf_and_gistic_data = (maf_and_gistic_data
-                               .groupby('case_id')
-                               .agg(collect_set(avd).alias(avd)))
-
-        return maf_and_gistic_data
+    def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
+        return self._load_cases(
+            input_dfs["maf_metadata_df"],
+            input_dfs["ascat_df"],
+            self._config.repartition_size,
+        )

@@ -1,114 +1,128 @@
+import abc
 import logging
+from typing import Collection, Dict, Iterable, Mapping, NamedTuple, Union
 
-from parsers import (
-    BuildArgs,
-    S3Args,
-    ESArgs,
-)
-from config import LOG_FORMAT
-from builders import (
-    MAFBuilder,
-    GisticBuilder,
-    CaseBuilder,
-    CaseCentricBuilder,
-    GeneCentricBuilder,
-    GeneExpressionBuilder,
-    GeneExpressionCaseInputBuilder,
-    GeneExpressionValueInputBuilder,
-    SSMCentricBuilder,
-    SSMOccurrenceCentricBuilder,
-    CNVCentricBuilder,
-    CNVOccurrenceCentricBuilder,
-)
+import pyspark
+from pyspark import sql
 
-logging.basicConfig(format=LOG_FORMAT)
+import config
+from exports.builders import base_builder, base_input_builder, bases
+from exports.constants import build
+
+logging.basicConfig(format=config.LOG_FORMAT)
+
+logger = logging.getLogger(__name__)
 
 
-class GDCMutationExport(object):
+class Builders(NamedTuple):
+    input_builders: Mapping[
+        build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
+    ]
+    index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
+
+
+class GDCMutationExport(abc.ABC):
     """
     The main entry point into the index export process for the mutation indices
     """
 
-    def __init__(self, sc, sqlContext, config):
-        self.config = config
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.sc = sc
-        self.sqlContext = sqlContext
-        self.builders = [
-            CaseCentricBuilder,
-            GeneCentricBuilder,
-            GeneExpressionBuilder,
-            SSMCentricBuilder,
-            SSMOccurrenceCentricBuilder,
-            CNVCentricBuilder,
-            CNVOccurrenceCentricBuilder,
-        ]
+    __slots__ = ("_spark_context", "_index_types", "_input_builders", "_index_builders")
 
-    def build_input_data_frames(self):
+    def __init__(
+        self,
+        spark_context: pyspark.SparkContext,
+        index_types: Collection[build.IndexType],
+        builders: Builders,
+    ) -> None:
+        self._spark_context = spark_context
+        self._index_types = index_types
+        self._input_builders = builders.input_builders
+        self._index_builders = builders.index_builders
 
-        # Combine MAFs into one DataFrame
-        self.sc.setJobGroup('MAFBuilder', 'Build MAF dataframe')
-        maf_df = MAFBuilder(self.config, self.sqlContext).build()
+    @property
+    @abc.abstractmethod
+    def _input_data_frames(self) -> Iterable[build.DataFrame]:
+        """
+        An ordered iteration of the required data frames for the export process.
+        """
+        pass
 
-        # Combine Gistics into one DataFrame
-        self.sc.setJobGroup('GisticBuilder', 'Build Gistic dataframe')
-        gistic_df = GisticBuilder(self.config, self.sqlContext).build()
+    def _build_input_data_frames(self) -> Dict[str, sql.DataFrame]:
+        """
+        Builds the input data frames given by the input data frames prop using their
+        related input builder.
 
-        # Use maf_df and gistic_df to build case DataFrame
-        self.sc.setJobGroup('CaseBuilder', 'Build Case dataframe')
-        case_df = CaseBuilder(self.config,
-                              self.sqlContext).build(maf_df, gistic_df)
-        sub_case_df = case_df.drop('summary')
-        sub_case_df.persist()
+        Returns:
+            All data frames output by the input data frame builders.
+        """
+        inputs: Dict[str, sql.DataFrame] = {}
 
-        return maf_df, gistic_df, case_df, sub_case_df
+        for data_frame in self._input_data_frames:
+            if data_frame not in self._input_builders:
+                raise ValueError(
+                    f"No builder is configured for DataFrame: {data_frame}."
+                )
 
-    def run_export(self):
-        maf_df = None
-        gistic_df = None
-        case_df = None
-        sub_case_df = None
+            self._spark_context.setJobGroup(data_frame.name, f"Build {data_frame}")
 
-        for builder in self.builders:
-            index_name = builder.index_name
+            df = self._input_builders[data_frame].build(**inputs)
+            inputs[data_frame.to_param()] = df
 
-            if index_name not in self.config.index_types:
-                continue
+        return inputs
 
-            self.sc.setJobGroup(index_name, 'Build {}'.format(index_name))
+    def run_export(
+        self,
+    ) -> None:
+        """
+        Executes the export configured data by running the required builders.
+        """
+        inputs = self._build_input_data_frames()
 
-            if index_name == "gene_expression":
-                self.sc.setJobGroup("GeneExpressionCaseInputBuilder", "Build GE CaseInput df")
-                ge_case_df = GeneExpressionCaseInputBuilder(
-                    self.config,
-                    self.sqlContext,
-                    "gene_expression_cases",
-                ).build()
+        for index_type in self._index_types:
+            if index_type not in self._index_builders:
+                raise ValueError(f"No builder is configured for index: {index_type}.")
 
-                self.sc.setJobGroup("GeneExpressionValueInputBuilder", "Build GE ValueInput df")
-                ge_values_df = GeneExpressionValueInputBuilder(
-                    self.config,
-                    self.sqlContext,
-                    "gene_expression_values",
-                ).build()
+            self._spark_context.setJobGroup(index_type.name, f"Build {index_type}")
+            self._index_builders[index_type].build(**inputs).load()
 
-                builder(self.config, self.sqlContext).build(ge_case_df, ge_values_df).load()
+        logger.info("Mutation Indexer finished successfully")
 
-                continue
 
-            if maf_df is None:
-                maf_df, gistic_df, case_df, sub_case_df = self.build_input_data_frames()
+class VizExport(GDCMutationExport):
+    def __init__(
+        self,
+        sc: pyspark.SparkContext,
+        index_types: Collection[build.IndexType],
+        builders: Builders,
+    ) -> None:
+        super().__init__(sc, index_types, builders)
 
-            if index_name == 'case_centric':
-                builder(self.config, self.sqlContext).build(maf_df, gistic_df, case_df).load()
-            elif index_name in ['ssm_centric', 'ssm_occurrence_centric']:
-                # these builders do not yet depend on gistic_df
-                builder(self.config, self.sqlContext).build(maf_df, sub_case_df).load()
-            elif index_name in ['cnv_centric', 'cnv_occurrence_centric']:
-                # these builders do not depend on maf_df
-                builder(self.config, self.sqlContext).build(gistic_df, sub_case_df).load()
-            else:
-                builder(self.config,
-                        self.sqlContext).build(maf_df, gistic_df, sub_case_df).load()
+    @property
+    def _input_data_frames(self) -> Iterable[build.DataFrame]:
+        return (
+            build.DataFrame.GENE_MODEL,
+            build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.MAF_METADATA,
+            build.DataFrame.MAF,
+            build.DataFrame.ASCAT,
+            build.DataFrame.CASE,
+        )
 
-        self.logger.info('Mutation Indexer finished successfully')
+
+class GEExport(GDCMutationExport):
+    def __init__(
+        self,
+        sc: pyspark.SparkContext,
+        index_types: Collection[build.IndexType],
+        builders: Builders,
+    ) -> None:
+        super().__init__(sc, index_types, builders)
+
+    @property
+    def _input_data_frames(self) -> Iterable[build.DataFrame]:
+        return (
+            build.DataFrame.GENE_MODEL,
+            build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.CASE,
+            build.DataFrame.EXPRESSION_VALUE,
+        )

@@ -1,5 +1,7 @@
 import logging
 
+from pyspark import sql
+
 from exports.builders.base_input_builder import BaseInputBuilder
 
 from config import LOG_FORMAT
@@ -16,7 +18,7 @@ class ClinicalAnnotationBuilder(BaseInputBuilder):
     def __init__(self, config, sqlContext):
         super(ClinicalAnnotationBuilder, self).__init__(config, sqlContext, 'tsv')
 
-    def build_from_scratch(self):
+    def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and
         augmenting them with additional features

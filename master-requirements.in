@@ -1,0 +1,5 @@
+# These are only required by master.py and will not be distributed to spark workers
+-c requirements.txt
+
+halo~=0.0.31
+pex~=2.1

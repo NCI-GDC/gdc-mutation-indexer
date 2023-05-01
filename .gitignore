@@ -9,7 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
-venv/
+venv*/
 .venv/
 build/
 develop-eggs/
@@ -25,6 +25,9 @@ var/
 .installed.cfg
 *.egg
 .python-version
+*.pex
+artifacts/
+wheelhouse*/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -88,3 +91,6 @@ tests/data/*
 # testing stuff
 elasticsearch-*
 spark-2.*
+/_version.py
+/.env
+.configs/

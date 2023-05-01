@@ -1,0 +1,20 @@
+string_field: &string_field
+  metadata: {}
+  nullable: true
+  type: string
+
+expected_schema:
+  fields:
+    - <<: *string_field
+      name: case_id
+    - <<: *string_field
+      name: state
+    - <<: *string_field
+      name: submitter_id
+  type: struct
+
+expected_data:
+  a20aeafc-9a68-4af0-87ea-532ee835ebb2:
+    case_id: a20aeafc-9a68-4af0-87ea-532ee835ebb2
+    submitter_id: TCGA-DA-A3F2
+    state: live

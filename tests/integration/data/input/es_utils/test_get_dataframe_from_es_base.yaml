@@ -1,0 +1,13 @@
+index: Case
+document_id: case_id
+kwargs:
+  query:
+    query:
+      terms:
+        case_id:
+          - a20aeafc-9a68-4af0-87ea-532ee835ebb2
+
+  include_fields:
+    - case_id
+    - submitter_id
+    - state

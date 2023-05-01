@@ -8,7 +8,6 @@ Backend for exporting mutation indices for visualization on the GDC
   - [Architecture](#architecture)
   - [Make the docs](#make-the-docs)
   - [Tests](#tests)
-  - [Vagrant](#vagrant)
   - [Setup pre-commit hook to check for secrets](#setup-pre-commit-hook-to-check-for-secrets)
   - [Contributing](#contributing)
 
@@ -28,45 +27,38 @@ ghp-import build/html
 ```
 
 ## Tests
+### ElasticSearch
+Insure you have elasticsearch working on your device:
+`service elasticsearch status`
 
-Tests depend on `$PYTHONPATH` being configured correctly to find the spark 
-python modules. Make sure the paths are correct in `bin/run-tests.sh`.
-
+In case you need to install elastic search:
+#### Homebrew
 ```
-bin/run-tests.sh
-```
-
-The mutation indexer is currently deployed with Spark 2.4.3.
-If you try to run the tests on a different version, you may need to update
-`bin/run-tests.sh` to refer to the specific Py4J build included with your
-Spark distribution.
-
-
-
-## Vagrant
-
-Testing locally can be hard and `vagrant` support has been added to make our lives
-a little bit easier. Make sure to have `vagrant` and `VirtualBox` installed, then
-simply do and start making coffee, it's gonna take a while:
-```
-vagrant up
+brew install elasticsearch@7.6
+/usr/local/Cellar/elasticsearch\@7.6/7.6.2/bin/elasticsearch-plugin install mapper-size
+brew services start elasticsearch@7.6
 ```
 
-This will spin up a VM and run necessary setup steps like:
-* installing some core libs like `jdk`, `python-pip` etc
-* downloading and setting up `pyspark`, `elasticsearch` and related plugins
-* setting up development environment
-
-The tests should be ran from within the box:
-
+#### Ubuntu/Debian bases systems
 ```
-vagrant ssh
-source venv/bin/activate
-pytest /vagrant/tests
+apt install elasticsearch=7.6.2
+apt-mark hold elasticsearch
+service elasticsearch start
+```
+Make sure your elasticsearch server is running at port 9200.
+
+### Tox
+Insure tox is install via pip or pipx
+```
+pipx install tox
 ```
 
-To get a better understanding of how to tweak/customize provisioning steps read
-the docs! Have fun testing.
+To run tests:
+```
+tox -- path/to/test(s)
+```
+
+
 
 ## Setup pre-commit hook to check for secrets
 
@@ -90,6 +82,12 @@ git add .secrets.baseline
 detect-secrets audit .secrets.baseline
 ```
 
+### Internal Reference
+https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer
+
+### TODO
+- Expand background on purpose
+- Provide instructions for how to use
 
 ## Contributing
 

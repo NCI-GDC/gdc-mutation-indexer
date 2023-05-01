@@ -1,0 +1,102 @@
+string_field: &string_field
+  metadata: {}
+  nullable: true
+  type: string
+
+long_field: &long_field
+  <<: *string_field
+  type: long
+
+expected_schema:
+  fields:
+    - metadata: {}
+      name: acl
+      nullable: true
+      type:
+        containsNull: true
+        elementType: string
+        type: array
+    - metadata: {}
+      name: cases
+      nullable: true
+      type:
+        containsNull: true
+        elementType:
+          fields:
+            - metadata: {}
+              name: demographic
+              nullable: true
+              type:
+                fields:
+                  - <<: *long_field
+                    name: year_of_birth
+                type: struct
+            - metadata: {}
+              name: diagnoses
+              nullable: true
+              type:
+                containsNull: true
+                elementType:
+                  fields:
+                    - metadata: {}
+                      name: treatments
+                      nullable: true
+                      type:
+                        containsNull: true
+                        elementType:
+                          fields:
+                            - <<: *string_field
+                              name: state
+                          type: struct
+                        type: array
+                  type: struct
+                type: array
+            - metadata: {}
+              name: project
+              nullable: true
+              type:
+                fields:
+                  - metadata: {}
+                    name: primary_site
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                type: struct  
+          type: struct
+        type: array
+    - <<: *string_field
+      name: file_id
+    - <<: *string_field
+      name: updated_datetime              
+    - metadata: {}
+      name: _metadata
+      nullable: true
+      type:
+        keyType: string
+        valueType: string
+        valueContainsNull: true
+        type: map
+  type: struct
+
+expected_data:
+  213fd6e3-9462-492f-8917-56967be8fc9d:
+    file_id: 213fd6e3-9462-492f-8917-56967be8fc9d
+    updated_datetime: "2018-07-20T22:27:55.342974+00:00"
+    acl:
+      - open
+    cases:
+      - demographic:
+          year_of_birth: 1972
+        project:
+          primary_site:
+            - Kidney
+        diagnoses:
+          - treatments:
+              - state: live
+    _metadata:
+      _id: 213fd6e3-9462-492f-8917-56967be8fc9d
+      _index: graph_file
+      _score: "1.0"
+      _type: _doc

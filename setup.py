@@ -1,22 +1,40 @@
-import os
-import shlex
-from subprocess import check_output
-from setuptools import setup, find_packages
-from config import (
-    VERSION,
-    ROOT_DIR,
-    get_git_commit,
-)
-
-PACKAGES = find_packages()
+from setuptools import find_packages, setup
 
 setup(
     name="gdc-mutation-indexer",
-    version=VERSION,
+    use_scm_version={
+        "local_scheme": "dirty-tag",
+        "write_to": "_version.py",
+    },
+    setup_requires=["setuptools_scm<6"],
     description="ETL for mutation elasticsearch indices",
+    long_description_content_type="text/markdown",
     license="Apache",
-    packages=PACKAGES,
+    packages=find_packages(exclude=("tests.*", "tests")),
     py_modules=["config"],
     include_package_data=True,
-    options=dict(egg_info=dict(tag_build=('_rev_' + get_git_commit(ROOT_DIR)))),
+    install_requires=[
+        "boto==2.49.0",
+        "elasticsearch[async]~=7.6",
+        "importlib-resources~=3.2",
+        "ndjson~=0.3",
+        "networkx<=2.4",
+        "marshmallow-dataclass~=8.5",
+        "marshmallow-enum~=1.5",
+        "more-itertools~=8.9",
+        "pyspark==3.3.1",
+        "python-dateutil~=2.8",
+        "python-json-logger~=2.0",
+        "PyYaml>=3.11,<6",
+        "requests~=2.7",
+        "six~=1.15.0",
+        "toml~=0.10",
+        "typing-extensions~=4.1",
+        "gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary",
+        "gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel",
+        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2#egg=indexclient",
+        "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@2.10.0-rc.2#egg=gdcmodels",
+        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@2.1.1#egg=normalizer",
+        "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
+    ],
 )

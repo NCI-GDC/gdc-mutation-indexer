@@ -1,18 +1,75 @@
 import abc
+import copy
 import json
 import logging
 
 from normalizer.mapper import ModelMapper
+from pyspark import sql
 from pyspark.sql.functions import col, size
+from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
+from typing_extensions import Self
 
 from config import LOG_FORMAT
 from exports.builders.utils import percentile
 
-
 logging.basicConfig(format=LOG_FORMAT)
 
 
-class BaseBuilder(object):
+def get_all_boolean_paths(mapping):
+    """ Find all the boolean field in mapping and return the paths
+
+    Args:
+        mapping: dict of mapping types
+
+    Returns:
+        list of path, each path is a list of field names
+    """
+    res = []
+
+    def helper(node, path=None):
+        if path is None:
+            path = []
+
+        for key, value in node['properties'].items():
+            if value.get('type') == 'boolean':
+                res.append(path + [key])
+            elif 'properties' in value:
+                helper(value, path + [key])
+
+    helper(mapping)
+    return res
+
+
+def cast_booleans(df, mapping):
+    """Ensure all the boolean fields in data frame are booleans before save to ES
+
+    Args:
+        df: pyspark dataframe to cast boolean
+        mapping: Dict of mapping types
+
+    Returns:
+        pyspark dataframe with boolean field casted
+    """
+    paths = get_all_boolean_paths(mapping)
+    schema = copy.deepcopy(df.schema)
+    for path in paths:
+        field = None
+        for node in path:
+            if field is None:
+                field = schema[node]
+            elif isinstance(field.dataType, StructType):
+                field = field.dataType[node]
+            elif isinstance(field.dataType, ArrayType):
+                field = field.dataType.elementType[node]
+            elif isinstance(field.dataType, MapType):
+                raise ValueError("Unsupported Property Type")
+        field.dataType = BooleanType()
+
+    select_expr = [df[f.name].cast(f.dataType) for f in schema.fields]
+    return df.select(*select_expr)
+
+
+class BaseBuilder:
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
@@ -29,7 +86,7 @@ class BaseBuilder(object):
         self.debug = config.debug
 
     @abc.abstractmethod
-    def build(self, *args, **kwargs):
+    def build(self, **kwargs: sql.DataFrame) -> Self:
         """
         Contains the ETL logic to construct a spark dataframe of
         the same structure as the required output index.
@@ -59,6 +116,7 @@ class BaseBuilder(object):
                      self.index_name).repartition(self.config.df_repartition,
                                                   self.id_field)
 
+        df = cast_booleans(df, index_mapper.mapping)
         self.log('Exporting {} index to {}'.format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write\
             .format('org.elasticsearch.spark.sql')\
@@ -79,7 +137,6 @@ class BaseBuilder(object):
             .option('es.batch.write.refresh', False)\
             .option('es.mapping.id', self.id_field)\
             .save(index)
-
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()

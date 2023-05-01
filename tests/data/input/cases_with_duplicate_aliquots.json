@@ -1,3 +1,0 @@
-{"case_id": "bbbbbbbb-aaaa-4ddd-dddd-00000000001a", "samples": [{"portions": [{"analytes": [{"aliquots": [{"submitter_id": "BAD-GRAPH-01"}]}]}]}], "project": {"project_id": "BAD-GRAPH-A"}, "files": []}
-{"case_id": "bbbbbbbb-aaaa-4ddd-dddd-00000000001b", "samples": [{"portions": [{"analytes": [{"aliquots": [{"submitter_id": "BAD-GRAPH-01"}]}]}]}], "project": {"project_id": "BAD-GRAPH-B"}, "files": []}
-{"case_id": "bbbbbbbb-aaaa-4ddd-dddd-00000000001c", "samples": [{"portions": [{"analytes": [{"aliquots": [{"submitter_id": "BAD-GRAPH-01"}]}]}]}], "project": {"project_id": "BAD-GRAPH-C"}, "files": []}

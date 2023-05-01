@@ -1,0 +1,13 @@
+fields:
+- &field
+  metadata: {}
+  name: case_id
+  nullable: true
+  type: string
+- <<: *field
+  name: data_type
+- <<: *field
+  name: file_id
+- <<: *field
+  name: workflow_type
+type: struct
