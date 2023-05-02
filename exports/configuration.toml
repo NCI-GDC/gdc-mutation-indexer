@@ -68,7 +68,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.case]
-include_as_arrays = ["project.disease_type", "project.primary_site", "*_ids"]
+include_as_arrays = ["project.disease_type", "project.primary_site", "*_ids", "files.acl"]
 is_cached = true
 repartition_size = 2048
 [builders.viz.case.backup]
