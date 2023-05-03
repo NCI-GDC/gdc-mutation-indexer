@@ -1,26 +1,36 @@
 import abc
+import copy
+import functools
 import logging
 from typing import (
     AbstractSet,
+    Any,
+    Dict,
     Generic,
     Iterable,
+    Iterator,
+    Literal,
     Mapping,
     Optional,
+    Protocol,
     Type,
     TypeVar,
     Union,
     get_type_hints,
 )
 
+import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal, Protocol, TypeGuard
+from pyspark.sql import types
+from typing_extensions import TypeGuard
 
 from exports import es_utils, pyspark_extensions
 from exports.configuration.builders import common
 from exports.constants import build
 
 TConfig = TypeVar("TConfig", bound=common.Builder)
+TIndexConfig = TypeVar("TIndexConfig", bound=common.IndexBuilder)
 TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
@@ -126,9 +136,9 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         The functionality to build a new data frame from the required inputs.
 
         Args:
-            inputs: The required data frames to construct the output data frame.
+            input_dfs: The required data frames to construct the output data frame.
 
-        Retruns:
+        Returns:
             A data frame which contains the expected data of the defined output.
         """
         pass
@@ -147,7 +157,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
     def _read(self) -> Optional[sql.DataFrame]:
         """
-        Reads the data frame, if configured to READ, from the configure parqet file. If
+        Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
 
         Returns:
@@ -428,3 +438,117 @@ class PrimaryAliquotBuilder(
                 *self._additional_selections,
             )
         )
+
+
+def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:
+    """
+    Walks the inputs fields data type field in order to find the child field with the
+    input name.
+
+    Args:
+        field: the field found in a parent schema/struct type.
+        child_name: the name of the desired child field.
+
+    Returns:
+        The child field with the given child_name.
+
+    Raises:
+        ValueError: this is raised if the input field is NOT a struct type, an array
+            with an struct type for an element type, or a map type with a value type
+            which is a struct type.
+    """
+    datatype = field.dataType
+
+    while isinstance(datatype, (types.ArrayType, types.MapType)):
+        if isinstance(datatype, types.ArrayType):
+            datatype = datatype.elementType
+        if isinstance(datatype, types.MapType):
+            datatype = datatype.valueType
+
+    if isinstance(datatype, types.StructType):
+        return datatype[child_name]
+    else:
+        raise ValueError(
+            f"Unexpected data type encountered while walking. DataType: {type(datatype)}"
+        )
+
+
+class IndexBuilder(
+    Generic[TIndexConfig, TInputDFs], InputBuilder[TIndexConfig, TInputDFs], abc.ABC
+):
+    """A builder base class for constructing data to be inserted into an elasticsearch index."""
+
+    __slots__ = ("_es_dataframe_util", "_mappings_loader", "_index_type", "_index_name")
+
+    def __init__(
+        self,
+        config: TIndexConfig,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        mappings_loader: es_utils.MappingsLoader,
+        input_type: Type[TInputDFs],
+        output: build.DataFrame,
+    ) -> None:
+        super().__init__(config, spark_session, input_type, output)
+
+        self._es_dataframe_util = es_dataframe_util
+        self._mappings_loader = mappings_loader
+        self._index_type = build.IndexType[self._output.name]
+        self._index_name, _ = self._index_type.get_mappings_details()
+
+    def _get_boolean_paths(self) -> Iterator[str]:
+        """
+        Find all the boolean field in mapping and return the paths
+
+        Returns:
+            An iterable of each path to a boolean field represented as a series of
+            field names separated by a '.'.
+        """
+
+        def get_boolean_paths(
+            node: Dict[str, Dict[str, Any]], path: str = ""
+        ) -> Iterator[str]:
+            for key, value in node.items():
+                subpath = f"{path}{key}"
+
+                if value.get("type") == "boolean":
+                    yield subpath
+                elif "properties" in value:
+                    yield from get_boolean_paths(value["properties"], f"{subpath}.")
+
+        mappings = self._mappings_loader.load_mappings(self._index_type).get(
+            "mappings", {}
+        )
+
+        return get_boolean_paths(mappings.get("properties", {}))
+
+    def _cast_booleans(self, df: sql.DataFrame) -> sql.DataFrame:
+        """
+        Ensure all the boolean fields in data frame are booleans before save to ES
+
+        Args:
+            df: pyspark dataframe to cast boolean
+
+        Returns:
+            the input dataframe with all boolean fields cast to such type.
+        """
+        paths = self._get_boolean_paths()
+        schema = copy.deepcopy(df.schema)
+
+        for raw_path in paths:
+            path = iter(raw_path.split("."))
+            fieldname = more_itertools.first(path)
+            field = functools.reduce(_walk_schema, path, schema[fieldname])
+            field.dataType = types.BooleanType()
+
+        return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
+
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        df = self._cast_booleans(df)
+        df = super()._write(df)
+        df = df.repartition(self._config.partition_size, self._config.id_field)
+
+        logger.info(f"Writing to ES: {self.output.name}")
+        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+
+        return df

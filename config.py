@@ -47,7 +47,6 @@ PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
 
 class BaseConfig(object):
-
     # data_type field values that correspond to MAF files in gdc_from_graph.file
     maf_data_types = [
         "Aggregated Somatic Mutation",
@@ -507,9 +506,10 @@ class BaseConfig(object):
 
 class ConfigAdapter(BaseConfig):
     """
-    An adapter class mapping the new configuration setting back to the former 
-    BaseConfig object. This is a temperary measure until DEV-1250 is completed.
+    An adapter class mapping the new configuration setting back to the former
+    BaseConfig object. This is a temporary measure until DEV-1250 is completed.
     """
+
     def __init__(
         self,
         config: configuration.Configuration,
@@ -522,10 +522,14 @@ class ConfigAdapter(BaseConfig):
 
         self.graph_case_doc_type = None
         self.graph_file_doc_type = None
+        self.df_repartition = 2048
+        self.df_coalesce = 12
 
     @property
     def maf_prioritized_experimental_strategies(self) -> Sequence[str]:
-        return self._config.builders.viz.maf_metadata.prioritized_experimental_strategies
+        return (
+            self._config.builders.viz.maf_metadata.prioritized_experimental_strategies
+        )
 
     @property
     def maf_data_types(self) -> List[str]:  # type: ignore
@@ -651,7 +655,9 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def gene_expression_values_backup(self) -> str:
-        return self._config.builders.gene_expression.expression_value.backup.mode.name.lower()
+        return (
+            self._config.builders.gene_expression.expression_value.backup.mode.name.lower()
+        )
 
     @property
     def gene_expression_cases_backup(self) -> str:
@@ -702,14 +708,6 @@ class ConfigAdapter(BaseConfig):
     @property
     def batch_size_bytes(self) -> str:
         return self._config.elasticsearch.write.batch_size_bytes
-
-    @property
-    def df_repartition(self) -> int:
-        return self._config.builders.viz.case_centric.repartition_size
-
-    @property
-    def df_coalesce(self) -> int:
-        return self._config.builders.viz.case_centric.coalesce_size
 
     @property
     def graph_file_index(self) -> str:

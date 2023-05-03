@@ -8,7 +8,7 @@ import dataclasses
 # gene_expression module
 from exports.configuration.builders.common import (
     Builder,
-    CentricBuilder,
+    IndexBuilder,
     GeneModelBuilder,
 )
 
@@ -22,4 +22,4 @@ class GeneExpression:
     case: Builder
     expression_value: Builder
     primary_aliquot: Builder
-    gene_expression: CentricBuilder
+    gene_expression: IndexBuilder

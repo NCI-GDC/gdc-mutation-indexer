@@ -28,12 +28,12 @@ class Builder:
 
 
 @dataclasses.dataclass(frozen=True)
-class CentricBuilder(Builder):
+class IndexBuilder(Builder):
     """
     The core configuration values for running the any builder which produces an index
     """
-    repartition_size: int
-    coalesce_size: int
+    partition_size: int
+    id_field: str
 
 
 @dataclasses.dataclass(frozen=True)
