@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Mapping,
     Union,
     cast,
@@ -24,7 +25,6 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import Literal
 
 import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
@@ -399,9 +399,7 @@ def maf_metadata_df(
 
 @pytest.fixture(scope="session")
 def case_df(
-    default_old_config: config.BaseConfig,
     default_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
@@ -411,7 +409,10 @@ def case_df(
     setup_graph_indices: Any,
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(
-        default_old_config, sqlContext, es_client
+        default_config.elasticsearch,
+        spark_session,
+        es_client,
+        es_utils.MappingsLoader(),
     )
     df = builders.CaseBuilder(
         default_config.builders.viz.case,
@@ -527,9 +528,16 @@ def case_centric_df(
     builder = builders.CaseCentricBuilder(
         default_config.builders.viz.case_centric,
         spark_session,
-        es_utils.DataFrameUtil(default_old_config, sqlContext, es_client),
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+        ),
         es_utils.MappingsLoader(),
-        es_utils.RDDUtil(default_old_config, sqlContext.sparkSession.sparkContext),
+        es_utils.RDDUtil(
+            default_config.elasticsearch, sqlContext.sparkSession.sparkContext
+        ),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,

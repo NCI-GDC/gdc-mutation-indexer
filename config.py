@@ -697,7 +697,7 @@ class ConfigAdapter(BaseConfig):
 
     @property
     def batch_size_entries(self) -> int:
-        return self._config.elasticsearch.write.batch_size_entities
+        return self._config.elasticsearch.write.batch_size_entries
 
     @property
     def batch_size_bytes(self) -> str:

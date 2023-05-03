@@ -9,8 +9,7 @@ import yaml
 from pyspark import sql
 from pyspark.sql import types
 
-import config
-from exports import es_utils
+from exports import configuration, es_utils
 from exports.constants import build
 from tests.integration.utils import test_setup
 
@@ -33,11 +32,11 @@ logger = logging.getLogger(__name__)
     ids=("base", "complex"),
 )
 def test_data_frame_util_read(
-    sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     input_file: str,
     output_file: str,
     load_data_from_file: Callable[[str], Any],
-    default_old_config: config.BaseConfig,
+    default_config: configuration.Configuration,
 ) -> None:
     # Arrange
     inputs = load_data_from_file(input_file)
@@ -50,7 +49,10 @@ def test_data_frame_util_read(
     expected_data = expected["expected_data"]
 
     dataframe_util = es_utils.DataFrameUtil(
-        default_old_config, sqlContext, mock.MagicMock()
+        default_config.elasticsearch,
+        spark_session,
+        mock.MagicMock(),
+        es_utils.MappingsLoader(),
     )
 
     # Act
@@ -66,7 +68,7 @@ def test_data_frame_util_read(
 
 def test_data_frame_util_write(
     input_dir: pathlib.Path,
-    sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> None:
     def load_config(data: dict) -> dict:
@@ -81,12 +83,12 @@ def test_data_frame_util_write(
         case_mapping = yaml.safe_load(f)
 
     conf = test_setup.load_configuraiton(load_config)
-    old_conf = config.ConfigAdapter(conf, es_client, mock.MagicMock())
     case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
-    model_mapper = mock.MagicMock()
-    model_mapper.get_normalized_mappings.return_value = case_mapping
-    model_mapper_factory = mock.MagicMock(return_value=model_mapper)
-    util = es_utils.DataFrameUtil(old_conf, sqlContext, es_client, model_mapper_factory)
+    mappings_loader = mock.MagicMock()
+    mappings_loader.load_mappings.return_value = case_mapping
+    util = es_utils.DataFrameUtil(
+        conf.elasticsearch, spark_session, es_client, mappings_loader
+    )
     case_data = (
         {
             "available_variation_data": ["ssm", "cnv"],
@@ -96,7 +98,7 @@ def test_data_frame_util_write(
             "samples": [{"sample_type": "Normal"}],
         },
     )
-    case_df = sqlContext.createDataFrame(case_data)  # type: ignore
+    case_df = spark_session.createDataFrame(case_data)  # type: ignore
 
     with test_setup.IndexManager(
         conf,
@@ -119,7 +121,7 @@ def test_data_frame_util_write(
 
 @pytest.mark.usefixtures("setup_graph_indices", "files_with_linked_cases")
 def test_get_rdd_from_es(
-    spark_session: sql.SparkSession, default_old_config: config.BaseConfig
+    spark_session: sql.SparkSession, default_config: configuration.Configuration
 ) -> None:
     # Arrange
     included_fields = (
@@ -131,7 +133,9 @@ def test_get_rdd_from_es(
             "nested": {"path": "cases", "query": {"exists": {"field": "cases.case_id"}}}
         }
     }
-    rdd_util = es_utils.RDDUtil(default_old_config, spark_session.sparkContext)
+    rdd_util = es_utils.RDDUtil(
+        default_config.elasticsearch, spark_session.sparkContext
+    )
 
     # Act
     result = rdd_util.get_rdd(

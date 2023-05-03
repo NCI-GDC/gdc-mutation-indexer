@@ -222,13 +222,16 @@ def get_viz_builders(
     Returns:
         The Builders object to used by the export process.
     """
+    mappings_loader = es_utils.MappingsLoader()
     indexd = get_index_client(config.indexd)
     config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
-    es_dataframe_util = es_utils.DataFrameUtil(config_adapter, sql_context, es_client)
-    es_rdd_util = es_utils.RDDUtil(config_adapter, spark_session.sparkContext)
+    es_dataframe_util = es_utils.DataFrameUtil(
+        config.elasticsearch, spark_session, es_client, mappings_loader
+    )
+    es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
-    case_field_selector = es_utils.CaseFieldSelector()
+    case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
 
     viz_builders = _get_viz_builders(
         config_adapter,
@@ -329,7 +332,9 @@ def get_ge_builders(
     indexd = get_index_client(config.indexd)
     config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
-    es_dataframe_util = es_utils.DataFrameUtil(config_adapter, sql_context, es_client)
+    es_dataframe_util = es_utils.DataFrameUtil(
+        config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
+    )
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     return gdc_mutation_export.Builders(
         get_ge_input_builders(

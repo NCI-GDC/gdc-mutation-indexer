@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Generic,
     Iterable,
+    Iterator,
     Literal,
     Mapping,
     Optional,
@@ -137,7 +138,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         Args:
             input_dfs: The required data frames to construct the output data frame.
 
-        Retruns:
+        Returns:
             A data frame which contains the expected data of the defined output.
         """
         pass
@@ -156,7 +157,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
     def _read(self) -> Optional[sql.DataFrame]:
         """
-        Reads the data frame, if configured to READ, from the configure parqet file. If
+        Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
 
         Returns:
@@ -188,9 +189,9 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
     def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
         """
-        A wrapper method whoes base functionality is to call the `_build_from_scratch`
+        A wrapper method whose base functionality is to call the `_build_from_scratch`
         method. Override this method in a derived base class to apply any post
-        transformations that have be applied to all builders inherriting from this base.
+        transformations that have be applied to all builders inheriting from this base.
 
         Args:
             input_dfs: The required data frames to construct the output data frame.
@@ -520,25 +521,25 @@ class IndexBuilder(
 
         return df
 
-    def _get_boolean_paths(self) -> Iterable[str]:
+    def _get_boolean_paths(self) -> Iterator[str]:
         """
         Find all the boolean field in mapping and return the paths
 
         Returns:
             An iterable of each path to a boolean field represented as a series of
-            field names seperated by a '.'.
+            field names separated by a '.'.
         """
 
         def get_boolean_paths(
             node: Dict[str, Dict[str, Any]], path: str = ""
-        ) -> Iterable[str]:
+        ) -> Iterator[str]:
             for key, value in node.items():
-                path = f"{path}{key}"
+                subpath = f"{path}{key}"
 
                 if value.get("type") == "boolean":
-                    yield path
+                    yield subpath
                 elif "properties" in value:
-                    yield from get_boolean_paths(value["properties"], f"{path}.")
+                    yield from get_boolean_paths(value["properties"], f"{subpath}.")
 
         mappings = self._mappings_loader.load_mappings(self._index_type).get(
             "mappings", {}
