@@ -512,15 +512,6 @@ class IndexBuilder(
         self._index_type = build.IndexType[self._output.name]
         self._index_name, _ = self._index_type.get_mappings_details()
 
-    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = super()._write(df)
-        df = df.repartition(self._config.partition_size, self._config.id_field)
-
-        logger.info(f"Writing to ES: {self.output.name}")
-        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
-
-        return df
-
     def _get_boolean_paths(self) -> Iterator[str]:
         """
         Find all the boolean field in mapping and return the paths
@@ -568,7 +559,12 @@ class IndexBuilder(
 
         return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
 
-    def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
-        df = super()._build(input_dfs)
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        df = self._cast_booleans(df)
+        df = super()._write(df)
+        df = df.repartition(self._config.partition_size, self._config.id_field)
 
-        return self._cast_booleans(df)
+        logger.info(f"Writing to ES: {self.output.name}")
+        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+
+        return df
