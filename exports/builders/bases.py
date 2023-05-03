@@ -187,6 +187,22 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
         return df.cache() if self._config.is_cached else df
 
+    def _build(self, input_dfs: TInputDFs) -> sql.DataFrame:
+        """
+        A wrapper method whose base functionality is to call the `_build_from_scratch`
+        method. Override this method in a derived base class to apply any post
+        transformations that have be applied to all builders inheriting from this base.
+
+        Args:
+            input_dfs: The required data frames to construct the output data frame.
+
+        Returns:
+            An data frame constructed from the given inputs based on the logic defined
+            in the `_build_from_scratch` with all universal transformations from the
+            base builder applied.
+        """
+        return self._build_from_scratch(input_dfs)
+
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
         assert self._input_manager.check(inputs), "Missing required inputs."
 
@@ -195,7 +211,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         if not df:
             logger.info(f"Building: {self.output.name}")
 
-            df = self._build_from_scratch(inputs)
+            df = self._build(inputs)
 
         return self._write(df)
 

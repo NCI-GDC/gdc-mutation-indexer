@@ -1,7 +1,8 @@
 import contextlib
+import itertools
 import logging
 import types
-from typing import Iterator, Mapping, Union
+from typing import Container, Iterable, Iterator, Mapping
 
 import elasticsearch
 import toml
@@ -11,19 +12,12 @@ from pyspark import sql
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
 from exports import logging as mutation_indexer_logging
-from exports.builders import (
-    ascat,
-    base_builder,
-    base_input_builder,
-    bases,
-    maf_metadata,
-)
+from exports.builders import ascat, base_builder, bases, maf_metadata
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
 from exports.configuration.builders import gene_expression, viz
 from exports.constants import build
-
 
 logger = logging.getLogger("exports")
 
@@ -79,9 +73,10 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     )
 
 
-def get_viz_input_builders(
+def _get_viz_builders(
     old_config: old_config.BaseConfig,
     config: viz.Viz,
+    indices: Container[build.DataFrame],
     es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
@@ -90,9 +85,7 @@ def get_viz_input_builders(
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[
-    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
-]:
+) -> Iterable[bases.Builder]:
     """
     Builds the input builders required for the viz export process.
 
@@ -118,44 +111,58 @@ def get_viz_input_builders(
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
+    mappings_loader = es_utils.MappingsLoader()
+    consequence_builder = builders.ConsequenceBuilder()
+    observation_builder = builders.ObservationBuilder()
 
-    return types.MappingProxyType(
-        {
-            build.DataFrame.ASCAT: builders.ASCATBuilder(
-                config.ascat,
-                spark_session,
-                doc_dataframe_util,
-                es_dataframe_util,
-                ascat_doc_resolver,
-            ),
-            build.DataFrame.CASE: builders.CaseBuilder(
-                config.case, spark_session, es_dataframe_util, case_field_selector
-            ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
-                config.gene_model, spark_session
-            ),
-            build.DataFrame.MAF: builders.MAFBuilder(
-                config.maf, spark_session, doc_dataframe_util, annotation_builders
-            ),
-            build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
-                config.maf_metadata,
-                spark_session,
-                es_dataframe_util,
-                file_filter_factory,
-            ),
-            build.DataFrame.PRIMARY_ALIQUOT: builders.PrimaryAliquotBuilder(
-                config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
-            ),
-        }
+    index_builders: Iterable[bases.Builder] = (
+        builders.CaseCentricBuilder(
+            config.case_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            es_rdd_util,
+            case_field_selector,
+            consequence_builder,
+            observation_builder,
+        ),
     )
+    index_builders = tuple(b for b in index_builders if b.output in indices)
+    inputs = frozenset(itertools.chain.from_iterable(b.inputs for b in index_builders))
+    input_builders: Iterable[bases.Builder] = (
+        builders.ASCATBuilder(
+            config.ascat,
+            spark_session,
+            doc_dataframe_util,
+            es_dataframe_util,
+            ascat_doc_resolver,
+        ),
+        builders.CaseBuilder(
+            config.case, spark_session, es_dataframe_util, case_field_selector
+        ),
+        builders.GeneModelBuilder(config.gene_model, spark_session),
+        builders.MAFBuilder(
+            config.maf, spark_session, doc_dataframe_util, annotation_builders
+        ),
+        builders.MAFMetadataBuilder(
+            config.maf_metadata,
+            spark_session,
+            es_dataframe_util,
+            file_filter_factory,
+        ),
+        builders.PrimaryAliquotBuilder(
+            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+        ),
+    )
+    # TODO: DEV-1256 Filter when all index builders have been moved.
+    # input_builders = (b for b in input_builders if b.output in inputs)
+
+    return tuple(itertools.chain(index_builders, input_builders))
 
 
 def get_viz_index_builders(
     old_config: old_config.BaseConfig,
     sql_context: sql.SQLContext,
-    es_dataframe_util: es_utils.DataFrameUtil,
-    es_rdd_util: es_utils.RDDUtil,
-    case_field_selector: es_utils.CaseFieldSelector,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
     """
     Builds the index builders required for the viz export process.
@@ -179,15 +186,6 @@ def get_viz_index_builders(
 
     return types.MappingProxyType(
         {
-            build.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(
-                old_config,
-                sql_context,
-                es_dataframe_util,
-                es_rdd_util,
-                case_field_selector,
-                consequence_builder,
-                observation_builder,
-            ),
             build.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
                 old_config, sql_context, consequence_builder, observation_builder
             ),
@@ -235,9 +233,10 @@ def get_viz_builders(
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
 
-    viz_input_builders = get_viz_input_builders(
+    viz_builders = _get_viz_builders(
         config_adapter,
         config.builders.viz,
+        frozenset(build.DataFrame[df.name] for df in config.build.index_types),
         config.elasticsearch,
         sql_context,
         spark_session,
@@ -247,23 +246,17 @@ def get_viz_builders(
         doc_dataframe_util,
         case_field_selector,
     )
-    viz_index_builders = get_viz_index_builders(
-        config_adapter, sql_context, es_dataframe_util, es_rdd_util, case_field_selector
-    )
+    viz_index_builders = get_viz_index_builders(config_adapter, sql_context)
 
-    return gdc_mutation_export.Builders(viz_input_builders, viz_index_builders)
+    return gdc_mutation_export.Builders(viz_builders, viz_index_builders)
 
 
 def get_ge_input_builders(
-    old_config: old_config.BaseConfig,
     config: gene_expression.GeneExpression,
-    sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[
-    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
-]:
+) -> Iterable[bases.Builder]:
     """
     Builds the input builders required for the gene expression export process.
 
@@ -282,21 +275,15 @@ def get_ge_input_builders(
         A mapping of the build.DataFrame to the builder which will produce said data
         frame.
     """
-    return types.MappingProxyType(
-        {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
-                config.gene_model, spark_session
-            ),
-            build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
-                config.primary_aliquot, spark_session, es_dataframe_util
-            ),
-            build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
-                config.case, spark_session
-            ),
-            build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
-                config.expression_value, spark_session, doc_dataframe_util
-            ),
-        }
+    return (
+        builders.GeneModelBuilder(config.gene_model, spark_session),
+        builders.GeneExpressionPrimaryAliquotBuilder(
+            config.primary_aliquot, spark_session, es_dataframe_util
+        ),
+        builders.GeneExpressionCaseInputBuilder(config.case, spark_session),
+        builders.GeneExpressionValueInputBuilder(
+            config.expression_value, spark_session, doc_dataframe_util
+        ),
     )
 
 
@@ -351,9 +338,7 @@ def get_ge_builders(
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     return gdc_mutation_export.Builders(
         get_ge_input_builders(
-            config_adapter,
             config.builders.gene_expression,
-            sql_context,
             spark_session,
             es_dataframe_util,
             doc_dataframe_util,
@@ -377,12 +362,12 @@ def main():
         ) as es_client, initialize_spark() as spark_session:
             if config.build.is_viz_build():
                 builders = get_viz_builders(config, spark_session, es_client)
-                exporter = gdc_mutation_export.VizExport(
+                exporter = gdc_mutation_export.Export(
                     spark_session.sparkContext, config.build.index_types, builders
                 )
             else:
                 builders = get_ge_builders(config, spark_session, es_client)
-                exporter = gdc_mutation_export.GEExport(
+                exporter = gdc_mutation_export.Export(
                     spark_session.sparkContext, config.build.index_types, builders
                 )
 

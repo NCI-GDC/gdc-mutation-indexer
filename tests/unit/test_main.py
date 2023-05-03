@@ -5,11 +5,21 @@ from exports.constants import build
 
 
 def test__get_viz_builders__all_builders() -> None:
-    viz_builders = main.get_viz_builders(
-        mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
+    config = mock.MagicMock()
+    config.build.index_types = (
+        build.IndexType.CASE_CENTRIC,
+        build.IndexType.CNV_CENTRIC,
+        build.IndexType.CNV_OCCURRENCE_CENTRIC,
+        build.IndexType.GENE_CENTRIC,
+        build.IndexType.SSM_CENTRIC,
+        build.IndexType.SSM_OCCURRENCE_CENTRIC,
     )
+    _builders = main.get_viz_builders(
+        config, mock.MagicMock(), mock.MagicMock()
+    )
+    viz_builders = {b.output: b for b in _builders.builders}
 
-    assert viz_builders.input_builders.keys() == frozenset(
+    assert viz_builders.keys() == frozenset(
         (
             build.DataFrame.ASCAT,
             build.DataFrame.CASE,
@@ -17,33 +27,30 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.MAF,
             build.DataFrame.MAF_METADATA,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.CASE_CENTRIC,
         )
     )
+    assert isinstance(viz_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.ASCAT], builders.ASCATBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.CASE], builders.CaseBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.GENE_MODEL],
+        viz_builders[build.DataFrame.GENE_MODEL],
         builders.GeneModelBuilder,
     )
+    assert isinstance(viz_builders[build.DataFrame.MAF], builders.MAFBuilder)
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.MAF], builders.MAFBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.MAF_METADATA],
+        viz_builders[build.DataFrame.MAF_METADATA],
         builders.MAFMetadataBuilder,
     )
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        viz_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.PrimaryAliquotBuilder,
     )
+    assert isinstance(
+        viz_builders[build.DataFrame.CASE_CENTRIC],
+        builders.CaseCentricBuilder,
+    )
 
-    assert viz_builders.index_builders.keys() == frozenset(
+    assert _builders.index_builders.keys() == frozenset(
         (
-            build.IndexType.CASE_CENTRIC,
             build.IndexType.CNV_CENTRIC,
             build.IndexType.CNV_OCCURRENCE_CENTRIC,
             build.IndexType.GENE_CENTRIC,
@@ -52,27 +59,23 @@ def test__get_viz_builders__all_builders() -> None:
         )
     )
     assert isinstance(
-        viz_builders.index_builders[build.IndexType.CASE_CENTRIC],
-        builders.CaseCentricBuilder,
-    )
-    assert isinstance(
-        viz_builders.index_builders[build.IndexType.CNV_CENTRIC],
+        _builders.index_builders[build.IndexType.CNV_CENTRIC],
         builders.CNVCentricBuilder,
     )
     assert isinstance(
-        viz_builders.index_builders[build.IndexType.CNV_OCCURRENCE_CENTRIC],
+        _builders.index_builders[build.IndexType.CNV_OCCURRENCE_CENTRIC],
         builders.CNVOccurrenceCentricBuilder,
     )
     assert isinstance(
-        viz_builders.index_builders[build.IndexType.GENE_CENTRIC],
+        _builders.index_builders[build.IndexType.GENE_CENTRIC],
         builders.GeneCentricBuilder,
     )
     assert isinstance(
-        viz_builders.index_builders[build.IndexType.SSM_CENTRIC],
+        _builders.index_builders[build.IndexType.SSM_CENTRIC],
         builders.SSMCentricBuilder,
     )
     assert isinstance(
-        viz_builders.index_builders[build.IndexType.SSM_OCCURRENCE_CENTRIC],
+        _builders.index_builders[build.IndexType.SSM_OCCURRENCE_CENTRIC],
         builders.SSMOccurrenceCentricBuilder,
     )
 
@@ -81,8 +84,9 @@ def test__get_ge_builders__all_builders() -> None:
     ge_builders = main.get_ge_builders(
         mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
     )
+    _builders = {b.output: b for b in ge_builders.builders}
 
-    assert ge_builders.input_builders.keys() == frozenset(
+    assert _builders.keys() == frozenset(
         (
             build.DataFrame.CASE,
             build.DataFrame.EXPRESSION_VALUE,
@@ -91,23 +95,23 @@ def test__get_ge_builders__all_builders() -> None:
         )
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.CASE],
+        _builders[build.DataFrame.CASE],
         builders.GeneExpressionCaseInputBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.EXPRESSION_VALUE],
+        _builders[build.DataFrame.EXPRESSION_VALUE],
         builders.GeneExpressionValueInputBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.GENE_MODEL],
+        _builders[build.DataFrame.GENE_MODEL],
         builders.GeneModelBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        _builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        _builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
     )
 
