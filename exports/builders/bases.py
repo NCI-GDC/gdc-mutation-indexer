@@ -8,8 +8,11 @@ from typing import (
     Dict,
     Generic,
     Iterable,
+    Iterator,
+    Literal,
     Mapping,
     Optional,
+    Protocol,
     Type,
     TypeVar,
     Union,
@@ -20,7 +23,7 @@ import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import Literal, Protocol, TypeGuard
+from typing_extensions import TypeGuard
 
 from exports import es_utils, pyspark_extensions
 from exports.configuration.builders import common
@@ -135,7 +138,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         Args:
             input_dfs: The required data frames to construct the output data frame.
 
-        Retruns:
+        Returns:
             A data frame which contains the expected data of the defined output.
         """
         pass
@@ -154,7 +157,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
     def _read(self) -> Optional[sql.DataFrame]:
         """
-        Reads the data frame, if configured to READ, from the configure parqet file. If
+        Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
 
         Returns:
@@ -493,25 +496,25 @@ class IndexBuilder(
         self._index_type = build.IndexType[self._output.name]
         self._index_name, _ = self._index_type.get_mappings_details()
 
-    def _get_boolean_paths(self) -> Iterable[str]:
+    def _get_boolean_paths(self) -> Iterator[str]:
         """
         Find all the boolean field in mapping and return the paths
 
         Returns:
             An iterable of each path to a boolean field represented as a series of
-            field names seperated by a '.'.
+            field names separated by a '.'.
         """
 
         def get_boolean_paths(
             node: Dict[str, Dict[str, Any]], path: str = ""
-        ) -> Iterable[str]:
+        ) -> Iterator[str]:
             for key, value in node.items():
-                path = f"{path}{key}"
+                subpath = f"{path}{key}"
 
                 if value.get("type") == "boolean":
-                    yield path
+                    yield subpath
                 elif "properties" in value:
-                    yield from get_boolean_paths(value["properties"], f"{path}.")
+                    yield from get_boolean_paths(value["properties"], f"{subpath}.")
 
         mappings = self._mappings_loader.load_mappings(self._index_type).get(
             "mappings", {}
