@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import types
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Container
 
 import elasticsearch
 import toml
@@ -83,6 +83,10 @@ def _get_viz_builders(
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
+    index_types: Container[build.IndexType],
+    mappings_loader: es_utils.MappingsLoader,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
 ) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the viz export process.
@@ -102,6 +106,11 @@ def _get_viz_builders(
             the indexd store.
         case_field_selector: A utility for loading the required case fields for a given
             index or set of indices.
+        index_types: A container of all required index types for this build.
+        mappings_loader: The mapping loader service for loading ES mappings.
+        consequence_builder: The builder service for loading consequence data.
+        observation_builder: The builder service for loading observation data.
+
     Returns:
         An iterator of all the builders required for the build.
     """
@@ -144,6 +153,8 @@ def get_viz_index_builders(
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     case_field_selector: es_utils.CaseFieldSelector,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
     """
     Builds the index builders required for the viz export process.
@@ -157,13 +168,13 @@ def get_viz_index_builders(
         es_rdd_util: A utility for loading rdd objects from the elasticsearch cluster.
         case_field_selector: A utility for loading the required case fields for a given
             index or set of indices.
+        consequence_builder: The builder service for loading consequence data.
+        observation_builder: The builder service for loading observation data.
 
     Returns:
         A mapping of the build.IndexType to the builder which will build and then load
         the said index into es.
     """
-    consequence_builder = builders.ConsequenceBuilder()
-    observation_builder = builders.ObservationBuilder()
 
     return types.MappingProxyType(
         {
@@ -222,6 +233,8 @@ def get_viz_builders(
     es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
+    consequence_builder = builders.ConsequenceBuilder()
+    observation_builder = builders.ObservationBuilder()
 
     viz_builders = _get_viz_builders(
         config_adapter,
@@ -234,9 +247,19 @@ def get_viz_builders(
         es_rdd_util,
         doc_dataframe_util,
         case_field_selector,
+        config.build.index_types,
+        mappings_loader,
+        consequence_builder,
+        observation_builder,
     )
     viz_index_builders = get_viz_index_builders(
-        config_adapter, sql_context, es_dataframe_util, es_rdd_util, case_field_selector
+        config_adapter,
+        sql_context,
+        es_dataframe_util,
+        es_rdd_util,
+        case_field_selector,
+        consequence_builder,
+        observation_builder,
     )
 
     return gdc_mutation_export.Builders(tuple(viz_builders), viz_index_builders)
@@ -247,6 +270,9 @@ def _get_ge_builders(
     spark_session: sql.SparkSession,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
+    index_types: Container[build.IndexType],
+    mappings_loader: es_utils.MappingsLoader,
+    
 ) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the gene expression export process.
@@ -261,6 +287,8 @@ def _get_ge_builders(
             elasticsearch to be used by the builders.
         doc_dataframe_util: A utility for reading document data from documents found in
             the indexd store.
+        index_types: A container of all required index types for this build.
+        mappings_loader: The mapping loader service for loading ES mappings.
 
     Returns:
         An iterator of the Builder objects required for this build.
@@ -328,6 +356,7 @@ def get_ge_builders(
         config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+
     return gdc_mutation_export.Builders(
         tuple(
             _get_ge_builders(
