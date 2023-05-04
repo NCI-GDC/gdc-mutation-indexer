@@ -17,6 +17,7 @@ from typing import (
     TypeVar,
     Union,
     get_type_hints,
+    runtime_checkable,
 )
 
 import more_itertools
@@ -46,8 +47,24 @@ BASE_PRIMARY_ALIQUOT_FIELDS = frozenset(
 )
 
 
+@runtime_checkable
 class Builder(Protocol):
     """A class which can build its defined output dataframe from its required inputs."""
+
+    def __hash__(self) -> int:
+        return hash(self.output)
+
+    def __eq__(self, value: object) -> bool:
+        if value is self:
+            return True
+
+        if isinstance(value, Builder):
+            return self.output == value.output
+
+        if isinstance(value, build.DataFrame):
+            return self.output == value
+
+        return False
 
     @property
     def output(self) -> build.DataFrame:  # type: ignore
