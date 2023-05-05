@@ -1,6 +1,7 @@
 import logging
 import pathlib
-from typing import Any, Iterable, Iterator, Optional
+from collections import Iterable, Iterator
+from typing import Any, Optional
 from unittest import mock
 
 import elasticsearch
@@ -9,7 +10,6 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
-import config
 from exports import builders, configuration, es_utils, indexd_utils
 from exports.constants import build
 from tests.integration.utils import test_setup
