@@ -6,6 +6,7 @@ class DataFrame(enum.IntEnum):
     ASCAT = enum.auto()
     CASE = enum.auto()
     EXPRESSION_VALUE = enum.auto()
+    GENE_EXPRESSION = enum.auto()
     GENE_MODEL = enum.auto()
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
