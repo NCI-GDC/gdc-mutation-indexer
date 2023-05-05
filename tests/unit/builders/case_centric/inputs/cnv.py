@@ -25,7 +25,7 @@ class Observations:
     occurrence_id: Optional[str] = "occ-1"
 
 
-def assert_observation_transated(
+def assert_observation_translated(
     result_gene: sql.Row, observations: Observations
 ) -> None:
     result_cnv = more_itertools.one(result_gene.cnv)

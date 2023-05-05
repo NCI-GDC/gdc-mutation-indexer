@@ -235,7 +235,7 @@ def assert_variant_calling_translated(
     assert result_variant_calling.variant_process == variant_calling.variant_process
 
 
-def assert_observation_transated(
+def assert_observation_translated(
     result_gene: sql.Row, observations: Observations
 ) -> None:
     result_ssm = more_itertools.one(result_gene.ssm)

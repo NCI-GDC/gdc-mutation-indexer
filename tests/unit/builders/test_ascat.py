@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Dict, Iterable, Mapping, Optional, Tuple
+from collections.abc import Iterable
+from typing import Mapping, Tuple
 from unittest import mock
 
 import more_itertools
@@ -13,6 +14,7 @@ from exports.configuration.builders import viz
 from exports.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
+from tests.unit.data.models import viz as models
 
 
 @dataclasses.dataclass(frozen=True)
@@ -58,88 +60,6 @@ class ESCase:
 class ESFile:
     file_id: str = "file-0"
     cases: Tuple[ESCase, ...] = (ESCase(),)
-
-
-@dataclasses.dataclass(frozen=True)
-class Domain:
-    description: str = "G protein-coupled receptor, rhodopsin-like"
-    end: int = 280
-    gff_source: str = "pfam"
-    hit_name: str = "PF00001"
-    interpro_id: str = "IPR000276"
-    start: int = 34
-
-
-@dataclasses.dataclass(frozen=True)
-class Exon:
-    cdna_coding_end: int = 0
-    cdna_coding_start: int = 0
-    cdna_end: int = 359
-    cdna_start: int = 1
-    end: int = 12227
-    end_phase: int = -1
-    genomic_coding_end: int = 0
-    genomic_coding_stairt: int = 0
-    genomic_coding_start: int = 0
-    start: int = 11869
-    start_phase: int = -1
-
-
-@dataclasses.dataclass(frozen=True)
-class Transcript:
-    biotype: str = "processed_transcript"
-    cdna_coding_end: int = 0
-    cdna_coding_start: int = 0
-    coding_region_end: int = 0
-    coding_region_start: int = 0
-    domains: Tuple[Domain, ...] = (Domain(),)
-    end: Optional[int] = 14409
-    end_exon: Optional[int] = None
-    exons: Tuple[Exon, ...] = (Exon(),)
-    transcript_id: str = "ENST00000456328"
-    is_canonical: bool = False
-    length: Optional[int] = 1657
-    length_amino_acid: Optional[int] = None
-    length_cds: Optional[int] = None
-    name: str = "DDX11L1-002"
-    number_of_exons: int = 6
-    seq_exon_end: Optional[int] = None
-    seq_exon_start: Optional[int] = None
-    start: Optional[int] = 11869
-    start_exon: Optional[int] = None
-    translation_id: Optional[str] = None
-
-
-@dataclasses.dataclass(frozen=True)
-class GeneModel:
-    _gene_id: str = "ENSG00000238009"
-    _id: Dict[str, str] = dataclasses.field(
-        default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"},
-    )
-    biotype: str = "protein_coding"
-    canonical_transcript_id: str = "ENST00000456328"
-    chromosome: str = "1"
-    cytoband: Tuple[Optional[str], ...] = ("1p36.33",)
-    description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
-    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
-    gene_end: int = 14409
-    gene_start: int = 11869
-    gene_strand: int = 1
-    hgnc: Tuple[str, ...] = ("HGNC:37102",)
-    is_cancer_gene_census: str = "true"
-    omim_gene: Tuple[str, ...] = ()
-    uniprotkb_swissprot: Tuple[str, ...] = ()
-    name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
-    symbol: str = "DDX11L1"
-    synonyms: Tuple[str, ...] = ()
-    transcripts: Tuple[Transcript, ...] = (Transcript(),)
-
-
-@dataclasses.dataclass(frozen=True)
-class PrimaryAliquot:
-    entity: str = "file"
-    file_id: str = "file-0"
-    aliquot_id: str = "aliquot-0"
 
 
 DEFAULT_ASCAT_DOCUMENTS = (
@@ -255,8 +175,8 @@ class TestAscatBuilder:
 
     def _arrange_input_dataframes(
         self,
-        primary_aliquots: Tuple[PrimaryAliquot, ...],
-        gene_model: Tuple[GeneModel, ...],
+        primary_aliquots: Tuple[models.PrimaryAliquot, ...],
+        gene_model: Tuple[models.GeneModel, ...],
     ) -> Mapping[str, sql.DataFrame]:
         primary_aliquot_df = self.spark_session.createDataFrame(primary_aliquots)  # type: ignore
         gene_model_df = self.spark_session.createDataFrame(
@@ -271,8 +191,8 @@ class TestAscatBuilder:
 
     def test__build__joins_single_record(self) -> None:
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (models.GeneModel(),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
@@ -284,8 +204,8 @@ class TestAscatBuilder:
 
     def test__build__input_data_transformed(self) -> None:
         es_file = ESFile()
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = GeneModel()
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = models.GeneModel()
 
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder((es_file,))
@@ -306,8 +226,8 @@ class TestAscatBuilder:
             (
                 (ESFile(file_id="file-1"),),
                 DEFAULT_ASCAT_DOCUMENTS,
-                (PrimaryAliquot(),),
-                (GeneModel(),),
+                (models.PrimaryAliquot(),),
+                (models.GeneModel(),),
             ),
             (
                 (
@@ -320,8 +240,8 @@ class TestAscatBuilder:
                     ),
                 ),
                 DEFAULT_ASCAT_DOCUMENTS,
-                (PrimaryAliquot(),),
-                (GeneModel(),),
+                (models.PrimaryAliquot(),),
+                (models.GeneModel(),),
             ),
             (
                 (ESFile(),),
@@ -330,26 +250,26 @@ class TestAscatBuilder:
                     AscatDocument(did="file-1", copy_number=30),
                     AscatDocument(did="file-1", copy_number=30),
                 ),
-                (PrimaryAliquot(),),
-                (GeneModel(),),
+                (models.PrimaryAliquot(),),
+                (models.GeneModel(),),
             ),
             (
                 (ESFile(),),
                 DEFAULT_ASCAT_DOCUMENTS,
-                (PrimaryAliquot(aliquot_id="aliquot-1"),),
-                (GeneModel(),),
+                (models.PrimaryAliquot(aliquot_id="aliquot-1"),),
+                (models.GeneModel(),),
             ),
             (
                 (ESFile(),),
                 DEFAULT_ASCAT_DOCUMENTS,
-                (PrimaryAliquot(file_id="file-1"),),
-                (GeneModel(),),
+                (models.PrimaryAliquot(file_id="file-1"),),
+                (models.GeneModel(),),
             ),
             (
                 (ESFile(),),
                 DEFAULT_ASCAT_DOCUMENTS,
-                (PrimaryAliquot(),),
-                (GeneModel(_gene_id="ENSG00000238008"),),
+                (models.PrimaryAliquot(),),
+                (models.GeneModel(_gene_id="ENSG00000238008"),),
             ),
         ),
         ids=(
@@ -365,8 +285,8 @@ class TestAscatBuilder:
         self,
         es_files: Tuple[ESFile, ...],
         ascat_documents: Tuple[AscatDocument, ...],
-        primary_aliquots: Tuple[PrimaryAliquot, ...],
-        gene_model: Tuple[GeneModel, ...],
+        primary_aliquots: Tuple[models.PrimaryAliquot, ...],
+        gene_model: Tuple[models.GeneModel, ...],
     ) -> None:
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
@@ -383,8 +303,8 @@ class TestAscatBuilder:
             AscatDocument(copy_number=30),
             AscatDocument(copy_number=30),
         )
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (models.GeneModel(),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
@@ -412,8 +332,8 @@ class TestAscatBuilder:
         ascat_documents = tuple(
             AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
         )
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (models.GeneModel(),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files, ascat_documents)
@@ -431,8 +351,8 @@ class TestAscatBuilder:
         self, copy_numbers: Iterable[int]
     ) -> None:
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (models.GeneModel(),)
         ascat_documents = tuple(
             AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
         )
@@ -446,8 +366,8 @@ class TestAscatBuilder:
 
     def test__build__uuids_generated(self) -> None:
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = GeneModel()
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = models.GeneModel()
 
         inputs = self._arrange_input_dataframes(primary_aliquots, (gene_model,))
         builder = self._arrange_builder(es_files)
@@ -476,13 +396,17 @@ class TestAscatBuilder:
         )
 
     def test__build__canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = Transcript(
+        canonical_transcript = models.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (
+            models.GeneModel(transcripts=(other_transcript, canonical_transcript)),
+        )
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
@@ -505,13 +429,17 @@ class TestAscatBuilder:
         )
 
     def test__build__null_canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = Transcript(
+        canonical_transcript = models.Transcript(
             length=None, length_cds=None, end=None, start=None, is_canonical=True
         )
-        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(transcripts=(other_transcript, canonical_transcript)),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (
+            models.GeneModel(transcripts=(other_transcript, canonical_transcript)),
+        )
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
@@ -523,13 +451,13 @@ class TestAscatBuilder:
         assert result_row.canonical_transcript_length_cds == None
         assert result_row.canonical_transcript_length_genomic == None
 
-    def test__build__canonical_transcript_lengths_no_canonical_transcipt(
+    def test__build__canonical_transcript_lengths_no_canonical_transcript(
         self,
     ) -> None:
-        transcript = Transcript(length=10, length_cds=3, end=122, start=100)
+        transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
         es_files = (ESFile(),)
-        primary_aliquots = (PrimaryAliquot(),)
-        gene_model = (GeneModel(transcripts=(transcript,)),)
+        primary_aliquots = (models.PrimaryAliquot(entity="file"),)
+        gene_model = (models.GeneModel(transcripts=(transcript,)),)
 
         inputs = self._arrange_input_dataframes(primary_aliquots, gene_model)
         builder = self._arrange_builder(es_files)
@@ -545,15 +473,15 @@ class TestAscatBuilder:
         ("gene_model", "ascat_documents"),
         (
             (
-                GeneModel(biotype="transcribed_unprocessed_pseudogene"),
+                models.GeneModel(biotype="transcribed_unprocessed_pseudogene"),
                 (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
             ),
             (
-                GeneModel(chromosome="X"),
+                models.GeneModel(chromosome="X"),
                 (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
             ),
             (
-                GeneModel(),
+                models.GeneModel(),
                 (
                     AscatDocument(copy_number=30, chromosome="X"),
                     AscatDocument(),
@@ -564,9 +492,11 @@ class TestAscatBuilder:
         ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
     def test__build__filter_gene_model(
-        self, gene_model: GeneModel, ascat_documents: Tuple[AscatDocument, ...]
+        self, gene_model: models.GeneModel, ascat_documents: Tuple[AscatDocument, ...]
     ) -> None:
-        inputs = self._arrange_input_dataframes((PrimaryAliquot(),), (gene_model,))
+        inputs = self._arrange_input_dataframes(
+            (models.PrimaryAliquot(entity="file"),), (gene_model,)
+        )
         builder = self._arrange_builder((ESFile(),), ascat_documents)
 
         result_df = builder.build(**inputs)

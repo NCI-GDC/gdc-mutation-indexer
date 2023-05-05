@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Dict, Tuple
 from unittest import mock
 
@@ -8,33 +7,7 @@ from pyspark.sql import types
 
 from exports import builders
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class Gene:
-    gene_id: str = "gene-0"
-    expression_value: float = 328382.4458
-    symbol: str = "genSym"
-
-
-@dataclasses.dataclass(frozen=True)
-class File:
-    file_id: str = "file-0"
-    genes: Tuple[Gene, ...] = (Gene(),)
-
-
-@dataclasses.dataclass(frozen=True)
-class Case:
-    case_id: str = "case-0"
-    days_to_death: int = 38
-    ethnicity: str = "hispanic"
-    gender: str = "male"
-    race: str = "indigenous"
-    vital_status: str = "status"
-    submitter_id: str = "sub-id"
-    project_id: str = "GDC-TEST"
-    file_id: str = "file-0"
-    age_at_diagnosis: Tuple[int, ...] = (12,)
+from tests.unit.data.models import gene_expression as models
 
 
 @pytest.fixture(scope="class")
@@ -67,7 +40,9 @@ class TestGeneExpressionBuilder:
         self.final_schema = final_schema
 
     def arrange_inputs(
-        self, values: Tuple[File, ...] = (File(),), cases: Tuple[Case, ...] = (Case(),)
+        self,
+        values: Tuple[models.Value, ...] = (models.Value(),),
+        cases: Tuple[models.Case, ...] = (models.Case(),),
     ) -> Dict[str, sql.DataFrame]:
         value_df = self.spark_session.createDataFrame(
             values,  # type: ignore
@@ -98,7 +73,7 @@ class TestGeneExpressionBuilder:
         config = mock.MagicMock()
         sql_context = mock.MagicMock()
         inputs = self.arrange_inputs(
-            (File(file_id="file-1"),), (Case(file_id="file-2"),)
+            (models.Value(file_id="file-1"),), (models.Case(file_id="file-2"),)
         )
         builder = builders.GeneExpressionBuilder(config, sql_context)
 
