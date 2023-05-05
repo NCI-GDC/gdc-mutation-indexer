@@ -52,13 +52,20 @@ def primary_aliquot_df(
 @pytest.fixture
 def ge_builder(
     ge_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> builders.GeneExpressionBuilder:
-    adapter = config.ConfigAdapter(ge_config, es_client, mock.MagicMock())
-    builder = builders.GeneExpressionBuilder(adapter, sqlContext)
+    mappings_loader = es_utils.MappingsLoader()
+    dataframe_util = es_utils.DataFrameUtil(
+        ge_config.elasticsearch, spark_session, es_client, mappings_loader
+    )
 
-    return builder
+    return builders.GeneExpressionBuilder(
+        ge_config.builders.gene_expression.gene_expression,
+        spark_session,
+        dataframe_util,
+        mappings_loader,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -188,8 +195,9 @@ def test_gene_expression_builder(
     expression_value_df: sql.DataFrame,
 ) -> None:
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
+    inputs = {"case_df": case_df, "expression_value_df": expression_value_df}
 
-    ge_builder.build(case_df, expression_value_df).load()
+    ge_builder.build(**inputs)
 
     es_client.indices.refresh()
 
