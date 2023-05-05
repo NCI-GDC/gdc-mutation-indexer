@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Set, Tuple
+from collections.abc import Set
+from typing import Tuple
 from unittest import mock
 
 import more_itertools
@@ -11,18 +12,9 @@ from typing_extensions import TypedDict
 
 import config
 from exports import builders, es_utils
-from tests.unit.builders.case_centric.inputs import ascat, case, cnv, maf, sample, ssm
+from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class PrimaryAliquot:
-    aliquot_id: str = "aliquot-0"
-    case_id: str = "case-0"
-    entity: str = "case"
-    entity_id: str = "case-0"
-    experimental_strategy: str = "WXS"
-    file_id: str = "file-0"
+from tests.unit.data.models import viz as models
 
 
 class Inputs(TypedDict):
@@ -30,6 +22,44 @@ class Inputs(TypedDict):
     maf_df: sql.DataFrame
     ascat_df: sql.DataFrame
     primary_aliquot_df: sql.DataFrame
+
+
+def assert_ascat_translated(result_gene: sql.Row, ascat: models.ASCAT) -> None:
+    result_cnv = more_itertools.one(result_gene.cnv)
+
+    assert result_gene.gene_id == ascat.gene_id
+    assert result_gene.biotype == ascat.biotype
+    assert result_gene.symbol == ascat.symbol
+    assert result_gene.is_cancer_gene_census == ascat.is_cancer_gene_census
+    assert result_cnv.cnv_id == ascat.cnv_id
+    assert result_cnv.chromosome == ascat.chromosome
+    assert result_cnv.cnv_change == ascat.cnv_change
+    assert result_cnv.end_position == ascat.end_position
+    assert result_cnv.gene_level_cn == ascat.gene_level_cn
+    assert result_cnv.ncbi_build == ascat.ncbi_build
+    assert result_cnv.start_position == ascat.start_position
+
+
+def assert_maf_translated(result_gene: sql.Row, maf: models.MAF) -> None:
+    result_ssm = more_itertools.one(result_gene.ssm)
+    result_civic = result_ssm.clinical_annotations.civic
+
+    assert result_gene.gene_id == maf.gene_id
+    assert result_gene.biotype == maf.biotype
+    assert result_gene.symbol == maf.symbol
+    assert result_gene.is_cancer_gene_census == maf.is_cancer_gene_census
+    assert result_ssm.chromosome == maf.chromosome
+    assert result_ssm.cosmic_id == maf.cosmic_id
+    assert result_ssm.end_position == maf.end_position
+    assert result_ssm.genomic_dna_change == maf.genomic_dna_change
+    assert result_ssm.mutation_subtype == maf.mutation_subtype
+    assert result_ssm.mutation_type == maf.mutation_type
+    assert result_ssm.ncbi_build == maf.ncbi_build
+    assert result_ssm.reference_allele == maf.reference_allele
+    assert result_ssm.start_position == maf.start_position
+    assert result_ssm.tumor_allele == maf.tumor_allele
+    assert result_civic.gene_id == maf.civic_gene_id
+    assert result_civic.variant_id == maf.civic_variant_id
 
 
 @pytest.fixture(scope="class")
@@ -181,10 +211,12 @@ class TestCaseCentricBuilder:
 
     def arrange_inputs(
         self,
-        maf_metadata: Tuple[maf.Metadata, ...] = (maf.Metadata(),),
-        mafs: Tuple[maf.MAF, ...] = (maf.MAF(),),
-        ascats: Tuple[ascat.ASCAT, ...] = (ascat.ASCAT(),),
-        primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
+        maf_metadata: Tuple[models.MAFMetadata, ...] = (models.MAFMetadata(),),
+        mafs: Tuple[models.MAF, ...] = (models.MAF(),),
+        ascats: Tuple[models.ASCAT, ...] = (models.ASCAT(),),
+        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
+            models.PrimaryAliquot(),
+        ),
     ) -> Inputs:
         maf_metadata_df = self.spark_session.createDataFrame(
             maf_metadata, schema=self.maf_metadata_schema
@@ -232,8 +264,8 @@ class TestCaseCentricBuilder:
     def test__build__data_translated(self) -> None:
         es_case = case.Case()
         es_hit = sample.Hit()
-        raw_maf = maf.MAF(gene_id="MAFGENE")
-        raw_ascat = ascat.ASCAT(gene_id="ASCATGENE")
+        raw_maf = models.MAF(gene_id="MAFGENE")
+        raw_ascat = models.ASCAT(gene_id="ASCATGENE")
         ssm_consequence = ssm.Consequences()
         ssm_observation = ssm.Observations()
         cnv_observation = cnv.Observations()
@@ -270,11 +302,11 @@ class TestCaseCentricBuilder:
 
         case.assert_case_translated(result_case, es_case)
         sample.assert_hit_translated(result_case, es_hit)
-        maf.assert_maf_translated(maf_gene, raw_maf)
+        assert_maf_translated(maf_gene, raw_maf)
         ssm.assert_consequences_translated(maf_gene, ssm_consequence)
-        ssm.assert_observation_transated(maf_gene, ssm_observation)
-        ascat.assert_ascat_transated(ascat_gene, raw_ascat)
-        cnv.assert_observation_transated(ascat_gene, cnv_observation)
+        ssm.assert_observation_translated(maf_gene, ssm_observation)
+        assert_ascat_translated(ascat_gene, raw_ascat)
+        cnv.assert_observation_translated(ascat_gene, cnv_observation)
 
     @pytest.mark.parametrize(
         ("maf_case_id", "cnv_case_id", "expected_available_variations"),
@@ -292,8 +324,8 @@ class TestCaseCentricBuilder:
         cnv_case_id: str,
         expected_available_variations: Set[str],
     ) -> None:
-        maf_metadata = maf.Metadata(case_id=maf_case_id)
-        raw_ascat = ascat.ASCAT(case_id=cnv_case_id)
+        maf_metadata = models.MAFMetadata(case_id=maf_case_id)
+        raw_ascat = models.ASCAT(case_id=cnv_case_id)
 
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
@@ -345,13 +377,13 @@ class TestCaseCentricBuilder:
         is_cancer_gene_census: str,
         expected_count: int,
     ) -> None:
-        raw_maf = maf.MAF(
+        raw_maf = models.MAF(
             gene_id=gene_id,
             biotype=biotype,
             symbol=symbol,
             is_cancer_gene_census=is_cancer_gene_census,
         )
-        raw_ascat = ascat.ASCAT(
+        raw_ascat = models.ASCAT(
             gene_id="gene-0",
             biotype="b-0",
             symbol="sym-0",
@@ -383,8 +415,8 @@ class TestCaseCentricBuilder:
         assert len(result_case.gene) == expected_count
 
     def test__build__gene_joins_neither_ssm_nor_cnv(self) -> None:
-        raw_maf = maf.MAF(case_id="case-1")
-        raw_ascat = ascat.ASCAT(case_id="case-1")
+        raw_maf = models.MAF(case_id="case-1")
+        raw_ascat = models.ASCAT(case_id="case-1")
 
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
@@ -411,7 +443,7 @@ class TestCaseCentricBuilder:
         assert result_case.gene is None
 
     def test__build__gene_joins_ssm_only(self) -> None:
-        raw_maf = maf.MAF(case_id="case-0")
+        raw_maf = models.MAF(case_id="case-0")
         ssm_observation = ssm.Observations(case_id="case-0")
 
         config = self.arrange_config()
@@ -443,7 +475,7 @@ class TestCaseCentricBuilder:
         assert result_case.gene[0].cnv is None
 
     def test__build__gene_joins_cnv_only(self) -> None:
-        raw_ascat = ascat.ASCAT(case_id="case-0")
+        raw_ascat = models.ASCAT(case_id="case-0")
         cnv_observation = cnv.Observations(case_id="case-0")
 
         config = self.arrange_config()
@@ -475,7 +507,7 @@ class TestCaseCentricBuilder:
         assert len(result_case.gene[0].cnv) == 1
 
     def test__build__gene_joins_both_ssm_and_cnv(self) -> None:
-        raw_maf = maf.MAF(
+        raw_maf = models.MAF(
             gene_id="g-0",
             biotype="b-0",
             symbol="s-0",
@@ -483,7 +515,7 @@ class TestCaseCentricBuilder:
             case_id="case-0",
         )
         ssm_observation = ssm.Observations(case_id="case-0")
-        raw_ascat = ascat.ASCAT(
+        raw_ascat = models.ASCAT(
             gene_id="g-0",
             biotype="b-0",
             symbol="s-0",
@@ -521,8 +553,8 @@ class TestCaseCentricBuilder:
         assert len(result_case.gene[0].cnv) == 1
 
     def test__build__ssm_group_by_gene_and_case_id(self) -> None:
-        raw_maf0 = maf.MAF(gene_id="g-0", case_id="case-0", ssm_id="ssm-0")
-        raw_maf1 = maf.MAF(gene_id="g-0", case_id="case-0", ssm_id="ssm-1")
+        raw_maf0 = models.MAF(gene_id="g-0", case_id="case-0", ssm_id="ssm-0")
+        raw_maf1 = models.MAF(gene_id="g-0", case_id="case-0", ssm_id="ssm-1")
         ssm_observation0 = ssm.Observations(case_id="case-0", ssm_id="ssm-0")
         ssm_observation1 = ssm.Observations(case_id="case-0", ssm_id="ssm-1")
 
@@ -554,8 +586,8 @@ class TestCaseCentricBuilder:
         assert len(result_case.gene[0].ssm) == 2
 
     def test__build__cnv_group_by_gene_and_case_id(self) -> None:
-        raw_ascat0 = ascat.ASCAT(cnv_id="cnv-0")
-        raw_ascat1 = ascat.ASCAT(cnv_id="cnv-1")
+        raw_ascat0 = models.ASCAT(cnv_id="cnv-0")
+        raw_ascat1 = models.ASCAT(cnv_id="cnv-1")
         cnv_observation0 = cnv.Observations(cnv_id="cnv-0")
         cnv_observation1 = cnv.Observations(cnv_id="cnv-1")
 

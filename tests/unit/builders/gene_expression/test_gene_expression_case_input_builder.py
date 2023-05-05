@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Dict, Tuple
 from unittest import mock
 
@@ -11,42 +10,7 @@ from exports import builders
 from exports.configuration.builders import gene_expression
 from exports.constants import build
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class Demographic:
-    days_to_death: int = 20
-    ethnicity: str = "non-hispanic"
-    gender: str = "female"
-    race: str = "first nations"
-    vital_status: str = "dead"
-
-
-@dataclasses.dataclass(frozen=True)
-class Project:
-    project_id: str = "GDC-TEST"
-
-
-@dataclasses.dataclass(frozen=True)
-class Diagnosis:
-    age_at_diagnosis: int = 74
-
-
-@dataclasses.dataclass(frozen=True)
-class Sample:
-    sample_id: str = "sample-0"
-    sample_type: str = "tumor"
-
-
-@dataclasses.dataclass(frozen=True)
-class PrimaryAliquot:
-    file_id: str = "file-0"
-    case_id: str = "case-0"
-    submitter_id: str = "case 0"
-    demographic: Demographic = Demographic()
-    project: Project = Project()
-    diagnoses: Tuple[Diagnosis, ...] = (Diagnosis(),)
-    samples: Tuple[Sample, ...] = (Sample(),)
+from tests.unit.data.models import gene_expression as models
 
 
 @pytest.fixture(scope="class")
@@ -79,7 +43,9 @@ class TestGeneExpressionCaseInputBuilder:
 
     def arrange_inputs(
         self,
-        primary_aliquots: Tuple[PrimaryAliquot, ...] = (PrimaryAliquot(),),
+        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
+            models.PrimaryAliquot(),
+        ),
     ) -> Dict[str, sql.DataFrame]:
         primary_aliquot_df = self.spark_session.createDataFrame(
             primary_aliquots,  # type: ignore
@@ -102,9 +68,9 @@ class TestGeneExpressionCaseInputBuilder:
         assert result_df.schema == self.final_schema
 
     def test__build__data_transformed(self) -> None:
-        demographic = Demographic()
-        diagnosis = Diagnosis()
-        primary_aliquot = PrimaryAliquot(
+        demographic = models.Demographic()
+        diagnosis = models.Diagnosis()
+        primary_aliquot = models.PrimaryAliquot(
             demographic=demographic, diagnoses=(diagnosis,)
         )
 

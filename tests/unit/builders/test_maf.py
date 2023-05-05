@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Dict, List, Optional, Tuple
 from unittest import mock
 
 import more_itertools
@@ -14,6 +15,7 @@ from exports.configuration.builders import viz
 from exports.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
+from tests.unit.data.models import viz as models
 
 
 @dataclasses.dataclass(frozen=True)
@@ -65,7 +67,7 @@ class MAF:
     n_alt_count: Optional[str] = None
     all_effects: str = "CSMD2,missense_variant,p.A609S,ENST00000373381,NM_001281956.2,c.1825G>T,MODERATE,YES,tolerated(0.14),benign(0.305),-1;CSMD2,missense_variant,p.A569S,ENST00000619121,,c.1705G>T,MODERATE,,tolerated(0.13),benign(0.02),-1;CSMD2,missense_variant,p.A569S,ENST00000373388,NM_052896.4,c.1705G>T,MODERATE,,tolerated(0.12),benign(0.305),-1;CSMD2,missense_variant,p.A217S,ENST00000338325,,c.649G>T,MODERATE,,tolerated(0.18),benign(0.264),-1;CSMD2,missense_variant,p.A569S,ENST00000241312,,c.1705G>T,MODERATE,,tolerated(0.12),benign(0.305),-1"
     Allele: str = "A"
-    Gene: str = "ENSG00000121904"
+    Gene: str = "ENSG00000238009"
     Feature: str = "ENST00000241312"
     Feature_type: str = "Transcript"
     One_Consequence: str = "missense_variant"
@@ -180,81 +182,6 @@ class MAF:
         return sql.Row(*(data[f.name] for f in fields))
 
 
-@dataclasses.dataclass(frozen=True)
-class Domain:
-    description: str = "G protein-coupled receptor, rhodopsin-like"
-    end: int = 280
-    gff_source: str = "pfam"
-    hit_name: str = "PF00001"
-    interpro_id: str = "IPR000276"
-    start: int = 34
-
-
-@dataclasses.dataclass(frozen=True)
-class Exon:
-    cdna_coding_end: int = 0
-    cdna_coding_start: int = 0
-    cdna_end: int = 359
-    cdna_start: int = 1
-    end: int = 12227
-    end_phase: int = -1
-    genomic_coding_end: int = 0
-    genomic_coding_stairt: int = 0
-    genomic_coding_start: int = 0
-    start: int = 11869
-    start_phase: int = -1
-
-
-@dataclasses.dataclass(frozen=True)
-class Transcript:
-    biotype: str = "processed_transcript"
-    cdna_coding_end: int = 0
-    cdna_coding_start: int = 0
-    coding_region_end: int = 0
-    coding_region_start: int = 0
-    domains: Tuple[Domain, ...] = (Domain(),)
-    end: int = 14409
-    end_exon: Optional[int] = None
-    exons: Tuple[Exon, ...] = (Exon(),)
-    transcript_id: str = "ENST00000456328"
-    is_canonical: bool = False
-    length: int = 1657
-    length_amino_acid: Optional[int] = None
-    length_cds: Optional[int] = None
-    name: str = "DDX11L1-002"
-    number_of_exons: int = 6
-    seq_exon_end: Optional[int] = None
-    seq_exon_start: Optional[int] = None
-    start: int = 11869
-    start_exon: Optional[int] = None
-    translation_id: Optional[str] = None
-
-
-@dataclasses.dataclass(frozen=True)
-class GeneModel:
-    _gene_id: str = "ENSG00000121904"
-    _id: Dict[str, str] = dataclasses.field(
-        default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
-    )
-    biotype: str = "transcribed_unprocessed_pseudogene"
-    canonical_transcript_id: str = "ENST00000456328"
-    chromosome: str = "1"
-    cytoband: Tuple[Optional[str], ...] = ("1p36.33",)
-    description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
-    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
-    gene_end: int = 14409
-    gene_start: int = 11869
-    gene_strand: int = 1
-    hgnc: Tuple[str, ...] = ("HGNC:37102",)
-    is_cancer_gene_census: str = "true"
-    omim_gene: Tuple[str, ...] = ()
-    uniprotkb_swissprot: Tuple[str, ...] = ()
-    name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
-    symbol: str = "DDX11L1"
-    synonyms: Tuple[str, ...] = ()
-    transcripts: Tuple[Transcript, ...] = (Transcript(),)
-
-
 @pytest.fixture(scope="class")
 def gene_model_schema() -> types.StructType:
     return schemas.Builders.GeneModel.FINAL.load()
@@ -284,7 +211,7 @@ def arrange_config() -> viz.MAFBuilder:
     )
 
 
-def assert_domains_equal(result_domain: sql.Row, domain: Domain) -> None:
+def assert_domains_equal(result_domain: sql.Row, domain: models.Domain) -> None:
     assert result_domain.description == domain.description
     assert result_domain.end == domain.end
     assert result_domain.gff_source == domain.gff_source
@@ -293,7 +220,7 @@ def assert_domains_equal(result_domain: sql.Row, domain: Domain) -> None:
     assert result_domain.start == domain.start
 
 
-def assert_exons_equal(result_exon: sql.Row, exon: Exon) -> None:
+def assert_exons_equal(result_exon: sql.Row, exon: models.Exon) -> None:
     assert result_exon.cdna_coding_end == exon.cdna_coding_end
     assert result_exon.cdna_coding_start == exon.cdna_coding_start
     assert result_exon.cdna_end == exon.cdna_end
@@ -308,7 +235,7 @@ def assert_exons_equal(result_exon: sql.Row, exon: Exon) -> None:
 
 
 def assert_transcripts_equal(
-    result_transcript: sql.Row, transcript: Transcript
+    result_transcript: sql.Row, transcript: models.Transcript
 ) -> None:
     assert result_transcript.biotype == transcript.biotype
     assert result_transcript.cdna_coding_end == transcript.cdna_coding_end
@@ -342,7 +269,7 @@ def assert_transcripts_equal(
 
 
 def assert_core_maf_transformed(
-    result_maf: sql.Row, maf: MAF, gene_model: GeneModel
+    result_maf: sql.Row, maf: MAF, gene_model: models.GeneModel
 ) -> None:
     assert result_maf._id.asDict() == gene_model._id
     assert result_maf.aa_change == maf.ESP_AA_AF
@@ -479,7 +406,7 @@ class TestMAFBuilder:
         )
 
     def arrange_inputs(
-        self, gene_model: Tuple[GeneModel, ...] = (GeneModel(),)
+        self, gene_model: Tuple[models.GeneModel, ...] = (models.GeneModel(),)
     ) -> Dict[str, sql.DataFrame]:
         gene_model_df = self.spark_session.createDataFrame(
             gene_model,  # type: ignore
@@ -499,7 +426,7 @@ class TestMAFBuilder:
         assert result_df.schema == self.final_maf_schema
 
     def test__build__masked_somatic_mutation_maf_transformed(self) -> None:
-        gene_model = GeneModel()
+        gene_model = models.GeneModel()
         maf = MAF()
         inputs = self.arrange_inputs(gene_model=(gene_model,))
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
@@ -516,7 +443,7 @@ class TestMAFBuilder:
     def test__build__aggregated_somatic_mutation_maf_transformed(
         self,
     ) -> None:
-        gene_model = GeneModel()
+        gene_model = models.GeneModel()
         maf = MAF()
         inputs = self.arrange_inputs(gene_model=(gene_model,))
         builder = self.arrange_builder(
@@ -565,7 +492,7 @@ class TestMAFBuilder:
         assert result_row.is_canonical == expected_value
 
     def test__build__joins_fail(self) -> None:
-        inputs = self.arrange_inputs((GeneModel(),))
+        inputs = self.arrange_inputs((models.GeneModel(),))
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(MAF(Gene="GENE0"),)
         )
@@ -796,11 +723,11 @@ class TestMAFBuilder:
         assert result_row.sift_score == sift_score
 
     def test__build__canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = Transcript(
+        canonical_transcript = models.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
-        gene_model = (GeneModel(transcripts=(canonical_transcript, other_transcript)),)
+        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        gene_model = (models.GeneModel(transcripts=(canonical_transcript, other_transcript)),)
 
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = self.arrange_builder()
@@ -821,8 +748,8 @@ class TestMAFBuilder:
     def test__build__canonical_transcript_lengths_no_canonical_transcipt(
         self,
     ) -> None:
-        other_transcript = Transcript(length=10, length_cds=3, end=122, start=100)
-        gene_model = (GeneModel(transcripts=(other_transcript,)),)
+        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        gene_model = (models.GeneModel(transcripts=(other_transcript,)),)
 
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = self.arrange_builder()
@@ -869,7 +796,7 @@ class TestMAFBuilder:
         assert result_row.gene_chromosome == "1"
 
     def test__build__chromosome(self) -> None:
-        inputs = self.arrange_inputs(gene_model=(GeneModel(chromosome="1"),))
+        inputs = self.arrange_inputs(gene_model=(models.GeneModel(chromosome="1"),))
         builder = self.arrange_builder(
             masked_somatic_mutation_mafs=(MAF(Chromosome="chr1"),)
         )
