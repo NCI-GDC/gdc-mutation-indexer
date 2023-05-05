@@ -272,7 +272,6 @@ def _get_ge_builders(
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     index_types: Container[build.IndexType],
     mappings_loader: es_utils.MappingsLoader,
-    
 ) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the gene expression export process.
@@ -356,6 +355,7 @@ def get_ge_builders(
         config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+    mappings_loader = es_utils.MappingsLoader()
 
     return gdc_mutation_export.Builders(
         tuple(
@@ -364,6 +364,8 @@ def get_ge_builders(
                 spark_session,
                 es_dataframe_util,
                 doc_dataframe_util,
+                config.build.index_types,
+                mappings_loader,
             )
         ),
         get_ge_index_builders(config_adapter, sql_context),
