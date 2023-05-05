@@ -39,9 +39,7 @@ class Exporter:
         ).static_order()
 
         # TODO: Remove when old index builders ported to new base.
-        self._index_types = frozenset(index_types) - frozenset(
-            b.output for b in builders.builders
-        )
+        self._index_types = frozenset(index_types) & builders.index_builders.keys()
         self._index_builders = builders.index_builders
 
     def run(self) -> None:
