@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import types
-from typing import Iterator, Mapping, Union
+from collections.abc import Iterator, Mapping, Container
 
 import elasticsearch
 import toml
@@ -11,19 +11,12 @@ from pyspark import sql
 import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
 from exports import logging as mutation_indexer_logging
-from exports.builders import (
-    ascat,
-    base_builder,
-    base_input_builder,
-    bases,
-    maf_metadata,
-)
+from exports.builders import ascat, base_builder, bases, maf_metadata
 from exports.builders.clinical_annotations import civic
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
 from exports.configuration.builders import gene_expression, viz
 from exports.constants import build
-
 
 logger = logging.getLogger("exports")
 
@@ -79,7 +72,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     )
 
 
-def get_viz_input_builders(
+def _get_viz_builders(
     old_config: old_config.BaseConfig,
     config: viz.Viz,
     es_config: es_config.Elasticsearch,
@@ -90,9 +83,11 @@ def get_viz_input_builders(
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-) -> Mapping[
-    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
-]:
+    index_types: Container[build.IndexType],
+    mappings_loader: es_utils.MappingsLoader,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
+) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the viz export process.
 
@@ -111,43 +106,45 @@ def get_viz_input_builders(
             the indexd store.
         case_field_selector: A utility for loading the required case fields for a given
             index or set of indices.
+        index_types: A container of all required index types for this build.
+        mappings_loader: The mapping loader service for loading ES mappings.
+        consequence_builder: The builder service for loading consequence data.
+        observation_builder: The builder service for loading observation data.
+
     Returns:
-        A mapping of the build.DataFrame to the builder which will produce said data
-        frame.
+        An iterator of all the builders required for the build.
     """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
-    return types.MappingProxyType(
-        {
-            build.DataFrame.ASCAT: builders.ASCATBuilder(
-                config.ascat,
-                spark_session,
-                doc_dataframe_util,
-                es_dataframe_util,
-                ascat_doc_resolver,
-            ),
-            build.DataFrame.CASE: builders.CaseBuilder(
-                config.case, spark_session, es_dataframe_util, case_field_selector
-            ),
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
-                config.gene_model, spark_session
-            ),
-            build.DataFrame.MAF: builders.MAFBuilder(
-                config.maf, spark_session, doc_dataframe_util, annotation_builders
-            ),
-            build.DataFrame.MAF_METADATA: builders.MAFMetadataBuilder(
-                config.maf_metadata,
-                spark_session,
-                es_dataframe_util,
-                file_filter_factory,
-            ),
-            build.DataFrame.PRIMARY_ALIQUOT: builders.PrimaryAliquotBuilder(
-                config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
-            ),
-        }
+    input_builders = (
+        builders.ASCATBuilder(
+            config.ascat,
+            spark_session,
+            doc_dataframe_util,
+            es_dataframe_util,
+            ascat_doc_resolver,
+        ),
+        builders.CaseBuilder(
+            config.case, spark_session, es_dataframe_util, case_field_selector
+        ),
+        builders.GeneModelBuilder(config.gene_model, spark_session),
+        builders.MAFBuilder(
+            config.maf, spark_session, doc_dataframe_util, annotation_builders
+        ),
+        builders.MAFMetadataBuilder(
+            config.maf_metadata,
+            spark_session,
+            es_dataframe_util,
+            file_filter_factory,
+        ),
+        builders.PrimaryAliquotBuilder(
+            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+        ),
     )
+
+    yield from input_builders
 
 
 def get_viz_index_builders(
@@ -156,6 +153,8 @@ def get_viz_index_builders(
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     case_field_selector: es_utils.CaseFieldSelector,
+    consequence_builder: builders.ConsequenceBuilder,
+    observation_builder: builders.ObservationBuilder,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
     """
     Builds the index builders required for the viz export process.
@@ -169,13 +168,13 @@ def get_viz_index_builders(
         es_rdd_util: A utility for loading rdd objects from the elasticsearch cluster.
         case_field_selector: A utility for loading the required case fields for a given
             index or set of indices.
+        consequence_builder: The builder service for loading consequence data.
+        observation_builder: The builder service for loading observation data.
 
     Returns:
         A mapping of the build.IndexType to the builder which will build and then load
         the said index into es.
     """
-    consequence_builder = builders.ConsequenceBuilder()
-    observation_builder = builders.ObservationBuilder()
 
     return types.MappingProxyType(
         {
@@ -216,7 +215,7 @@ def get_viz_builders(
     Builds the exporters Builders object with the required builders for the viz process.
 
     Args:
-        config: The master configuration with all subconfigurations for builders and
+        config: The master configuration with all sub-configurations for builders and
             services.
         spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
@@ -234,8 +233,10 @@ def get_viz_builders(
     es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
     case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
+    consequence_builder = builders.ConsequenceBuilder()
+    observation_builder = builders.ObservationBuilder()
 
-    viz_input_builders = get_viz_input_builders(
+    viz_builders = _get_viz_builders(
         config_adapter,
         config.builders.viz,
         config.elasticsearch,
@@ -246,24 +247,32 @@ def get_viz_builders(
         es_rdd_util,
         doc_dataframe_util,
         case_field_selector,
+        config.build.index_types,
+        mappings_loader,
+        consequence_builder,
+        observation_builder,
     )
     viz_index_builders = get_viz_index_builders(
-        config_adapter, sql_context, es_dataframe_util, es_rdd_util, case_field_selector
+        config_adapter,
+        sql_context,
+        es_dataframe_util,
+        es_rdd_util,
+        case_field_selector,
+        consequence_builder,
+        observation_builder,
     )
 
-    return gdc_mutation_export.Builders(viz_input_builders, viz_index_builders)
+    return gdc_mutation_export.Builders(tuple(viz_builders), viz_index_builders)
 
 
-def get_ge_input_builders(
-    old_config: old_config.BaseConfig,
+def _get_ge_builders(
     config: gene_expression.GeneExpression,
-    sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
     es_dataframe_util: es_utils.DataFrameUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
-) -> Mapping[
-    build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
-]:
+    index_types: Container[build.IndexType],
+    mappings_loader: es_utils.MappingsLoader,
+) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the gene expression export process.
 
@@ -277,27 +286,24 @@ def get_ge_input_builders(
             elasticsearch to be used by the builders.
         doc_dataframe_util: A utility for reading document data from documents found in
             the indexd store.
+        index_types: A container of all required index types for this build.
+        mappings_loader: The mapping loader service for loading ES mappings.
 
     Returns:
-        A mapping of the build.DataFrame to the builder which will produce said data
-        frame.
+        An iterator of the Builder objects required for this build.
     """
-    return types.MappingProxyType(
-        {
-            build.DataFrame.GENE_MODEL: builders.GeneModelBuilder(
-                config.gene_model, spark_session
-            ),
-            build.DataFrame.PRIMARY_ALIQUOT: builders.GeneExpressionPrimaryAliquotBuilder(
-                config.primary_aliquot, spark_session, es_dataframe_util
-            ),
-            build.DataFrame.CASE: builders.GeneExpressionCaseInputBuilder(
-                config.case, spark_session
-            ),
-            build.DataFrame.EXPRESSION_VALUE: builders.GeneExpressionValueInputBuilder(
-                config.expression_value, spark_session, doc_dataframe_util
-            ),
-        }
+    input_builders = (
+        builders.GeneModelBuilder(config.gene_model, spark_session),
+        builders.GeneExpressionPrimaryAliquotBuilder(
+            config.primary_aliquot, spark_session, es_dataframe_util
+        ),
+        builders.GeneExpressionCaseInputBuilder(config.case, spark_session),
+        builders.GeneExpressionValueInputBuilder(
+            config.expression_value, spark_session, doc_dataframe_util
+        ),
     )
+
+    yield from input_builders
 
 
 def get_ge_index_builders(
@@ -334,7 +340,7 @@ def get_ge_builders(
     Builds the exporters Builders object with the required builders for the viz process.
 
     Args:
-        config: The master configuration with all subconfigurations for builders and
+        config: The master configuration with all sub-configurations for builders and
             services.
         spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
@@ -349,14 +355,18 @@ def get_ge_builders(
         config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+    mappings_loader = es_utils.MappingsLoader()
+
     return gdc_mutation_export.Builders(
-        get_ge_input_builders(
-            config_adapter,
-            config.builders.gene_expression,
-            sql_context,
-            spark_session,
-            es_dataframe_util,
-            doc_dataframe_util,
+        tuple(
+            _get_ge_builders(
+                config.builders.gene_expression,
+                spark_session,
+                es_dataframe_util,
+                doc_dataframe_util,
+                config.build.index_types,
+                mappings_loader,
+            )
         ),
         get_ge_index_builders(config_adapter, sql_context),
     )
@@ -375,17 +385,15 @@ def main():
         with get_es_client(
             config.elasticsearch.connection
         ) as es_client, initialize_spark() as spark_session:
-            if config.build.is_viz_build():
-                builders = get_viz_builders(config, spark_session, es_client)
-                exporter = gdc_mutation_export.VizExport(
-                    spark_session.sparkContext, config.build.index_types, builders
-                )
-            else:
-                builders = get_ge_builders(config, spark_session, es_client)
-                exporter = gdc_mutation_export.GEExport(
-                    spark_session.sparkContext, config.build.index_types, builders
-                )
+            builders = (
+                get_viz_builders(config, spark_session, es_client)
+                if config.build.is_viz_build()
+                else get_ge_builders(config, spark_session, es_client)
+            )
+            exporter = gdc_mutation_export.Exporter(
+                spark_session.sparkContext, config.build.index_types, builders
+            )
 
-            exporter.run_export()
+            exporter.run()
     except Exception as ex:
         logger.critical("Driver failed", exc_info=ex)
