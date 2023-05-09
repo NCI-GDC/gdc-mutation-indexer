@@ -39,7 +39,7 @@ def final_other_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def final_ssm_schema() -> types.StructType:
-    return schemas.Viz.Builders.DFBuilders.SSM.SSM.FINAL.load()
+    return schemas.Viz.Builders.DFBuilders.SSM.FINAL.load()
 
 
 class TestGetSSMDataFrame:
