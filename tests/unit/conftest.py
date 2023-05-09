@@ -1,9 +1,15 @@
+import dataclasses
 import os
-from typing import Generator
+from collections.abc import Generator, Iterable
+from typing import Any
 
+import pyspark
 import pytest
 import yaml
 from pyspark import sql
+from pyspark.sql import types
+
+from tests.unit import utils
 
 
 @pytest.fixture(scope="session")
@@ -21,6 +27,18 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         spark_session.sql("set spark.sql.caseSensitive=true")
 
         yield spark_session
+
+
+@pytest.fixture(scope="session")
+def create_dataframe(spark_session: sql.SparkSession) -> utils.CreateDataFrame:
+    def inner(data: Iterable[Any], schema: types.StructType) -> sql.DataFrame:
+        rdd: pyspark.RDD = spark_session.sparkContext.parallelize(
+            map(dataclasses.asdict, data)
+        )
+
+        return spark_session.createDataFrame(rdd, schema)
+
+    return inner
 
 
 @pytest.fixture(scope="session")

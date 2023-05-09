@@ -1,0 +1,51 @@
+fields:
+- &string_field
+  metadata: {}
+  name: ssm_id
+  nullable: true
+  type: string
+- <<: *string_field
+  name: chromosome
+- metadata: {}
+  name: cosmic_id
+  nullable: true
+  type:
+    containsNull: true
+    elementType: string
+    type: array
+- &integer_field
+  metadata: {}
+  name: end_position
+  nullable: true
+  type: integer
+- <<: *string_field
+  name: genomic_dna_change
+- <<: *string_field
+  name: mutation_subtype
+- <<: *string_field
+  name: mutation_type
+- <<: *string_field
+  name: ncbi_build
+- <<: *string_field
+  name: reference_allele
+- <<: *integer_field
+  name: start_position
+- <<: *string_field
+  name: tumor_allele
+- metadata: {}
+  name: clinical_annotations
+  nullable: true
+  type:
+    fields:
+    - metadata: {}
+      name: civic
+      nullable: false
+      type:
+        fields:
+        - <<: *string_field
+          name: gene_id
+        - <<: *string_field
+          name: variant_id
+        type: struct
+    type: struct
+type: struct

@@ -1,6 +1,5 @@
 import dataclasses
-from collections.abc import Set
-from typing import Tuple
+from collections.abc import Iterable, Set
 from unittest import mock
 
 import more_itertools
@@ -12,6 +11,7 @@ from typing_extensions import TypedDict
 
 import config
 from exports import builders, es_utils
+from tests.unit import utils
 from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -49,7 +49,7 @@ def assert_maf_translated(result_gene: sql.Row, maf: models.MAF) -> None:
     assert result_gene.symbol == maf.symbol
     assert result_gene.is_cancer_gene_census == maf.is_cancer_gene_census
     assert result_ssm.chromosome == maf.chromosome
-    assert result_ssm.cosmic_id == maf.cosmic_id
+    assert tuple(result_ssm.cosmic_id) == maf.cosmic_id
     assert result_ssm.end_position == maf.end_position
     assert result_ssm.genomic_dna_change == maf.genomic_dna_change
     assert result_ssm.mutation_subtype == maf.mutation_subtype
@@ -99,7 +99,7 @@ def cnv_observation_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def ssm_consequence_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.FINAL.load()
+    return schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
 
 
 @pytest.fixture(scope="class")
@@ -112,6 +112,7 @@ class TestCaseCentricBuilder:
     def initialize_fixtures(
         self,
         spark_session: sql.SparkSession,
+        create_dataframe: utils.CreateDataFrame,
         maf_metadata_schema: types.StructType,
         maf_schema: types.StructType,
         ascat_schema: types.StructType,
@@ -123,6 +124,7 @@ class TestCaseCentricBuilder:
         final_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
+        self.create_dataframe = create_dataframe
         self.maf_metadata_schema = maf_metadata_schema
         self.maf_schema = maf_schema
         self.ascat_schema = ascat_schema
@@ -149,16 +151,16 @@ class TestCaseCentricBuilder:
         return sql_context
 
     def arrange_dataframe_util(
-        self, cases: Tuple[case.Case, ...] = (case.Case(),)
+        self, cases: Iterable[case.Case] = (case.Case(),)
     ) -> es_utils.DataFrameUtil:
-        case_df = self.spark_session.createDataFrame(cases, schema=self.case_schema)
+        case_df = self.create_dataframe(cases, self.case_schema)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         dataframe_util.read.return_value = case_df
 
         return dataframe_util
 
     def arrange_rdd_util(
-        self, cases: Tuple[sample.Hit, ...] = (sample.Hit(),)
+        self, cases: Iterable[sample.Hit] = (sample.Hit(),)
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
@@ -179,14 +181,14 @@ class TestCaseCentricBuilder:
 
     def arrange_observation_builder(
         self,
-        ssm_observations: Tuple[ssm.Observations, ...] = (ssm.Observations(),),
-        cnv_observations: Tuple[cnv.Observations, ...] = (cnv.Observations(),),
+        ssm_observations: Iterable[ssm.Observations] = (ssm.Observations(),),
+        cnv_observations: Iterable[cnv.Observations] = (cnv.Observations(),),
     ) -> builders.ObservationBuilder:
-        ssm_observation_df = self.spark_session.createDataFrame(
+        ssm_observation_df = self.create_dataframe(
             ssm_observations, self.ssm_observation_schema
         )
         build_for_ssm = mock.MagicMock(return_value=ssm_observation_df)
-        cnv_observation_df = self.spark_session.createDataFrame(
+        cnv_observation_df = self.create_dataframe(
             cnv_observations, self.cnv_observation_schema
         )
         build_for_cnv = mock.MagicMock(return_value=cnv_observation_df)
@@ -198,10 +200,10 @@ class TestCaseCentricBuilder:
         )
 
     def arrange_consequence_builder(
-        self, consequences: Tuple[ssm.Consequences, ...] = (ssm.Consequences(),)
+        self, consequences: Iterable[ssm.Consequences] = (ssm.Consequences(),)
     ) -> builders.ConsequenceBuilder:
-        consequence_df = self.spark_session.createDataFrame(
-            consequences, schema=self.ssm_consequence_schema
+        consequence_df = self.create_dataframe(
+            consequences, self.ssm_consequence_schema
         )
         build_for_ssm = mock.MagicMock(return_value=consequence_df)
 
@@ -211,20 +213,16 @@ class TestCaseCentricBuilder:
 
     def arrange_inputs(
         self,
-        maf_metadata: Tuple[models.MAFMetadata, ...] = (models.MAFMetadata(),),
-        mafs: Tuple[models.MAF, ...] = (models.MAF(),),
-        ascats: Tuple[models.ASCAT, ...] = (models.ASCAT(),),
-        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
-            models.PrimaryAliquot(),
-        ),
+        maf_metadata: Iterable[models.MAFMetadata] = (models.MAFMetadata(),),
+        mafs: Iterable[models.MAF] = (models.MAF(),),
+        ascats: Iterable[models.ASCAT] = (models.ASCAT(),),
+        primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
     ) -> Inputs:
-        maf_metadata_df = self.spark_session.createDataFrame(
-            maf_metadata, schema=self.maf_metadata_schema
-        )
-        maf_df = self.spark_session.createDataFrame(mafs, schema=self.maf_schema)
-        ascat_df = self.spark_session.createDataFrame(ascats, schema=self.ascat_schema)
-        primary_aliquot_df = self.spark_session.createDataFrame(
-            primary_aliquots, schema=self.primary_aliquot_schema
+        maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
+        maf_df = self.create_dataframe(mafs, self.maf_schema)
+        ascat_df = self.create_dataframe(ascats, self.ascat_schema)
+        primary_aliquot_df = self.create_dataframe(
+            primary_aliquots, self.primary_aliquot_schema
         )
 
         return Inputs(

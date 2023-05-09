@@ -79,14 +79,20 @@ class Viz:
 
         @_init_schemas
         class Consequence:
-            FINAL: Schema
-
             @_init_schemas
-            class AAChange:
+            class SSM:
                 FINAL: Schema
 
+                @_init_schemas
+                class WithoutAAChange:
+                    FINAL: Schema
+
+                @_init_schemas
+                class WithoutGene:
+                    FINAL: Schema
+
             @_init_schemas
-            class Gene:
+            class CNV:
                 FINAL: Schema
 
         @_init_schemas
@@ -117,6 +123,31 @@ class Viz:
         class PrimaryAliquot:
             FINAL: Schema
             FILE: Schema
+
+        class DFBuilders:
+            @_init_schemas
+            class SSM:
+                FINAL: Schema
+
+                @_init_schemas
+                class Occurrence:
+                    FINAL: Schema
+
+                @_init_schemas
+                class Other:
+                    FINAL: Schema
+
+            @_init_schemas
+            class CNV:
+                FINAL: Schema
+
+                @_init_schemas
+                class Occurrence:
+                    FINAL: Schema
+
+                @_init_schemas
+                class Other:
+                    FINAL: Schema
 
 
 class GeneExpression:

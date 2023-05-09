@@ -1,11 +1,22 @@
 import decimal
 import uuid
-from typing import Any, Optional, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Optional, Protocol, Union
 from unittest import mock
+
+from pyspark import sql
+from pyspark.sql import types
 
 from exports import es_utils
 
 DECIMAL_CONTEXT = decimal.Context(prec=10)
+
+
+class DataClass(Protocol):
+    __dataclass_fields__: Any
+
+
+CreateDataFrame = Callable[[Iterable[DataClass], types.StructType], sql.DataFrame]
 
 
 def generate_uuid5(*args: Any) -> str:
