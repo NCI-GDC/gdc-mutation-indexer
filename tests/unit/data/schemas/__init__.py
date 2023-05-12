@@ -149,6 +149,14 @@ class Viz:
                 class Other:
                     FINAL: Schema
 
+        @_init_schemas
+        class SSMCentric:
+            FINAL: Schema
+
+        @_init_schemas
+        class SSMOccurrenceCentric:
+            FINAL: Schema
+
 
 class GeneExpression:
     class Builders:

@@ -59,3 +59,24 @@ def arrange_empty_mappings_loader() -> es_utils.MappingsLoader:
     loader.load_mappings.return_value = {}
 
     return loader
+
+
+def row_to_dict(row: sql.Row) -> dict:
+    data = row.asDict()
+
+    for key, value in data.items():
+        if isinstance(value, list):
+            if any(isinstance(i, sql.Row) for i in value):
+                value = (row_to_dict(i) for i in value)
+            
+            data[key] = tuple(value)
+
+        elif isinstance(value, sql.Row):
+            data[key] = row_to_dict(value)
+
+        else:
+            data[key] = value
+
+    return data
+
+

@@ -63,10 +63,8 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self.log("Joining ssm with case")
         ssm_occurrence_centric = (
             ssm_cons.join(case_obs_df, on=["case_id", "ssm_id"], how="inner")
-            .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
-            .drop("case_id")
-            .drop("ssm_id")
-            .drop("occurrence_id")
+            .withColumnRenamed("occurrence_id", "ssm_occurrence_id")
+            .drop("case_id", "ssm_id")
         )
         self.log_count(ssm_occurrence_centric)
 
@@ -95,9 +93,7 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         ssm_cons = ssm_df.select(
             "ssm_id",
             "case_id",
-            F.struct(
-                "consequence", *ssm_df.drop("consequence").drop("case_id").columns
-            ).alias("ssm"),
+            F.struct("*").dropFields("case_id").alias("ssm"),
         )
         self.log_count(ssm_cons)
 
@@ -122,7 +118,7 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
             "case_id",
             "ssm_id",
             "occurrence_id",
-            F.struct("observation", *case_df.columns).alias("case"),
+            F.struct("*").dropFields("ssm_id", "occurrence_id").alias("case"),
         )
         self.log_count(case_obs_df)
 
