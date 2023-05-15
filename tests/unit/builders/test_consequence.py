@@ -1,6 +1,7 @@
 import dataclasses
 import decimal
-from typing import Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Optional
 
 import more_itertools
 import pytest
@@ -49,51 +50,67 @@ class AllEffects:
 
 
 @pytest.fixture(scope="class")
+def ascat_schema() -> types.StructType:
+    return schemas.Viz.Builders.ASCAT.FINAL.load()
+
+
+@pytest.fixture(scope="class")
 def maf_schema() -> types.StructType:
     return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 @pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.FINAL.load()
+def final_ssm_schema() -> types.StructType:
+    return schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_genes_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.Gene.FINAL.load()
+    return schemas.Viz.Builders.Consequence.SSM.WithoutAAChange.FINAL.load()
 
 
 @pytest.fixture(scope="class")
 def final_with_aa_change_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.AAChange.FINAL.load()
+    return schemas.Viz.Builders.Consequence.SSM.FINAL.load()
+
+
+@pytest.fixture(scope="class")
+def final_cnv_schema() -> types.StructType:
+    return schemas.Viz.Builders.Consequence.CNV.FINAL.load()
 
 
 class TestConsequenceBuilder:
     @pytest.fixture(autouse=True)
     def initialize_fixtures(
         self,
-        spark_session: sql.SparkSession,
+        create_dataframe: utils.CreateDataFrame,
+        ascat_schema: types.StructType,
         maf_schema: types.StructType,
-        final_schema: types.StructType,
+        final_ssm_schema: types.StructType,
         final_with_genes_schema: types.StructType,
         final_with_aa_change_schema: types.StructType,
+        final_cnv_schema: types.StructType,
     ) -> None:
-        self.spark_session = spark_session
+        self.create_dataframe = create_dataframe
+        self.ascat_schema = ascat_schema
         self.maf_schema = maf_schema
-        self.final_schemas = {
-            "case_centric": final_schema,
-            "gene_centric": final_schema,
+        self.final_ssm_schemas = {
+            "case_centric": final_ssm_schema,
+            "gene_centric": final_ssm_schema,
             "ssm_centric": final_with_aa_change_schema,
             "ssm_occurrence_centric": final_with_genes_schema,
         }
+        self.final_cnv_schema = final_cnv_schema
+
+    def arrange_ascat_df(
+        self, ascats: Iterable[models.ASCAT] = (models.ASCAT(),)
+    ) -> sql.DataFrame:
+        return self.create_dataframe(ascats, self.ascat_schema)
 
     def arrange_maf_df(
-        self, mafs: Tuple[models.MAF, ...] = (models.MAF(),)
+        self, mafs: Iterable[models.MAF] = (models.MAF(),)
     ) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(
-            mafs,  # type: ignore
-            schema=self.maf_schema,
-        )
+        return self.create_dataframe(mafs, self.maf_schema)
 
     @pytest.mark.parametrize(
         ("index_name", "join_gene", "add_gene_aa_change"),
@@ -117,7 +134,7 @@ class TestConsequenceBuilder:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schemas[index_name]
+        assert result_df.schema == self.final_ssm_schemas[index_name]
 
     def test__build_for_ssm__data_translated(self) -> None:
         all_effects = AllEffects(
@@ -173,7 +190,9 @@ class TestConsequenceBuilder:
         assert result_annotation.hgvsp == maf.hgvsp
         assert result_annotation.hgvsp_short == maf.hgvsp_short
         assert result_annotation.polyphen_impact != maf.polyphen_impact
-        utils.assert_float_not_equal(result_annotation.polyphen_score, maf.polyphen_score)
+        utils.assert_float_not_equal(
+            result_annotation.polyphen_score, maf.polyphen_score
+        )
         assert result_annotation.protein_position == maf.protein_position
         assert result_annotation.pubmed == maf.pubmed
         assert result_annotation.sift_impact != maf.sift_impact
@@ -482,7 +501,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__gene_aa_change_all_effects(
-        self, aa_changes: Iterable[Optional[str]], expected_output: List[str]
+        self, aa_changes: Iterable[Optional[str]], expected_output: list[str]
     ) -> None:
         all_effects = ";".join(
             str(AllEffects(do_not_use="gene", aa_change=c)) for c in aa_changes
@@ -495,3 +514,27 @@ class TestConsequenceBuilder:
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.gene_aa_change == expected_output
+
+    @pytest.mark.parametrize("index_name", ("cnv_centric", "cnv_occurrence_centric"))
+    def test__build_for_cnv__gene_data_generated(self, index_name: str) -> None:
+        ascat = models.ASCAT()
+        ascat_df = self.arrange_ascat_df((ascat,))
+        builder = builders.ConsequenceBuilder()
+
+        result_df = builder.build_for_cnv(ascat_df, index_name)
+
+        assert result_df.count() == 1
+        assert result_df.schema == self.final_cnv_schema
+
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.cnv_id == ascat.cnv_id
+
+        result_consequence = more_itertools.one(result_row.consequence)
+        assert result_consequence.consequence_id == ascat.consequence_id
+        assert result_consequence.gene.biotype == ascat.biotype
+        assert result_consequence.gene.gene_id == ascat.gene_id
+        assert (
+            result_consequence.gene.is_cancer_gene_census == ascat.is_cancer_gene_census
+        )
+        assert result_consequence.gene.symbol == ascat.symbol

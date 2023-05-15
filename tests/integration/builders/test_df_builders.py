@@ -1,4 +1,5 @@
-from typing import AbstractSet, Any, Iterable
+from collections.abc import Iterable, Set
+from typing import Any
 
 import pytest
 from pyspark import sql
@@ -7,9 +8,7 @@ from pyspark.sql import functions as F
 from exports.builders import df_builders, utils
 
 
-def is_sub(
-    subset: dict, superset: Iterable[Any], mapping: dict
-) -> bool:
+def is_sub(subset: dict, superset: Iterable[Any], mapping: dict) -> bool:
     result = True
     for item in subset.items():
         (key, val) = item
@@ -36,7 +35,7 @@ def assert_from_df(
     assert is_sub(item, filtered_dict.items(), mapping)
 
 
-def get_must_have_keys(keys: Iterable[str]) -> AbstractSet[str]:
+def get_must_have_keys(keys: Iterable[str]) -> Set[str]:
     stopwords = ("copy_to", "_autocomplete", "gene_aa_change")
 
     return frozenset(k for k in keys if all(s not in k for s in stopwords))
@@ -98,60 +97,6 @@ def test__get_annotation_df__add_fields(
     maf_df: sql.DataFrame,
 ) -> None:
     df = df_builders.get_annotation_df(maf_df, "case_centric", add_fields=["case_id"])
-
-    assert "case_id" in df.columns
-
-
-## CNV
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "cnv_centric", "cnv_occurrence_centric"),
-)
-def test__get_cnv_df__simple_df(cnv_df: sql.DataFrame, index_type: str) -> None:
-    # the input_df has entries with duplicated id but different values
-    input_df = cnv_df.drop_duplicates(subset=["cnv_id"])
-
-    df = df_builders.get_cnv_df(input_df, index_type)
-    mapping = utils.select_mapping(index_type, "cnv")["properties"]
-
-    # Do not check for unwanted keys
-    must_have_keys = get_must_have_keys(mapping.keys())
-
-    # make sure all required keys exist
-    assert frozenset(df.columns) == must_have_keys
-
-    # make sure that values came from input_df
-    assert_from_df(input_df, df.first(), "cnv_id", mapping=mapping)
-
-
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "cnv_centric", "cnv_occurrence_centric"),
-)
-def test__get_cnv_df__drop_fields(cnv_df: sql.DataFrame, index_type: str) -> None:
-    fields_to_delete = ("cnv_id", "cnv_change")
-
-    df = df_builders.get_cnv_df(cnv_df, index_type, drop_fields=fields_to_delete)
-
-    assert all(f not in df.columns for f in fields_to_delete)
-
-
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "cnv_centric", "cnv_occurrence_centric"),
-)
-def test__get_cnv_df__unique_fields(cnv_df: sql.DataFrame, index_type: str) -> None:
-    unique_fields = ("chromosome", "cnv_change")
-    df = df_builders.get_cnv_df(cnv_df, index_type, unique_fields=None)
-    df_unique = df_builders.get_cnv_df(cnv_df, index_type, unique_fields=unique_fields)
-
-    assert df_unique.count() == (df.select(*unique_fields).distinct().count())
-
-
-def test__get_cnv_df__add_fields(
-    cnv_df: sql.DataFrame,
-) -> None:
-    df = df_builders.get_cnv_df(cnv_df, "case_centric", add_fields=["case_id"])
 
     assert "case_id" in df.columns
 
@@ -255,60 +200,6 @@ def test__get_gene_df__add_fields(
     maf_df: sql.DataFrame,
 ) -> None:
     df = df_builders.get_gene_df(maf_df, "case_centric", add_fields=["case_id"])
-
-    assert "case_id" in df.columns
-
-
-## SSM
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
-)
-def test__get_ssm_df__simple_df(maf_df: sql.DataFrame, index_type: str) -> None:
-    # the input_df has entries with duplicated id but different values
-    input_df = maf_df.drop_duplicates(subset=["ssm_id"])
-
-    df = df_builders.get_ssm_df(input_df, index_type)
-    mapping = utils.select_mapping(index_type, "ssm")["properties"]
-
-    # Do not check for unwanted keys
-    must_have_keys = get_must_have_keys(mapping.keys())
-
-    # make sure all required keys exist
-    assert frozenset(df.columns) == must_have_keys
-
-    # make sure that values came from input_df
-    assert_from_df(input_df, df.first(), "ssm_id", mapping=mapping)
-
-
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
-)
-def test__get_ssm_df__drop_fields(maf_df: sql.DataFrame, index_type: str) -> None:
-    fields_to_delete = ("ssm_id", "mutation_subtype")
-
-    df = df_builders.get_ssm_df(maf_df, index_type, drop_fields=fields_to_delete)
-
-    assert all(f not in df.columns for f in fields_to_delete)
-
-
-@pytest.mark.parametrize(
-    "index_type",
-    ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
-)
-def test__get_ssm_df__unique_fields(maf_df: sql.DataFrame, index_type: str) -> None:
-    unique_fields = ("chromosome",)
-    df = df_builders.get_ssm_df(maf_df, index_type, unique_fields=None)
-    df_unique = df_builders.get_ssm_df(maf_df, index_type, unique_fields=unique_fields)
-
-    assert df_unique.count() == (df.select(*unique_fields).distinct().count())
-
-
-def test__get_ssm_df__add_fields(
-    maf_df: sql.DataFrame,
-) -> None:
-    df = df_builders.get_ssm_df(maf_df, "case_centric", add_fields=["case_id"])
 
     assert "case_id" in df.columns
 

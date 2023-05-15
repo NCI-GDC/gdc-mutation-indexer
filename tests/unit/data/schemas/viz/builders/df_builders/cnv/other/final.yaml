@@ -1,0 +1,55 @@
+fields:
+- &string_field
+  metadata: {}
+  name: cnv_id
+  nullable: true
+  type: string
+- <<: *string_field
+  name: case_id
+- <<: *string_field
+  name: gene_id
+- <<: *string_field
+  name: chromosome
+- <<: *string_field
+  name: cnv_change
+- &long_field
+  metadata: {}
+  name: end_position
+  nullable: true
+  type: long
+- metadata: {}
+  name: gene_level_cn
+  nullable: false
+  type: boolean
+- metadata: {}
+  name: ncbi_build
+  nullable: false
+  type: string
+- <<: *long_field
+  name: start_position
+- metadata: {}
+  name: observation
+  nullable: true
+  type:
+    containsNull: false
+    elementType:
+      fields:
+      - <<: *string_field
+        name: observation_id
+      - metadata: {}
+        name: variant_calling
+        nullable: false
+        type:
+          fields:
+          - metadata: {}
+            name: variant_caller
+            nullable: false
+            type: string
+          type: struct
+      - metadata: {}
+        name: variant_status
+        nullable: false
+        type: string
+      type: struct
+    type: array
+type: struct
