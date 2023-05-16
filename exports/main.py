@@ -305,30 +305,10 @@ def _get_ge_builders(
 
     yield from input_builders
 
-
-def get_ge_index_builders(
-    old_config: old_config.BaseConfig,
-    sql_context: sql.SQLContext,
-) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
-    """
-    Builds the index builders required for the gene expression export process.
-
-    Args:
-        old_config: The old god configuration object with all of the configuration
-            values needed to run any and all builders.
-        sql_context: The SQLContext for the current spark run.
-
-    Returns:
-        A mapping of the build.IndexType to the builder which will build and then load
-        the said index into es.
-    """
-    return types.MappingProxyType(
-        {
-            build.IndexType.GENE_EXPRESSION: builders.GeneExpressionBuilder(
-                old_config, sql_context
-            )
-        }
-    )
+    if build.IndexType.GENE_EXPRESSION in index_types:
+        yield builders.GeneExpressionBuilder(
+            config.gene_expression, spark_session, es_dataframe_util, mappings_loader
+        )
 
 
 def get_ge_builders(
@@ -349,7 +329,6 @@ def get_ge_builders(
         The Builders object to used by the export process.
     """
     indexd = get_index_client(config.indexd)
-    config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     es_dataframe_util = es_utils.DataFrameUtil(
         config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
@@ -368,7 +347,7 @@ def get_ge_builders(
                 mappings_loader,
             )
         ),
-        get_ge_index_builders(config_adapter, sql_context),
+        {},
     )
 
 

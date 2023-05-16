@@ -73,8 +73,10 @@ def test__get_viz_builders__all_builders() -> None:
 
 
 def test__get_ge_builders__all_builders() -> None:
+    config = mock.MagicMock()
+    config.build.index_types = (build.IndexType.GENE_EXPRESSION,)
     ge_builders = main.get_ge_builders(
-        mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
+        config, mock.MagicMock(), mock.MagicMock()
     )
     generic_builders = {b.output: b for b in ge_builders.builders}
 
@@ -84,6 +86,7 @@ def test__get_ge_builders__all_builders() -> None:
             build.DataFrame.EXPRESSION_VALUE,
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.GENE_EXPRESSION
         )
     )
     assert isinstance(
@@ -106,11 +109,17 @@ def test__get_ge_builders__all_builders() -> None:
         generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
     )
-
-    assert ge_builders.index_builders.keys() == frozenset(
-        (build.IndexType.GENE_EXPRESSION,)
-    )
     assert isinstance(
-        ge_builders.index_builders[build.IndexType.GENE_EXPRESSION],
-        builders.GeneExpressionBuilder,
+        generic_builders[build.DataFrame.GENE_EXPRESSION],
+        builders.GeneExpressionBuilder
     )
+
+def test__get_ge_builders__excludes() -> None:
+    config = mock.MagicMock()
+    config.build.index_types = ()
+    ge_builders = main.get_ge_builders(
+        config, mock.MagicMock(), mock.MagicMock()
+    )
+    generic_builders = frozenset(ge_builders.builders)
+
+    assert build.DataFrame.GENE_EXPRESSION not in generic_builders

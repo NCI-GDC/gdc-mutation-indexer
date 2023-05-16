@@ -1,12 +1,11 @@
-from typing import Iterable, List, Optional, Sequence
+from collections.abc import Iterable, Sequence
+from typing import List, TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self, TypedDict
 
-import config
 from exports import es_utils, indexd_utils, schemas
-from exports.builders import base_builder, base_input_builder, bases
+from exports.builders import bases
 from exports.configuration.builders import gene_expression
 from exports.constants import build
 
@@ -161,7 +160,7 @@ class ExpressionValueBuilder(
         Returns:
             a data frame of expression values associated with the file containing them
 
-            gene_espression_value {}
+            gene_expression_value {}
             |---file_id
             +---genes [{}]
                 |---expression_value
@@ -191,7 +190,7 @@ class ExpressionValueBuilder(
         self, primary_aliquot_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
-        Load the gene espression data from the files referenced in the primary aliqout df
+        Load the gene expression data from the files referenced in the primary aliquot df
 
         Args:
             primary_aliquot_df: The dataframe of primary aliquot data for all
@@ -286,28 +285,35 @@ class CaseBuilder(bases.InputBuilder[gene_expression.Builder, CaseInputs]):
         )
 
 
-class GeneExpressionBuilder(base_builder.BaseBuilder):
+class GeneExpressionInputs(TypedDict):
+    case_df: sql.DataFrame
+    expression_value_df: sql.DataFrame
+
+
+class GeneExpressionBuilder(
+    bases.IndexBuilder[gene_expression.IndexBuilder, GeneExpressionInputs]
+):
     """
     A builder class for loading gene expression data.
     """
 
-    index_name = "gene_expression"
-    # NOTE: We might need a synthetic ID here, when we add support for Aliquot
-    #   level gene expressions
-    id_field = "case_id"
-
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext):
-        super().__init__(config, sqlContext)
-
-        self.gene_expression: Optional[sql.DataFrame] = None
-        self.gene_expression_backup = "neither"
-
-    def build(
+    def __init__(
         self,
-        case_df: sql.DataFrame,
-        expression_value_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> Self:
+        config: gene_expression.IndexBuilder,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        mappings_loader: es_utils.MappingsLoader,
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            input_type=GeneExpressionInputs,
+            output=build.DataFrame.GENE_EXPRESSION,
+        )
+
+    def _build_from_scratch(self, input_dfs: GeneExpressionInputs) -> sql.DataFrame:
         """
         Combines the ge case data and the ge expression value data based on the
         file they are associated with.
@@ -334,10 +340,10 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
             |---submitter_id
             +---vital_status
         """
+        case_df = input_dfs["case_df"]
+        expression_value_df = input_dfs["expression_value_df"]
 
-        # NOTE: the default join strategy is 'inner', so any extra cases/expression
-        #   values will be dropped, which is expected
-        self.gene_expression = case_df.join(expression_value_df, "file_id").select(
+        return case_df.join(expression_value_df, on="file_id", how="inner").select(
             "age_at_diagnosis",
             "case_id",
             "days_to_death",
@@ -349,5 +355,3 @@ class GeneExpressionBuilder(base_builder.BaseBuilder):
             "submitter_id",
             "vital_status",
         )
-
-        return self
