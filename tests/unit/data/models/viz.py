@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Iterable, Optional
+from typing import Optional
 
 from tests.unit.data.models.builders import *
 

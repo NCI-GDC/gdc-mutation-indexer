@@ -8,8 +8,9 @@ def test__get_viz_builders__all_builders() -> None:
     viz_builders = main.get_viz_builders(
         mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
     )
+    generic_builders = {b.output: b for b in viz_builders.builders}
 
-    assert viz_builders.input_builders.keys() == frozenset(
+    assert generic_builders.keys() == frozenset(
         (
             build.DataFrame.ASCAT,
             build.DataFrame.CASE,
@@ -19,25 +20,19 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.PRIMARY_ALIQUOT,
         )
     )
+    assert isinstance(generic_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
+    assert isinstance(generic_builders[build.DataFrame.CASE], builders.CaseBuilder)
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.ASCAT], builders.ASCATBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.CASE], builders.CaseBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.GENE_MODEL],
+        generic_builders[build.DataFrame.GENE_MODEL],
         builders.GeneModelBuilder,
     )
+    assert isinstance(generic_builders[build.DataFrame.MAF], builders.MAFBuilder)
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.MAF], builders.MAFBuilder
-    )
-    assert isinstance(
-        viz_builders.input_builders[build.DataFrame.MAF_METADATA],
+        generic_builders[build.DataFrame.MAF_METADATA],
         builders.MAFMetadataBuilder,
     )
     assert isinstance(
-        viz_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.PrimaryAliquotBuilder,
     )
 
@@ -78,43 +73,53 @@ def test__get_viz_builders__all_builders() -> None:
 
 
 def test__get_ge_builders__all_builders() -> None:
+    config = mock.MagicMock()
+    config.build.index_types = (build.IndexType.GENE_EXPRESSION,)
     ge_builders = main.get_ge_builders(
-        mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
+        config, mock.MagicMock(), mock.MagicMock()
     )
+    generic_builders = {b.output: b for b in ge_builders.builders}
 
-    assert ge_builders.input_builders.keys() == frozenset(
+    assert generic_builders.keys() == frozenset(
         (
             build.DataFrame.CASE,
             build.DataFrame.EXPRESSION_VALUE,
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.GENE_EXPRESSION
         )
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.CASE],
+        generic_builders[build.DataFrame.CASE],
         builders.GeneExpressionCaseInputBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.EXPRESSION_VALUE],
+        generic_builders[build.DataFrame.EXPRESSION_VALUE],
         builders.GeneExpressionValueInputBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.GENE_MODEL],
+        generic_builders[build.DataFrame.GENE_MODEL],
         builders.GeneModelBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
     )
     assert isinstance(
-        ge_builders.input_builders[build.DataFrame.PRIMARY_ALIQUOT],
+        generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.GENE_EXPRESSION],
+        builders.GeneExpressionBuilder
     )
 
-    assert ge_builders.index_builders.keys() == frozenset(
-        (build.IndexType.GENE_EXPRESSION,)
+def test__get_ge_builders__excludes() -> None:
+    config = mock.MagicMock()
+    config.build.index_types = ()
+    ge_builders = main.get_ge_builders(
+        config, mock.MagicMock(), mock.MagicMock()
     )
-    assert isinstance(
-        ge_builders.index_builders[build.IndexType.GENE_EXPRESSION],
-        builders.GeneExpressionBuilder,
-    )
+    generic_builders = frozenset(ge_builders.builders)
+
+    assert build.DataFrame.GENE_EXPRESSION not in generic_builders

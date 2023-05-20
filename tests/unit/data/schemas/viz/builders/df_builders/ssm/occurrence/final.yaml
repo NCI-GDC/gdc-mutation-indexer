@@ -226,4 +226,11 @@ fields:
           type: struct
       type: struct
     type: array
+- metadata: {}
+  name: gene_aa_change
+  nullable: true
+  type:
+    containsNull: true
+    elementType: string
+    type: array
 type: struct

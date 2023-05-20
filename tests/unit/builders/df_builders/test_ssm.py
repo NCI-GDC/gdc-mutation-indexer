@@ -141,9 +141,7 @@ class TestBuildSSMSubtree:
         maf = models.MAF()
         maf_df = self._arrange_maf_df((maf,))
         consequence_wrapper = models.SSMConsequence()
-        consequence_df = self._arrange_consequence_df(
-            (consequence_wrapper,), drop_aa_change=True
-        )
+        consequence_df = self._arrange_consequence_df((consequence_wrapper,))
 
         result_df = df_builders.build_ssm_subtree(
             maf_df, consequence_df, "ssm_occurrence_centric"
@@ -240,6 +238,11 @@ class TestBuildSSMSubtree:
             tuple(result_external_db_ids.uniprotkb_swissprot)
             == external_db_ids.uniprotkb_swissprot
         )
+
+        result_aa_change = result_row.gene_aa_change
+        aa_change = consequence_wrapper.gene_aa_change
+        assert result_aa_change and aa_change
+        assert tuple(result_aa_change) == aa_change
 
     @pytest.mark.parametrize("index_name", ("case_centric", "gene_centric"))
     def test__other(self, index_name: str) -> None:
