@@ -11,6 +11,8 @@ class DataFrame(enum.IntEnum):
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
+    SSM_CENTRIC = enum.auto()
+    SSM_OCCURRENCE_CENTRIC = enum.auto()
 
     def to_param(self) -> str:
         return f"{self.name}_df".lower()
