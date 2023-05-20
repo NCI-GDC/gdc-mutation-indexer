@@ -2,7 +2,8 @@ import functools
 import logging
 import re
 import uuid
-from typing import Any, Mapping
+from collections.abc import Set
+from typing import Any
 
 import pkg_resources
 import yaml
@@ -17,7 +18,7 @@ logging.basicConfig(format=config.LOG_FORMAT)
 logger = logging.getLogger("BaseBuilder")
 
 
-DEFAULT_EXCLUDE_FIELDS = {}  # type: Mapping[str, Any]
+DEFAULT_EXCLUDE_FIELDS = {}  # type: dict[str, dict[str, Set[str]]]
 
 
 def get_default_excludes(index, mapping):
@@ -33,73 +34,6 @@ def get_default_excludes(index, mapping):
         DEFAULT_EXCLUDE_FIELDS[k] = v
 
     return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
-
-
-def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele):
-    """
-    Create a label (genomic change) from an ssm based on its variant type:
-
-    :param chromosome: The chromosome where the mutation occurred
-    :param variant_type: The variant type (e.g., ``SNP``, ``DNP``, ``DEL``, ``INS``...)
-    :param start_pos: The starting position of the mutation
-    :param end_pos: The end position of the mutation
-    :param ref_allele: The reference allele
-    :param tumor_allele: The tumor allele
-    """
-    chromosome = chromosome.replace("chr", "")
-
-    if variant_type == "SNP":
-        label = "chr{}:g.{}{}>{}".format(
-            chromosome, start_pos, ref_allele, tumor_allele
-        )
-    elif variant_type in {"DNP", "TNP", "ONP"}:
-        label = "chr{}:g.{}_{}delins{}".format(
-            chromosome, start_pos, end_pos, tumor_allele
-        )
-    elif variant_type == "DEL":
-        label = "chr{}:g.{}del{}".format(chromosome, start_pos, ref_allele)
-    elif variant_type == "INS":
-        label = "chr{}:g.{}_{}ins{}".format(
-            chromosome, start_pos, end_pos, tumor_allele
-        )
-    else:
-        label = chromosome
-
-    return label
-
-
-def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
-    """Get an ES query clause for matching cases based on aliquot submitter IDs.
-
-    Optionally add a requirement that the cases be within certain projects.
-    """
-    aliquot_clause = {
-        "nested": {
-            "path": "samples.portions.analytes.aliquots",
-            "query": {
-                "terms": {
-                    "samples.portions.analytes.aliquots.submitter_id": submitter_ids
-                }
-            },
-        }
-    }
-
-    if project_ids:
-        return {
-            "bool": {
-                "must": [{"terms": {"project.project_id": project_ids}}, aliquot_clause]
-            }
-        }
-
-    return aliquot_clause
-
-
-def ssm_label_col(
-    chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele
-):
-    return F.udf(ssm_label, types.StringType())(
-        chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele
-    )
 
 
 def generate_uuid5(*values: Any) -> str:
@@ -147,7 +81,7 @@ def extract_impact(df, column, res_colname):
     impact = 'possibly_damaging'
     """
 
-    return df.withColumn(res_colname, F.regexp_extract(column, "(.*)\(.*\)$", 1))
+    return df.withColumn(res_colname, F.regexp_extract(column, r"(.*)\(.*\)$", 1))
 
 
 def extract_score(df, column, res_colname):
@@ -160,7 +94,7 @@ def extract_score(df, column, res_colname):
 
     return df.withColumn(
         res_colname,
-        F.regexp_extract(column, "(\w)\((\d*.?(\d?)*)\)$", 2).cast(types.DoubleType()),
+        F.regexp_extract(column, r"(\w)\((\d*.?(\d?)*)\)$", 2).cast(types.DoubleType()),
     )
 
 
@@ -411,7 +345,7 @@ def extract_aas_position(df):
     """
 
     def extract(aa_change, start=True):
-        match = re.findall(re.compile("(\d+)(?:\D+?)*(\d+)*(?:\D+)"), aa_change)
+        match = re.findall(re.compile(r"(\d+)(?:\D+?)*(\d+)*(?:\D+)"), aa_change)
         if match:
             aa_start, aa_end = match[0]
             if start or not aa_end:
