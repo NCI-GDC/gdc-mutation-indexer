@@ -1,13 +1,9 @@
-import logging
 from typing import Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import config
 from exports.builders import utils
-
-logging.basicConfig(format=config.LOG_FORMAT)
 
 
 class ObservationBuilder:
@@ -47,15 +43,19 @@ class ObservationBuilder:
             )
             .where(F.col("variant_caller") != F.lit("somaticsniper"))
         )
-        flat_obs_df = flat_obs_df.withColumn(
-            "observation_id",
-            utils.uuid5_col(
-                F.lit("ssm_observation"),
-                F.col("occurrence_id"),
-                F.col("tumor_sample_uuid"),
-                F.col("matched_norm_sample_uuid"),
-                F.col("variant_caller"),
-                F.lit("masked"),
+        flat_obs_df = utils.add_uuids(
+            flat_obs_df,
+            supplemental_columns={
+                "ssm_observation": F.lit("ssm_observation"),
+                "masked": F.lit("masked"),
+            },
+            observation_id=(
+                "ssm_observation",
+                "occurrence_id",
+                "tumor_sample_uuid",
+                "matched_norm_sample_uuid",
+                "variant_caller",
+                "masked",
             ),
         )
 

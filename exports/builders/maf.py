@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, Iterable, cast
+from collections.abc import Iterable
+from typing import TypedDict, cast
 
 import more_itertools
 import yaml
@@ -7,7 +8,6 @@ from pkg_resources import resource_filename
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
 
 from exports import indexd_utils, pyspark_extensions, schemas
 from exports.builders import bases, utils
@@ -61,31 +61,23 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
             MAF {}
             +---???
         """
-        gene_model_df = input_dfs["gene_model_df"]
+        gene_model_df = input_dfs["gene_model_df"].withColumnRenamed(
+            "_gene_id", "gene_id"
+        )
         maf_metadata_df = input_dfs["maf_metadata_df"]
 
         df = self._build_document_dataframe(maf_metadata_df)
-
         df = self.add_available_variation_data(df)
-        # Add label identifying the mutation
         df = self.add_genomic_dna_change(df)
-        # Add mutation_type
         df = self.add_mutation_type(df)
-        # Add mutation_subtype
         df = self.add_mutation_subtype(df)
-        # ssm_id from hashing unique columns in the maf
-        df = self.add_ssm_id(df)
-        # Create occurrence_id
-        df = self.add_occurrence_id(df)
-        # Get cds columns from cds_position
+        df = self._add_ids(df)
         df = self.extract_cds_position(df)
-        # Extract sift and polyphen columns
         df = utils.extract_sift_polyphen(df)
 
-        cols_to_drop = frozenset(gene_model_df.columns)
-        df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, "inner")
-        df = df.drop("_gene_id")
+        drop_columns = (c for c in gene_model_df.columns if c != "gene_id")
+        df = df.drop(*drop_columns)
+        df = df.join(gene_model_df, on="gene_id", how="inner")
         df = self.add_null(df)
         df = utils.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
@@ -154,7 +146,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         # ensure that we output columns in a consistent order.
         return df.select(*[standardize(k, v) for k, v in self.schema.items()])
 
-    def get_schema(self) -> Dict[str, Dict[str, str]]:
+    def get_schema(self) -> dict[str, dict[str, str]]:
         """
         Load the intended MAF schema from the local YAML file
         """
@@ -246,43 +238,37 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         """
         maf_df = df.withColumn(
             "normal_genotype",
-            F.struct(
-                utils.uuid5_col(
-                    F.col("match_norm_seq_allele1"), F.col("match_norm_seq_allele2")
-                ).alias("allele_id")
-            ),
+            F.struct(F.col("normal_genotype_allele_id").alias("allele_id")),
         )
-        return maf_df
 
-    def add_ssm_id(self, df: sql.DataFrame) -> sql.DataFrame:
+        return maf_df.drop("normal_genotype_allele_id")
+
+    def _add_ids(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Adds ssm_id column to the MAF dataframe
         """
-        maf_df = df.withColumn(
-            "ssm_id",
-            utils.uuid5_col(
-                F.lit("ssm"),
-                F.col("ncbi_build"),
-                F.col("chromosome"),
-                F.col("start_position"),
-                F.col("end_position"),
-                F.col("mutation_subtype"),
-                F.col("reference_allele"),
-                F.col("tumor_allele"),
+        return utils.add_uuids(
+            df,
+            supplemental_columns={
+                "ssm": F.lit("ssm"),
+                "ssm_occurrence": F.lit("ssm_occurrence"),
+            },
+            ssm_id=(
+                "ssm",
+                "ncbi_build",
+                "chromosome",
+                "start_position",
+                "end_position",
+                "mutation_subtype",
+                "reference_allele",
+                "tumor_allele",
+            ),
+            occurrence_id=("ssm_occurrence", "ssm_id", "case_id"),
+            normal_genotype_allele_id=(
+                "match_norm_seq_allele1",
+                "match_norm_seq_allele2",
             ),
         )
-        return maf_df
-
-    def add_occurrence_id(self, df: sql.DataFrame) -> sql.DataFrame:
-        """
-        Adds the occurrence_id, a uuid hash of:
-        'ssm_occurrence' + ssm_id + case_id
-        """
-        df = df.withColumn(
-            "occurrence_id",
-            utils.uuid5_col(F.lit("ssm_occurrence"), F.col("ssm_id"), F.col("case_id")),
-        )
-        return df
 
     def add_genomic_dna_change(self, df: sql.DataFrame) -> sql.DataFrame:
         """

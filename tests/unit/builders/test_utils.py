@@ -176,31 +176,3 @@ def test__ssm_label__extract(
     )
 
     assert label == expected_label
-
-
-@pytest.mark.parametrize(
-    ("inputs", "expected_uuid"),
-    (
-        (
-            ("ssm", "GRCh38", "chr4", "112382545", "112382545", "SNP", "A", "T"),
-            "3439eab1-0c63-50cd-bad7-1ae8ffa8aa01",
-        ),
-        (
-            (
-                "ssm_occurrence",
-                "642a6e7d-8b15-5f93-9e29-22c9649e9058",
-                "13afbde8-e5b5-4f3c-8a9d-daef71560005",
-            ),
-            "f4222c55-fea2-5b23-a204-482f33492800",
-        ),
-    ),
-)
-def test__generate_uuid5__fixed_output_for(
-    inputs: Tuple[Any, ...], expected_uuid: str
-) -> None:
-    """
-    Test uuid5 generation
-    """
-    result_uuid = utils.generate_uuid5(*inputs)
-
-    assert result_uuid == expected_uuid

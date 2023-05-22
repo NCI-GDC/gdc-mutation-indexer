@@ -1,8 +1,12 @@
+import collections
 import functools
+import graphlib
+import itertools
 import logging
 import re
 import uuid
-from typing import Any, Mapping
+from collections.abc import Container, Iterator, Mapping, Sequence
+from typing import Any, Optional
 
 import pkg_resources
 import yaml
@@ -100,43 +104,6 @@ def ssm_label_col(
     return F.udf(ssm_label, types.StringType())(
         chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele
     )
-
-
-def generate_uuid5(*values: Any) -> str:
-    """
-    From Junjun's indexer:
-    https://github.com/NCI-GDC/es-indexer/blob/d30cf9ef9a445c5bea441b9333ca4b8c2c2c33cb/es_indexer/dataframe/processor/uuid5_field.py#L6
-
-    Let's use uuid5 hash for distributed 'unique' ID generation.
-    This is sure not safe to. We should later switch to get ID
-    from some kind of central ID Service. One other benefit to
-    use ID service is that we can get short IDs
-    This is a UDF.
-    """
-    # first value is entity type, the rest are fields made up
-    # to a business key uniquely identifying an entity
-    return str(
-        uuid.uuid5(
-            uuid.NAMESPACE_DNS,
-            "\t".join([v if type(v) == str else str(v) for v in values]),
-        )
-    )
-
-
-def uuid5_col(*values):
-    return F.udf(generate_uuid5, types.StringType())(*values)
-
-
-def ssm_occurrence_uuid(namespace, ssm, case):
-    return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
-
-
-def ssm_occurrence_uuid_udf(namespace):
-    """
-    Wraps the ssm_uuid function in a spark udf and injects a given namespace
-    """
-    ssm_namespaced = functools.partial(ssm_occurrence_uuid, str(namespace))
-    return F.udf(ssm_namespaced, types.StringType())
 
 
 def extract_impact(df, column, res_colname):
@@ -512,3 +479,82 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
     )
 
     return transcripts_df.drop("canonical_transcript")
+
+
+def _generate_uuid5(*values: Any) -> str:
+    """
+    From Junjun's indexer:
+    https://github.com/NCI-GDC/es-indexer/blob/d30cf9ef9a445c5bea441b9333ca4b8c2c2c33cb/es_indexer/dataframe/processor/uuid5_field.py#L6
+
+    Let's use uuid5 hash for distributed 'unique' ID generation.
+    This is sure not safe to. We should later switch to get ID
+    from some kind of central ID Service. One other benefit to
+    use ID service is that we can get short IDs
+    This is a UDF.
+    """
+    # first value is entity type, the rest are fields made up
+    # to a business key uniquely identifying an entity
+    return str(
+        uuid.uuid5(
+            uuid.NAMESPACE_DNS,
+            "\t".join(str(value) for value in values),
+        )
+    )
+
+
+def _uuid_map_col(
+    columns: Container[str],
+    supplemental_columns: Mapping[str, sql.Column],
+    uuids: Mapping[str, Sequence[str]],
+) -> sql.Column:
+    input_names = tuple(
+        frozenset(itertools.chain.from_iterable(v for v in uuids.values()))
+        - uuids.keys()
+    )
+    uuids = collections.OrderedDict(
+        (name, uuids[name])
+        for name in graphlib.TopologicalSorter(uuids).static_order()
+        if name in uuids
+    )
+
+    @F.udf(returnType=types.MapType(types.StringType(), types.StringType()))
+    def generate_uuids(*input_values: Any) -> Mapping[str, str]:
+        inputs = dict(zip(input_names, input_values))
+        result_uuids: dict[str, str] = {}
+
+        for uuid_name, uuid_inputs in uuids.items():
+            values = tuple(
+                inputs[i] if i in inputs else result_uuids[i] for i in uuid_inputs
+            )
+            print(values)
+            result_uuids[uuid_name] = _generate_uuid5(*values)
+
+        return result_uuids
+
+    def extract_param_columns() -> Iterator[sql.Column]:
+        for name in input_names:
+            if name in supplemental_columns:
+                yield supplemental_columns[name]
+            elif name in columns:
+                yield F.col(name)
+            else:
+                raise ValueError(
+                    f"The input parameter {name} has no source in the data frame nor"
+                    "supplemental columns."
+                )
+
+    return generate_uuids(*extract_param_columns())
+
+
+def add_uuids(
+    df: sql.DataFrame,
+    *,
+    supplemental_columns: Optional[Mapping[str, sql.Column]] = None,
+    **uuids: Sequence[str],
+) -> sql.DataFrame:
+    columns = frozenset(df.columns)
+    supplemental_columns = supplemental_columns or {}
+    df = df.withColumn("_uuids", _uuid_map_col(columns, supplemental_columns, uuids))
+    df = df.withColumns({name: F.col("_uuids").getItem(name) for name in uuids.keys()})
+
+    return df.drop("_uuids")

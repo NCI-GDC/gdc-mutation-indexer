@@ -31,36 +31,6 @@ def test_ssm_occurrence_centric_path_exists(
     ssm_occurrence_centric_df.select(path)
 
 
-def test_consequences_per_ssm_occurrence(
-    ssm_transcript_df: sql.DataFrame, ssm_occurrence_centric_df: sql.DataFrame
-) -> None:
-    # Consequences per SSM Occurrence built:
-    df = ssm_occurrence_centric_df.select("ssm_occurrence_id", "ssm.ssm_id")
-    ssm_occ_to_ssm = join_utils.get_relationship_map(
-        df, ("ssm_occurrence_id", "ssm_id")
-    )
-
-    # SSM to SSM Occurrence expected:
-    df = (
-        ssm_transcript_df.withColumn(
-            "consequence_id",
-            utils.uuid5_col(
-                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
-            ),
-        )
-        .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
-        .select(
-            "ssm_occurrence_id", "ssm_id", "consequence_id", "transcript_id", "gene_id"
-        )
-    )
-
-    true_ssm_occ_to_ssm = join_utils.get_relationship_map(
-        df, ("ssm_occurrence_id", "ssm_id")
-    )
-
-    assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
-
-
 def test_observations_per_ssm_occurrence(
     maf_df: sql.DataFrame, ssm_occurrence_centric_df: sql.DataFrame
 ) -> None:

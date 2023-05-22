@@ -1,9 +1,11 @@
 fields:
   - &string_field
     metadata: {}
-    name: variant_caller
+    name: gene_id
     nullable: true
     type: string
+  - <<: *string_field
+    name: variant_caller
   - metadata: {}
     name: cosmic_id
     nullable: true
@@ -17,8 +19,6 @@ fields:
     name: dbsnp_val_status
   - <<: *string_field
     name: gene_chromosome
-  - <<: *string_field
-    name: gene_id
   - <<: *string_field
     name: ncbi_build
   - &integer_field

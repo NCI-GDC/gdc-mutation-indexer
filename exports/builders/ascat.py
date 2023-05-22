@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import elasticsearch
 from pyspark import sql
@@ -13,8 +14,6 @@ from exports.configuration import elasticsearch as es_config
 from exports.configuration.builders import viz
 from exports.constants import build
 
-UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
-
 logger = logging.getLogger(__name__)
 
 
@@ -22,83 +21,6 @@ def _strip_gene_id() -> sql.Column:
     gene_id = F.col("gene_id")
 
     return F.element_at(F.split(gene_id, r"\."), 1)
-
-
-@F.udf(returnType=UUIDS_STRUCT)
-def _generate_uuids(
-    chromosome: str,
-    start_position: int,
-    end_position: int,
-    cnv_change: int,
-    symbol: str,
-    gene_id: str,
-    is_cancer_gene_census: bool,
-    biotype: str,
-    case_id: str,
-    aliquot_id: str,
-) -> Dict[str, str]:
-    """Creates a uuid struct the following uuids (based on):
-        cnv_id (chromosome, start_position, end_position, copy_number)
-        consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
-        occurrence_id (cnv_id, case_id)
-        observation_id (cnv_id, case_id, aliquot_id)
-
-    Returns: UUIDS_STRUCT
-    """
-    cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, cnv_change)
-
-    return {
-        "cnv_id": cnv_id,
-        "consequence_id": utils.generate_uuid5(
-            symbol, gene_id, is_cancer_gene_census, biotype
-        ),
-        "occurrence_id": utils.generate_uuid5(cnv_id, case_id),
-        "observation_id": utils.generate_uuid5(cnv_id, case_id, aliquot_id),
-    }
-
-
-def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
-    """Adds the following uuids to the dataframe:
-        cnv_id
-        consequence_id
-        occurrence_id
-        observation_id
-    Which are created using the following columns from the input ascat_df:
-        gene_chromosome
-        start_position
-        end_position
-        copy_number
-        symbol
-        gene_id
-        is_cancer_gene_census
-        biotype
-        case_id
-        aliquot_id
-
-    Args:
-        ascat_df: The ascat dataframe with the documented columns present.
-
-    Returns:
-        Ascat data frame with the uuuids added.
-    """
-    uuids = _generate_uuids(
-        "gene_chromosome",
-        "start_position",
-        "end_position",
-        "cnv_change",
-        "symbol",
-        "gene_id",
-        "is_cancer_gene_census",
-        "biotype",
-        "case_id",
-        "aliquot_id",
-    )
-
-    ascat_df = ascat_df.withColumn(
-        "uuids", uuids
-    )  # This adds the uuids struct used below.
-
-    return ascat_df.select("*", "uuids.*")
 
 
 def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
@@ -184,7 +106,7 @@ class DocumentResolver:
         Return:
             A sequence of ASCAT file/document IDs.
         """
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "_source": ["file_id"],
             "query": {
                 "bool": {
@@ -424,7 +346,13 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             gene_model_df, on=["gene_id"]
         )
         ascat_df = utils.add_canonical_transcript_lengths(ascat_df)
-        ascat_df = _add_uuids(ascat_df)
+        ascat_df = utils.add_uuids(
+            ascat_df,
+            cnv_id=("chromosome", "start_position", "end_position", "cnv_change"),
+            consequence_id=("symbol", "gene_id", "is_cancer_gene_census", "biotype"),
+            occurrence_id=("cnv_id", "case_id"),
+            observation_id=("cnv_id", "case_id", "aliquot_id"),
+        )
 
         return ascat_df.select(
             "_id",

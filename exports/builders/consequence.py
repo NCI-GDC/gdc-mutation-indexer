@@ -37,7 +37,7 @@ class ConsequenceBuilder:
             join_gene: Whether or not to join the gene data to the consquence. SSM and
                 SSM Occurrence have gene under consequences, while Case and Gene do
                 not. Must be true if add_gene_aa_change is true
-            add_gene_aa_change: Adds the gene_aa_change field to the data if set to 
+            add_gene_aa_change: Adds the gene_aa_change field to the data if set to
                 True. Can only be set to True if join_gene is set to true also.
 
         Returns:
@@ -143,11 +143,10 @@ class ConsequenceBuilder:
         tran_with_ann = tran_with_ann.drop("gene_id", "empty")
 
         # Add consequence_id, a uuid from ssm_id and transcript_id
-        tran_df = tran_with_ann.withColumn(
-            "consequence_id",
-            utils.uuid5_col(
-                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
-            ),
+        tran_df = utils.add_uuids(
+            tran_with_ann,
+            consequence_id=("ssm_consequence", "ssm_id", "transcript_id"),
+            supplemental_columns={"ssm_consequence": F.lit("ssm_consequence")},
         )
         if add_gene_aa_change:
             tran_df = tran_df.withColumn(
