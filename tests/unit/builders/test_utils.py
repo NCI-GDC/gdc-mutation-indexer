@@ -1,5 +1,5 @@
 import random
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import more_itertools
 import pytest
