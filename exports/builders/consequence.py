@@ -44,7 +44,6 @@ def _extract_transactions(maf_df: sql.DataFrame) -> sql.DataFrame:
     ssm_transaction_df = maf_df.withColumn(
         "selected_transcript_id", F.col("transcript_id")
     )
-
     # Explode all_effects, to have each individual transcript data on a separate line
     # NOTE: after exploding, missing fields for secondary transcripts will be populated
     # with values from selected transcript (top level columns)
@@ -57,13 +56,9 @@ def _extract_transactions(maf_df: sql.DataFrame) -> sql.DataFrame:
             F.split(all_effects, ":")
         ),
     )
-    ssm_transaction_df = ssm_transaction_df.withColumn(
-        "all_effects",
-        F.map_from_arrays(F.array(*(F.lit(k) for k in ALL_EFFECTS_KEYS)), all_effects),
-    )
 
     return ssm_transaction_df.withColumns(
-        {k: all_effects.getItem(k) for k in ALL_EFFECTS_KEYS}
+        {key: all_effects.getItem(index) for index, key in enumerate(ALL_EFFECTS_KEYS)}
     )
 
 
