@@ -2,7 +2,8 @@ import functools
 import logging
 import re
 import uuid
-from typing import Any, Mapping
+from collections.abc import Set
+from typing import Any
 
 import pkg_resources
 import yaml
@@ -11,13 +12,10 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
-
-logging.basicConfig(format=config.LOG_FORMAT)
-logger = logging.getLogger("BaseBuilder")
+logger = logging.getLogger(__name__)
 
 
-DEFAULT_EXCLUDE_FIELDS = {}  # type: Mapping[str, Any]
+DEFAULT_EXCLUDE_FIELDS: dict[str, dict[str, Set[str]]] = {}
 
 
 def get_default_excludes(index, mapping):
@@ -68,32 +66,6 @@ def ssm_label(chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_al
     return label
 
 
-def _create_aliquot_submitter_id_query(submitter_ids, project_ids):
-    """Get an ES query clause for matching cases based on aliquot submitter IDs.
-
-    Optionally add a requirement that the cases be within certain projects.
-    """
-    aliquot_clause = {
-        "nested": {
-            "path": "samples.portions.analytes.aliquots",
-            "query": {
-                "terms": {
-                    "samples.portions.analytes.aliquots.submitter_id": submitter_ids
-                }
-            },
-        }
-    }
-
-    if project_ids:
-        return {
-            "bool": {
-                "must": [{"terms": {"project.project_id": project_ids}}, aliquot_clause]
-            }
-        }
-
-    return aliquot_clause
-
-
 def ssm_label_col(
     chromosome, variant_type, start_pos, end_pos, ref_allele, tumor_allele
 ):
@@ -125,18 +97,6 @@ def generate_uuid5(*values: Any) -> str:
 
 def uuid5_col(*values):
     return F.udf(generate_uuid5, types.StringType())(*values)
-
-
-def ssm_occurrence_uuid(namespace, ssm, case):
-    return str(uuid.uuid5(uuid.UUID(str(namespace)), str(ssm) + str(case)))
-
-
-def ssm_occurrence_uuid_udf(namespace):
-    """
-    Wraps the ssm_uuid function in a spark udf and injects a given namespace
-    """
-    ssm_namespaced = functools.partial(ssm_occurrence_uuid, str(namespace))
-    return F.udf(ssm_namespaced, types.StringType())
 
 
 def extract_impact(df, column, res_colname):
@@ -175,105 +135,6 @@ def extract_sift_polyphen(df):
     return df
 
 
-def extract_all_effects(val, index=0):
-    """
-    Extracts an element from all_effects at the given index
-
-    Rows are delimited by ;
-    Columns are delimited by , or :
-    """
-    delimiter = "," if "," in val else ":"
-    if len(val.split(delimiter)) > index:
-        return val.split(delimiter)[index]
-
-
-def all_effects_udf(index):
-    f = functools.partial(extract_all_effects, index=index)
-    return F.udf(f, types.StringType())
-
-
-def extract_rows_udf():
-    vals = F.udf(lambda x: x.split(";"), types.ArrayType(types.StringType()))
-    return vals
-
-
-def access_json_path(json_dict, step_list):
-    """
-    Access json path by list of steps
-    """
-    stack = list(step_list)
-
-    if not stack:
-        return json_dict
-
-    step = stack.pop(0)
-    return access_json_path(json_dict[step], stack)
-
-
-def map_create_column(df, map_function, target_column_name, new_column_name):
-    """
-    Creates new column in pyspark DataFrame by mapping :map_function to :target_column
-    """
-    # TODO: allow controlling the return type
-    udf = F.udf(map_function, types.StringType())
-    df = df.withColumn(new_column_name, udf(getattr(df, target_column_name)))
-    return df
-
-
-def melt_df(df, id_vars, value_vars=None, var_name="variable", value_name="value"):
-    """
-    Source:
-    https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
-
-    See also:
-    http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html
-
-    The opposite of pivoting a dataframe
-
-    :param df: input pyspark.DataFrame
-    :param id_vars: Column(s) to use as identifier variables
-    :type id_vars: Iterable
-    :param value_vars: Column(s) to unpivot. If not specified, uses all columns
-    that are not set as id_vars.
-    :type value_vars: Iterable
-    :param var_name: Name to use for the 'variable' column. If None, default to 'variable'.
-    :param value_name: Name to use for the 'value' column. If none, default to 'value'.
-    :return: long version of dataframe
-    """
-
-    # We assume id_vars is a strict subset of value_vars
-    if not value_vars:
-        value_vars = list(set(df.columns) - set(id_vars))
-
-    _vars_and_vals = F.array(
-        *(
-            F.struct(F.lit(c).alias(var_name), F.col(c).alias(value_name))
-            for c in value_vars
-        )
-    )
-
-    _temp = df.withColumn("_vars_and_vals", F.explode(_vars_and_vals))
-
-    cols = id_vars + [
-        F.col("_vars_and_vals")[x].alias(x) for x in [var_name, value_name]
-    ]
-
-    return_df = _temp.select(*cols)
-
-    return return_df
-
-
-def remove_columns(df, *args):
-    """
-    Removes columns from DataFrame
-    """
-
-    for column_name in args:
-        df = df.drop(column_name)
-
-    return df
-
-
 def select_mapping(index_name, mapping_name, selector=None, exclude_fields=None):
     if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
@@ -286,16 +147,6 @@ def select_mapping(index_name, mapping_name, selector=None, exclude_fields=None)
     }
 
     return mapping
-
-
-def standardize_schema(dataframe, index_name, mapping_name):
-    """Select only columns that are in specified document mapping"""
-
-    doc_mapping = select_mapping(index_name, mapping_name)["properties"]
-    columns_to_keep = [c for c in dataframe.columns if c in doc_mapping.keys()]
-    return_df = dataframe.select(*columns_to_keep)
-
-    return return_df
 
 
 def struct_select(index_name, mapping_name, ignore=(), selector=None):
