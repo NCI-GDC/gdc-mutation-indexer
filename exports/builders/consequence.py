@@ -1,13 +1,65 @@
-import logging
 from typing import Any
 
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import config
 from exports.builders import df_builders, utils
 
-logging.basicConfig(format=config.LOG_FORMAT)
+
+ALL_EFFECTS_KEYS = (
+    "do_not_use",
+    "consequence_type",
+    "aa_change",
+    "transcript_id",
+    "ref_seq_accession",
+    "hgvsc",
+    "vep_impact",
+    "is_canonical",
+    "sift",
+    "polyphen",
+    "transcript_strand",
+)
+NULL_NON_SELECTED_FIELDS = (
+    "amino_acids",
+    "cdna_position",
+    "cds_end",
+    "cds_length",
+    "cds_position",
+    "cds_start",
+    "clin_sig",
+    "codons",
+    "domains",
+    "ensp",
+    "hgvsp",
+    "hgvsp_short",
+    "protein_position",
+    "swissprot",
+    "trembl",
+    "uniparc",
+)
+
+
+def _extract_transactions(maf_df: sql.DataFrame) -> sql.DataFrame:
+    all_effects = F.col("all_effects")
+    ssm_transaction_df = maf_df.withColumn(
+        "selected_transcript_id", F.col("transcript_id")
+    )
+    # Explode all_effects, to have each individual transcript data on a separate line
+    # NOTE: after exploding, missing fields for secondary transcripts will be populated
+    # with values from selected transcript (top level columns)
+    ssm_transaction_df = ssm_transaction_df.withColumn(
+        "all_effects", F.explode(F.split(all_effects, ";"))
+    )
+    ssm_transaction_df = ssm_transaction_df.withColumn(
+        "all_effects",
+        F.when(all_effects.contains(","), F.split(all_effects, ",")).otherwise(
+            F.split(all_effects, ":")
+        ),
+    )
+
+    return ssm_transaction_df.withColumns(
+        {key: all_effects.getItem(index) for index, key in enumerate(ALL_EFFECTS_KEYS)}
+    )
 
 
 class ConsequenceBuilder:
@@ -34,10 +86,10 @@ class ConsequenceBuilder:
         Args:
             maf_df: The formatted MAF dataframe from MAFBuilder
             index_name: name of the index this consequence is a part of
-            join_gene: Whether or not to join the gene data to the consquence. SSM and
+            join_gene: Whether or not to join the gene data to the consequence. SSM and
                 SSM Occurrence have gene under consequences, while Case and Gene do
                 not. Must be true if add_gene_aa_change is true
-            add_gene_aa_change: Adds the gene_aa_change field to the data if set to 
+            add_gene_aa_change: Adds the gene_aa_change field to the data if set to
                 True. Can only be set to True if join_gene is set to true also.
 
         Returns:
@@ -236,65 +288,12 @@ class ConsequenceBuilder:
         symbol from the mutation to the do_not_use column.
         These should be removed.
         """
-        # Convert all_effects column into an array.
-        # Each element corresponds to a transcript and it's effects
-        ssm_tran = maf_df.withColumn(
-            "all_effects",
-            utils.extract_rows_udf()(F.col("all_effects")).alias("all_effects"),
-        )
-
-        effects_legend = [
-            "do_not_use",
-            "consequence_type",
-            "aa_change",
-            "transcript_id",
-            "ref_seq_accession",
-            "hgvsc",
-            "vep_impact",
-            "is_canonical",
-            "sift",
-            "polyphen",
-            "transcript_strand",
-        ]
-
         # Before exploding, let's save the transcript_id of the selected transcript
-        ssm_tran = ssm_tran.withColumn("selected_transcript_id", F.col("transcript_id"))
-
-        # Explode all_effects, to have each individual transcript data on a separate line
-        # NOTE: after exploding, missing fields for secondary transcripts will be populated
-        # with values from selected transcript (top level columns)
-        ssm_tran = ssm_tran.select(
-            F.explode("all_effects").alias("all_effects"),
-            *ssm_tran.drop("all_effects").columns
-        )
-
-        # Extract transcripts' effects from 'all_effects'
-        for idx, field in enumerate(effects_legend):
-            ssm_tran = ssm_tran.withColumn(
-                field, utils.all_effects_udf(idx)(F.col("all_effects"))
-            )
+        ssm_transaction_df = _extract_transactions(maf_df)
 
         # Clear the fields that we shouldn't copy from selected transcript (top level of maf_df)
-        must_be_none_for_non_selected = [
-            "amino_acids",
-            "cdna_position",
-            "cds_end",
-            "cds_length",
-            "cds_position",
-            "cds_start",
-            "clin_sig",
-            "codons",
-            "domains",
-            "ensp",
-            "hgvsp",
-            "hgvsp_short",
-            "protein_position",
-            "swissprot",
-            "trembl",
-            "uniparc",
-        ]
-        for field in must_be_none_for_non_selected:
-            ssm_tran = ssm_tran.withColumn(
+        for field in NULL_NON_SELECTED_FIELDS:
+            ssm_transaction_df = ssm_transaction_df.withColumn(
                 field,
                 F.when(
                     F.col("transcript_id") == F.col("selected_transcript_id"),
@@ -303,25 +302,31 @@ class ConsequenceBuilder:
             )
 
         # Take out the transcripts from genes that this mutation is not in
-        ssm_tran = ssm_tran.filter("symbol == do_not_use")
-
-        # get is_canonical
-        ssm_tran = ssm_tran.withColumn(
-            "is_canonical", ssm_tran.canonical_transcript_id == ssm_tran.transcript_id
+        ssm_transaction_df = ssm_transaction_df.where(
+            F.col("symbol") == F.col("do_not_use")
         )
 
-        ssm_tran = utils.sanitize_aa_change(ssm_tran)
+        # get is_canonical
+        ssm_transaction_df = ssm_transaction_df.withColumn(
+            "is_canonical", F.col("canonical_transcript_id") == F.col("transcript_id")
+        )
+
+        ssm_transaction_df = utils.sanitize_aa_change(ssm_transaction_df)
         # Get aas columns from aa_change
-        ssm_tran = utils.extract_aas_position(ssm_tran)
-        ssm_tran = utils.convert_empty_str_to_null_in_col(ssm_tran, "aa_change")
+        ssm_transaction_df = utils.extract_aas_position(ssm_transaction_df)
+        ssm_transaction_df = utils.convert_empty_str_to_null_in_col(
+            ssm_transaction_df, "aa_change"
+        )
 
         # Extract sift, polyphen columns
-        ssm_tran = utils.extract_sift_polyphen(ssm_tran)
+        ssm_transaction_df = utils.extract_sift_polyphen(ssm_transaction_df)
 
         # Drop used helper columns
-        ssm_tran = ssm_tran.drop("all_effects", "do_not_use", "symbol")
+        ssm_transaction_df = ssm_transaction_df.drop(
+            "all_effects", "do_not_use", "symbol"
+        )
 
-        return ssm_tran
+        return ssm_transaction_df
 
     def _build_gene_struct(
         self, maf_df: sql.DataFrame, index_name: str
