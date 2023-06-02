@@ -11,7 +11,8 @@ This command uses anchors to minimize the size of the yaml schema to reduce the 
 of redundant lines which are common in the schema structures.
 
 ### Example
-File Input:
+#### Inputs
+File:
 ```yaml
 fields:
 - metadata: {}
@@ -24,13 +25,14 @@ fields:
   type: string
 type: struct
 ```
-Bash Input:
+Command:
 ```bash
 python -m tests.unit.data.schemas minimize \
     -s ./input.yaml # NOTE: This can be: a file, a directory, or a module. Default: tests.unit.data.schemas
 ```
 
-File Output:
+#### Outputs
+File:
 ```yaml
 fields:
 - &string_field
