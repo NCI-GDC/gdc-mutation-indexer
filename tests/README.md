@@ -4,15 +4,18 @@ as well as a few specific requirements unique requirements such as jar files whi
 to be install in order to run the tests.
 
 The test are separated into unit and integration tests. Please limit adding new 
-integration test to things which can **ONLY* be tested by integrating with 
-elasticsearch. Otherwise, mock any interfaces onto external services and use unit tests.
-It should be noted that even the unit tests do run a local spark instance through which
-pyspark/spark functionality are run.
+integration test to things which can *ONLY* be tested by integrating with elasticsearch,
+indexd, or other external services. Otherwise, mock any interfaces onto external
+services and use unit tests. It should be noted that even the unit tests do run a local
+spark instance through which pyspark/spark functionality are run.
 
+### Contents
 - [Running Tests](#running-tests)
 - [Elasticsearch](#elasticsearch)
 - [Java](#java)
 - [Tools](#tools)
+  - [Models](unit/data/models/README.md)
+  - [Schemas](unit/data/schemas/README.md)
 
 ## Running Tests
 Run the following command
@@ -79,8 +82,8 @@ There are several tools included in the test suite in order to make several manu
 steps for generating data for the tests easier and faster. Please see the specific
 tools for more details.
 
-### [Schema Tools](unit/data/schemas/README.md)
-These are tools for managing the schemas used to load test data.
-
 ### [Model Tools](unit/data/models/README.md)
 These are tools for generating various input models for the test data.
+
+### [Schema Tools](unit/data/schemas/README.md)
+These are tools for managing the schemas used to load test data.

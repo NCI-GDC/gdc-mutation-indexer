@@ -3,6 +3,7 @@ The schemas module offers commands for managing and creating and managing schema
 to load test inputs. Though, it can be useful in some cases for production schemas; 
 these will be found in the main export/schemas directory.
 
+### Contents
 - [Minimize](#minimize)
 - [Translate Mapping](#translate-mapping)
 

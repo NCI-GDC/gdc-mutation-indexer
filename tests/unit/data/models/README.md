@@ -2,6 +2,9 @@
 The models module offers commands for managing and creating data models representing
 data that will be input into tests.
 
+### Contents
+- [Create Models](#create-models)
+
 ## Create Models
 Create models is a command that will create a model based on a given schema. It will
 populate that data with default values given in the defaults provided to the command.
