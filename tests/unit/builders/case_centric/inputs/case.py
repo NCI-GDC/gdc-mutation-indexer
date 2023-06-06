@@ -10,12 +10,15 @@ from tests.unit import utils
 
 @dataclasses.dataclass(frozen=True)
 class PathologyDetail:
+    additional_pathology_findings: Optional[str] = None
     anaplasia_present: Optional[str] = None
     anaplasia_present_type: Optional[str] = None
     bone_marrow_malignant_cells: Optional[str] = None
     breslow_thickness: Optional[float] = None
     circumferential_resection_margin: Optional[float] = None
     columnar_mucosa_present: Optional[str] = None
+    consistent_pathology_review: Optional[str] = None
+    created_datetime: Optional[str] = None
     dysplasia_degree: Optional[str] = None
     dysplasia_type: Optional[str] = None
     greatest_tumor_dimension: Optional[float] = None
@@ -29,6 +32,7 @@ class PathologyDetail:
     margin_status: Optional[str] = None
     metaplasia_present: Optional[str] = None
     morphologic_architectural_pattern: Optional[str] = None
+    necrosis_percent: Optional[float] = None
     necrosis_present: Optional[str] = None
     non_nodal_regional_disease: Optional[str] = None
     non_nodal_tumor_deposits: Optional[str] = None
@@ -41,10 +45,18 @@ class PathologyDetail:
     prostatic_chips_positive_count: Optional[float] = None
     prostatic_chips_total_count: Optional[float] = None
     prostatic_involvement_percent: Optional[float] = None
+    residual_tumor: Optional[str] = None
+    rhabdoid_percent: Optional[float] = None
+    rhabdoid_present: Optional[str] = None
+    sarcomatoid_percent: Optional[float] = None
+    sarcomatoid_present: Optional[str] = None
+    size_extraocular_nodule: Optional[float] = None
     state: Optional[str] = None
     submitter_id: Optional[str] = None
     transglottic_extension: Optional[str] = None
     tumor_largest_dimension_diameter: Optional[float] = None
+    tumor_thickness: Optional[float] = None
+    updated_datetime: Optional[str] = None
     vascular_invasion_present: Optional[str] = None
     vascular_invasion_type: Optional[str] = None
 
@@ -73,6 +85,7 @@ class Summary:
 
 @dataclasses.dataclass(frozen=True)
 class FamilyHistory:
+    created_datetime: Optional[str] = None
     family_history_id: Optional[str] = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
     relationship_age_at_diagnosis: Optional[float] = None
     relationship_gender: Optional[str] = None
@@ -80,7 +93,9 @@ class FamilyHistory:
     relationship_type: Optional[str] = None
     relative_with_cancer_history: Optional[str] = "yes"
     relatives_with_cancer_history_count: Optional[int] = None
+    state: Optional[str] = None
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_family_history"
+    updated_datetime: Optional[str] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -139,32 +154,64 @@ class Project:
     )
     program: Program = Program()
     project_id: Optional[str] = "HCMI-CMDC"
+    releasable: Optional[str] = None
+    released: Optional[str] = None
+    state: Optional[str] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Annotation:
+    annotation_id: Optional[str] = None
+    case_id: Optional[str] = "case-0"
+    case_submitter_id: Optional[str] = "HCM-BROD-0001-C18"
+    category: Optional[str] = None
+    classification: Optional[str] = None
+    created_datetime: Optional[str] = None
+    creator: Optional[str] = None
+    entity_id: Optional[str] = None
+    entity_submitter_id: Optional[str] = None
+    entity_type: Optional[str] = None
+    legacy_created_datetime: Optional[str] = None
+    legacy_updated_datetime: Optional[str] = None
+    notes: Optional[str] = None
+    state: Optional[str] = None
+    status: Optional[str] = None
+    submitter_id: Optional[str] = None
+    updated_datetime: Optional[str] = None
 
 
 @dataclasses.dataclass(frozen=True)
 class Treatment:
     chemo_concurrent_to_radiation: Optional[str] = None
+    created_datetime: Optional[str] = None
     days_to_treatment_end: Optional[int] = None
     days_to_treatment_start: Optional[int] = 53
     initial_disease_status: Optional[str] = "Progressive Disease"
     number_of_cycles: Optional[int] = None
     reason_treatment_ended: Optional[str] = None
     regimen_or_line_of_therapy: Optional[str] = None
+    route_of_administration: Optional[str] = None
     state: Optional[str] = "released"
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_treatment4"
     therapeutic_agents: Optional[str] = "Oxaliplatin"
     treatment_anatomic_site: Optional[str] = None
+    treatment_arm: Optional[str] = None
     treatment_dose: Optional[int] = None
+    treatment_dose_units: Optional[str] = None
+    treatment_effect: Optional[str] = None
+    treatment_effect_indicator: Optional[str] = None
     treatment_frequency: Optional[str] = None
     treatment_id: Optional[str] = "0619e104-8110-441b-97ef-a6a13d6823bb"
     treatment_intent_type: Optional[str] = "Maintenance Therapy"
     treatment_or_therapy: Optional[str] = "yes"
     treatment_outcome: Optional[str] = "Progressive Disease"
     treatment_type: Optional[str] = None
+    updated_datetime: Optional[str] = None
 
 
 @dataclasses.dataclass(frozen=True)
 class Diagnosis:
+    adrenal_hormone: Optional[str] = None
     age_at_diagnosis: Optional[int] = 17316
     ajcc_clinical_m: Optional[str] = None
     ajcc_clinical_n: Optional[str] = None
@@ -176,14 +223,20 @@ class Diagnosis:
     ajcc_pathologic_t: Optional[str] = "T4"
     ajcc_staging_system_edition: Optional[str] = "7th"
     ann_arbor_b_symptoms: Optional[str] = None
+    ann_arbor_b_symptoms_described: Optional[str] = None
     ann_arbor_clinical_stage: Optional[str] = None
     ann_arbor_extranodal_involvement: Optional[str] = None
     ann_arbor_pathologic_stage: Optional[str] = None
+    annotations: Tuple[Annotation, ...] = (Annotation(),)
     best_overall_response: Optional[str] = None
     burkitt_lymphoma_clinical_variant: Optional[str] = None
+    child_pugh_classification: Optional[str] = None
     classification_of_tumor: Optional[str] = "metastasis"
+    cog_liver_stage: Optional[str] = None
+    cog_neuroblastoma_risk_group: Optional[str] = None
     cog_renal_stage: Optional[str] = None
     cog_rhabdomyosarcoma_risk_group: Optional[str] = None
+    created_datetime: Optional[str] = None
     days_to_best_overall_response: Optional[int] = None
     days_to_diagnosis: Optional[int] = 0
     days_to_last_follow_up: Optional[float] = None
@@ -191,29 +244,52 @@ class Diagnosis:
     days_to_recurrence: Optional[float] = None
     diagnosis_id: Optional[str] = "a7f019db-c623-4d56-94e9-102cc4574f88"
     eln_risk_classification: Optional[str] = None
+    enneking_msts_grade: Optional[str] = None
+    enneking_msts_metastasis: Optional[str] = None
+    enneking_msts_stage: Optional[str] = None
+    enneking_msts_tumor_site: Optional[str] = None
     esophageal_columnar_dysplasia_degree: Optional[str] = None
     esophageal_columnar_metaplasia_present: Optional[str] = None
     figo_stage: Optional[str] = None
     figo_staging_edition_year: Optional[str] = None
+    first_symptom_prior_to_diagnosis: Optional[str] = None
     gastric_esophageal_junction_involvement: Optional[str] = None
+    gleason_grade_group: Optional[str] = None
+    gleason_grade_tertiary: Optional[str] = None
+    gleason_patterns_percent: Optional[int] = None
     goblet_cells_columnar_mucosa_present: Optional[str] = None
     icd_10_code: Optional[str] = "C79.3"
     igcccg_stage: Optional[str] = None
+    inpc_grade: Optional[str] = None
+    inpc_histologic_group: Optional[str] = None
+    inrg_stage: Optional[str] = None
     inss_stage: Optional[str] = None
     international_prognostic_index: Optional[str] = None
     irs_group: Optional[str] = None
+    irs_stage: Optional[str] = None
+    ishak_fibrosis_score: Optional[str] = None
     iss_stage: Optional[str] = None
     last_known_disease_status: Optional[str] = None
     laterality: Optional[str] = None
+    margin_distance: Optional[float] = None
+    margins_involved_site: Optional[str] = None
     masaoka_stage: Optional[str] = None
+    medulloblastoma_molecular_classification: Optional[str] = None
     metastasis_at_diagnosis: Optional[str] = "Unknown"
     metastasis_at_diagnosis_site: Optional[str] = None
     method_of_diagnosis: Optional[str] = None
     micropapillary_features: Optional[str] = None
+    mitosis_karyorrhexis_index: Optional[str] = None
+    mitotic_count: Optional[float] = None
     morphology: Optional[str] = "8140/3"
+    ovarian_specimen_status: Optional[str] = None
+    ovarian_surface_involvement: Optional[str] = None
+    papillary_renal_cell_type: Optional[str] = None
     pathology_details: Tuple[PathologyDetail, ...] = (PathologyDetail(),)
+    peritoneal_fluid_cytological_status: Optional[str] = None
     pregnant_at_diagnosis: Optional[str] = None
     primary_diagnosis: Optional[str] = "Adenocarcinoma, NOS"
+    primary_disease: Optional[str] = None
     primary_gleason_grade: Optional[str] = None
     prior_malignancy: Optional[str] = "no"
     prior_treatment: Optional[str] = "Yes"
@@ -222,14 +298,22 @@ class Diagnosis:
     satellite_nodule_present: Optional[str] = None
     secondary_gleason_grade: Optional[str] = None
     site_of_resection_or_biopsy: Optional[str] = "Brain, NOS"
+    sites_of_involvement: Optional[str] = None
     state: Optional[str] = "released"
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_diagnosis"
+    supratentorial_localization: Optional[str] = None
     synchronous_malignancy: Optional[str] = None
     tissue_or_organ_of_origin: Optional[str] = "Rectum, NOS"
     treatments: Tuple[Treatment, ...] = (Treatment(),)
     tumor_confined_to_organ_of_origin: Optional[str] = None
+    tumor_depth: Optional[float] = None
     tumor_focality: Optional[str] = None
     tumor_grade: Optional[str] = "GX"
+    tumor_regression_grade: Optional[str] = None
+    updated_datetime: Optional[str] = None
+    weiss_assessment_score: Optional[str] = None
+    who_cns_grade: Optional[str] = None
+    who_nte_grade: Optional[str] = None
     wilms_tumor_histologic_subtype: Optional[str] = None
     year_of_diagnosis: Optional[int] = None
 
@@ -239,39 +323,61 @@ class Demographic:
     age_at_index: Optional[int] = None
     age_is_obfuscated: Optional[str] = False
     cause_of_death: Optional[str] = "Cancer Related"
+    cause_of_death_source: Optional[str] = None
+    country_of_residence_at_enrollment: Optional[str] = None
+    created_datetime: Optional[str] = None
     days_to_birth: Optional[int] = -17316
     days_to_death: Optional[int] = 1011
     demographic_id: Optional[str] = "c1e37539-cdf7-4707-8913-fafb8146e838"
     ethnicity: Optional[str] = "Unknown"
     gender: Optional[str] = "female"
+    occupation_duration_years: Optional[int] = None
+    premature_at_birth: Optional[str] = None
     race: Optional[str] = "white"
     state: Optional[str] = "released"
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_demographic"
+    updated_datetime: Optional[str] = None
     vital_status: Optional[str] = "Dead"
+    weeks_gestation_at_birth: Optional[float] = None
     year_of_birth: Optional[int] = 1963
     year_of_death: Optional[int] = None
 
 
 @dataclasses.dataclass(frozen=True)
 class Exposure:
+    age_at_onset: Optional[int] = None
     alcohol_days_per_week: Optional[float] = None
+    alcohol_drinks_per_day: Optional[float] = None
     alcohol_history: Optional[str] = None
     alcohol_intensity: Optional[str] = None
+    alcohol_type: Optional[str] = None
     asbestos_exposure: Optional[str] = None
     cigarettes_per_day: Optional[float] = None
+    coal_dust_exposure: Optional[str] = None
+    created_datetime: Optional[str] = None
+    environmental_tobacco_smoke_exposure: Optional[str] = None
+    exposure_duration: Optional[str] = None
+    exposure_duration_years: Optional[int] = None
     exposure_id: Optional[str] = "a0ce5ab0-e9df-459a-960f-85fd4203ec62"
     exposure_type: Optional[str] = None
+    marijuana_use_per_week: Optional[float] = None
     pack_years_smoked: Optional[float] = None
     parent_with_radiation_exposure: Optional[str] = None
     radon_exposure: Optional[str] = None
+    respirable_crystalline_silica_exposure: Optional[str] = None
     secondhand_smoke_as_child: Optional[str] = None
+    smokeless_tobacco_quit_age: Optional[int] = None
+    smoking_frequency: Optional[str] = None
     state: Optional[str] = "released"
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_exposure"
+    time_between_waking_and_first_smoke: Optional[str] = None
     tobacco_smoking_onset_year: Optional[int] = None
     tobacco_smoking_quit_year: Optional[int] = None
     tobacco_smoking_status: Optional[str] = "4"
+    tobacco_use_per_day: Optional[float] = None
     type_of_smoke_exposure: Optional[str] = None
     type_of_tobacco_used: Optional[str] = None
+    updated_datetime: Optional[str] = None
     years_smoked: Optional[float] = None
 
 
@@ -287,6 +393,7 @@ class MolecularTest:
     chromosome: Optional[str] = None
     clonality: Optional[str] = None
     copy_number: Optional[float] = None
+    created_datetime: Optional[str] = None
     cytoband: Optional[str] = None
     days_to_test: Optional[int] = None
     exon: Optional[str] = None
@@ -309,12 +416,14 @@ class MolecularTest:
     second_exon: Optional[str] = None
     second_gene_symbol: Optional[str] = None
     specialized_molecular_test: Optional[str] = None
+    state: Optional[str] = None
     submitter_id: Optional[str] = "HCM-BROD-0001-C18_molecular_test"
     test_analyte_type: Optional[str] = None
     test_result: Optional[str] = "Positive"
     test_units: Optional[str] = None
     test_value: Optional[float] = None
     transcript: Optional[str] = None
+    updated_datetime: Optional[str] = None
     variant_origin: Optional[str] = None
     variant_type: Optional[str] = None
     zygosity: Optional[str] = None
@@ -333,6 +442,7 @@ class FollowUp:
     cdc_hiv_risk_factors: Optional[str] = None
     comorbidity: Optional[str] = None
     comorbidity_method_of_diagnosis: Optional[str] = None
+    created_datetime: Optional[str] = None
     days_to_adverse_event: Optional[int] = None
     days_to_comorbidity: Optional[int] = None
     days_to_follow_up: Optional[int] = 0
@@ -390,32 +500,50 @@ class FollowUp:
     undescended_testis_corrected_method: Optional[str] = None
     undescended_testis_history: Optional[str] = None
     undescended_testis_history_laterality: Optional[str] = None
+    updated_datetime: Optional[str] = None
     viral_hepatitis_serologies: Optional[str] = None
     weight: Optional[float] = 79.8
 
 
 @dataclasses.dataclass(frozen=True)
 class Case:
+    aliquot_ids: Iterable[str] = None
+    analyte_ids: Iterable[str] = None
+    annotations: Tuple[Annotation, ...] = (Annotation(),)
+    case_autocomplete: Optional[str] = None
     case_id: Optional[str] = "case-0"
     consent_type: Optional[str] = None
+    created_datetime: Optional[str] = None
     days_to_consent: Optional[int] = None
     days_to_lost_to_followup: Optional[int] = None
     demographic: Demographic = Demographic()
     diagnoses: Tuple[Diagnosis, ...] = (Diagnosis(),)
+    diagnosis_ids: Iterable[str] = None
     disease_type: Optional[str] = "Adenomas and Adenocarcinomas"
     exposures: Tuple[Exposure, ...] = (Exposure(),)
     family_histories: Tuple[FamilyHistory, ...] = (FamilyHistory(),)
     follow_ups: Tuple[FollowUp, ...] = (FollowUp(),)
     index_date: Optional[str] = "Diagnosis"
     lost_to_followup: Optional[str] = None
+    portion_ids: Iterable[str] = None
     primary_site: Optional[str] = "Rectum"
     project: Project = Project()
+    sample_ids: Iterable[str] = None
+    slide_ids: Iterable[str] = None
     state: Optional[str] = "released"
+    submitter_aliquot_ids: Iterable[str] = None
+    submitter_analyte_ids: Iterable[str] = None
+    submitter_diagnosis_ids: Iterable[str] = None
     submitter_id: Optional[str] = "HCM-BROD-0001-C18"
+    submitter_portion_ids: Iterable[str] = None
+    submitter_sample_ids: Iterable[str] = None
+    submitter_slide_ids: Iterable[str] = None
     summary: Summary = Summary()
     tissue_source_site: TissueSourceSite = TissueSourceSite()
+    updated_datetime: Optional[str] = None
 
 
+# TODO: The asserts below need to be updated to include checks for the newly added properties
 def assert_demographic_translated(
     result_demographic: sql.Row, demographic: Demographic
 ):
