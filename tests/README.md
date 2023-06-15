@@ -1,7 +1,7 @@
 # Tests
 The test are run through the tox command which will handle the usual python requirements
-as well as a few specific requirements unique requirements such as jar files which need
-to be install in order to run the tests.
+as well as a few specific unique requirements such as jar files which need to be install
+in order to run the tests.
 
 The test are separated into unit and integration tests. Please limit adding new 
 integration test to things which can *ONLY* be tested by integrating with elasticsearch,

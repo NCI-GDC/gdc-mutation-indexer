@@ -26,7 +26,7 @@ def _get_fields(properties: dict[str, dict]) -> Iterable[types.StructField]:
         elif "properties" in details:
             yield types.StructField(prop, _to_schema(details))
         else:
-            raise Exception(
+            raise ValueError(
                 f"Unknown property type in the mapping encountered for {prop}: {prop_type}."
             )
 
