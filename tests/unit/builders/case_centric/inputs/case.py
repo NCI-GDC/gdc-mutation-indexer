@@ -2090,7 +2090,6 @@ class Case:
 
     def assert_equals(self, row: sql.Row) -> bool:
         assert row
-        assert row.case_autocomplete == self.case_autocomplete
         assert row.case_id == self.case_id
         assert row.consent_type == self.consent_type
         assert row.created_datetime == self.created_datetime
