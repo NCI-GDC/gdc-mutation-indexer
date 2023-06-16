@@ -20,6 +20,13 @@ class Builders(NamedTuple):
     index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
 
 
+def _order_builders(builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
+    builder_by_output = {b.output: b for b in builders}
+    graph = graphlib.TopologicalSorter({b.output: b.inputs for b in builders})
+
+    return tuple(builder_by_output[d] for d in graph.static_order())
+
+
 class Exporter:
     """
     The main entry point into the index export process for the mutation indices
@@ -34,9 +41,7 @@ class Exporter:
         builders: Builders,
     ) -> None:
         self._spark_context = spark_context
-        self._builders: Iterable[bases.Builder] = graphlib.TopologicalSorter(
-            (b, b.inputs) for b in builders.builders
-        ).static_order()
+        self._builders = _order_builders(builders.builders)
 
         # TODO: Remove when old index builders ported to new base.
         self._index_types = frozenset(index_types) & builders.index_builders.keys()
