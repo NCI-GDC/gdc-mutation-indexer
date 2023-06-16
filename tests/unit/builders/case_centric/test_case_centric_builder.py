@@ -262,6 +262,7 @@ class TestCaseCentricBuilder:
     def test__build__data_translated(self) -> None:
         es_case = case.Case()
         es_hit = sample.Hit()
+        es_sample = more_itertools.one(es_hit._source and es_hit._source.samples or ())
         raw_maf = models.MAF(gene_id="MAFGENE")
         raw_ascat = models.ASCAT(gene_id="ASCATGENE")
         ssm_consequence = ssm.Consequences()
@@ -298,8 +299,8 @@ class TestCaseCentricBuilder:
             g for g in result_case.gene if g.gene_id == "ASCATGENE"
         )
 
-        case.assert_case_translated(result_case, es_case)
-        sample.assert_hit_translated(result_case, es_hit)
+        es_case.assert_equals(result_case)
+        es_sample.assert_equals(more_itertools.one(result_case.samples))
         assert_maf_translated(maf_gene, raw_maf)
         ssm.assert_consequences_translated(maf_gene, ssm_consequence)
         ssm.assert_observation_translated(maf_gene, ssm_observation)

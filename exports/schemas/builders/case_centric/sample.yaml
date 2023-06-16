@@ -18,6 +18,49 @@ fields:
             containsNull: true
             elementType:
               fields:
+                - metadata: {}
+                  name: annotations
+                  nullable: true
+                  type:
+                    containsNull: true
+                    elementType:
+                      fields:
+                        - <<: *string_field
+                          name: annotation_id
+                        - <<: *string_field
+                          name: case_id
+                        - <<: *string_field
+                          name: case_submitter_id
+                        - <<: *string_field
+                          name: category
+                        - <<: *string_field
+                          name: classification
+                        - <<: *string_field
+                          name: created_datetime
+                        - <<: *string_field
+                          name: creator
+                        - <<: *string_field
+                          name: entity_id
+                        - <<: *string_field
+                          name: entity_submitter_id
+                        - <<: *string_field
+                          name: entity_type
+                        - <<: *string_field
+                          name: legacy_created_datetime
+                        - <<: *string_field
+                          name: legacy_updated_datetime
+                        - <<: *string_field
+                          name: notes
+                        - <<: *string_field
+                          name: state
+                        - <<: *string_field
+                          name: status
+                        - <<: *string_field
+                          name: submitter_id
+                        - <<: *string_field
+                          name: updated_datetime
+                      type: struct
+                    type: array
                 - <<: *string_field
                   name: biospecimen_anatomic_site
                 - <<: *string_field
@@ -26,6 +69,8 @@ fields:
                   name: catalog_reference
                 - <<: *string_field
                   name: composition
+                - <<: *string_field
+                  name: created_datetime
                 - &double_field
                   metadata: {}
                   name: current_weight
@@ -100,6 +145,49 @@ fields:
                                         - <<: *string_field
                                           name: analyte_type_id
                                         - metadata: {}
+                                          name: annotations
+                                          nullable: true
+                                          type:
+                                            containsNull: true
+                                            elementType:
+                                              fields:
+                                                - <<: *string_field
+                                                  name: annotation_id
+                                                - <<: *string_field
+                                                  name: case_id
+                                                - <<: *string_field
+                                                  name: case_submitter_id
+                                                - <<: *string_field
+                                                  name: category
+                                                - <<: *string_field
+                                                  name: classification
+                                                - <<: *string_field
+                                                  name: created_datetime
+                                                - <<: *string_field
+                                                  name: creator
+                                                - <<: *string_field
+                                                  name: entity_id
+                                                - <<: *string_field
+                                                  name: entity_submitter_id
+                                                - <<: *string_field
+                                                  name: entity_type
+                                                - <<: *string_field
+                                                  name: legacy_created_datetime
+                                                - <<: *string_field
+                                                  name: legacy_updated_datetime
+                                                - <<: *string_field
+                                                  name: notes
+                                                - <<: *string_field
+                                                  name: state
+                                                - <<: *string_field
+                                                  name: status
+                                                - <<: *string_field
+                                                  name: submitter_id
+                                                - <<: *string_field
+                                                  name: updated_datetime
+                                              type: struct
+                                            type: array
+                                        - metadata: {}
                                           name: center
                                           nullable: true
                                           type:
@@ -120,6 +208,8 @@ fields:
                                         - <<: *double_field
                                           name: concentration
                                         - <<: *string_field
+                                          name: created_datetime
+                                        - <<: *string_field
                                           name: no_matched_normal_low_pass_wgs
                                         - <<: *string_field
                                           name: no_matched_normal_targeted_sequencing
@@ -138,7 +228,11 @@ fields:
                                         - <<: *string_field
                                           name: source_center
                                         - <<: *string_field
+                                          name: state
+                                        - <<: *string_field
                                           name: submitter_id
+                                        - <<: *string_field
+                                          name: updated_datetime
                                       type: struct
                                     type: array
                                 - <<: *double_field
@@ -153,8 +247,53 @@ fields:
                                   name: analyte_type_id
                                 - <<: *double_field
                                   name: analyte_volume
+                                - metadata: {}
+                                  name: annotations
+                                  nullable: true
+                                  type:
+                                    containsNull: true
+                                    elementType:
+                                      fields:
+                                        - <<: *string_field
+                                          name: annotation_id
+                                        - <<: *string_field
+                                          name: case_id
+                                        - <<: *string_field
+                                          name: case_submitter_id
+                                        - <<: *string_field
+                                          name: category
+                                        - <<: *string_field
+                                          name: classification
+                                        - <<: *string_field
+                                          name: created_datetime
+                                        - <<: *string_field
+                                          name: creator
+                                        - <<: *string_field
+                                          name: entity_id
+                                        - <<: *string_field
+                                          name: entity_submitter_id
+                                        - <<: *string_field
+                                          name: entity_type
+                                        - <<: *string_field
+                                          name: legacy_created_datetime
+                                        - <<: *string_field
+                                          name: legacy_updated_datetime
+                                        - <<: *string_field
+                                          name: notes
+                                        - <<: *string_field
+                                          name: state
+                                        - <<: *string_field
+                                          name: status
+                                        - <<: *string_field
+                                          name: submitter_id
+                                        - <<: *string_field
+                                          name: updated_datetime
+                                      type: struct
+                                    type: array
                                 - <<: *double_field
                                   name: concentration
+                                - <<: *string_field
+                                  name: created_datetime
                                 - <<: *string_field
                                   name: experimental_protocol_type
                                 - <<: *string_field
@@ -166,9 +305,56 @@ fields:
                                 - <<: *string_field
                                   name: spectrophotometer_method
                                 - <<: *string_field
+                                  name: state
+                                - <<: *string_field
                                   name: submitter_id
                                 - <<: *string_field
+                                  name: updated_datetime
+                                - <<: *string_field
                                   name: well_number
+                              type: struct
+                            type: array
+                        - metadata: {}
+                          name: annotations
+                          nullable: true
+                          type:
+                            containsNull: true
+                            elementType:
+                              fields:
+                                - <<: *string_field
+                                  name: annotation_id
+                                - <<: *string_field
+                                  name: case_id
+                                - <<: *string_field
+                                  name: case_submitter_id
+                                - <<: *string_field
+                                  name: category
+                                - <<: *string_field
+                                  name: classification
+                                - <<: *string_field
+                                  name: created_datetime
+                                - <<: *string_field
+                                  name: creator
+                                - <<: *string_field
+                                  name: entity_id
+                                - <<: *string_field
+                                  name: entity_submitter_id
+                                - <<: *string_field
+                                  name: entity_type
+                                - <<: *string_field
+                                  name: legacy_created_datetime
+                                - <<: *string_field
+                                  name: legacy_updated_datetime
+                                - <<: *string_field
+                                  name: notes
+                                - <<: *string_field
+                                  name: state
+                                - <<: *string_field
+                                  name: status
+                                - <<: *string_field
+                                  name: submitter_id
+                                - <<: *string_field
+                                  name: updated_datetime
                               type: struct
                             type: array
                         - metadata: {}
@@ -189,6 +375,8 @@ fields:
                               - <<: *string_field
                                 name: short_name
                             type: struct
+                        - <<: *string_field
+                          name: created_datetime
                         - <<: *double_field
                           name: creation_datetime
                         - <<: *string_field
@@ -204,8 +392,53 @@ fields:
                             containsNull: true
                             elementType:
                               fields:
+                                - metadata: {}
+                                  name: annotations
+                                  nullable: true
+                                  type:
+                                    containsNull: true
+                                    elementType:
+                                      fields:
+                                        - <<: *string_field
+                                          name: annotation_id
+                                        - <<: *string_field
+                                          name: case_id
+                                        - <<: *string_field
+                                          name: case_submitter_id
+                                        - <<: *string_field
+                                          name: category
+                                        - <<: *string_field
+                                          name: classification
+                                        - <<: *string_field
+                                          name: created_datetime
+                                        - <<: *string_field
+                                          name: creator
+                                        - <<: *string_field
+                                          name: entity_id
+                                        - <<: *string_field
+                                          name: entity_submitter_id
+                                        - <<: *string_field
+                                          name: entity_type
+                                        - <<: *string_field
+                                          name: legacy_created_datetime
+                                        - <<: *string_field
+                                          name: legacy_updated_datetime
+                                        - <<: *string_field
+                                          name: notes
+                                        - <<: *string_field
+                                          name: state
+                                        - <<: *string_field
+                                          name: status
+                                        - <<: *string_field
+                                          name: submitter_id
+                                        - <<: *string_field
+                                          name: updated_datetime
+                                      type: struct
+                                    type: array
                                 - <<: *string_field
                                   name: bone_marrow_malignant_cells
+                                - <<: *string_field
+                                  name: created_datetime
                                 - <<: *long_field
                                   name: number_proliferating_cells
                                 - <<: *double_field
@@ -247,13 +480,21 @@ fields:
                                 - <<: *string_field
                                   name: slide_id
                                 - <<: *string_field
+                                  name: state
+                                - <<: *string_field
                                   name: submitter_id
                                 - <<: *string_field
                                   name: tissue_microarray_coordinates
+                                - <<: *string_field
+                                  name: updated_datetime
                               type: struct
                             type: array
                         - <<: *string_field
+                          name: state
+                        - <<: *string_field
                           name: submitter_id
+                        - <<: *string_field
+                          name: updated_datetime
                         - <<: *double_field
                           name: weight
                       type: struct
@@ -271,6 +512,8 @@ fields:
                 - <<: *double_field
                   name: shortest_dimension
                 - <<: *string_field
+                  name: state
+                - <<: *string_field
                   name: submitter_id
                 - <<: *double_field
                   name: time_between_clamping_and_freezing
@@ -286,6 +529,8 @@ fields:
                   name: tumor_code_id
                 - <<: *string_field
                   name: tumor_descriptor
+                - <<: *string_field
+                  name: updated_datetime
               type: struct
             type: array
       type: struct
