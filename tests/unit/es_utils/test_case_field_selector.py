@@ -14,8 +14,10 @@ class TestCaseFieldSelector:
         *mappings: dict,
         indices: Iterable[build.IndexType] = (build.IndexType.CASE_CENTRIC,)
     ) -> es_utils.MappingsLoader:
-        mappings = {index: mapping for index, mapping in zip(indices, mappings)}
-        load_mappings = mock.MagicMock(side_effect=lambda i: mappings[i])
+        index_mappings = {
+            index: {"mappings": mapping} for index, mapping in zip(indices, mappings)
+        }
+        load_mappings = mock.MagicMock(side_effect=lambda i: index_mappings[i])
 
         return mock.MagicMock(spec=es_utils.MappingsLoader, load_mappings=load_mappings)
 

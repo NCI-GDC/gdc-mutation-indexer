@@ -1,17 +1,17 @@
 import collections
 import functools
 import json
-import re
 import types
 from typing import (
     AbstractSet,
-    Callable,
     Container,
     Deque,
+    Final,
     Iterable,
     Iterator,
     Mapping,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -20,196 +20,30 @@ import pyspark
 from elasticsearch import helpers
 from normalizer import mapper
 from pyspark import sql
-from typing_extensions import Final
 
+from exports.configuration import elasticsearch as es_config
 from exports.constants import build
 
 
-def iterate_es_results(es_client, index_name, doc_type=None, query=None):
+def iterate_es_results(
+    es_client: elasticsearch.Elasticsearch,
+    index_name: str,
+    doc_type: Optional[str] = None,
+    query: Optional[dict] = None,
+) -> Iterable:
     """
     Returns iterator over elasticsearch query results
     """
-    if query is None:
-        query = {}
-
     doc_iterator = helpers.scan(
         es_client,
         index=index_name,
         doc_type=doc_type,
         scroll="2m",
         size=100,
-        query=query,
+        query=query or {},
     )
+
     return doc_iterator
-
-
-def get_values_from_path(es_doc, path):
-    """
-    Retrieves the value(s) from the document's dot-delimited path
-
-    NOTE: Since there could be array fields in :path, there can be multiple values
-    at the :path in :es_doc
-    """
-
-    if isinstance(path, str):
-        path = path.split(".")
-
-    values = []
-    for i, step in enumerate(path):
-        if isinstance(es_doc, list):
-            for subdoc in es_doc:
-                values.extend(get_values_from_path(subdoc, path[i + 1 :]))
-        elif isinstance(es_doc, dict):
-            subdoc = es_doc[step]
-            values.extend(get_values_from_path(subdoc, path[i + 1 :]))
-        else:
-            values.append(es_doc)
-
-    return values
-
-
-def get_es_doc_count(es_client, index_name, query=None):
-    if query is None:
-        query = {}
-    es_client.indices.refresh(index=index_name)
-    return es_client.count(index=index_name, body=query)["count"]
-
-
-def get_nested_field_by_value_query(field, nested_path, value, not_equals=False):
-    """
-    Builds query for :field which is underneath nested :nested_path elasticsearch path
-    and which has value == :value (value != :value if :not_equals is True)
-    """
-    if not_equals:
-        clause = "must_not"
-    else:
-        clause = "must"
-
-    query = {
-        "query": {
-            "bool": {
-                "should": [
-                    {
-                        "bool": {
-                            clause: {
-                                "nested": {
-                                    "path": nested_path,
-                                    "query": {"terms": {field: value}},
-                                }
-                            }
-                        }
-                    }
-                ]
-            }
-        }
-    }
-
-    return query
-
-
-def get_non_null_fields(config, blacklist=None):
-    """
-    Compare the graph index and case_centric mappings to figure out the field
-    differences. Given the missing fields, query graph index and check if any
-    of the fields have actual values.
-
-    :param config: MI run config
-    :param blacklist: a list of fields to ignore in the differences
-    :return: list of fields that have values in graph index, but missing not
-        defined in case_centric mappings
-    """
-    if not blacklist:
-        # Load default blacklist fields from the config
-        blacklist = config.exclude_fields
-
-    es_client = config.source_es
-
-    # Get actual graph index mappings. The object returned by get_mapping has the
-    # index name at the top level, but if the index is aliased, it might not match
-    # config.graph_case_index, so take whatever the first value is.
-    gi_name = config.graph_case_index
-    gi_mappings = tuple(es_client.indices.get_mapping(gi_name).values())[0]["mappings"]
-    if config.graph_case_doc_type:
-        gi_doc_mappings = gi_mappings[config.graph_case_doc_type]
-    else:
-        gi_doc_mappings = gi_mappings
-
-    # get actual graph index settings
-    gi_settings = tuple(es_client.indices.get_settings(gi_name).values())[0]["settings"]
-
-    # Need to create the mappings in gdcmodels format
-    gc_mappings = {
-        "gdc_from_graph": {
-            "case": {"_mapping": gi_doc_mappings},
-            "_settings": gi_settings,
-        }
-    }
-
-    centric_mapper = mapper.ModelMapper("case_centric")
-    graph_mapper = mapper.ModelMapper("gdc_from_graph", "case")
-
-    graph_mapper.models = gc_mappings
-
-    # Get exclude fields, some of which can be wildcard
-    concretes = []
-    wildcards = []
-    for f in blacklist:
-        if "*" in f:
-            # making it regex compatible to filter later
-            wildcards.append(f.replace("*.", "*").replace("*", ".*"))
-        else:
-            concretes.append(f)
-
-    graph_paths = graph_mapper.get_paths()
-    centric_paths = centric_mapper.get_paths()
-
-    # filter out explicit fields
-    for c in concretes:
-        graph_paths = [p for p in graph_paths if not p.startswith(c)]
-
-    # filter out wildcard fields
-    for w in wildcards:
-        graph_paths = [p for p in graph_paths if not re.match(w, p)]
-
-    missing_paths = set(graph_paths) - set(centric_paths)
-
-    paths_with_data = []
-
-    nested_docs_paths = {
-        p.replace("root.", "").replace("properties.", "").replace(".type.nested", "")
-        for p in graph_mapper.leaf_paths
-        if p.endswith("nested")
-    }
-
-    for path in missing_paths:
-        nested = None
-
-        parts = path.split(".")
-        for i in range(len(parts), 0, -1):
-            sub_path = ".".join(parts[:i])
-            if sub_path in nested_docs_paths:
-                nested = sub_path
-                break
-
-        if nested == path:
-            # Extend config.case_exclude_fields to exclude nested types
-            continue
-
-        exists = {"exists": {"field": path}}
-        if nested:
-            query = {"nested": {"path": nested, "query": exists}}
-        else:
-            query = exists
-
-        if (
-            get_es_doc_count(
-                es_client=es_client, index_name=gi_name, query={"query": query}
-            )
-            > 0
-        ):
-            paths_with_data.append(path)
-
-    return paths_with_data
 
 
 class MappingsLoader:
@@ -231,7 +65,7 @@ class MappingsLoader:
         index_name, doc_type = index_type.get_mappings_details()
         model_mapper = mapper.ModelMapper(index_name, doc_type)
 
-        return model_mapper.get_normalized_mappings()["mappings"]
+        return model_mapper.get_normalized_mappings()
 
 
 def _is_included_field(
@@ -285,7 +119,9 @@ def _convert_properties(
     Yields:
         Individual fields from the given properties mapping.
     """
-    fields = ((f"{path}{prop}", details) for prop, details in properties.items())
+    fields: Iterable[Tuple[str, Mapping]] = (
+        (f"{path}{prop}", details) for prop, details in properties.items()
+    )
     is_included_field = functools.partial(
         _is_included_field, excluded_fields, included_fields
     )
@@ -344,7 +180,7 @@ def _extract_fields(
 class CaseFieldSelector:
     """A class for selecting the case fields in a given elasticsearch index."""
 
-    __slots__ = ("_mapping_loader",)
+    __slots__ = ("_mappings_loader",)
 
     CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = types.MappingProxyType(
         {
@@ -358,7 +194,7 @@ class CaseFieldSelector:
     )
 
     def __init__(self, mappings_loader: Optional[MappingsLoader] = None) -> None:
-        self._mapping_loader = mappings_loader or MappingsLoader()
+        self._mappings_loader = mappings_loader or MappingsLoader()
 
     def _select_fields(
         self,
@@ -373,7 +209,7 @@ class CaseFieldSelector:
         path_to_fields = (
             collections.deque(prefix.split(".")) if prefix else collections.deque()
         )
-        mappings = self._mapping_loader.load_mappings(index_type)
+        mappings = self._mappings_loader.load_mappings(index_type)["mappings"]
         fields = _extract_fields(
             mappings["properties"], excluded_fields, included_fields, path_to_fields
         )
@@ -410,41 +246,34 @@ class CaseFieldSelector:
         )
 
 
-def _get_index(config, index_type: build.IndexType) -> str:
+def _get_index(config: es_config.Elasticsearch, index_type: build.IndexType) -> str:
     if index_type == build.IndexType.FILE:
-        return str(config.graph_file_index)
+        return config.read.file_index
 
     if index_type == build.IndexType.CASE:
-        return str(config.graph_case_index)
+        return config.read.case_index
 
-    type_key = index_type.name.lower()
-
-    if type_key in config.indices:
-        return config.indices[type_key]
+    if index_type in config.write.indices:
+        return config.write.indices[index_type]
 
     raise ValueError(f"Index not configured: {index_type.name}")
 
 
-def _model_mapper_factory(index_type: str) -> mapper.ModelMapper:
-    return mapper.ModelMapper(index=index_type)
-
-
 class DataFrameUtil:
+    __slots__ = ("_config", "_spark_session", "_es_client", "_mappings_loader")
     ES_FORMAT = "org.elasticsearch.spark.sql"
 
     def __init__(
         self,
-        config,
-        sql_context: sql.SQLContext,
+        config: es_config.Elasticsearch,
+        spark_session: sql.SparkSession,
         es_client: elasticsearch.Elasticsearch,
-        model_mapper_factory: Callable[
-            [str], mapper.ModelMapper
-        ] = _model_mapper_factory,
+        mappings_loader: MappingsLoader,
     ) -> None:
         self._config = config
-        self._sql_context = sql_context
+        self._spark_session = spark_session
         self._es_client = es_client
-        self._model_mapper_factory = model_mapper_factory
+        self._mappings_loader = mappings_loader
 
     def _get_index(self, index_type: build.IndexType) -> str:
         return _get_index(self._config, index_type)
@@ -475,18 +304,18 @@ class DataFrameUtil:
         """
         index = self._get_index(index_type)
         reader = (
-            self._sql_context.read.format(self.ES_FORMAT)
+            self._spark_session.read.format(self.ES_FORMAT)
             .option("es.read.metadata", read_metadata)
-            .option("es.nodes", self._config.source_es_nodes)
-            .option("es.net.http.auth.user", self._config.source_es_user)
-            .option("es.net.http.auth.pass", self._config.source_es_pass)
-            .option("es.net.ssl", self._config.es_use_ssl)
+            .option("es.nodes", self._config.connection.nodes)
+            .option("es.net.http.auth.user", self._config.connection.user)
+            .option("es.net.http.auth.pass", self._config.connection.password)
+            .option("es.net.ssl", self._config.connection.use_ssl)
             .option("es.nodes.wan.only", True)
             .option("es.nodes.resolve.hostname", False)
             .option("es.resource.read", index)
             .option(
                 "es.net.ssl.cert.allow.self.signed",
-                self._config.disable_es_verify_certs,
+                not self._config.connection.verify_certs,
             )
             .option("es.nodes.resolve.hostname", False)
         )
@@ -521,10 +350,11 @@ class DataFrameUtil:
                 f"Index: {index} already exists. Cannot overwrite existing index."
             )
 
-        index_mapper = self._model_mapper_factory(index_type.name.lower())
-        body = index_mapper.get_normalized_mappings()
+        mappings = self._mappings_loader.load_mappings(index_type)
 
-        self._es_client.indices.create(index=index, body=body)
+        self._es_client.indices.create(
+            index=index, mappings=mappings["mappings"], settings=mappings["settings"]
+        )
 
     def write(
         self, df: sql.DataFrame, index_type: build.IndexType, id_field: str
@@ -542,13 +372,13 @@ class DataFrameUtil:
         self._create_index(index, index_type)
         (
             df.write.format(self.ES_FORMAT)
-            .option("es.nodes", self._config.es_nodes)
-            .option("es.net.http.auth.user", self._config.source_es_user)
-            .option("es.net.http.auth.pass", self._config.es_pass)
-            .option("es.net.ssl", self._config.es_use_ssl)
+            .option("es.nodes", self._config.connection.nodes)
+            .option("es.net.http.auth.user", self._config.connection.user)
+            .option("es.net.http.auth.pass", self._config.connection.password)
+            .option("es.net.ssl", self._config.connection.use_ssl)
             .option(
                 "es.net.ssl.cert.allow.self.signed",
-                self._config.disable_es_verify_certs,
+                not self._config.connection.verify_certs,
             )
             .option("es.nodes.wan.only", "true")
             .option("es.nodes.resolve.hostname", "false")
@@ -557,8 +387,8 @@ class DataFrameUtil:
             .option("es.http.retries", "-1")
             .option("es.batch.write.retry.count", "-1")
             .option("es.batch.write.retry.wait", "10m")
-            .option("es.batch.size.bytes", self._config.batch_size_bytes)
-            .option("es.batch.size.entries", self._config.batch_size_entries)
+            .option("es.batch.size.bytes", self._config.write.batch_size_bytes)
+            .option("es.batch.size.entries", self._config.write.batch_size_entries)
             .option("es.batch.write.refresh", True)
             .option("es.mapping.id", id_field)
             .save(index)
@@ -574,7 +404,11 @@ class RDDUtil:
         vs an RDD.
     """
 
-    def __init__(self, config, spark_context: pyspark.SparkContext) -> None:
+    __slots__ = ("_config", "_spark_context")
+
+    def __init__(
+        self, config: es_config.Elasticsearch, spark_context: pyspark.SparkContext
+    ) -> None:
         self._config = config
         self._spark_context = spark_context
 
@@ -613,12 +447,12 @@ class RDDUtil:
         """
         config = {
             "es.read.metadata": str(read_metadata),
-            "es.nodes": self._config.source_es_nodes,
-            "es.net.http.auth.user": self._config.source_es_user,
-            "es.net.http.auth.pass": self._config.source_es_pass,
-            "es.net.ssl": str(self._config.es_use_ssl),
+            "es.nodes": self._config.connection.nodes,
+            "es.net.http.auth.user": self._config.connection.user,
+            "es.net.http.auth.pass": self._config.connection.password,
+            "es.net.ssl": str(self._config.connection.use_ssl),
             "es.net.ssl.cert.allow.self.signed": str(
-                self._config.disable_es_verify_certs
+                not self._config.connection.verify_certs
             ),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": self._get_index(index_type),

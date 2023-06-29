@@ -1,40 +1,16 @@
-import dataclasses
-from typing import Dict, Tuple
+from typing import Tuple
 from unittest import mock
 
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
+from exports.builders import gene_expression as builders
+from exports.configuration.builders import gene_expression
+from exports.constants import build
+from tests.unit import utils
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class Gene:
-    gene_id: str = "gene-0"
-    expression_value: float = 328382.4458
-    symbol: str = "genSym"
-
-
-@dataclasses.dataclass(frozen=True)
-class File:
-    file_id: str = "file-0"
-    genes: Tuple[Gene, ...] = (Gene(),)
-
-
-@dataclasses.dataclass(frozen=True)
-class Case:
-    case_id: str = "case-0"
-    days_to_death: int = 38
-    ethnicity: str = "hispanic"
-    gender: str = "male"
-    race: str = "indigenous"
-    vital_status: str = "status"
-    submitter_id: str = "sub-id"
-    project_id: str = "GDC-TEST"
-    file_id: str = "file-0"
-    age_at_diagnosis: Tuple[int, ...] = (12,)
+from tests.unit.data.models import gene_expression as models
 
 
 @pytest.fixture(scope="class")
@@ -67,8 +43,10 @@ class TestGeneExpressionBuilder:
         self.final_schema = final_schema
 
     def arrange_inputs(
-        self, values: Tuple[File, ...] = (File(),), cases: Tuple[Case, ...] = (Case(),)
-    ) -> Dict[str, sql.DataFrame]:
+        self,
+        values: Tuple[models.Value, ...] = (models.Value(),),
+        cases: Tuple[models.Case, ...] = (models.Case(),),
+    ) -> builders.GeneExpressionInputs:
         value_df = self.spark_session.createDataFrame(
             values,  # type: ignore
             schema=self.values_schema,
@@ -80,32 +58,46 @@ class TestGeneExpressionBuilder:
 
         return {"expression_value_df": value_df, "case_df": case_df}
 
+    def arrange_config(self) -> gene_expression.IndexBuilder:
+        config = mock.MagicMock(
+            spec=gene_expression.IndexBuilder,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+            is_cached=False,
+            projects=(),
+            partition_size=1,
+            id_field="case_id",
+        )
+
+        return config
+
     def test__build__single_row(self) -> None:
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
+        dataframe_util = mock.MagicMock()
+        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs()
-        builder = builders.GeneExpressionBuilder(config, sql_context)
+        builder = builders.GeneExpressionBuilder(
+            config, spark_session, dataframe_util, mappings_loader
+        )
 
-        builder.build(**inputs)
+        result_df = builder.build(**inputs)
 
-        result_df = builder.gene_expression
-
-        assert result_df
         assert result_df.count() == 1
         assert result_df.schema == self.final_schema
 
     def test__build__no_matching_file_ids(self) -> None:
-        config = mock.MagicMock()
-        sql_context = mock.MagicMock()
+        config = self.arrange_config()
+        spark_session = mock.MagicMock()
+        dataframe_util = mock.MagicMock()
+        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs(
-            (File(file_id="file-1"),), (Case(file_id="file-2"),)
+            (models.Value(file_id="file-1"),), (models.Case(file_id="file-2"),)
         )
-        builder = builders.GeneExpressionBuilder(config, sql_context)
+        builder = builders.GeneExpressionBuilder(
+            config, spark_session, dataframe_util, mappings_loader
+        )
 
-        builder.build(**inputs)
+        result_df = builder.build(**inputs)
 
-        result_df = builder.gene_expression
-
-        assert result_df
         assert result_df.count() == 0
         assert result_df.schema == self.final_schema

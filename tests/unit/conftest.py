@@ -1,10 +1,15 @@
+import dataclasses
 import os
-from typing import Any, Callable, Generator, Iterable
+from collections.abc import Generator, Iterable
+from typing import Any
 
+import pyspark
 import pytest
 import yaml
 from pyspark import sql
 from pyspark.sql import types
+
+from tests.unit import utils
 
 
 @pytest.fixture(scope="session")
@@ -25,15 +30,15 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
 
 
 @pytest.fixture(scope="session")
-def create_dataframe(
-    spark_session: sql.SparkSession,
-) -> Callable[[Iterable[Any], types.StructType], sql.DataFrame]:
-    def _create_dataframe(
-        data: Iterable[Any], schema: types.StructType
-    ) -> sql.DataFrame:
-        return spark_session.sparkContext.parallelize(data, 1).toDF(schema=schema)
+def create_dataframe(spark_session: sql.SparkSession) -> utils.CreateDataFrame:
+    def inner(data: Iterable[Any], schema: types.StructType) -> sql.DataFrame:
+        rdd: pyspark.RDD = spark_session.sparkContext.parallelize(
+            map(dataclasses.asdict, data)
+        )
 
-    return _create_dataframe
+        return spark_session.createDataFrame(rdd, schema)
+
+    return inner
 
 
 @pytest.fixture(scope="session")

@@ -1,6 +1,7 @@
 -c requirements.txt
 -c master-requirements.txt
 
+click~=8.1
 coverage[toml]~=5.5
 deepdiff==3.3.0
 ghp-import==0.5.4

@@ -12,7 +12,7 @@ from exports.configuration import marshmallow_extensions
 # these are directly imported to created a better interface when using the viz module
 from exports.configuration.builders.common import (
     Builder,
-    CentricBuilder,
+    IndexBuilder,
     GeneModelBuilder,
 )
 
@@ -81,7 +81,7 @@ class DNABuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class CaseCentricBuilder(CentricBuilder):
+class CaseCentricBuilder(IndexBuilder):
     """
     Configuration values for running the case centric builder
     """
@@ -99,7 +99,7 @@ class CaseCentricBuilder(CentricBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
-class CNVCentricBuilder(CentricBuilder):
+class CNVCentricBuilder(IndexBuilder):
     """
     Configuration values for running the case builder
     """
@@ -108,7 +108,7 @@ class CNVCentricBuilder(CentricBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
-class SSMCentricBuilder(CentricBuilder):
+class SSMCentricBuilder(IndexBuilder):
     """
     Configuration values for running the SSM centric builder
     """
@@ -131,8 +131,8 @@ class Viz:
     maf: MAFBuilder
     primary_aliquot: Builder
     case_centric: CaseCentricBuilder
-    gene_centric: CentricBuilder
+    gene_centric: IndexBuilder
     cnv_centric: CNVCentricBuilder
-    cnv_occurrence_centric: CentricBuilder
+    cnv_occurrence_centric: IndexBuilder
     ssm_centric: SSMCentricBuilder
-    ssm_occurrence_centric: CentricBuilder
+    ssm_occurrence_centric: IndexBuilder

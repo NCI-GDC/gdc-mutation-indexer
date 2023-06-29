@@ -14,9 +14,9 @@ class PROTInputs(TypedDict):
     ...
 
 
-class PROTBuilder(
-    bases.InputBuilder[viz.PROTBuilder, PROTInputs]
-):
+class PROTBuilder(bases.InputBuilder[viz.PROTBuilder, PROTInputs]):
+    __slots__ = ()
+
     def __init__(
         self, config: viz.PROTBuilder, spark_session: sql.SparkSession
     ) -> None:
@@ -27,9 +27,7 @@ class PROTBuilder(
             output=build.DataFrame.CIVIC_PROT,
         )
 
-    def _build_from_scratch(
-        self, input_dfs: PROTInputs
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: PROTInputs) -> sql.DataFrame:
         with resources.path(
             self._config.data_package, self._config.data_resource
         ) as file_path:
@@ -47,12 +45,10 @@ class DNAInputs(TypedDict):
     ...
 
 
-class DNABuilder(
-    bases.InputBuilder[viz.DNABuilder, DNAInputs]
-):
-    def __init__(
-        self, config: viz.DNABuilder, spark_session: sql.SparkSession
-    ) -> None:
+class DNABuilder(bases.InputBuilder[viz.DNABuilder, DNAInputs]):
+    __slots__ = ()
+
+    def __init__(self, config: viz.DNABuilder, spark_session: sql.SparkSession) -> None:
         super().__init__(
             config,
             spark_session,

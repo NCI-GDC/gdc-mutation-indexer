@@ -1,6 +1,7 @@
 import logging
 import pathlib
-from typing import Any, Iterable, Iterator, Optional
+from collections import Iterable, Iterator
+from typing import Any, Optional
 from unittest import mock
 
 import elasticsearch
@@ -9,7 +10,6 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import types
 
-import config
 from exports import builders, configuration, es_utils, indexd_utils
 from exports.constants import build
 from tests.integration.utils import test_setup
@@ -29,15 +29,16 @@ def ge_config() -> configuration.Configuration:
 
 @pytest.fixture(scope="module")
 def primary_aliquot_df(
-    default_old_config: config.BaseConfig,
     default_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     ge_file_docs: Any,
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(
-        default_old_config, sqlContext, es_client
+        default_config.elasticsearch,
+        spark_session,
+        es_client,
+        es_utils.MappingsLoader(),
     )
     primary_aliquot_builder = builders.GeneExpressionPrimaryAliquotBuilder(
         default_config.builders.gene_expression.primary_aliquot,
@@ -51,13 +52,20 @@ def primary_aliquot_df(
 @pytest.fixture
 def ge_builder(
     ge_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
+    spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> builders.GeneExpressionBuilder:
-    adapter = config.ConfigAdapter(ge_config, es_client, mock.MagicMock())
-    builder = builders.GeneExpressionBuilder(adapter, sqlContext)
+    mappings_loader = es_utils.MappingsLoader()
+    dataframe_util = es_utils.DataFrameUtil(
+        ge_config.elasticsearch, spark_session, es_client, mappings_loader
+    )
 
-    return builder
+    return builders.GeneExpressionBuilder(
+        ge_config.builders.gene_expression.gene_expression,
+        spark_session,
+        dataframe_util,
+        mappings_loader,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -95,7 +103,6 @@ def case_df(
 
 @pytest.fixture(scope="function")
 def expression_value_df(
-    default_old_config: config.BaseConfig,
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
@@ -188,8 +195,9 @@ def test_gene_expression_builder(
     expression_value_df: sql.DataFrame,
 ) -> None:
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
+    inputs = {"case_df": case_df, "expression_value_df": expression_value_df}
 
-    ge_builder.build(case_df, expression_value_df).load()
+    ge_builder.build(**inputs)
 
     es_client.indices.refresh()
 

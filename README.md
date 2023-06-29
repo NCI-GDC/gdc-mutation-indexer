@@ -4,64 +4,26 @@
 
 Backend for exporting mutation indices for visualization on the GDC
 
-- [GDC Mutation Index Export](#gdc-mutation-index-export)
-  - [Architecture](#architecture)
-  - [Make the docs](#make-the-docs)
-  - [Tests](#tests)
-  - [Setup pre-commit hook to check for secrets](#setup-pre-commit-hook-to-check-for-secrets)
-  - [Contributing](#contributing)
+### Contents
+- [Architecture](#architecture)
+- [Pre-Commit](#setup-pre-commit-hook-to-check-for-secrets)
+- [Tests](tests/README.md)
+  - [Running Tests](tests/README.md#running-tests)
+  - [Elasticsearch](tests/README.md#elasticsearch)
+  - [Java](tests/README.md#java)
+  - [Tools](tests/README.md#tools)
+    - [Models](tests/unit/data/models/README.md)
+    - [Schemas](tests/unit/data/schemas/README.md)
 
 ## Architecture
-![Indexer Architecture](architecture.png)
+![Indexer Architecture](https://user-images.githubusercontent.com/68259544/201140691-64d64079-ef62-4ee9-ac0f-5b16388dd8cd.png)
 
-The mutation indexer combines mutation data from MAF analysis files and metadata
-from the data model to create Elasticsearch indices that may be used for
-visualization or further analysis.
+Mutation indexer is an ETL platform leveraging Spark/Pyspark. It combines data from data
+derived from the GDC graph (via the graph indices), static data (e.g. gene model), and
+data contained in analysis files (e.g. MAF and ASCAT files) in order to create
+structured data which can be used for visualization and further analysis.
 
-## Make the docs
-
-```
-cd docs
-make html
-ghp-import build/html
-```
-
-## Tests
-### ElasticSearch
-Insure you have elasticsearch working on your device:
-`service elasticsearch status`
-
-In case you need to install elastic search:
-#### Homebrew
-```
-brew install elasticsearch@7.6
-/usr/local/Cellar/elasticsearch\@7.6/7.6.2/bin/elasticsearch-plugin install mapper-size
-brew services start elasticsearch@7.6
-```
-
-#### Ubuntu/Debian bases systems
-```
-apt install elasticsearch=7.6.2
-apt-mark hold elasticsearch
-service elasticsearch start
-```
-Make sure your elasticsearch server is running at port 9200.
-
-### Tox
-Insure tox is install via pip or pipx
-```
-pipx install tox
-```
-
-To run tests:
-```
-tox -- path/to/test(s)
-```
-
-
-
-## Setup pre-commit hook to check for secrets
-
+## Pre-Commit
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.
 We use [detect-secrets](https://github.com/Yelp/detect-secrets) to search for secrets being committed into the repo. 
 
@@ -81,14 +43,3 @@ git add .secrets.baseline
 ```
 detect-secrets audit .secrets.baseline
 ```
-
-### Internal Reference
-https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer
-
-### TODO
-- Expand background on purpose
-- Provide instructions for how to use
-
-## Contributing
-
-Read how to contribute [here](https://github.com/NCI-GDC/gdcapi/blob/master/CONTRIBUTING.md)

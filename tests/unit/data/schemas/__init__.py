@@ -6,7 +6,9 @@ from typing import Type
 import yaml
 from pyspark.sql import types
 
-PYTHON_PASCAL_CASE = re.compile("((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
+from tests.unit.data.schemas import _minimize
+
+PYTHON_PASCAL_CASE = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -24,9 +26,11 @@ class Schema:
             resources.files(self._package).joinpath(self._resource)
         ) as path, open(path, "w") as f:
             yaml.dump(schema.jsonValue(), f)
+        
+        _minimize.minimize_files(self._package)
 
 
-def _get_schama(cls: Type, schema: str) -> Schema:
+def _get_schema(cls: Type, schema: str) -> Schema:
     package = ".".join(
         PYTHON_PASCAL_CASE.sub(r"_\1", p).lower() for p in cls.__qualname__.split(".")
     )
@@ -37,8 +41,8 @@ def _get_schama(cls: Type, schema: str) -> Schema:
 
 
 def _init_schemas(cls: Type) -> Type:
-    annoations = getattr(cls, "__annotations__", {})
-    schemas = {s: _get_schama(cls, s) for s, t in annoations.items() if t is Schema}
+    annotations = getattr(cls, "__annotations__", {})
+    schemas = {s: _get_schema(cls, s) for s, t in annotations.items() if t is Schema}
 
     for name, schema in schemas.items():
         setattr(cls, name, schema)
@@ -91,14 +95,20 @@ class Viz:
 
         @_init_schemas
         class Consequence:
-            FINAL: Schema
-
             @_init_schemas
-            class AAChange:
+            class SSM:
                 FINAL: Schema
 
+                @_init_schemas
+                class WithoutAAChange:
+                    FINAL: Schema
+
+                @_init_schemas
+                class WithoutGene:
+                    FINAL: Schema
+
             @_init_schemas
-            class Gene:
+            class CNV:
                 FINAL: Schema
 
         @_init_schemas
@@ -129,6 +139,31 @@ class Viz:
         class PrimaryAliquot:
             FINAL: Schema
             FILE: Schema
+
+        class DFBuilders:
+            @_init_schemas
+            class SSM:
+                FINAL: Schema
+
+                @_init_schemas
+                class Occurrence:
+                    FINAL: Schema
+
+                @_init_schemas
+                class Other:
+                    FINAL: Schema
+
+            @_init_schemas
+            class CNV:
+                FINAL: Schema
+
+                @_init_schemas
+                class Occurrence:
+                    FINAL: Schema
+
+                @_init_schemas
+                class Other:
+                    FINAL: Schema
 
 
 class GeneExpression:

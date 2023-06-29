@@ -132,13 +132,14 @@ class TestInputBuilder:
     class Builder1(DummyBuilder[DummyInputs]):
         def __init__(
             self,
+            output: build.DataFrame = build.DataFrame.EXPRESSION_VALUE,
             config: Optional[common.Builder] = None,
             spark_session: Optional[sql.SparkSession] = None,
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
             super().__init__(
                 DummyInputs,
-                build.DataFrame.EXPRESSION_VALUE,
+                output,
                 config,
                 spark_session,
                 scratch_df,
@@ -314,3 +315,37 @@ class TestInputBuilder:
         result_df = builder.build()
 
         assert result_df is expected_df
+
+    def test__hash__hash_is_same_as_output(self) -> None:
+        builder = TestInputBuilder.Builder0()
+
+        assert (
+            hash(builder) == hash(builder.output) == hash(build.DataFrame.MAF_METADATA)
+        )
+
+    def test__eq__compare_with_self_true(self) -> None:
+        builder = TestInputBuilder.Builder0()
+
+        assert builder == builder
+
+    def test__eq__builders_with_same_output_true(self) -> None:
+        builder0 = TestInputBuilder.Builder0()
+        builder1 = TestInputBuilder.Builder1(output=builder0.output)
+
+        assert builder0 == builder1
+
+    def test__eq__same_builder_output_and_dataframe_true(self) -> None:
+        builder = TestInputBuilder.Builder0()
+
+        assert builder == build.DataFrame.MAF_METADATA
+
+    def test__eq__builders_with_diff_outputs_false(self) -> None:
+        builder0 = TestInputBuilder.Builder0()
+        builder1 = TestInputBuilder.Builder1()
+
+        assert builder0 != builder1
+
+    def test__eq__diff_builder_output_and_dataframe_false(self) -> None:
+        builder = TestInputBuilder.Builder1()
+
+        assert builder != build.DataFrame.MAF_METADATA

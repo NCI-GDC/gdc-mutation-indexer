@@ -1,12 +1,13 @@
-import abc
+import graphlib
 import logging
-from typing import Collection, Dict, Iterable, Mapping, NamedTuple, Union
+from collections.abc import Iterable, Mapping, MutableMapping
+from typing import NamedTuple
 
 import pyspark
 from pyspark import sql
 
 import config
-from exports.builders import base_builder, base_input_builder, bases
+from exports.builders import base_builder, bases
 from exports.constants import build
 
 logging.basicConfig(format=config.LOG_FORMAT)
@@ -15,69 +16,51 @@ logger = logging.getLogger(__name__)
 
 
 class Builders(NamedTuple):
-    input_builders: Mapping[
-        build.DataFrame, Union[bases.Builder, base_input_builder.BaseInputBuilder]
-    ]
+    builders: Iterable[bases.Builder]
     index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
 
 
-class GDCMutationExport(abc.ABC):
+def _order_builders(builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
+    builder_by_output = {b.output: b for b in builders}
+    graph = graphlib.TopologicalSorter({b.output: b.inputs for b in builders})
+
+    return tuple(builder_by_output[d] for d in graph.static_order())
+
+
+class Exporter:
     """
     The main entry point into the index export process for the mutation indices
     """
 
-    __slots__ = ("_spark_context", "_index_types", "_input_builders", "_index_builders")
+    __slots__ = ("_spark_context", "_builders", "_index_types", "_index_builders")
 
     def __init__(
         self,
         spark_context: pyspark.SparkContext,
-        index_types: Collection[build.IndexType],
+        index_types: Iterable[build.IndexType],
         builders: Builders,
     ) -> None:
         self._spark_context = spark_context
-        self._index_types = index_types
-        self._input_builders = builders.input_builders
+        self._builders = _order_builders(builders.builders)
+
+        # TODO: Remove when old index builders ported to new base.
+        self._index_types = frozenset(index_types) & builders.index_builders.keys()
         self._index_builders = builders.index_builders
 
-    @property
-    @abc.abstractmethod
-    def _input_data_frames(self) -> Iterable[build.DataFrame]:
+    def run(self) -> None:
         """
-        An ordered iteration of the required data frames for the export process.
+        Executes the export for the configured data by running the required builders.
         """
-        pass
+        inputs: MutableMapping[str, sql.DataFrame] = {}
 
-    def _build_input_data_frames(self) -> Dict[str, sql.DataFrame]:
-        """
-        Builds the input data frames given by the input data frames prop using their
-        related input builder.
+        for builder in self._builders:
+            output = builder.output
 
-        Returns:
-            All data frames output by the input data frame builders.
-        """
-        inputs: Dict[str, sql.DataFrame] = {}
+            self._spark_context.setJobGroup(output.name, f"Build {output.name}")
 
-        for data_frame in self._input_data_frames:
-            if data_frame not in self._input_builders:
-                raise ValueError(
-                    f"No builder is configured for DataFrame: {data_frame}."
-                )
+            inputs[output.to_param()] = builder.build(**inputs)
 
-            self._spark_context.setJobGroup(data_frame.name, f"Build {data_frame}")
-
-            df = self._input_builders[data_frame].build(**inputs)
-            inputs[data_frame.to_param()] = df
-
-        return inputs
-
-    def run_export(
-        self,
-    ) -> None:
-        """
-        Executes the export configured data by running the required builders.
-        """
-        inputs = self._build_input_data_frames()
-
+        # TODO: Remove when old index builders ported to new base
         for index_type in self._index_types:
             if index_type not in self._index_builders:
                 raise ValueError(f"No builder is configured for index: {index_type}.")
@@ -86,43 +69,3 @@ class GDCMutationExport(abc.ABC):
             self._index_builders[index_type].build(**inputs).load()
 
         logger.info("Mutation Indexer finished successfully")
-
-
-class VizExport(GDCMutationExport):
-    def __init__(
-        self,
-        sc: pyspark.SparkContext,
-        index_types: Collection[build.IndexType],
-        builders: Builders,
-    ) -> None:
-        super().__init__(sc, index_types, builders)
-
-    @property
-    def _input_data_frames(self) -> Iterable[build.DataFrame]:
-        return (
-            build.DataFrame.GENE_MODEL,
-            build.DataFrame.PRIMARY_ALIQUOT,
-            build.DataFrame.MAF_METADATA,
-            build.DataFrame.MAF,
-            build.DataFrame.ASCAT,
-            build.DataFrame.CASE,
-        )
-
-
-class GEExport(GDCMutationExport):
-    def __init__(
-        self,
-        sc: pyspark.SparkContext,
-        index_types: Collection[build.IndexType],
-        builders: Builders,
-    ) -> None:
-        super().__init__(sc, index_types, builders)
-
-    @property
-    def _input_data_frames(self) -> Iterable[build.DataFrame]:
-        return (
-            build.DataFrame.GENE_MODEL,
-            build.DataFrame.PRIMARY_ALIQUOT,
-            build.DataFrame.CASE,
-            build.DataFrame.EXPRESSION_VALUE,
-        )

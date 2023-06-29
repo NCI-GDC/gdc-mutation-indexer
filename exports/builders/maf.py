@@ -18,6 +18,59 @@ from exports.constants import build
 logger = logging.getLogger(__name__)
 
 
+def _ssm_label() -> sql.Column:
+    """
+    Creates a column with a label (genomic change) from an ssm based on its variant type.
+    """
+    chromosome = F.regexp_replace("chromosome", "chr", "")
+    variant_type = F.col("variant_type")
+    start_position = F.col("start_position")
+    end_position = F.col("end_position")
+    reference_allele = F.col("reference_allele")
+    tumor_allele = F.col("tumor_allele")
+    multi_nucleotide_polymorphisms = ("DNP", "TNP", "ONP")
+
+    return (
+        F.when(
+            variant_type == "SNP",
+            F.format_string(
+                "chr%s:g.%s%s>%s",
+                chromosome,
+                start_position,
+                reference_allele,
+                tumor_allele,
+            ),
+        )
+        .when(
+            variant_type.isin(*(F.lit(t) for t in multi_nucleotide_polymorphisms)),
+            F.format_string(
+                "chr%s:g.%s_%sdelins%s",
+                chromosome,
+                start_position,
+                end_position,
+                tumor_allele,
+            ),
+        )
+        .when(
+            variant_type == "DEL",
+            F.format_string(
+                "chr%s:g.%sdel%s", chromosome, start_position, reference_allele
+            ),
+        )
+        .when(
+            variant_type == "INS",
+            F.format_string(
+                "chr%s:g.%s_%sins%s",
+                chromosome,
+                start_position,
+                end_position,
+                tumor_allele,
+            ),
+        )
+        .otherwise(chromosome)
+    )
+
+
 class MAFInputs(TypedDict):
     maf_metadata_df: sql.DataFrame
     gene_model_df: sql.DataFrame
@@ -288,17 +341,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         """
         Adds the genomic_dna_change column
         """
-        maf_df = df.withColumn(
-            "genomic_dna_change",
-            utils.ssm_label_col(
-                F.col("chromosome"),
-                F.col("variant_type"),
-                F.col("start_position"),
-                F.col("end_position"),
-                F.col("reference_allele"),
-                F.col("tumor_allele"),
-            ),
-        )
+        maf_df = df.withColumn("genomic_dna_change", _ssm_label())
         return maf_df
 
     def extract_cds_position(self, df: sql.DataFrame) -> sql.DataFrame:
