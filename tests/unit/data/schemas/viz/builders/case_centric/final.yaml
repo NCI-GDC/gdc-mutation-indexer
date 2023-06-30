@@ -4,8 +4,67 @@ fields:
     name: case_id
     nullable: true
     type: string
+  - metadata: {}
+    name: aliquot_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: analyte_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: annotations
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *string_field
+            name: annotation_id
+          - <<: *string_field
+            name: case_id
+          - <<: *string_field
+            name: case_submitter_id
+          - <<: *string_field
+            name: category
+          - <<: *string_field
+            name: classification
+          - <<: *string_field
+            name: created_datetime
+          - <<: *string_field
+            name: creator
+          - <<: *string_field
+            name: entity_id
+          - <<: *string_field
+            name: entity_submitter_id
+          - <<: *string_field
+            name: entity_type
+          - <<: *string_field
+            name: legacy_created_datetime
+          - <<: *string_field
+            name: legacy_updated_datetime
+          - <<: *string_field
+            name: notes
+          - <<: *string_field
+            name: state
+          - <<: *string_field
+            name: status
+          - <<: *string_field
+            name: submitter_id
+          - <<: *string_field
+            name: updated_datetime
+        type: struct
+      type: array
   - <<: *string_field
     name: consent_type
+  - <<: *string_field
+    name: created_datetime
   - &long_field
     metadata: {}
     name: days_to_consent
@@ -24,6 +83,12 @@ fields:
           name: age_is_obfuscated
         - <<: *string_field
           name: cause_of_death
+        - <<: *string_field
+          name: cause_of_death_source
+        - <<: *string_field
+          name: country_of_residence_at_enrollment
+        - <<: *string_field
+          name: created_datetime
         - <<: *long_field
           name: days_to_birth
         - <<: *long_field
@@ -34,6 +99,10 @@ fields:
           name: ethnicity
         - <<: *string_field
           name: gender
+        - <<: *long_field
+          name: occupation_duration_years
+        - <<: *string_field
+          name: premature_at_birth
         - <<: *string_field
           name: race
         - <<: *string_field
@@ -41,7 +110,14 @@ fields:
         - <<: *string_field
           name: submitter_id
         - <<: *string_field
+          name: updated_datetime
+        - <<: *string_field
           name: vital_status
+        - &double_field
+          metadata: {}
+          name: weeks_gestation_at_birth
+          nullable: true
+          type: double
         - <<: *long_field
           name: year_of_birth
         - <<: *long_field
@@ -54,6 +130,8 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - <<: *string_field
+            name: adrenal_hormone
           - <<: *long_field
             name: age_at_diagnosis
           - <<: *string_field
@@ -77,30 +155,80 @@ fields:
           - <<: *string_field
             name: ann_arbor_b_symptoms
           - <<: *string_field
+            name: ann_arbor_b_symptoms_described
+          - <<: *string_field
             name: ann_arbor_clinical_stage
           - <<: *string_field
             name: ann_arbor_extranodal_involvement
           - <<: *string_field
             name: ann_arbor_pathologic_stage
+          - metadata: {}
+            name: annotations
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: annotation_id
+                  - <<: *string_field
+                    name: case_id
+                  - <<: *string_field
+                    name: case_submitter_id
+                  - <<: *string_field
+                    name: category
+                  - <<: *string_field
+                    name: classification
+                  - <<: *string_field
+                    name: created_datetime
+                  - <<: *string_field
+                    name: creator
+                  - <<: *string_field
+                    name: entity_id
+                  - <<: *string_field
+                    name: entity_submitter_id
+                  - <<: *string_field
+                    name: entity_type
+                  - <<: *string_field
+                    name: legacy_created_datetime
+                  - <<: *string_field
+                    name: legacy_updated_datetime
+                  - <<: *string_field
+                    name: notes
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: status
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: updated_datetime
+                type: struct
+              type: array
           - <<: *string_field
             name: best_overall_response
           - <<: *string_field
             name: burkitt_lymphoma_clinical_variant
           - <<: *string_field
+            name: child_pugh_classification
+          - <<: *string_field
             name: classification_of_tumor
+          - <<: *string_field
+            name: cog_liver_stage
+          - <<: *string_field
+            name: cog_neuroblastoma_risk_group
           - <<: *string_field
             name: cog_renal_stage
           - <<: *string_field
             name: cog_rhabdomyosarcoma_risk_group
+          - <<: *string_field
+            name: created_datetime
           - <<: *long_field
             name: days_to_best_overall_response
           - <<: *long_field
             name: days_to_diagnosis
-          - &double_field
-            metadata: {}
+          - <<: *double_field
             name: days_to_last_follow_up
-            nullable: true
-            type: double
           - <<: *double_field
             name: days_to_last_known_disease_status
           - <<: *double_field
@@ -110,6 +238,14 @@ fields:
           - <<: *string_field
             name: eln_risk_classification
           - <<: *string_field
+            name: enneking_msts_grade
+          - <<: *string_field
+            name: enneking_msts_metastasis
+          - <<: *string_field
+            name: enneking_msts_stage
+          - <<: *string_field
+            name: enneking_msts_tumor_site
+          - <<: *string_field
             name: esophageal_columnar_dysplasia_degree
           - <<: *string_field
             name: esophageal_columnar_metaplasia_present
@@ -118,7 +254,15 @@ fields:
           - <<: *string_field
             name: figo_staging_edition_year
           - <<: *string_field
+            name: first_symptom_prior_to_diagnosis
+          - <<: *string_field
             name: gastric_esophageal_junction_involvement
+          - <<: *string_field
+            name: gleason_grade_group
+          - <<: *string_field
+            name: gleason_grade_tertiary
+          - <<: *long_field
+            name: gleason_patterns_percent
           - <<: *string_field
             name: goblet_cells_columnar_mucosa_present
           - <<: *string_field
@@ -126,19 +270,35 @@ fields:
           - <<: *string_field
             name: igcccg_stage
           - <<: *string_field
+            name: inpc_grade
+          - <<: *string_field
+            name: inpc_histologic_group
+          - <<: *string_field
+            name: inrg_stage
+          - <<: *string_field
             name: inss_stage
           - <<: *string_field
             name: international_prognostic_index
           - <<: *string_field
             name: irs_group
           - <<: *string_field
+            name: irs_stage
+          - <<: *string_field
+            name: ishak_fibrosis_score
+          - <<: *string_field
             name: iss_stage
           - <<: *string_field
             name: last_known_disease_status
           - <<: *string_field
             name: laterality
+          - <<: *double_field
+            name: margin_distance
+          - <<: *string_field
+            name: margins_involved_site
           - <<: *string_field
             name: masaoka_stage
+          - <<: *string_field
+            name: medulloblastoma_molecular_classification
           - <<: *string_field
             name: metastasis_at_diagnosis
           - <<: *string_field
@@ -148,7 +308,17 @@ fields:
           - <<: *string_field
             name: micropapillary_features
           - <<: *string_field
+            name: mitosis_karyorrhexis_index
+          - <<: *long_field
+            name: mitotic_count
+          - <<: *string_field
             name: morphology
+          - <<: *string_field
+            name: ovarian_specimen_status
+          - <<: *string_field
+            name: ovarian_surface_involvement
+          - <<: *string_field
+            name: papillary_renal_cell_type
           - metadata: {}
             name: pathology_details
             nullable: true
@@ -156,6 +326,8 @@ fields:
               containsNull: true
               elementType:
                 fields:
+                  - <<: *string_field
+                    name: additional_pathology_findings
                   - <<: *string_field
                     name: anaplasia_present
                   - <<: *string_field
@@ -168,6 +340,10 @@ fields:
                     name: circumferential_resection_margin
                   - <<: *string_field
                     name: columnar_mucosa_present
+                  - <<: *string_field
+                    name: consistent_pathology_review
+                  - <<: *string_field
+                    name: created_datetime
                   - <<: *string_field
                     name: dysplasia_degree
                   - <<: *string_field
@@ -194,6 +370,8 @@ fields:
                     name: metaplasia_present
                   - <<: *string_field
                     name: morphologic_architectural_pattern
+                  - <<: *double_field
+                    name: necrosis_percent
                   - <<: *string_field
                     name: necrosis_present
                   - <<: *string_field
@@ -219,6 +397,18 @@ fields:
                   - <<: *double_field
                     name: prostatic_involvement_percent
                   - <<: *string_field
+                    name: residual_tumor
+                  - <<: *double_field
+                    name: rhabdoid_percent
+                  - <<: *string_field
+                    name: rhabdoid_present
+                  - <<: *double_field
+                    name: sarcomatoid_percent
+                  - <<: *string_field
+                    name: sarcomatoid_present
+                  - <<: *double_field
+                    name: size_extraocular_nodule
+                  - <<: *string_field
                     name: state
                   - <<: *string_field
                     name: submitter_id
@@ -226,6 +416,10 @@ fields:
                     name: transglottic_extension
                   - <<: *double_field
                     name: tumor_largest_dimension_diameter
+                  - <<: *double_field
+                    name: tumor_thickness
+                  - <<: *string_field
+                    name: updated_datetime
                   - <<: *string_field
                     name: vascular_invasion_present
                   - <<: *string_field
@@ -233,9 +427,13 @@ fields:
                 type: struct
               type: array
           - <<: *string_field
+            name: peritoneal_fluid_cytological_status
+          - <<: *string_field
             name: pregnant_at_diagnosis
           - <<: *string_field
             name: primary_diagnosis
+          - <<: *string_field
+            name: primary_disease
           - <<: *string_field
             name: primary_gleason_grade
           - <<: *string_field
@@ -253,9 +451,13 @@ fields:
           - <<: *string_field
             name: site_of_resection_or_biopsy
           - <<: *string_field
+            name: sites_of_involvement
+          - <<: *string_field
             name: state
           - <<: *string_field
             name: submitter_id
+          - <<: *string_field
+            name: supratentorial_localization
           - <<: *string_field
             name: synchronous_malignancy
           - <<: *string_field
@@ -269,6 +471,8 @@ fields:
                 fields:
                   - <<: *string_field
                     name: chemo_concurrent_to_radiation
+                  - <<: *string_field
+                    name: created_datetime
                   - <<: *long_field
                     name: days_to_treatment_end
                   - <<: *long_field
@@ -282,6 +486,8 @@ fields:
                   - <<: *string_field
                     name: regimen_or_line_of_therapy
                   - <<: *string_field
+                    name: route_of_administration
+                  - <<: *string_field
                     name: state
                   - <<: *string_field
                     name: submitter_id
@@ -289,8 +495,16 @@ fields:
                     name: therapeutic_agents
                   - <<: *string_field
                     name: treatment_anatomic_site
+                  - <<: *string_field
+                    name: treatment_arm
                   - <<: *long_field
                     name: treatment_dose
+                  - <<: *string_field
+                    name: treatment_dose_units
+                  - <<: *string_field
+                    name: treatment_effect
+                  - <<: *string_field
+                    name: treatment_effect_indicator
                   - <<: *string_field
                     name: treatment_frequency
                   - <<: *string_field
@@ -303,19 +517,40 @@ fields:
                     name: treatment_outcome
                   - <<: *string_field
                     name: treatment_type
+                  - <<: *string_field
+                    name: updated_datetime
                 type: struct
               type: array
           - <<: *string_field
             name: tumor_confined_to_organ_of_origin
+          - <<: *double_field
+            name: tumor_depth
           - <<: *string_field
             name: tumor_focality
           - <<: *string_field
             name: tumor_grade
           - <<: *string_field
+            name: tumor_regression_grade
+          - <<: *string_field
+            name: updated_datetime
+          - <<: *string_field
+            name: weiss_assessment_score
+          - <<: *string_field
+            name: who_cns_grade
+          - <<: *string_field
+            name: who_nte_grade
+          - <<: *string_field
             name: wilms_tumor_histologic_subtype
           - <<: *long_field
             name: year_of_diagnosis
         type: struct
+      type: array
+  - metadata: {}
+    name: diagnosis_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
       type: array
   - <<: *string_field
     name: disease_type
@@ -326,20 +561,38 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - <<: *long_field
+            name: age_at_onset
           - <<: *double_field
             name: alcohol_days_per_week
+          - <<: *double_field
+            name: alcohol_drinks_per_day
           - <<: *string_field
             name: alcohol_history
           - <<: *string_field
             name: alcohol_intensity
           - <<: *string_field
+            name: alcohol_type
+          - <<: *string_field
             name: asbestos_exposure
           - <<: *double_field
             name: cigarettes_per_day
           - <<: *string_field
+            name: coal_dust_exposure
+          - <<: *string_field
+            name: created_datetime
+          - <<: *string_field
+            name: environmental_tobacco_smoke_exposure
+          - <<: *string_field
+            name: exposure_duration
+          - <<: *long_field
+            name: exposure_duration_years
+          - <<: *string_field
             name: exposure_id
           - <<: *string_field
             name: exposure_type
+          - <<: *double_field
+            name: marijuana_use_per_week
           - <<: *double_field
             name: pack_years_smoked
           - <<: *string_field
@@ -347,21 +600,33 @@ fields:
           - <<: *string_field
             name: radon_exposure
           - <<: *string_field
+            name: respirable_crystalline_silica_exposure
+          - <<: *string_field
             name: secondhand_smoke_as_child
+          - <<: *long_field
+            name: smokeless_tobacco_quit_age
+          - <<: *string_field
+            name: smoking_frequency
           - <<: *string_field
             name: state
           - <<: *string_field
             name: submitter_id
+          - <<: *string_field
+            name: time_between_waking_and_first_smoke
           - <<: *long_field
             name: tobacco_smoking_onset_year
           - <<: *long_field
             name: tobacco_smoking_quit_year
           - <<: *string_field
             name: tobacco_smoking_status
+          - <<: *double_field
+            name: tobacco_use_per_day
           - <<: *string_field
             name: type_of_smoke_exposure
           - <<: *string_field
             name: type_of_tobacco_used
+          - <<: *string_field
+            name: updated_datetime
           - <<: *double_field
             name: years_smoked
         type: struct
@@ -373,6 +638,8 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - <<: *string_field
+            name: created_datetime
           - <<: *string_field
             name: family_history_id
           - <<: *double_field
@@ -388,7 +655,744 @@ fields:
           - <<: *long_field
             name: relatives_with_cancer_history_count
           - <<: *string_field
+            name: state
+          - <<: *string_field
             name: submitter_id
+          - <<: *string_field
+            name: updated_datetime
+        type: struct
+      type: array
+  - metadata: {}
+    name: files
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *string_field
+            name: access
+          - metadata: {}
+            name: acl
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
+          - metadata: {}
+            name: analysis
+            nullable: true
+            type:
+              fields:
+                - <<: *string_field
+                  name: analysis_id
+                - <<: *string_field
+                  name: analysis_type
+                - <<: *string_field
+                  name: created_datetime
+                - metadata: {}
+                  name: input_files
+                  nullable: true
+                  type:
+                    containsNull: true
+                    elementType:
+                      fields:
+                        - <<: *string_field
+                          name: access
+                        - <<: *double_field
+                          name: average_base_quality
+                        - <<: *long_field
+                          name: average_insert_size
+                        - <<: *long_field
+                          name: average_read_length
+                        - <<: *string_field
+                          name: channel
+                        - <<: *string_field
+                          name: chip_id
+                        - <<: *string_field
+                          name: chip_position
+                        - <<: *double_field
+                          name: contamination
+                        - <<: *double_field
+                          name: contamination_error
+                        - <<: *string_field
+                          name: created_datetime
+                        - <<: *string_field
+                          name: data_category
+                        - <<: *string_field
+                          name: data_format
+                        - <<: *string_field
+                          name: data_type
+                        - <<: *string_field
+                          name: error_type
+                        - <<: *string_field
+                          name: experimental_strategy
+                        - <<: *string_field
+                          name: file_id
+                        - <<: *string_field
+                          name: file_name
+                        - <<: *long_field
+                          name: file_size
+                        - <<: *string_field
+                          name: imaging_date
+                        - <<: *double_field
+                          name: magnification
+                        - <<: *string_field
+                          name: md5sum
+                        - <<: *double_field
+                          name: mean_coverage
+                        - <<: *double_field
+                          name: msi_score
+                        - <<: *string_field
+                          name: msi_status
+                        - <<: *long_field
+                          name: pairs_on_diff_chr
+                        - <<: *string_field
+                          name: plate_name
+                        - <<: *string_field
+                          name: plate_well
+                        - <<: *string_field
+                          name: platform
+                        - <<: *string_field
+                          name: proc_internal
+                        - <<: *double_field
+                          name: proportion_base_mismatch
+                        - <<: *double_field
+                          name: proportion_coverage_10x
+                        - <<: *double_field
+                          name: proportion_coverage_30x
+                        - <<: *double_field
+                          name: proportion_reads_duplicated
+                        - <<: *double_field
+                          name: proportion_reads_mapped
+                        - <<: *double_field
+                          name: proportion_targets_no_coverage
+                        - <<: *string_field
+                          name: read_pair_number
+                        - <<: *double_field
+                          name: revision
+                        - <<: *string_field
+                          name: stain_type
+                        - <<: *string_field
+                          name: state
+                        - <<: *string_field
+                          name: state_comment
+                        - <<: *string_field
+                          name: submitter_id
+                        - <<: *long_field
+                          name: total_reads
+                        - <<: *double_field
+                          name: tumor_ploidy
+                        - <<: *double_field
+                          name: tumor_purity
+                        - <<: *string_field
+                          name: updated_datetime
+                      type: struct
+                    type: array
+                - metadata: {}
+                  name: metadata
+                  nullable: true
+                  type:
+                    fields:
+                      - metadata: {}
+                        name: read_groups
+                        nullable: true
+                        type:
+                          containsNull: true
+                          elementType:
+                            fields:
+                              - <<: *string_field
+                                name: adapter_name
+                              - <<: *string_field
+                                name: adapter_sequence
+                              - <<: *string_field
+                                name: base_caller_name
+                              - <<: *string_field
+                                name: base_caller_version
+                              - <<: *string_field
+                                name: chipseq_antibody
+                              - <<: *string_field
+                                name: chipseq_target
+                              - <<: *string_field
+                                name: created_datetime
+                              - <<: *long_field
+                                name: days_to_sequencing
+                              - <<: *string_field
+                                name: experiment_name
+                              - <<: *string_field
+                                name: flow_cell_barcode
+                              - <<: *long_field
+                                name: fragment_maximum_length
+                              - <<: *double_field
+                                name: fragment_mean_length
+                              - <<: *long_field
+                                name: fragment_minimum_length
+                              - <<: *double_field
+                                name: fragment_standard_deviation_length
+                              - <<: *string_field
+                                name: fragmentation_enzyme
+                              - <<: *string_field
+                                name: includes_spike_ins
+                              - <<: *string_field
+                                name: instrument_model
+                              - <<: *string_field
+                                name: is_paired_end
+                              - <<: *long_field
+                                name: lane_number
+                              - <<: *string_field
+                                name: library_name
+                              - <<: *string_field
+                                name: library_preparation_kit_catalog_number
+                              - <<: *string_field
+                                name: library_preparation_kit_name
+                              - <<: *string_field
+                                name: library_preparation_kit_vendor
+                              - <<: *string_field
+                                name: library_preparation_kit_version
+                              - <<: *string_field
+                                name: library_selection
+                              - <<: *string_field
+                                name: library_strand
+                              - <<: *string_field
+                                name: library_strategy
+                              - <<: *string_field
+                                name: multiplex_barcode
+                              - <<: *long_field
+                                name: number_expect_cells
+                              - <<: *string_field
+                                name: platform
+                              - <<: *string_field
+                                name: read_group_id
+                              - <<: *string_field
+                                name: read_group_name
+                              - metadata: {}
+                                name: read_group_qcs
+                                nullable: true
+                                type:
+                                  containsNull: true
+                                  elementType:
+                                    fields:
+                                      - <<: *string_field
+                                        name: adapter_content
+                                      - <<: *string_field
+                                        name: basic_statistics
+                                      - <<: *string_field
+                                        name: created_datetime
+                                      - <<: *string_field
+                                        name: encoding
+                                      - <<: *string_field
+                                        name: fastq_name
+                                      - <<: *string_field
+                                        name: kmer_content
+                                      - <<: *string_field
+                                        name: overrepresented_sequences
+                                      - <<: *string_field
+                                        name: per_base_n_content
+                                      - <<: *string_field
+                                        name: per_base_sequence_content
+                                      - <<: *string_field
+                                        name: per_base_sequence_quality
+                                      - <<: *string_field
+                                        name: per_sequence_gc_content
+                                      - <<: *string_field
+                                        name: per_sequence_quality_score
+                                      - <<: *string_field
+                                        name: per_tile_sequence_quality
+                                      - <<: *long_field
+                                        name: percent_gc_content
+                                      - <<: *string_field
+                                        name: read_group_qc_id
+                                      - <<: *string_field
+                                        name: sequence_duplication_levels
+                                      - <<: *string_field
+                                        name: sequence_length_distribution
+                                      - <<: *string_field
+                                        name: state
+                                      - <<: *string_field
+                                        name: submitter_id
+                                      - <<: *long_field
+                                        name: total_sequences
+                                      - <<: *string_field
+                                        name: updated_datetime
+                                      - <<: *string_field
+                                        name: workflow_end_datetime
+                                      - <<: *string_field
+                                        name: workflow_link
+                                      - <<: *string_field
+                                        name: workflow_start_datetime
+                                      - <<: *string_field
+                                        name: workflow_type
+                                      - <<: *string_field
+                                        name: workflow_version
+                                    type: struct
+                                  type: array
+                              - <<: *long_field
+                                name: read_length
+                              - <<: *double_field
+                                name: rin
+                              - <<: *string_field
+                                name: sequencing_center
+                              - <<: *string_field
+                                name: sequencing_date
+                              - <<: *string_field
+                                name: single_cell_library
+                              - <<: *string_field
+                                name: size_selection_range
+                              - <<: *string_field
+                                name: spike_ins_concentration
+                              - <<: *string_field
+                                name: spike_ins_fasta
+                              - <<: *string_field
+                                name: state
+                              - <<: *string_field
+                                name: submitter_id
+                              - <<: *string_field
+                                name: target_capture_kit
+                              - <<: *string_field
+                                name: target_capture_kit_catalog_number
+                              - <<: *string_field
+                                name: target_capture_kit_name
+                              - <<: *string_field
+                                name: target_capture_kit_target_region
+                              - <<: *string_field
+                                name: target_capture_kit_vendor
+                              - <<: *string_field
+                                name: target_capture_kit_version
+                              - <<: *string_field
+                                name: to_trim_adapter_sequence
+                              - <<: *string_field
+                                name: updated_datetime
+                            type: struct
+                          type: array
+                    type: struct
+                - <<: *string_field
+                  name: state
+                - <<: *string_field
+                  name: submitter_id
+                - <<: *string_field
+                  name: updated_datetime
+                - <<: *string_field
+                  name: workflow_end_datetime
+                - <<: *string_field
+                  name: workflow_link
+                - <<: *string_field
+                  name: workflow_start_datetime
+                - <<: *string_field
+                  name: workflow_type
+                - <<: *string_field
+                  name: workflow_version
+              type: struct
+          - metadata: {}
+            name: archive
+            nullable: true
+            type:
+              fields:
+                - <<: *string_field
+                  name: archive_id
+                - <<: *string_field
+                  name: created_datetime
+                - <<: *string_field
+                  name: data_category
+                - <<: *string_field
+                  name: data_format
+                - <<: *string_field
+                  name: data_type
+                - <<: *string_field
+                  name: error_type
+                - <<: *string_field
+                  name: file_name
+                - <<: *long_field
+                  name: file_size
+                - <<: *string_field
+                  name: md5sum
+                - <<: *double_field
+                  name: revision
+                - <<: *string_field
+                  name: state
+                - <<: *string_field
+                  name: state_comment
+                - <<: *string_field
+                  name: submitter_id
+                - <<: *string_field
+                  name: updated_datetime
+              type: struct
+          - <<: *double_field
+            name: average_base_quality
+          - <<: *long_field
+            name: average_insert_size
+          - <<: *long_field
+            name: average_read_length
+          - metadata: {}
+            name: center
+            nullable: true
+            type:
+              fields:
+                - <<: *string_field
+                  name: center_id
+                - <<: *string_field
+                  name: center_type
+                - <<: *string_field
+                  name: code
+                - <<: *string_field
+                  name: name
+                - <<: *string_field
+                  name: namespace
+                - <<: *string_field
+                  name: short_name
+              type: struct
+          - <<: *string_field
+            name: channel
+          - <<: *string_field
+            name: chip_id
+          - <<: *string_field
+            name: chip_position
+          - <<: *double_field
+            name: contamination
+          - <<: *double_field
+            name: contamination_error
+          - <<: *string_field
+            name: created_datetime
+          - <<: *string_field
+            name: data_category
+          - <<: *string_field
+            name: data_format
+          - <<: *string_field
+            name: data_type
+          - metadata: {}
+            name: downstream_analyses
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: analysis_id
+                  - <<: *string_field
+                    name: analysis_type
+                  - <<: *string_field
+                    name: created_datetime
+                  - metadata: {}
+                    name: output_files
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType:
+                        fields:
+                          - <<: *string_field
+                            name: access
+                          - <<: *double_field
+                            name: average_base_quality
+                          - <<: *long_field
+                            name: average_insert_size
+                          - <<: *long_field
+                            name: average_read_length
+                          - <<: *string_field
+                            name: channel
+                          - <<: *string_field
+                            name: chip_id
+                          - <<: *string_field
+                            name: chip_position
+                          - <<: *double_field
+                            name: contamination
+                          - <<: *double_field
+                            name: contamination_error
+                          - <<: *string_field
+                            name: created_datetime
+                          - <<: *string_field
+                            name: data_category
+                          - <<: *string_field
+                            name: data_format
+                          - <<: *string_field
+                            name: data_type
+                          - <<: *string_field
+                            name: error_type
+                          - <<: *string_field
+                            name: experimental_strategy
+                          - <<: *string_field
+                            name: file_id
+                          - <<: *string_field
+                            name: file_name
+                          - <<: *long_field
+                            name: file_size
+                          - <<: *string_field
+                            name: imaging_date
+                          - <<: *double_field
+                            name: magnification
+                          - <<: *string_field
+                            name: md5sum
+                          - <<: *double_field
+                            name: mean_coverage
+                          - <<: *double_field
+                            name: msi_score
+                          - <<: *string_field
+                            name: msi_status
+                          - <<: *long_field
+                            name: pairs_on_diff_chr
+                          - <<: *string_field
+                            name: plate_name
+                          - <<: *string_field
+                            name: plate_well
+                          - <<: *string_field
+                            name: platform
+                          - <<: *string_field
+                            name: proc_internal
+                          - <<: *double_field
+                            name: proportion_base_mismatch
+                          - <<: *double_field
+                            name: proportion_coverage_10x
+                          - <<: *double_field
+                            name: proportion_coverage_30x
+                          - <<: *double_field
+                            name: proportion_reads_duplicated
+                          - <<: *double_field
+                            name: proportion_reads_mapped
+                          - <<: *double_field
+                            name: proportion_targets_no_coverage
+                          - <<: *string_field
+                            name: read_pair_number
+                          - <<: *double_field
+                            name: revision
+                          - <<: *string_field
+                            name: stain_type
+                          - <<: *string_field
+                            name: state
+                          - <<: *string_field
+                            name: state_comment
+                          - <<: *string_field
+                            name: submitter_id
+                          - <<: *long_field
+                            name: total_reads
+                          - <<: *double_field
+                            name: tumor_ploidy
+                          - <<: *double_field
+                            name: tumor_purity
+                          - <<: *string_field
+                            name: updated_datetime
+                        type: struct
+                      type: array
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: updated_datetime
+                  - <<: *string_field
+                    name: workflow_end_datetime
+                  - <<: *string_field
+                    name: workflow_link
+                  - <<: *string_field
+                    name: workflow_start_datetime
+                  - <<: *string_field
+                    name: workflow_type
+                  - <<: *string_field
+                    name: workflow_version
+                type: struct
+              type: array
+          - <<: *string_field
+            name: error_type
+          - <<: *string_field
+            name: experimental_strategy
+          - <<: *string_field
+            name: file_id
+          - <<: *string_field
+            name: file_name
+          - <<: *long_field
+            name: file_size
+          - <<: *string_field
+            name: imaging_date
+          - metadata: {}
+            name: index_files
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: access
+                  - <<: *double_field
+                    name: average_base_quality
+                  - <<: *long_field
+                    name: average_insert_size
+                  - <<: *long_field
+                    name: average_read_length
+                  - <<: *string_field
+                    name: channel
+                  - <<: *string_field
+                    name: chip_id
+                  - <<: *string_field
+                    name: chip_position
+                  - <<: *double_field
+                    name: contamination
+                  - <<: *double_field
+                    name: contamination_error
+                  - <<: *string_field
+                    name: created_datetime
+                  - <<: *string_field
+                    name: data_category
+                  - <<: *string_field
+                    name: data_format
+                  - <<: *string_field
+                    name: data_type
+                  - <<: *string_field
+                    name: error_type
+                  - <<: *string_field
+                    name: experimental_strategy
+                  - <<: *string_field
+                    name: file_id
+                  - <<: *string_field
+                    name: file_name
+                  - <<: *long_field
+                    name: file_size
+                  - <<: *string_field
+                    name: imaging_date
+                  - <<: *double_field
+                    name: magnification
+                  - <<: *string_field
+                    name: md5sum
+                  - <<: *double_field
+                    name: mean_coverage
+                  - <<: *double_field
+                    name: msi_score
+                  - <<: *string_field
+                    name: msi_status
+                  - <<: *long_field
+                    name: pairs_on_diff_chr
+                  - <<: *string_field
+                    name: plate_name
+                  - <<: *string_field
+                    name: plate_well
+                  - <<: *string_field
+                    name: platform
+                  - <<: *string_field
+                    name: proc_internal
+                  - <<: *double_field
+                    name: proportion_base_mismatch
+                  - <<: *double_field
+                    name: proportion_coverage_10x
+                  - <<: *double_field
+                    name: proportion_coverage_30x
+                  - <<: *double_field
+                    name: proportion_reads_duplicated
+                  - <<: *double_field
+                    name: proportion_reads_mapped
+                  - <<: *double_field
+                    name: proportion_targets_no_coverage
+                  - <<: *string_field
+                    name: read_pair_number
+                  - <<: *double_field
+                    name: revision
+                  - <<: *string_field
+                    name: stain_type
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: state_comment
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *long_field
+                    name: total_reads
+                  - <<: *double_field
+                    name: tumor_ploidy
+                  - <<: *double_field
+                    name: tumor_purity
+                  - <<: *string_field
+                    name: updated_datetime
+                type: struct
+              type: array
+          - <<: *double_field
+            name: magnification
+          - <<: *string_field
+            name: md5sum
+          - <<: *double_field
+            name: mean_coverage
+          - metadata: {}
+            name: metadata_files
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: access
+                  - <<: *string_field
+                    name: created_datetime
+                  - <<: *string_field
+                    name: data_category
+                  - <<: *string_field
+                    name: data_format
+                  - <<: *string_field
+                    name: data_type
+                  - <<: *string_field
+                    name: error_type
+                  - <<: *string_field
+                    name: file_id
+                  - <<: *string_field
+                    name: file_name
+                  - <<: *long_field
+                    name: file_size
+                  - <<: *string_field
+                    name: md5sum
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: state_comment
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: type
+                  - <<: *string_field
+                    name: updated_datetime
+                type: struct
+              type: array
+          - <<: *double_field
+            name: msi_score
+          - <<: *string_field
+            name: msi_status
+          - <<: *long_field
+            name: pairs_on_diff_chr
+          - <<: *string_field
+            name: plate_name
+          - <<: *string_field
+            name: plate_well
+          - <<: *string_field
+            name: platform
+          - <<: *string_field
+            name: proc_internal
+          - <<: *double_field
+            name: proportion_base_mismatch
+          - <<: *double_field
+            name: proportion_coverage_10x
+          - <<: *double_field
+            name: proportion_coverage_30x
+          - <<: *double_field
+            name: proportion_reads_duplicated
+          - <<: *double_field
+            name: proportion_reads_mapped
+          - <<: *double_field
+            name: proportion_targets_no_coverage
+          - <<: *string_field
+            name: read_pair_number
+          - <<: *double_field
+            name: revision
+          - <<: *string_field
+            name: stain_type
+          - <<: *string_field
+            name: state
+          - <<: *string_field
+            name: state_comment
+          - <<: *string_field
+            name: submitter_id
+          - <<: *string_field
+            name: tags
+          - <<: *long_field
+            name: total_reads
+          - <<: *double_field
+            name: tumor_ploidy
+          - <<: *double_field
+            name: tumor_purity
+          - <<: *string_field
+            name: type
+          - <<: *string_field
+            name: updated_datetime
         type: struct
       type: array
   - metadata: {}
@@ -420,6 +1424,8 @@ fields:
             name: comorbidity
           - <<: *string_field
             name: comorbidity_method_of_diagnosis
+          - <<: *string_field
+            name: created_datetime
           - <<: *long_field
             name: days_to_adverse_event
           - <<: *long_field
@@ -518,6 +1524,8 @@ fields:
                   - <<: *double_field
                     name: copy_number
                   - <<: *string_field
+                    name: created_datetime
+                  - <<: *string_field
                     name: cytoband
                   - <<: *long_field
                     name: days_to_test
@@ -562,6 +1570,8 @@ fields:
                   - <<: *string_field
                     name: specialized_molecular_test
                   - <<: *string_field
+                    name: state
+                  - <<: *string_field
                     name: submitter_id
                   - <<: *string_field
                     name: test_analyte_type
@@ -573,6 +1583,8 @@ fields:
                     name: test_value
                   - <<: *string_field
                     name: transcript
+                  - <<: *string_field
+                    name: updated_datetime
                   - <<: *string_field
                     name: variant_origin
                   - <<: *string_field
@@ -624,6 +1636,8 @@ fields:
           - <<: *string_field
             name: undescended_testis_history_laterality
           - <<: *string_field
+            name: updated_datetime
+          - <<: *string_field
             name: viral_hepatitis_serologies
           - <<: *double_field
             name: weight
@@ -633,6 +1647,13 @@ fields:
     name: index_date
   - <<: *string_field
     name: lost_to_followup
+  - metadata: {}
+    name: portion_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
   - <<: *string_field
     name: primary_site
   - metadata: {}
@@ -674,11 +1695,73 @@ fields:
             type: struct
         - <<: *string_field
           name: project_id
+        - <<: *string_field
+          name: releasable
+        - <<: *string_field
+          name: released
+        - <<: *string_field
+          name: state
       type: struct
+  - metadata: {}
+    name: sample_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: slide_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
   - <<: *string_field
     name: state
+  - metadata: {}
+    name: submitter_aliquot_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_analyte_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_diagnosis_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
   - <<: *string_field
     name: submitter_id
+  - metadata: {}
+    name: submitter_portion_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_sample_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_slide_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
   - metadata: {}
     name: summary
     nullable: true
@@ -731,6 +1814,8 @@ fields:
         - <<: *string_field
           name: tissue_source_site_id
       type: struct
+  - <<: *string_field
+    name: updated_datetime
   - metadata: {}
     name: samples
     nullable: true
@@ -738,6 +1823,49 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - metadata: {}
+            name: annotations
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: annotation_id
+                  - <<: *string_field
+                    name: case_id
+                  - <<: *string_field
+                    name: case_submitter_id
+                  - <<: *string_field
+                    name: category
+                  - <<: *string_field
+                    name: classification
+                  - <<: *string_field
+                    name: created_datetime
+                  - <<: *string_field
+                    name: creator
+                  - <<: *string_field
+                    name: entity_id
+                  - <<: *string_field
+                    name: entity_submitter_id
+                  - <<: *string_field
+                    name: entity_type
+                  - <<: *string_field
+                    name: legacy_created_datetime
+                  - <<: *string_field
+                    name: legacy_updated_datetime
+                  - <<: *string_field
+                    name: notes
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: status
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: updated_datetime
+                type: struct
+              type: array
           - <<: *string_field
             name: biospecimen_anatomic_site
           - <<: *string_field
@@ -746,6 +1874,8 @@ fields:
             name: catalog_reference
           - <<: *string_field
             name: composition
+          - <<: *string_field
+            name: created_datetime
           - <<: *double_field
             name: current_weight
           - <<: *long_field
@@ -814,6 +1944,49 @@ fields:
                                   - <<: *string_field
                                     name: analyte_type_id
                                   - metadata: {}
+                                    name: annotations
+                                    nullable: true
+                                    type:
+                                      containsNull: true
+                                      elementType:
+                                        fields:
+                                          - <<: *string_field
+                                            name: annotation_id
+                                          - <<: *string_field
+                                            name: case_id
+                                          - <<: *string_field
+                                            name: case_submitter_id
+                                          - <<: *string_field
+                                            name: category
+                                          - <<: *string_field
+                                            name: classification
+                                          - <<: *string_field
+                                            name: created_datetime
+                                          - <<: *string_field
+                                            name: creator
+                                          - <<: *string_field
+                                            name: entity_id
+                                          - <<: *string_field
+                                            name: entity_submitter_id
+                                          - <<: *string_field
+                                            name: entity_type
+                                          - <<: *string_field
+                                            name: legacy_created_datetime
+                                          - <<: *string_field
+                                            name: legacy_updated_datetime
+                                          - <<: *string_field
+                                            name: notes
+                                          - <<: *string_field
+                                            name: state
+                                          - <<: *string_field
+                                            name: status
+                                          - <<: *string_field
+                                            name: submitter_id
+                                          - <<: *string_field
+                                            name: updated_datetime
+                                        type: struct
+                                      type: array
+                                  - metadata: {}
                                     name: center
                                     nullable: true
                                     type:
@@ -834,6 +2007,8 @@ fields:
                                   - <<: *double_field
                                     name: concentration
                                   - <<: *string_field
+                                    name: created_datetime
+                                  - <<: *string_field
                                     name: no_matched_normal_low_pass_wgs
                                   - <<: *string_field
                                     name: no_matched_normal_targeted_sequencing
@@ -852,7 +2027,11 @@ fields:
                                   - <<: *string_field
                                     name: source_center
                                   - <<: *string_field
+                                    name: state
+                                  - <<: *string_field
                                     name: submitter_id
+                                  - <<: *string_field
+                                    name: updated_datetime
                                 type: struct
                               type: array
                           - <<: *double_field
@@ -867,8 +2046,53 @@ fields:
                             name: analyte_type_id
                           - <<: *double_field
                             name: analyte_volume
+                          - metadata: {}
+                            name: annotations
+                            nullable: true
+                            type:
+                              containsNull: true
+                              elementType:
+                                fields:
+                                  - <<: *string_field
+                                    name: annotation_id
+                                  - <<: *string_field
+                                    name: case_id
+                                  - <<: *string_field
+                                    name: case_submitter_id
+                                  - <<: *string_field
+                                    name: category
+                                  - <<: *string_field
+                                    name: classification
+                                  - <<: *string_field
+                                    name: created_datetime
+                                  - <<: *string_field
+                                    name: creator
+                                  - <<: *string_field
+                                    name: entity_id
+                                  - <<: *string_field
+                                    name: entity_submitter_id
+                                  - <<: *string_field
+                                    name: entity_type
+                                  - <<: *string_field
+                                    name: legacy_created_datetime
+                                  - <<: *string_field
+                                    name: legacy_updated_datetime
+                                  - <<: *string_field
+                                    name: notes
+                                  - <<: *string_field
+                                    name: state
+                                  - <<: *string_field
+                                    name: status
+                                  - <<: *string_field
+                                    name: submitter_id
+                                  - <<: *string_field
+                                    name: updated_datetime
+                                type: struct
+                              type: array
                           - <<: *double_field
                             name: concentration
+                          - <<: *string_field
+                            name: created_datetime
                           - <<: *string_field
                             name: experimental_protocol_type
                           - <<: *string_field
@@ -880,9 +2104,56 @@ fields:
                           - <<: *string_field
                             name: spectrophotometer_method
                           - <<: *string_field
+                            name: state
+                          - <<: *string_field
                             name: submitter_id
                           - <<: *string_field
+                            name: updated_datetime
+                          - <<: *string_field
                             name: well_number
+                        type: struct
+                      type: array
+                  - metadata: {}
+                    name: annotations
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType:
+                        fields:
+                          - <<: *string_field
+                            name: annotation_id
+                          - <<: *string_field
+                            name: case_id
+                          - <<: *string_field
+                            name: case_submitter_id
+                          - <<: *string_field
+                            name: category
+                          - <<: *string_field
+                            name: classification
+                          - <<: *string_field
+                            name: created_datetime
+                          - <<: *string_field
+                            name: creator
+                          - <<: *string_field
+                            name: entity_id
+                          - <<: *string_field
+                            name: entity_submitter_id
+                          - <<: *string_field
+                            name: entity_type
+                          - <<: *string_field
+                            name: legacy_created_datetime
+                          - <<: *string_field
+                            name: legacy_updated_datetime
+                          - <<: *string_field
+                            name: notes
+                          - <<: *string_field
+                            name: state
+                          - <<: *string_field
+                            name: status
+                          - <<: *string_field
+                            name: submitter_id
+                          - <<: *string_field
+                            name: updated_datetime
                         type: struct
                       type: array
                   - metadata: {}
@@ -903,6 +2174,8 @@ fields:
                         - <<: *string_field
                           name: short_name
                       type: struct
+                  - <<: *string_field
+                    name: created_datetime
                   - <<: *double_field
                     name: creation_datetime
                   - <<: *string_field
@@ -918,8 +2191,53 @@ fields:
                       containsNull: true
                       elementType:
                         fields:
+                          - metadata: {}
+                            name: annotations
+                            nullable: true
+                            type:
+                              containsNull: true
+                              elementType:
+                                fields:
+                                  - <<: *string_field
+                                    name: annotation_id
+                                  - <<: *string_field
+                                    name: case_id
+                                  - <<: *string_field
+                                    name: case_submitter_id
+                                  - <<: *string_field
+                                    name: category
+                                  - <<: *string_field
+                                    name: classification
+                                  - <<: *string_field
+                                    name: created_datetime
+                                  - <<: *string_field
+                                    name: creator
+                                  - <<: *string_field
+                                    name: entity_id
+                                  - <<: *string_field
+                                    name: entity_submitter_id
+                                  - <<: *string_field
+                                    name: entity_type
+                                  - <<: *string_field
+                                    name: legacy_created_datetime
+                                  - <<: *string_field
+                                    name: legacy_updated_datetime
+                                  - <<: *string_field
+                                    name: notes
+                                  - <<: *string_field
+                                    name: state
+                                  - <<: *string_field
+                                    name: status
+                                  - <<: *string_field
+                                    name: submitter_id
+                                  - <<: *string_field
+                                    name: updated_datetime
+                                type: struct
+                              type: array
                           - <<: *string_field
                             name: bone_marrow_malignant_cells
+                          - <<: *string_field
+                            name: created_datetime
                           - <<: *long_field
                             name: number_proliferating_cells
                           - <<: *double_field
@@ -961,13 +2279,21 @@ fields:
                           - <<: *string_field
                             name: slide_id
                           - <<: *string_field
+                            name: state
+                          - <<: *string_field
                             name: submitter_id
                           - <<: *string_field
                             name: tissue_microarray_coordinates
+                          - <<: *string_field
+                            name: updated_datetime
                         type: struct
                       type: array
                   - <<: *string_field
+                    name: state
+                  - <<: *string_field
                     name: submitter_id
+                  - <<: *string_field
+                    name: updated_datetime
                   - <<: *double_field
                     name: weight
                 type: struct
@@ -985,6 +2311,8 @@ fields:
           - <<: *double_field
             name: shortest_dimension
           - <<: *string_field
+            name: state
+          - <<: *string_field
             name: submitter_id
           - <<: *double_field
             name: time_between_clamping_and_freezing
@@ -1000,6 +2328,8 @@ fields:
             name: tumor_code_id
           - <<: *string_field
             name: tumor_descriptor
+          - <<: *string_field
+            name: updated_datetime
         type: struct
       type: array
   - metadata: {}
