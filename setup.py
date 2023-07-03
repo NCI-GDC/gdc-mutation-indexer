@@ -34,7 +34,7 @@ setup(
         "gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel",
         "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2#egg=indexclient",
         "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@3.2.1#egg=gdcmodels",
-        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@2.1.1#egg=normalizer",
+        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@feat/dev-1752-fix-setting-default-settings#egg=normalizer",
         "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
     ],
 )
