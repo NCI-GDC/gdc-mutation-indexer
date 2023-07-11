@@ -60,17 +60,17 @@ class SSMCentricBuilder(builders.BaseBuilder):
             maf_df, self.index_name, unique_fields=["ssm_id"]
         )
 
-        cons_df = self.build_consequence(maf_df)
+        cons_df = self._build_consequence(maf_df)
 
-        occurrence_df = self.build_occurrence(maf_df, case_df, primary_aliquot_df)
+        occurrence_df = self._build_occurrence(maf_df, case_df, primary_aliquot_df)
 
         self.log("Final join SSM + Consequence + Occurrence")
         ssm_centric = ssm_df.join(cons_df, on="ssm_id").join(occurrence_df, on="ssm_id")
 
         # Truncate outliers
-        treshold = self.config.percentile_threshold["occurrences_per_ssm"]
+        threshold = self.config.percentile_threshold["occurrences_per_ssm"]
         self.ssm_centric = self.truncate_df_at_percentile(
-            ssm_centric, "occurrence", treshold
+            ssm_centric, "occurrence", threshold
         )
         self.log_count(self.ssm_centric)
         self.log("Build finished")
@@ -80,14 +80,14 @@ class SSMCentricBuilder(builders.BaseBuilder):
 
         return self
 
-    def build_consequence(self, maf_df):
+    def _build_consequence(self, maf_df: sql.DataFrame) -> sql.DataFrame:
         cons_df = self.consequence_builder.build_for_ssm(
             maf_df, self.index_name, join_gene=True, add_gene_aa_change=True
         )
 
         return cons_df
 
-    def build_occurrence(
+    def _build_occurrence(
         self,
         maf_df: sql.DataFrame,
         case_df: sql.DataFrame,
