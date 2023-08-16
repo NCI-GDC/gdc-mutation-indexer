@@ -26,7 +26,7 @@ class Schema:
             resources.files(self._package).joinpath(self._resource)
         ) as path, open(path, "w") as f:
             yaml.dump(schema.jsonValue(), f)
-        
+
         _minimize.minimize_files(self._package)
 
 
@@ -161,8 +161,9 @@ class GeneExpression:
             FINAL: Schema
 
         @_init_schemas
-        class GeneExpression:
+        class Index:
             FINAL: Schema
+            STAR_COUNTS: Schema
 
         @_init_schemas
         class PrimaryAliquot:
@@ -172,4 +173,3 @@ class GeneExpression:
         @_init_schemas
         class Value:
             FINAL: Schema
-            STAR_COUNTS: Schema

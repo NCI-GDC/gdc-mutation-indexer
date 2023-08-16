@@ -82,20 +82,10 @@ def test__get_ge_builders__all_builders() -> None:
 
     assert generic_builders.keys() == frozenset(
         (
-            build.DataFrame.CASE,
-            build.DataFrame.EXPRESSION_VALUE,
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
             build.DataFrame.GENE_EXPRESSION
         )
-    )
-    assert isinstance(
-        generic_builders[build.DataFrame.CASE],
-        builders.GeneExpressionCaseInputBuilder,
-    )
-    assert isinstance(
-        generic_builders[build.DataFrame.EXPRESSION_VALUE],
-        builders.GeneExpressionValueInputBuilder,
     )
     assert isinstance(
         generic_builders[build.DataFrame.GENE_MODEL],
@@ -111,7 +101,7 @@ def test__get_ge_builders__all_builders() -> None:
     )
     assert isinstance(
         generic_builders[build.DataFrame.GENE_EXPRESSION],
-        builders.GeneExpressionBuilder
+        builders.GeneExpressionIndexBuilder
     )
 
 def test__get_ge_builders__excludes() -> None:
