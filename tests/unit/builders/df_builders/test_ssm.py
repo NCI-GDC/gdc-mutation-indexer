@@ -6,7 +6,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from exports.builders import df_builders
+from mutation_indexer.builders import df_builders
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models

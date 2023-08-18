@@ -8,10 +8,10 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders, es_utils
-from exports.builders import maf_metadata
-from exports.configuration.builders import viz
-from exports.constants import build
+from mutation_indexer import builders, es_utils
+from mutation_indexer.builders import maf_metadata
+from mutation_indexer.configuration.builders import viz
+from mutation_indexer.constants import build
 from tests.unit.data import schemas
 
 

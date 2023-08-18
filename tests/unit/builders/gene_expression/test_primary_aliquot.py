@@ -8,10 +8,10 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import es_utils
-from exports.builders import gene_expression
-from exports.configuration.builders import gene_expression as ge_config
-from exports.constants import build
+from mutation_indexer import es_utils
+from mutation_indexer.gene_expression import builders
+from mutation_indexer.configuration.builders import gene_expression as ge_config
+from mutation_indexer.constants import build
 from tests.unit.data import schemas
 
 
@@ -101,12 +101,12 @@ class TestPrimaryAliquotBuilder:
 
     def arrange_builder(
         self, data: Tuple[ESFile, ...] = (ESFile(),)
-    ) -> gene_expression.PrimaryAliquotBuilder:
+    ) -> builders.PrimaryAliquotBuilder:
         config = self.arrange_config()
         util = self.arrange_es_dataframe_util(data)
         spark_session = mock.MagicMock(spec=sql.SparkSession)
 
-        return gene_expression.PrimaryAliquotBuilder(config, spark_session, util)
+        return builders.PrimaryAliquotBuilder(config, spark_session, util)
 
     def test__build__single_row(self) -> None:
         builder = self.arrange_builder()

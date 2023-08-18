@@ -6,9 +6,9 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
-from exports.configuration.builders import gene_expression
-from exports.constants import build
+from mutation_indexer import builders
+from mutation_indexer.configuration.builders import gene_expression
+from mutation_indexer.constants import build
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 

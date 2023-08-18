@@ -4,7 +4,7 @@ import pytest
 from pyspark import sql
 
 import config
-from exports import builders
+from mutation_indexer import builders
 from tests.integration.utils import join_utils
 
 

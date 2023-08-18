@@ -4,8 +4,8 @@ from unittest import mock
 
 import pytest
 
-from exports import es_utils
-from exports.constants import build
+from mutation_indexer import es_utils
+from mutation_indexer.constants import build
 
 
 class TestCaseFieldSelector:

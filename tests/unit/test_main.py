@@ -1,7 +1,7 @@
 from unittest import mock
 
-from exports import builders, main
-from exports.constants import build
+from mutation_indexer import builders, main
+from mutation_indexer.constants import build
 
 
 def test__get_viz_builders__all_builders() -> None:

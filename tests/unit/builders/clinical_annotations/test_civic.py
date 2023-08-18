@@ -14,7 +14,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 
-from exports.builders.clinical_annotations import civic
+from mutation_indexer.builders.clinical_annotations import civic
 from tests.unit.data import schemas
 
 

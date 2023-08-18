@@ -7,7 +7,7 @@ from unittest import mock
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import es_utils
+from mutation_indexer import es_utils
 
 DECIMAL_CONTEXT = decimal.Context(prec=10)
 

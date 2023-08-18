@@ -1,4 +1,4 @@
-from exports.configuration import spark
+from mutation_indexer.configuration import spark
 
 
 class TestSpark:

@@ -1,6 +1,6 @@
 import pytest
 
-from exports.constants import build
+from mutation_indexer.constants import build
 
 
 class TestDataFrame:

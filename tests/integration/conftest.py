@@ -27,9 +27,9 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 import config
-from exports import builders, configuration, es_utils, indexd_utils, schemas
-from exports.builders.clinical_annotations import civic
-from exports.constants import build
+from mutation_indexer import builders, configuration, es_utils, indexd_utils, schemas
+from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]

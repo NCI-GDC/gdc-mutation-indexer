@@ -11,7 +11,7 @@ from boto.s3 import connection
 from indexclient import client
 
 import parsers
-from exports import configuration, es_utils
+from mutation_indexer import configuration, es_utils
 
 
 def create_factory(host, port=443, timeout=10):

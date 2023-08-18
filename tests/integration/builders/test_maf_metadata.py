@@ -1,14 +1,14 @@
 import contextlib
 import dataclasses
-from typing import Iterable, Iterator, Tuple
+from collections.abc import Iterable, Iterator
 from unittest import mock
 
 import elasticsearch
 import pytest
 from elasticsearch import helpers
 
-from exports.builders import maf_metadata
-from exports.configuration import elasticsearch as es_config
+from mutation_indexer.viz import configuration, constants
+from mutation_indexer.viz.builders import maf_metadata
 
 FILE_SETTINGS = {
     "index": {
@@ -108,7 +108,7 @@ class File:
     data_type: str = "Masked Somatic Mutation"
     experimental_strategy: str = "WXS"
     analysis: Analysis = Analysis()
-    cases: Tuple[Case] = (Case(),)
+    cases: tuple[Case] = (Case(),)
 
 
 @pytest.fixture(scope="class")
@@ -130,10 +130,9 @@ class TestMAFFileFilterFactory:
     def initialize_fixtures(self, es_client: elasticsearch.Elasticsearch) -> None:
         self.es_client = es_client
 
-    def arrange_config(self) -> es_config.Read:
+    def arrange_config(self) -> configuration.Read:
         return mock.MagicMock(
-            spec=es_config.Read,
-            file_index=TEST_INDEX,
+            spec=configuration.Read, indices={constants.IndexType.FILE: TEST_INDEX}
         )
 
     @contextlib.contextmanager
