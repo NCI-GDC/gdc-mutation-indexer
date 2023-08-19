@@ -3,10 +3,10 @@ import csv
 import dataclasses
 import functools
 import io
+from importlib import resources
 from typing import Any, Callable, ContextManager, Iterable, Iterator, Optional, Tuple
 from unittest import mock
 
-import importlib_resources as resources
 import more_itertools
 import pytest
 from pyspark import sql
