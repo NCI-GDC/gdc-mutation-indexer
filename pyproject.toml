@@ -1,0 +1,55 @@
+[tool.poetry]
+authors = ["Your Name <you@example.com>"]
+description = "ETL for transforming submitted data into data for vizualization."
+license = "MIT"
+name = "gdc-mutation-indexer"
+packages = [{ include = "gdc_mutation_indexer" }]
+readme = "README.md"
+version = "2.0.0"
+
+[tool.poetry.dependencies]
+click = "^8.1.7"
+elasticsearch = { version = ">=7.6,<8.0", extras = ["async"] }
+gdc_ng_models = { git = "https://github.com/NCI-GDC/gdc-ng-models.git", tag = "1.6.4" }
+gdcdatamodel = { git = "https://github.com/NCI-GDC/gdcdatamodel.git", tag = "4.1.0" }
+gdcdictionary = { git = "https://github.com/NCI-GDC/gdcdictionary.git", tag = "2.6.6" }
+gdcmodels = { git = "https://github.com/NCI-GDC/gdc-models.git", tag = "4.0.0" }
+halo = "^0.0.31"
+marshmallow-dataclass = { extras = ["enum", "union"], version = "^8.5.14" }
+more-itertools = "^10.1.0"
+mutationindexerresource = { git = "https://github.com/NCI-GDC/mutation-indexer-resource.git", branch = "civic_annot" }
+normalizer = { git = "https://github.com/NCI-GDC/normalizer.git", tag = "4.0.0-rc.1" }
+psqlgraph = { git = "https://github.com/NCI-GDC/psqlgraph.git", tag = "4.0.1" }
+pyspark = ">=3.3.0,<3.4.0"
+python = "^3.9"
+
+[tool.poetry.group.dev.dependencies]
+coverage = { extras = ["toml"], version = "^7.3.0" }
+deepdiff = "^6.3.1"
+mypy = "^1.5.1"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[tool.poetry-dynamic-versioning]
+dirty = true
+enable = true
+metadata = true
+pattern = "default-unprefixed"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core", "poetry-dynamic-versioning"]
+
+[tool.isort]
+known_first_party = ["exports"]
+multi_line_output = 3
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = "-rflv"
+markers = ["do_not_collect", "gistic_build", "ssm_occurrence_centric_ssm_subtree", "gistic_combine", "gene_centric_ssm_subtree", "cnv_occurrence_centric_cnv_subtree", "case_centric_ssm_subtree"]
+minversion = "6.0"
+testpaths = ["tests/unit", "tests/integration"]
+
+[tool.mypy]
+plugins = ["marshmallow_dataclass.mypy"]

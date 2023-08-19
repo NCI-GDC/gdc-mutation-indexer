@@ -37,7 +37,7 @@ before_install:
   - sudo service elasticsearch restart
 
 install:
-  - pip install tox-travis
+  - pip install tox-travis poetry 'poetry-dynamic-versioning[poetry]'
 
 script:
   - java -version

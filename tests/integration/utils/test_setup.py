@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib
 import types
+from importlib import resources
 from typing import (
     AbstractSet,
     Callable,
@@ -19,7 +20,6 @@ from typing import (
 )
 
 import elasticsearch
-import importlib_resources as resources
 import ndjson
 import toml
 from elasticsearch import helpers

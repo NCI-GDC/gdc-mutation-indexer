@@ -3,6 +3,7 @@ import logging
 import pathlib
 import tempfile
 import uuid
+from importlib import resources
 from typing import (
     AbstractSet,
     Any,
@@ -19,7 +20,6 @@ from typing import (
 from unittest import mock
 
 import elasticsearch
-import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -27,9 +27,9 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, configuration, es_utils, indexd_utils, schemas
-from mutation_indexer.viz.builders.clinical_annotations import civic
 from mutation_indexer.configuration import old_adapter
 from mutation_indexer.viz import constants
+from mutation_indexer.viz.builders.clinical_annotations import civic
 from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[constants.IndexType], Callable[[], None]]
