@@ -3,7 +3,7 @@ authors = ["Your Name <you@example.com>"]
 description = "ETL for transforming submitted data into data for vizualization."
 license = "MIT"
 name = "gdc-mutation-indexer"
-packages = [{ include = "gdc_mutation_indexer" }]
+packages = [{ include = "mutation_indexer", from = "src" }]
 readme = "README.md"
 version = "2.0.0"
 
