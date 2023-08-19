@@ -8,10 +8,8 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer import es_utils
-from mutation_indexer.gene_expression import builders
-from mutation_indexer.configuration.builders import gene_expression as ge_config
-from mutation_indexer.constants import build
+from mutation_indexer import constants, es_utils
+from mutation_indexer.gene_expression import builders, configuration
 from tests.unit.data import schemas
 
 
@@ -80,11 +78,11 @@ class TestPrimaryAliquotBuilder:
         self.input_file_schema = input_file_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> ge_config.Builder:
-        backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
+    def arrange_config(self) -> configuration.Builder:
+        backup = mock.MagicMock(mode=constants.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
-            spec=ge_config.Builder, projects=(), is_cached=False, backup=backup
+            spec=configuration.Builder, projects=(), is_cached=False, backup=backup
         )
 
     def arrange_es_dataframe_util(

@@ -3,10 +3,10 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import Self
 
-import config
 from mutation_indexer import es_utils, schemas
 from mutation_indexer.builders import base_builder
-from mutation_indexer.constants import build
+from mutation_indexer.configuration import old_adapter
+from mutation_indexer.viz import constants
 from mutation_indexer.viz.builders import case, consequence, df_builders, observation
 
 
@@ -34,11 +34,11 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: old_adapter.BaseConfig,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
-        field_selector: es_utils.CaseFieldSelector,
+        field_selector: case.CaseFieldSelector,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
@@ -52,19 +52,21 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         self.observation_builder = observation_builder
 
     def _load_es_case_data(self) -> sql.DataFrame:
-        if False and self.config.projects:  # TODO: Restore func w/ new config specific projects
+        if (
+            False and self.config.projects
+        ):  # TODO: Restore func w/ new config specific projects
             query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
             query = {"query": {"match_all": {}}}
 
         fields = self._field_selector.select_for(
-            build.IndexType.CASE,
-            build.IndexType.CASE_CENTRIC,
+            constants.IndexType.CASE,
+            constants.IndexType.CASE_CENTRIC,
             excluded_fields=("samples",),
         )
         sample_fields = self._field_selector.select_for(
-            build.IndexType.CASE,
-            build.IndexType.CASE_CENTRIC,
+            constants.IndexType.CASE,
+            constants.IndexType.CASE_CENTRIC,
             included_fields=("samples",),
         )
 
@@ -72,14 +74,14 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         self.logger.info(f"Included sample fields: {sample_fields}")
 
         case_df = self._es_dataframe_util.read(
-            build.IndexType.CASE,
+            constants.IndexType.CASE,
             include_fields=fields,
             include_as_arrays=self.config.case_include_as_arrays,
             query=query,
         )
         sample_df = (
             self._es_rdd_util.get_rdd(
-                build.IndexType.CASE,
+                constants.IndexType.CASE,
                 include_fields=sample_fields,
                 query=query,
             )

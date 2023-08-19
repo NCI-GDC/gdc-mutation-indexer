@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-import config
 from mutation_indexer import builders, es_utils
+from mutation_indexer.configuration import old_adapter
 from tests.unit import utils
 from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
 from tests.unit.data import schemas
@@ -135,9 +135,9 @@ class TestCaseCentricBuilder:
         self.ssm_consequence_schema = ssm_consequence_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> config.BaseConfig:
+    def arrange_config(self) -> old_adapter.BaseConfig:
         return mock.MagicMock(
-            spec=config.BaseConfig,
+            spec=old_adapter.BaseConfig,
             debug=False,
             projects=(),
             output_raw="neither",

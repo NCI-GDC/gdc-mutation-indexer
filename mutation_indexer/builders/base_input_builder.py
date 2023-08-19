@@ -4,12 +4,15 @@ import logging
 from pyspark import sql
 from pyspark.sql.utils import AnalysisException
 
-import config
+from mutation_indexer.configuration import old_adapter
 
 
 class BaseInputBuilder(abc.ABC):
     def __init__(
-        self, config: config.BaseConfig, sqlContext: sql.SQLContext, input_type: str
+        self,
+        config: old_adapter.BaseConfig,
+        sqlContext: sql.SQLContext,
+        input_type: str,
     ) -> None:
         """
 
@@ -106,7 +109,6 @@ class BaseInputBuilder(abc.ABC):
         mode = getattr(self.config, "{}_backup".format(self.input_type))
 
         if mode == "read":
-
             # Load stored built input into dataframe
             saved_path = getattr(self.config, "{}_path".format(self.input_type))
             self.logger.info("Loading file from s3 instead of building")

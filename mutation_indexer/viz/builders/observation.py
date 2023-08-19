@@ -4,10 +4,10 @@ from typing import Optional
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import config
+from mutation_indexer.configuration import old_adapter
 from mutation_indexer.viz.builders import utils
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=old_adapter.LOG_FORMAT)
 
 
 class ObservationBuilder:

@@ -6,18 +6,15 @@ from typing import NamedTuple
 import pyspark
 from pyspark import sql
 
-import config
+from mutation_indexer import constants
 from mutation_indexer.builders import base_builder, bases
-from mutation_indexer.constants import build
-
-logging.basicConfig(format=config.LOG_FORMAT)
 
 logger = logging.getLogger(__name__)
 
 
 class Builders(NamedTuple):
     builders: Iterable[bases.Builder]
-    index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
+    index_builders: Mapping[constants.IndexType, base_builder.BaseBuilder]
 
 
 def _order_builders(builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
@@ -37,7 +34,7 @@ class Exporter:
     def __init__(
         self,
         spark_context: pyspark.SparkContext,
-        index_types: Iterable[build.IndexType],
+        index_types: Iterable[constants.IndexType],
         builders: Builders,
     ) -> None:
         self._spark_context = spark_context

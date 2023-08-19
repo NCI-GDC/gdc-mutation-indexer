@@ -8,11 +8,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
+from mutation_indexer.configuration import old_adapter
 from mutation_indexer.viz.builders import utils
 from mutation_indexer.viz.builders.clinical_annotations import base
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=old_adapter.LOG_FORMAT)
 
 
 class CivicBuilder(base.ClinicalAnnotationBuilder):
@@ -21,7 +21,7 @@ class CivicBuilder(base.ClinicalAnnotationBuilder):
     uniform features
     """
 
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext) -> None:
+    def __init__(self, config: old_adapter.BaseConfig, sqlContext: sql.SQLContext) -> None:
         super().__init__(config, sqlContext)
         self.sources, self.schema = self._get_resource()
 

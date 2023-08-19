@@ -5,8 +5,8 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import collect_set, struct
 from typing_extensions import Self
 
-from config import LOG_FORMAT, BaseConfig
 from mutation_indexer.builders import base_builder
+from mutation_indexer.configuration.old_adapter import LOG_FORMAT, BaseConfig
 from mutation_indexer.viz.builders import consequence, df_builders, observation
 
 logging.basicConfig(format=LOG_FORMAT)

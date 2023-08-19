@@ -9,10 +9,6 @@ from pyspark.sql.functions import col, size
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 from typing_extensions import Self
 
-from config import LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
-
 
 # TODO: THIS MUST BE MOVED BEFORE THE SPLIT OR WE NEED TO BE ON THE NEW IndexBuilder
 def percentile(vector, p):

@@ -5,9 +5,9 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer.gene_expression import builders as builders
-from mutation_indexer.configuration.builders import gene_expression
-from mutation_indexer.constants import build
+from mutation_indexer import constants
+from mutation_indexer.gene_expression import builders
+from mutation_indexer.gene_expression import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -58,10 +58,10 @@ class TestGeneExpressionBuilder:
 
         return {"expression_value_df": value_df, "case_df": case_df}
 
-    def arrange_config(self) -> gene_expression.IndexBuilder:
+    def arrange_config(self) -> configuration.IndexBuilder:
         config = mock.MagicMock(
-            spec=gene_expression.IndexBuilder,
-            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+            spec=configuration.IndexBuilder,
+            backup=mock.MagicMock(mode=constants.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
             partition_size=1,

@@ -1,7 +1,9 @@
-from pyspark.sql.functions import struct, col
+import logging
+
+from pyspark.sql.functions import col, struct
+
 from mutation_indexer.viz.builders.utils import select_mapping
 
-import logging
 logger = logging.getLogger('clinical_annotation')
 
 

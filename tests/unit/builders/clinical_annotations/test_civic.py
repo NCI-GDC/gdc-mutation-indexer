@@ -1,20 +1,18 @@
 import contextlib
 import csv
-import functools
-from pprint import pprint
 import dataclasses
+import functools
 import io
 from typing import Any, Callable, ContextManager, Iterable, Iterator, Optional, Tuple
 from unittest import mock
-import importlib_resources as resources
 
+import importlib_resources as resources
 import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-
-from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer.viz.builders.clinical_annotations import civic
 from tests.unit.data import schemas
 
 

@@ -4,11 +4,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
-import config
 from mutation_indexer.builders import base_builder
-from mutation_indexer.viz.builders import df_builders
+from mutation_indexer.configuration import old_adapter
+from mutation_indexer.viz.builders import consequence, df_builders, observation
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=old_adapter.LOG_FORMAT)
 
 
 class GeneCentricBuilder(base_builder.BaseBuilder):
@@ -35,10 +35,10 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: old_adapter.BaseConfig,
         sqlContext: sql.SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 

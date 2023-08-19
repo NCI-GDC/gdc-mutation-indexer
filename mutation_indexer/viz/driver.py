@@ -6,12 +6,17 @@ import elasticsearch
 from indexclient import client
 from pyspark import sql
 
-import config as old_config
 from mutation_indexer import driver, es_utils, indexd_utils
 from mutation_indexer.builders import base_builder, bases, gene_model
-from mutation_indexer.constants import build
-from mutation_indexer.viz import builders, configuration
-from mutation_indexer.viz.builders import ascat, consequence, maf_metadata, observation
+from mutation_indexer.configuration import old_adapter
+from mutation_indexer.viz import builders, configuration, constants
+from mutation_indexer.viz.builders import (
+    ascat,
+    case,
+    consequence,
+    maf_metadata,
+    observation,
+)
 from mutation_indexer.viz.builders.clinical_annotations import civic
 from mutation_indexer.viz.configuration import Configuration
 
@@ -29,7 +34,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         es_client: elasticsearch.Elasticsearch,
         indexd: client.IndexClient,
     ) -> Iterable[bases.Builder]:
-        config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
+        config_adapter = old_adapter.BaseConfig(config, es_client, indexd)
         sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
         doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
         annotation_builders = (civic.CivicBuilder(config_adapter, sql_context),)
@@ -44,7 +49,7 @@ class Driver(driver.Driver[configuration.Configuration]):
             config.elasticsearch, spark_session, es_client, mappings_loader
         )
         es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
-        case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
+        case_field_selector = case.CaseFieldSelector(mappings_loader)
 
         input_builders = (
             builders.ASCATBuilder(
@@ -76,19 +81,19 @@ class Driver(driver.Driver[configuration.Configuration]):
 
     def _get_index_builders(self, config: Configuration, spark_session: sql.SparkSession, es_client: elasticsearch.Elasticsearch, indexd: client.IndexClient) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
         mappings_loader = es_utils.MappingsLoader()
-        config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
+        config_adapter = old_adapter.BaseConfig(config, es_client, indexd)
         sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
         es_dataframe_util = es_utils.DataFrameUtil(
             config.elasticsearch, spark_session, es_client, mappings_loader
         )
         es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
-        case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
+        case_field_selector = case.CaseFieldSelector(mappings_loader)
         consequence_builder = consequence.ConsequenceBuilder()
         observation_builder = observation.ObservationBuilder()
 
         return types.MappingProxyType(
             {
-                build.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(
+                constants.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(
                     config_adapter,
                     sql_context,
                     es_dataframe_util,
@@ -97,19 +102,19 @@ class Driver(driver.Driver[configuration.Configuration]):
                     consequence_builder,
                     observation_builder,
                 ),
-                build.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
+                constants.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
                     config_adapter, sql_context, consequence_builder, observation_builder
                 ),
-                build.IndexType.CNV_OCCURRENCE_CENTRIC: builders.CNVOccurrenceCentricBuilder(
+                constants.IndexType.CNV_OCCURRENCE_CENTRIC: builders.CNVOccurrenceCentricBuilder(
                     config_adapter, sql_context, consequence_builder, observation_builder
                 ),
-                build.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
+                constants.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
                     config_adapter, sql_context, consequence_builder, observation_builder
                 ),
-                build.IndexType.SSM_CENTRIC: builders.SSMCentricBuilder(
+                constants.IndexType.SSM_CENTRIC: builders.SSMCentricBuilder(
                     config_adapter, sql_context, consequence_builder, observation_builder
                 ),
-                build.IndexType.SSM_OCCURRENCE_CENTRIC: builders.SSMOccurrenceCentricBuilder(
+                constants.IndexType.SSM_OCCURRENCE_CENTRIC: builders.SSMOccurrenceCentricBuilder(
                     config_adapter, sql_context, consequence_builder, observation_builder
                 ),
             }

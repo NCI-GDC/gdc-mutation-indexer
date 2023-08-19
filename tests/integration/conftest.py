@@ -26,13 +26,13 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from mutation_indexer import builders, configuration, es_utils, indexd_utils, schemas
-from mutation_indexer.builders.clinical_annotations import civic
-from mutation_indexer.constants import build
+from mutation_indexer.viz.builders.clinical_annotations import civic
+from mutation_indexer.configuration import old_adapter
+from mutation_indexer.viz import constants
 from tests.integration.utils import test_setup
 
-CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
+CentricIndexFinalizer = Callable[[constants.IndexType], Callable[[], None]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
 
 log = logging.getLogger()
@@ -123,8 +123,8 @@ def source_es_client(
 @pytest.fixture(scope="session")
 def default_old_config(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> config.BaseConfig:
-    return config.ConfigAdapter(default_config, es_client, mock.MagicMock())
+) -> old_adapter.BaseConfig:
+    return old_adapter.BaseConfig(default_config, es_client, mock.MagicMock())
 
 
 @pytest.fixture(scope="session")
@@ -137,8 +137,8 @@ def setup_graph_indices(
     manager = test_setup.IndexManager(default_config, es_client, log)
     loader = test_setup.DocumentLoader(default_config, es_client, log)
     data = {
-        build.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
-        build.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
+        constants.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
+        constants.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
     }
 
     with manager, loader:
@@ -227,7 +227,7 @@ def all_cases(
     """
     hits = es_utils.iterate_es_results(
         es_client=es_client,
-        index_name=default_config.elasticsearch.read.case_index,
+        index_name=default_config.elasticsearch.read.indices[constants.IndexType.CASE],
         query={"_source": ["case_id"]},
     )
 
@@ -263,7 +263,7 @@ def gene_model_df(
 
 @pytest.fixture(scope="session")
 def maf_df(
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
@@ -426,7 +426,7 @@ def case_df(
 
 @pytest.fixture(scope="session")
 def ssm_transcript_df(
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
 ) -> sql.DataFrame:
@@ -479,7 +479,7 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 @pytest.fixture(scope="session")
 def consequence_builder(
-    default_old_config: config.BaseConfig, sqlContext: sql.SQLContext
+    default_old_config: old_adapter.BaseConfig, sqlContext: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
     return builders.ConsequenceBuilder(default_old_config, sqlContext)
 
@@ -505,7 +505,7 @@ def centric_index_finalizer(
 def case_centric_df(
     request: pytest.FixtureRequest,
     default_config: configuration.Configuration,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
@@ -553,7 +553,7 @@ def case_centric_df(
 @pytest.fixture(scope="session")
 def gene_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -586,7 +586,7 @@ def gene_centric_df(
 @pytest.fixture(scope="session")
 def ssm_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -618,7 +618,7 @@ def ssm_centric_df(
 @pytest.fixture(scope="session")
 def ssm_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -652,7 +652,7 @@ def ssm_occurrence_centric_df(
 @pytest.fixture(scope="session")
 def cnv_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -682,7 +682,7 @@ def cnv_centric_df(
 @pytest.fixture(scope="session")
 def cnv_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -714,7 +714,7 @@ def cnv_occurrence_centric_df(
 @pytest.fixture(scope="session")
 def case_ssm_subtree(
     default_config: configuration.Configuration,
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
@@ -749,7 +749,7 @@ def case_ssm_subtree(
 
 @pytest.fixture(scope="session")
 def gene_ssm_subtree(
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
@@ -769,7 +769,7 @@ def gene_ssm_subtree(
 
 @pytest.fixture(scope="session")
 def ssm_occurrence_ssm_subtree(
-    default_old_config: config.BaseConfig,
+    default_old_config: old_adapter.BaseConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,

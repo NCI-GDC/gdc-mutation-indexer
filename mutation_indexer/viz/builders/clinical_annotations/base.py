@@ -3,8 +3,7 @@ import logging
 from pyspark import sql
 
 from mutation_indexer.builders.base_input_builder import BaseInputBuilder
-
-from config import LOG_FORMAT
+from mutation_indexer.configuration.old_adapter import LOG_FORMAT
 
 logging.basicConfig(format=LOG_FORMAT)
 

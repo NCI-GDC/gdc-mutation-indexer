@@ -5,8 +5,8 @@ import elasticsearch
 import pytest
 from pyspark import sql
 
-import config
 from mutation_indexer import builders, configuration, es_utils
+from mutation_indexer.configuration import old_adapter
 from tests.integration.utils import test_setup
 
 

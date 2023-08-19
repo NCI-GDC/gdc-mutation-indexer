@@ -1,7 +1,6 @@
 import dataclasses
 from typing import Dict, Optional, Tuple
 
-
 __all__ = ("Domain", "Exon", "GeneModel", "Transcript")
 
 
