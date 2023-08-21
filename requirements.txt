@@ -46,7 +46,7 @@ gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcdatamodel
-gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@4.0.0
+gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer
@@ -84,7 +84,7 @@ multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
-mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot
+mutationindexerresource @ git+https://github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot
     # via gdc-mutation-indexer (setup.py)
 mypy-extensions==0.4.3
     # via typing-inspect
@@ -92,7 +92,7 @@ ndjson==0.3.1
     # via gdc-mutation-indexer (setup.py)
 networkx==2.4
     # via gdc-mutation-indexer (setup.py)
-normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0-rc.1
+normalizer @ git+https://github.com/NCI-GDC/normalizer.git@4.0.0
     # via gdc-mutation-indexer (setup.py)
 psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0
     # via gdcdatamodel
@@ -100,7 +100,7 @@ psycopg2==2.8.6
     # via psqlgraph
 py4j==0.10.9.5
     # via pyspark
-pyrsistent==0.18.0
+pyrsistent==0.19.3
     # via jsonschema
 pyspark==3.3.1
     # via gdc-mutation-indexer (setup.py)
