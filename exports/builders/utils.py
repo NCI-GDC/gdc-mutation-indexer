@@ -327,7 +327,7 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
 def is_protein_coding() -> sql.Column:
     """
     Returns:
-        A column which represents whether or not the a in the gene model is a protein
+        A column which represents whether or not a gene in the gene model is a protein
         coding gene based on the biotype.
     """
     return F.col("biotype") == F.lit("protein_coding")
