@@ -297,17 +297,17 @@ def _get_ge_builders(
         builders.GeneExpressionPrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util
         ),
-        builders.GeneExpressionCaseInputBuilder(config.case, spark_session),
-        builders.GeneExpressionValueInputBuilder(
-            config.expression_value, spark_session, doc_dataframe_util
-        ),
     )
 
     yield from input_builders
 
     if build.IndexType.GENE_EXPRESSION in index_types:
-        yield builders.GeneExpressionBuilder(
-            config.gene_expression, spark_session, es_dataframe_util, mappings_loader
+        yield builders.GeneExpressionIndexBuilder(
+            config.gene_expression,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            doc_dataframe_util,
         )
 
 

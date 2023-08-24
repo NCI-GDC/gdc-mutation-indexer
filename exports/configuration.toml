@@ -184,7 +184,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.gene_expression.gene_expression]
-id_field = "case_id"
+id_field = "gene_expression_id"
 is_cached = true
 partition_size = 12
 [builders.gene_expression.gene_expression.backup]

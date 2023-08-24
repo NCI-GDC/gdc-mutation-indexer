@@ -35,7 +35,7 @@ from tests.integration.utils import test_setup
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
 
-log = logging.getLogger()
+log = logging.getLogger("tests.integration")
 log.setLevel(logging.INFO)
 
 

@@ -1,6 +1,3 @@
-import dataclasses
-import datetime
-from typing import Tuple
 from unittest import mock
 
 import more_itertools
@@ -13,49 +10,7 @@ from exports.builders import gene_expression
 from exports.configuration.builders import gene_expression as ge_config
 from exports.constants import build
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class ESDemographic:
-    days_to_death: int = 3
-    ethnicity: str = "hispanic"
-    gender: str = "male"
-    race: str = "mixed"
-    vital_status: str = "?"
-
-
-@dataclasses.dataclass(frozen=True)
-class ESDiagnosis:
-    age_at_diagnosis: int = 100
-
-
-@dataclasses.dataclass(frozen=True)
-class ESProject:
-    project_id: str = "GDC-TEST"
-
-
-@dataclasses.dataclass(frozen=True)
-class ESSample:
-    sample_id: str = "s-0"
-    sample_type: str = "Primay Tumor"
-
-
-@dataclasses.dataclass(frozen=True)
-class ESCase:
-    case_id: str = "c-0"
-    submitter_id: str = "case0"
-    project: ESProject = ESProject()
-    demographic: ESDemographic = ESDemographic()
-    samples: Tuple[ESSample, ...] = (ESSample(),)
-    diagnoses: Tuple[ESDiagnosis, ...] = (ESDiagnosis(),)
-
-
-@dataclasses.dataclass(frozen=True)
-class ESFile:
-    file_id: str = "f-0"
-    created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
-    experimental_strategy: str = "WXS"
-    cases: Tuple[ESCase, ...] = (ESCase(),)
+from tests.unit.data.models import gene_expression as models
 
 
 @pytest.fixture(scope="class")
@@ -88,7 +43,7 @@ class TestPrimaryAliquotBuilder:
         )
 
     def arrange_es_dataframe_util(
-        self, data: Tuple[ESFile, ...]
+        self, data: tuple[models.File, ...]
     ) -> es_utils.DataFrameUtil:
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
@@ -100,7 +55,7 @@ class TestPrimaryAliquotBuilder:
         return dataframe_util
 
     def arrange_builder(
-        self, data: Tuple[ESFile, ...] = (ESFile(),)
+        self, data: tuple[models.File, ...] = (models.File(),)
     ) -> gene_expression.PrimaryAliquotBuilder:
         config = self.arrange_config()
         util = self.arrange_es_dataframe_util(data)
@@ -113,11 +68,11 @@ class TestPrimaryAliquotBuilder:
 
         result_df = builder.build()
 
-        assert result_df.schema == self.final_schema
         assert result_df.count() == 1
+        assert result_df.schema == self.final_schema
 
     def test__build__data_translated(self) -> None:
-        es_file = ESFile()
+        es_file = models.File()
         es_case = es_file.cases[0]
         builder = self.arrange_builder((es_file,))
 
@@ -127,13 +82,3 @@ class TestPrimaryAliquotBuilder:
         assert result_row.file_id == es_file.file_id
         assert result_row.case_id == es_case.case_id
         assert result_row.submitter_id == es_case.submitter_id
-        assert result_row.demographic.asDict() == dataclasses.asdict(
-            es_case.demographic
-        )
-        assert result_row.project.asDict() == dataclasses.asdict(es_case.project)
-        assert len(result_row.samples) == 1
-        assert result_row.samples[0].asDict() == dataclasses.asdict(es_case.samples[0])
-        assert len(result_row.diagnoses) == 1
-        assert result_row.diagnoses[0].asDict() == dataclasses.asdict(
-            es_case.diagnoses[0]
-        )

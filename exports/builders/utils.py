@@ -322,3 +322,23 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
     )
 
     return transcripts_df.drop("canonical_transcript")
+
+
+def is_protein_coding() -> sql.Column:
+    """
+    Returns:
+        A column which represents whether or not a gene in the gene model is a protein
+        coding gene based on the biotype.
+    """
+    return F.col("biotype") == F.lit("protein_coding")
+
+
+def is_between_chr1_and_chr22() -> sql.Column:
+    """
+    Returns:
+        A column which represents whether or not a gene in the gene model with a
+        chromosome value between char1 and char22.
+    """
+    return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(
+        1, 22
+    )

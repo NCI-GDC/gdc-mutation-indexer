@@ -21,8 +21,6 @@ from exports.builders.cnv_occurrence_centric import CNVOccurrenceCentricBuilder
 
 # Gene expression builder
 from exports.builders.gene_expression import (
-    CaseBuilder as GeneExpressionCaseInputBuilder,
-    ExpressionValueBuilder as GeneExpressionValueInputBuilder,
-    GeneExpressionBuilder,
+    IndexBuilder as GeneExpressionIndexBuilder,
     PrimaryAliquotBuilder as GeneExpressionPrimaryAliquotBuilder,
 )

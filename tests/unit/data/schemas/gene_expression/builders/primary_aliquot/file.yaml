@@ -17,8 +17,6 @@ fields:
       fields:
       - <<: *string_field
         name: case_id
-      - <<: *string_field
-        name: submitter_id
       - metadata: {}
         name: samples
         nullable: true
@@ -32,44 +30,8 @@ fields:
               name: sample_type
             type: struct
           type: array
-      - metadata: {}
-        name: demographic
-        nullable: true
-        type:
-          fields:
-          - &long_field
-            metadata: {}
-            name: days_to_death
-            nullable: true
-            type: long
-          - <<: *string_field
-            name: ethnicity
-          - <<: *string_field
-            name: gender
-          - <<: *string_field
-            name: race
-          - <<: *string_field
-            name: vital_status
-          type: struct
-      - metadata: {}
-        name: diagnoses
-        nullable: true
-        type:
-          containsNull: true
-          elementType:
-            fields:
-            - <<: *long_field
-              name: age_at_diagnosis
-            type: struct
-          type: array
-      - metadata: {}
-        name: project
-        nullable: true
-        type:
-          fields:
-          - <<: *string_field
-            name: project_id
-          type: struct
+      - <<: *string_field
+        name: submitter_id
       type: struct
     type: array
 type: struct
