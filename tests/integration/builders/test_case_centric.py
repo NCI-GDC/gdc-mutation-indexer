@@ -3,8 +3,8 @@ from typing import AbstractSet
 import pytest
 from pyspark import sql
 
-import config
 from exports import builders
+from exports.configuration import adapter
 from tests.integration.utils import join_utils
 
 
@@ -42,7 +42,7 @@ def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> 
 @pytest.mark.case_centric_ssm_subtree
 @pytest.mark.usefixtures("case_centric_df")
 def test_ssm_subtree(
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,

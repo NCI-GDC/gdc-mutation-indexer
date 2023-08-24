@@ -4,11 +4,12 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
-import config
 from exports import builders
 from exports.builders import df_builders
+from exports.configuration import adapter
+from exports.constants import app
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class SSMCentricBuilder(builders.BaseBuilder):
@@ -30,7 +31,7 @@ class SSMCentricBuilder(builders.BaseBuilder):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: adapter.ObsoleteConfig,
         sqlContext: sql.SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
@@ -96,9 +97,7 @@ class SSMCentricBuilder(builders.BaseBuilder):
         # Observation
         self.log("Aggregating Observation from MAF")
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df,
-            primary_aliquot_df,
-            self.index_name,
+            maf_df, primary_aliquot_df, self.index_name,
         )
 
         self.log("Joining Cases with Observation, [right, case_id]")

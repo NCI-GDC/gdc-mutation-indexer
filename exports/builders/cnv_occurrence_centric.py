@@ -5,11 +5,12 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import struct
 from typing_extensions import Self
 
-from config import LOG_FORMAT, BaseConfig
 from exports import builders
 from exports.builders.df_builders import build_cnv_subtree
+from exports.configuration import adapter
+from exports.constants import app
 
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
@@ -32,7 +33,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
 
     def __init__(
         self,
-        config: BaseConfig,
+        config: adapter.ObsoleteConfig,
         sqlContext: SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,

@@ -3,10 +3,9 @@ import logging
 from pyspark import sql
 
 from exports.builders.base_input_builder import BaseInputBuilder
+from exports.constants import app
 
-from config import LOG_FORMAT
-
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class ClinicalAnnotationBuilder(BaseInputBuilder):
@@ -16,7 +15,7 @@ class ClinicalAnnotationBuilder(BaseInputBuilder):
     """
 
     def __init__(self, config, sqlContext):
-        super(ClinicalAnnotationBuilder, self).__init__(config, sqlContext, 'tsv')
+        super(ClinicalAnnotationBuilder, self).__init__(config, sqlContext, "tsv")
 
     def build_from_scratch(self, **kwargs: sql.DataFrame) -> sql.DataFrame:
         """

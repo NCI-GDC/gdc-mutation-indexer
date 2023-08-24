@@ -1,11 +1,9 @@
 from typing import List, Sequence
-from unittest import mock
 
 import elasticsearch
 import pytest
 from pyspark import sql
 
-import config
 from exports import builders, configuration, es_utils
 from tests.integration.utils import test_setup
 
