@@ -60,9 +60,11 @@ class Configuration:
             .values(),
         )
         projects = tuple(data.get("build", _DEFAULT_DICT).get("projects", ()))
+        acl = tuple(data.get("build", _DEFAULT_DICT).get("acl", ()))
 
         for builder in builders:
             builder.setdefault("projects", projects)
+            builder.setdefault("acl", acl)
 
         return data
 

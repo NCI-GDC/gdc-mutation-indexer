@@ -58,6 +58,7 @@ jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
 projects = []
 study_label = ""
+acl = []
 
 [builders]
 [builders.viz.ascat]
