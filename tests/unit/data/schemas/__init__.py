@@ -157,10 +157,6 @@ class Viz:
 class GeneExpression:
     class Builders:
         @_init_schemas
-        class Case:
-            FINAL: Schema
-
-        @_init_schemas
         class Index:
             FINAL: Schema
             STAR_COUNTS: Schema
@@ -169,7 +165,3 @@ class GeneExpression:
         class PrimaryAliquot:
             FINAL: Schema
             FILE: Schema
-
-        @_init_schemas
-        class Value:
-            FINAL: Schema
