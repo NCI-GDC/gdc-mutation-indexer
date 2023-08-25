@@ -11,15 +11,11 @@ aiosignal==1.2.0
 async-timeout==4.0.2
     # via aiohttp
 attrs==21.4.0
-    # via
-    #   aiohttp
-    #   jsonschema
+    # via aiohttp
 backports-tempfile==1.0
     # via normalizer
 backports-weakref==1.0.post1
     # via backports-tempfile
-boto==2.49.0
-    # via gdc-mutation-indexer (setup.py)
 certifi==2022.6.15
     # via
     #   elasticsearch
@@ -28,8 +24,6 @@ charset-normalizer==2.0.12
     # via
     #   aiohttp
     #   requests
-decorator==5.1.1
-    # via networkx
 elasticsearch[async]==7.17.4
     # via
     #   gdc-mutation-indexer (setup.py)
@@ -38,14 +32,6 @@ frozenlist==1.2.0
     # via
     #   aiohttp
     #   aiosignal
-gdc-ng-models @ git+https://github.com/NCI-GDC/gdc-ng-models.git@1.5.2
-    # via gdcdatamodel
-gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0
-    # via gdc-mutation-indexer (setup.py)
-gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0
-    # via
-    #   gdc-mutation-indexer (setup.py)
-    #   gdcdatamodel
 gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0
     # via
     #   gdc-mutation-indexer (setup.py)
@@ -56,8 +42,6 @@ gitdb2==3.0.3.post1
     # via normalizer
 gitpython==3.1.18
     # via normalizer
-graphviz==0.16
-    # via gdcdatamodel
 idna==3.3
     # via
     #   requests
@@ -66,10 +50,6 @@ importlib-resources==3.3.1
     # via gdc-mutation-indexer (setup.py)
 indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2
     # via gdc-mutation-indexer (setup.py)
-jsonschema==3.2.0
-    # via
-    #   gdcdatamodel
-    #   gdcdictionary
 marshmallow==3.14.1
     # via
     #   marshmallow-dataclass
@@ -88,52 +68,24 @@ mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-reso
     # via gdc-mutation-indexer (setup.py)
 mypy-extensions==0.4.3
     # via typing-inspect
-ndjson==0.3.1
-    # via gdc-mutation-indexer (setup.py)
-networkx==2.4
-    # via gdc-mutation-indexer (setup.py)
 normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0
     # via gdc-mutation-indexer (setup.py)
-psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0
-    # via gdcdatamodel
-psycopg2==2.8.6
-    # via psqlgraph
 py4j==0.10.9.5
     # via pyspark
-pyrsistent==0.19.3
-    # via jsonschema
 pyspark==3.3.1
-    # via gdc-mutation-indexer (setup.py)
-python-dateutil==2.8.2
     # via gdc-mutation-indexer (setup.py)
 python-json-logger==2.0.4
     # via gdc-mutation-indexer (setup.py)
-pytz==2020.5
-    # via gdcdatamodel
 pyyaml==5.4.1
     # via
-    #   gdc-mutation-indexer (setup.py)
-    #   gdcdictionary
     #   gdcmodels
     #   normalizer
 requests==2.27.1
-    # via
-    #   gdc-mutation-indexer (setup.py)
-    #   indexclient
-rstr==2.2.6
-    # via psqlgraph
-six==1.15.0
-    # via
-    #   gdc-mutation-indexer (setup.py)
-    #   jsonschema
-    #   psqlgraph
-    #   python-dateutil
+    # via indexclient
 smmap==5.0.0
     # via gitdb
 smmap2==2.0.5
     # via gitdb2
-sqlalchemy==1.3.24
-    # via psqlgraph
 toml==0.10.2
     # via gdc-mutation-indexer (setup.py)
 typing-extensions==4.1.1
@@ -146,10 +98,5 @@ urllib3==1.26.9
     # via
     #   elasticsearch
     #   requests
-xlocal==0.5
-    # via psqlgraph
 yarl==1.7.2
     # via aiohttp
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
