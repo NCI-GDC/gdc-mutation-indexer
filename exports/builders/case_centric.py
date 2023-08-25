@@ -53,7 +53,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
     def _load_es_case_data(self) -> sql.DataFrame:
         if (
             False and self.config.projects
-        ):  # TODO: Restore func w/ new config specific projects
+        ):  # TODO: DEV-1256 Restore func w/ new config specific projects
             query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
             query = {"query": {"match_all": {}}}
