@@ -5,11 +5,12 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import collect_set, struct
 from typing_extensions import Self
 
-from config import LOG_FORMAT, BaseConfig
 from exports import builders
 from exports.builders.df_builders import get_cnv_df
+from exports.configuration import adapter
+from exports.constants import app
 
-logging.basicConfig(format=LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class CNVCentricBuilder(builders.BaseBuilder):
@@ -31,7 +32,7 @@ class CNVCentricBuilder(builders.BaseBuilder):
 
     def __init__(
         self,
-        config: BaseConfig,
+        config: adapter.ObsoleteConfig,
         sqlContext: SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
@@ -57,10 +58,7 @@ class CNVCentricBuilder(builders.BaseBuilder):
         cnv_df = get_cnv_df(ascat_df, self.index_name)
 
         self.log("Build Consequence")
-        cons_df = self.consequence_builder.build_for_cnv(
-            ascat_df,
-            self.index_name,
-        )
+        cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name,)
 
         self.log("Build Occurrence")
         occurrence_df = self.build_occurrence_df(ascat_df, case_df)
@@ -101,10 +99,7 @@ class CNVCentricBuilder(builders.BaseBuilder):
 
         # 1. Observation
         self.logger.info("Aggregating Observation from ASCAT")
-        obs_df = self.observation_builder.build_for_cnv(
-            ascat_df,
-            self.index_name,
-        )
+        obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name,)
 
         # 2. Join Case to Observation and create structs
         self.logger.info("Joining Cases with Observation, [right, case_id]")

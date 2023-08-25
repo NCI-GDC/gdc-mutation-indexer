@@ -6,11 +6,10 @@ from typing import NamedTuple
 import pyspark
 from pyspark import sql
 
-import config
 from exports.builders import base_builder, bases
-from exports.constants import build
+from exports.constants import app, build
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 logger = logging.getLogger(__name__)
 

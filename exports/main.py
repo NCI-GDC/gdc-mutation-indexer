@@ -1,18 +1,18 @@
 import contextlib
 import logging
 import types
-from collections.abc import Iterator, Mapping, Container
+from collections.abc import Container, Iterator, Mapping
 
 import elasticsearch
 import toml
 from indexclient import client
 from pyspark import sql
 
-import config as old_config
 from exports import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
 from exports import logging as mutation_indexer_logging
 from exports.builders import ascat, base_builder, bases, maf_metadata
 from exports.builders.clinical_annotations import civic
+from exports.configuration import adapter
 from exports.configuration import elasticsearch as es_config
 from exports.configuration import indexd
 from exports.configuration.builders import gene_expression, viz
@@ -46,8 +46,7 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
         An indexd client
     """
     return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}",
-        auth=(config.user, config.password),
+        baseurl=f"{config.host}:{config.port}", auth=(config.user, config.password),
     )
 
 
@@ -65,15 +64,12 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
         config.nodes.split(","),
         use_ssl=config.use_ssl,
         verify_certs=config.verify_certs,
-        http_auth=(
-            config.user,
-            config.password,
-        ),
+        http_auth=(config.user, config.password,),
     )
 
 
 def _get_viz_builders(
-    old_config: old_config.BaseConfig,
+    old_config: adapter.ObsoleteConfig,
     config: viz.Viz,
     es_config: es_config.Elasticsearch,
     sql_context: sql.SQLContext,
@@ -134,10 +130,7 @@ def _get_viz_builders(
             config.maf, spark_session, doc_dataframe_util, annotation_builders
         ),
         builders.MAFMetadataBuilder(
-            config.maf_metadata,
-            spark_session,
-            es_dataframe_util,
-            file_filter_factory,
+            config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory,
         ),
         builders.PrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
@@ -148,7 +141,7 @@ def _get_viz_builders(
 
 
 def get_viz_index_builders(
-    old_config: old_config.BaseConfig,
+    old_config: adapter.ObsoleteConfig,
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
@@ -225,7 +218,7 @@ def get_viz_builders(
     """
     mappings_loader = es_utils.MappingsLoader()
     indexd = get_index_client(config.indexd)
-    config_adapter = old_config.ConfigAdapter(config, es_client, indexd)
+    config_adapter = adapter.ObsoleteConfig(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     es_dataframe_util = es_utils.DataFrameUtil(
         config.elasticsearch, spark_session, es_client, mappings_loader

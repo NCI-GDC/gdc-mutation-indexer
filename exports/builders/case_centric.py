@@ -3,9 +3,9 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import Self
 
-import config
 from exports import builders, es_utils, schemas
 from exports.builders import case, df_builders
+from exports.configuration import adapter
 from exports.constants import build
 
 
@@ -33,7 +33,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: adapter.ObsoleteConfig,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
@@ -51,7 +51,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         self.observation_builder = observation_builder
 
     def _load_es_case_data(self) -> sql.DataFrame:
-        if False and self.config.projects:  # TODO: Restore func w/ new config specific projects
+        if (
+            False and self.config.projects
+        ):  # TODO: DEV-1256 Restore func w/ new config specific projects
             query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
             query = {"query": {"match_all": {}}}
@@ -78,9 +80,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         )
         sample_df = (
             self._es_rdd_util.get_rdd(
-                build.IndexType.CASE,
-                include_fields=sample_fields,
-                query=query,
+                build.IndexType.CASE, include_fields=sample_fields, query=query,
             )
             .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
             .select("_source.*")
@@ -213,10 +213,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df,
-            primary_aliquot_df,
-            self.index_name,
-            selector="ssm",
+            maf_df, primary_aliquot_df, self.index_name, selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
@@ -248,9 +245,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            ascat_df,
-            self.index_name,
-            selector="cnv",
+            ascat_df, self.index_name, selector="cnv",
         )
 
         # Build the final cnv dataframe

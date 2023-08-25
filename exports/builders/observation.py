@@ -4,10 +4,10 @@ from typing import Optional
 from pyspark import sql
 from pyspark.sql import functions as F
 
-import config
 from exports.builders import utils
+from exports.constants import app
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class ObservationBuilder:

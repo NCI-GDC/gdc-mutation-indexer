@@ -8,11 +8,12 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports.builders import utils
 from exports.builders.clinical_annotations import base
+from exports.configuration import adapter
+from exports.constants import app
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class CivicBuilder(base.ClinicalAnnotationBuilder):
@@ -21,7 +22,9 @@ class CivicBuilder(base.ClinicalAnnotationBuilder):
     uniform features
     """
 
-    def __init__(self, config: config.BaseConfig, sqlContext: sql.SQLContext) -> None:
+    def __init__(
+        self, config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
+    ) -> None:
         super().__init__(config, sqlContext)
         self.sources, self.schema = self._get_resource()
 

@@ -26,9 +26,9 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-import config
 from exports import builders, configuration, es_utils, indexd_utils, schemas
 from exports.builders.clinical_annotations import civic
+from exports.configuration import adapter
 from exports.constants import build
 from tests.integration.utils import test_setup
 
@@ -104,10 +104,7 @@ def es_client(
         es_connection.nodes.split(","),
         use_ssl=es_connection.use_ssl,
         verify_certs=es_connection.verify_certs,
-        http_auth=(
-            es_connection.user,
-            es_connection.password,
-        ),
+        http_auth=(es_connection.user, es_connection.password,),
     ) as es_client:
         yield es_client
 
@@ -123,8 +120,8 @@ def source_es_client(
 @pytest.fixture(scope="session")
 def default_old_config(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> config.BaseConfig:
-    return config.ConfigAdapter(default_config, es_client, mock.MagicMock())
+) -> adapter.ObsoleteConfig:
+    return adapter.ObsoleteConfig(default_config, es_client, mock.MagicMock())
 
 
 @pytest.fixture(scope="session")
@@ -263,7 +260,7 @@ def gene_model_df(
 
 @pytest.fixture(scope="session")
 def maf_df(
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
@@ -276,12 +273,7 @@ def maf_df(
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
     maf_df = (
-        sqlContext.read.csv(
-            maf_urls,
-            sep="\t",
-            header=True,
-            comment="#",
-        )
+        sqlContext.read.csv(maf_urls, sep="\t", header=True, comment="#",)
         .drop(
             "AFR_MAF",
             "ALLELE_NUM",
@@ -426,7 +418,7 @@ def case_df(
 
 @pytest.fixture(scope="session")
 def ssm_transcript_df(
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
 ) -> sql.DataFrame:
@@ -479,7 +471,7 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 @pytest.fixture(scope="session")
 def consequence_builder(
-    default_old_config: config.BaseConfig, sqlContext: sql.SQLContext
+    default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
     return builders.ConsequenceBuilder(default_old_config, sqlContext)
 
@@ -505,7 +497,7 @@ def centric_index_finalizer(
 def case_centric_df(
     request: pytest.FixtureRequest,
     default_config: configuration.Configuration,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
@@ -553,7 +545,7 @@ def case_centric_df(
 @pytest.fixture(scope="session")
 def gene_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -586,7 +578,7 @@ def gene_centric_df(
 @pytest.fixture(scope="session")
 def ssm_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -618,7 +610,7 @@ def ssm_centric_df(
 @pytest.fixture(scope="session")
 def ssm_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -652,7 +644,7 @@ def ssm_occurrence_centric_df(
 @pytest.fixture(scope="session")
 def cnv_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -682,7 +674,7 @@ def cnv_centric_df(
 @pytest.fixture(scope="session")
 def cnv_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -714,7 +706,7 @@ def cnv_occurrence_centric_df(
 @pytest.fixture(scope="session")
 def case_ssm_subtree(
     default_config: configuration.Configuration,
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
@@ -749,7 +741,7 @@ def case_ssm_subtree(
 
 @pytest.fixture(scope="session")
 def gene_ssm_subtree(
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
@@ -769,7 +761,7 @@ def gene_ssm_subtree(
 
 @pytest.fixture(scope="session")
 def ssm_occurrence_ssm_subtree(
-    default_old_config: config.BaseConfig,
+    default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,

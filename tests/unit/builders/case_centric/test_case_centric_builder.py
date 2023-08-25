@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-import config
 from exports import builders, es_utils
+from exports.configuration import adapter
 from tests.unit import utils
 from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
 from tests.unit.data import schemas
@@ -135,9 +135,9 @@ class TestCaseCentricBuilder:
         self.ssm_consequence_schema = ssm_consequence_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> config.BaseConfig:
+    def arrange_config(self) -> adapter.ObsoleteConfig:
         return mock.MagicMock(
-            spec=config.BaseConfig,
+            spec=adapter.ObsoleteConfig,
             debug=False,
             projects=(),
             output_raw="neither",
@@ -164,10 +164,7 @@ class TestCaseCentricBuilder:
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
-            map(
-                lambda c: (c._id, dataclasses.asdict(c._source)),
-                cases,
-            )
+            map(lambda c: (c._id, dataclasses.asdict(c._source)), cases,)
         )
         rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
         rdd_util.get_rdd.return_value = rdd

@@ -4,11 +4,12 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
-import config
 from exports import builders
 from exports.builders import df_builders
+from exports.configuration import adapter
+from exports.constants import app
 
-logging.basicConfig(format=config.LOG_FORMAT)
+logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class GeneCentricBuilder(builders.BaseBuilder):
@@ -35,7 +36,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
 
     def __init__(
         self,
-        config: config.BaseConfig,
+        config: adapter.ObsoleteConfig,
         sqlContext: sql.SQLContext,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
@@ -106,11 +107,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         - join them together
         """
         self.log("Building Case with gene info from MAF and GeneModel")
-        case_and_gene_df = self._build_case_with_gene_id(
-            maf_df,
-            ascat_df,
-            case_df,
-        )
+        case_and_gene_df = self._build_case_with_gene_id(maf_df, ascat_df, case_df,)
 
         self.log("Building SSM subtree")
         ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
@@ -151,17 +148,11 @@ class GeneCentricBuilder(builders.BaseBuilder):
         """
 
         # Consequence
-        cons_df = self.consequence_builder.build_for_ssm(
-            maf_df,
-            self.index_name,
-        )
+        cons_df = self.consequence_builder.build_for_ssm(maf_df, self.index_name,)
 
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df,
-            primary_aliquot_df,
-            self.index_name,
-            selector="ssm",
+            maf_df, primary_aliquot_df, self.index_name, selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
@@ -192,9 +183,7 @@ class GeneCentricBuilder(builders.BaseBuilder):
         """
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            ascat_df,
-            self.index_name,
-            selector="cnv",
+            ascat_df, self.index_name, selector="cnv",
         )
 
         # Build the final cnv dataframe

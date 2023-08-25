@@ -4,12 +4,15 @@ import logging
 from pyspark import sql
 from pyspark.sql.utils import AnalysisException
 
-import config
+from exports.configuration import adapter
 
 
 class BaseInputBuilder(abc.ABC):
     def __init__(
-        self, config: config.BaseConfig, sqlContext: sql.SQLContext, input_type: str
+        self,
+        config: adapter.ObsoleteConfig,
+        sqlContext: sql.SQLContext,
+        input_type: str,
     ) -> None:
         """
 
