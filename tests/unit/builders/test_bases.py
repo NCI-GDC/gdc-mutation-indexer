@@ -132,17 +132,13 @@ class TestInputBuilder:
     class Builder1(DummyBuilder[DummyInputs]):
         def __init__(
             self,
-            output: build.DataFrame = build.DataFrame.EXPRESSION_VALUE,
+            output: build.DataFrame = build.DataFrame.GENE_MODEL,
             config: Optional[common.Builder] = None,
             spark_session: Optional[sql.SparkSession] = None,
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
             super().__init__(
-                DummyInputs,
-                output,
-                config,
-                spark_session,
-                scratch_df,
+                DummyInputs, output, config, spark_session, scratch_df,
             )
 
     @pytest.mark.parametrize(
@@ -172,13 +168,11 @@ class TestInputBuilder:
         ("builder", "expected_output"),
         (
             (Builder0(), build.DataFrame.MAF_METADATA),
-            (Builder1(), build.DataFrame.EXPRESSION_VALUE),
+            (Builder1(), build.DataFrame.GENE_MODEL),
         ),
     )
     def test__output(
-        self,
-        builder: bases.InputBuilder,
-        expected_output: build.DataFrame,
+        self, builder: bases.InputBuilder, expected_output: build.DataFrame,
     ) -> None:
         assert builder.output == expected_output
 
@@ -198,9 +192,7 @@ class TestInputBuilder:
         ids=("empty", "dummy"),
     )
     def test__build__all_inputs_given(
-        self,
-        builder: bases.Builder,
-        inputs: Mapping[str, sql.DataFrame],
+        self, builder: bases.Builder, inputs: Mapping[str, sql.DataFrame],
     ) -> None:
         result_df = builder.build(**inputs)
         result_rows = result_df.collect()

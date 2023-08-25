@@ -9,7 +9,6 @@ class TestDataFrame:
         (
             (build.DataFrame.ASCAT, "ascat_df"),
             (build.DataFrame.CASE, "case_df"),
-            (build.DataFrame.EXPRESSION_VALUE, "expression_value_df"),
             (build.DataFrame.GENE_MODEL, "gene_model_df"),
             (build.DataFrame.MAF, "maf_df"),
             (build.DataFrame.MAF_METADATA, "maf_metadata_df"),
@@ -24,7 +23,6 @@ class TestDataFrame:
         (
             ("ascat_df", build.DataFrame.ASCAT),
             ("case_df", build.DataFrame.CASE),
-            ("expression_value_df", build.DataFrame.EXPRESSION_VALUE),
             ("gene_model_df", build.DataFrame.GENE_MODEL),
             ("maf_df", build.DataFrame.MAF),
             ("maf_metadata_df", build.DataFrame.MAF_METADATA),
