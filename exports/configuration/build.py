@@ -69,6 +69,16 @@ class Build:
     manifest_dir: str
     config_file: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
+    acl: Sequence[str] = dataclasses.field(
+        metadata={
+            "metadata": {
+                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
+                    fields.String()
+                )
+            },
+        },
+        default=("open",),
+    )
 
     def is_viz_build(self) -> bool:
         return build.IndexType.GENE_EXPRESSION not in self.index_types
