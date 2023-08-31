@@ -32,7 +32,7 @@ setup(
         "typing-extensions~=4.1",
         "gdcdictionary @ git+https://github.com/NCI-GDC/gdcdictionary.git@2.4.0#egg=gdcdictionary",
         "gdcdatamodel @ git+https://github.com/NCI-GDC/gdcdatamodel.git@3.4.0#egg=gdcdatamodel",
-        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2#egg=indexclient",
+        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@feat/dev-2132-use-nexus-and-remove-travis#egg=indexclient",
         "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0#egg=gdcmodels",
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0#egg=normalizer",
         "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
