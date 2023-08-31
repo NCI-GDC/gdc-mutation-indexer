@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import elasticsearch
 from pyspark import sql
@@ -36,7 +37,7 @@ def _generate_uuids(
     biotype: str,
     case_id: str,
     aliquot_id: str,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Creates a uuid struct the following uuids (based on):
         cnv_id (chromosome, start_position, end_position, copy_number)
         consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
@@ -173,9 +174,9 @@ class DocumentResolver:
         self._config = config
         self._es_client = es_client
 
-    def get_ids(self, projects: Sequence[str]) -> Sequence[str]:
+    def get_ids(self, acl: Sequence[str], projects: Sequence[str]) -> Sequence[str]:
         """
-        Gets all document/file IDs for the TCGA ASCAT documents in the file index.
+        Gets all document/file IDs for the ASCAT documents in the file index.
 
         Args:
             projects: A collection of projects by which the results should be further
@@ -184,20 +185,13 @@ class DocumentResolver:
         Return:
             A sequence of ASCAT file/document IDs.
         """
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "_source": ["file_id"],
             "query": {
                 "bool": {
                     "must": [
                         {"term": {"data_type": "Gene Level Copy Number"}},
-                        {
-                            "nested": {
-                                "path": "cases",
-                                "query": {
-                                    "term": {"cases.project.program.name": "TCGA"}
-                                },
-                            }
-                        },
+                        {"terms": {"acl": acl}},
                     ],
                     "minimum_should_match": 1,
                     "should": [
@@ -379,7 +373,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         primary_aliquot_df = input_dfs["primary_aliquot_df"]
         gene_model_df = input_dfs["gene_model_df"]
 
-        dids = self._doc_resolver.get_ids(self._config.projects)
+        dids = self._doc_resolver.get_ids(self._config.acl, self._config.projects)
         primary_aliquot_df = primary_aliquot_df.where(
             F.col("entity") == F.lit("file")
         ).select("file_id", "aliquot_id")
@@ -408,8 +402,12 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
                 "transcripts",
                 "uniprotkb_swissprot",
             )
-            .where(utils.is_protein_coding())
-            .where(utils.is_between_chr1_and_chr22())
+            .where(F.col("biotype") == F.lit("protein_coding"))
+            .where(
+                F.coalesce(
+                    F.col("chromosome").cast(types.IntegerType()), F.lit(-1)
+                ).between(0, 22)
+            )
         )
         file_df = self._build_file_df(dids)
         file_df = file_df.join(primary_aliquot_df, on=["file_id", "aliquot_id"]).select(
