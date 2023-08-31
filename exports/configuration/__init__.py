@@ -20,6 +20,7 @@ from exports.configuration import (
 )
 
 _DEFAULT_DICT = {}
+_DEFAULT_ACL = ("open",)
 
 
 def _get_index_template(build: dict) -> Optional[str]:
@@ -60,7 +61,7 @@ class Configuration:
             .values(),
         )
         projects = tuple(data.get("build", _DEFAULT_DICT).get("projects", ()))
-        acl = tuple(data.get("build", _DEFAULT_DICT).get("acl", ()))
+        acl = tuple(data.get("build", _DEFAULT_DICT).get("acl", _DEFAULT_ACL))
 
         for builder in builders:
             builder.setdefault("projects", projects)
