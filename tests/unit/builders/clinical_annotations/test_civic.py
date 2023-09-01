@@ -243,7 +243,7 @@ def mock_open(
 @contextlib.contextmanager
 def arrange_mock_resource_filename() -> Iterator[Callable[[Any, str], str]]:
     with resources.as_file(
-        resources.files("exports.schemas.clinical_annotations")
+        resources.files("mutation_indexer.schemas.clinical_annotations")
     ) as p:
 
         def mock(package: Any, path: str) -> str:

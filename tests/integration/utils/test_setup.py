@@ -33,7 +33,7 @@ T = TypeVar("T")
 def load_configuraiton(
     *pre_load: Callable[[dict], dict]
 ) -> configuration.Configuration:
-    data = toml.loads(resources.read_text("exports", "configuration.toml"))
+    data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
     data = functools.reduce(lambda d, f: f(d), pre_load, data)
 
     return configuration.CONFIG_SCHEMA.load(data)  # type: ignore

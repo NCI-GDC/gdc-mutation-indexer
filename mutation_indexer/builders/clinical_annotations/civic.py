@@ -135,7 +135,7 @@ class CivicBuilder(base.ClinicalAnnotationBuilder):
     def _get_resource(self) -> Tuple[dict, dict]:
         # read Civic annotation from csv files into pandas dataset
         path = pkg_resources.resource_filename(
-            "exports.schemas.clinical_annotations", "civic.yml"
+            "mutation_indexer.schemas.clinical_annotations", "civic.yml"
         )
         with open(path, "r") as f:
             s_yaml = yaml.safe_load(f)

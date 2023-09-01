@@ -22,7 +22,7 @@ def get_default_excludes(index, mapping):
     if DEFAULT_EXCLUDE_FIELDS:
         return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
-    path = pkg_resources.resource_filename("exports", "schemas/exclude.defaults.yaml")
+    path = pkg_resources.resource_filename("mutation_indexer", "schemas/exclude.defaults.yaml")
 
     with open(path) as f:
         excludes = yaml.safe_load(f)

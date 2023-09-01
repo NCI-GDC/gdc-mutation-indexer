@@ -18,7 +18,7 @@ from mutation_indexer.configuration import indexd
 from mutation_indexer.configuration.builders import gene_expression, viz
 from mutation_indexer.constants import build
 
-logger = logging.getLogger("exports")
+logger = logging.getLogger("mutation_indexer")
 
 
 @contextlib.contextmanager

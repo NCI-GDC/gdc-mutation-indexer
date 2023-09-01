@@ -211,7 +211,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         """
         Load the intended MAF schema from the local YAML file
         """
-        path = resource_filename("exports.schemas", "maf.yml")
+        path = resource_filename("mutation_indexer.schemas", "maf.yml")
         with open(path) as f:
             return yaml.safe_load(f)["maf_schema"]
 
