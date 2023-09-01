@@ -3,8 +3,8 @@ from typing import AbstractSet
 import pytest
 from pyspark import sql
 
-from exports import builders
-from exports.configuration import adapter
+from mutation_indexer import builders
+from mutation_indexer.configuration import adapter
 from tests.integration.utils import join_utils
 
 

@@ -24,8 +24,8 @@ import toml
 from elasticsearch import helpers
 from normalizer import mapper
 
-from exports import configuration
-from exports.constants import build
+from mutation_indexer import configuration
+from mutation_indexer.constants import build
 
 T = TypeVar("T")
 

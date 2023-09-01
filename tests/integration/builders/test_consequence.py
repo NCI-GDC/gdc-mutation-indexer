@@ -4,7 +4,7 @@ import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from exports import builders
+from mutation_indexer import builders
 
 CNV_INDICES = ("cnv_centric", "cnv_occurrence_centric")
 SSM_INDICES = ("ssm_centric", "ssm_occurrence_centric")

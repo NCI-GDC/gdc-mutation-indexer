@@ -7,9 +7,9 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import builders
-from exports.configuration.builders import viz
-from exports.constants import build
+from mutation_indexer import builders
+from mutation_indexer.configuration.builders import viz
+from mutation_indexer.constants import build
 from tests.unit.data import schemas
 
 

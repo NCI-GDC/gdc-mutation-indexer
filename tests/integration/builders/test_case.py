@@ -4,7 +4,7 @@ import elasticsearch
 import pytest
 from pyspark import sql
 
-from exports import builders, configuration, es_utils
+from mutation_indexer import builders, configuration, es_utils
 from tests.integration.utils import test_setup
 
 

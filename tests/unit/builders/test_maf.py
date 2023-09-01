@@ -9,10 +9,10 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from exports import builders
-from exports.builders.clinical_annotations import civic
-from exports.configuration.builders import viz
-from exports.constants import build
+from mutation_indexer import builders
+from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer.configuration.builders import viz
+from mutation_indexer.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models

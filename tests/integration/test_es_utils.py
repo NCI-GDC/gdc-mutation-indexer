@@ -9,8 +9,8 @@ import yaml
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import configuration, es_utils
-from exports.constants import build
+from mutation_indexer import configuration, es_utils
+from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)

@@ -7,8 +7,8 @@ import elasticsearch
 import pytest
 from elasticsearch import helpers
 
-from exports.builders import maf_metadata
-from exports.configuration import elasticsearch as es_config
+from mutation_indexer.builders import maf_metadata
+from mutation_indexer.configuration import elasticsearch as es_config
 
 FILE_SETTINGS = {
     "index": {
