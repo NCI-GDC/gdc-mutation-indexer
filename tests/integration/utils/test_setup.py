@@ -20,7 +20,6 @@ from typing import (
 
 import elasticsearch
 import importlib_resources as resources
-import ndjson
 import toml
 from elasticsearch import helpers
 from normalizer import mapper
@@ -163,11 +162,13 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         return None
 
     def _load_file(self, filename: str) -> Iterable[dict]:
-        loader = ndjson if ".ndjson" in filename else json
         open_fn = gzip.open if filename.endswith(".gz") else open
 
         with open_fn(filename, "rt", encoding="utf-8") as f:
-            docs = loader.load(f)
+            if ".ndjson" in filename:
+                docs = tuple(json.loads(l.strip()) for l in f)
+            else:
+                docs = json.load(f)
 
         return docs
 
