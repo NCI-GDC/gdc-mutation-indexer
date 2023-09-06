@@ -402,12 +402,8 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
                 "transcripts",
                 "uniprotkb_swissprot",
             )
-            .where(F.col("biotype") == F.lit("protein_coding"))
-            .where(
-                F.coalesce(
-                    F.col("chromosome").cast(types.IntegerType()), F.lit(-1)
-                ).between(0, 22)
-            )
+            .where(utils.is_protein_coding())
+            .where(utils.is_between_chr1_and_chr22())
         )
         file_df = self._build_file_df(dids)
         file_df = file_df.join(primary_aliquot_df, on=["file_id", "aliquot_id"]).select(
