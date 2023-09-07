@@ -10,8 +10,6 @@ setup(
     description="ETL for mutation elasticsearch indices",
     long_description_content_type="text/markdown",
     license="Apache",
-    packages=find_packages(exclude=("tests.*", "tests")),
-    py_modules=["config"],
     include_package_data=True,
     install_requires=[
         "elasticsearch[async]~=7.6",
