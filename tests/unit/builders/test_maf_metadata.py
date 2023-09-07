@@ -79,6 +79,7 @@ class TestMAFMetadataBuilder:
             backup=backup,
             is_cached=False,
             prioritized_experimental_strategies=(),
+            acl=(),
         )
         sql_context = mock.MagicMock(spec=sql.SQLContext)
         es_dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
@@ -86,11 +87,9 @@ class TestMAFMetadataBuilder:
 
         conf.projects = None
 
-        es_dataframe_util.read.return_value = (
-            self.spark_session.createDataFrame(
-                files,  # type: ignore
-                schema=self.file_schema,
-            )
+        es_dataframe_util.read.return_value = self.spark_session.createDataFrame(
+            files,  # type: ignore
+            schema=self.file_schema,
         )
 
         return builders.MAFMetadataBuilder(

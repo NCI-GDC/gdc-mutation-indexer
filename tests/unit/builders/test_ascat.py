@@ -158,6 +158,7 @@ class TestAscatBuilder:
             is_cached=False,
             backup=backup,
             projects=(),
+            acl=(),
         )
         mock_sql_context = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)

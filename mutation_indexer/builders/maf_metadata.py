@@ -1,6 +1,7 @@
 import functools
 import logging
-from typing import Iterable, List, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import Union
 
 import elasticsearch
 import more_itertools
@@ -70,10 +71,7 @@ class MAFFileFilterFactory:
                 "nested": {"path": "cases"},
                 "aggs": {
                     "projects": {
-                        "terms": {
-                            "field": "cases.project.project_id",
-                            "size": size,
-                        },
+                        "terms": {"field": "cases.project.project_id", "size": size},
                         "aggs": {
                             "files": {
                                 "reverse_nested": {},
@@ -116,8 +114,8 @@ class MAFFileFilterFactory:
         Finds the highest priority experimental strategy associated with the project.
 
         Args:
-            prioritized_experimental_strategies: a prioritized sequence of experimental 
-                strategies the highest priority comimg first. For a MAF to be selected
+            prioritized_experimental_strategies: a prioritized sequence of experimental
+                strategies the highest priority coming first. For a MAF to be selected
                 it must be associated with the experimental strategy with the highest
                 priority which is associated with any MAF within the same project.
             project: The project bucket from the doc_type aggregation by project.
@@ -130,7 +128,7 @@ class MAFFileFilterFactory:
             strategy["key"]
             for strategy in project["files"]["experimental_strategies"]["buckets"]
         )
-        # selects the first and thus highest priority experimental stategy
+        # selects the first and thus highest priority experimental strategy
         strategy = more_itertools.first_true(
             prioritized_experimental_strategies,
             pred=lambda s: s in strategies,
@@ -158,8 +156,8 @@ class MAFFileFilterFactory:
             filters: all other filters that will be used to select the MAFs for all
                 projects
             projects: The projects from which to select MAFs.
-            prioritized_experimental_strategies: a prioritized sequence of experimental 
-                strategies the highest priority comimg first. For a MAF to be selected
+            prioritized_experimental_strategies: a prioritized sequence of experimental
+                strategies the highest priority coming first. For a MAF to be selected
                 it must be associated with the experimental strategy with the highest
                 priority which is associated with any MAF within the same project.
 
@@ -209,17 +207,18 @@ class MAFFileFilterFactory:
 
     def get_filters(
         self,
+        acl: Sequence[str],
         projects: Sequence[str],
         prioritized_experimental_strategies: Iterable[str],
-    ) -> List[dict]:
+    ) -> Sequence[dict]:
         """
         Builds the elasticsearch query filters to be used to select the MAF documents
         from the file index.
 
         Args:
             projects: The projects from which to select MAFs.
-            prioritized_experimental_strategies: a prioritized sequence of experimental 
-                strategies the highest priority comimg first. For a MAF to be selected
+            prioritized_experimental_strategies: a prioritized sequence of experimental
+                strategies the highest priority coming first. For a MAF to be selected
                 it must be associated with the experimental strategy with the highest
                 priority which is associated with any MAF within the same project.
 
@@ -252,14 +251,18 @@ class MAFFileFilterFactory:
                 ]
             }
         }
-        filters: List[dict] = [{"bool": {"should": [aesvmm_workflow, fvam_workflow]}}]
+        filter = {
+            "bool": {
+                "must": ({"terms": {"acl": acl}},),
+                "should": (aesvmm_workflow, fvam_workflow),
+                "minimum_should_match": 1,
+            }
+        }
         strategy_filter = self._build_experimental_strategy_filter(
-            filters, projects, prioritized_experimental_strategies
+            (filter,), projects, prioritized_experimental_strategies
         )
 
-        filters.append(strategy_filter)
-
-        return filters
+        return (filter, strategy_filter)
 
 
 class MAFMetadataInputs(TypedDict):
@@ -326,16 +329,13 @@ class MAFMetadataBuilder(
             +---workflow_type
         """
         filters = self._file_filter_factory.get_filters(
-            self._config.projects, self._config.prioritized_experimental_strategies
+            self._config.acl,
+            self._config.projects,
+            self._config.prioritized_experimental_strategies,
         )
 
         return self._get_primary_aliquot_df(
             filters,
             frozenset(("case",)),
             include_fields=("data_type", "analysis.workflow_type"),
-        ).select(
-            "case_id",
-            "data_type",
-            "file_id",
-            "workflow_type",
-        )
+        ).select("case_id", "data_type", "file_id", "workflow_type")

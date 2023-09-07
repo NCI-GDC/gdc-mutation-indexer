@@ -1,6 +1,7 @@
 import contextlib
 import logging
-from typing import Any, Callable, ContextManager, Iterator
+from collections.abc import Callable, Iterator
+from typing import Any, ContextManager
 
 import elasticsearch
 import pytest
@@ -37,17 +38,17 @@ class TestDocumentResolver:
     ) -> None:
         doc = {
             "file_id": "ascat2-0",
+            "acl": ("open",),
             "data_type": "Gene Level Copy Number",
             "experimental_strategy": "Genotyping Array",
             "analysis": {"workflow_type": "ASCAT2"},
-            "cases": [{"project": {"program": {"name": "TCGA"}}}],
         }
 
         with load_docs(doc):
             resolver = ascat.DocumentResolver(
                 default_config.elasticsearch.read, es_client
             )
-            ids = resolver.get_ids(())
+            ids = resolver.get_ids(("open",), ())
 
         assert ids == ("ascat2-0",)
 
@@ -59,17 +60,17 @@ class TestDocumentResolver:
     ) -> None:
         doc = {
             "file_id": "ascat-ngs-0",
+            "acl": ("open",),
             "data_type": "Gene Level Copy Number",
             "experimental_strategy": "WGS",
             "analysis": {"workflow_type": "AscatNGS"},
-            "cases": [{"project": {"program": {"name": "TCGA"}}}],
         }
 
         with load_docs(doc):
             resolver = ascat.DocumentResolver(
                 default_config.elasticsearch.read, es_client
             )
-            ids = resolver.get_ids(())
+            ids = resolver.get_ids(("open",), ())
 
         assert ids == ("ascat-ngs-0",)
 
@@ -92,39 +93,17 @@ class TestDocumentResolver:
     ) -> None:
         doc = {
             "file_id": "ascat-0",
+            "acl": ("open",),
             "data_type": data_type,
             "experimental_strategy": experimental_strategy,
             "analysis": {"workflow_type": workflow_type},
-            "cases": [{"project": {"program": {"name": "TCGA"}}}],
         }
 
         with load_docs(doc):
             resolver = ascat.DocumentResolver(
                 default_config.elasticsearch.read, es_client
             )
-            ids = resolver.get_ids(())
-
-        assert ids == ()
-
-    def test__get_ids__only_tcga_program(
-        self,
-        load_docs: LoadDocs,
-        default_config: configuration.Configuration,
-        es_client: elasticsearch.Elasticsearch,
-    ) -> None:
-        doc = {
-            "file_id": "ascat-ngs-0",
-            "data_type": "Gene Level Copy Number",
-            "experimental_strategy": "WGS",
-            "analysis": {"workflow_type": "AscatNGS"},
-            "cases": [{"project": {"program": {"name": "GDC"}}}],
-        }
-
-        with load_docs(doc):
-            resolver = ascat.DocumentResolver(
-                default_config.elasticsearch.read, es_client
-            )
-            ids = resolver.get_ids(())
+            ids = resolver.get_ids(("open",), ())
 
         assert ids == ()
 
@@ -137,6 +116,7 @@ class TestDocumentResolver:
         docs = (
             {
                 "file_id": "ascat2-0",
+                "acl": ("open",),
                 "data_type": "Gene Level Copy Number",
                 "experimental_strategy": "Genotyping Array",
                 "analysis": {"workflow_type": "ASCAT2"},
@@ -151,6 +131,7 @@ class TestDocumentResolver:
             },
             {
                 "file_id": "ascat2-1",
+                "acl": ("open",),
                 "data_type": "Gene Level Copy Number",
                 "experimental_strategy": "Genotyping Array",
                 "analysis": {"workflow_type": "ASCAT2"},
@@ -165,6 +146,7 @@ class TestDocumentResolver:
             },
             {
                 "file_id": "ascat-ngs-0",
+                "acl": ("open",),
                 "data_type": "Gene Level Copy Number",
                 "experimental_strategy": "WGS",
                 "analysis": {"workflow_type": "AscatNGS"},
@@ -178,6 +160,63 @@ class TestDocumentResolver:
             resolver = ascat.DocumentResolver(
                 default_config.elasticsearch.read, es_client
             )
-            ids = resolver.get_ids(("GDC-TEST", "TCGA-TEST1"))
+            ids = resolver.get_ids(("open",), ("GDC-TEST", "TCGA-TEST1"))
 
-        assert ids == ("ascat2-1",)
+        assert ids == ("ascat2-1", "ascat-ngs-0")
+
+    def test__get_ids__specified_acl(
+        self,
+        load_docs: LoadDocs,
+        default_config: configuration.Configuration,
+        es_client: elasticsearch.Elasticsearch,
+    ) -> None:
+        docs = (
+            {
+                "file_id": "ascat2-0",
+                "acl": ("secret",),
+                "data_type": "Gene Level Copy Number",
+                "experimental_strategy": "Genotyping Array",
+                "analysis": {"workflow_type": "ASCAT2"},
+                "cases": [
+                    {
+                        "project": {
+                            "project_id": "TCGA-TEST0",
+                            "program": {"name": "TCGA"},
+                        }
+                    }
+                ],
+            },
+            {
+                "file_id": "ascat2-1",
+                "acl": ("super-secret",),
+                "data_type": "Gene Level Copy Number",
+                "experimental_strategy": "Genotyping Array",
+                "analysis": {"workflow_type": "ASCAT2"},
+                "cases": [
+                    {
+                        "project": {
+                            "project_id": "TCGA-TEST1",
+                            "program": {"name": "TCGA"},
+                        }
+                    }
+                ],
+            },
+            {
+                "file_id": "ascat-ngs-0",
+                "acl": ("open",),
+                "data_type": "Gene Level Copy Number",
+                "experimental_strategy": "WGS",
+                "analysis": {"workflow_type": "AscatNGS"},
+                "cases": [
+                    {"project": {"project_id": "GDC-TEST", "program": {"name": "GDC"}}}
+                ],
+            },
+        )
+
+        with load_docs(*docs):
+            resolver = ascat.DocumentResolver(
+                default_config.elasticsearch.read, es_client
+            )
+            ids = resolver.get_ids(("open", "secret"), ())
+
+        assert ids == ("ascat2-0", "ascat-ngs-0")
