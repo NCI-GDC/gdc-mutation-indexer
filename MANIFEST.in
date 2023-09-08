@@ -1,2 +1,2 @@
-recursive-include exports/schemas *.yml *.yaml *.json
-include exports/configuration.toml
+recursive-include src/mutation_indexer/schemas *.yml *.yaml *.json
+include src/mutation_indexer/configuration.toml

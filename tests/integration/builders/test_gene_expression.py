@@ -10,9 +10,9 @@ import pytest
 from indexclient import client
 from pyspark import sql
 
-from exports import configuration, es_utils, indexd_utils
-from exports.builders import gene_expression
-from exports.constants import build
+from mutation_indexer import configuration, es_utils, indexd_utils
+from mutation_indexer.builders import gene_expression
+from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)

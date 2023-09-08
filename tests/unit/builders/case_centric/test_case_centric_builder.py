@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-from exports import builders, es_utils
-from exports.configuration import adapter
+from mutation_indexer import builders, es_utils
+from mutation_indexer.configuration import adapter
 from tests.unit import utils
 from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
 from tests.unit.data import schemas

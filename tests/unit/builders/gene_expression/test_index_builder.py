@@ -5,10 +5,10 @@ import more_itertools
 import pytest
 from pyspark.sql import types
 
-from exports import indexd_utils
-from exports.builders import gene_expression
-from exports.configuration.builders import gene_expression as ge_config
-from exports.constants import build
+from mutation_indexer import indexd_utils
+from mutation_indexer.builders import gene_expression
+from mutation_indexer.configuration.builders import gene_expression as ge_config
+from mutation_indexer.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models

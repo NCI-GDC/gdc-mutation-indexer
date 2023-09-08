@@ -5,7 +5,7 @@ import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from exports import builders
+from mutation_indexer import builders
 
 
 class TestObservationBuilder:

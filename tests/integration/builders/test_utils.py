@@ -3,7 +3,7 @@ from typing import Callable, Sequence
 import pytest
 from normalizer import mapper
 
-from exports.builders import utils
+from mutation_indexer.builders import utils
 
 
 @pytest.mark.usefixtures("spark_session")

@@ -4,8 +4,8 @@ from typing import Iterable
 import pytest
 from marshmallow import validate
 
-from exports.configuration import build as build_config
-from exports.constants import build
+from mutation_indexer.configuration import build as build_config
+from mutation_indexer.constants import build
 
 
 class TestIndexTypesValidator:

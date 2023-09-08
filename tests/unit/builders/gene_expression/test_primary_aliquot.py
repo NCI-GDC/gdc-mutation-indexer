@@ -5,10 +5,10 @@ import pytest
 from pyspark import sql
 from pyspark.sql import types
 
-from exports import es_utils
-from exports.builders import gene_expression
-from exports.configuration.builders import gene_expression as ge_config
-from exports.constants import build
+from mutation_indexer import es_utils
+from mutation_indexer.builders import gene_expression
+from mutation_indexer.configuration.builders import gene_expression as ge_config
+from mutation_indexer.constants import build
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 

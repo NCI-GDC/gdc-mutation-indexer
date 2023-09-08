@@ -5,7 +5,7 @@ import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from exports.builders import df_builders, utils
+from mutation_indexer.builders import df_builders, utils
 
 
 def is_sub(subset: dict, superset: Iterable[Any], mapping: dict) -> bool:

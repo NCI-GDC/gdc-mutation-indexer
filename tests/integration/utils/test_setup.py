@@ -24,8 +24,8 @@ import toml
 from elasticsearch import helpers
 from normalizer import mapper
 
-from exports import configuration
-from exports.constants import build
+from mutation_indexer import configuration
+from mutation_indexer.constants import build
 
 T = TypeVar("T")
 
@@ -33,7 +33,7 @@ T = TypeVar("T")
 def load_configuraiton(
     *pre_load: Callable[[dict], dict]
 ) -> configuration.Configuration:
-    data = toml.loads(resources.read_text("exports", "configuration.toml"))
+    data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
     data = functools.reduce(lambda d, f: f(d), pre_load, data)
 
     return configuration.CONFIG_SCHEMA.load(data)  # type: ignore

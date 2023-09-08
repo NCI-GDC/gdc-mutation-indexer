@@ -6,9 +6,9 @@ from typing import Any, ContextManager
 import elasticsearch
 import pytest
 
-from exports import configuration
-from exports.builders import ascat
-from exports.constants import build
+from mutation_indexer import configuration
+from mutation_indexer.builders import ascat
+from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)

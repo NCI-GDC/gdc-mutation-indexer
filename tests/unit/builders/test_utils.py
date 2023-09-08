@@ -5,7 +5,7 @@ import more_itertools
 import pytest
 from pyspark import sql
 
-from exports.builders import utils
+from mutation_indexer.builders import utils
 
 
 def test__percentile__returns_correct_value() -> None:
