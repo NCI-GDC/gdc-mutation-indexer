@@ -356,9 +356,8 @@ def filter_arrays_by_relative_size(
     if size_percentile >= 100:
         return df
 
-    # Standardizes the given percentile to an equivalent decimal value
-    # w/ a precision of 2 decimal places. E.g. 99 -> 0.99
-    percentile_decimal = size_percentile / decimal.Decimal("100.00")
+    # Standardizes the given percentile to an equivalent decimal value, e.g. 99 -> 0.99
+    percentile_decimal = size_percentile / decimal.Decimal("100")
     percentile_window = sql.Window.orderBy("_size")
     df = df.select("*", F.size(array_field).alias("_size")).select(
         "*", F.percent_rank().over(percentile_window).alias("_percentile")
