@@ -14,6 +14,7 @@ from mutation_indexer.configuration.builders.common import (
     Builder,
     IndexBuilder,
     GeneModelBuilder,
+    ResourceBuilder,
 )
 
 
@@ -112,6 +113,8 @@ class Viz:
 
     ascat: ASCATBuilder
     case: CaseBuilder
+    civic_dna: ResourceBuilder
+    civic_protein: ResourceBuilder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder

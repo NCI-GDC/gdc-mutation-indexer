@@ -76,6 +76,17 @@ class Viz:
             CASE: Schema
             SAMPLE: Schema
 
+        class CIVIC:
+            @_init_schemas
+            class DNA:
+                INPUT: Schema
+                FINAL: Schema
+
+            @_init_schemas
+            class Protein:
+                INPUT: Schema
+                FINAL: Schema
+
         @_init_schemas
         class CIVICAnnotation:
             FINAL: Schema

@@ -91,6 +91,26 @@ partition_size = 12
 mode = "NEITHER"
 path = ""
 
+[builders.viz.civic_dna]
+package = "clinical_variant_annotation"
+resource = "/civic/civic_gdcmaf_mapping_dna.tsv"
+schema = "builders/civic/dna.yaml"
+is_cached = false
+
+[builders.viz.civic_dna.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.civic_protein]
+package = "clinical_variant_annotation"
+resource = "/civic/civic_gdcmaf_mapping_prot.tsv"
+schema = "builders/civic/protein.yaml"
+is_cached = false
+
+[builders.viz.civic_protein.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.cnv_centric]
 id_field = "cnv_id"
 is_cached = true
