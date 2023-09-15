@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Iterable, cast
+from typing import cast
 
 import more_itertools
 import yaml
@@ -11,7 +11,6 @@ from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, pyspark_extensions, schemas
 from mutation_indexer.builders import bases, utils
-from mutation_indexer.builders.clinical_annotations import civic
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
@@ -74,6 +73,8 @@ def _ssm_label() -> sql.Column:
 class MAFInputs(TypedDict):
     maf_metadata_df: sql.DataFrame
     gene_model_df: sql.DataFrame
+    civic_dna_df: sql.DataFrame
+    civic_protein_df: sql.DataFrame
 
 
 class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
@@ -89,15 +90,34 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         config: viz.MAFBuilder,
         spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
-        annotation_builders: Iterable[civic.CivicBuilder],
     ):
         super().__init__(
             config, spark_session, input_type=MAFInputs, output=build.DataFrame.MAF
         )
 
         self.schema = self.get_schema()
-        self.annotation_builders = annotation_builders
         self._doc_dataframe_util = doc_dataframe_util
+
+    def _add_civic_annotations(
+        self, maf_df: sql.DataFrame, dna_df: sql.DataFrame, protein_df: sql.DataFrame
+    ) -> sql.DataFrame:
+        df = maf_df.join(
+            dna_df,
+            on=["chromosome", "start_position", "reference_allele", "tumor_allele"],
+            how="left",
+        )
+        protein_df = protein_df.withColumnRenamed(
+            "civic_gene_id", "_civic_gene_id"
+        ).withColumnRenamed("civic_variant_id", "_civic_variant_id")
+        df = df.join(protein_df, on=["name", "hgvsp_short"], how="left")
+        df = df.withColumns(
+            {
+                "civic_gene_id": F.coalesce("civic_gene_id", "_civic_gene_id"),
+                "civic_variant_id": F.coalesce("civic_variant_id", "_civic_variant_id"),
+            }
+        )
+
+        return df.drop("_civic_gene_id", "_civic_variant_id")
 
     def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
         """
@@ -106,7 +126,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
         Args:
             maf_metadata_df: The output of the MAFMetadataBuilder
-            gene_model_df: The output of the GeneModelbuilder.
+            gene_model_df: The output of the GeneModelBuilder.
+            civic_dna_df: The output of the civic.DNABuilder.
+            civic_protein_df: The output of the civic.ProteinBuilder.
 
         Return:
             A data frame containing all of the required data related to MAFS
@@ -149,8 +171,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         df = df.withColumn(
             "domains", F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", "")
         )
-        for builder in self.annotation_builders:
-            df = builder.merge_with_maf(df)
+        df = self._add_civic_annotations(
+            df, input_dfs["civic_dna_df"], input_dfs["civic_protein_df"]
+        )
 
         logger.info("Repartitioning MAF dataframe")
         df = df.repartition(self._config.repartition_size, "ssm_id")
@@ -207,7 +230,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         # ensure that we output columns in a consistent order.
         return df.select(*[standardize(k, v) for k, v in self.schema.items()])
 
-    def get_schema(self) -> Dict[str, Dict[str, str]]:
+    def get_schema(self) -> dict[str, dict[str, str]]:
         """
         Load the intended MAF schema from the local YAML file
         """

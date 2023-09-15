@@ -359,3 +359,21 @@ class CNVObservation:
     case_id: Optional[str] = "case-0"
     occurrence_id: Optional[str] = "occ-0"
     observation: Optional[tuple[Observation, ...]] = (Observation(),)
+
+
+class CIVIC:
+    @dataclasses.dataclass(frozen=True)
+    class DNA:
+        chromosome: Optional[str] = "chr1"
+        civic_gene_id: Optional[str] = "dna_gene"
+        civic_variant_id: Optional[str] = "dna_variant"
+        reference_allele: Optional[str] = "C"
+        start_position: Optional[int] = 33772590
+        tumor_allele: Optional[str] = "A"
+
+    @dataclasses.dataclass(frozen=True)
+    class Protein:
+        civic_gene_id: Optional[str] = "dna_gene"
+        civic_variant_id: Optional[str] = "dna_variant"
+        name: Optional[str] = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
+        hgvsp_short: Optional[str] = "p.A569S"

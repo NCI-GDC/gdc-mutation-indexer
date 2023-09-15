@@ -3,19 +3,8 @@ import logging
 import pathlib
 import tempfile
 import uuid
-from typing import (
-    AbstractSet,
-    Any,
-    Callable,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Literal,
-    Mapping,
-    Union,
-    cast,
-)
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
+from typing import Any, Literal, Union, cast
 from unittest import mock
 
 import elasticsearch
@@ -27,7 +16,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, configuration, es_utils, indexd_utils, schemas
-from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer.builders import civic
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
@@ -57,7 +46,7 @@ def input_dir(data_dir: pathlib.Path) -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def maf_urls(input_dir: pathlib.Path) -> List[str]:
+def maf_urls(input_dir: pathlib.Path) -> list[str]:
     return [str(p) for p in input_dir.joinpath("maf").glob("**/*.maf")]
 
 
@@ -104,7 +93,7 @@ def es_client(
         es_connection.nodes.split(","),
         use_ssl=es_connection.use_ssl,
         verify_certs=es_connection.verify_certs,
-        http_auth=(es_connection.user, es_connection.password,),
+        http_auth=(es_connection.user, es_connection.password),
     ) as es_client:
         yield es_client
 
@@ -185,7 +174,7 @@ def sqlContext(
 
 
 @pytest.fixture(scope="session")
-def all_maf_cases() -> AbstractSet[str]:
+def all_maf_cases() -> Set[str]:
     """
     Returns all case_ids expected to build and have 'ssm' in available_variation_data
     (including "empty cases" - ones that have been tested for ssm but had none)
@@ -217,7 +206,7 @@ def all_maf_cases() -> AbstractSet[str]:
 @pytest.fixture(scope="session")
 def all_cases(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> AbstractSet[str]:
+) -> Set[str]:
     """
     Returns the IDs of all cases in the GDC graph, including those with no
     maf or cnv data
@@ -259,13 +248,34 @@ def gene_model_df(
 
 
 @pytest.fixture(scope="session")
+def civic_dna_df(
+    default_config: configuration.Configuration, spark_session: sql.SparkSession
+) -> sql.DataFrame:
+    builder = civic.DNABuilder(default_config.builders.viz.civic_dna, spark_session)
+
+    return builder.build()
+
+
+@pytest.fixture(scope="session")
+def civic_protein_df(
+    default_config: configuration.Configuration, spark_session: sql.SparkSession
+) -> sql.DataFrame:
+    builder = civic.ProteinBuilder(
+        default_config.builders.viz.civic_protein, spark_session
+    )
+
+    return builder.build()
+
+
+@pytest.fixture(scope="session")
 def maf_df(
-    default_old_config: adapter.ObsoleteConfig,
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
-    maf_urls: List[str],
+    maf_urls: list[str],
     gene_model_df: sql.DataFrame,
+    civic_dna_df: sql.DataFrame,
+    civic_protein_df: sql.DataFrame,
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
     """
@@ -273,7 +283,7 @@ def maf_df(
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
     maf_df = (
-        sqlContext.read.csv(maf_urls, sep="\t", header=True, comment="#",)
+        sqlContext.read.csv(maf_urls, sep="\t", header=True, comment="#")
         .drop(
             "AFR_MAF",
             "ALLELE_NUM",
@@ -356,11 +366,13 @@ def maf_df(
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
     df = builders.MAFBuilder(
-        default_config.builders.viz.maf,
-        spark_session,
-        doc_dataframe_util,
-        (civic.CivicBuilder(default_old_config, sqlContext),),
-    ).build(gene_model_df=gene_model_df, maf_metadata_df=mock.MagicMock())
+        default_config.builders.viz.maf, spark_session, doc_dataframe_util
+    ).build(
+        gene_model_df=gene_model_df,
+        civic_dna_df=civic_dna_df,
+        civic_protein_df=civic_protein_df,
+        maf_metadata_df=mock.MagicMock(),
+    )
 
     return dataframe_writer(df)
 
