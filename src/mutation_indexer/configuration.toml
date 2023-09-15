@@ -93,7 +93,7 @@ path = ""
 
 [builders.viz.civic_dna]
 package = "clinical_variant_annotation"
-resource = "/civic/civic_gdcmaf_mapping_dna.tsv"
+resource = "civic/civic_gdcmaf_mapping_dna.tsv"
 schema = "builders/civic/dna.yaml"
 is_cached = false
 
@@ -103,7 +103,7 @@ path = ""
 
 [builders.viz.civic_protein]
 package = "clinical_variant_annotation"
-resource = "/civic/civic_gdcmaf_mapping_prot.tsv"
+resource = "civic/civic_gdcmaf_mapping_prot.tsv"
 schema = "builders/civic/protein.yaml"
 is_cached = false
 
