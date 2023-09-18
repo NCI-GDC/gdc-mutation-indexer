@@ -4,20 +4,38 @@ from typing import Any, Tuple
 import more_itertools
 import pytest
 from pyspark import sql
+from pyspark.sql import types
 
 from mutation_indexer.builders import utils
 
 
-def test__percentile__returns_correct_value() -> None:
-    """
-    Test the percentile util function
-    """
-    length = (random.randint(0, 50)) * 2 + 1
-    v = list(more_itertools.repeatfunc(random.randint, length, 0, 100))
-    sorted_v = sorted(v)
-    assert utils.percentile(v, 0) == sorted_v[0]
-    assert utils.percentile(v, 50) == sorted_v[length // 2]
-    assert utils.percentile(v, 100) == sorted_v[-1]
+@pytest.mark.parametrize(
+    ("percentile", "expected_count"), ((0, 1), (15, 4), (58, 6), (86, 7), (100, 8))
+)
+def test__filter_arrays_by_relative_size(
+    spark_session: sql.SparkSession, percentile: int, expected_count: int
+) -> None:
+    arrays = [
+        (1,),
+        (1, 2),
+        (1, 2),
+        (1, 2),
+        (1, 2, 3),
+        (1, 2, 3),
+        (1, 2, 3, 4),
+        (1, 2, 3, 4, 5, 6),
+    ]
+    random.shuffle(arrays)
+    df = spark_session.createDataFrame(
+        ((a,) for a in arrays),
+        types.StructType(
+            [types.StructField("array", types.ArrayType(types.IntegerType()))]
+        ),
+    )
+
+    result = utils.filter_arrays_by_relative_size(df, "array", percentile)
+
+    assert result.count() == expected_count
 
 
 def test__sanitize_aa_change__remove_p_dot(spark_session: sql.SparkSession) -> None:

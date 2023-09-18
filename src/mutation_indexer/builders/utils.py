@@ -1,9 +1,10 @@
+import decimal
 import functools
 import logging
 import re
 import uuid
 from collections.abc import Set
-from typing import Any
+from typing import Any, Literal, Optional
 
 import pkg_resources
 import yaml
@@ -22,7 +23,9 @@ def get_default_excludes(index, mapping):
     if DEFAULT_EXCLUDE_FIELDS:
         return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
-    path = pkg_resources.resource_filename("mutation_indexer", "schemas/exclude.defaults.yaml")
+    path = pkg_resources.resource_filename(
+        "mutation_indexer", "schemas/exclude.defaults.yaml"
+    )
 
     with open(path) as f:
         excludes = yaml.safe_load(f)
@@ -198,21 +201,6 @@ def select_nested(index_name, mapping_name, ignore=(), selector=None):
     return flatten_nested(mapping["properties"])
 
 
-def percentile(vector, p):
-    """
-    Calculates the p percentile of vector
-    """
-    vector = sorted(vector)
-    vector_len = len(vector)
-    position = (vector_len - 1) * float(p) / 100
-    floored_pos = int(position)
-    rest = position - floored_pos
-    if floored_pos >= vector_len - 1:
-        return vector[vector_len - 1]
-
-    return vector[floored_pos] + (vector[floored_pos + 1] - vector[floored_pos]) * rest
-
-
 def extract_aas_position(df):
     """
     create aa_start and aa_end field based on aa_change string
@@ -342,3 +330,38 @@ def is_between_chr1_and_chr22() -> sql.Column:
     return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(
         1, 22
     )
+
+
+def filter_arrays_by_relative_size(
+    df: sql.DataFrame,
+    array_field: str,
+    size_percentile: int,
+) -> sql.DataFrame:
+    """
+    Filters the given data frame to only include rows where the array in the given field
+    has a size which is under the given percentile threshold (based on the size of all
+    of the arrays in the given column).
+
+    Args:
+        df: The data frame containing the array field which will be filtered.
+        array_field: The name of the column containing the array in the data frame.
+        percentile: The percentile threshold which will not be exceeded in the resulting
+            data frame. Should be an integer from 0 to 100.
+
+    Returns:
+        A data frame with the arrays with a size larger than the given percentile
+        threshold removed. If the percentile is 100 then the data frame is returned
+        without modification.
+    """
+    if size_percentile >= 100:
+        return df
+
+    # Standardizes the given percentile to an equivalent decimal value, e.g. 99 -> 0.99
+    percentile_decimal = size_percentile / decimal.Decimal("100")
+    percentile_window = sql.Window.orderBy("_size")
+    df = df.select("*", F.size(array_field).alias("_size")).select(
+        "*", F.percent_rank().over(percentile_window).alias("_percentile")
+    )
+    df = df.where(F.col("_percentile") <= F.lit(percentile_decimal))
+
+    return df.drop("_size", "_percentile")
