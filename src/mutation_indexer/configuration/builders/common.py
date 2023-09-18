@@ -31,6 +31,13 @@ class Builder:
 
 
 @dataclasses.dataclass(frozen=True)
+class ResourceBuilder(Builder):
+    package: str
+    resource: str
+    schema: str
+
+
+@dataclasses.dataclass(frozen=True)
 class IndexBuilder(Builder):
     """
     The core configuration values for running the any builder which produces an index

@@ -2,18 +2,15 @@ import abc
 import copy
 import functools
 import logging
+from collections.abc import Iterable, Iterator, Mapping, Set
+from importlib import resources
 from typing import (
-    AbstractSet,
     Any,
     Dict,
     Generic,
-    Iterable,
-    Iterator,
     Literal,
-    Mapping,
     Optional,
     Protocol,
-    Type,
     TypeVar,
     Union,
     get_type_hints,
@@ -26,7 +23,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypeGuard
 
-from mutation_indexer import es_utils, pyspark_extensions
+from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
 
@@ -94,14 +91,14 @@ class Builder(Protocol):
 class InputDataFrameManger(Generic[TInputDFs]):
     __slots__ = ("_required_dfs", "_required_params")
 
-    def __init__(self, input_type: Type[TInputDFs]) -> None:
+    def __init__(self, input_type: type[TInputDFs]) -> None:
         type_hints = get_type_hints(input_type)
 
         assert all(
             issubclass(t, sql.DataFrame) for t in type_hints.values()
         ), "Input mapping type must contain only sql.DataFrames"
 
-        self._required_params: AbstractSet[str] = type_hints.keys()
+        self._required_params: Set[str] = type_hints.keys()
         self._required_dfs = tuple(
             build.DataFrame.from_param(p) for p in self._required_params
         )
@@ -131,7 +128,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         self,
         config: TConfig,
         spark_session: sql.SparkSession,
-        input_type: Type[TInputDFs],
+        input_type: type[TInputDFs],
         output: build.DataFrame,
     ) -> None:
         self._config = config
@@ -278,7 +275,7 @@ class PrimaryAliquotBuilder(
         self,
         config: TConfig,
         spark_session: sql.SparkSession,
-        input_type: Type[TInputDFs],
+        input_type: type[TInputDFs],
         output: build.DataFrame,
         es_dataframe_util: es_utils.DataFrameUtil,
         additional_selections: Iterable[str] = (),
@@ -388,7 +385,7 @@ class PrimaryAliquotBuilder(
     def _get_primary_aliquot_df(
         self,
         filters: Iterable[dict],
-        entities: AbstractSet[str] = frozenset(("case", "file")),
+        entities: Set[str] = frozenset(("case", "file")),
         include_fields: Union[Iterable[str], Literal[True]] = True,
     ) -> sql.DataFrame:
         """
@@ -457,6 +454,26 @@ class PrimaryAliquotBuilder(
         )
 
 
+TResourceConfig = TypeVar("TResourceConfig", bound=common.ResourceBuilder)
+
+
+class ResourceBuilder(
+    Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs]
+):
+    def _schema(self) -> types.StructType:
+        return schemas.load_schema(self._config.schema)
+
+    def _load_resource_data(self) -> sql.DataFrame:
+        with resources.as_file(
+            resources.files(self._config.package).joinpath(self._config.resource)
+        ) as p:
+            df = self._spark_session.read.csv(
+                str(p), schema=self._schema(), header=True, sep="\t", comment="#"
+            )
+
+        return df
+
+
 def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:
     """
     Walks the inputs fields data type field in order to find the child field with the
@@ -503,7 +520,7 @@ class IndexBuilder(
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,
-        input_type: Type[TInputDFs],
+        input_type: type[TInputDFs],
         output: build.DataFrame,
     ) -> None:
         super().__init__(config, spark_session, input_type, output)

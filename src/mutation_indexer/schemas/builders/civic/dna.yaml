@@ -1,0 +1,21 @@
+fields:
+  - &string_field
+    metadata: {}
+    name: civic_var_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: civic_gene_id
+  - <<: *string_field
+    name: source
+  - <<: *string_field
+    name: chromosome
+  - &long_field
+    metadata: {}
+    name: start_position
+    nullable: true
+    type: long
+  - <<: *string_field
+    name: reference_allele
+  - <<: *string_field
+    name: alternative_allele
