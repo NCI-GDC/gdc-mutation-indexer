@@ -1,16 +1,14 @@
 import dataclasses
 from collections.abc import Iterable
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 from unittest import mock
 
 import more_itertools
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders
-from mutation_indexer.builders.clinical_annotations import civic
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 from tests.unit import utils
@@ -188,6 +186,16 @@ def gene_model_schema() -> types.StructType:
 
 
 @pytest.fixture(scope="class")
+def civic_dna_schema() -> types.StructType:
+    return schemas.Viz.Builders.CIVIC.DNA.FINAL.load()
+
+
+@pytest.fixture(scope="class")
+def civic_protein_schema() -> types.StructType:
+    return schemas.Viz.Builders.CIVIC.Protein.FINAL.load()
+
+
+@pytest.fixture(scope="class")
 def masked_somatic_mutation_schema() -> types.StructType:
     return schemas.Viz.Builders.MAF.MASKED_SOMATIC_MUTATION.load()
 
@@ -345,38 +353,28 @@ class TestMAFBuilder:
     def load_fixtures(
         self,
         spark_session: sql.SparkSession,
+        create_dataframe: utils.CreateDataFrame,
         gene_model_schema: types.StructType,
+        civic_dna_schema: types.StructType,
+        civic_protein_schema: types.StructType,
         masked_somatic_mutation_schema: types.StructType,
         aggregated_somatic_mutation_schema: types.StructType,
         final_maf_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
+        self.create_dataframe = create_dataframe
         self.gene_model_schema = gene_model_schema
+        self.civic_dna_schema = civic_dna_schema
+        self.civic_protein_schema = civic_protein_schema
         self.masked_somatic_mutation_schema = masked_somatic_mutation_schema
         self.aggregated_somatic_mutation_schema = aggregated_somatic_mutation_schema
         self.final_maf_schema = final_maf_schema
 
-    def arrange_civic_builder(self) -> civic.CivicBuilder:
-        builder = mock.MagicMock(spec=civic.CivicBuilder)
-        builder.merge_with_maf.side_effect = lambda df: df.select(
-            "*",
-            F.lit(None).cast(types.StringType()).alias("civic_gene_id"),
-            F.lit(None).cast(types.StringType()).alias("civic_variant_id"),
-        )
-
-        return builder
-
     def arrange_builder(
         self,
-        masked_somatic_mutation_mafs: Tuple[MAF, ...] = (MAF(),),
-        aggregated_somatic_mutation_mafs: Tuple[MAF, ...] = (),
-        annotation_builders: Optional[Iterable[civic.CivicBuilder]] = None,
+        masked_somatic_mutation_mafs: tuple[MAF, ...] = (MAF(),),
+        aggregated_somatic_mutation_mafs: tuple[MAF, ...] = (),
     ) -> builders.MAFBuilder:
-        annotation_builders = (
-            (self.arrange_civic_builder(),)
-            if annotation_builders is None
-            else annotation_builders
-        )
         mafs = tuple(
             maf.to_sql_row(self.masked_somatic_mutation_schema.fields)
             for maf in masked_somatic_mutation_mafs
@@ -401,20 +399,27 @@ class TestMAFBuilder:
             aggregated_somatic_mutation_df,
         )
 
-        return builders.MAFBuilder(
-            config, sql_context, doc_dataframe_util, annotation_builders
-        )
+        return builders.MAFBuilder(config, sql_context, doc_dataframe_util)
 
     def arrange_inputs(
-        self, gene_model: Tuple[models.GeneModel, ...] = (models.GeneModel(),)
-    ) -> Dict[str, sql.DataFrame]:
-        gene_model_df = self.spark_session.createDataFrame(
-            gene_model,  # type: ignore
-            self.gene_model_schema,
+        self,
+        gene_model: Iterable[models.GeneModel] = (models.GeneModel(),),
+        dna_annotations: Iterable[models.CIVIC.DNA] = (),
+        protein_annotations: Iterable[models.CIVIC.Protein] = (),
+    ) -> dict[str, sql.DataFrame]:
+        gene_model_df = self.create_dataframe(gene_model, self.gene_model_schema)
+        dna_df = self.create_dataframe(dna_annotations, self.civic_dna_schema)
+        protein_df = self.create_dataframe(
+            protein_annotations, self.civic_protein_schema
         )
         maf_metadata_df = mock.MagicMock()
 
-        return {"gene_model_df": gene_model_df, "maf_metadata_df": maf_metadata_df}
+        return {
+            "gene_model_df": gene_model_df,
+            "civic_dna_df": dna_df,
+            "civic_protein_df": protein_df,
+            "maf_metadata_df": maf_metadata_df,
+        }
 
     def test__build__joins_succeed(self) -> None:
         inputs = self.arrange_inputs()
@@ -440,9 +445,7 @@ class TestMAFBuilder:
         assert result_row.tumor_bam_uuid == maf.tumor_bam_uuid
         assert result_row.variant_caller == maf.callers
 
-    def test__build__aggregated_somatic_mutation_maf_transformed(
-        self,
-    ) -> None:
+    def test__build__aggregated_somatic_mutation_maf_transformed(self) -> None:
         gene_model = models.GeneModel()
         maf = MAF()
         inputs = self.arrange_inputs(gene_model=(gene_model,))
@@ -520,7 +523,7 @@ class TestMAFBuilder:
         self,
         tumor_sample_barcode: Optional[str],
         case_id: Optional[str],
-        available_variation_data: List[str],
+        available_variation_data: list[str],
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
@@ -568,10 +571,7 @@ class TestMAFBuilder:
 
     @pytest.mark.parametrize(
         ("mutation_status", "mutation_type"),
-        (
-            ("Somatic", "Simple Somatic Mutation"),
-            ("Normal", None),
-        ),
+        (("Somatic", "Simple Somatic Mutation"), ("Normal", None)),
     )
     def test__build__mutation_type(
         self, mutation_status: str, mutation_type: Optional[str]
@@ -601,9 +601,7 @@ class TestMAFBuilder:
     def test__build__mutation_subtype(
         self, variant_type: str, mutation_subtype: str
     ) -> None:
-        maf = MAF(
-            Variant_Type=variant_type,
-        )
+        maf = MAF(Variant_Type=variant_type)
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(maf,))
 
@@ -726,8 +724,12 @@ class TestMAFBuilder:
         canonical_transcript = models.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
-        gene_model = (models.GeneModel(transcripts=(canonical_transcript, other_transcript)),)
+        other_transcript = models.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
+        gene_model = (
+            models.GeneModel(transcripts=(canonical_transcript, other_transcript)),
+        )
 
         inputs = self.arrange_inputs(gene_model=gene_model)
         builder = self.arrange_builder()
@@ -742,13 +744,13 @@ class TestMAFBuilder:
         )
         assert (
             result_row.canonical_transcript_length_genomic
-            == canonical_transcript.end - canonical_transcript.start + 1
+            == (canonical_transcript.end or 0) - (canonical_transcript.start or 0) + 1
         )
 
-    def test__build__canonical_transcript_lengths_no_canonical_transcipt(
-        self,
-    ) -> None:
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+    def test__build__canonical_transcript_lengths_no_canonical_transcipt(self) -> None:
+        other_transcript = models.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         gene_model = (models.GeneModel(transcripts=(other_transcript,)),)
 
         inputs = self.arrange_inputs(gene_model=gene_model)
@@ -817,7 +819,7 @@ class TestMAFBuilder:
         ids=("multiple", "single", "empty", "null"),
     )
     def test__build__cosmic_id(
-        self, cosmic: Optional[str], cosmic_id: Optional[List[str]]
+        self, cosmic: Optional[str], cosmic_id: Optional[list[str]]
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
@@ -829,24 +831,40 @@ class TestMAFBuilder:
 
         assert result_row.cosmic_id == cosmic_id
 
-    def test__build__annotation_builders_called(self) -> None:
-        def pass_through(df: sql.DataFrame) -> sql.DataFrame:
-            return df
+    def test__build__annotations_none_if_none_match(self) -> None:
+        inputs = self.arrange_inputs(dna_annotations=(), protein_annotations=())
+        builder = self.arrange_builder()
 
-        annotation_builder0 = mock.MagicMock()
-        annotation_builder0.merge_with_maf.side_effect = pass_through
-        annotation_builder1 = mock.MagicMock()
-        annotation_builder1.merge_with_maf.side_effect = pass_through
+        result_df = builder.build(**inputs)
+        result_row = more_itertools.one(result_df.collect())
 
-        inputs = self.arrange_inputs()
-        builder = self.arrange_builder(
-            annotation_builders=(annotation_builder0, annotation_builder1)
+        assert result_row.civic_gene_id is None
+        assert result_row.civic_variant_id is None
+
+    def test__build__dna_selected_over_protein(self) -> None:
+        dna = models.CIVIC.DNA()
+        protein = models.CIVIC.Protein()
+        inputs = self.arrange_inputs(
+            dna_annotations=(dna,), protein_annotations=(protein,)
         )
+        builder = self.arrange_builder()
 
-        _ = builder.build(**inputs)
+        result_df = builder.build(**inputs)
+        result_row = more_itertools.one(result_df.collect())
 
-        annotation_builder0.merge_with_maf.assert_called_once()
-        annotation_builder1.merge_with_maf.assert_called_once()
+        assert result_row.civic_gene_id == dna.civic_gene_id
+        assert result_row.civic_variant_id == dna.civic_variant_id
+
+    def test__build__protein_selected_if_dna_not_found(self) -> None:
+        protein = models.CIVIC.Protein()
+        inputs = self.arrange_inputs(dna_annotations=(), protein_annotations=(protein,))
+        builder = self.arrange_builder()
+
+        result_df = builder.build(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.civic_gene_id == protein.civic_gene_id
+        assert result_row.civic_variant_id == protein.civic_variant_id
 
     def test__build__strip_domains(self) -> None:
         inputs = self.arrange_inputs()
