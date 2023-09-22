@@ -287,13 +287,13 @@ class PrimaryAliquotBuilder(
     def _load_file_schema(self) -> types.StructType:
         """
         This loads the schema which will drive what data will be selected from ES. This
-        schema should ultimately reflect on a subset of data from the graph's file 
+        schema should ultimately reflect on a subset of data from the graph's file
         index. Overload this method and load the core data using `super()` and add any
-        additional fields that may be needed in an implementing class (via 
+        additional fields that may be needed in an implementing class (via
         types.StructTypes.add).
 
         Returns:
-            A struct type which will be used to determine the data that is loaded from 
+            A struct type which will be used to determine the data that is loaded from
             elasticsearch as well as validate the data loaded.
         """
         return schemas.load_schema("builders/bases/primary_aliquot.yaml")
@@ -338,7 +338,9 @@ class PrimaryAliquotBuilder(
                     "sample_type": F.col("sample.sample_type"),
                     "sample_weight": _sample_weight_col(F.col("sample.sample_type")),
                     "aliquot": F.explode_outer(
-                        F.flatten(F.flatten("sample.portions.analytes.aliquots"))
+                        F.explode_outer(
+                            F.explode_outer("sample.portions").getField("analytes")
+                        ).getField("aliquots")
                     ),
                 }
             )
@@ -358,7 +360,7 @@ class PrimaryAliquotBuilder(
         query. The primary aliquot is a determined on a per case basis by selecting the
         file associated with the oldest most "tumor like" sample type and from within
         that sample the oldest aliquot is selected as the primary aliquot. This data
-        frame contains the case_id, file_id, sample_id & aliquot_id of all the 
+        frame contains the case_id, file_id, sample_id & aliquot_id of all the
         forementioned.
 
         Args:
