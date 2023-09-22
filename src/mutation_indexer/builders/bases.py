@@ -320,6 +320,7 @@ class PrimaryAliquotBuilder(
                 query=query,
             )
             .toDF(schema)
+            .select("_source.*")
             .withColumns(
                 {
                     "created_datetime": F.col("created_datetime").cast("timestamp"),
