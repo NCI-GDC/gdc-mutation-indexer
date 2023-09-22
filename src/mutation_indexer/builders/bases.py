@@ -328,7 +328,7 @@ class PrimaryAliquotBuilder(
                 }
             )
             .withColumns(
-                {"case_id": F.col("case.case_id"), "sample": F.explode("samples")}
+                {"case_id": F.col("case.case_id"), "sample": F.explode("case.samples")}
             )
             .where(F.col("sample.sample_type").isNotNull())
             .withColumns(
