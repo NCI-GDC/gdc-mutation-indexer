@@ -312,6 +312,12 @@ class PrimaryAliquotBuilder(
             aliquot's sample_type.
         """
         include_fields = _struct_fields_to_es_fields(schema.fields)
+        schema = types.StructType(
+            [
+                types.StructField("_id", types.StringType()),
+                types.StructField("_source", schema),
+            ]
+        )
 
         return (
             self._es_rdd_util.get_rdd(
