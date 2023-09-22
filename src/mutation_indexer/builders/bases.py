@@ -343,7 +343,7 @@ class PrimaryAliquotBuilder(
             .withColumn("aliquot", F.explode_outer("analyte.aliquots"))
             .withColumns(
                 {
-                    "aliquot_id": F.col("aliquot.aliquot"),
+                    "aliquot_id": F.col("aliquot.aliquot_id"),
                     "aliquot_created_datetime": F.col("aliquot.created_datetime"),
                 }
             )
