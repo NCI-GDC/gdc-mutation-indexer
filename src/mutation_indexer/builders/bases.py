@@ -327,7 +327,6 @@ class PrimaryAliquotBuilder(
                     "case": F.explode("cases"),
                 }
             )
-            .drop("cases")
             .withColumns(
                 {"case_id": F.col("case.case_id"), "sample": F.explode("case.samples")}
             )
