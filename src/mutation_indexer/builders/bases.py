@@ -327,6 +327,7 @@ class PrimaryAliquotBuilder(
                     "case": F.explode("cases"),
                 }
             )
+            .drop("cases")
             .withColumns(
                 {"case_id": F.col("case.case_id"), "sample": F.explode("case.samples")}
             )
@@ -341,12 +342,14 @@ class PrimaryAliquotBuilder(
                     ),
                 }
             )
+            .drop("sample")
             .withColumns(
                 {
                     "aliquot_id": F.col("aliquot.aliquot"),
                     "aliquot_created_datetime": F.col("aliquot.created_datetime"),
                 }
             )
+            .drop("aliquot")
         )
 
     def _get_primary_aliquot_df(self, query: dict) -> sql.DataFrame:

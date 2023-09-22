@@ -61,6 +61,10 @@ fields:
                                     type: array
                               type: struct
                             type: array
+                        - metadata: {}
+                          name: sample_type
+                          nullable: true
+                          type: string
                       type: struct
                     type: array
               type: struct
