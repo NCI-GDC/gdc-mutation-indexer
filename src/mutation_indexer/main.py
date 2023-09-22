@@ -8,7 +8,13 @@ import toml
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
+from mutation_indexer import (
+    builders,
+    configuration,
+    es_utils,
+    gdc_mutation_export,
+    indexd_utils,
+)
 from mutation_indexer import logging as mutation_indexer_logging
 from mutation_indexer.builders import ascat, base_builder, bases, maf_metadata
 from mutation_indexer.builders.clinical_annotations import civic
@@ -46,7 +52,8 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
         An indexd client
     """
     return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}", auth=(config.user, config.password),
+        baseurl=f"{config.host}:{config.port}",
+        auth=(config.user, config.password),
     )
 
 
@@ -60,9 +67,6 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     Returns:
         An elasticsearch client
     """
-
-
-
 
     return elasticsearch.Elasticsearch(
         config.nodes.split(","),
@@ -116,16 +120,12 @@ def _get_viz_builders(
     """
     annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
-    ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
     input_builders = (
-        builders.ASCATBuilder(
-            config.ascat,
-            spark_session,
-            doc_dataframe_util,
-            es_dataframe_util,
-            ascat_doc_resolver,
+        builders.ASCATMetadataBuilder(
+            config.ascat_metadata, spark_session, es_rdd_util
         ),
+        builders.ASCATBuilder(config.ascat, spark_session, doc_dataframe_util),
         builders.CaseBuilder(
             config.case, spark_session, es_dataframe_util, case_field_selector
         ),
@@ -134,10 +134,10 @@ def _get_viz_builders(
             config.maf, spark_session, doc_dataframe_util, annotation_builders
         ),
         builders.MAFMetadataBuilder(
-            config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory,
+            config.maf_metadata, spark_session, es_rdd_util, file_filter_factory
         ),
         builders.PrimaryAliquotBuilder(
-            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+            config.primary_aliquot, spark_session, es_rdd_util
         ),
     )
 

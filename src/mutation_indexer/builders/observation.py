@@ -25,11 +25,10 @@ class ObservationBuilder:
         """
         Builds an observation from a maf.
         Each line of a maf is roughly an observation, though it could be better
-        said that a unique observation is identified by a unqiue pairing of
+        said that a unique observation is identified by a unique pairing of
         tumor and normal sample uuids and an ssm uuid.
         """
         # Select all of the nested fields
-        primary_aliquot_df = primary_aliquot_df.where(F.col("entity") == F.lit("case"))
         flat_obs_df = maf_df.select(
             "ssm_id",
             "case_id",

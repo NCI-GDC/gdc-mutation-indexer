@@ -2,12 +2,13 @@ from collections.abc import Iterable, Sequence
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, types
 
 from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from tests.integration.conftest import es_client
 
 
 def _get_primary_aliquot_filters(projects: Sequence[str]) -> list[dict]:
@@ -41,7 +42,7 @@ class PrimaryAliquotBuilder(
         self,
         config: gene_expression.Builder,
         spark_session: sql.SparkSession,
-        es_dataframe_util: es_utils.DataFrameUtil,
+        es_rdd_util: es_utils.RDDUtil,
     ) -> None:
         """
         Args:
@@ -52,10 +53,22 @@ class PrimaryAliquotBuilder(
         super().__init__(
             config,
             spark_session,
-            es_dataframe_util=es_dataframe_util,
+            es_rdd_util,
             input_type=PrimaryAliquotInputs,
             output=build.DataFrame.PRIMARY_ALIQUOT,
         )
+
+    def _load_file_schema(self) -> types.StructType:
+        schema = super()._load_file_schema()
+        cases = schema["cases"]
+
+        assert isinstance(cases.dataType, types.ArrayType) and isinstance(
+            cases.dataType.elementType, types.StructType
+        )  # This should never deviate
+
+        cases.dataType.elementType.add("submitter_id", types.StringType())
+
+        return schema
 
     def _build_from_scratch(self, input_dfs: PrimaryAliquotInputs) -> sql.DataFrame:
         """
@@ -76,15 +89,9 @@ class PrimaryAliquotBuilder(
             +---submitter_id
         """
         filters = _get_primary_aliquot_filters(self._config.projects)
-        case_fields = [
-            "cases.submitter_id",
-        ]
+        query = {"query": {"bool": {"must": filters}}}
 
-        return self._get_primary_aliquot_df(
-            filters,
-            entities=frozenset(("case",)),
-            include_fields=case_fields,
-        ).select(
+        return self._get_primary_aliquot_df(query).select(
             "file_id",
             "case_id",
             "case.submitter_id",

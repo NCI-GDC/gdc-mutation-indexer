@@ -6,7 +6,7 @@ from typing import Union
 import elasticsearch
 import more_itertools
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, types
 from typing_extensions import Literal, TypedDict
 
 from mutation_indexer import es_utils
@@ -283,7 +283,7 @@ class MAFMetadataBuilder(
         self,
         config: viz.MAFMetadataBuilder,
         spark_session: sql.SparkSession,
-        es_dataframe_util: es_utils.DataFrameUtil,
+        es_rdd_util: es_utils.RDDUtil,
         file_filter_factory: MAFFileFilterFactory,
     ):
         """
@@ -297,22 +297,23 @@ class MAFMetadataBuilder(
         super().__init__(
             config,
             spark_session,
-            es_dataframe_util=es_dataframe_util,
-            additional_selections=("data_type", "workflow_type"),
+            es_rdd_util,
             input_type=MAFMetadataInputs,
             output=build.DataFrame.MAF_METADATA,
         )
 
         self._file_filter_factory = file_filter_factory
 
-    def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Iterable[str], Literal[True]]
-    ) -> sql.DataFrame:
-        return (
-            super()
-            ._get_initial_weighted_df(query, include_fields)
-            .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
+    def _load_file_schema(self) -> types.StructType:
+        schema = super()._load_file_schema()
+
+        schema.add(
+            "analysis",
+            types.StructType([types.StructField("workflow_type", types.StringType())]),
         )
+        schema.add("data_type", types.StringType())
+
+        return schema
 
     def _build_from_scratch(self, input_dfs: MAFMetadataInputs) -> sql.DataFrame:
         """
@@ -333,9 +334,8 @@ class MAFMetadataBuilder(
             self._config.projects,
             self._config.prioritized_experimental_strategies,
         )
+        query = {"bool": {"must": filters}}
 
-        return self._get_primary_aliquot_df(
-            filters,
-            frozenset(("case",)),
-            include_fields=("data_type", "analysis.workflow_type"),
-        ).select("case_id", "data_type", "file_id", "workflow_type")
+        return self._get_primary_aliquot_df(query).select(
+            "case_id", "data_type", "file_id", "analysis.workflow_type"
+        )

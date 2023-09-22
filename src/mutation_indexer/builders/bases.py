@@ -8,11 +8,9 @@ from typing import (
     Any,
     Dict,
     Generic,
-    Literal,
     Optional,
     Protocol,
     TypeVar,
-    Union,
     get_type_hints,
     runtime_checkable,
 )
@@ -23,7 +21,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypeGuard
 
-from mutation_indexer import es_utils, pyspark_extensions, schemas
+from mutation_indexer import es_utils, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
 
@@ -214,7 +212,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         return self._write(df)
 
 
-def _sample_weight_col() -> sql.Column:
+def _sample_weight_col(sample_type: sql.Column) -> sql.Column:
     """
     Builds the sample weight column based on the sample type.
 
@@ -234,51 +232,43 @@ def _sample_weight_col() -> sql.Column:
     )
     when_clause = F.when(F.lit(1) != F.lit(1), 0)
 
-    for sample_type, weight in weights:
-        when_clause = when_clause.when(F.col("sample_type") == sample_type, weight)
+    for sample_type_value, weight in weights:
+        when_clause = when_clause.when(sample_type == sample_type_value, weight)
 
-    return when_clause.otherwise(len(weights) + 1).alias("sample_weight")
-
-
-def _combine_weighted_entity_dfs(
-    weighted_file_df: Optional[sql.DataFrame],
-    weighted_case_df: Optional[sql.DataFrame],
-) -> sql.DataFrame:
-    if weighted_case_df and weighted_file_df:
-        return weighted_case_df.union(weighted_file_df)
-
-    elif weighted_case_df:
-        return weighted_case_df
-
-    elif weighted_file_df:
-        return weighted_file_df
-
-    else:
-        raise ValueError("At least one valid entity must be provided.")
+    return when_clause.otherwise(len(weights) + 1)
 
 
-def _add_required_include_fields(
-    include_fields: Union[Iterable[str], Literal[True]]
-) -> Union[Iterable[str], Literal[True]]:
-    if include_fields is not True:
-        return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
+def _struct_fields_to_es_fields(
+    fields: Iterable[types.StructField], path: str = ""
+) -> Iterable[str]:
+    for field in fields:
+        data_type = field.dataType
 
-    return include_fields
+        if isinstance(data_type, types.ArrayType) and isinstance(
+            data_type.elementType, types.StructType
+        ):
+            data_type = data_type.elementType
+
+        if isinstance(data_type, types.StructType):
+            yield from _struct_fields_to_es_fields(
+                data_type.fields, f"{path}{field.name}."
+            )
+        else:
+            yield f"{path}{field.name}"
 
 
 class PrimaryAliquotBuilder(
     Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
 ):
-    __slots__ = ("_es_dataframe_util", "_additional_selections")
+    __slots__ = ("_es_rdd_util",)
 
     def __init__(
         self,
         config: TConfig,
         spark_session: sql.SparkSession,
+        es_rdd_util: es_utils.RDDUtil,
         input_type: type[TInputDFs],
         output: build.DataFrame,
-        es_dataframe_util: es_utils.DataFrameUtil,
-        additional_selections: Iterable[str] = (),
     ) -> None:
         """
         Args:
@@ -292,165 +282,124 @@ class PrimaryAliquotBuilder(
         """
         super().__init__(config, spark_session, input_type, output)
 
-        self._es_dataframe_util = es_dataframe_util
-        self._additional_selections = additional_selections
+        self._es_rdd_util = es_rdd_util
 
-    def _get_weighted_entity_df(
-        self,
-        weighted_df: sql.DataFrame,
-        entity_id: str,
-        entity: str,
-    ) -> sql.DataFrame:
-        return weighted_df.select(
-            F.col(entity_id).alias("entity_id"),
-            F.lit(entity).alias("entity"),
-            "file_id",
-            "created_datetime",
+    def _load_file_schema(self) -> types.StructType:
+        """
+        This loads the schema which will drive what data will be selected from ES. This
+        schema should ultimately reflect on a subset of data from the graph's file 
+        index. Overload this method and load the core data using `super()` and add any
+        additional fields that may be needed in an implementing class (via 
+        types.StructTypes.add).
+
+        Returns:
+            A struct type which will be used to determine the data that is loaded from 
+            elasticsearch as well as validate the data loaded.
+        """
+        return schemas.load_schema("builders/bases/primary_aliquot.yaml")
+
+    def _load_aliquot_df(self, query: dict, schema: types.StructType) -> sql.DataFrame:
+        """
+        Loads the file data from ES and explodes the data out to an aliquot level such
+        that each row contains an aliquots info including the calculated sample weight.
+
+        Args:
+            query: The query with which to limit the ES results.
+            schema: The structure of the expected result from ES.
+
+        Returns:
+            A data frame of aliquot data including the sample weight associated with the
+            aliquot's sample_type.
+        """
+        include_fields = _struct_fields_to_es_fields(schema.fields)
+
+        return (
+            self._es_rdd_util.get_rdd(
+                build.IndexType.FILE,
+                include_fields=include_fields,
+                query=query,
+            )
+            .toDF(schema)
+            .withColumns(
+                {
+                    "created_datetime": F.col("created_datetime").cast("timestamp"),
+                    "case": F.explode("cases"),
+                }
+            )
+            .withColumns(
+                {"case_id": F.col("case.case_id"), "sample": F.explode("sample")}
+            )
+            .where(F.col("sample.sample_type").isNotNull())
+            .withColumns(
+                {
+                    "sample_id": F.col("sample.sample_id"),
+                    "sample_type": F.col("sample.sample_type"),
+                    "sample_weight": _sample_weight_col(F.col("sample.sample_type")),
+                    "aliquot": F.explode_outer(
+                        F.flatten(F.flatten("sample.portions.analytes.aliquots"))
+                    ),
+                }
+            )
+            .withColumns(
+                {
+                    "aliquot_id": F.col("aliquot.aliquot"),
+                    "aliquot_created_datetime": F.col("aliquot.created_datetime"),
+                }
+            )
+        )
+
+    def _get_primary_aliquot_df(self, query: dict) -> sql.DataFrame:
+        """
+        Loads the primary aliquot data for the given subset of files loaded by the given
+        query. The primary aliquot is a determined on a per case basis by selecting the
+        file associated with the oldest most "tumor like" sample type and from within
+        that sample the oldest aliquot is selected as the primary aliquot. This data
+        frame contains the case_id, file_id, sample_id & aliquot_id of all the 
+        forementioned.
+
+        Args:
+            query: The *body* of the elasticsearch search API which will be used to load
+                the files from elasticsearch.
+
+        Returns:
+            primary_aliquot {}
+            |---aliquot_created_datetime
+            |---aliquot_id
+            |---case_id
+            |---file_id
+            |---sample_id
+            |---sample_type
+            |---sample_weight
+            |---case {} <- Contains the data from the file's cases property
+            +---*additional selections <- Any additional fields added to the schema
+        """
+        schema = self._load_file_schema()
+        final_fields = (
+            "aliquot_created_datetime",
+            "aliquot_id",
             "case_id",
             "sample_id",
-            "case",
+            "sample_type",
             "sample_weight",
-            *self._additional_selections,
+            *map(lambda f: "case" if f.name == "cases" else f.name, schema.fields),
         )
-
-    def _get_initial_weighted_df(
-        self,
-        query: dict,
-        include_fields: Union[Iterable[str], Literal[True]],
-    ) -> sql.DataFrame:
-        """
-        Gets the initial data from elasticsearch. This is the data meeting the
-        criteria in the query and includes the fields given in include_fields.
-
-        NOTE: Override this method if any manipulation of the data frame needs to
-        happen before the standard primary aliquot selection begins. E.g. use it to
-        alias fields that have special characters that cannot be utilized in
-        additional_selections
-
-        Args:
-            query: The query to be run in elasticsearch to determine the data loaded.
-            include_fields: The fields that will be included/returned in the dataframe.
-                If set to True, all fields are returned.
-
-        Returns:
-            The data frame created in the above process.
-        """
-        return self._es_dataframe_util.read(
-            build.IndexType.FILE,
-            include_fields=include_fields,
-            query=query,
-        )
-
-    def _get_weighted_df(
-        self,
-        query: dict,
-        include_fields: Union[Iterable[str], Literal[True]],
-    ) -> sql.DataFrame:
-        return (
-            self._get_initial_weighted_df(query, include_fields)
-            .select(
-                "file_id",
-                F.col("created_datetime").cast("timestamp"),
-                pyspark_extensions.explode_nested_doc("cases").alias("case"),
-                *self._additional_selections,
-            )
-            .select(
-                "file_id",
-                "created_datetime",
-                F.col("case.case_id").alias("case_id"),
-                "case",
-                F.explode("case.samples").alias("sample"),
-                *self._additional_selections,
-            )
-            .select(
-                "file_id",
-                "created_datetime",
-                "case_id",
-                "case",
-                "sample.sample_id",
-                "sample.sample_type",
-                *self._additional_selections,
-            )
-            .select(
-                "file_id",
-                "created_datetime",
-                "case_id",
-                "sample_id",
-                "case",
-                _sample_weight_col(),
-                *self._additional_selections,
-            )
-        )
-
-    def _get_primary_aliquot_df(
-        self,
-        filters: Iterable[dict],
-        entities: Set[str] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], Literal[True]] = True,
-    ) -> sql.DataFrame:
-        """
-        Args:
-            filters: The filters used to query es files with
-            include_fields: An optional field used to tell spark which fields to read from
-                spark. Use to include extra fields in the returned case mapping.
-
-        Returns:
-            a dataframe with the file data associated with the most relevant sample for
-            each case.
-
-            file_id
-            created_datetime
-            experimental_strategy
-            case_id
-            case
-                case_id
-                samples
-                (other case fields can be included in the include fields param)
-        """
-        query = {"query": {"bool": {"must": filters}}}
-        include_fields = _add_required_include_fields(include_fields)
-        weighted_df = self._get_weighted_df(query, include_fields)
-        weighted_file_df = None
-        weighted_case_df = None
-
-        if "file" in entities:
-            weighted_file_df = self._get_weighted_entity_df(
-                weighted_df, "file_id", "file"
-            )
-
-        if "case" in entities:
-            weighted_case_df = self._get_weighted_entity_df(
-                weighted_df, "case_id", "case"
-            )
-
-        weighted_entity_df = _combine_weighted_entity_dfs(
-            weighted_file_df, weighted_case_df
-        )
-        entity_window = (
+        file_df = self._load_aliquot_df(query, schema).select(*final_fields)
+        case_window = (
             sql.Window()
-            .partitionBy("entity", "entity_id")
+            .partitionBy("case_id")
             .orderBy(
                 F.col("sample_weight"),
                 F.col("created_datetime"),
                 F.col("file_id"),
+                F.col("aliquot_created_datetime"),
+                F.col("aliquot_id"),
             )
         )
 
         return (
-            weighted_entity_df.withColumn(
-                "row_number", F.row_number().over(entity_window)
-            )
+            file_df.withColumn("row_number", F.row_number().over(case_window))
             .where(F.col("row_number") == 1)
-            .select(
-                "entity_id",
-                "entity",
-                "file_id",
-                "created_datetime",
-                "case_id",
-                "sample_id",
-                "case",
-                *self._additional_selections,
-            )
+            .select(*final_fields)
         )
 
 
