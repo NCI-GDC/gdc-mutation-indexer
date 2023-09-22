@@ -8,7 +8,6 @@ from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
-from tests.integration.conftest import es_client
 
 
 def _get_primary_aliquot_filters(projects: Sequence[str]) -> list[dict]:
