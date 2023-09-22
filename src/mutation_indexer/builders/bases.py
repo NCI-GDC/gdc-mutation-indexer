@@ -337,21 +337,18 @@ class PrimaryAliquotBuilder(
                     "sample_id": F.col("sample.sample_id"),
                     "sample_type": F.col("sample.sample_type"),
                     "sample_weight": _sample_weight_col(F.col("sample.sample_type")),
-                    "aliquot": F.explode_outer(
-                        F.explode_outer(
-                            F.explode_outer("sample.portions").getField("analytes")
-                        ).getField("aliquots")
-                    ),
+                    "portion": F.explode_outer("sample.portions"),
                 }
             )
-            .drop("sample")
+            .withColumn("analyte", F.explode_outer("portion.analytes"))
+            .withColumn("aliquot", F.explode_outer("analyte.aliquots"))
             .withColumns(
                 {
                     "aliquot_id": F.col("aliquot.aliquot"),
                     "aliquot_created_datetime": F.col("aliquot.created_datetime"),
                 }
             )
-            .drop("aliquot")
+            .drop("cases", "sample", "portion", "analyte", "aliquot")
         )
 
     def _get_primary_aliquot_df(self, query: dict) -> sql.DataFrame:
