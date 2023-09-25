@@ -83,8 +83,6 @@ class PrimaryAliquotBuilder(
         return self._get_primary_aliquot_df(query).select(
             "aliquot_id",
             "case_id",
-            "entity",
-            "entity_id",
             "experimental_strategy",
             "file_id",
         )
