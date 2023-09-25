@@ -350,7 +350,9 @@ class PrimaryAliquotBuilder(
             .withColumns(
                 {
                     "aliquot_id": F.col("aliquot.aliquot_id"),
-                    "aliquot_created_datetime": F.col("aliquot.created_datetime"),
+                    "aliquot_created_datetime": F.col("aliquot.created_datetime").cast(
+                        "timestamp"
+                    ),
                 }
             )
             .drop("cases", "sample", "portion", "analyte", "aliquot")
@@ -378,8 +380,10 @@ class PrimaryAliquotBuilder(
             |---sample_id
             |---sample_type
             |---sample_weight
-            |---case {} <- Contains the data from the file's cases property
-            +---*additional selections <- Any additional fields added to the schema
+            |---case {}                <- Contains the data from the file's cases 
+            |   +--- ...                  property.
+            +---*additional selections <- Any additional fields added to the schema in
+                                          an overload of the _load_file_schema method.
         """
         schema = self._load_file_schema()
         final_fields = (
