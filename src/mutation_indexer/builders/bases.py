@@ -321,9 +321,7 @@ class PrimaryAliquotBuilder(
 
         return (
             self._es_rdd_util.get_rdd(
-                build.IndexType.FILE,
-                include_fields=include_fields,
-                query=query,
+                build.IndexType.FILE, include_fields=include_fields, query=query,
             )
             .toDF(schema)
             .select("_source.*")
@@ -380,7 +378,7 @@ class PrimaryAliquotBuilder(
             |---sample_id
             |---sample_type
             |---sample_weight
-            |---case {}                <- Contains the data from the file's cases 
+            |---case {}                <- Contains the data from the file's cases
             |   +--- ...                  property.
             +---*additional selections <- Any additional fields added to the schema in
                                           an overload of the _load_file_schema method.
@@ -539,7 +537,7 @@ class IndexBuilder(
         return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
 
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = self._cast_booleans(df)
+        # df = self._cast_booleans(df)
         df = super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 

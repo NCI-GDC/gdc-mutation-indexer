@@ -117,7 +117,7 @@ class BaseBuilder:
             self.config.df_repartition, self.id_field
         )
 
-        df = cast_booleans(df, index_mapper.mapping)
+        # df = cast_booleans(df, index_mapper.mapping)
         self.log("Exporting {} index to {}".format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write.format(
             "org.elasticsearch.spark.sql"
@@ -159,10 +159,7 @@ class BaseBuilder:
         df.unpersist()
 
     def truncate_df_at_percentile(
-        self,
-        df_to_truncate,
-        field,
-        percentile_threshold,
+        self, df_to_truncate, field, percentile_threshold,
     ):
         """
         Truncates df_to_truncate to remove rows

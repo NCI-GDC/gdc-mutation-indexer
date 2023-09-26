@@ -6,7 +6,8 @@ fields:
       containsNull: true
       elementType:
         fields:
-          - metadata: {}
+          - &string_field
+            metadata: {}
             name: case_id
             nullable: true
             type: string
@@ -38,38 +39,26 @@ fields:
                                       containsNull: true
                                       elementType:
                                         fields:
-                                          - metadata: {}
+                                          - <<: *string_field
                                             name: aliquot_id
-                                            nullable: true
-                                            type: string
-                                          - metadata: {}
+                                          - <<: *string_field
                                             name: created_datetime
-                                            nullable: true
-                                            type: string
                                         type: struct
                                       type: array
                                 type: struct
                               type: array
                         type: struct
                       type: array
-                  - metadata: {}
+                  - <<: *string_field
                     name: sample_id
-                    nullable: true
-                    type: string
-                  - metadata: {}
+                  - <<: *string_field
                     name: sample_type
-                    nullable: true
-                    type: string
                 type: struct
               type: array
         type: struct
       type: array
-  - metadata: {}
+  - <<: *string_field
     name: created_datetime
-    nullable: true
-    type: string
-  - metadata: {}
+  - <<: *string_field
     name: file_id
-    nullable: true
-    type: string
 type: struct
