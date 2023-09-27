@@ -2,6 +2,9 @@ from setuptools import find_packages, setup
 
 setup(
     name="gdc-mutation-indexer",
+    url='https://github.com/NCI-GDC/gdc-mutation-indexer',
+    author="NCI GDC",
+    author_email="gdc_dev_questions-aaaaae2lhsbell56tlvh3upgoq@cdis.slack.com",
     use_scm_version={
         "local_scheme": "dirty-tag",
         "write_to": "_version.py",
@@ -9,6 +12,12 @@ setup(
     setup_requires=["setuptools_scm<6"],
     description="ETL for mutation elasticsearch indices",
     long_description_content_type="text/markdown",
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+    ],
     license="Apache",
     include_package_data=True,
     install_requires=[
