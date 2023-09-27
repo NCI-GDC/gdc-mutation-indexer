@@ -27,7 +27,12 @@ tox:
     ES_NODES: http://elasticsearch:9200
     ES_VERSION: 7.7.1
     SPARK_VERSION: 2.4.5
+  before_script:
+    - sudo apt update
+    - sudo apt install -y maven
+    - mvn -version
   script:
+    - curl http://elasticsearch:9200/
     - pip install 'tox < 4'
     - tox -e py
 
