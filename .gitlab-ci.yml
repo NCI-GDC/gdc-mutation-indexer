@@ -27,12 +27,11 @@ tox:
     ES_NODES: http://elasticsearch:9200
     ES_VERSION: 7.7.1
     SPARK_VERSION: 2.4.5
-  before_script:
+  script:
     - mkdir -p /usr/share/man/man1/    # https://github.com/geerlingguy/ansible-role-java/issues/64#issuecomment-597132394
     - apt-get update
     - apt-get install -y maven
     - mvn -version
-  script:
     - pip install 'tox < 4'
     - tox -e py
 
