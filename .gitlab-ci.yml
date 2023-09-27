@@ -23,9 +23,10 @@ tox:
     - name: docker.osdc.io/ncigdc/ci-elasticsearch-7::${BASE_CONTAINER_VERSION}
       alias: elasticsearch
   variables:
-    SPARK_VERSION: 2.4.5
-    ES_VERSION: 7.7.1
     BOTO_CONFIG: /dev/null
+    ES_NODES: http://elasticsearch:9200
+    ES_VERSION: 7.7.1
+    SPARK_VERSION: 2.4.5
   script:
     - pip install 'tox < 4'
     - tox -e py
