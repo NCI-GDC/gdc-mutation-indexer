@@ -8,10 +8,15 @@ import toml
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import builders, configuration, es_utils, gdc_mutation_export, indexd_utils
+from mutation_indexer import (
+    builders,
+    configuration,
+    es_utils,
+    gdc_mutation_export,
+    indexd_utils,
+)
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.builders import ascat, base_builder, bases, maf_metadata
-from mutation_indexer.builders.clinical_annotations import civic
+from mutation_indexer.builders import ascat, base_builder, bases, civic, maf_metadata
 from mutation_indexer.configuration import adapter
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
@@ -61,9 +66,6 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
         An elasticsearch client
     """
 
-
-
-
     return elasticsearch.Elasticsearch(
         config.nodes.split(","),
         use_ssl=config.use_ssl,
@@ -73,10 +75,8 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 
 def _get_viz_builders(
-    old_config: adapter.ObsoleteConfig,
     config: viz.Viz,
     es_config: es_config.Elasticsearch,
-    sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     es_dataframe_util: es_utils.DataFrameUtil,
@@ -92,11 +92,8 @@ def _get_viz_builders(
     Builds the input builders required for the viz export process.
 
     Args:
-        old_config: The old god configuration object with all of the configuration
-            values needed to run any and all builders.
         config: The configuration for the builder objects.
         es_config: The configurations for connecting to the elasticsearch cluster.
-        sql_context: The SQLContext for the current spark run.
         spark_session: The SparkSession for the current spark run.
         es_client: The client for interacting with the elasticsearch cluster.
         es_dataframe_util: A utility for loading and writing data frames to and from
@@ -114,7 +111,6 @@ def _get_viz_builders(
     Returns:
         An iterator of all the builders required for the build.
     """
-    annotation_builders = (civic.CivicBuilder(old_config, sql_context),)
     file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
@@ -129,10 +125,10 @@ def _get_viz_builders(
         builders.CaseBuilder(
             config.case, spark_session, es_dataframe_util, case_field_selector
         ),
+        civic.DNABuilder(config.civic_dna, spark_session),
+        civic.ProteinBuilder(config.civic_protein, spark_session),
         builders.GeneModelBuilder(config.gene_model, spark_session),
-        builders.MAFBuilder(
-            config.maf, spark_session, doc_dataframe_util, annotation_builders
-        ),
+        builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
         builders.MAFMetadataBuilder(
             config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory,
         ),
@@ -234,10 +230,8 @@ def get_viz_builders(
     observation_builder = builders.ObservationBuilder()
 
     viz_builders = _get_viz_builders(
-        config_adapter,
         config.builders.viz,
         config.elasticsearch,
-        sql_context,
         spark_session,
         es_client,
         es_dataframe_util,

@@ -1,9 +1,24 @@
 fields:
   - &string_field
     metadata: {}
-    name: variant_caller
+    name: name
     nullable: true
     type: string
+  - <<: *string_field
+    name: hgvsp_short
+  - <<: *string_field
+    name: chromosome
+  - &integer_field
+    metadata: {}
+    name: start_position
+    nullable: true
+    type: integer
+  - <<: *string_field
+    name: reference_allele
+  - <<: *string_field
+    name: tumor_allele
+  - <<: *string_field
+    name: variant_caller
   - metadata: {}
     name: cosmic_id
     nullable: true
@@ -21,19 +36,10 @@ fields:
     name: gene_id
   - <<: *string_field
     name: ncbi_build
-  - &integer_field
-    metadata: {}
-    name: start_position
-    nullable: true
-    type: integer
   - <<: *integer_field
     name: end_position
   - <<: *string_field
     name: variant_type
-  - <<: *string_field
-    name: tumor_allele
-  - <<: *string_field
-    name: reference_allele
   - <<: *string_field
     name: mutation_type
   - <<: *string_field
@@ -87,8 +93,6 @@ fields:
     name: protein_position
   - <<: *string_field
     name: cds_position
-  - <<: *string_field
-    name: hgvsp_short
   - <<: *string_field
     name: mutation_status
   - <<: *string_field
@@ -306,13 +310,9 @@ fields:
   - <<: *string_field
     name: canonical_transcript_id
   - <<: *string_field
-    name: chromosome
-  - <<: *string_field
     name: description
   - <<: *integer_field
     name: gene_end
-  - <<: *string_field
-    name: name
   - <<: *integer_field
     name: gene_start
   - <<: *long_field
