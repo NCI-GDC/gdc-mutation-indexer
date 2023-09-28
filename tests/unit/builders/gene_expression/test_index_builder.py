@@ -93,13 +93,11 @@ class TestGeneExpressionBuilder:
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
         doc_dataframe_util = self.arrange_doc_dataframe_util()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs()
         builder = gene_expression.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 
@@ -114,7 +112,6 @@ class TestGeneExpressionBuilder:
         es_dataframe_util = mock.MagicMock()
         star_count = models.STARCounts()
         doc_dataframe_util = self.arrange_doc_dataframe_util((star_count,))
-        mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel()
         primary_aliquot = models.PrimaryAliquot()
         inputs = self.arrange_inputs((gene_model,), (primary_aliquot,))
@@ -122,7 +119,6 @@ class TestGeneExpressionBuilder:
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 
@@ -141,14 +137,12 @@ class TestGeneExpressionBuilder:
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
         doc_dataframe_util = self.arrange_doc_dataframe_util()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel(chromosome=chromosome)
         inputs = self.arrange_inputs((gene_model,))
         builder = gene_expression.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 
@@ -161,14 +155,12 @@ class TestGeneExpressionBuilder:
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
         doc_dataframe_util = self.arrange_doc_dataframe_util()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel(biotype="other")
         inputs = self.arrange_inputs((gene_model,))
         builder = gene_expression.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 
@@ -181,7 +173,6 @@ class TestGeneExpressionBuilder:
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
         doc_dataframe_util = self.arrange_doc_dataframe_util()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel()
         primary_aliquot = models.PrimaryAliquot()
         inputs = self.arrange_inputs((gene_model,), (primary_aliquot,))
@@ -189,7 +180,6 @@ class TestGeneExpressionBuilder:
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 
@@ -206,13 +196,11 @@ class TestGeneExpressionBuilder:
         es_dataframe_util = mock.MagicMock()
         star_count = models.STARCounts()
         doc_dataframe_util = self.arrange_doc_dataframe_util((star_count,))
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs()
         builder = gene_expression.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             doc_dataframe_util,
         )
 

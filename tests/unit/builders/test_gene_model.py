@@ -251,6 +251,7 @@ class TestGeneModelBuilder:
             assert row_transcript.end == model_transcript.end
             assert row_transcript.end == model_transcript.end
             assert row_transcript.end_exon == model_transcript.end_exon
+            assert result_row.is_cancer_gene_census == (census.is_cancer_gene_census == "True")
             assert row_transcript.is_canonical == model_transcript.is_canonical
             assert row_transcript.length == model_transcript.length
             assert (
@@ -312,10 +313,3 @@ class TestGeneModelBuilder:
 
         assert result_row.cytoband == [cytobands]
 
-    def test__build__is_cancer_gene_census_lowwered(self) -> None:
-        builder = self._arrange_builder((Cytoband(),), (Census(),), (GeneModel(),))
-
-        result_df = builder.build()
-        result_row = more_itertools.one(result_df.collect())
-
-        assert result_row.is_cancer_gene_census == "true"

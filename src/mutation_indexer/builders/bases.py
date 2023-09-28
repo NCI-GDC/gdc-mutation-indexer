@@ -474,111 +474,28 @@ class ResourceBuilder(
         return df
 
 
-def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:
-    """
-    Walks the inputs fields data type field in order to find the child field with the
-    input name.
-
-    Args:
-        field: the field found in a parent schema/struct type.
-        child_name: the name of the desired child field.
-
-    Returns:
-        The child field with the given child_name.
-
-    Raises:
-        ValueError: this is raised if the input field is NOT a struct type, an array
-            with an struct type for an element type, or a map type with a value type
-            which is a struct type.
-    """
-    datatype = field.dataType
-
-    while isinstance(datatype, (types.ArrayType, types.MapType)):
-        if isinstance(datatype, types.ArrayType):
-            datatype = datatype.elementType
-        if isinstance(datatype, types.MapType):
-            datatype = datatype.valueType
-
-    if isinstance(datatype, types.StructType):
-        return datatype[child_name]
-    else:
-        raise ValueError(
-            f"Unexpected data type encountered while walking. DataType: {type(datatype)}"
-        )
-
-
 class IndexBuilder(
     Generic[TIndexConfig, TInputDFs], InputBuilder[TIndexConfig, TInputDFs], abc.ABC
 ):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
 
-    __slots__ = ("_es_dataframe_util", "_mappings_loader", "_index_type", "_index_name")
+    __slots__ = ("_es_dataframe_util", "_index_type", "_index_name")
 
     def __init__(
         self,
         config: TIndexConfig,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
-        mappings_loader: es_utils.MappingsLoader,
         input_type: type[TInputDFs],
         output: build.DataFrame,
     ) -> None:
         super().__init__(config, spark_session, input_type, output)
 
         self._es_dataframe_util = es_dataframe_util
-        self._mappings_loader = mappings_loader
         self._index_type = build.IndexType[self._output.name]
         self._index_name, _ = self._index_type.get_mappings_details()
 
-    def _get_boolean_paths(self) -> Iterator[str]:
-        """
-        Find all the boolean field in mapping and return the paths
-
-        Returns:
-            An iterable of each path to a boolean field represented as a series of
-            field names separated by a '.'.
-        """
-
-        def get_boolean_paths(
-            node: Dict[str, Dict[str, Any]], path: str = ""
-        ) -> Iterator[str]:
-            for key, value in node.items():
-                subpath = f"{path}{key}"
-
-                if value.get("type") == "boolean":
-                    yield subpath
-                elif "properties" in value:
-                    yield from get_boolean_paths(value["properties"], f"{subpath}.")
-
-        mappings = self._mappings_loader.load_mappings(self._index_type).get(
-            "mappings", {}
-        )
-
-        return get_boolean_paths(mappings.get("properties", {}))
-
-    def _cast_booleans(self, df: sql.DataFrame) -> sql.DataFrame:
-        """
-        Ensure all the boolean fields in data frame are booleans before save to ES
-
-        Args:
-            df: pyspark dataframe to cast boolean
-
-        Returns:
-            the input dataframe with all boolean fields cast to such type.
-        """
-        paths = self._get_boolean_paths()
-        schema = copy.deepcopy(df.schema)
-
-        for raw_path in paths:
-            path = iter(raw_path.split("."))
-            fieldname = more_itertools.first(path)
-            field = functools.reduce(_walk_schema, path, schema[fieldname])
-            field.dataType = types.BooleanType()
-
-        return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
-
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = self._cast_booleans(df)
         df = super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 

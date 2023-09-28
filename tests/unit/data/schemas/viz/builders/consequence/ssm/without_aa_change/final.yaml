@@ -1,5 +1,5 @@
 fields:
-- &string_field 
+- &string_field
   metadata: {}
   name: ssm_id
   nullable: true
@@ -166,7 +166,7 @@ fields:
                 name: gene_strand
                 nullable: true
                 type: long
-              - <<: *string_field
+              - <<: *boolean_field
                 name: is_cancer_gene_census
               - <<: *string_field
                 name: symbol
