@@ -88,11 +88,6 @@ class Viz:
                 FINAL: Schema
 
         @_init_schemas
-        class CIVICAnnotation:
-            FINAL: Schema
-            MAF: Schema
-
-        @_init_schemas
         class Consequence:
             @_init_schemas
             class SSM:

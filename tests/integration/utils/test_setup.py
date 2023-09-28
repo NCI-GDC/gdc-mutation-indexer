@@ -3,7 +3,6 @@ import functools
 import gzip
 import json
 import logging
-import os
 import pathlib
 import types
 from typing import (
@@ -36,10 +35,6 @@ def load_configuraiton(
 ) -> configuration.Configuration:
     data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
     data = functools.reduce(lambda d, f: f(d), pre_load, data)
-    data["elasticsearch"]["connection"]["nodes"] = os.environ.get(
-        "ES_NODES",
-        data["elasticsearch"]["connection"]["nodes"]
-    )
 
     return configuration.CONFIG_SCHEMA.load(data)  # type: ignore
 
