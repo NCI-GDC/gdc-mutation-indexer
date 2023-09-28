@@ -1,0 +1,42 @@
+---
+include:
+  - project: nci-gdc/gitlab-templates
+    ref: 0.3.1
+    file:
+      - templates/global/full.yaml
+      - templates/python/full.yaml
+      - templates/common/python.yaml
+      - templates/deployments/salt-service.yaml
+
+.services:
+  allow_failure: true
+  stage: deploy
+  when: manual
+  parallel:
+    matrix:
+      - DEPLOY_SERVICE_LIST: [ mutation_indexer ]
+tox:
+  parallel:
+    matrix:
+      - BUILD_PY_VERSION: [ python3.9 ]
+  services:
+    - name: docker.osdc.io/ncigdc/ci-elasticsearch-7:${BASE_CONTAINER_VERSION}
+      alias: elasticsearch
+  variables:
+    BOTO_CONFIG: /dev/null
+    ES_NODES: http://elasticsearch:9200
+    ES_VERSION: 7.7.1
+    SPARK_VERSION: 2.4.5
+  script:
+    - mkdir -p /usr/share/man/man1/    # https://github.com/geerlingguy/ansible-role-java/issues/64#issuecomment-597132394
+    - apt-get update
+    - apt-get install -y maven
+    - mvn -version
+    - pip install 'tox < 4'
+    - tox -e py
+
+release:
+  variables:
+    RELEASE_PY_VERSION: python3.9
+  before_script:
+    - git fetch --unshallow || true

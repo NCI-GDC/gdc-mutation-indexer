@@ -1,2 +1,4 @@
-recursive-include src/mutation_indexer/schemas *.yml *.yaml *.json
-include src/mutation_indexer/configuration.toml
+graft src
+prune tests
+
+global-exclude *.py[cod]
