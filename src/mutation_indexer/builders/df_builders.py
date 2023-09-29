@@ -1,8 +1,9 @@
 import itertools
 import logging
-from collections.abc import Container, Iterable
+from collections.abc import Container, Iterable, Iterator
 from typing import Optional
 
+import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
 
@@ -101,7 +102,7 @@ def _get_clinical_annotation_df(
     drop_fields: Container[str] = (),
     unique_fields: Optional[list[str]] = None,
 ) -> sql.DataFrame:
-    def restructure(doc, parent_name):
+    def restructure(doc: dict, parent_name: str = "") -> Iterator[sql.Column]:
         """
         Takes the structure from a mapping and produces arguments for a select
         to reorganize a flat dataframe of clinical annotations into the desired structure.
@@ -119,33 +120,24 @@ def _get_clinical_annotation_df(
                     type: keyword
         ```
         """
-
-        if type(doc) is not dict:
-            return []
-
-        cols = []
         for k, v in doc.items():
-            if "type" in v and "properties" not in v:
-                name = "{}_{}".format(parent_name, k)
-                if "default" in v:
-                    name = v["default"]
-                cols.append(F.col(name).alias(k))
+            if "properties" in v:
+                yield F.struct(*restructure(v["properties"], k)).alias(k)
+            elif "type" in v:
+                name = v.get("default", f"{parent_name}_{k}")
+                
+                yield F.col(name).alias(k)
             else:
-                if "properties" in v:
-                    cols.append(F.struct(restructure(v["properties"], k)).alias(k))
-                else:
-                    cols.append(F.struct(restructure(v, k)).alias(k))
-        return cols
+                yield F.struct(*restructure(v, k)).alias(k)
 
     name = "clinical_annotations"
     mapping = utils.select_mapping(index_name, name)
-    cols = ["ssm_id"] + restructure({name: mapping}, "")
-    logger.info(input_df)
-    logger.info(cols)
-
+    cols = more_itertools.value_chain("ssm_id", restructure({name: mapping}))
     df = input_df.select(*cols)
     df = df.drop_duplicates(subset=unique_fields)
-    return df.select([column for column in df.columns if column not in drop_fields])
+    cols = (column for column in df.columns if column not in drop_fields)
+
+    return df.select(*cols)
 
 
 def get_ssm_df(
