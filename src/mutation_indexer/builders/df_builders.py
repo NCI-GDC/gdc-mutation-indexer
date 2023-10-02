@@ -1,11 +1,13 @@
 import itertools
 import logging
-from collections.abc import Container, Iterable
+from collections.abc import Container, Iterable, Iterator
 from typing import Optional
 
+import more_itertools
 from pyspark import sql
+from pyspark.sql import functions as F
 
-from mutation_indexer.builders import clinical_annotations, utils
+from mutation_indexer.builders import utils
 
 logger = logging.getLogger("df_builder")
 
@@ -94,6 +96,50 @@ def get_gene_df(
     )
 
 
+def _get_clinical_annotation_df(
+    index_name: str,
+    input_df: sql.DataFrame,
+    drop_fields: Container[str] = (),
+    unique_fields: Optional[list[str]] = None,
+) -> sql.DataFrame:
+    def restructure(doc: dict, parent_name: str = "") -> Iterator[sql.Column]:
+        """
+        Takes the structure from a mapping and produces arguments for a select
+        to reorganize a flat dataframe of clinical annotations into the desired structure.
+        Eg:
+        Given the mapping:
+        ```
+        properties:
+          clinical_annotations:
+            properties:
+              civic:
+                properties:
+                  gene_id:
+                    type: keyword
+                  variant_id:
+                    type: keyword
+        ```
+        """
+        for k, v in doc.items():
+            if "properties" in v:
+                yield F.struct(*restructure(v["properties"], k)).alias(k)
+            elif "type" in v:
+                name = v.get("default", f"{parent_name}_{k}")
+                
+                yield F.col(name).alias(k)
+            else:
+                yield F.struct(*restructure(v, k)).alias(k)
+
+    name = "clinical_annotations"
+    mapping = utils.select_mapping(index_name, name)
+    cols = more_itertools.value_chain("ssm_id", restructure({name: mapping}))
+    df = input_df.select(*cols)
+    df = df.drop_duplicates(subset=unique_fields)
+    cols = (column for column in df.columns if column not in drop_fields)
+
+    return df.select(*cols)
+
+
 def get_ssm_df(
     maf_df: sql.DataFrame,
     index_name: str,
@@ -102,9 +148,7 @@ def get_ssm_df(
     unique_fields: Optional[list[str]] = None,
     ignore: Container[str] = (),
 ) -> sql.DataFrame:
-    clinical_anno_df = clinical_annotations.get_clinical_annotation_df(
-        index_name, maf_df
-    )
+    clinical_anno_df = _get_clinical_annotation_df(index_name, maf_df)
     df = get_single_df(maf_df, index_name, "ssm", add_fields, (), unique_fields, ignore)
     df = df.join(clinical_anno_df, on="ssm_id", how="left")
     columns = (column for column in df.columns if column not in drop_fields)
