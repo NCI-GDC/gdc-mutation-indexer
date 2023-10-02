@@ -7,6 +7,8 @@ class DataFrame(enum.IntEnum):
     CASE = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()
+    CNV_CENTRIC = enum.auto()
+    CNV_OCCURRENCE_CENTRIC = enum.auto()
     GENE_EXPRESSION = enum.auto()
     GENE_MODEL = enum.auto()
     MAF = enum.auto()

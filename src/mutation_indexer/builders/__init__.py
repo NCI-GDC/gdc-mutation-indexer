@@ -16,7 +16,7 @@ from mutation_indexer.builders.case_centric import CaseCentricBuilder
 from mutation_indexer.builders.gene_centric import GeneCentricBuilder
 from mutation_indexer.builders.ssm_centric import SSMCentricBuilder
 from mutation_indexer.builders.ssm_occurrence_centric import SSMOccurrenceCentricBuilder
-from mutation_indexer.builders.cnv_centric import CNVCentricBuilder
+from mutation_indexer.builders.cnv import CNVCentricBuilder
 from mutation_indexer.builders.cnv_occurrence_centric import CNVOccurrenceCentricBuilder
 
 # Gene expression builder

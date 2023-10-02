@@ -16,7 +16,14 @@ from mutation_indexer import (
     indexd_utils,
 )
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.builders import ascat, base_builder, bases, civic, maf_metadata
+from mutation_indexer.builders import (
+    ascat,
+    base_builder,
+    bases,
+    civic,
+    cnv,
+    maf_metadata,
+)
 from mutation_indexer.configuration import adapter
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
@@ -51,7 +58,8 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
         An indexd client
     """
     return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}", auth=(config.user, config.password),
+        baseurl=f"{config.host}:{config.port}",
+        auth=(config.user, config.password),
     )
 
 
@@ -114,6 +122,23 @@ def _get_viz_builders(
     file_filter_factory = maf_metadata.MAFFileFilterFactory(es_config.read, es_client)
     ascat_doc_resolver = ascat.DocumentResolver(es_config.read, es_client)
 
+    if build.IndexType.CNV_CENTRIC in index_types:
+        yield builders.CNVCentricBuilder(
+            config.cnv_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            consequence_builder,
+            observation_builder,
+        )
+    if build.IndexType.CNV_OCCURRENCE_CENTRIC in index_types:
+        yield cnv.CNVOccurrenceCentricBuilder(
+            config.cnv_occurrence_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+        )
+
     input_builders = (
         builders.ASCATBuilder(
             config.ascat,
@@ -130,7 +155,10 @@ def _get_viz_builders(
         builders.GeneModelBuilder(config.gene_model, spark_session),
         builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
         builders.MAFMetadataBuilder(
-            config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory,
+            config.maf_metadata,
+            spark_session,
+            es_dataframe_util,
+            file_filter_factory,
         ),
         builders.PrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
@@ -179,12 +207,6 @@ def get_viz_index_builders(
                 case_field_selector,
                 consequence_builder,
                 observation_builder,
-            ),
-            build.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
-                old_config, sql_context, consequence_builder, observation_builder
-            ),
-            build.IndexType.CNV_OCCURRENCE_CENTRIC: builders.CNVOccurrenceCentricBuilder(
-                old_config, sql_context, consequence_builder, observation_builder
             ),
             build.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
                 old_config, sql_context, consequence_builder, observation_builder
