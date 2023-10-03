@@ -36,6 +36,6 @@ setup(
         "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2#egg=indexclient",
         "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0#egg=gdcmodels",
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0#egg=normalizer",
-        "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
+        "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0#egg=mutation-indexer-resource",
     ],
 )
