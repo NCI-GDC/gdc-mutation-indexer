@@ -469,7 +469,7 @@ class ResourceBuilder(
         ) as p:
             logger.info(f"LOADING: {p}")
             df = self._spark_session.read.csv(
-                str(p), schema=self._schema(), header=True, sep="\t", comment="#"
+                f"file://{p}", schema=self._schema(), header=True, sep="\t", comment="#"
             )
 
         return df
