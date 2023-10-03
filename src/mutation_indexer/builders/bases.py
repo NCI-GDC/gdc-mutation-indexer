@@ -4,6 +4,7 @@ import functools
 import logging
 from collections.abc import Iterable, Iterator, Mapping, Set
 from importlib import resources
+import os
 from typing import (
     Any,
     Dict,
@@ -467,9 +468,8 @@ class ResourceBuilder(
         with resources.as_file(
             resources.files(self._config.package).joinpath(self._config.resource)
         ) as p:
-            logger.info(f"LOADING: {p}")
             df = self._spark_session.read.csv(
-                f"file://{p}", schema=self._schema(), header=True, sep="\t", comment="#"
+                p.as_uri(), schema=self._schema(), header=True, sep="\t", comment="#"
             )
 
         return df

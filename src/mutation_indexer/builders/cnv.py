@@ -145,7 +145,7 @@ class CNVOccurrenceCentricBuilder(
                     "start_position",
                     F.lit("tumor only").alias("variant_status"),
                 ).alias("cnv"),
-                F.explode("occurrence"),
+                F.explode("occurrence").alias("occurrence"),
             )
             .select("occurrence.case", "cnv", "occurrence.cnv_occurrence_id")
         )
