@@ -92,8 +92,8 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_dna]
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_dna.tsv"
+package = "mutation_indexer_resource"
+resource = "annotation/civic/dna.tsv.gz"
 schema = "builders/civic/dna.yaml"
 is_cached = false
 
@@ -102,8 +102,8 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_protein]
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_prot.tsv"
+package = "mutation_indexer_resource"
+resource = "annotation/civic/prot.tsv.gz"
 schema = "builders/civic/protein.yaml"
 is_cached = false
 

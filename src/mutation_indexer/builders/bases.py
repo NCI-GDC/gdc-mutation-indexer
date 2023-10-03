@@ -467,6 +467,7 @@ class ResourceBuilder(
         with resources.as_file(
             resources.files(self._config.package).joinpath(self._config.resource)
         ) as p:
+            logger.info(f"LOADING: {p}")
             df = self._spark_session.read.csv(
                 str(p), schema=self._schema(), header=True, sep="\t", comment="#"
             )
