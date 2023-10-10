@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Sequence
+import logging
 from typing import TypedDict
 
 from pyspark import sql
@@ -8,6 +9,9 @@ from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_primary_aliquot_filters(projects: Sequence[str]) -> list[dict]:
@@ -152,13 +156,20 @@ class IndexBuilder(
 
         gene_model_df = (
             gene_model_df.where(utils.is_protein_coding())
-            .where(utils.is_between_chr1_and_chr22())
+            # .where(utils.is_between_chr1_and_chr22())
             .select(F.col("_gene_id").alias("gene_id"))
         )
 
         values_df = self._load_expression_values(primary_aliquot_df)
         # Remove sex chromosomes
         values_df = values_df.join(gene_model_df, on=["gene_id"], how="inner")
+        logger.info(f"PROTEIN CODING ROWS ONLY: {values_df.count()}.")
+        values_df = values_df.join(
+            gene_model_df.where(utils.is_between_chr1_and_chr22()).select("gene_id"),
+            on="gene_id",
+            how="inner",
+        )
+        logger.info(f"CHR1-22 ROWS ONLY: {values_df.count()}.")
 
         gene_expression_df = values_df.join(
             primary_aliquot_df, on=["file_id"], how="inner"
