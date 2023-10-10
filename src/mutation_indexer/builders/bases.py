@@ -468,7 +468,7 @@ class ResourceBuilder(
             resources.files(self._config.package).joinpath(self._config.resource)
         ) as p:
             df = self._spark_session.read.csv(
-                str(p), schema=self._schema(), header=True, sep="\t", comment="#"
+                p.as_uri(), schema=self._schema(), header=True, sep="\t", comment="#"
             )
 
         return df
