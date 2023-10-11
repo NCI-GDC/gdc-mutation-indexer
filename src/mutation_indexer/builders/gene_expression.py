@@ -172,12 +172,15 @@ class IndexBuilder(
         logger.info(f"CHR1-22 ROWS ONLY: {values_df.count()}.")
 
         gene_expression_df = values_df.join(
-            primary_aliquot_df, on=["file_id"], how="inner"
+            primary_aliquot_df.select("file_id", "submitter_id"),
+            on=["file_id"],
+            how="inner",
         ).select(
             "*",
             utils.uuid5_col("case_id", "gene_id").alias("gene_expression_id"),
             F.log2(F.col("uqfpkm") + 1).alias("log2_uqfpkm"),
         )
+        logger.info(f"Final: {gene_expression_df.count()}.")
 
         return gene_expression_df.select(
             "case_id",
