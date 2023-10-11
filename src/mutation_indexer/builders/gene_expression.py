@@ -172,7 +172,7 @@ class IndexBuilder(
         logger.info(f"CHR1-22 ROWS ONLY: {values_df.count()}.")
 
         gene_expression_df = values_df.join(
-            primary_aliquot_df.select("file_id", "submitter_id"),
+            primary_aliquot_df.select("file_id", "submitter_id", "case_id"),
             on=["file_id"],
             how="inner",
         ).select(
