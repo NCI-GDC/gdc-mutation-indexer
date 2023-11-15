@@ -263,7 +263,7 @@ def _add_required_include_fields(
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
 
-    return include_fields
+    return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
 class PrimaryAliquotBuilder(

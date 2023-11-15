@@ -1,0 +1,35 @@
+fields:
+- &string_field
+  metadata: {}
+  name: file_id
+  nullable: true
+  type: string
+- <<: *string_field
+  name: created_datetime
+- <<: *string_field
+  name: experimental_strategy
+- metadata: {}
+  name: cases
+  nullable: true
+  type:
+    containsNull: true
+    elementType:
+      fields:
+      - <<: *string_field
+        name: case_id
+      - metadata: {}
+        name: samples
+        nullable: true
+        type:
+          containsNull: true
+          elementType:
+            fields:
+            - <<: *string_field
+              name: sample_id
+            - <<: *string_field
+              name: sample_type
+            type: struct
+          type: array
+      type: struct
+    type: array
+type: struct
