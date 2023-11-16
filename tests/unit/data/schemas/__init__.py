@@ -64,7 +64,16 @@ class Viz:
         class ASCAT:
             FINAL: Schema
             DOCUMENT: Schema
+
+        @_init_schemas
+        class ASCATMetadata:
             FILE: Schema
+            FINAL: Schema
+
+        @_init_schemas
+        class ASCATMetadata:
+            FILE: Schema
+            FINAL: Schema
 
         @_init_schemas
         class ASCATMetadata:
