@@ -71,16 +71,6 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
-        class ASCATMetadata:
-            FILE: Schema
-            FINAL: Schema
-
-        @_init_schemas
-        class ASCATMetadata:
-            FILE: Schema
-            FINAL: Schema
-
-        @_init_schemas
         class Case:
             FINAL: Schema
             RAW: Schema
