@@ -2,6 +2,7 @@ from mutation_indexer.builders.base_builder import BaseBuilder
 
 # External dependency builders
 from mutation_indexer.builders.ascat import ASCATBuilder
+from mutation_indexer.builders.ascat_metadata import ASCATMetadataBuilder
 from mutation_indexer.builders.maf_metadata import MAFMetadataBuilder
 from mutation_indexer.builders.maf import MAFBuilder
 from mutation_indexer.builders.case import CaseBuilder
