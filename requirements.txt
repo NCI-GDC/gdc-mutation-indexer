@@ -24,6 +24,8 @@ charset-normalizer==2.0.12
     # via
     #   aiohttp
     #   requests
+deepdiff==6.5.0
+    # via gdcmodels
 elasticsearch[async]==7.17.4
     # via
     #   gdc-mutation-indexer (setup.py)
@@ -32,7 +34,7 @@ frozenlist==1.2.0
     # via
     #   aiohttp
     #   aiosignal
-gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0
+gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.1.2
     # via
     #   gdc-mutation-indexer (setup.py)
     #   normalizer
@@ -58,6 +60,8 @@ marshmallow-dataclass==8.5.8
     # via gdc-mutation-indexer (setup.py)
 marshmallow-enum==1.5.1
     # via gdc-mutation-indexer (setup.py)
+mergedeep==1.3.4
+    # via gdcmodels
 more-itertools==8.13.0
     # via gdc-mutation-indexer (setup.py)
 multidict==5.2.0
@@ -68,15 +72,17 @@ mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-reso
     # via gdc-mutation-indexer (setup.py)
 mypy-extensions==0.4.3
     # via typing-inspect
-normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0
+normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.3
     # via gdc-mutation-indexer (setup.py)
+ordered-set==4.1.0
+    # via deepdiff
 py4j==0.10.9.5
     # via pyspark
 pyspark==3.3.1
     # via gdc-mutation-indexer (setup.py)
 python-json-logger==2.0.4
     # via gdc-mutation-indexer (setup.py)
-pyyaml==5.4.1
+pyyaml==5.3.1
     # via
     #   gdcmodels
     #   normalizer
