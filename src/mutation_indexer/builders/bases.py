@@ -263,7 +263,7 @@ def _add_required_include_fields(
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
 
-    return include_fields
+    return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
 class PrimaryAliquotBuilder(
@@ -275,9 +275,9 @@ class PrimaryAliquotBuilder(
         self,
         config: TConfig,
         spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
         input_type: type[TInputDFs],
         output: build.DataFrame,
-        es_dataframe_util: es_utils.DataFrameUtil,
         additional_selections: Iterable[str] = (),
     ) -> None:
         """
@@ -449,6 +449,228 @@ class PrimaryAliquotBuilder(
                 "case_id",
                 "sample_id",
                 "case",
+                *self._additional_selections,
+            )
+        )
+
+
+def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
+    """
+    Expands the rows in the loaded file data to be each a single aliquot worth of data.
+
+    Args:
+        aliquot_df: The data frame containing the file data containing all associated
+            aliquots under the cases field.
+
+    Returns:
+        A dataframe fo the aliquot data.
+    """
+    return (
+        aliquot_df.select("file_id", F.explode_outer("cases").alias("case"))
+        .select(
+            "file_id",
+            F.col("case.case_id").alias("case_id"),
+            F.explode_outer("case.samples").alias("sample"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            F.col("sample.sample_id").alias("sample_id"),
+            F.explode_outer("sample.portions").alias("portion"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("portion.analytes").alias("analyte"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            F.explode_outer("analyte.aliquots").alias("aliquot"),
+        )
+    )
+
+
+class InclusivePrimaryAliquotBuilder(
+    Generic[TConfig, TInputDFs], PrimaryAliquotBuilder[TConfig, TInputDFs]
+):
+    """
+    This builder creates a primary aliquot dataframe which INCLUDES the aliquot data
+    associated with the sample which has been identified as the "primary" aliquot.
+    """
+
+    __slots__ = ("_es_rdd_util",)
+
+    def __init__(
+        self,
+        config: TConfig,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        es_rdd_util: es_utils.RDDUtil,
+        input_type: type[TInputDFs],
+        output: build.DataFrame,
+        additional_selections: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util,
+            input_type,
+            output,
+            additional_selections,
+        )
+
+        self._es_rdd_util = es_rdd_util
+
+    def _get_aliquot_level_df(self, filters: Iterable[dict]) -> sql.DataFrame:
+        """
+        Loads the aliquot data from elasticsearch.
+
+        Args:
+            filters: The filters with which to restrict the aliquots loaded.
+
+        Returns:
+            A data frame containing the desired aliquot data
+
+            aliquot {}
+            |---file_id
+            |---case_id
+            |---sample_id
+            |---aliquot_id
+            +---aliquot_created_datetime
+        """
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "nested": {
+                                "path": "cases.samples.portions.analytes.aliquots",
+                                "query": {
+                                    "exists": {
+                                        "field": "cases.samples.portions.analytes.aliquots"
+                                    }
+                                },
+                            }
+                        },
+                        *filters,
+                    ]
+                }
+            }
+        }
+        included_fields = (
+            "file_id",
+            "cases.case_id",
+            "cases.samples.sample_id",
+            "cases.samples.portions.analytes.aliquots.aliquot_id",
+            "cases.samples.portions.analytes.aliquots.created_datetime",
+        )
+        aliquot_data_schema = schemas.load_schema(
+            "builders/primary_aliquot/aliquot_data.json"
+        )
+
+        if self._config.projects:
+            project_clause = {
+                "nested": {
+                    "path": "cases",
+                    "query": {
+                        "terms": {"cases.project.project_id": self._config.projects}
+                    },
+                }
+            }
+
+            query["query"]["bool"]["must"].append(project_clause)
+
+        aliquot_df = _expand_aliquots(
+            self._es_rdd_util.get_rdd(
+                build.IndexType.FILE, include_fields=included_fields, query=query
+            )
+            .toDF(aliquot_data_schema)
+            .select("_source.*")
+        ).select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            "aliquot.aliquot_id",
+            F.col("aliquot.created_datetime")
+            .cast("timestamp")
+            .alias("aliquot_created_datetime"),
+        )
+
+        return aliquot_df
+
+    def _get_primary_aliquot_df(
+        self,
+        filters: Iterable[dict],
+        entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
+        include_fields: Union[Iterable[str], Literal[True]] = True,
+    ) -> sql.DataFrame:
+        """
+        Loads the primary aliquot data from elasticsearch into a dataframe including the
+        aliquot level id.
+
+        Args:
+            filters: The filters to be included in the must claus of the bool query when
+                loading the data from elasticsearch.
+            entities: The entity over which to find a primary aliquot.
+            include_fields: The fields which should be included when loading data from
+                elasticsearch.
+
+        Returns:
+            The primary aliquot dataframe
+
+            primary_aliquot {}
+            |---aliquot_created_datetime
+            |---aliquot_id
+            |---case
+            |---case_id
+            |---created_datetime
+            |---entity
+            |---entity_id
+            |---file_id
+            |---sample_id
+            +---*additional_selections
+        """
+        sample_include_fields = (
+            include_fields
+            if include_fields is True
+            else filter(
+                lambda f: f not in ("aliquot_created_datetime", "aliquot_id"),
+                include_fields,
+            )
+        )
+        primary_aliquot_df = super()._get_primary_aliquot_df(
+            filters, entities, sample_include_fields
+        )
+
+        aliquot_df = self._get_aliquot_level_df(filters)
+        primary_aliquot_df = primary_aliquot_df.join(
+            aliquot_df, on=["file_id", "case_id", "sample_id"], how="left"
+        )
+
+        aliquot_window = (
+            sql.Window()
+            .partitionBy("entity", "entity_id")
+            .orderBy("aliquot_created_datetime", "aliquot_id")
+        )
+
+        return (
+            primary_aliquot_df.withColumn(
+                "row_number", F.row_number().over(aliquot_window)
+            )
+            .where(F.col("row_number") == 1)
+            .select(
+                "aliquot_created_datetime",
+                "aliquot_id",
+                "case",
+                "case_id",
+                "created_datetime",
+                "entity",
+                "entity_id",
+                "file_id",
+                "sample_id",
                 *self._additional_selections,
             )
         )

@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from importlib import resources
-from typing import Type
+from typing import TypeVar
 
 import yaml
 from pyspark.sql import types
@@ -9,6 +9,7 @@ from pyspark.sql import types
 from tests.unit.data.schemas import _minimize
 
 PYTHON_PASCAL_CASE = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
+T = TypeVar("T")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -30,7 +31,7 @@ class Schema:
         _minimize.minimize_files(self._package)
 
 
-def _get_schema(cls: Type, schema: str) -> Schema:
+def _get_schema(cls: type, schema: str) -> Schema:
     package = ".".join(
         PYTHON_PASCAL_CASE.sub(r"_\1", p).lower() for p in cls.__qualname__.split(".")
     )
@@ -40,7 +41,7 @@ def _get_schema(cls: Type, schema: str) -> Schema:
     return Schema(package, resource)
 
 
-def _init_schemas(cls: Type) -> Type:
+def _init_schemas(cls: type[T]) -> type[T]:
     annotations = getattr(cls, "__annotations__", {})
     schemas = {s: _get_schema(cls, s) for s, t in annotations.items() if t is Schema}
 
@@ -64,6 +65,11 @@ class Viz:
             FINAL: Schema
             DOCUMENT: Schema
             FILE: Schema
+
+        @_init_schemas
+        class ASCATMetadata:
+            FILE: Schema
+            FINAL: Schema
 
         @_init_schemas
         class Case:

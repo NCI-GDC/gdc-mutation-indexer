@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 
 class DataFrame(enum.IntEnum):
     ASCAT = enum.auto()
+    ASCAT_METADATA = enum.auto()
     CASE = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()

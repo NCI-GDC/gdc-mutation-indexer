@@ -64,6 +64,13 @@ omit_cnv_data = true
 mode = "NEITHER"
 path = ""
 
+[builders.viz.ascat_metadata]
+is_cached = false
+
+[builders.viz.ascat_metadata.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.case]
 include_as_arrays = ["project.disease_type", "project.primary_site", "*_ids", "files.acl"]
 is_cached = true

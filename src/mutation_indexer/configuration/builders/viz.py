@@ -112,6 +112,7 @@ class Viz:
     """
 
     ascat: ASCATBuilder
+    ascat_metadata: Builder
     case: CaseBuilder
     civic_dna: ResourceBuilder
     civic_protein: ResourceBuilder
