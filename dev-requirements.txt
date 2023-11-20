@@ -14,8 +14,10 @@ coverage[toml]==7.3.0
     # via
     #   -r dev-requirements.in
     #   pytest-cov
-deepdiff==6.3.1
-    # via -r dev-requirements.in
+deepdiff==6.5.0
+    # via
+    #   -c requirements.txt
+    #   -r dev-requirements.in
 distlib==0.3.4
     # via virtualenv
 exceptiongroup==1.1.3
@@ -28,8 +30,10 @@ iniconfig==1.1.1
     # via pytest
 nodeenv==1.6.0
     # via pre-commit
-ordered-set==4.0.2
-    # via deepdiff
+ordered-set==4.1.0
+    # via
+    #   -c requirements.txt
+    #   deepdiff
 packaging==21.3
     # via pytest
 platformdirs==2.4.0
@@ -46,7 +50,7 @@ pytest==7.4.0
     #   pytest-cov
 pytest-cov==4.1.0
     # via -r dev-requirements.in
-pyyaml==5.4.1
+pyyaml==5.3.1
     # via
     #   -c requirements.txt
     #   aspy-yaml
@@ -54,7 +58,6 @@ pyyaml==5.4.1
 six==1.15.0
     # via
     #   -c master-requirements.txt
-    #   -c requirements.txt
     #   pre-commit
     #   virtualenv
 toml==0.10.2

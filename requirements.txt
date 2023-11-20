@@ -68,7 +68,7 @@ multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
-mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot
+mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0
     # via gdc-mutation-indexer (setup.py)
 mypy-extensions==0.4.3
     # via typing-inspect

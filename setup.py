@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="gdc-mutation-indexer",
-    url='https://github.com/NCI-GDC/gdc-mutation-indexer',
+    url="https://github.com/NCI-GDC/gdc-mutation-indexer",
     author="NCI GDC",
     author_email="gdc_dev_questions-aaaaae2lhsbell56tlvh3upgoq@cdis.slack.com",
     use_scm_version={
@@ -36,6 +36,6 @@ setup(
         "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2",
         "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.1.2",
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.3",
-        "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot",
+        "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
 )

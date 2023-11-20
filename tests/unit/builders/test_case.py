@@ -254,7 +254,11 @@ class Project:
 
 @dataclasses.dataclass(frozen=True)
 class Sample:
+    preservation_method: str = dataclasses.field(default_factory=random_string)
     sample_type: str = dataclasses.field(default_factory=random_string)
+    specimen_type: str = dataclasses.field(default_factory=random_string)
+    tissue_type: str = dataclasses.field(default_factory=random_string)
+    tumor_descriptor: str = dataclasses.field(default_factory=random_string)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -671,7 +675,11 @@ def assert_projects_equal(result_project: sql.Row, project: Project) -> None:
 
 
 def assert_sample_equal(result_sample: sql.Row, sample: Sample) -> None:
+    assert result_sample.preservation_method == sample.preservation_method
     assert result_sample.sample_type == sample.sample_type
+    assert result_sample.specimen_type == sample.specimen_type
+    assert result_sample.tissue_type == sample.tissue_type
+    assert result_sample.tumor_descriptor == sample.tumor_descriptor
 
 
 def assert_tissue_source_sites_equal(

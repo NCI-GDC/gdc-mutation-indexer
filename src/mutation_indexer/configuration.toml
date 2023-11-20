@@ -4,22 +4,15 @@ host = ""
 secret_key = ""
 
 [build]
+acl = []
 build_version = "v0"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
-index_types = [
-  "CASE_CENTRIC",
-  "CNV_CENTRIC",
-  "CNV_OCCURRENCE_CENTRIC",
-  "GENE_CENTRIC",
-  "SSM_CENTRIC",
-  "SSM_OCCURRENCE_CENTRIC",
-]
+index_types = ["CASE_CENTRIC", "CNV_CENTRIC", "CNV_OCCURRENCE_CENTRIC", "GENE_CENTRIC", "SSM_CENTRIC", "SSM_OCCURRENCE_CENTRIC"]
 jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
 projects = []
 study_label = ""
-acl = []
 
 [builders]
 
@@ -92,20 +85,20 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_dna]
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_dna.tsv"
-schema = "builders/civic/dna.yaml"
 is_cached = false
+package = "mutation_indexer_resource.annotation.civic"
+resource = "dna.tsv.gz"
+schema = "builders/civic/dna.yaml"
 
 [builders.viz.civic_dna.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.civic_protein]
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_prot.tsv"
-schema = "builders/civic/protein.yaml"
 is_cached = false
+package = "mutation_indexer_resource.annotation.civic"
+resource = "prot.tsv.gz"
+schema = "builders/civic/protein.yaml"
 
 [builders.viz.civic_protein.backup]
 mode = "NEITHER"

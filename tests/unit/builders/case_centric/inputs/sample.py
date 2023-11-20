@@ -24,7 +24,9 @@ class Hit:
                 entity_type: Optional[str] = "aliquot"
                 legacy_created_datetime: Optional[str] = None
                 legacy_updated_datetime: Optional[str] = None
-                notes: Optional[str] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
+                notes: Optional[
+                    str
+                ] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
                 state: Optional[str] = "released"
                 status: Optional[str] = "Approved"
                 submitter_id: Optional[str] = "sub-generic-0"
@@ -65,18 +67,24 @@ class Hit:
                             case_submitter_id: Optional[str] = None
                             category: Optional[str] = "General"
                             classification: Optional[str] = "Observation"
-                            created_datetime: Optional[str] = "2018-05-21T16:07:40.645885-05:00"
+                            created_datetime: Optional[
+                                str
+                            ] = "2018-05-21T16:07:40.645885-05:00"
                             creator: Optional[str] = None
                             entity_id: Optional[str] = "entity-0"
                             entity_submitter_id: Optional[str] = "sub-entity-0"
                             entity_type: Optional[str] = "aliquot"
                             legacy_created_datetime: Optional[str] = None
                             legacy_updated_datetime: Optional[str] = None
-                            notes: Optional[str] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
+                            notes: Optional[
+                                str
+                            ] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
                             state: Optional[str] = "released"
                             status: Optional[str] = "Approved"
                             submitter_id: Optional[str] = "sub-generic-0"
-                            updated_datetime: Optional[str] = "2018-11-01T15:06:10.843096-05:00"
+                            updated_datetime: Optional[
+                                str
+                            ] = "2018-11-01T15:06:10.843096-05:00"
 
                             def assert_equals(self, row: sql.Row) -> bool:
                                 assert row
@@ -88,10 +96,18 @@ class Hit:
                                 assert row.created_datetime == self.created_datetime
                                 assert row.creator == self.creator
                                 assert row.entity_id == self.entity_id
-                                assert row.entity_submitter_id == self.entity_submitter_id
+                                assert (
+                                    row.entity_submitter_id == self.entity_submitter_id
+                                )
                                 assert row.entity_type == self.entity_type
-                                assert row.legacy_created_datetime == self.legacy_created_datetime
-                                assert row.legacy_updated_datetime == self.legacy_updated_datetime
+                                assert (
+                                    row.legacy_created_datetime
+                                    == self.legacy_created_datetime
+                                )
+                                assert (
+                                    row.legacy_updated_datetime
+                                    == self.legacy_updated_datetime
+                                )
                                 assert row.notes == self.notes
                                 assert row.state == self.state
                                 assert row.status == self.status
@@ -105,7 +121,9 @@ class Hit:
                             center_id: Optional[str] = "center-0"
                             center_type: Optional[str] = "CGCC"
                             code: Optional[str] = "20"
-                            name: Optional[str] = "MD Anderson - RPPA Core Facility (Proteomics)"
+                            name: Optional[
+                                str
+                            ] = "MD Anderson - RPPA Core Facility (Proteomics)"
                             namespace: Optional[str] = "mdanderson.org"
                             short_name: Optional[str] = "MDA"
 
@@ -129,7 +147,9 @@ class Hit:
                         annotations: Optional[tuple[Annotation, ...]] = (Annotation(),)
                         center: Optional[Center] = Center()
                         concentration: Optional[float] = 0.17
-                        created_datetime: Optional[str] = "2018-05-21T16:07:40.645885-05:00"
+                        created_datetime: Optional[
+                            str
+                        ] = "2018-05-21T16:07:40.645885-05:00"
                         no_matched_normal_low_pass_wgs: Optional[str] = None
                         no_matched_normal_targeted_sequencing: Optional[str] = None
                         no_matched_normal_wgs: Optional[str] = None
@@ -141,7 +161,9 @@ class Hit:
                         source_center: Optional[str] = "23"
                         state: Optional[str] = "released"
                         submitter_id: Optional[str] = "sub-generic-0"
-                        updated_datetime: Optional[str] = "2018-11-01T15:06:10.843096-05:00"
+                        updated_datetime: Optional[
+                            str
+                        ] = "2018-11-01T15:06:10.843096-05:00"
 
                         def assert_equals(self, row: sql.Row) -> bool:
                             assert row
@@ -153,23 +175,43 @@ class Hit:
                             assert row.analyte_type_id == self.analyte_type_id
                             assert row.concentration == self.concentration
                             assert row.created_datetime == self.created_datetime
-                            assert row.no_matched_normal_low_pass_wgs == self.no_matched_normal_low_pass_wgs
-                            assert row.no_matched_normal_targeted_sequencing == self.no_matched_normal_targeted_sequencing
-                            assert row.no_matched_normal_wgs == self.no_matched_normal_wgs
-                            assert row.no_matched_normal_wxs == self.no_matched_normal_wxs
-                            assert row.selected_normal_low_pass_wgs == self.selected_normal_low_pass_wgs
-                            assert row.selected_normal_targeted_sequencing == self.selected_normal_targeted_sequencing
+                            assert (
+                                row.no_matched_normal_low_pass_wgs
+                                == self.no_matched_normal_low_pass_wgs
+                            )
+                            assert (
+                                row.no_matched_normal_targeted_sequencing
+                                == self.no_matched_normal_targeted_sequencing
+                            )
+                            assert (
+                                row.no_matched_normal_wgs == self.no_matched_normal_wgs
+                            )
+                            assert (
+                                row.no_matched_normal_wxs == self.no_matched_normal_wxs
+                            )
+                            assert (
+                                row.selected_normal_low_pass_wgs
+                                == self.selected_normal_low_pass_wgs
+                            )
+                            assert (
+                                row.selected_normal_targeted_sequencing
+                                == self.selected_normal_targeted_sequencing
+                            )
                             assert row.selected_normal_wgs == self.selected_normal_wgs
                             assert row.selected_normal_wxs == self.selected_normal_wxs
                             assert row.source_center == self.source_center
                             assert row.state == self.state
                             assert row.submitter_id == self.submitter_id
                             assert row.updated_datetime == self.updated_datetime
-                            assert (
-                                (row.center is None and self.center is None) 
-                                or (self.center and self.center.assert_equals(row.center))
+                            assert (row.center is None and self.center is None) or (
+                                self.center and self.center.assert_equals(row.center)
                             )
-                            assert all(e.assert_equals(r) for r, e in zip(row.annotations or (), self.annotations or ()))
+                            assert all(
+                                e.assert_equals(r)
+                                for r, e in zip(
+                                    row.annotations or (), self.annotations or ()
+                                )
+                            )
 
                             return True
 
@@ -180,18 +222,24 @@ class Hit:
                         case_submitter_id: Optional[str] = None
                         category: Optional[str] = "General"
                         classification: Optional[str] = "Observation"
-                        created_datetime: Optional[str] = "2018-05-21T16:07:40.645885-05:00"
+                        created_datetime: Optional[
+                            str
+                        ] = "2018-05-21T16:07:40.645885-05:00"
                         creator: Optional[str] = None
                         entity_id: Optional[str] = "entity-0"
                         entity_submitter_id: Optional[str] = "sub-entity-0"
                         entity_type: Optional[str] = "aliquot"
                         legacy_created_datetime: Optional[str] = None
                         legacy_updated_datetime: Optional[str] = None
-                        notes: Optional[str] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
+                        notes: Optional[
+                            str
+                        ] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
                         state: Optional[str] = "released"
                         status: Optional[str] = "Approved"
                         submitter_id: Optional[str] = "sub-generic-0"
-                        updated_datetime: Optional[str] = "2018-11-01T15:06:10.843096-05:00"
+                        updated_datetime: Optional[
+                            str
+                        ] = "2018-11-01T15:06:10.843096-05:00"
 
                         def assert_equals(self, row: sql.Row) -> bool:
                             assert row
@@ -205,8 +253,14 @@ class Hit:
                             assert row.entity_id == self.entity_id
                             assert row.entity_submitter_id == self.entity_submitter_id
                             assert row.entity_type == self.entity_type
-                            assert row.legacy_created_datetime == self.legacy_created_datetime
-                            assert row.legacy_updated_datetime == self.legacy_updated_datetime
+                            assert (
+                                row.legacy_created_datetime
+                                == self.legacy_created_datetime
+                            )
+                            assert (
+                                row.legacy_updated_datetime
+                                == self.legacy_updated_datetime
+                            )
                             assert row.notes == self.notes
                             assert row.state == self.state
                             assert row.status == self.status
@@ -226,7 +280,9 @@ class Hit:
                     annotations: Optional[tuple[Annotation, ...]] = (Annotation(),)
                     concentration: Optional[float] = 0.17
                     created_datetime: Optional[str] = "2018-05-21T16:07:40.645885-05:00"
-                    experimental_protocol_type: Optional[str] = "mirVana (Allprep DNA) RNA"
+                    experimental_protocol_type: Optional[
+                        str
+                    ] = "mirVana (Allprep DNA) RNA"
                     normal_tumor_genotype_snp_match: Optional[str] = "Yes"
                     ribosomal_rna_28s_16s_ratio: Optional[float] = 1.7
                     rna_integrity_number: Optional[float] = 8.1
@@ -247,17 +303,37 @@ class Hit:
                         assert row.analyte_volume == self.analyte_volume
                         assert row.concentration == self.concentration
                         assert row.created_datetime == self.created_datetime
-                        assert row.experimental_protocol_type == self.experimental_protocol_type
-                        assert row.normal_tumor_genotype_snp_match == self.normal_tumor_genotype_snp_match
-                        assert row.ribosomal_rna_28s_16s_ratio == self.ribosomal_rna_28s_16s_ratio
+                        assert (
+                            row.experimental_protocol_type
+                            == self.experimental_protocol_type
+                        )
+                        assert (
+                            row.normal_tumor_genotype_snp_match
+                            == self.normal_tumor_genotype_snp_match
+                        )
+                        assert (
+                            row.ribosomal_rna_28s_16s_ratio
+                            == self.ribosomal_rna_28s_16s_ratio
+                        )
                         assert row.rna_integrity_number == self.rna_integrity_number
-                        assert row.spectrophotometer_method == self.spectrophotometer_method
+                        assert (
+                            row.spectrophotometer_method
+                            == self.spectrophotometer_method
+                        )
                         assert row.state == self.state
                         assert row.submitter_id == self.submitter_id
                         assert row.updated_datetime == self.updated_datetime
                         assert row.well_number == self.well_number
-                        assert all(e.assert_equals(r) for r, e in zip(row.aliquots or (), self.aliquots or ()))
-                        assert all(e.assert_equals(r) for r, e in zip(row.annotations or (), self.annotations or ()))
+                        assert all(
+                            e.assert_equals(r)
+                            for r, e in zip(row.aliquots or (), self.aliquots or ())
+                        )
+                        assert all(
+                            e.assert_equals(r)
+                            for r, e in zip(
+                                row.annotations or (), self.annotations or ()
+                            )
+                        )
 
                         return True
 
@@ -275,7 +351,9 @@ class Hit:
                     entity_type: Optional[str] = "aliquot"
                     legacy_created_datetime: Optional[str] = None
                     legacy_updated_datetime: Optional[str] = None
-                    notes: Optional[str] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
+                    notes: Optional[
+                        str
+                    ] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
                     state: Optional[str] = "released"
                     status: Optional[str] = "Approved"
                     submitter_id: Optional[str] = "sub-generic-0"
@@ -293,8 +371,12 @@ class Hit:
                         assert row.entity_id == self.entity_id
                         assert row.entity_submitter_id == self.entity_submitter_id
                         assert row.entity_type == self.entity_type
-                        assert row.legacy_created_datetime == self.legacy_created_datetime
-                        assert row.legacy_updated_datetime == self.legacy_updated_datetime
+                        assert (
+                            row.legacy_created_datetime == self.legacy_created_datetime
+                        )
+                        assert (
+                            row.legacy_updated_datetime == self.legacy_updated_datetime
+                        )
                         assert row.notes == self.notes
                         assert row.state == self.state
                         assert row.status == self.status
@@ -308,7 +390,9 @@ class Hit:
                     center_id: Optional[str] = "center-0"
                     center_type: Optional[str] = "CGCC"
                     code: Optional[str] = "20"
-                    name: Optional[str] = "MD Anderson - RPPA Core Facility (Proteomics)"
+                    name: Optional[
+                        str
+                    ] = "MD Anderson - RPPA Core Facility (Proteomics)"
                     namespace: Optional[str] = "mdanderson.org"
                     short_name: Optional[str] = "MDA"
 
@@ -332,18 +416,24 @@ class Hit:
                         case_submitter_id: Optional[str] = None
                         category: Optional[str] = "General"
                         classification: Optional[str] = "Observation"
-                        created_datetime: Optional[str] = "2018-05-21T16:07:40.645885-05:00"
+                        created_datetime: Optional[
+                            str
+                        ] = "2018-05-21T16:07:40.645885-05:00"
                         creator: Optional[str] = None
                         entity_id: Optional[str] = "entity-0"
                         entity_submitter_id: Optional[str] = "sub-entity-0"
                         entity_type: Optional[str] = "aliquot"
                         legacy_created_datetime: Optional[str] = None
                         legacy_updated_datetime: Optional[str] = None
-                        notes: Optional[str] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
+                        notes: Optional[
+                            str
+                        ] = "This is the correct replacement barcode for RNA aliquot UUID: 50F23D00-F6FD-4B3D-AED2-0705F7AE6A17, which is a replacement aliquot for UUID: 60770e58-3b35-4222-97e9-d92e973f0203 that was found to have inconclusive identity (RNA only).   Note that this replacement aliquot is derived from a different portion than the DNA."
                         state: Optional[str] = "released"
                         status: Optional[str] = "Approved"
                         submitter_id: Optional[str] = "sub-generic-0"
-                        updated_datetime: Optional[str] = "2018-11-01T15:06:10.843096-05:00"
+                        updated_datetime: Optional[
+                            str
+                        ] = "2018-11-01T15:06:10.843096-05:00"
 
                         def assert_equals(self, row: sql.Row) -> bool:
                             assert row
@@ -357,8 +447,14 @@ class Hit:
                             assert row.entity_id == self.entity_id
                             assert row.entity_submitter_id == self.entity_submitter_id
                             assert row.entity_type == self.entity_type
-                            assert row.legacy_created_datetime == self.legacy_created_datetime
-                            assert row.legacy_updated_datetime == self.legacy_updated_datetime
+                            assert (
+                                row.legacy_created_datetime
+                                == self.legacy_created_datetime
+                            )
+                            assert (
+                                row.legacy_updated_datetime
+                                == self.legacy_updated_datetime
+                            )
                             assert row.notes == self.notes
                             assert row.state == self.state
                             assert row.status == self.status
@@ -397,33 +493,83 @@ class Hit:
 
                     def assert_equals(self, row: sql.Row) -> bool:
                         assert row
-                        assert row.bone_marrow_malignant_cells == self.bone_marrow_malignant_cells
+                        assert (
+                            row.bone_marrow_malignant_cells
+                            == self.bone_marrow_malignant_cells
+                        )
                         assert row.created_datetime == self.created_datetime
-                        assert row.number_proliferating_cells == self.number_proliferating_cells
-                        assert row.percent_eosinophil_infiltration == self.percent_eosinophil_infiltration
-                        assert row.percent_follicular_component == self.percent_follicular_component
-                        assert row.percent_granulocyte_infiltration == self.percent_granulocyte_infiltration
-                        assert row.percent_inflam_infiltration == self.percent_inflam_infiltration
-                        assert row.percent_lymphocyte_infiltration == self.percent_lymphocyte_infiltration
-                        assert row.percent_monocyte_infiltration == self.percent_monocyte_infiltration
+                        assert (
+                            row.number_proliferating_cells
+                            == self.number_proliferating_cells
+                        )
+                        assert (
+                            row.percent_eosinophil_infiltration
+                            == self.percent_eosinophil_infiltration
+                        )
+                        assert (
+                            row.percent_follicular_component
+                            == self.percent_follicular_component
+                        )
+                        assert (
+                            row.percent_granulocyte_infiltration
+                            == self.percent_granulocyte_infiltration
+                        )
+                        assert (
+                            row.percent_inflam_infiltration
+                            == self.percent_inflam_infiltration
+                        )
+                        assert (
+                            row.percent_lymphocyte_infiltration
+                            == self.percent_lymphocyte_infiltration
+                        )
+                        assert (
+                            row.percent_monocyte_infiltration
+                            == self.percent_monocyte_infiltration
+                        )
                         assert row.percent_necrosis == self.percent_necrosis
-                        assert row.percent_neutrophil_infiltration == self.percent_neutrophil_infiltration
+                        assert (
+                            row.percent_neutrophil_infiltration
+                            == self.percent_neutrophil_infiltration
+                        )
                         assert row.percent_normal_cells == self.percent_normal_cells
-                        assert row.percent_rhabdoid_features == self.percent_rhabdoid_features
-                        assert row.percent_sarcomatoid_features == self.percent_sarcomatoid_features
+                        assert (
+                            row.percent_rhabdoid_features
+                            == self.percent_rhabdoid_features
+                        )
+                        assert (
+                            row.percent_sarcomatoid_features
+                            == self.percent_sarcomatoid_features
+                        )
                         assert row.percent_stromal_cells == self.percent_stromal_cells
                         assert row.percent_tumor_cells == self.percent_tumor_cells
                         assert row.percent_tumor_nuclei == self.percent_tumor_nuclei
-                        assert row.prostatic_chips_positive_count == self.prostatic_chips_positive_count
-                        assert row.prostatic_chips_total_count == self.prostatic_chips_total_count
-                        assert row.prostatic_involvement_percent == self.prostatic_involvement_percent
+                        assert (
+                            row.prostatic_chips_positive_count
+                            == self.prostatic_chips_positive_count
+                        )
+                        assert (
+                            row.prostatic_chips_total_count
+                            == self.prostatic_chips_total_count
+                        )
+                        assert (
+                            row.prostatic_involvement_percent
+                            == self.prostatic_involvement_percent
+                        )
                         assert row.section_location == self.section_location
                         assert row.slide_id == self.slide_id
                         assert row.state == self.state
                         assert row.submitter_id == self.submitter_id
-                        assert row.tissue_microarray_coordinates == self.tissue_microarray_coordinates
+                        assert (
+                            row.tissue_microarray_coordinates
+                            == self.tissue_microarray_coordinates
+                        )
                         assert row.updated_datetime == self.updated_datetime
-                        assert all(e.assert_equals(r) for r, e in zip(row.annotations or (), self.annotations or ()))
+                        assert all(
+                            e.assert_equals(r)
+                            for r, e in zip(
+                                row.annotations or (), self.annotations or ()
+                            )
+                        )
 
                         return True
 
@@ -452,13 +598,21 @@ class Hit:
                     assert row.submitter_id == self.submitter_id
                     assert row.updated_datetime == self.updated_datetime
                     assert row.weight == self.weight
-                    assert (
-                        (row.center is None and self.center is None) 
-                        or (self.center and self.center.assert_equals(row.center))
+                    assert (row.center is None and self.center is None) or (
+                        self.center and self.center.assert_equals(row.center)
                     )
-                    assert all(e.assert_equals(r) for r, e in zip(row.analytes or (), self.analytes or ()))
-                    assert all(e.assert_equals(r) for r, e in zip(row.annotations or (), self.annotations or ()))
-                    assert all(e.assert_equals(r) for r, e in zip(row.slides or (), self.slides or ()))
+                    assert all(
+                        e.assert_equals(r)
+                        for r, e in zip(row.analytes or (), self.analytes or ())
+                    )
+                    assert all(
+                        e.assert_equals(r)
+                        for r, e in zip(row.annotations or (), self.annotations or ())
+                    )
+                    assert all(
+                        e.assert_equals(r)
+                        for r, e in zip(row.slides or (), self.slides or ())
+                    )
 
                     return True
 
@@ -483,7 +637,9 @@ class Hit:
             method_of_sample_procurement: Optional[str] = None
             oct_embedded: Optional[str] = "true"
             passage_count: Optional[int] = None
-            pathology_report_uuid: Optional[str] = "57323AE5-3EFE-4492-8522-D9A6DB3F1BE0"
+            pathology_report_uuid: Optional[
+                str
+            ] = "57323AE5-3EFE-4492-8522-D9A6DB3F1BE0"
             portions: Optional[tuple[Portion, ...]] = (Portion(),)
             preservation_method: Optional[str] = "FFPE"
             sample_id: Optional[str] = "sample-0"
@@ -491,6 +647,7 @@ class Hit:
             sample_type: Optional[str] = "Primary Tumor"
             sample_type_id: Optional[str] = "01"
             shortest_dimension: Optional[float] = None
+            specimen_type: Optional[str] = "Unknown"
             state: Optional[str] = "released"
             submitter_id: Optional[str] = "sub-generic-0"
             time_between_clamping_and_freezing: Optional[float] = None
@@ -512,7 +669,10 @@ class Hit:
                 assert row.current_weight == self.current_weight
                 assert row.days_to_collection == self.days_to_collection
                 assert row.days_to_sample_procurement == self.days_to_sample_procurement
-                assert row.diagnosis_pathologically_confirmed == self.diagnosis_pathologically_confirmed
+                assert (
+                    row.diagnosis_pathologically_confirmed
+                    == self.diagnosis_pathologically_confirmed
+                )
                 assert row.distance_normal_to_tumor == self.distance_normal_to_tumor
                 assert row.distributor_reference == self.distributor_reference
                 assert row.freezing_method == self.freezing_method
@@ -521,7 +681,10 @@ class Hit:
                 assert row.intermediate_dimension == self.intermediate_dimension
                 assert row.is_ffpe == self.is_ffpe
                 assert row.longest_dimension == self.longest_dimension
-                assert row.method_of_sample_procurement == self.method_of_sample_procurement
+                assert (
+                    row.method_of_sample_procurement
+                    == self.method_of_sample_procurement
+                )
                 assert row.oct_embedded == self.oct_embedded
                 assert row.passage_count == self.passage_count
                 assert row.pathology_report_uuid == self.pathology_report_uuid
@@ -531,18 +694,31 @@ class Hit:
                 assert row.sample_type == self.sample_type
                 assert row.sample_type_id == self.sample_type_id
                 assert row.shortest_dimension == self.shortest_dimension
+                assert row.specimen_type == self.specimen_type
                 assert row.state == self.state
                 assert row.submitter_id == self.submitter_id
-                assert row.time_between_clamping_and_freezing == self.time_between_clamping_and_freezing
-                assert row.time_between_excision_and_freezing == self.time_between_excision_and_freezing
+                assert (
+                    row.time_between_clamping_and_freezing
+                    == self.time_between_clamping_and_freezing
+                )
+                assert (
+                    row.time_between_excision_and_freezing
+                    == self.time_between_excision_and_freezing
+                )
                 assert row.tissue_collection_type == self.tissue_collection_type
                 assert row.tissue_type == self.tissue_type
                 assert row.tumor_code == self.tumor_code
                 assert row.tumor_code_id == self.tumor_code_id
                 assert row.tumor_descriptor == self.tumor_descriptor
                 assert row.updated_datetime == self.updated_datetime
-                assert all(e.assert_equals(r) for r, e in zip(row.annotations or (), self.annotations or ()))
-                assert all(e.assert_equals(r) for r, e in zip(row.portions or (), self.portions or ()))
+                assert all(
+                    e.assert_equals(r)
+                    for r, e in zip(row.annotations or (), self.annotations or ())
+                )
+                assert all(
+                    e.assert_equals(r)
+                    for r, e in zip(row.portions or (), self.portions or ())
+                )
 
                 return True
 
@@ -552,7 +728,10 @@ class Hit:
         def assert_equals(self, row: sql.Row) -> bool:
             assert row
             assert row.case_id == self.case_id
-            assert all(e.assert_equals(r) for r, e in zip(row.samples or (), self.samples or ()))
+            assert all(
+                e.assert_equals(r)
+                for r, e in zip(row.samples or (), self.samples or ())
+            )
 
             return True
 
@@ -562,10 +741,8 @@ class Hit:
     def assert_equals(self, row: sql.Row) -> bool:
         assert row
         assert row._id == self._id
-        assert (
-            (row._source is None and self._source is None) 
-            or (self._source and self._source.assert_equals(row._source))
+        assert (row._source is None and self._source is None) or (
+            self._source and self._source.assert_equals(row._source)
         )
 
         return True
-

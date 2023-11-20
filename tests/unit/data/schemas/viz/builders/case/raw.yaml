@@ -411,7 +411,15 @@ fields:
       elementType:
         fields:
           - <<: *string_field
+            name: preservation_method
+          - <<: *string_field
             name: sample_type
+          - <<: *string_field
+            name: specimen_type
+          - <<: *string_field
+            name: tissue_type
+          - <<: *string_field
+            name: tumor_descriptor
         type: struct
       type: array
   - <<: *string_field
