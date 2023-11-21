@@ -26,7 +26,7 @@ setup(
         "marshmallow-dataclass~=8.5",
         "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
-        "pyspark==3.3.1",
+        "pyspark~=3.3.1",
         "python-json-logger~=2.0",
         # `setuptools` is required for references to `pkg_resources` in mutation
         # indexer itself and in normalizer/gdc-models.
@@ -34,8 +34,8 @@ setup(
         "toml~=0.10",
         "typing-extensions~=4.1",
         "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2",
-        "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.1.2",
-        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.3",
+        "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@feat/dev-2195-fix-pyyaml-version",
+        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@feat/dev-2195-update-gdc-models",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
 )
