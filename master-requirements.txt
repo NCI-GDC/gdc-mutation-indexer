@@ -4,7 +4,7 @@
 #
 #    pip-compile master-requirements.in
 #
-colorama==0.4.5
+colorama==0.4.6
     # via
     #   halo
     #   log-symbols
@@ -12,11 +12,11 @@ halo==0.0.31
     # via -r master-requirements.in
 log-symbols==0.0.14
     # via halo
-pex==2.1.94
+pex==2.1.153
     # via -r master-requirements.in
-six==1.15.0
+six==1.16.0
     # via halo
 spinners==0.0.24
     # via halo
-termcolor==1.1.0
+termcolor==2.3.0
     # via halo
