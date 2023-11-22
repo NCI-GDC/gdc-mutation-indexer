@@ -38,4 +38,15 @@ setup(
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.4",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
+    extras_require={
+        "dev": (
+            "click~=8.1",
+            "coverage[toml]~=7.0",
+            "deepdiff~=6.0",
+            "pre-commit==1.21.0",
+            "pytest~=7.0",
+            "pytest-cov~=4.0",
+        ),
+        "master": ("halo~=0.0", "pex~=2.1"),
+    },
 )
