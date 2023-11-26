@@ -14,6 +14,7 @@ def test__get_viz_builders__all_builders() -> None:
     assert generic_builders.keys() == frozenset(
         (
             build.DataFrame.ASCAT,
+            build.DataFrame.ASCAT_METADATA,
             build.DataFrame.CASE,
             build.DataFrame.CIVIC_DNA,
             build.DataFrame.CIVIC_PROTEIN,
@@ -24,6 +25,9 @@ def test__get_viz_builders__all_builders() -> None:
         )
     )
     assert isinstance(generic_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
+    assert isinstance(
+        generic_builders[build.DataFrame.ASCAT_METADATA], builders.ASCATMetadataBuilder
+    )
     assert isinstance(generic_builders[build.DataFrame.CASE], builders.CaseBuilder)
     assert isinstance(generic_builders[build.DataFrame.CIVIC_DNA], civic.DNABuilder)
     assert isinstance(

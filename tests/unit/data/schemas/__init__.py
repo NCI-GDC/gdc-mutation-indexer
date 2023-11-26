@@ -64,7 +64,6 @@ class Viz:
         class ASCAT:
             FINAL: Schema
             DOCUMENT: Schema
-            FILE: Schema
 
         @_init_schemas
         class ASCATMetadata:
