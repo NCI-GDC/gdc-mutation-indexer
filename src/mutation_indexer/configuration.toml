@@ -93,8 +93,8 @@ path = ""
 
 [builders.viz.civic_dna]
 is_cached = false
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_dna.tsv"
+package = "mutation_indexer_resource.annotation.civic"
+resource = "dna.tsv.gz"
 schema = "builders/civic/dna.yaml"
 
 [builders.viz.civic_dna.backup]
@@ -103,8 +103,8 @@ path = ""
 
 [builders.viz.civic_protein]
 is_cached = false
-package = "clinical_variant_annotation"
-resource = "civic/civic_gdcmaf_mapping_prot.tsv"
+package = "mutation_indexer_resource.annotation.civic"
+resource = "prot.tsv.gz"
 schema = "builders/civic/protein.yaml"
 
 [builders.viz.civic_protein.backup]

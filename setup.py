@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="gdc-mutation-indexer",
-    url='https://github.com/NCI-GDC/gdc-mutation-indexer',
+    url="https://github.com/NCI-GDC/gdc-mutation-indexer",
     author="NCI GDC",
     author_email="gdc_dev_questions-aaaaae2lhsbell56tlvh3upgoq@cdis.slack.com",
     use_scm_version={
@@ -26,16 +26,27 @@ setup(
         "marshmallow-dataclass~=8.5",
         "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
-        "pyspark==3.3.1",
+        "pyspark~=3.3.1",
         "python-json-logger~=2.0",
         # `setuptools` is required for references to `pkg_resources` in mutation
         # indexer itself and in normalizer/gdc-models.
         "setuptools",
         "toml~=0.10",
         "typing-extensions~=4.1",
-        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2#egg=indexclient",
-        "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.0.0#egg=gdcmodels",
-        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.0#egg=normalizer",
-        "mutationindexerresource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@civic_annot#egg=mutationindexerresource",
+        "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2",
+        "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.1.3",
+        "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.4",
+        "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
+    extras_require={
+        "dev": (
+            "click~=8.1",
+            "coverage[toml]~=7.0",
+            "deepdiff~=6.0",
+            "pre-commit==1.21.0",
+            "pytest~=7.0",
+            "pytest-cov~=4.0",
+        ),
+        "master": ("halo~=0.0", "pex~=2.1"),
+    },
 )

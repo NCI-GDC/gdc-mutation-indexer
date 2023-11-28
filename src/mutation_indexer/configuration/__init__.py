@@ -91,7 +91,7 @@ class Configuration:
         return data
 
 
-CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="EXCLUDE")
+CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="exclude")
 OBFUSCATED_CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(
     context={"is_obfuscated": True}
 )

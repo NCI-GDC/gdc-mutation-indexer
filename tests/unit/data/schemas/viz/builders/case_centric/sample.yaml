@@ -273,6 +273,8 @@ fields:
                 - <<: *double_field
                   name: shortest_dimension
                 - <<: *string_field
+                  name: specimen_type
+                - <<: *string_field
                   name: submitter_id
                 - <<: *double_field
                   name: time_between_clamping_and_freezing
