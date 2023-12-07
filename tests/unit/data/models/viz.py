@@ -39,7 +39,7 @@ class ASCAT:
     gene_start: Optional[int] = 11869
     gene_strand: Optional[int] = 1
     hgnc: Optional[tuple[str, ...]] = ("HGNC:37102",)
-    is_cancer_gene_census: Optional[str] = "true"
+    is_cancer_gene_census: Optional[bool] = True
     name: Optional[str] = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
     ncbi_build: Optional[str] = "GRCh38"
     observation_id: Optional[str] = "b1627f65-d28b-568c-9f76-1a24bd4fe82d"
@@ -108,7 +108,7 @@ class MAF:
     hgvsc: str = "c.1705G>T"
     hgvsp: str = "p.Ala569Ser"
     hgvsp_short: str = "p.A569S"
-    is_cancer_gene_census: str = "true"
+    is_cancer_gene_census: bool = True
     is_canonical: Optional[bool] = None
     match_norm_seq_allele1: Optional[str] = None
     match_norm_seq_allele2: Optional[str] = None
@@ -303,7 +303,7 @@ class SSMConsequence:
                 gene_id: Optional[str] = "ENSG00000238009"
                 gene_start: Optional[int] = 11869
                 gene_strand: Optional[int] = 1
-                is_cancer_gene_census: Optional[str] = "true"
+                is_cancer_gene_census: Optional[bool] = True
                 symbol: Optional[str] = "CSMD2"
                 synonyms: Optional[tuple[str, ...]] = ()
 
@@ -333,7 +333,7 @@ class CNVConsequence:
         class Gene:
             biotype: Optional[str] = "transcribed_unprocessed_pseudogene"
             gene_id: Optional[str] = "ENSG00000238009"
-            is_cancer_gene_census: Optional[str] = "true"
+            is_cancer_gene_census: Optional[bool] = True
             symbol: Optional[str] = "CSMD2"
 
         consequence_id: Optional[str] = "cons-0"

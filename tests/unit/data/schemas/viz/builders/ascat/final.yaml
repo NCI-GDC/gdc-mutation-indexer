@@ -1,228 +1,229 @@
+---
 fields:
-- metadata: {}
-  name: _id
-  nullable: true
-  type:
-    fields:
-    - &string_field
-      metadata: {}
-      name: $oid
-      nullable: true
-      type: string
-    type: struct
-- <<: *string_field
-  name: aliquot_id
-- metadata: {}
-  name: available_variation_data
-  nullable: false
-  type: string
-- <<: *string_field
-  name: biotype
-- <<: *string_field
-  name: canonical_transcript_id
-- &long_field
-  metadata: {}
-  name: canonical_transcript_length
-  nullable: true
-  type: long
-- <<: *long_field
-  name: canonical_transcript_length_cds
-- <<: *long_field
-  name: canonical_transcript_length_genomic
-- <<: *string_field
-  name: case_id
-- <<: *string_field
-  name: chromosome
-- <<: *string_field
-  name: cnv_change
-- <<: *string_field
-  name: cnv_id
-- <<: *string_field
-  name: consequence_id
-- metadata: {}
-  name: cytoband
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- <<: *string_field
-  name: description
-- <<: *long_field
-  name: end_position
-- metadata: {}
-  name: entrez_gene
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- <<: *string_field
-  name: gene_chromosome
-- <<: *long_field
-  name: gene_end
-- <<: *string_field
-  name: gene_id
-- metadata: {}
-  name: gene_level_cn
-  nullable: false
-  type: boolean
-- <<: *long_field
-  name: gene_start
-- <<: *long_field
-  name: gene_strand
-- metadata: {}
-  name: hgnc
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- <<: *string_field
-  name: is_cancer_gene_census
-- <<: *string_field
-  name: name
-- metadata: {}
-  name: ncbi_build
-  nullable: false
-  type: string
-- <<: *string_field
-  name: observation_id
-- <<: *string_field
-  name: occurrence_id
-- metadata: {}
-  name: omim_gene
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- <<: *long_field
-  name: start_position
-- <<: *string_field
-  name: symbol
-- metadata: {}
-  name: synonyms
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- metadata: {}
-  name: transcripts
-  nullable: true
-  type:
-    containsNull: true
-    elementType:
+  - metadata: {}
+    name: _id
+    nullable: true
+    type:
       fields:
-      - <<: *string_field
-        name: biotype
-      - <<: *long_field
-        name: cdna_coding_end
-      - <<: *long_field
-        name: cdna_coding_start
-      - <<: *long_field
-        name: coding_region_end
-      - <<: *long_field
-        name: coding_region_start
-      - metadata: {}
-        name: domains
-        nullable: true
-        type:
-          containsNull: true
-          elementType:
-            fields:
-            - <<: *string_field
-              name: description
-            - <<: *long_field
-              name: end
-            - <<: *string_field
-              name: gff_source
-            - <<: *string_field
-              name: hit_name
-            - <<: *string_field
-              name: interpro_id
-            - <<: *long_field
-              name: start
-            type: struct
-          type: array
-      - <<: *long_field
-        name: end
-      - <<: *long_field
-        name: end_exon
-      - metadata: {}
-        name: exons
-        nullable: true
-        type:
-          containsNull: true
-          elementType:
-            fields:
-            - <<: *long_field
-              name: cdna_coding_end
-            - <<: *long_field
-              name: cdna_coding_start
-            - <<: *long_field
-              name: cdna_end
-            - <<: *long_field
-              name: cdna_start
-            - <<: *long_field
-              name: end
-            - <<: *long_field
-              name: end_phase
-            - <<: *long_field
-              name: genomic_coding_end
-            - <<: *long_field
-              name: genomic_coding_stairt
-            - <<: *long_field
-              name: genomic_coding_start
-            - <<: *long_field
-              name: start
-            - <<: *long_field
-              name: start_phase
-            type: struct
-          type: array
-      - <<: *string_field
-        name: transcript_id
-      - &boolean_field
-        metadata: {}
-        name: is_canonical
-        nullable: true
-        type: boolean
-      - <<: *long_field
-        name: length
-      - <<: *long_field
-        name: length_amino_acid
-      - <<: *long_field
-        name: length_cds
-      - <<: *string_field
-        name: name
-      - <<: *long_field
-        name: number_of_exons
-      - <<: *long_field
-        name: seq_exon_end
-      - <<: *long_field
-        name: seq_exon_start
-      - <<: *long_field
-        name: start
-      - <<: *long_field
-        name: start_exon
-      - <<: *string_field
-        name: translation_id
+        - &string_field
+          metadata: {}
+          name: $oid
+          nullable: true
+          type: string
       type: struct
-    type: array
-- metadata: {}
-  name: uniprotkb_swissprot
-  nullable: true
-  type:
-    containsNull: true
-    elementType: string
-    type: array
-- metadata: {}
-  name: variant_caller
-  nullable: false
-  type: string
-- metadata: {}
-  name: variant_status
-  nullable: false
-  type: string
+  - <<: *string_field
+    name: aliquot_id
+  - metadata: {}
+    name: available_variation_data
+    nullable: false
+    type: string
+  - <<: *string_field
+    name: biotype
+  - <<: *string_field
+    name: canonical_transcript_id
+  - &long_field
+    metadata: {}
+    name: canonical_transcript_length
+    nullable: true
+    type: long
+  - <<: *long_field
+    name: canonical_transcript_length_cds
+  - <<: *long_field
+    name: canonical_transcript_length_genomic
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: chromosome
+  - <<: *string_field
+    name: cnv_change
+  - <<: *string_field
+    name: cnv_id
+  - <<: *string_field
+    name: consequence_id
+  - metadata: {}
+    name: cytoband
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: description
+  - <<: *long_field
+    name: end_position
+  - metadata: {}
+    name: entrez_gene
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: gene_chromosome
+  - <<: *long_field
+    name: gene_end
+  - <<: *string_field
+    name: gene_id
+  - metadata: {}
+    name: gene_level_cn
+    nullable: false
+    type: boolean
+  - <<: *long_field
+    name: gene_start
+  - <<: *long_field
+    name: gene_strand
+  - metadata: {}
+    name: hgnc
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - &boolean_field
+    metadata: {}
+    name: is_cancer_gene_census
+    nullable: true
+    type: boolean
+  - <<: *string_field
+    name: name
+  - metadata: {}
+    name: ncbi_build
+    nullable: false
+    type: string
+  - <<: *string_field
+    name: observation_id
+  - <<: *string_field
+    name: occurrence_id
+  - metadata: {}
+    name: omim_gene
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *long_field
+    name: start_position
+  - <<: *string_field
+    name: symbol
+  - metadata: {}
+    name: synonyms
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: transcripts
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *string_field
+            name: biotype
+          - <<: *long_field
+            name: cdna_coding_end
+          - <<: *long_field
+            name: cdna_coding_start
+          - <<: *long_field
+            name: coding_region_end
+          - <<: *long_field
+            name: coding_region_start
+          - metadata: {}
+            name: domains
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: description
+                  - <<: *long_field
+                    name: end
+                  - <<: *string_field
+                    name: gff_source
+                  - <<: *string_field
+                    name: hit_name
+                  - <<: *string_field
+                    name: interpro_id
+                  - <<: *long_field
+                    name: start
+                type: struct
+              type: array
+          - <<: *long_field
+            name: end
+          - <<: *long_field
+            name: end_exon
+          - metadata: {}
+            name: exons
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *long_field
+                    name: cdna_coding_end
+                  - <<: *long_field
+                    name: cdna_coding_start
+                  - <<: *long_field
+                    name: cdna_end
+                  - <<: *long_field
+                    name: cdna_start
+                  - <<: *long_field
+                    name: end
+                  - <<: *long_field
+                    name: end_phase
+                  - <<: *long_field
+                    name: genomic_coding_end
+                  - <<: *long_field
+                    name: genomic_coding_stairt
+                  - <<: *long_field
+                    name: genomic_coding_start
+                  - <<: *long_field
+                    name: start
+                  - <<: *long_field
+                    name: start_phase
+                type: struct
+              type: array
+          - <<: *string_field
+            name: transcript_id
+          - <<: *boolean_field
+            name: is_canonical
+          - <<: *long_field
+            name: length
+          - <<: *long_field
+            name: length_amino_acid
+          - <<: *long_field
+            name: length_cds
+          - <<: *string_field
+            name: name
+          - <<: *long_field
+            name: number_of_exons
+          - <<: *long_field
+            name: seq_exon_end
+          - <<: *long_field
+            name: seq_exon_start
+          - <<: *long_field
+            name: start
+          - <<: *long_field
+            name: start_exon
+          - <<: *string_field
+            name: translation_id
+        type: struct
+      type: array
+  - metadata: {}
+    name: uniprotkb_swissprot
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: variant_caller
+    nullable: false
+    type: string
+  - metadata: {}
+    name: variant_status
+    nullable: false
+    type: string
 type: struct

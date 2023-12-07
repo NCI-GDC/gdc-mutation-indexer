@@ -234,7 +234,6 @@ class TestGeneModelBuilder:
         for row_transcript, model_transcript in zip(
             result_row.transcripts, gene_model.transcripts
         ):
-
             assert row_transcript.transcript_id == model_transcript.id
             assert row_transcript.biotype == model_transcript.biotype
             assert row_transcript.cdna_coding_end == model_transcript.cdna_coding_end
@@ -312,10 +311,17 @@ class TestGeneModelBuilder:
 
         assert result_row.cytoband == [cytobands]
 
-    def test__build__is_cancer_gene_census_lowwered(self) -> None:
-        builder = self._arrange_builder((Cytoband(),), (Census(),), (GeneModel(),))
+    @pytest.mark.parametrize("is_cancer_gene_census", (True, False))
+    def test__build__is_cancer_gene_census_is_boolean(
+        self, is_cancer_gene_census: bool
+    ) -> None:
+        builder = self._arrange_builder(
+            (Cytoband(),),
+            (Census(is_cancer_gene_census=str(is_cancer_gene_census)),),
+            (GeneModel(),),
+        )
 
         result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
-        assert result_row.is_cancer_gene_census == "true"
+        assert result_row.is_cancer_gene_census is is_cancer_gene_census

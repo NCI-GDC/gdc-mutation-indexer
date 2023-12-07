@@ -1,6 +1,76 @@
+---
 repos:
--   repo: git@github.com:Yelp/detect-secrets
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: fix-encoding-pragma
+        args: [--remove]
+      - id: no-commit-to-branch
+        args: [--branch, develop, --branch, master, --pattern, release/.*]
+      - id: pretty-format-json
+        args: [--autofix]
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+  - repo: https://github.com/psf/black
+    rev: 23.10.1
+    hooks:
+      - id: black
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: [--profile, black]
+      - id: isort
+        name: isort (cython)
+        types: [cython]
+        args: [--profile, black]
+      - id: isort
+        name: isort (pyi)
+        types: [pyi]
+        args: [--profile, black]
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        args: [convention=google, --add-ignore, 'D100,D101,D102,D103,D104,D105,D106,D107']
+        exclude: ^(tests|unit_tests)/
+  - repo: local # include pylint in dev-requirements.in
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [--skip, 'B101,B303,B404,B603', --exclude, tests]
+      # if a .bandit-baseline exists in repo
+      # - id: bandit
+      #   args: [--skip, "B101,B303,B404,B603", --exclude, tests, -b, .bandit-baseline]
+  - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+    rev: 0.2.3
+    hooks:
+      - id: yamlfmt
+        args: [--mapping, '2', --sequence, '4', --offset, '2', --width, '80']
+  - repo: https://github.com/pappasam/toml-sort
+    rev: v0.23.1
+    hooks:
+      - id: toml-sort
+        args: [--in-place]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+  # detect secrets should be last, otherwise hooks that rewrite files will require detect-secrets to run again.
+  - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
     hooks:
-    -   id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]

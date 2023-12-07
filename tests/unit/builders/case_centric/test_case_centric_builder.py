@@ -164,7 +164,10 @@ class TestCaseCentricBuilder:
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
-            map(lambda c: (c._id, dataclasses.asdict(c._source)), cases,)
+            map(
+                lambda c: (c._id, dataclasses.asdict(c._source)),
+                cases,
+            )
         )
         rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
         rdd_util.get_rdd.return_value = rdd
@@ -351,11 +354,11 @@ class TestCaseCentricBuilder:
     @pytest.mark.parametrize(
         ("gene_id", "biotype", "symbol", "is_cancer_gene_census", "expected_count"),
         (
-            ("gene-1", "b-0", "sym-0", "true", 2),
-            ("gene-0", "b-1", "sym-0", "true", 2),
-            ("gene-0", "b-0", "sym-1", "true", 2),
-            ("gene-0", "b-0", "sym-0", "false", 2),
-            ("gene-0", "b-0", "sym-0", "true", 1),
+            ("gene-1", "b-0", "sym-0", True, 2),
+            ("gene-0", "b-1", "sym-0", True, 2),
+            ("gene-0", "b-0", "sym-1", True, 2),
+            ("gene-0", "b-0", "sym-0", False, 2),
+            ("gene-0", "b-0", "sym-0", True, 1),
         ),
         ids=(
             "distinct_id",
@@ -370,7 +373,7 @@ class TestCaseCentricBuilder:
         gene_id: str,
         biotype: str,
         symbol: str,
-        is_cancer_gene_census: str,
+        is_cancer_gene_census: bool,
         expected_count: int,
     ) -> None:
         raw_maf = models.MAF(
@@ -383,7 +386,7 @@ class TestCaseCentricBuilder:
             gene_id="gene-0",
             biotype="b-0",
             symbol="sym-0",
-            is_cancer_gene_census="true",
+            is_cancer_gene_census=True,
         )
 
         config = self.arrange_config()
@@ -507,7 +510,7 @@ class TestCaseCentricBuilder:
             gene_id="g-0",
             biotype="b-0",
             symbol="s-0",
-            is_cancer_gene_census="true",
+            is_cancer_gene_census=True,
             case_id="case-0",
         )
         ssm_observation = ssm.Observations(case_id="case-0")
@@ -515,7 +518,7 @@ class TestCaseCentricBuilder:
             gene_id="g-0",
             biotype="b-0",
             symbol="s-0",
-            is_cancer_gene_census="true",
+            is_cancer_gene_census=True,
             case_id="case-0",
         )
         cnv_observation = cnv.Observations(case_id="case-0")
