@@ -27,10 +27,11 @@ class PrimaryAliquotBuilder(
     ) -> None:
         """
         Args:
-            config: The app configuration object
-            sql_context: The sql context object for the current pyspark run
-            es_dataframe_util: The util for creating dataframes from data in elasticsearch
-            es_rdd_util: The util for creating RDD objects from data in elasticsearch
+            config: The app configuration object.
+            sql_context: The sql context object for the current pyspark run.
+            es_dataframe_util: The util for creating dataframes from data in
+                elasticsearch.
+            es_rdd_util: The util for creating RDD objects from data in elasticsearch.
         """
         super().__init__(
             config,

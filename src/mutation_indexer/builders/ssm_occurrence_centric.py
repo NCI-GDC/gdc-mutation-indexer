@@ -4,15 +4,19 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
-from mutation_indexer import builders
-from mutation_indexer.builders import df_builders
+from mutation_indexer.builders import (
+    base_builder,
+    consequence,
+    df_builders,
+    observation,
+)
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app
 
 logging.basicConfig(format=app.LOG_FORMAT)
 
 
-class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
+class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
     """
     Builds ssm-occurrence-centric dataframe given case and maf dataframes::
 
@@ -33,8 +37,8 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self,
         config: adapter.ObsoleteConfig,
         sqlContext: sql.SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 
@@ -82,7 +86,9 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
     def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = self.consequence_builder.build_for_ssm(
-            maf_df, self.index_name, join_gene=True,
+            maf_df,
+            self.index_name,
+            join_gene=True,
         )
 
         # SSM
@@ -111,7 +117,9 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self.log("Building case subtree")
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name,
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
         )
 
         self.log("Join observation with case")

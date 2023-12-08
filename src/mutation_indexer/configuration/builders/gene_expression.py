@@ -8,8 +8,8 @@ import dataclasses
 # gene_expression module
 from mutation_indexer.configuration.builders.common import (
     Builder,
-    IndexBuilder,
     GeneModelBuilder,
+    IndexBuilder,
 )
 
 
@@ -18,6 +18,7 @@ class GeneExpression:
     """
     Configuration values for running the exprot the gene expression indices
     """
+
     gene_model: GeneModelBuilder
     case: Builder
     expression_value: Builder

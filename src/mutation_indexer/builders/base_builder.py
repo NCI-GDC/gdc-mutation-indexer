@@ -1,15 +1,16 @@
 import abc
 import copy
-import json
 import logging
+from typing import Any, Optional
 
-from normalizer.mapper import ModelMapper
+from normalizer import mapper
 from pyspark import sql
-from pyspark.sql.functions import col, size
+from pyspark.sql import utils as sql_utils
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 from typing_extensions import Self
 
 from mutation_indexer.builders import utils
+from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app
 
 logging.basicConfig(format=app.LOG_FORMAT)
@@ -69,21 +70,21 @@ def cast_booleans(df, mapping):
     return df.select(*select_expr)
 
 
-class BaseBuilder:
+class BaseBuilder(abc.ABC):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
 
-    __metaclass__ = abc.ABCMeta
+    index_name = ""
+    id_field = ""
+    settings = ""
 
-    index_name = None
-    id_field = None
-    settings = None
-
-    def __init__(self, config, sqlContext):
+    def __init__(
+        self, config: adapter.ObsoleteConfig, sql_context: sql.SQLContext
+    ) -> None:
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self.sql_context = sql_context
         self.debug = config.debug
 
     @abc.abstractmethod
@@ -101,24 +102,23 @@ class BaseBuilder:
         """
         index = self.config.indices[self.index_name]
 
-        index_mapper = ModelMapper(self.index_name)
+        index_mapper = mapper.ModelMapper(self.index_name)
         if self.config.skip_normalization:
             index_body = index_mapper.index_settings
         else:
             index_body = index_mapper.get_normalized_mappings()
-        index_body = json.dumps(index_body)
 
-        self.log("Creating {} index".format(index))
+        self.log(f"Creating {index} index")
         response = self.config.es.indices.create(index=index, body=index_body)
         self.log(response)
 
-        self.log("Repartitioning {}".format(self.index_name))
+        self.log(f"Repartitioning {self.index_name}")
         df = getattr(self, self.index_name).repartition(
             self.config.df_repartition, self.id_field
         )
 
         df = cast_booleans(df, index_mapper.mapping)
-        self.log("Exporting {} index to {}".format(self.index_name, index))
+        self.log(f"Exporting {self.index_name} index to {index}")
         df.coalesce(self.config.df_coalesce).write.format(
             "org.elasticsearch.spark.sql"
         ).option("es.nodes", self.config.es_nodes).option(
@@ -154,7 +154,7 @@ class BaseBuilder:
         ).save(
             index
         )
-        self.log("Finished exporting {} index to {}".format(self.index_name, index))
+        self.log(f"Finished exporting {self.index_name} index to {index}")
 
         df.unpersist()
 
@@ -172,7 +172,7 @@ class BaseBuilder:
             df_to_truncate, field, percentile_threshold
         )
 
-    def load_raw(self, path=None):
+    def load_raw(self, path: Optional[str] = None) -> Optional[sql.DataFrame]:
         """
         Loads the computed index's dataframe, if it exists, and return it,
         returns None it does not
@@ -180,11 +180,11 @@ class BaseBuilder:
         if path is None:
             path = self.config.get_raw_output_path(self.index_name)
         try:
-            self.logger.info("Using existing index from {}".format(path))
-            df = self.sqlContext.read.load(path)
+            self.logger.info("Using existing index from %s", path)
+            df = self.sql_context.read.load(path)
             return df
-        except Exception:
-            self.logger.info("Couldn't find file at {}".format(path))
+        except sql_utils.AnalysisException:
+            self.logger.info("Couldn't find file at %s", path)
             return None
 
     def write(self, path=None):
@@ -208,18 +208,18 @@ class BaseBuilder:
         else:
             df = df.repartition(self.config.df_repartition).write
             df = df.mode("overwrite")
-        self.logger.info("Saving {} to {}".format(self.index_name, path))
+        self.logger.info("Saving %s to %s", self.index_name, path)
         df.json(path)
 
-    def log(self, string):
+    def log(self, info: Any) -> None:
         """
         Handles Builder logging.
         """
-        self.logger.info(string)
+        self.logger.info(info)
 
-    def log_count(self, dataframe):
+    def log_count(self, dataframe: sql.DataFrame) -> None:
         """
         Logs dataframe count if in Debug mode
         """
         if self.debug:
-            self.log("Count: {}".format(dataframe.count()))
+            self.log(f"Count: {dataframe.count()}")

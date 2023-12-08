@@ -27,9 +27,9 @@ from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
 
-TConfig = TypeVar("TConfig", bound=common.Builder)
-TIndexConfig = TypeVar("TIndexConfig", bound=common.IndexBuilder)
-TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
+Config = TypeVar("Config", bound=common.Builder)
+IndexConfig = TypeVar("IndexConfig", bound=common.IndexBuilder)
+InputDFs = TypeVar("InputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +88,10 @@ class Builder(Protocol):
         pass
 
 
-class InputDataFrameManger(Generic[TInputDFs]):
+class InputDataFrameManger(Generic[InputDFs]):
     __slots__ = ("_required_dfs", "_required_params")
 
-    def __init__(self, input_type: type[TInputDFs]) -> None:
+    def __init__(self, input_type: type[InputDFs]) -> None:
         type_hints = get_type_hints(input_type)
 
         assert all(
@@ -110,7 +110,7 @@ class InputDataFrameManger(Generic[TInputDFs]):
         """
         return self._required_dfs
 
-    def check(self, inputs: Mapping[str, sql.DataFrame]) -> TypeGuard[TInputDFs]:
+    def check(self, inputs: Mapping[str, sql.DataFrame]) -> TypeGuard[InputDFs]:
         """
         Checks if all required keys for the input's TypedDict are present in the input
         mapping.
@@ -121,14 +121,14 @@ class InputDataFrameManger(Generic[TInputDFs]):
         return self._required_params <= inputs.keys()
 
 
-class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
+class InputBuilder(Builder, Generic[Config, InputDFs], abc.ABC):
     __slots__ = ("_config", "_spark_session", "_input_manager", "_output")
 
     def __init__(
         self,
-        config: TConfig,
+        config: Config,
         spark_session: sql.SparkSession,
-        input_type: type[TInputDFs],
+        input_type: type[InputDFs],
         output: build.DataFrame,
     ) -> None:
         self._config = config
@@ -145,7 +145,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         return self._input_manager.required_dataframes
 
     @abc.abstractmethod
-    def _build_from_scratch(self, input_dfs: TInputDFs) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: InputDFs) -> sql.DataFrame:
         """
         The functionality to build a new data frame from the required inputs.
 
@@ -165,7 +165,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         Returns:
             A data frame with data from the file at the configured backup path
         """
-        logger.info(f"Reading: {self.output.name}")
+        logger.info("Reading: %s", self.output.name)
 
         return self._spark_session.read.parquet(self._config.backup.path)
 
@@ -193,7 +193,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             configuration.
         """
         if self._config.backup.mode.is_write():
-            logger.info(f"Writing: {self.output.name}")
+            logger.info("Writing: %s", self.output.name)
             df.write.parquet(self._config.backup.path, mode="overwrite")
 
         if self._config.backup.mode == build.BackupMode.BOTH:
@@ -207,7 +207,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         df = self._read()
 
         if not df:
-            logger.info(f"Building: {self.output.name}")
+            logger.info("Building: %s", self.output.name)
 
             df = self._build_from_scratch(inputs)
 
@@ -266,17 +266,15 @@ def _add_required_include_fields(
     return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
-class PrimaryAliquotBuilder(
-    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
-):
+class PrimaryAliquotBuilder(Generic[Config, InputDFs], InputBuilder[Config, InputDFs]):
     __slots__ = ("_es_dataframe_util", "_additional_selections")
 
     def __init__(
         self,
-        config: TConfig,
+        config: Config,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
-        input_type: type[TInputDFs],
+        input_type: type[InputDFs],
         output: build.DataFrame,
         additional_selections: Iterable[str] = (),
     ) -> None:
@@ -390,9 +388,9 @@ class PrimaryAliquotBuilder(
     ) -> sql.DataFrame:
         """
         Args:
-            filters: The filters used to query es files with
-            include_fields: An optional field used to tell spark which fields to read from
-                spark. Use to include extra fields in the returned case mapping.
+            filters: The filters used to query es files with.
+            include_fields: An optional field used to tell spark which fields to read
+                from spark. Use to include extra fields in the returned case mapping.
 
         Returns:
             a dataframe with the file data associated with the most relevant sample for
@@ -494,7 +492,7 @@ def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
 
 
 class InclusivePrimaryAliquotBuilder(
-    Generic[TConfig, TInputDFs], PrimaryAliquotBuilder[TConfig, TInputDFs]
+    Generic[Config, InputDFs], PrimaryAliquotBuilder[Config, InputDFs]
 ):
     """
     This builder creates a primary aliquot dataframe which INCLUDES the aliquot data
@@ -505,11 +503,11 @@ class InclusivePrimaryAliquotBuilder(
 
     def __init__(
         self,
-        config: TConfig,
+        config: Config,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
-        input_type: type[TInputDFs],
+        input_type: type[InputDFs],
         output: build.DataFrame,
         additional_selections: Iterable[str] = (),
     ) -> None:
@@ -541,25 +539,18 @@ class InclusivePrimaryAliquotBuilder(
             |---aliquot_id
             +---aliquot_created_datetime
         """
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "nested": {
-                                "path": "cases.samples.portions.analytes.aliquots",
-                                "query": {
-                                    "exists": {
-                                        "field": "cases.samples.portions.analytes.aliquots"
-                                    }
-                                },
-                            }
-                        },
-                        *filters,
-                    ]
+        filters = (
+            {
+                "nested": {
+                    "path": "cases.samples.portions.analytes.aliquots",
+                    "query": {
+                        "exists": {"field": "cases.samples.portions.analytes.aliquots"}
+                    },
                 }
-            }
-        }
+            },
+            *filters,
+        )
+        query = {"query": {"bool": {"must": filters}}}
         included_fields = (
             "file_id",
             "cases.case_id",
@@ -570,18 +561,6 @@ class InclusivePrimaryAliquotBuilder(
         aliquot_data_schema = schemas.load_schema(
             "builders/primary_aliquot/aliquot_data.json"
         )
-
-        if self._config.projects:
-            project_clause = {
-                "nested": {
-                    "path": "cases",
-                    "query": {
-                        "terms": {"cases.project.project_id": self._config.projects}
-                    },
-                }
-            }
-
-            query["query"]["bool"]["must"].append(project_clause)
 
         aliquot_df = _expand_aliquots(
             self._es_rdd_util.get_rdd(
@@ -676,11 +655,11 @@ class InclusivePrimaryAliquotBuilder(
         )
 
 
-TResourceConfig = TypeVar("TResourceConfig", bound=common.ResourceBuilder)
+ResourceConfig = TypeVar("ResourceConfig", bound=common.ResourceBuilder)
 
 
 class ResourceBuilder(
-    Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs]
+    Generic[ResourceConfig, InputDFs], InputBuilder[ResourceConfig, InputDFs]
 ):
     def _schema(self) -> types.StructType:
         return schemas.load_schema(self._config.schema)
@@ -730,19 +709,22 @@ def _walk_schema(field: types.StructField, child_name: str) -> types.StructField
 
 
 class IndexBuilder(
-    Generic[TIndexConfig, TInputDFs], InputBuilder[TIndexConfig, TInputDFs], abc.ABC
+    Generic[IndexConfig, InputDFs], InputBuilder[IndexConfig, InputDFs], abc.ABC
 ):
-    """A builder base class for constructing data to be inserted into an elasticsearch index."""
+    """
+    A builder base class for constructing data to be inserted into an elasticsearch
+    index.
+    """
 
     __slots__ = ("_es_dataframe_util", "_mappings_loader", "_index_type", "_index_name")
 
     def __init__(
         self,
-        config: TIndexConfig,
+        config: IndexConfig,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,
-        input_type: type[TInputDFs],
+        input_type: type[InputDFs],
         output: build.DataFrame,
     ) -> None:
         super().__init__(config, spark_session, input_type, output)
@@ -804,7 +786,7 @@ class IndexBuilder(
         df = super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 
-        logger.info(f"Writing to ES: {self.output.name}")
+        logger.info("Writing to ES: %s", self.output.name)
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
         return df

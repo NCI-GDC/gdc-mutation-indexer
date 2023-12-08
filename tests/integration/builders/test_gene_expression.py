@@ -1,12 +1,12 @@
 import logging
 import pathlib
-from collections import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any, Optional
 from unittest import mock
 
 import elasticsearch
-from elasticsearch import helpers
 import pytest
+from elasticsearch import helpers
 from indexclient import client
 from pyspark import sql
 

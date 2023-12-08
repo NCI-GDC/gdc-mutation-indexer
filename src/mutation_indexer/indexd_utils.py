@@ -63,7 +63,9 @@ class DataFrameUtil:
         self._sql_context = sql_context
         self._logger = logger
 
-    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
+    def _get_doc_urls(
+        self, doc_ids: Iterable[str], batch_size: int
+    ) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
             self._indexd.bulk_request(list(dids)) or () for dids in batches
@@ -73,7 +75,7 @@ class DataFrameUtil:
             url = _get_and_format_url(doc)
 
             if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
+                self._logger.warning("File is missing: '%s'", doc.did)
 
             else:
                 yield DocumentUrl(doc.did, url)

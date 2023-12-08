@@ -16,11 +16,11 @@ class ObsoleteConfig:
     def __init__(
         self,
         config: configuration.Configuration,
-        elasticsearch: elasticsearch.Elasticsearch,
+        es_client: elasticsearch.Elasticsearch,
         indexd: client.IndexClient,
     ) -> None:
         self._config = config
-        self._elasticsearch = elasticsearch
+        self._elasticsearch = es_client
         self._indexd = indexd
 
         self.graph_case_doc_type = None
@@ -106,10 +106,14 @@ class ObsoleteConfig:
     def percentile_threshold(self) -> dict[str, int]:  # type: ignore
         return {
             "genes_per_case": self._config.builders.viz.case_centric.genes_threshold,
-            "occurrences_per_ssm": self._config.builders.viz.ssm_centric.occurrences_threshold,
+            "occurrences_per_ssm": (
+                self._config.builders.viz.ssm_centric.occurrences_threshold
+            ),
             "consequences_per_ssm": 100,
             "observations_per_ssm": 100,
-            "occurrences_per_cnv": self._config.builders.viz.cnv_centric.occurrences_threshold,
+            "occurrences_per_cnv": (
+                self._config.builders.viz.cnv_centric.occurrences_threshold
+            ),
         }
 
     @property
@@ -121,9 +125,13 @@ class ObsoleteConfig:
             "case_centric": self._config.builders.viz.case_centric.is_cached,
             "gene_centric": self._config.builders.viz.gene_centric.is_cached,
             "ssm_centric": self._config.builders.viz.ssm_centric.is_cached,
-            "ssm_occurrence_centric": self._config.builders.viz.ssm_occurrence_centric.is_cached,
+            "ssm_occurrence_centric": (
+                self._config.builders.viz.ssm_occurrence_centric.is_cached
+            ),
             "cnv_centric": self._config.builders.viz.cnv_centric.is_cached,
-            "cnv_occurrence_centric": self._config.builders.viz.cnv_occurrence_centric.is_cached,
+            "cnv_occurrence_centric": (
+                self._config.builders.viz.cnv_occurrence_centric.is_cached
+            ),
             "primary_aliquot": self._config.builders.viz.primary_aliquot.is_cached,
             "gene_model": self._config.builders.viz.gene_model.is_cached,
         }
@@ -158,9 +166,9 @@ class ObsoleteConfig:
 
     @property
     def gene_expression_values_backup(self) -> str:
-        return (
-            self._config.builders.gene_expression.expression_value.backup.mode.name.lower()
-        )
+        mode = self._config.builders.gene_expression.expression_value.backup.mode
+
+        return mode.name.lower()
 
     @property
     def gene_expression_cases_backup(self) -> str:
@@ -168,9 +176,9 @@ class ObsoleteConfig:
 
     @property
     def gene_expression_primary_aliquot_backup(self) -> str:
-        return (
-            self._config.builders.gene_expression.primary_aliquot.backup.mode.name.lower()
-        )
+        mode = self._config.builders.gene_expression.primary_aliquot.backup.mode
+
+        return mode.name.lower()
 
     @property
     def primary_aliquot_backup(self) -> str:
@@ -271,10 +279,16 @@ class ObsoleteConfig:
         paths = {
             "case_centric": self._config.builders.viz.case_centric.backup.path,
             "cnv_centirc": self._config.builders.viz.cnv_centric.backup.path,
-            "cnv_occurence_centric": self._config.builders.viz.cnv_occurrence_centric.backup.path,
+            "cnv_occurence_centric": (
+                self._config.builders.viz.cnv_occurrence_centric.backup.path
+            ),
             "ssm_centric": self._config.builders.viz.ssm_centric.backup.path,
-            "ssm_occurence_centric": self._config.builders.viz.ssm_occurrence_centric.backup.path,
-            "gene_expression": self._config.builders.gene_expression.gene_expression.backup.path,
+            "ssm_occurence_centric": (
+                self._config.builders.viz.ssm_occurrence_centric.backup.path
+            ),
+            "gene_expression": (
+                self._config.builders.gene_expression.gene_expression.backup.path
+            ),
         }
 
         return paths[index_name]

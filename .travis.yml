@@ -1,9 +1,10 @@
+---
 dist: bionic
 
 language: python
 
 python:
-  - "3.9"
+  - '3.9'
 
 addons:
   apt:
@@ -26,7 +27,8 @@ before_install:
   - export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
   - export PATH="${JAVA_HOME}/bin:${PATH}"
   - sudo rm -rf /var/lib/elasticsearch
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-amd64.deb
+    && sudo dpkg --force-confnew -i elasticsearch-${ES_VERSION}-amd64.deb
   - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size
   - sudo fallocate -l 5G /mnt/swap.file
   - sudo mkswap /mnt/swap.file

@@ -5,7 +5,6 @@ from pyspark.sql import functions as F
 
 from mutation_indexer.builders import df_builders, utils
 
-
 ALL_EFFECTS_KEYS = (
     "do_not_use",
     "consequence_type",
@@ -291,7 +290,8 @@ class ConsequenceBuilder:
         # Before exploding, let's save the transcript_id of the selected transcript
         ssm_transaction_df = _extract_transactions(maf_df)
 
-        # Clear the fields that we shouldn't copy from selected transcript (top level of maf_df)
+        # Clear the fields that we shouldn't copy from selected transcript (top level of
+        # maf_df)
         for field in NULL_NON_SELECTED_FIELDS:
             ssm_transaction_df = ssm_transaction_df.withColumn(
                 field,

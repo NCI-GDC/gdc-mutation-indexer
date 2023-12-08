@@ -56,12 +56,12 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
 
         # Join gene model with cytobands data:
         gene_df = gene_df.join(
-            cytobands_df, gene_df._gene_id == cytobands_df.ens_gene_id, "left"
+            cytobands_df, gene_df["_gene_id"] == cytobands_df["ens_gene_id"], "left"
         )
 
         # Join the result with cancer gene census data:
         gene_df = gene_df.join(
-            census_df, gene_df._gene_id == census_df.cancer_gene_id, "left"
+            census_df, gene_df["_gene_id"] == census_df["cancer_gene_id"], "left"
         )
 
         # Drop unnecessary columns

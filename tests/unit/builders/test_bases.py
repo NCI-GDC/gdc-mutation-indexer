@@ -138,7 +138,11 @@ class TestInputBuilder:
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
             super().__init__(
-                DummyInputs, output, config, spark_session, scratch_df,
+                DummyInputs,
+                output,
+                config,
+                spark_session,
+                scratch_df,
             )
 
     @pytest.mark.parametrize(
@@ -172,7 +176,9 @@ class TestInputBuilder:
         ),
     )
     def test__output(
-        self, builder: bases.InputBuilder, expected_output: build.DataFrame,
+        self,
+        builder: bases.InputBuilder,
+        expected_output: build.DataFrame,
     ) -> None:
         assert builder.output == expected_output
 
@@ -192,7 +198,9 @@ class TestInputBuilder:
         ids=("empty", "dummy"),
     )
     def test__build__all_inputs_given(
-        self, builder: bases.Builder, inputs: Mapping[str, sql.DataFrame],
+        self,
+        builder: bases.Builder,
+        inputs: Mapping[str, sql.DataFrame],
     ) -> None:
         result_df = builder.build(**inputs)
         result_rows = result_df.collect()

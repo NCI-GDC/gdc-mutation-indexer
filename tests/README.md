@@ -3,7 +3,7 @@ The test are run through the tox command which will handle the usual python requ
 as well as a few specific unique requirements such as jar files which need to be install
 in order to run the tests.
 
-The test are separated into unit and integration tests. Please limit adding new 
+The test are separated into unit and integration tests. Please limit adding new
 integration test to things which can *ONLY* be tested by integrating with elasticsearch,
 indexd, or other external services. Otherwise, mock any interfaces onto external
 services and use unit tests. It should be noted that even the unit tests do run a local

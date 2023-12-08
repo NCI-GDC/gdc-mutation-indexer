@@ -2,6 +2,7 @@ import contextlib
 import logging
 import types
 from collections.abc import Container, Iterator, Mapping
+from typing import cast
 
 import elasticsearch
 import toml
@@ -76,7 +77,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 
 
 def _get_viz_builders(
-    config: viz.Viz,
+    viz_config: viz.Viz,
     es_config: es_config.Elasticsearch,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
@@ -84,10 +85,6 @@ def _get_viz_builders(
     es_rdd_util: es_utils.RDDUtil,
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     case_field_selector: es_utils.CaseFieldSelector,
-    index_types: Container[build.IndexType],
-    mappings_loader: es_utils.MappingsLoader,
-    consequence_builder: builders.ConsequenceBuilder,
-    observation_builder: builders.ObservationBuilder,
 ) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the viz export process.
@@ -116,21 +113,24 @@ def _get_viz_builders(
 
     input_builders = (
         builders.ASCATMetadataBuilder(
-            config.ascat_metadata, spark_session, es_dataframe_util, es_rdd_util
+            viz_config.ascat_metadata, spark_session, es_dataframe_util, es_rdd_util
         ),
-        builders.ASCATBuilder(config.ascat, spark_session, doc_dataframe_util),
+        builders.ASCATBuilder(viz_config.ascat, spark_session, doc_dataframe_util),
         builders.CaseBuilder(
-            config.case, spark_session, es_dataframe_util, case_field_selector
+            viz_config.case, spark_session, es_dataframe_util, case_field_selector
         ),
-        civic.DNABuilder(config.civic_dna, spark_session),
-        civic.ProteinBuilder(config.civic_protein, spark_session),
-        builders.GeneModelBuilder(config.gene_model, spark_session),
-        builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
+        civic.DNABuilder(viz_config.civic_dna, spark_session),
+        civic.ProteinBuilder(viz_config.civic_protein, spark_session),
+        builders.GeneModelBuilder(viz_config.gene_model, spark_session),
+        builders.MAFBuilder(viz_config.maf, spark_session, doc_dataframe_util),
         builders.MAFMetadataBuilder(
-            config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory
+            viz_config.maf_metadata,
+            spark_session,
+            es_dataframe_util,
+            file_filter_factory,
         ),
         builders.PrimaryAliquotBuilder(
-            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+            viz_config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
         ),
     )
 
@@ -235,10 +235,6 @@ def get_viz_builders(
         es_rdd_util,
         doc_dataframe_util,
         case_field_selector,
-        config.build.index_types,
-        mappings_loader,
-        consequence_builder,
-        observation_builder,
     )
     viz_index_builders = get_viz_index_builders(
         config_adapter,
@@ -343,8 +339,9 @@ def main():
     mutation_indexer_logging.configure()
 
     try:
-        config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
-            toml.load("configuration.toml")
+        config = cast(
+            configuration.Configuration,
+            configuration.CONFIG_SCHEMA.load(toml.load("configuration.toml")),
         )
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
@@ -362,5 +359,5 @@ def main():
             )
 
             exporter.run()
-    except Exception as ex:
+    except Exception as ex:  # pylint: disable=W0718
         logger.critical("Driver failed", exc_info=ex)

@@ -1,19 +1,22 @@
 import logging
 
 from pyspark import sql
-from pyspark.sql import SQLContext
-from pyspark.sql.functions import struct
+from pyspark.sql import functions as F
 from typing_extensions import Self
 
-from mutation_indexer import builders
-from mutation_indexer.builders.df_builders import build_cnv_subtree
+from mutation_indexer.builders import (
+    base_builder,
+    consequence,
+    df_builders,
+    observation,
+)
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app
 
 logging.basicConfig(format=app.LOG_FORMAT)
 
 
-class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
+class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
     """
     Builds cnv-occurrence-centric dataframe given
     case, gene, and maf dataframes:
@@ -34,9 +37,9 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        sqlContext: sql.SQLContext,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 
@@ -92,14 +95,14 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
         # Consequence
         cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name)
 
-        cnv_df = build_cnv_subtree(
+        cnv_df = df_builders.build_cnv_subtree(
             ascat_df, self.index_name, cons_df=cons_df, add_fields=["case_id"]
         )
 
         cnv_subtree = cnv_df.select(
             "cnv_id",
             "case_id",
-            struct(
+            F.struct(
                 "consequence", *cnv_df.drop("consequence").drop("case_id").columns
             ).alias("cnv"),
         )
@@ -121,7 +124,7 @@ class CNVOccurrenceCentricBuilder(builders.BaseBuilder):
             "case_id",
             "occurrence_id",
             "cnv_id",
-            struct("observation", *case_df.columns).alias("case"),
+            F.struct("observation", *case_df.columns).alias("case"),
         )
         self.log_count(case_obs_df)
         return case_obs_df

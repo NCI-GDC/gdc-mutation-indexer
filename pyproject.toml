@@ -3,6 +3,9 @@ known_first_party = ["mutation_indexer"]
 multi_line_output = 3
 profile = "black"
 
+[tool.mypy]
+plugins = ["marshmallow_dataclass.mypy"]
+
 [tool.pytest.ini_options]
 addopts = "-rflv"
 markers = [
@@ -12,13 +15,10 @@ markers = [
   "gistic_combine",
   "gene_centric_ssm_subtree",
   "cnv_occurrence_centric_cnv_subtree",
-  "case_centric_ssm_subtree",
+  "case_centric_ssm_subtree"
 ]
 minversion = "6.0"
 testpaths = [
   "tests/unit",
-  "tests/integration",
+  "tests/integration"
 ]
-
-[tool.mypy]
-plugins = ["marshmallow_dataclass.mypy"]

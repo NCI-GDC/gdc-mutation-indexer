@@ -79,7 +79,7 @@ def test_data_frame_util_write(
 
     case_mapping_file = input_dir / "es_utils/test_data_frame_util_write.yaml"
 
-    with open(case_mapping_file, "r") as f:
+    with open(case_mapping_file) as f:
         case_mapping = yaml.safe_load(f)
 
     conf = test_setup.load_configuraiton(load_config)

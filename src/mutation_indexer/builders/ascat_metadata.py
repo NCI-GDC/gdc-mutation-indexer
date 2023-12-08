@@ -37,12 +37,25 @@ class ASCATMetadataBuilder(
         )
 
     def _build_from_scratch(self, input_dfs: ASCATMetadataInputs) -> sql.DataFrame:
+        project_clause = (
+            {
+                "nested": {
+                    "path": "cases",
+                    "query": {
+                        "terms": {"cases.project.project_id": self._config.projects}
+                    },
+                }
+            }
+            if self._config.projects
+            else {"match_all": {}}
+        )
         filters = [
             {
                 "bool": {
                     "must": [
                         {"term": {"data_type": "Gene Level Copy Number"}},
                         {"terms": {"acl": self._config.acl}},
+                        project_clause,
                     ],
                     "minimum_should_match": 1,
                     "should": [

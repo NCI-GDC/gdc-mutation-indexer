@@ -1,10 +1,9 @@
 import decimal
-import functools
 import logging
 import re
 import uuid
 from collections.abc import Set
-from typing import Any, Literal, Optional
+from typing import Any
 
 import pkg_resources
 import yaml
@@ -27,7 +26,7 @@ def get_default_excludes(index, mapping):
         "mutation_indexer", "schemas/exclude.defaults.yaml"
     )
 
-    with open(path) as f:
+    with open(path, "rb") as f:
         excludes = yaml.safe_load(f)
 
     for k, v in excludes.items():
@@ -49,12 +48,7 @@ def generate_uuid5(*values: Any) -> str:
     """
     # first value is entity type, the rest are fields made up
     # to a business key uniquely identifying an entity
-    return str(
-        uuid.uuid5(
-            uuid.NAMESPACE_DNS,
-            "\t".join([v if type(v) == str else str(v) for v in values]),
-        )
-    )
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, "\t".join(str(v) for v in values)))
 
 
 def uuid5_col(*values):
@@ -91,8 +85,8 @@ def extract_sift_polyphen(df):
     Extracts '{polyphen|sift}_{impact|score}' from 'polyphen' and 'sift' columns
     """
     for c in ["polyphen", "sift"]:
-        df = extract_impact(df, c, "{}_impact".format(c.lower()))
-        df = extract_score(df, c, "{}_score".format(c.lower()))
+        df = extract_impact(df, c, f"{c.lower()}_impact")
+        df = extract_score(df, c, f"{c.lower()}_score")
     df = df.drop("polyphen").drop("sift")
     return df
 
@@ -272,10 +266,6 @@ def convert_empty_str_to_null_in_col(df, col_name):
     return df.withColumn(
         col_name, F.when(F.col(col_name) != "", F.col(col_name)).otherwise(None)
     )
-
-
-def get_column_name(column_name, dataset_key):
-    return "{}_{}".format(column_name, dataset_key)
 
 
 def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataFrame:

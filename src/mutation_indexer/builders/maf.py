@@ -159,7 +159,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
         cols_to_drop = frozenset(gene_model_df.columns)
         df = df.select(*[c for c in df.columns if c not in cols_to_drop])
-        df = df.join(gene_model_df, df.gene_id == gene_model_df._gene_id, "inner")
+        df = df.join(gene_model_df, df["gene_id"] == gene_model_df["_gene_id"], "inner")
         df = df.drop("_gene_id")
         df = self.add_null(df)
         df = utils.add_canonical_transcript_lengths(df)
@@ -191,15 +191,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
                     assert val_type in ["float", "int", "str", "boolean"]
                     df = df.withColumn(column, df[column].cast(val_type))
 
-                elif "pattern" in self.schema[column]:
-                    pattern = self.schema[column]["pattern"]
+                elif pattern := self.schema[column].get("pattern"):
+                    df = df.withColumn(column, F.format_string(pattern, column))
 
-                    def apply_pattern(value):
-                        return pattern.format(value)
-
-                    df = df.withColumn(
-                        column, F.udf(apply_pattern, types.StringType())(df[column])
-                    )
                 else:
                     pass
         return df
@@ -223,7 +217,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
             if old_column in df_columns:
                 return F.col(old_column).alias(new_column)
             else:
-                raise KeyError("Required column {} missing from MAF".format(old_column))
+                raise KeyError(f"Required column {old_column} missing from MAF")
 
         # Iterate over the output schema rather than the input dataframe.
         # As long as we don't modify the schema after loading it, this should
@@ -235,25 +229,14 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         Load the intended MAF schema from the local YAML file
         """
         path = resource_filename("mutation_indexer.schemas", "maf.yml")
-        with open(path) as f:
+        with open(path, "rb") as f:
             return yaml.safe_load(f)["maf_schema"]
 
     def format_cosmic_id(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Turns StringType() cosmic_id field to ArrayType(StringType()) field
         """
-
-        def to_array(cosmic_string):
-            if cosmic_string is not None:
-                if ";" in cosmic_string:
-                    cosmic_string = cosmic_string.split(";")
-                else:
-                    cosmic_string = [cosmic_string]
-            return cosmic_string
-
-        to_array = F.udf(to_array, types.ArrayType(types.StringType()))
-        df = df.withColumn("cosmic_id", to_array(df["cosmic_id"]))
-        return df
+        return df.withColumn("cosmic_id", F.split("cosmic_id", ";"))
 
     def add_available_variation_data(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -273,16 +256,12 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         )
 
     def add_mutation_type(self, df: sql.DataFrame) -> sql.DataFrame:
-        def mutation_type(mut_type):
-            types = {"Somatic": "Simple Somatic Mutation"}
-            if mut_type in types:
-                return types[mut_type]
-            else:
-                return None
-
-        mut_type_udf = F.udf(mutation_type, types.StringType())
-        df = df.withColumn("mutation_type", mut_type_udf("mutation_type"))
-        return df
+        return df.withColumn(
+            "mutation_type",
+            F.when(
+                F.col("mutation_type") == F.lit("Somatic"), "Simple Somatic Mutation"
+            ).otherwise(None),
+        )
 
     def format_chr(self, df: sql.DataFrame) -> sql.DataFrame:
         """

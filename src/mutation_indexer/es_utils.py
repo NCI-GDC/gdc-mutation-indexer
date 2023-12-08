@@ -346,7 +346,7 @@ class DataFrameUtil:
             index_type: the index type correlating to the mapping for the new index
         """
         if self._es_client.indices.exists(index=index):
-            raise Exception(
+            raise ValueError(
                 f"Index: {index} already exists. Cannot overwrite existing index."
             )
 

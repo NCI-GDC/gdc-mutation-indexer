@@ -4,7 +4,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 import itertools
 import types
-from typing import Any, Iterable, Optional
+from typing import Any, ClassVar, Iterable, Optional
 
 import marshmallow
 import marshmallow_dataclass
@@ -23,23 +23,28 @@ _DEFAULT_DICT = {}
 _DEFAULT_ACL = ("open",)
 
 
-def _get_index_template(build: dict) -> Optional[str]:
-    if "data_release" not in build or "build_version" not in build:
+def _get_index_template(build_data: dict) -> Optional[str]:
+    if "data_release" not in build_data or "build_version" not in build_data:
         return None
 
-    data_release = build["data_release"]
-    build_version = build["build_version"]
+    data_release = build_data["data_release"]
+    build_version = build_data["build_version"]
 
-    if build.get("study_label"):
-        study_label = build["study_label"]
+    if build_data.get("study_label"):
+        study_label = build_data["study_label"]
 
-        return f"{data_release}_viz_closed_{build_version}__{{}}__{study_label}__controlled"
+        return (
+            f"{data_release}_viz_closed_{build_version}__{{}}__{study_label}"
+            "__controlled"
+        )
 
     return f"{data_release}_viz_open_{build_version}__{{}}"
 
 
 @marshmallow_dataclass.dataclass(frozen=True)
 class Configuration:
+    Schema: ClassVar[type[marshmallow.Schema]]  # pylint: disable=C0103
+
     aws: aws.AWS
     build: build.Build
     builders: builders.Builders
@@ -49,12 +54,12 @@ class Configuration:
     spark: spark.Spark
 
     @marshmallow.pre_load
-    def _add_projects_to_builders(self, data: dict, **kwargs: Any) -> dict:
+    def _add_projects_to_builders(self, data: dict, **_: Any) -> dict:
         """
         This method insures that all builders' projects properties are defaulted to
         that of the main build prior to the marshmallow load process.
         """
-        builders: Iterable[dict] = itertools.chain(
+        builders_data: Iterable[dict] = itertools.chain(
             data.get("builders", _DEFAULT_DICT).get("viz", _DEFAULT_DICT).values(),
             data.get("builders", _DEFAULT_DICT)
             .get("gene_expression", _DEFAULT_DICT)
@@ -63,21 +68,21 @@ class Configuration:
         projects = tuple(data.get("build", _DEFAULT_DICT).get("projects", ()))
         acl = tuple(data.get("build", _DEFAULT_DICT).get("acl", _DEFAULT_ACL))
 
-        for builder in builders:
+        for builder in builders_data:
             builder.setdefault("projects", projects)
             builder.setdefault("acl", acl)
 
         return data
 
     @marshmallow.pre_load
-    def _add_es_write_indices(self, data: dict, **kwargs: Any) -> dict:
+    def _add_es_write_indices(self, data: dict, **_: Any) -> dict:
         """
         This method populates the indices property of the elasticsearch write
         configuration prior to the marshmallow load process.
         """
-        build = data.get("build", _DEFAULT_DICT)
-        index_types = build.get("index_types", ())
-        template = _get_index_template(build)
+        build_data = data.get("build", _DEFAULT_DICT)
+        index_types = build_data.get("index_types", ())
+        template = _get_index_template(build_data)
         es_write = data.get("elasticsearch", _DEFAULT_DICT).get("write", {})
 
         if template:

@@ -105,7 +105,8 @@ def _get_clinical_annotation_df(
     def restructure(doc: dict, parent_name: str = "") -> Iterator[sql.Column]:
         """
         Takes the structure from a mapping and produces arguments for a select
-        to reorganize a flat dataframe of clinical annotations into the desired structure.
+        to reorganize a flat dataframe of clinical annotations into the desired
+        structure.
         Eg:
         Given the mapping:
         ```
@@ -125,7 +126,7 @@ def _get_clinical_annotation_df(
                 yield F.struct(*restructure(v["properties"], k)).alias(k)
             elif "type" in v:
                 name = v.get("default", f"{parent_name}_{k}")
-                
+
                 yield F.col(name).alias(k)
             else:
                 yield F.struct(*restructure(v, k)).alias(k)

@@ -8,7 +8,7 @@ import os
 import tempfile
 import uuid
 from os import path
-from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
+from typing import Any, Iterable, Iterator, Mapping, Tuple
 
 import elasticsearch
 import halo
@@ -72,7 +72,9 @@ def load_config_data(
     Returns:
         the final configuration data as a mapping.
     """
-    default_config = toml.loads(resources.read_text(mutation_indexer, "configuration.toml"))
+    default_config = toml.loads(
+        resources.read_text(mutation_indexer, "configuration.toml")
+    )
     default_config["build"]["config_file"] = final_config_file
     user_config = toml.load(user_config_file)
 
@@ -234,14 +236,14 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         missing_indices = config.elasticsearch.write.indices.keys() - indices
 
         if missing_indices:
-            logger.warning(f"Build failed to build indices: {missing_indices}.")
+            logger.warning("Build failed to build indices: %s.", missing_indices)
 
         try:
             await es_client.indices.forcemerge(
                 index=",".join(indices), max_num_segments=1
             )
-        except Exception as ex:
-            logger.warning(f"Error occurred while merging: {ex}.")
+        except Exception as ex:  # pylint: disable=W0718
+            logger.warning("Error occurred while merging: %s.", ex)
 
 
 def set_environment_variables(env: environment.Environment) -> None:
@@ -281,5 +283,5 @@ if __name__ == "__main__":
     try:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
-    except:
+    except:  # pylint: disable=W0702
         logger.critical("Appliction failed.", exc_info=True)

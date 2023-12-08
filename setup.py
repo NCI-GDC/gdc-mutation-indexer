@@ -1,6 +1,6 @@
-from setuptools import find_packages, setup
+import setuptools
 
-setup(
+setuptools.setup(
     name="gdc-mutation-indexer",
     url="https://github.com/NCI-GDC/gdc-mutation-indexer",
     author="NCI GDC",
@@ -36,7 +36,7 @@ setup(
         "indexclient @ git+https://github.com/NCI-GDC/indexclient.git@2.3.2",
         "gdcmodels @ git+https://github.com/NCI-GDC/gdc-models.git@4.1.3",
         "normalizer @ git+ssh://git@github.com/NCI-GDC/normalizer.git@4.0.4",
-        "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
+        "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",  # pylint: disable=C0301
     ],
     extras_require={
         "dev": (

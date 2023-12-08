@@ -32,7 +32,9 @@ class ConfigArgumentMixin:
             field = self._format_field(field)
 
             if isinstance(value, ConfigArgumentMixin):
-                yield from value._get_arguments(f"{path}{field}.")
+                yield from value._get_arguments(  # pylint: disable=W0212
+                    f"{path}{field}."
+                )
 
             else:
                 yield self._get_field_argument(path, field, value)

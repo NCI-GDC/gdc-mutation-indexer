@@ -96,7 +96,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
         )
 
         # Only retrieve the fields we want
-        logger.debug(f"Included fields: {fields}")
+        logger.debug("Included fields: %s", fields)
 
         # Load cases from graph index
         return self._es_dataframe_util.read(

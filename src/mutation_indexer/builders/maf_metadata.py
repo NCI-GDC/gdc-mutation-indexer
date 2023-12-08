@@ -137,7 +137,10 @@ class MAFFileFilterFactory:
 
         if strategy == _UNPRIORITIZED_STRATEGY:
             logger.warning(
-                f"Project: {project['key']} only has MAFs that are associated with unprioritized experimental strategies: {', '.join(strategies)}"
+                "Project: %s only has MAFs that are associated with unprioritized"
+                " experimental strategies: %s",
+                project["key"],
+                ", ".join(strategies),
             )
 
         return strategy
@@ -232,7 +235,9 @@ class MAFFileFilterFactory:
                     {"term": {"data_type": "Masked Somatic Mutation"}},
                     {
                         "term": {
-                            "analysis.workflow_type": "Aliquot Ensemble Somatic Variant Merging and Masking"
+                            "analysis.workflow_type": (
+                                "Aliquot Ensemble Somatic Variant Merging and Masking"
+                            )
                         }
                     },
                 ]
@@ -245,13 +250,15 @@ class MAFFileFilterFactory:
                     {"term": {"data_type": "Aggregated Somatic Mutation"}},
                     {
                         "term": {
-                            "analysis.workflow_type": "FoundationOne Variant Aggregation and Masking"
+                            "analysis.workflow_type": (
+                                "FoundationOne Variant Aggregation and Masking"
+                            )
                         }
                     },
                 ]
             }
         }
-        filter = {
+        file_filter = {
             "bool": {
                 "must": ({"terms": {"acl": acl}},),
                 "should": (aesvmm_workflow, fvam_workflow),
@@ -259,10 +266,10 @@ class MAFFileFilterFactory:
             }
         }
         strategy_filter = self._build_experimental_strategy_filter(
-            (filter,), projects, prioritized_experimental_strategies
+            (file_filter,), projects, prioritized_experimental_strategies
         )
 
-        return (filter, strategy_filter)
+        return (file_filter, strategy_filter)
 
 
 class MAFMetadataInputs(TypedDict):

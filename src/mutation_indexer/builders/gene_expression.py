@@ -45,9 +45,10 @@ class PrimaryAliquotBuilder(
     ) -> None:
         """
         Args:
-            config: The app configuration object
-            sqlContext: The sql context object for the current pyspark run
-            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+            config: The app configuration object.
+            sqlContext: The sql context object for the current pyspark run.
+            es_dataframe_util: The util for creating dataframes from data in
+                elasticsearch.
         """
         super().__init__(
             config,
@@ -182,7 +183,8 @@ class IndexBuilder(
         self, primary_aliquot_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
-        Load the gene expression data from the files referenced in the primary aliquot df
+        Load the gene expression data from the files referenced in the primary aliquot
+        dataframe.
 
         Args:
             primary_aliquot_df: The dataframe of primary aliquot data for all
