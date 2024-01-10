@@ -24,6 +24,30 @@ Run the following command
 tox -e py39
 ```
 
+## Dockerized Elasticsearch and Indexd
+Instead of locally installed services, docker imgs for Mac M2 are available.
+
+```
+elasticsearch=$(docker run --name elasticsearch -d --rm -p 9200:9200 -p 9300:9300 \
+    -e ES_JAVA_OPTS="-Xms1g -Xmx1g" \
+    -e "discovery.type=single-node" \
+    -e "xpack.security.enabled=false" \
+    --entrypoint '/bin/bash' \
+    docker.elastic.co/elasticsearch/elasticsearch:7.16.1 \
+    -c '/usr/share/elasticsearch/bin/elasticsearch-plugin list | grep -q mapper-size || /usr/share/elasticsearch/bin/elasticsearch-plugin install mapper-size && /usr/local/bin/docker-entrypoint.sh elasticsearch')
+echo "Elasticsearch running" $elasticsearch
+
+indexd=$(docker run \
+    --name indexd \
+    -d \
+    --rm \
+    -p 80:80 \
+    docker.osdc.io/ncigdc/indexd)
+echo "Indexd running" $indexd
+```
+
+[Java](#java) installation is required.
+
 ## Elasticsearch
 For the integration tests it is required that you have a working Elasticsearch on your
 device. To insure insure you have elasticsearch working on your device run the command
@@ -63,11 +87,13 @@ echo $JAVA_HOME
 ```
 
 ### MacOS
-WARNING: This is unverified and based solely on documentation
 ```bash
-brew install openjdk@8
-echo "export JAVA_HOME=$HOMEBREW_PREFIX/opt/openjdk@8/openjdk-8.jdk" >> ~/.bashrc
-. ~/.bashrc
+brew install openjdk@8  # In theory, upto openjdk@17 should work, openjdk@21 won't.
+... Follow extra instructions for PATH, symlinks, source, etc.
+# Add JAVA_HOME to your shell
+echo "export JAVA_HOME=$HOMEBREW_PREFIX/opt/openjdk@8/openjdk-8.jdk" >> zshrc.sh
+. ~/zshrc.sh
+brew install maven
 ```
 
 ### Ubuntu
