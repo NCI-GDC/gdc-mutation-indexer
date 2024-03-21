@@ -6,26 +6,15 @@ import logging
 import os
 import pathlib
 import types
-from typing import (
-    AbstractSet,
-    Callable,
-    Container,
-    ContextManager,
-    Iterable,
-    Iterator,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from collections.abc import Callable, Container, Iterable, Iterator, Set
+from typing import ContextManager, Optional, Type, TypeVar, Union
 
 import elasticsearch
 import importlib_resources as resources
 import toml
 from elasticsearch import helpers
-from normalizer import mapper
 
-from mutation_indexer import configuration
+from mutation_indexer import configuration, es_utils
 from mutation_indexer.constants import build
 
 T = TypeVar("T")
@@ -37,8 +26,7 @@ def load_configuraiton(
     data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
     data = functools.reduce(lambda d, f: f(d), pre_load, data)
     data["elasticsearch"]["connection"]["nodes"] = os.environ.get(
-        "ES_NODES",
-        data["elasticsearch"]["connection"]["nodes"]
+        "ES_NODES", data["elasticsearch"]["connection"]["nodes"]
     )
 
     return configuration.CONFIG_SCHEMA.load(data)  # type: ignore
@@ -68,7 +56,14 @@ def remove_keys_from_dict(tree: dict, remove_keys: Optional[Container[str]]) -> 
 
 
 class IndexManager(ContextManager["IndexManager"]):
-    __slots__ = ("_es", "_logger", "_graph_indices", "_index_types")
+    __slots__ = (
+        "_es",
+        "_logger",
+        "_graph_indices",
+        "_index_types",
+        "_skip_creation",
+        "_mappings_loader",
+    )
 
     def __init__(
         self,
@@ -90,11 +85,11 @@ class IndexManager(ContextManager["IndexManager"]):
         }
         self._index_types = index_types
         self._skip_creation = skip_creation
+        self._mappings_loader = es_utils.MappingsLoader()
 
     def _create_index(self, index_type: build.IndexType) -> None:
         index_name = self._graph_indices[index_type]
-        model_mapper = mapper.ModelMapper(*index_type.get_mappings_details())
-        mappings = model_mapper.get_normalized_mappings()
+        model_mapper = self._mappings_loader.load_mappings(index_type)
 
         if self._es.indices.exists(index=index_name):
             self._logger.info(f"Deleting existing index: {index_name}")
@@ -104,8 +99,8 @@ class IndexManager(ContextManager["IndexManager"]):
         self._logger.info(f"Creating index: {index_name}")
         self._es.indices.create(
             index=index_name,
-            settings=mappings["settings"],
-            mappings=mappings["mappings"],
+            settings=model_mapper.settings,
+            mappings=model_mapper.mappings,
         )
 
     def __enter__(self) -> "IndexManager":
@@ -208,7 +203,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         self,
         index_type: build.IndexType,
         inputs: Union[str, pathlib.Path, Iterable[dict]],
-    ) -> AbstractSet[str]:
+    ) -> Set[str]:
         """Load documents from gzipped test data into test index.
         Default to the file named in ``conf.doc_files`` for the given ``doc_type``.
         Returns:

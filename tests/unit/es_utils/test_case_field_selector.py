@@ -1,5 +1,5 @@
 import functools
-from typing import Iterable
+from collections.abc import Iterable
 from unittest import mock
 
 import pytest
@@ -15,7 +15,8 @@ class TestCaseFieldSelector:
         indices: Iterable[build.IndexType] = (build.IndexType.CASE_CENTRIC,)
     ) -> es_utils.MappingsLoader:
         index_mappings = {
-            index: {"mappings": mapping} for index, mapping in zip(indices, mappings)
+            index: mock.MagicMock(mappings=mapping)
+            for index, mapping in zip(indices, mappings)
         }
         load_mappings = mock.MagicMock(side_effect=lambda i: index_mappings[i])
 

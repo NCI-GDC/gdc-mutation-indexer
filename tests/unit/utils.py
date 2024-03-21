@@ -56,6 +56,6 @@ def assert_float_not_equal(
 
 def arrange_empty_mappings_loader() -> es_utils.MappingsLoader:
     loader = mock.MagicMock(spec=es_utils.MappingsLoader)
-    loader.load_mappings.return_value = {}
+    loader.load_mappings.return_value = mock.MagicMock(mappings={}, settings={})
 
     return loader

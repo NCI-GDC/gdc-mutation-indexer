@@ -5,8 +5,6 @@ import logging
 from collections.abc import Iterable, Iterator, Mapping, Set
 from importlib import resources
 from typing import (
-    Any,
-    Dict,
     Generic,
     Literal,
     Optional,
@@ -18,6 +16,7 @@ from typing import (
 )
 
 import more_itertools
+from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -762,7 +761,7 @@ class IndexBuilder(
         """
 
         def get_boolean_paths(
-            node: Dict[str, Dict[str, Any]], path: str = ""
+            node: esmodels.Properties, path: str = ""
         ) -> Iterator[str]:
             for key, value in node.items():
                 subpath = f"{path}{key}"
@@ -772,9 +771,7 @@ class IndexBuilder(
                 elif "properties" in value:
                     yield from get_boolean_paths(value["properties"], f"{subpath}.")
 
-        mappings = self._mappings_loader.load_mappings(self._index_type).get(
-            "mappings", {}
-        )
+        mappings = self._mappings_loader.load_mappings(self._index_type).mappings
 
         return get_boolean_paths(mappings.get("properties", {}))
 

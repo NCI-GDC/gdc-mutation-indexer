@@ -1,17 +1,19 @@
 import decimal
-import functools
 import logging
 import re
 import uuid
-from collections.abc import Set
-from typing import Any, Literal, Optional
+from collections.abc import Container, Set
+from typing import Any, Optional
 
 import pkg_resources
 import yaml
-from normalizer import mapper
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from gdcmodels import mapper, esmodels
+
+from mutation_indexer import es_utils
+from mutation_indexer.constants import build
 
 logger = logging.getLogger(__name__)
 
@@ -97,21 +99,51 @@ def extract_sift_polyphen(df):
     return df
 
 
-def select_mapping(index_name, mapping_name, selector=None, exclude_fields=None):
+def select_mapping(
+    index_name: str,
+    mapping_name: str,
+    selector: Optional[mapper.Selector] = None,
+    exclude_fields: Optional[Container[str]] = None,
+) -> esmodels.ESMapping:
+    """
+    Selects the sub-mapping from the index.
+
+    Args:
+        index_name: The name of the index containing the mapping.
+        mapping_name: The name of the sub-mapping in the index.
+        selector: An optional function to filter the paths found to the given mapping or
+            the name of a parent property which must be found in the valid path for the
+            mapping. If none, it is assumed there is only one path to the given
+            mapping_name in the index mapping.
+        exclude_fields: An optional set of fields within the mapping which should be
+            excluded.
+
+    Returns:
+        The sub-mapping found within the given index.
+    """
     if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
 
-    model_mapper = mapper.ModelMapper(index_name)
+    model_mapper = es_utils.MappingsLoader().load_mappings(
+        build.IndexType[index_name.upper()]
+    )
     mapping = model_mapper.select_mapping(mapping_name, selector)
 
-    mapping["properties"] = {
-        k: v for k, v in mapping["properties"].items() if k not in exclude_fields
+    assert "properties" in mapping
+
+    return {
+        "properties": {
+            k: v for k, v in mapping["properties"].items() if k not in exclude_fields
+        }
     }
 
-    return mapping
 
-
-def struct_select(index_name, mapping_name, ignore=(), selector=None):
+def struct_select(
+    index_name: str,
+    mapping_name: str,
+    ignore: Container[str] = (),
+    selector: Optional[mapper.Selector] = None,
+):
     """
     Takes the structure from a mapping and produces arguments for a select
     to reorganize a flat dataframe of those fields into the desired structure.

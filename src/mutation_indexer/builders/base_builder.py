@@ -1,16 +1,15 @@
 import abc
 import copy
-import json
 import logging
+from typing import ClassVar
 
-from normalizer.mapper import ModelMapper
 from pyspark import sql
-from pyspark.sql.functions import col, size
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 from typing_extensions import Self
 
+from mutation_indexer import es_utils
 from mutation_indexer.builders import utils
-from mutation_indexer.constants import app
+from mutation_indexer.constants import app, build
 
 logging.basicConfig(format=app.LOG_FORMAT)
 
@@ -76,7 +75,7 @@ class BaseBuilder:
 
     __metaclass__ = abc.ABCMeta
 
-    index_name = None
+    index_name: ClassVar[str]
     id_field = None
     settings = None
 
@@ -85,6 +84,7 @@ class BaseBuilder:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
         self.debug = config.debug
+        self.mappings_loader = es_utils.MappingsLoader()
 
     @abc.abstractmethod
     def build(self, **kwargs: sql.DataFrame) -> Self:
@@ -100,16 +100,14 @@ class BaseBuilder:
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-
-        index_mapper = ModelMapper(self.index_name)
-        if self.config.skip_normalization:
-            index_body = index_mapper.index_settings
-        else:
-            index_body = index_mapper.get_normalized_mappings()
-        index_body = json.dumps(index_body)
+        mapper = self.mappings_loader.load_mappings(
+            build.IndexType[self.index_name.upper()]
+        )
 
         self.log("Creating {} index".format(index))
-        response = self.config.es.indices.create(index=index, body=index_body)
+        response = self.config.es.indices.create(
+            index=index, mappings=mapper.mappings, settings=mapper.settings
+        )
         self.log(response)
 
         self.log("Repartitioning {}".format(self.index_name))
@@ -117,7 +115,7 @@ class BaseBuilder:
             self.config.df_repartition, self.id_field
         )
 
-        df = cast_booleans(df, index_mapper.mapping)
+        df = cast_booleans(df, mapper.mappings)
         self.log("Exporting {} index to {}".format(self.index_name, index))
         df.coalesce(self.config.df_coalesce).write.format(
             "org.elasticsearch.spark.sql"
