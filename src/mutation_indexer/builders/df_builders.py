@@ -1,9 +1,18 @@
+"""
+This module contains logic for building a particular sub-struct within a given index.
+
+NOTE: Please avoid using this pattern. Instead build a single superset of the data using
+a `base.Builder` whose singular (cached/backed up) output can be used by multiple 
+dependent builders. This avoids similar data being built multiple times.
+"""
+
 import itertools
 import logging
 from collections.abc import Container, Iterable, Iterator
 from typing import Optional
 
 import more_itertools
+from gdcmodels import mapper
 from pyspark import sql
 from pyspark.sql import functions as F
 
@@ -125,7 +134,7 @@ def _get_clinical_annotation_df(
                 yield F.struct(*restructure(v["properties"], k)).alias(k)
             elif "type" in v:
                 name = v.get("default", f"{parent_name}_{k}")
-                
+
                 yield F.col(name).alias(k)
             else:
                 yield F.struct(*restructure(v, k)).alias(k)
@@ -185,6 +194,7 @@ def get_transcript_df(
         drop_fields,
         unique_fields,
         ignore,
+        selector="consequence",
     )
 
 
@@ -196,9 +206,61 @@ def get_single_df(
     drop_fields: Container[str] = (),
     unique_fields: Optional[list[str]] = None,
     ignore: Container[str] = (),
+    selector: Optional[mapper.Selector] = None,
 ) -> sql.DataFrame:
+    """Selects the required struct based on the mapping and the data in the data frame.
+
+    Example:
+        input_df [{}]
+        |---id
+        |---center
+        +---normal_bam_uuid
+
+        struct:
+        mapping:
+            properties:
+                sub-mapping:
+                    center:
+                        type: keyword
+                    input_bam_file:
+                        properties:
+                            normal_bam_uuid:
+                                type: keyword
+
+        `get_single_df(input_df, "mapping", "sub-mapping", add_fields=("id",))`
+
+        return_df [{}]
+        |---id
+        |---center
+        +---input_bam_file
+            +---normal_bam_uuid
+
+    Args:
+        input_df: The data frame from which to select the data that is part of the given
+            mapping in the index.
+        index_name: The index containing the given mapping.
+        mapping_name: The name of the mapping that is being built.
+        add_fields: An optional sequence of extra fields to include which are not found
+            in the mapping. These are usually fields required for joining.
+        drop_fields: A set of columns which should not be selected from the input_df but
+            are found in the mapping.
+        unique_fields: A list of fields with represent a unique row in the data. These
+            are used to drop duplicates from the resulting data frame.
+        ignore: A set of properties which should not be selected from the mapping.
+            These are usually fields which have no corresponding data found with in the
+            input_df.
+        selector: An optional function to filter the paths found to the given mapping or
+            the name of a parent property which must be found in the valid path for the
+            mapping. If none, it is assumed there is only one path to the given
+            mapping_name in the index mapping.
+
+        Returns:
+            A data frame with the restructured data.
+
+    """
     columns = itertools.chain(
-        add_fields, utils.struct_select(index_name, mapping_name, ignore=ignore)
+        add_fields,
+        utils.struct_select(index_name, mapping_name, ignore=ignore, selector=selector),
     )
     df = input_df.select(*columns)
     df = df.drop_duplicates(subset=unique_fields)

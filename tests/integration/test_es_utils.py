@@ -1,6 +1,7 @@
 import logging
 import pathlib
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 from unittest import mock
 
 import elasticsearch
@@ -80,12 +81,12 @@ def test_data_frame_util_write(
     case_mapping_file = input_dir / "es_utils/test_data_frame_util_write.yaml"
 
     with open(case_mapping_file, "r") as f:
-        case_mapping = yaml.safe_load(f)
+        model_mapper = mock.MagicMock(**yaml.safe_load(f))
 
     conf = test_setup.load_configuraiton(load_config)
     case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
     mappings_loader = mock.MagicMock()
-    mappings_loader.load_mappings.return_value = case_mapping
+    mappings_loader.load_mappings.return_value = model_mapper
     util = es_utils.DataFrameUtil(
         conf.elasticsearch, spark_session, es_client, mappings_loader
     )

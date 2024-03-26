@@ -2,23 +2,14 @@ import collections
 import functools
 import json
 import types
-from typing import (
-    AbstractSet,
-    Container,
-    Deque,
-    Final,
-    Iterable,
-    Iterator,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
-)
+from collections.abc import Container, Iterable, Iterator, Mapping, Set
+from typing import Deque, Final, Optional, Tuple, Union
 
 import elasticsearch
+import gdcmodels
 import pyspark
 from elasticsearch import helpers
-from normalizer import mapper
+from gdcmodels import mapper
 from pyspark import sql
 
 from mutation_indexer.configuration import elasticsearch as es_config
@@ -46,12 +37,23 @@ def iterate_es_results(
     return doc_iterator
 
 
+@functools.cache
+def _load_models() -> Mapping[str, Mapping[str, mapper.ModelMapper]]:
+    """
+    A cached call to `gdcmodels.get_es_models`.
+
+    Returns:
+        The loaded model mappers from gdcmodels.
+    """
+    return gdcmodels.get_es_models(vestigial_included=False)
+
+
 class MappingsLoader:
     """A class for loading the elasticsearch mapping for any given index."""
 
     __slots__ = ()
 
-    def load_mappings(self, index_type: build.IndexType) -> dict:
+    def load_mappings(self, index_type: build.IndexType) -> mapper.ModelMapper:
         """
         Loads the mapping for the given index.
 
@@ -63,9 +65,8 @@ class MappingsLoader:
             A mappings dict based on the configured output of the given index type.
         """
         index_name, doc_type = index_type.get_mappings_details()
-        model_mapper = mapper.ModelMapper(index_name, doc_type)
 
-        return model_mapper.get_normalized_mappings()
+        return _load_models()[index_name][doc_type or index_name]
 
 
 def _is_included_field(
@@ -201,7 +202,7 @@ class CaseFieldSelector:
         index_type: build.IndexType,
         excluded_fields: Container[str],
         included_fields: Optional[Iterable[str]],
-    ) -> AbstractSet[str]:
+    ) -> Set[str]:
         if index_type not in self.CASE_PREFIXES:
             raise ValueError(f"Index: {index_type} is not supported.")
 
@@ -209,7 +210,7 @@ class CaseFieldSelector:
         path_to_fields = (
             collections.deque(prefix.split(".")) if prefix else collections.deque()
         )
-        mappings = self._mappings_loader.load_mappings(index_type)["mappings"]
+        mappings = self._mappings_loader.load_mappings(index_type).mappings
         fields = _extract_fields(
             mappings["properties"], excluded_fields, included_fields, path_to_fields
         )
@@ -353,7 +354,7 @@ class DataFrameUtil:
         mappings = self._mappings_loader.load_mappings(index_type)
 
         self._es_client.indices.create(
-            index=index, mappings=mappings["mappings"], settings=mappings["settings"]
+            index=index, mappings=mappings.mappings, settings=mappings.settings
         )
 
     def write(

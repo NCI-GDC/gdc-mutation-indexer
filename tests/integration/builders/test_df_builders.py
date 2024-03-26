@@ -214,7 +214,9 @@ def test__get_transcript_df__simple_df(maf_df: sql.DataFrame, index_type: str) -
     input_df = maf_df.drop_duplicates(subset=["transcript_id"])
 
     df = df_builders.get_transcript_df(input_df, index_type)
-    mapping = utils.select_mapping(index_type, "transcript")["properties"]
+    mapping = utils.select_mapping(index_type, "transcript", selector="consequence")[
+        "properties"
+    ]
 
     # Do not check for unwanted keys
     must_have_keys = get_must_have_keys(mapping.keys())
