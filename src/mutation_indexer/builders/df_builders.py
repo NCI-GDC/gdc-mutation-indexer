@@ -3,7 +3,7 @@ This module contains logic for building a particular sub-struct within a given i
 
 NOTE: Please avoid using this pattern. Instead build a single superset of the data using
 a `base.Builder` whose singular (cached/backed up) output can be used by multiple 
-dependent builders. This avoids similar data being built built multiple times.
+dependent builders. This avoids similar data being built multiple times.
 """
 
 import itertools

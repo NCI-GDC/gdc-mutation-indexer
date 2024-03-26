@@ -68,16 +68,13 @@ def cast_booleans(df, mapping):
     return df.select(*select_expr)
 
 
-class BaseBuilder:
+class BaseBuilder(abc.ABC):
     """
     BaseBuilder contains the structure necessary for a Builder object.
     """
 
-    __metaclass__ = abc.ABCMeta
-
     index_name: ClassVar[str]
-    id_field = None
-    settings = None
+    id_field: ClassVar[str]
 
     def __init__(self, config, sqlContext):
         self.config = config
