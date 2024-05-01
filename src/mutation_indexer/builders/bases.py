@@ -198,6 +198,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()
 
+        # NOTE: why is `is_cached` a lower priotity "rule" than backup READ/BOTH? (just curious)
         return df.cache() if self._config.is_cached else df
 
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
@@ -805,3 +806,33 @@ class IndexBuilder(
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
         return df
+
+class FileBuilder(
+    # TODO: Do we need abc.ABC?
+    Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs], abc.ABC
+):
+    """A builder that aims to sink its output to a file."""
+
+    __slots__ = ()  # TODO: do we need this empty?
+
+    def __init__(
+        self,
+        config: TResourceConfig,
+        spark_session: sql.SparkSession,
+        # es_dataframe_util: es_utils.DataFrameUtil,
+        # mappings_loader: es_utils.MappingsLoader,
+        input_type: type[TInputDFs],
+        output: build.DataFrame,
+    ) -> None:
+        super().__init__(config, spark_session, input_type, output)
+
+        # self._es_dataframe_util = es_dataframe_util
+        # self._mappings_loader = mappings_loader
+        # self._index_type = build.IndexType[self._output.name]
+        # self._index_name, _ = self._index_type.get_mappings_details()
+
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        #  NOTE: should we end with super instead?
+        dfbak = super()._write(df)
+        dfbak.write.parquet(self._config.backup.path , mode="overwrite")
+        return dfbak
