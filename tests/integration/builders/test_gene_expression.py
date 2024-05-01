@@ -22,9 +22,11 @@ logger = logging.getLogger(__name__)
 def ge_config() -> configuration.Configuration:
     def pre_load(data: dict) -> dict:
         data["build"]["index_types"] = ["GENE_EXPRESSION"]
-#         [builders.gene_expression.case.backup]
-# mode = "NEITHER"
-# path = ""
+        # TODO: remove this (only for debugging purposes)
+        # From configuration.toml:
+        # [builders.gene_expression.case.backup]
+        # mode = "NEITHER"
+        # path = ""
         backup = data["builders"]["gene_expression"]["case"]["backup"] = {}
         backup["mode"] = build.BackupMode.WRITE.name
         path = pathlib.Path().cwd() / "cases.parquet"

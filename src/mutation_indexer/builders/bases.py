@@ -193,6 +193,9 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             configuration.
         """
         # NOTE: backup can be turned on in configuration.toml
+        # NOTE: We will lift this code to output parquet but w/o using _config.backup
+        #   because the semantics of _config.backup are for "debugging" purpouses and not
+        #   for sinking purpouses.
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
             df.write.parquet(self._config.backup.path, mode="overwrite")
