@@ -121,6 +121,7 @@ class InputDataFrameManger(Generic[TInputDFs]):
 
 
 class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
+    # NOTE: build() calls _write() which has configurable backup to parquet
     __slots__ = ("_config", "_spark_session", "_input_manager", "_output")
 
     def __init__(
@@ -191,6 +192,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             The original, cached, or written data frame depending on the builders
             configuration.
         """
+        # NOTE: backup can be turned on in configuration.toml
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
             df.write.parquet(self._config.backup.path, mode="overwrite")

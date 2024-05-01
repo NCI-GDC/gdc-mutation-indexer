@@ -97,6 +97,7 @@ class IndexBuilderInputs(TypedDict):
 
 
 class IndexBuilder(
+    # NOTE: bases.IndexBuilder
     bases.IndexBuilder[gene_expression.IndexBuilder, IndexBuilderInputs]
 ):
     """

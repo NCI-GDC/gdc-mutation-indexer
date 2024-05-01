@@ -22,6 +22,13 @@ logger = logging.getLogger(__name__)
 def ge_config() -> configuration.Configuration:
     def pre_load(data: dict) -> dict:
         data["build"]["index_types"] = ["GENE_EXPRESSION"]
+#         [builders.gene_expression.case.backup]
+# mode = "NEITHER"
+# path = ""
+        backup = data["builders"]["gene_expression"]["case"]["backup"] = {}
+        backup["mode"] = build.BackupMode.WRITE.name
+        path = pathlib.Path().cwd() / "cases.parquet"
+        backup["path"] = str(path.absolute())
 
         return data
 
@@ -102,7 +109,7 @@ def ge_builder(
         ge_config.elasticsearch, spark_session, es_client, mappings_loader
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(
-        indexd, spark_session, mock.MagicMock()
+        indexd, spark_session, logger=mock.MagicMock()
     )
 
     return gene_expression.IndexBuilder(

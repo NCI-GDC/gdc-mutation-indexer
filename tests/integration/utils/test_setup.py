@@ -20,7 +20,7 @@ from mutation_indexer.constants import build
 T = TypeVar("T")
 
 
-def load_configuraiton(
+def load_configuraiton(  # TODO: Should we fix this typo?
     *pre_load: Callable[[dict], dict]
 ) -> configuration.Configuration:
     data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
