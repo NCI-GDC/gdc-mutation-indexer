@@ -3,6 +3,7 @@ from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
@@ -213,3 +214,39 @@ class IndexBuilder(
             F.col("gene_name").alias("symbol"),
             F.col("fpkm_uq_unstranded").alias("uqfpkm"),
         )
+
+
+class FileBuilder(bases.FileBuilder[gene_expression.FileBuilder, IndexBuilderInputs]):
+    """
+    A builder class for outputing gene expression data to a file.
+    """
+
+    __slots__ = ()
+
+    def __init__(
+        self, config: gene_expression.FileBuilder, spark_session: sql.SparkSession
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            input_type=IndexBuilderInputs,
+            output=build.DataFrame.GENE_EXPRESSION,
+        )
+
+    def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
+        # TODO: Replace with real impl after refactoring IndexBuilder._build_from_scratch() above.
+        schema = StructType(
+            [
+                StructField(col_name, col_type)
+                for col_name, col_type in (
+                    ("case_id", StringType())("gene_expression_id", StringType())(
+                        "gene_id", StringType()
+                    )("log2_uqfpkm", DoubleType())("submitter_id", StringType())(
+                        "symbol", StringType()
+                    )(
+                        "uqfpkm", DoubleType()
+                    )
+                )
+            ]
+        )
+        return self.spark_session.createDataFrame(data=[], schema=schema)

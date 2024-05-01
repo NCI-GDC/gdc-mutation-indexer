@@ -807,9 +807,15 @@ class IndexBuilder(
 
         return df
 
+
+TFileConfig = TypeVar("TFileConfig", bound=common.FileBuilder)
+
+
 class FileBuilder(
     # TODO: Do we need abc.ABC?
-    Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs], abc.ABC
+    Generic[TFileConfig, TInputDFs],
+    InputBuilder[TFileConfig, TInputDFs],
+    abc.ABC,
 ):
     """A builder that aims to sink its output to a file."""
 
@@ -817,7 +823,7 @@ class FileBuilder(
 
     def __init__(
         self,
-        config: TResourceConfig,
+        config: TFileConfig,
         spark_session: sql.SparkSession,
         # es_dataframe_util: es_utils.DataFrameUtil,
         # mappings_loader: es_utils.MappingsLoader,
@@ -834,5 +840,5 @@ class FileBuilder(
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         #  NOTE: should we end with super instead?
         dfbak = super()._write(df)
-        dfbak.write.parquet(self._config.backup.path , mode="overwrite")
+        dfbak.write.parquet(self._config.output_path, mode="overwrite")
         return dfbak
