@@ -56,3 +56,10 @@ class GeneModelBuilder(Builder):
     census_file: str
     citobands_file: str
     gene_model_file: str
+
+@dataclasses.dataclass(frozen=True)
+class FileBuilder(Builder):
+    """
+    Configuration values for running any builder that outputs files.
+    """
+    output_path: str
