@@ -2,6 +2,7 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
 from typing import Sequence
 
@@ -57,9 +58,11 @@ class GeneModelBuilder(Builder):
     citobands_file: str
     gene_model_file: str
 
+
 @dataclasses.dataclass(frozen=True)
 class FileBuilder(Builder):
     """
     Configuration values for running any builder that outputs files.
     """
+
     output_path: str

@@ -293,13 +293,18 @@ def _get_ge_builders(
         # NOTE: Create our own builder (inherited from builder.bases.InputBuilder),
         #   place it in the base builder path and call it ~FileBuilder.
         #   whose write() is parquet output.
-        yield builders.GeneExpressionIndexBuilder(
-            config.gene_expression,
-            spark_session,
-            es_dataframe_util,
-            mappings_loader,
-            doc_dataframe_util,
+        input_ge_builders = (
+            builders.GeneExpressionIndexBuilder(
+                config.gene_expression,
+                spark_session,
+                es_dataframe_util,
+                mappings_loader,
+                doc_dataframe_util,
+            ),
+            builders.GeneExpressionFileBuilder(config.gene_expression, spark_session),
         )
+
+        yield from input_ge_builders
 
 
 def get_ge_builders(
