@@ -830,20 +830,17 @@ class FileBuilder(
         self,
         config: TFileConfig,
         spark_session: sql.SparkSession,
-        # es_dataframe_util: es_utils.DataFrameUtil,
-        # mappings_loader: es_utils.MappingsLoader,
         input_type: type[TInputDFs],
         output: build.DataFrame,
     ) -> None:
         super().__init__(config, spark_session, input_type, output)
 
-        # self._es_dataframe_util = es_dataframe_util
-        # self._mappings_loader = mappings_loader
-        # self._index_type = build.IndexType[self._output.name]
-        # self._index_name, _ = self._index_type.get_mappings_details()
-
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         #  NOTE: should we end with super instead?
         dfbak = super()._write(df)
+
+        # TODO: Can we pass build config instead of builders.gene_expression_to_file config?
+        #   We need build.data_release and build.build_version here.
+        # filename = "gene_expressions_{data_release}_{build_version}.parquet".format(self._config.)
         dfbak.write.parquet(self._config.output_path, mode="overwrite")
         return dfbak

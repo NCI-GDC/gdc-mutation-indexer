@@ -92,6 +92,7 @@ def test__get_ge_builders__all_builders() -> None:
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
             build.DataFrame.GENE_EXPRESSION,
+            build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT,
         )
     )
     assert isinstance(
@@ -105,9 +106,15 @@ def test__get_ge_builders__all_builders() -> None:
         generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
     )
+    # TODO: Either we build the DataFrame.GENE_EXPRESSION twice (once from each builder),
+    #   or we remove the 1-1 mapping between DataFrames and builders.
     assert isinstance(
         generic_builders[build.DataFrame.GENE_EXPRESSION],
         builders.GeneExpressionIndexBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT],
+        builders.GeneExpressionFileBuilder,
     )
 
 
