@@ -7,6 +7,7 @@ import itertools
 import types
 from typing import Any, Iterable, Optional
 
+import dataclasses
 import marshmallow
 import marshmallow_dataclass
 
@@ -24,19 +25,44 @@ _DEFAULT_DICT = {}
 _DEFAULT_ACL = ("open",)
 
 
-def _get_index_template(build: dict) -> Optional[str]:
-    if "data_release" not in build or "build_version" not in build:
-        return None
+@dataclasses.dataclass(frozen=True)
+class DataReleaseAndBuildVersion:
+    data_release: Optional[str]
+    build_version: Optional[str]
 
-    data_release = build["data_release"]
-    build_version = build["build_version"]
+    def __bool__(self) -> bool:
+        return self.build_version is not None and self.data_release is not None
+
+
+def _get_data_release_and_build_version(build: dict) -> Optional[dict]:
+    return DataReleaseAndBuildVersion(
+        build.get("data_release"), build.get("build_version")
+    )
+
+
+def _get_index_template(build: dict) -> Optional[str]:
+    build_config: DataReleaseAndBuildVersion = _get_data_release_and_build_version(
+        build
+    )
+    if not build_config:
+        return None
 
     if build.get("study_label"):
         study_label = build["study_label"]
 
-        return f"{data_release}_viz_closed_{build_version}__{{}}__{study_label}__controlled"
+        return f"{build_config.data_release}_viz_closed_{build_config.build_version}__{{}}__{study_label}__controlled"
 
-    return f"{data_release}_viz_open_{build_version}__{{}}"
+    return f"{build_config.data_release}_viz_open_{build_config.build_version}__{{}}"
+
+
+def _get_builders_from_data(data: dict) -> Iterable[dict]:
+    builders: Iterable[dict] = itertools.chain(
+        data.get("builders", _DEFAULT_DICT).get("viz", _DEFAULT_DICT).values(),
+        data.get("builders", _DEFAULT_DICT)
+        .get("gene_expression", _DEFAULT_DICT)
+        .values(),
+    )
+    return builders
 
 
 @marshmallow_dataclass.dataclass(frozen=True)
@@ -56,12 +82,7 @@ class Configuration:
         This method insures that all builders' projects properties are defaulted to
         that of the main build prior to the marshmallow load process.
         """
-        builders: Iterable[dict] = itertools.chain(
-            data.get("builders", _DEFAULT_DICT).get("viz", _DEFAULT_DICT).values(),
-            data.get("builders", _DEFAULT_DICT)
-            .get("gene_expression", _DEFAULT_DICT)
-            .values(),
-        )
+        builders = _get_builders_from_data(data)
         projects = tuple(data.get("build", _DEFAULT_DICT).get("projects", ()))
         acl = tuple(data.get("build", _DEFAULT_DICT).get("acl", _DEFAULT_ACL))
 
@@ -91,6 +112,23 @@ class Configuration:
             )
 
         return data
+
+    @marshmallow.pre_load
+    def _update_backup_path(self, data: dict, **kwargs: Any) -> dict:
+        """
+        This method populates build_version and data_release (if present) in the
+        backup path configuration prior to the marshmallow load process.
+        """
+        version = _get_data_release_and_build_version(data)
+        if not version:
+            return data
+
+        builders = _get_builders_from_data(data)
+
+        for builder in builders:
+            path = builder.get("backup", _DEFAULT_DICT).get("path")
+            if path:
+                path.format(dataclasses.asdict(version))
 
 
 CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="exclude")
