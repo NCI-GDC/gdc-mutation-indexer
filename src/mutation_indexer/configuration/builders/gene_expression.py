@@ -26,4 +26,4 @@ class GeneExpression:
     expression_value: Builder
     primary_aliquot: Builder
     gene_expression: IndexBuilder
-    output_file: FileBuilder
+    gene_expression_to_file: FileBuilder

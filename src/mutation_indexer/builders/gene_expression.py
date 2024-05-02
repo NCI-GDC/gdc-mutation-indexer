@@ -230,7 +230,18 @@ class FileBuilder(bases.FileBuilder[gene_expression.FileBuilder, IndexBuilderInp
             config,
             spark_session,
             input_type=IndexBuilderInputs,
-            output=build.DataFrame.GENE_EXPRESSION,
+            # TODO: Either we build the DataFrame.GENE_EXPRESSION twice (once from each builder with its own build.DataFrame.GENE_EXPRESSION_X),
+            # or we remove the 1-1 mapping between DataFrames and builders used in main.
+            #
+            # ATM, a builder does 2 things as a monolith: builds a DataFrame and exports it as an ES index.
+            # Instead, if the export part (_write()) was removed from the builder and became a new entity (e.g. ExporterX subclass of ExportBase),
+            # we could assign DataFrames (builder.output) to exporters and elimintate the 1-1 mapping.
+            #
+            # So, in order to prevent the building of the "same" DataFrame twice, the easiest
+            # and efficient route would be to modify _write() in IndexBuilder above and let it output its DataFrame
+            # to a file (i.e. exploit the backup functionality builtin in every Builder)
+            # For the time being, I'm sticking to the recommendation of adding new builder class.
+            output=build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT,
         )
 
     def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
@@ -239,13 +250,13 @@ class FileBuilder(bases.FileBuilder[gene_expression.FileBuilder, IndexBuilderInp
             [
                 StructField(col_name, col_type)
                 for col_name, col_type in (
-                    ("case_id", StringType())("gene_expression_id", StringType())(
-                        "gene_id", StringType()
-                    )("log2_uqfpkm", DoubleType())("submitter_id", StringType())(
-                        "symbol", StringType()
-                    )(
-                        "uqfpkm", DoubleType()
-                    )
+                    ("case_id", StringType()),
+                    ("gene_expression_id", StringType()),
+                    ("gene_id", StringType()),
+                    ("log2_uqfpkm", DoubleType()),
+                    ("submitter_id", StringType()),
+                    ("symbol", StringType()),
+                    ("uqfpkm", DoubleType()),
                 )
             ]
         )
