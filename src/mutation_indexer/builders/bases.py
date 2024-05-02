@@ -813,34 +813,34 @@ class IndexBuilder(
         return df
 
 
-TFileConfig = TypeVar("TFileConfig", bound=common.FileBuilder)
+# TFileConfig = TypeVar("TFileConfig", bound=common.FileBuilder)
 
 
-class FileBuilder(
-    # TODO: Do we need abc.ABC?
-    Generic[TFileConfig, TInputDFs],
-    InputBuilder[TFileConfig, TInputDFs],
-    abc.ABC,
-):
-    """A builder that aims to sink its output to a file."""
+# class FileBuilder(
+#     # TODO: Do we need abc.ABC?
+#     Generic[TFileConfig, TInputDFs],
+#     InputBuilder[TFileConfig, TInputDFs],
+#     abc.ABC,
+# ):
+#     """A builder that aims to sink its output to a file."""
 
-    __slots__ = ()  # TODO: do we need this empty?
+#     __slots__ = ()  # TODO: do we need this empty?
 
-    def __init__(
-        self,
-        config: TFileConfig,
-        spark_session: sql.SparkSession,
-        input_type: type[TInputDFs],
-        output: build.DataFrame,
-    ) -> None:
-        super().__init__(config, spark_session, input_type, output)
+#     def __init__(
+#         self,
+#         config: TFileConfig,
+#         spark_session: sql.SparkSession,
+#         input_type: type[TInputDFs],
+#         output: build.DataFrame,
+#     ) -> None:
+#         super().__init__(config, spark_session, input_type, output)
 
-    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        #  NOTE: should we end with super instead?
-        dfbak = super()._write(df)
+#     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+#         #  NOTE: should we end with super instead?
+#         dfbak = super()._write(df)
 
-        # TODO: Can we pass build config instead of builders.gene_expression_to_file config?
-        #   We need build.data_release and build.build_version here.
-        # filename = "gene_expressions_{data_release}_{build_version}.parquet".format(self._config.)
-        dfbak.write.parquet(self._config.output_path, mode="overwrite")
-        return dfbak
+#         # TODO: Can we pass build config instead of builders.gene_expression_to_file config?
+#         #   We need build.data_release and build.build_version here.
+#         # filename = "gene_expressions_{data_release}_{build_version}.parquet".format(self._config.)
+#         dfbak.write.parquet(self._config.output_path, mode="overwrite")
+#         return dfbak

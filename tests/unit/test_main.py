@@ -92,7 +92,7 @@ def test__get_ge_builders__all_builders() -> None:
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
             build.DataFrame.GENE_EXPRESSION,
-            build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT,
+            # build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT,
         )
     )
     assert isinstance(
@@ -112,10 +112,10 @@ def test__get_ge_builders__all_builders() -> None:
         generic_builders[build.DataFrame.GENE_EXPRESSION],
         builders.GeneExpressionIndexBuilder,
     )
-    assert isinstance(
-        generic_builders[build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT],
-        builders.GeneExpressionFileBuilder,
-    )
+    # assert isinstance(
+    #     generic_builders[build.DataFrame.GENE_EXPRESSION_FOR_FILE_OUTPUT],
+    #     builders.GeneExpressionFileBuilder,
+    # )
 
 
 def test__get_ge_builders__excludes() -> None:

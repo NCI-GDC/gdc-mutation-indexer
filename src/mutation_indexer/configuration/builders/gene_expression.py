@@ -11,7 +11,7 @@ from mutation_indexer.configuration.builders.common import (
     Builder,
     IndexBuilder,
     GeneModelBuilder,
-    FileBuilder,
+    # FileBuilder,
 )
 
 
@@ -26,4 +26,4 @@ class GeneExpression:
     expression_value: Builder
     primary_aliquot: Builder
     gene_expression: IndexBuilder
-    gene_expression_to_file: FileBuilder
+    # gene_expression_to_file: FileBuilder

@@ -301,7 +301,7 @@ def _get_ge_builders(
                 mappings_loader,
                 doc_dataframe_util,
             ),
-            builders.GeneExpressionFileBuilder(config.gene_expression, spark_session),
+            # builders.GeneExpressionFileBuilder(config.gene_expression, spark_session),
         )
 
         yield from input_ge_builders
