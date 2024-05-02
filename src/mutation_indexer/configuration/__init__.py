@@ -2,6 +2,7 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import itertools
 import types
 from typing import Any, Iterable, Optional
@@ -48,6 +49,7 @@ class Configuration:
     indexd: indexd.IndexD
     spark: spark.Spark
 
+    # NOTE: Will add another "patcher" to patch the backup output path to the gen'ed configured output path.
     @marshmallow.pre_load
     def _add_projects_to_builders(self, data: dict, **kwargs: Any) -> dict:
         """

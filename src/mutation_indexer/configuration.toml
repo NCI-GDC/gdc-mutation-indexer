@@ -43,8 +43,11 @@ is_cached = true
 partition_size = 12
 
 [builders.gene_expression.gene_expression.backup]
-mode = "NEITHER"
-path = ""
+# TODO: JIRA-X: Set mode=NEITHER and remove path when composition of Builder with multiple Exporters is done.
+# mode = "NEITHER"
+# path = ""
+# Build config will be injected so data_release and build_version are part of the in path used for backup.
+path = "./{build.data_release}/gene_expression_to_file/{build.build_version}"
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
@@ -63,16 +66,15 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
-[builders.gene_expression.gene_expression_to_file]
-is_cached = true
+# [builders.gene_expression.gene_expression_to_file]
+# is_cached = true
 # TODO: Ideally, we should have build config so we can inject data_release and build_version in path.
 # output_path = "./{build.data_release}/gene_expression_to_file/{build.build_version}"
-output_path = "./data_release/gene_expression_to_file/build_version/gene_expressions_drN_vN.parquet"
+# output_path = "./data_release/gene_expression_to_file/build_version/gene_expressions_drN_vN.parquet"
 
-[builders.gene_expression.gene_expression_to_file.backup]
-# TODO: NEITHER
-mode = "WRITE"
-path = ""
+# [builders.gene_expression.gene_expression_to_file.backup]
+# mode = "WRITE"
+# path = ""
 
 [builders.viz.ascat]
 is_cached = true
