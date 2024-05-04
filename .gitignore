@@ -94,3 +94,4 @@ spark-2.*
 /_version.py
 /.env
 .configs/
+data_release/
