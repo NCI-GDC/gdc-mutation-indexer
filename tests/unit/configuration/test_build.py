@@ -1,10 +1,16 @@
 import uuid
-from typing import Iterable
+from typing import Any, Generator, Iterable
 
 import pytest
+import importlib_resources as resources
+import toml
 from marshmallow import validate
 
-from mutation_indexer.configuration import build as build_config
+from mutation_indexer.configuration import (
+    build as build_config,
+    Configuration,
+    CONFIG_SCHEMA,
+)
 from mutation_indexer.constants import build
 
 
@@ -89,3 +95,42 @@ class TestBuild:
         )
 
         assert not ge_build.is_viz_build()
+
+
+@pytest.fixture
+def configuration_toml() -> Generator[dict[str, Any], None, None]:
+    yield toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
+
+
+class TestLoadConfiguration:
+
+    @pytest.mark.parametrize("data_release", ("dr40", "dr1", ""))
+    @pytest.mark.parametrize("build_version", ("v1", "v20", ""))
+    @pytest.mark.parametrize(
+        "backup_path",
+        (
+            "",
+            "path",
+            "{data_release}",
+            "{build_version}",
+            "{data_release}/{build_version}/file.parquet",
+            "/path/{data_release}/{build_version}/file_{data_release}_{build_version}.parquet",
+        ),
+    )
+    def test_backup_path_honors_datarelease_and_buildversion(
+        self, configuration_toml, data_release, build_version, backup_path
+    ) -> None:
+        configuration_toml["build"]["data_release"] = data_release
+        configuration_toml["build"]["build_version"] = build_version
+        configuration_toml["builders"]["gene_expression"]["gene_expression"]["backup"][
+            "path"
+        ] = backup_path
+
+        config: Configuration = CONFIG_SCHEMA.load(configuration_toml)
+
+        assert (
+            config.builders.gene_expression.gene_expression.backup.path
+            == backup_path.format(
+                data_release=data_release, build_version=build_version
+            )
+        )

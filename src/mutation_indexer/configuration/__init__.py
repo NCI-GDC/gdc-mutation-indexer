@@ -119,16 +119,17 @@ class Configuration:
         This method populates build_version and data_release (if present) in the
         backup path configuration prior to the marshmallow load process.
         """
-        version = _get_data_release_and_build_version(data)
-        if not version:
-            return data
+        version = _get_data_release_and_build_version(data.get("build", _DEFAULT_DICT))
+        if version:
+            builders = _get_builders_from_data(data)
 
-        builders = _get_builders_from_data(data)
+            for builder in builders:
+                backup = builder.get("backup", _DEFAULT_DICT)
+                if "path" in backup:
+                    path = backup["path"]
+                    backup["path"] = path.format(**dataclasses.asdict(version))
 
-        for builder in builders:
-            path = builder.get("backup", _DEFAULT_DICT).get("path")
-            if path:
-                path.format(dataclasses.asdict(version))
+        return data
 
 
 CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="exclude")
