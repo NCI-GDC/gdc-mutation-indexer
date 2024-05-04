@@ -34,7 +34,7 @@ def ge_config() -> configuration.Configuration:
 
         return data
 
-    return test_setup.load_configuraiton(pre_load)
+    return test_setup.load_configuration(pre_load)
 
 
 @pytest.fixture(scope="module")

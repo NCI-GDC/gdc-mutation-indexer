@@ -83,7 +83,7 @@ def test_data_frame_util_write(
     with open(case_mapping_file, "r") as f:
         model_mapper = mock.MagicMock(**yaml.safe_load(f))
 
-    conf = test_setup.load_configuraiton(load_config)
+    conf = test_setup.load_configuration(load_config)
     case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
     mappings_loader = mock.MagicMock()
     mappings_loader.load_mappings.return_value = model_mapper
