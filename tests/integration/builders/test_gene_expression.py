@@ -22,15 +22,6 @@ logger = logging.getLogger(__name__)
 def ge_config() -> configuration.Configuration:
     def pre_load(data: dict) -> dict:
         data["build"]["index_types"] = ["GENE_EXPRESSION"]
-        # TODO: remove this (only for debugging purposes)
-        # From configuration.toml:
-        # [builders.gene_expression.case.backup]
-        # mode = "NEITHER"
-        # path = ""
-        backup = data["builders"]["gene_expression"]["case"]["backup"] = {}
-        backup["mode"] = build.BackupMode.WRITE.name
-        path = pathlib.Path().cwd() / "cases.parquet"
-        backup["path"] = str(path.absolute())
 
         return data
 
@@ -166,3 +157,34 @@ def test_gene_expression_builder(
 
     assert len(expressions) == 50
     assert len(gene_ids) == 10
+
+
+@pytest.mark.usefixtures("ge_file_docs")
+def test_gene_expression_builder_writes_backup_to_path(
+    ge_config: configuration.Configuration,
+    ge_builder: gene_expression.IndexBuilder,
+    gene_model_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+) -> None:
+    inputs = gene_expression.IndexBuilderInputs(
+        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
+    )
+    # Assert default congfiguration (ideally, we should create Configuration here but it's a frozen dataclass).
+    assert (
+        ge_config.builders.gene_expression.gene_expression.backup.mode
+        == build.BackupMode.WRITE
+    )
+    assert (
+        ge_config.builders.gene_expression.gene_expression.backup.path
+        == "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+    )
+    assert ge_config.build.build_version == "v0"
+    assert ge_config.build.build_version == "test"
+
+    ge_builder.build(**inputs)
+
+    parquet_dump = pathlib.Path(
+        ge_config.builders.gene_expression.gene_expression.backup.path
+    )
+    assert parquet_dump.exists()
+    assert parquet_dump.is_dir()
