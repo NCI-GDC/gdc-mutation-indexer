@@ -290,21 +290,13 @@ def _get_ge_builders(
     yield from input_builders
 
     if build.IndexType.GENE_EXPRESSION in index_types:
-        # NOTE: Create our own builder (inherited from builder.bases.InputBuilder),
-        #   place it in the base builder path and call it ~FileBuilder.
-        #   whose write() is parquet output.
-        input_ge_builders = (
-            builders.GeneExpressionIndexBuilder(
+        yield builders.GeneExpressionIndexBuilder(
                 config.gene_expression,
                 spark_session,
                 es_dataframe_util,
                 mappings_loader,
                 doc_dataframe_util,
-            ),
-            # builders.GeneExpressionFileBuilder(config.gene_expression, spark_session),
-        )
-
-        yield from input_ge_builders
+            )
 
 
 def get_ge_builders(
@@ -326,7 +318,6 @@ def get_ge_builders(
     """
     indexd = get_index_client(config.indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
-    # NOTE: Build the gene-expr builder using es_util as DF writer.
     es_dataframe_util = es_utils.DataFrameUtil(
         config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
     )

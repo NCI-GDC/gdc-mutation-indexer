@@ -25,5 +25,4 @@ from mutation_indexer.builders.cnv_occurrence_centric import CNVOccurrenceCentri
 from mutation_indexer.builders.gene_expression import (
     IndexBuilder as GeneExpressionIndexBuilder,
     PrimaryAliquotBuilder as GeneExpressionPrimaryAliquotBuilder,
-    # FileBuilder as GeneExpressionFileBuilder,
 )

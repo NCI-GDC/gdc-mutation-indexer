@@ -75,7 +75,6 @@ class Configuration:
     indexd: indexd.IndexD
     spark: spark.Spark
 
-    # NOTE: Will add another "patcher" to patch the backup output path to the gen'ed configured output path.
     @marshmallow.pre_load
     def _add_projects_to_builders(self, data: dict, **kwargs: Any) -> dict:
         """
@@ -114,7 +113,7 @@ class Configuration:
         return data
 
     @marshmallow.pre_load
-    def _update_backup_path(self, data: dict, **kwargs: Any) -> dict:
+    def _update_backup_paths(self, data: dict, **kwargs: Any) -> dict:
         """
         This method populates build_version and data_release (if present) in the
         backup path configuration prior to the marshmallow load process.

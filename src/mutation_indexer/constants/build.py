@@ -9,7 +9,6 @@ class DataFrame(enum.IntEnum):
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()
     GENE_EXPRESSION = enum.auto()
-    # GENE_EXPRESSION_FOR_FILE_OUTPUT = enum.auto()
     GENE_MODEL = enum.auto()
     MAF = enum.auto()
     MAF_METADATA = enum.auto()

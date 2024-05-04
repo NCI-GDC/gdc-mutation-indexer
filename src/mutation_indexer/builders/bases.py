@@ -121,7 +121,6 @@ class InputDataFrameManger(Generic[TInputDFs]):
 
 
 class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
-    # NOTE: build() calls _write() which has configurable backup to parquet
     __slots__ = ("_config", "_spark_session", "_input_manager", "_output")
 
     def __init__(
@@ -192,10 +191,6 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             The original, cached, or written data frame depending on the builders
             configuration.
         """
-        # NOTE: backup can be turned on in configuration.toml
-        # NOTE: We will lift this code to output parquet but w/o using _config.backup
-        #   because the semantics of _config.backup are for "debugging" purpouses and not
-        #   for sinking purpouses.
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
             df.write.parquet(self._config.backup.path, mode="overwrite")
@@ -203,7 +198,6 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()
 
-        # NOTE: why is `is_cached` a lower priotity "rule" than backup READ/BOTH? (just curious)
         return df.cache() if self._config.is_cached else df
 
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
@@ -811,36 +805,3 @@ class IndexBuilder(
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
         return df
-
-
-# TFileConfig = TypeVar("TFileConfig", bound=common.FileBuilder)
-
-
-# class FileBuilder(
-#     # TODO: Do we need abc.ABC?
-#     Generic[TFileConfig, TInputDFs],
-#     InputBuilder[TFileConfig, TInputDFs],
-#     abc.ABC,
-# ):
-#     """A builder that aims to sink its output to a file."""
-
-#     __slots__ = ()  # TODO: do we need this empty?
-
-#     def __init__(
-#         self,
-#         config: TFileConfig,
-#         spark_session: sql.SparkSession,
-#         input_type: type[TInputDFs],
-#         output: build.DataFrame,
-#     ) -> None:
-#         super().__init__(config, spark_session, input_type, output)
-
-#     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-#         #  NOTE: should we end with super instead?
-#         dfbak = super()._write(df)
-
-#         # TODO: Can we pass build config instead of builders.gene_expression_to_file config?
-#         #   We need build.data_release and build.build_version here.
-#         # filename = "gene_expressions_{data_release}_{build_version}.parquet".format(self._config.)
-#         dfbak.write.parquet(self._config.output_path, mode="overwrite")
-#         return dfbak
