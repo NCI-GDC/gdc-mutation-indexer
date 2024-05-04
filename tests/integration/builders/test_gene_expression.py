@@ -169,17 +169,17 @@ def test_gene_expression_builder_writes_backup_to_path(
     inputs = gene_expression.IndexBuilderInputs(
         gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
     )
-    # Assert default congfiguration (ideally, we should create Configuration here but it's a frozen dataclass).
+    # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
+    assert ge_config.build.build_version == "v0"
+    assert ge_config.build.build_version == "test"
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.mode
         == build.BackupMode.WRITE
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.path
-        == "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+        == "./data_release/test/v0/gene_expressions_test_v0.parquet"
     )
-    assert ge_config.build.build_version == "v0"
-    assert ge_config.build.build_version == "test"
 
     ge_builder.build(**inputs)
 
