@@ -166,6 +166,7 @@ def test_gene_expression_builder_writes_backup_to_path(
     gene_model_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
 ) -> None:
+    ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
     inputs = gene_expression.IndexBuilderInputs(
         gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
     )
