@@ -171,7 +171,7 @@ def test_gene_expression_builder_writes_backup_to_path(
     )
     # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
     assert ge_config.build.build_version == "v0"
-    assert ge_config.build.build_version == "test"
+    assert ge_config.build.data_release == "test"
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.mode
         == build.BackupMode.WRITE
