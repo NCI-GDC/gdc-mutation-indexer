@@ -113,6 +113,7 @@ def ge_builder(
         doc_dataframe_util,
     )
 
+    # Delete the index
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
     es_client.indices.delete(index=ge_index, ignore_unavailable=True)
 
