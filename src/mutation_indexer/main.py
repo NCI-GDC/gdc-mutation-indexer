@@ -291,12 +291,12 @@ def _get_ge_builders(
 
     if build.IndexType.GENE_EXPRESSION in index_types:
         yield builders.GeneExpressionIndexBuilder(
-                config.gene_expression,
-                spark_session,
-                es_dataframe_util,
-                mappings_loader,
-                doc_dataframe_util,
-            )
+            config.gene_expression,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            doc_dataframe_util,
+        )
 
 
 def get_ge_builders(
