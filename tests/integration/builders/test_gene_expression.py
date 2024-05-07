@@ -1,8 +1,9 @@
 import logging
 import pathlib
-from collections import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any, Optional
 from unittest import mock
+import tempfile
 
 import elasticsearch
 from elasticsearch import helpers
@@ -19,13 +20,18 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def ge_config() -> configuration.Configuration:
-    def pre_load(data: dict) -> dict:
-        data["build"]["index_types"] = ["GENE_EXPRESSION"]
+def ge_config() -> Iterator[configuration.Configuration]:
+    with tempfile.TemporaryDirectory() as tmpdir:
 
-        return data
+        def pre_load(data: dict) -> dict:
+            data["build"]["index_types"] = ["GENE_EXPRESSION"]
 
-    return test_setup.load_configuraiton(pre_load)
+            backup = data["builders"]["gene_expression"]["gene_expression"]["backup"]
+            backup["path"] = tmpdir + "/" + backup["path"]
+
+            return data
+
+        yield test_setup.load_configuration(pre_load)
 
 
 @pytest.fixture(scope="module")
@@ -157,3 +163,34 @@ def test_gene_expression_builder(
 
     assert len(expressions) == 50
     assert len(gene_ids) == 10
+
+
+@pytest.mark.usefixtures("ge_file_docs")
+def test_gene_expression_builder_writes_backup_to_path(
+    ge_config: configuration.Configuration,
+    ge_builder: gene_expression.IndexBuilder,
+    gene_model_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+) -> None:
+    ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
+    inputs = gene_expression.IndexBuilderInputs(
+        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
+    )
+    # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
+    assert ge_config.build.build_version == "v0"
+    assert ge_config.build.data_release == "test"
+    assert (
+        ge_config.builders.gene_expression.gene_expression.backup.mode
+        == build.BackupMode.WRITE
+    )
+    assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
+        "./data_release/test/v0/gene_expressions_test_v0.parquet"
+    )
+
+    ge_builder.build(**inputs)
+
+    parquet_dump = pathlib.Path(
+        ge_config.builders.gene_expression.gene_expression.backup.path
+    )
+    assert parquet_dump.exists()
+    assert parquet_dump.is_dir()
