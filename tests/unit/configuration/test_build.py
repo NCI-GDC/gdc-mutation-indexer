@@ -1,5 +1,6 @@
 import uuid
-from typing import Any, Generator, Iterable
+from typing import Any
+from collections.abc import Iterable, Iterator
 
 import pytest
 import importlib_resources as resources
@@ -98,7 +99,7 @@ class TestBuild:
 
 
 @pytest.fixture
-def configuration_toml() -> Generator[dict[str, Any], None, None]:
+def configuration_toml() -> Iterator[dict[str, Any]]:
     yield toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
 
 

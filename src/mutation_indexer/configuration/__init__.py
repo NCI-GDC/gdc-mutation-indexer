@@ -27,6 +27,7 @@ _DEFAULT_ACL = ("open",)
 
 @dataclasses.dataclass(frozen=True)
 class DataReleaseAndBuildVersion:
+    """Should be specified in configuration.toml."""
     data_release: Optional[str]
     build_version: Optional[str]
 
@@ -34,7 +35,7 @@ class DataReleaseAndBuildVersion:
         return self.build_version is not None and self.data_release is not None
 
 
-def _get_data_release_and_build_version(build: dict) -> Optional[dict]:
+def _get_data_release_and_build_version(build: dict) -> DataReleaseAndBuildVersion:
     return DataReleaseAndBuildVersion(
         build.get("data_release"), build.get("build_version")
     )
@@ -112,6 +113,7 @@ class Configuration:
 
         return data
 
+    # TODO: DEV-2690 When a Builder can have multiple exporters, we won't need to patch path.
     @marshmallow.pre_load
     def _update_backup_paths(self, data: dict, **kwargs: Any) -> dict:
         """

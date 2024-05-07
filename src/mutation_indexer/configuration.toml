@@ -5,7 +5,7 @@ secret_key = ""
 
 [build]
 acl = []
-build_version = "v0"  # TODO: Consider to do zero padding (or when we @pre_load) so it's easier to sort?
+build_version = "v0"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
