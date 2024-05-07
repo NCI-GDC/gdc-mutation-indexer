@@ -7,11 +7,7 @@ import importlib_resources as resources
 import toml
 from marshmallow import validate
 
-from mutation_indexer.configuration import (
-    build as build_config,
-    Configuration,
-    CONFIG_SCHEMA,
-)
+from mutation_indexer import configuration
 from mutation_indexer.constants import build
 
 
@@ -32,13 +28,13 @@ class TestIndexTypesValidator:
         ids=("partial", "all"),
     )
     def test__call__viz_indices(self, viz_indices: Iterable[build.IndexType]) -> None:
-        validator = build_config.IndexTypesValidator()
+        validator = configuration.build.IndexTypesValidator()
 
         assert viz_indices == validator(viz_indices)
 
     def test__call__ge_indices(self) -> None:
         ge_indices = (build.IndexType.GENE_EXPRESSION,)
-        validator = build_config.IndexTypesValidator()
+        validator = configuration.build.IndexTypesValidator()
 
         assert ge_indices == validator(ge_indices)
 
@@ -60,7 +56,7 @@ class TestIndexTypesValidator:
         ids=("partial", "all", "none"),
     )
     def test__call__both(self, indices: Iterable[build.IndexType]) -> None:
-        validator = build_config.IndexTypesValidator()
+        validator = configuration.build.IndexTypesValidator()
 
         with pytest.raises(validate.ValidationError):
             validator(indices)
@@ -68,7 +64,7 @@ class TestIndexTypesValidator:
 
 class TestBuild:
     def test__is_viz_build__true_if_no_gene_expression(self) -> None:
-        viz_build = build_config.Build(
+        viz_build = configuration.build.Build(
             study_label="",
             data_release="",
             build_version="",
@@ -83,7 +79,7 @@ class TestBuild:
         assert viz_build.is_viz_build()
 
     def test__is_viz_build__false_if_gene_expression(self) -> None:
-        ge_build = build_config.Build(
+        ge_build = configuration.build.Build(
             study_label="",
             data_release="",
             build_version="",
@@ -127,7 +123,9 @@ class TestLoadConfiguration:
             "path"
         ] = backup_path
 
-        config: Configuration = CONFIG_SCHEMA.load(configuration_toml)
+        config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(
+            configuration_toml
+        )
 
         assert (
             config.builders.gene_expression.gene_expression.backup.path
