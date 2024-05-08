@@ -12,6 +12,7 @@ from mutation_indexer.builders.gene_model import GeneModelBuilder
 from mutation_indexer.builders.consequence import ConsequenceBuilder
 from mutation_indexer.builders.observation import ObservationBuilder
 from mutation_indexer.builders.primary_aliquot import PrimaryAliquotBuilder
+
 # Centric builders
 from mutation_indexer.builders.case_centric import CaseCentricBuilder
 from mutation_indexer.builders.gene_centric import GeneCentricBuilder

@@ -77,7 +77,7 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
 def default_config(
     configure_gene_model: Callable[[dict], dict]
 ) -> configuration.Configuration:
-    return test_setup.load_configuraiton(configure_gene_model)
+    return test_setup.load_configuration(configure_gene_model)
 
 
 @pytest.fixture(scope="session")

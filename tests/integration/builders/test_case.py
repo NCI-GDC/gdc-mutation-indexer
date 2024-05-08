@@ -63,7 +63,7 @@ class TestCaseBuilder:
             data["build"]["projects"] = projects
             return data
 
-        conf = test_setup.load_configuraiton(load_config)
+        conf = test_setup.load_configuration(load_config)
         es_dataframe_util = es_utils.DataFrameUtil(
             conf.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
         )
