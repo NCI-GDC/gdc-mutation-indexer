@@ -150,6 +150,7 @@ class TestAscatBuilder:
         assert ascat_row.case_id == metadata.case_id
         assert ascat_row.end_position == gene_model.gene_end
         assert ascat_row.gene_chromosome == gene_model.chromosome
+        assert ascat_row.src_file_id == metadata.file_id
         assert ascat_row.start_position == gene_model.gene_start
         assert ascat_row.symbol == gene_model.symbol
 

@@ -319,6 +319,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "observation_id",
             "occurrence_id",
             "omim_gene",
+            F.col("file_id").alias("src_file_id"),
             "start_position",
             "symbol",
             "synonyms",

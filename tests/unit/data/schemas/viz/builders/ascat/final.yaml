@@ -97,6 +97,8 @@ fields:
     containsNull: true
     elementType: string
     type: array
+- <<: *string_field
+  name: src_file_id
 - <<: *long_field
   name: start_position
 - <<: *string_field
