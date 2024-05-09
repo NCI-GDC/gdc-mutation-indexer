@@ -11,4 +11,4 @@ def test__build__validate_index_types() -> None:
         return data
 
     with pytest.raises(validate.ValidationError):
-        test_setup.load_configuraiton(pre_load)
+        test_setup.load_configuration(pre_load)

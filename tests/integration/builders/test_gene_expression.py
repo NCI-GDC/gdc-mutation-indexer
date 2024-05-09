@@ -102,22 +102,26 @@ def ge_builder(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     indexd: client.IndexClient,
-) -> gene_expression.IndexBuilder:
+) -> Iterable[gene_expression.IndexBuilder]:
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
         ge_config.elasticsearch, spark_session, es_client, mappings_loader
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(
-        indexd, spark_session, mock.MagicMock()
+        indexd, spark_session, logger=mock.MagicMock()
     )
 
-    return gene_expression.IndexBuilder(
+    yield gene_expression.IndexBuilder(
         ge_config.builders.gene_expression.gene_expression,
         spark_session,
         es_dataframe_util,
         mappings_loader,
         doc_dataframe_util,
     )
+
+    # Delete the index
+    ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
+    es_client.indices.delete(index=ge_index, ignore_unavailable=True)
 
 
 @pytest.fixture(scope="module")
