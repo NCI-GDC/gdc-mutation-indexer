@@ -24,10 +24,25 @@ def ge_config() -> Iterator[configuration.Configuration]:
     with tempfile.TemporaryDirectory() as tmpdir:
 
         def pre_load(data: dict) -> dict:
+            # data["build"]["index_types"] = ["GENE_EXPRESSION", "GENE_EXPRESSION_FOR_FILE_OUTPUT"]
             data["build"]["index_types"] = ["GENE_EXPRESSION"]
 
-            backup = data["builders"]["gene_expression"]["gene_expression"]["backup"]
-            backup["path"] = tmpdir + "/" + backup["path"]
+            # Turn on backup for gene_expression and gene_expression_to_file
+            for builder in ("gene_expression", "gene_expression_to_file"):
+                backup = data["builders"]["gene_expression"][builder]["backup"]
+                backup["path"] = (
+                    tmpdir
+                    + "/backup/data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+                )
+                backup["mode"] = "WRITE"
+
+            # Set output_path for gene_expression_to_file
+            data["builders"]["gene_expression"]["gene_expression_to_file"][
+                "output_path"
+            ] = (
+                tmpdir
+                + "/parquet_output/data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+            )
 
             return data
 
@@ -131,7 +146,7 @@ def ge_file_builder(
     indexd: client.IndexClient,
 ) -> gene_expression.FileBuilder:
     return gene_expression.FileBuilder(
-        ge_config.builders.gene_expression.gene_expression,
+        ge_config.builders.gene_expression.gene_expression_to_file,
         spark_session,
     )
 
@@ -200,7 +215,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == build.BackupMode.WRITE
     )
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "./data_release/test/v0/gene_expressions_test_v0.parquet"
+        "/backup/data_release/test/v0/gene_expressions_test_v0.parquet"
     )
 
     ge_builder.build(**inputs)
@@ -213,7 +228,7 @@ def test_gene_expression_builder_writes_backup_to_path(
 
 
 @pytest.mark.usefixtures("ge_file_docs")
-def test_gene_expression_file_builder(
+def test_gene_expression_file_builder_writes_parquet_and_backup(
     ge_config: configuration.Configuration,
     ge_file_builder: gene_expression.FileBuilder,
     gene_model_df: sql.DataFrame,
@@ -224,3 +239,15 @@ def test_gene_expression_file_builder(
     )
 
     ge_file_builder.build(**inputs)
+
+    parquet_backup_dump = pathlib.Path(
+        ge_config.builders.gene_expression.gene_expression_to_file.backup.path
+    )
+    assert parquet_backup_dump.exists()
+    assert parquet_backup_dump.is_dir()
+
+    parquet_output = pathlib.Path(
+        ge_config.builders.gene_expression.gene_expression_to_file.output_path
+    )
+    assert parquet_output.exists()
+    assert parquet_output.is_dir()
