@@ -228,7 +228,27 @@ def test_gene_expression_builder_writes_backup_to_path(
 
 
 @pytest.mark.usefixtures("ge_file_docs")
-def test_gene_expression_file_builder_writes_parquet_and_backup(
+def test_gene_expression_file_builder_writes_parquet(
+    ge_config: configuration.Configuration,
+    ge_file_builder: gene_expression.FileBuilder,
+    gene_model_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+) -> None:
+    inputs = gene_expression.IndexBuilderInputs(
+        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
+    )
+
+    ge_file_builder.build(**inputs)
+
+    parquet_output = pathlib.Path(
+        ge_config.builders.gene_expression.gene_expression_to_file.output_path
+    )
+    assert parquet_output.exists()
+    assert parquet_output.is_dir()
+
+
+@pytest.mark.usefixtures("ge_file_docs")
+def test_gene_expression_file_builder_writes_backup(
     ge_config: configuration.Configuration,
     ge_file_builder: gene_expression.FileBuilder,
     gene_model_df: sql.DataFrame,
@@ -245,9 +265,3 @@ def test_gene_expression_file_builder_writes_parquet_and_backup(
     )
     assert parquet_backup_dump.exists()
     assert parquet_backup_dump.is_dir()
-
-    parquet_output = pathlib.Path(
-        ge_config.builders.gene_expression.gene_expression_to_file.output_path
-    )
-    assert parquet_output.exists()
-    assert parquet_output.is_dir()

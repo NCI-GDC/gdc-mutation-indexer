@@ -28,6 +28,7 @@ _DEFAULT_ACL = ("open",)
 @dataclasses.dataclass(frozen=True)
 class DataReleaseAndBuildVersion:
     """Should be specified in configuration.toml."""
+
     data_release: Optional[str]
     build_version: Optional[str]
 
@@ -113,7 +114,7 @@ class Configuration:
 
         return data
 
-    # TODO: DEV-2690 When a Builder can have multiple exporters, we won't need to patch path.
+    # TODO: DEV-2690 When a Builder can have multiple exporters, we might not need to patch path.
     @marshmallow.pre_load
     def _update_backup_paths(self, data: dict, **kwargs: Any) -> dict:
         """
@@ -129,6 +130,25 @@ class Configuration:
                 if "path" in backup:
                     path = backup["path"]
                     backup["path"] = path.format(**dataclasses.asdict(version))
+
+        return data
+
+    # TODO: DEV-2690 When a Builder can have multiple exporters, we mioght need to patch path.
+    @marshmallow.pre_load
+    def _update_output_path(self, data: dict, **kwargs: Any) -> dict:
+        """
+        This method populates build_version and data_release (if present) in the
+        GeneExpressionFileBuilder's output_path configuration prior to the marshmallow load process.
+        """
+        version = _get_data_release_and_build_version(data.get("build", _DEFAULT_DICT))
+        if version:
+            geneexpression_filebuilder = data["builders"]["gene_expression"][
+                "gene_expression_to_file"
+            ]
+            output_path = geneexpression_filebuilder["output_path"]
+            geneexpression_filebuilder["output_path"] = output_path.format(
+                **dataclasses.asdict(version)
+            )
 
         return data
 

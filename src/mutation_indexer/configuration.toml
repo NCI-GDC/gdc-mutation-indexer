@@ -65,13 +65,11 @@ path = ""
 
 [builders.gene_expression.gene_expression_to_file]
 is_cached = true
-# TODO: Ideally, we should have build config so we can inject data_release and build_version in path.
-# output_path = "./{build.data_release}/gene_expression_to_file/{build.build_version}"
-output_path = "./data_release/gene_expression_to_file/build_version/gene_expressions_drN_vN.parquet"
+output_path = "./parquet_output/data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
 
 [builders.gene_expression.gene_expression_to_file.backup]
-mode = "WRITE"
-path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+mode = "NEITHER"
+path = ""
 
 [builders.viz.ascat]
 is_cached = true
