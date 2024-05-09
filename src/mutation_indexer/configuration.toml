@@ -43,8 +43,10 @@ is_cached = true
 partition_size = 12
 
 [builders.gene_expression.gene_expression.backup]
-mode = "WRITE"
-path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+# mode = "WRITE"
+# path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+mode = "NEITHER"
+path = ""
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
@@ -70,9 +72,8 @@ is_cached = true
 output_path = "./data_release/gene_expression_to_file/build_version/gene_expressions_drN_vN.parquet"
 
 [builders.gene_expression.gene_expression_to_file.backup]
-# TODO: NEITHER
 mode = "WRITE"
-path = ""
+path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
 
 [builders.viz.ascat]
 is_cached = true

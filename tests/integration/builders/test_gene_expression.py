@@ -124,6 +124,18 @@ def ge_builder(
     es_client.indices.delete(index=ge_index, ignore_unavailable=True)
 
 
+@pytest.fixture
+def ge_file_builder(
+    ge_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
+    indexd: client.IndexClient,
+) -> gene_expression.FileBuilder:
+    return gene_expression.FileBuilder(
+        ge_config.builders.gene_expression.gene_expression,
+        spark_session,
+    )
+
+
 @pytest.fixture(scope="module")
 def ge_file_docs(
     ge_config: configuration.Configuration,
@@ -198,3 +210,17 @@ def test_gene_expression_builder_writes_backup_to_path(
     )
     assert parquet_dump.exists()
     assert parquet_dump.is_dir()
+
+
+@pytest.mark.usefixtures("ge_file_docs")
+def test_gene_expression_file_builder(
+    ge_config: configuration.Configuration,
+    ge_file_builder: gene_expression.FileBuilder,
+    gene_model_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+) -> None:
+    inputs = gene_expression.IndexBuilderInputs(
+        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
+    )
+
+    ge_file_builder.build(**inputs)

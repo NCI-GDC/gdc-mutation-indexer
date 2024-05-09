@@ -260,4 +260,4 @@ class FileBuilder(bases.FileBuilder[gene_expression.FileBuilder, IndexBuilderInp
                 )
             ]
         )
-        return self.spark_session.createDataFrame(data=[], schema=schema)
+        return self._spark_session.createDataFrame(data=[], schema=schema)
