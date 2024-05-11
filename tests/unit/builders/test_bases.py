@@ -138,7 +138,11 @@ class TestInputBuilder:
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
             super().__init__(
-                DummyInputs, output, config, spark_session, scratch_df,
+                DummyInputs,
+                output,
+                config,
+                spark_session,
+                scratch_df,
             )
 
     @pytest.mark.parametrize(
@@ -172,7 +176,9 @@ class TestInputBuilder:
         ),
     )
     def test__output(
-        self, builder: bases.InputBuilder, expected_output: build.DataFrame,
+        self,
+        builder: bases.InputBuilder,
+        expected_output: build.DataFrame,
     ) -> None:
         assert builder.output == expected_output
 
@@ -192,7 +198,9 @@ class TestInputBuilder:
         ids=("empty", "dummy"),
     )
     def test__build__all_inputs_given(
-        self, builder: bases.Builder, inputs: Mapping[str, sql.DataFrame],
+        self,
+        builder: bases.Builder,
+        inputs: Mapping[str, sql.DataFrame],
     ) -> None:
         result_df = builder.build(**inputs)
         result_rows = result_df.collect()
@@ -217,7 +225,9 @@ class TestInputBuilder:
         config = mock.MagicMock(
             spec=common.Builder,
             is_cached=False,
-            backup=mock.MagicMock(mode=build.BackupMode.BOTH, path="test/path"),
+            backup=mock.MagicMock(
+                mode=build.BackupMode.BOTH, path="test/path", partition_by=None
+            ),
         )
         builder = TestInputBuilder.Builder0(config, spark_session, scratch_df=df)
 
@@ -225,7 +235,9 @@ class TestInputBuilder:
 
         assert result_df is read_df
         read_df.write.parquet.assert_not_called()
-        df.write.parquet.assert_called_once_with(config.backup.path, mode="overwrite")
+        df.write.parquet.assert_called_once_with(
+            config.backup.path, mode="overwrite", partitionBy=None
+        )
         spark_session.read.parquet.assert_called_once_with(config.backup.path)
 
     def test__build__backup_read(self) -> None:
@@ -259,14 +271,18 @@ class TestInputBuilder:
         config = mock.MagicMock(
             spec=common.Builder,
             is_cached=False,
-            backup=mock.MagicMock(mode=build.BackupMode.WRITE, path="test/path"),
+            backup=mock.MagicMock(
+                mode=build.BackupMode.WRITE, path="test/path", partition_by=None
+            ),
         )
         builder = TestInputBuilder.Builder0(config, spark_session, scratch_df=df)
 
         result_df = builder.build()
 
         assert result_df is df
-        df.write.parquet.assert_called_once_with(config.backup.path, mode="overwrite")
+        df.write.parquet.assert_called_once_with(
+            config.backup.path, mode="overwrite", partitionBy=None
+        )
         spark_session.read.parquet.assert_not_called()
 
     def test__build__backup_neither(self) -> None:
