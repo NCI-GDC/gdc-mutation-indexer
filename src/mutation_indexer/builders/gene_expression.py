@@ -169,14 +169,21 @@ class IndexBuilder(
             F.log2(F.col("uqfpkm") + 1).alias("log2_uqfpkm"),
         )
 
-        return gene_expression_df.select(
-            "case_id",
-            "gene_expression_id",
-            "gene_id",
-            "log2_uqfpkm",
-            "submitter_id",
-            "symbol",
-            "uqfpkm",
+        # Keep the columns we need,
+        # repartition by gene_id so each partition has all cases for only one gene, and
+        # sort each partition by case_id in ascending order.
+        return (
+            gene_expression_df.select(
+                "case_id",
+                "gene_expression_id",
+                "gene_id",
+                "log2_uqfpkm",
+                "submitter_id",
+                "symbol",
+                "uqfpkm",
+            )
+            .repartition("gene_id")
+            .sortWithinPartitions("case_id")
         )
 
     def _load_expression_values(
