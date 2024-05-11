@@ -169,9 +169,11 @@ class IndexBuilder(
             F.log2(F.col("uqfpkm") + 1).alias("log2_uqfpkm"),
         )
 
-        # Keep the columns we need,
-        # repartition by gene_id so each partition has all cases for only one gene, and
-        # sort each partition by case_id in ascending order.
+        # Keep only the columns we need,
+        # repartition by gene_id so each partition has all cases for only one gene,
+        # and sort each partition by case_id in ascending order.
+        # The backup parquet file will have as many partitions as genes are and each
+        # partition will have all cases ordered.
         return (
             gene_expression_df.select(
                 "case_id",
