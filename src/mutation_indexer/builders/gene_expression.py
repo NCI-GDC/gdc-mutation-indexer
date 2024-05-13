@@ -124,6 +124,13 @@ class IndexBuilder(
 
         self._doc_dataframe_util = doc_dataframe_util
 
+    def _write_backup(self, df: sql.DataFrame) -> None:
+        df.write.parquet(
+            self._config.backup.path,
+            mode="overwrite",
+            partitionBy=self._config.backup.partition_by,
+        )
+
     def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
         """
         Creates a data frame with the final gene expression data as found in the
