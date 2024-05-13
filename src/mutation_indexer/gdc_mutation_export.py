@@ -38,20 +38,15 @@ class Graph:
 
         async def run(self) -> None:
             inputs: dict[str, sql.DataFrame] = {}
-            required_inputs = frozenset(self._builder.inputs)
+            required_inputs = frozenset(i.to_param() for i in self._builder.inputs)
 
             while not inputs.keys() == required_inputs:
-                print(f"{self._builder.output.name} waiting")
                 input_name, df = await self._input_queue.get()
-                print(f"{self._builder.output.name} received: {input_name.name}")
                 inputs[input_name.to_param()] = df
 
-            print(f"Building: {self._builder.output.name}")
             output = await self._builder.build(**inputs)
-            print(f"DONE: {self._builder.output.name}")
 
             for queue in self._output_queues:
-                print(f"Putting: {self._builder.output.name}")
                 await queue.put((self._builder.output, output))
 
     __slots__ = ("_nodes",)
@@ -72,25 +67,22 @@ class Graph:
 
         def get_node(builder: bases.Builder) -> Graph.Node:
             return Graph.Node(
-                builder, input_queues[builder.output], output_queues[builder.output]
+                builder,
+                input_queues[builder.output],
+                output_queues.get(builder.output, ()),
             )
 
         nodes = tuple(map(get_node, builders))
 
-        print(nodes)
-
         return Graph(nodes)
 
     async def run(self) -> None:
-        tasks = tuple(asyncio.create_task(node.run()) for node in self._nodes)
+        tasks = (node.run() for node in self._nodes)
 
         try:
             await asyncio.gather(*tasks)
-        except:
-            for task in tasks:
-                task.cancel()
-
-            raise
+        except Exception as ex:
+            logger.critical("Export failed", exc_info=ex)
 
 
 class Exporter:
@@ -110,5 +102,4 @@ class Exporter:
         """
         Executes the export for the configured data by running the required builders.
         """
-        print(f"Running: {self._builders}")
         await Graph.load(self._builders).run()

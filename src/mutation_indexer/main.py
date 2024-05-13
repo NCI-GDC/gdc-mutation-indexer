@@ -2,14 +2,12 @@ import asyncio
 import contextlib
 import itertools
 import logging
-import types
 from collections.abc import Awaitable, Container, Iterable, Iterator, Mapping
 from typing import Optional, cast
 
 import aiohttp
 import elasticsearch
 import toml
-from indexclient import client
 from pyspark import sql
 
 from mutation_indexer import (
