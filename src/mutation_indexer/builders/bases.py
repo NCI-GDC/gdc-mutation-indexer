@@ -181,6 +181,9 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
         return None
 
+    def _write_backup(self, df: sql.DataFrame) -> None:
+        df.write.parquet(self._config.backup.path, mode="overwrite")
+
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Writes the data frame to any configured or required data store. I.e. memory,
@@ -193,7 +196,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         """
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
-            df.write.parquet(self._config.backup.path, mode="overwrite")
+            self._write_backup(df)
 
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()
