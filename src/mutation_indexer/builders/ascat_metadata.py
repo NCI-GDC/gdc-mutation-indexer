@@ -36,7 +36,9 @@ class ASCATMetadataBuilder(
             output=build.DataFrame.ASCAT_METADATA,
         )
 
-    def _build_from_scratch(self, input_dfs: ASCATMetadataInputs) -> sql.DataFrame:
+    async def _build_from_scratch(
+        self, input_dfs: ASCATMetadataInputs
+    ) -> sql.DataFrame:
         filters = [
             {
                 "bool": {
@@ -70,7 +72,6 @@ class ASCATMetadataBuilder(
                 }
             }
         ]
+        df = await self._get_primary_aliquot_df(filters, entities=self.CASE_ONLY)
 
-        return self._get_primary_aliquot_df(
-            filters, entities=frozenset(("case",))
-        ).select("aliquot_id", "case_id", "file_id")
+        return df.select("aliquot_id", "case_id", "file_id")

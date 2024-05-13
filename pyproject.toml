@@ -21,4 +21,5 @@ testpaths = [
 ]
 
 [tool.mypy]
+enable_incomplete_feature = ["Unpack"]
 plugins = ["marshmallow_dataclass.mypy"]

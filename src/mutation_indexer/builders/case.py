@@ -1,4 +1,5 @@
 import abc
+from collections.abc import Awaitable
 import logging
 
 from pyspark import sql
@@ -37,10 +38,10 @@ class CaseLoaderMixin(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _load_es_case_data(self) -> sql.DataFrame:
+    def _load_es_case_data(self) -> Awaitable[sql.DataFrame]:
         pass
 
-    def _load_cases(
+    async def _load_cases(
         self,
         maf_metadata_df: sql.DataFrame,
         ascat_df: sql.DataFrame,
@@ -49,7 +50,7 @@ class CaseLoaderMixin(abc.ABC):
         """
         Builds Case dataframe
         """
-        case_df = self._load_es_case_data()
+        case_df = await self._load_es_case_data()
         available_variation_df = _load_available_variation_data(
             maf_metadata_df, ascat_df
         )
@@ -81,7 +82,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
         self._es_dataframe_util = es_dataframe_util
         self._field_selector = field_selector
 
-    def _load_es_case_data(self) -> sql.DataFrame:
+    def _load_es_case_data(self) -> Awaitable[sql.DataFrame]:
         if self._config.projects:
             query = {"query": {"terms": {"project.project_id": self._config.projects}}}
         else:
@@ -106,7 +107,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
             query=query,
         )
 
-    def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: CaseInputs) -> Awaitable[sql.DataFrame]:
         return self._load_cases(
             input_dfs["maf_metadata_df"],
             input_dfs["ascat_df"],

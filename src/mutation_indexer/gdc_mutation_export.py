@@ -1,8 +1,9 @@
-import graphlib
+import asyncio
 import logging
-from collections.abc import Iterable, Mapping, MutableMapping
+from collections.abc import Iterable, Mapping
 from typing import NamedTuple
 
+import more_itertools
 import pyspark
 from pyspark import sql
 
@@ -19,11 +20,77 @@ class Builders(NamedTuple):
     index_builders: Mapping[build.IndexType, base_builder.BaseBuilder]
 
 
-def _order_builders(builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
-    builder_by_output = {b.output: b for b in builders}
-    graph = graphlib.TopologicalSorter({b.output: b.inputs for b in builders})
+class Graph:
+    class Node:
+        __slots__ = ("_builder", "_input_queue", "_output_queues")
 
-    return tuple(builder_by_output[d] for d in graph.static_order())
+        def __init__(
+            self,
+            builder: bases.Builder,
+            input_queue: asyncio.Queue[tuple[build.DataFrame, sql.DataFrame]],
+            output_queues: Iterable[
+                asyncio.Queue[tuple[build.DataFrame, sql.DataFrame]]
+            ],
+        ) -> None:
+            self._builder = builder
+            self._input_queue = input_queue
+            self._output_queues = output_queues
+
+        async def run(self) -> None:
+            inputs: dict[str, sql.DataFrame] = {}
+            required_inputs = frozenset(self._builder.inputs)
+
+            while not inputs.keys() == required_inputs:
+                print(f"{self._builder.output.name} waiting")
+                input_name, df = await self._input_queue.get()
+                print(f"{self._builder.output.name} received: {input_name.name}")
+                inputs[input_name.to_param()] = df
+
+            print(f"Building: {self._builder.output.name}")
+            output = await self._builder.build(**inputs)
+            print(f"DONE: {self._builder.output.name}")
+
+            for queue in self._output_queues:
+                print(f"Putting: {self._builder.output.name}")
+                await queue.put((self._builder.output, output))
+
+    __slots__ = ("_nodes",)
+
+    def __init__(self, nodes: Iterable[Node]) -> None:
+        self._nodes = nodes
+
+    @staticmethod
+    def load(builders: Iterable[bases.Builder]) -> "Graph":
+        input_queues: Mapping[
+            build.DataFrame, asyncio.Queue[tuple[build.DataFrame, sql.DataFrame]]
+        ] = {b.output: asyncio.Queue() for b in builders}
+        output_queues = more_itertools.map_reduce(
+            ((i, b) for b in builders for i in b.inputs),
+            keyfunc=lambda i: i[0],
+            valuefunc=lambda i: input_queues[i[1].output],
+        )
+
+        def get_node(builder: bases.Builder) -> Graph.Node:
+            return Graph.Node(
+                builder, input_queues[builder.output], output_queues[builder.output]
+            )
+
+        nodes = tuple(map(get_node, builders))
+
+        print(nodes)
+
+        return Graph(nodes)
+
+    async def run(self) -> None:
+        tasks = tuple(asyncio.create_task(node.run()) for node in self._nodes)
+
+        try:
+            await asyncio.gather(*tasks)
+        except:
+            for task in tasks:
+                task.cancel()
+
+            raise
 
 
 class Exporter:
@@ -31,40 +98,17 @@ class Exporter:
     The main entry point into the index export process for the mutation indices
     """
 
-    __slots__ = ("_spark_context", "_builders", "_index_types", "_index_builders")
+    __slots__ = ("_spark_context", "_builders")
 
     def __init__(
-        self,
-        spark_context: pyspark.SparkContext,
-        index_types: Iterable[build.IndexType],
-        builders: Builders,
+        self, spark_context: pyspark.SparkContext, builders: Iterable[bases.Builder]
     ) -> None:
         self._spark_context = spark_context
-        self._builders = _order_builders(builders.builders)
+        self._builders = builders
 
-        # TODO: Remove when old index builders ported to new base.
-        self._index_types = frozenset(index_types) & builders.index_builders.keys()
-        self._index_builders = builders.index_builders
-
-    def run(self) -> None:
+    async def run(self) -> None:
         """
         Executes the export for the configured data by running the required builders.
         """
-        inputs: MutableMapping[str, sql.DataFrame] = {}
-
-        for builder in self._builders:
-            output = builder.output
-
-            self._spark_context.setJobGroup(output.name, f"Build {output.name}")
-
-            inputs[output.to_param()] = builder.build(**inputs)
-
-        # TODO: Remove when old index builders ported to new base
-        for index_type in self._index_types:
-            if index_type not in self._index_builders:
-                raise ValueError(f"No builder is configured for index: {index_type}.")
-
-            self._spark_context.setJobGroup(index_type.name, f"Build {index_type}")
-            self._index_builders[index_type].build(**inputs).load()
-
-        logger.info("Mutation Indexer finished successfully")
+        print(f"Running: {self._builders}")
+        await Graph.load(self._builders).run()

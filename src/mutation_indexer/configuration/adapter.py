@@ -16,12 +16,10 @@ class ObsoleteConfig:
     def __init__(
         self,
         config: configuration.Configuration,
-        elasticsearch: elasticsearch.Elasticsearch,
-        indexd: client.IndexClient,
+        elasticsearch: elasticsearch.AsyncElasticsearch,
     ) -> None:
         self._config = config
         self._elasticsearch = elasticsearch
-        self._indexd = indexd
 
         self.graph_case_doc_type = None
         self.graph_file_doc_type = None
@@ -63,8 +61,8 @@ class ObsoleteConfig:
         return self._config.builders.viz.gene_model.gene_model_file
 
     @property
-    def citobands_file(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.citobands_file
+    def cytobands_file(self) -> str:  # type: ignore
+        return self._config.builders.viz.gene_model.cytobands_file
 
     @property
     def census_file(self) -> str:  # type: ignore
@@ -260,12 +258,8 @@ class ObsoleteConfig:
         return not self._config.elasticsearch.connection.verify_certs
 
     @property
-    def es(self) -> elasticsearch.Elasticsearch:
+    def es(self) -> elasticsearch.AsyncElasticsearch:
         return self._elasticsearch
-
-    @property
-    def indexd(self) -> client.IndexClient:
-        return self._indexd
 
     def get_raw_output_path(self, index_name: str) -> str:
         paths = {

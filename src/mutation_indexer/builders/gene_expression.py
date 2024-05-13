@@ -57,7 +57,9 @@ class PrimaryAliquotBuilder(
             output=build.DataFrame.PRIMARY_ALIQUOT,
         )
 
-    def _build_from_scratch(self, input_dfs: PrimaryAliquotInputs) -> sql.DataFrame:
+    async def _build_from_scratch(
+        self, input_dfs: PrimaryAliquotInputs
+    ) -> sql.DataFrame:
         """
         Gets the case and it's associated file data for the mutation index.
 
@@ -79,16 +81,11 @@ class PrimaryAliquotBuilder(
         case_fields = [
             "cases.submitter_id",
         ]
-
-        return self._get_primary_aliquot_df(
-            filters,
-            entities=frozenset(("case",)),
-            include_fields=case_fields,
-        ).select(
-            "file_id",
-            "case_id",
-            "case.submitter_id",
+        df = await self._get_primary_aliquot_df(
+            filters, entities=self.CASE_ONLY, include_fields=case_fields
         )
+
+        return df.select("file_id", "case_id", "case.submitter_id")
 
 
 class IndexBuilderInputs(TypedDict):
@@ -124,7 +121,7 @@ class IndexBuilder(
 
         self._doc_dataframe_util = doc_dataframe_util
 
-    def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
+    async def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
         """
         Creates a data frame with the final gene expression data as found in the
         appropriate data files in indexd. Also adds the calculated log2 value of the
@@ -156,7 +153,7 @@ class IndexBuilder(
             .select(F.col("_gene_id").alias("gene_id"))
         )
 
-        values_df = self._load_expression_values(primary_aliquot_df)
+        values_df = await self._load_expression_values(primary_aliquot_df)
         # Remove sex chromosomes
         values_df = values_df.join(gene_model_df, on=["gene_id"], how="inner")
 
@@ -178,7 +175,7 @@ class IndexBuilder(
             "uqfpkm",
         )
 
-    def _load_expression_values(
+    async def _load_expression_values(
         self, primary_aliquot_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -203,9 +200,12 @@ class IndexBuilder(
             for row in primary_aliquot_df.select("file_id").distinct().toLocalIterator()
         )
         schema = schemas.load_schema("builders/gene_expression/star_counts.json")
-        gene_expression_df = self._doc_dataframe_util.get_dataframe(
+        gene_expression_df = await self._doc_dataframe_util.get_dataframe(
             file_ids, schema=schema, comment="#", has_header=True
-        ).where(F.col("gene_type") == F.lit("protein_coding"))
+        )
+        gene_expression_df = gene_expression_df.where(
+            F.col("gene_type") == F.lit("protein_coding")
+        )
 
         return gene_expression_df.select(
             F.col("did").alias("file_id"),

@@ -6,7 +6,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-from mutation_indexer import indexd_utils, schemas
+from mutation_indexer import aioutils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
@@ -179,8 +179,8 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
 
         self._document_dataframe_util = document_dataframe_util
 
-    def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
-        document_df = self._document_dataframe_util.get_dataframe(
+    async def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
+        document_df = await self._document_dataframe_util.get_dataframe(
             doc_ids, schema=schemas.load_schema("builders/ascat/ascat_document.yaml")
         )
 
@@ -202,7 +202,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
 
         return _add_cnv_change(document_df)
 
-    def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
+    async def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
         """Builds the ASCAT dataframe
 
         ascat {}
@@ -279,7 +279,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             .where(utils.is_protein_coding())
             .where(utils.is_between_chr1_and_chr22())
         )
-        document_df = self._build_document_df(
+        document_df = await self._build_document_df(
             r.file_id for r in ascat_metadata_df.select("file_id").toLocalIterator()
         )
         ascat_df = document_df.join(ascat_metadata_df, on=["file_id"]).join(

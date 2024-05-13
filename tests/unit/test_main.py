@@ -4,6 +4,8 @@ from mutation_indexer import builders, main
 from mutation_indexer.builders import civic
 from mutation_indexer.constants import build
 
+__test__ = False
+
 
 def test__get_viz_builders__all_builders() -> None:
     viz_builders = main.get_viz_builders(

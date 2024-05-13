@@ -3,13 +3,23 @@ import logging
 import pathlib
 import tempfile
 import uuid
-from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, Literal, Union, cast
+from collections.abc import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Set,
+)
+from typing import Any, Literal, Union
 from unittest import mock
 
 import elasticsearch
 import importlib_resources as resources
 import pytest
+import pytest_asyncio
 import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -21,7 +31,7 @@ from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
-CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
+CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], Awaitable[None]]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
 
 log = logging.getLogger("tests.integration")
@@ -52,7 +62,7 @@ def maf_urls(input_dir: pathlib.Path) -> list[str]:
 
 @pytest.fixture(scope="session")
 def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
-    citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
+    cytobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
     census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
     gene_model_file = str(input_dir.joinpath("genes.ndjson.gz"))
 
@@ -64,7 +74,7 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
         ),
     ) -> dict:
         for driver in drivers:
-            data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
+            data["builders"][driver]["gene_model"]["cytobands_file"] = cytobands_file
             data["builders"][driver]["gene_model"]["census_file"] = census_file
             data["builders"][driver]["gene_model"]["gene_model_file"] = gene_model_file
 
@@ -80,21 +90,22 @@ def default_config(
     return test_setup.load_configuration(configure_gene_model)
 
 
-@pytest.fixture(scope="session")
-def es_client(
+@pytest_asyncio.fixture(scope="session")
+async def es_client(
     default_config: configuration.Configuration,
-) -> Iterator[elasticsearch.Elasticsearch]:
+) -> AsyncIterator[elasticsearch.AsyncElasticsearch]:
     # The test config already sets up an ES client that we can just reuse.
     # TODO Probably refactor the way we use the test config so the test modules
     # don't create new ES clients upon import.
     es_connection = default_config.elasticsearch.connection
 
-    with elasticsearch.Elasticsearch(
-        es_connection.nodes.split(","),
+    async with elasticsearch.AsyncElasticsearch(
+        "http://127.0.0.1:9200",  # es_connection.nodes.split(","),
         use_ssl=es_connection.use_ssl,
         verify_certs=es_connection.verify_certs,
         http_auth=(es_connection.user, es_connection.password),
     ) as es_client:
+        await es_client.count(index="*")
         yield es_client
 
 
@@ -108,43 +119,44 @@ def source_es_client(
 
 @pytest.fixture(scope="session")
 def default_old_config(
-    default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> adapter.ObsoleteConfig:
-    return adapter.ObsoleteConfig(default_config, es_client, mock.MagicMock())
-
-
-@pytest.fixture(scope="session")
-def setup_graph_indices(
     default_config: configuration.Configuration,
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
+) -> adapter.ObsoleteConfig:
+    return adapter.ObsoleteConfig(default_config, es_client)
+
+
+@pytest_asyncio.fixture(scope="session")
+async def setup_graph_indices(
+    default_config: configuration.Configuration,
+    es_client: elasticsearch.AsyncElasticsearch,
     input_dir: pathlib.Path,
-) -> Iterator[Any]:
+) -> AsyncIterator[Any]:
     """Create graph indices with required docs."""
-    manager = test_setup.IndexManager(default_config, es_client, log)
-    loader = test_setup.DocumentLoader(default_config, es_client, log)
+    manager = test_setup.IndexManager(default_config, es_client)
+    loader = test_setup.DocumentLoader(default_config, es_client)
     data = {
         build.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
         build.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
     }
 
-    with manager, loader:
+    async with manager, loader:
         for index_type, input_file in data.items():
-            loader.load_docs(index_type, input_file)
+            await loader.load_docs(index_type, input_file)
 
         yield True
 
 
-@pytest.fixture(scope="class")
-def files_with_linked_cases(
+@pytest_asyncio.fixture(scope="class")
+async def files_with_linked_cases(
     setup_graph_indices: Any,  # Required to insure file index has been initialized.
     default_config: configuration.Configuration,
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
     input_dir: pathlib.Path,
-) -> Iterator[Any]:
+) -> AsyncIterator[Any]:
     input_path = input_dir.joinpath("files_with_linked_cases.ndjson")
 
-    with test_setup.DocumentLoader(default_config, es_client, log) as loader:
-        yield loader.load_docs(build.IndexType.FILE, input_path)
+    async with test_setup.DocumentLoader(default_config, es_client) as loader:
+        yield await loader.load_docs(build.IndexType.FILE, input_path)
 
 
 @pytest.fixture(scope="session")
@@ -203,9 +215,10 @@ def all_maf_cases() -> Set[str]:
     )
 
 
-@pytest.fixture(scope="session")
-def all_cases(
-    default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
+@pytest_asyncio.fixture(scope="session")
+async def all_cases(
+    default_config: configuration.Configuration,
+    es_client: elasticsearch.AsyncElasticsearch,
 ) -> Set[str]:
     """
     Returns the IDs of all cases in the GDC graph, including those with no
@@ -217,7 +230,7 @@ def all_cases(
         query={"_source": ["case_id"]},
     )
 
-    return {hit["_source"]["case_id"] for hit in hits}
+    return frozenset({hit["_source"]["case_id"] async for hit in hits})
 
 
 @pytest.fixture(scope="session")
@@ -234,41 +247,41 @@ def dataframe_writer(
     return write
 
 
-@pytest.fixture(scope="session")
-def gene_model_df(
+@pytest_asyncio.fixture(scope="session")
+async def gene_model_df(
     default_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
-    df = builders.GeneModelBuilder(
+    df = await builders.GeneModelBuilder(
         default_config.builders.viz.gene_model, spark_session
     ).build()
 
     return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def civic_dna_df(
+@pytest_asyncio.fixture(scope="session")
+async def civic_dna_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
     builder = civic.DNABuilder(default_config.builders.viz.civic_dna, spark_session)
 
-    return builder.build()
+    return await builder.build()
 
 
-@pytest.fixture(scope="session")
-def civic_protein_df(
+@pytest_asyncio.fixture(scope="session")
+async def civic_protein_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
     builder = civic.ProteinBuilder(
         default_config.builders.viz.civic_protein, spark_session
     )
 
-    return builder.build()
+    return await builder.build()
 
 
-@pytest.fixture(scope="session")
-def maf_df(
+@pytest_asyncio.fixture(scope="session")
+async def maf_df(
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
@@ -365,7 +378,7 @@ def maf_df(
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
-    df = builders.MAFBuilder(
+    df = await builders.MAFBuilder(
         default_config.builders.viz.maf, spark_session, doc_dataframe_util
     ).build(
         gene_model_df=gene_model_df,
@@ -401,14 +414,14 @@ def maf_metadata_df(
     ).cache()
 
 
-@pytest.fixture(scope="session")
-def case_df(
+@pytest_asyncio.fixture(scope="session")
+async def case_df(
     default_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
     dataframe_writer: DataFrameWriter,
     setup_graph_indices: Any,
 ) -> sql.DataFrame:
@@ -418,7 +431,7 @@ def case_df(
         es_client,
         es_utils.MappingsLoader(),
     )
-    df = builders.CaseBuilder(
+    df = await builders.CaseBuilder(
         default_config.builders.viz.case,
         spark_session,
         es_dataframe_util,
@@ -493,21 +506,25 @@ def observation_builder() -> builders.ObservationBuilder:
     return builders.ObservationBuilder()
 
 
-@pytest.fixture(scope="session")
-def centric_index_finalizer(
-    default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> CentricIndexFinalizer:
-    def finalizer(index_type: build.IndexType) -> None:
-        indices = default_config.elasticsearch.write.indices
+@pytest_asyncio.fixture(scope="session")
+async def centric_index_finalizer(
+    default_config: configuration.Configuration,
+    es_client: elasticsearch.AsyncElasticsearch,
+) -> AsyncIterator[CentricIndexFinalizer]:
+    indices: list[build.IndexType] = []
 
-        es_client.indices.delete(index=indices[index_type], ignore=(404,))
+    async def finalizer(index_type: build.IndexType) -> None:
+        indices.append(index_type)
 
-    return lambda it: functools.partial(finalizer, it)
+    yield lambda it: functools.partial(finalizer, it)
+
+    index_names = [default_config.elasticsearch.write.indices[i] for i in indices]
+
+    await es_client.indices.delete(index=index_names, ignore=(404,))
 
 
-@pytest.fixture(scope="session")
-def case_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def case_centric_df(
     default_config: configuration.Configuration,
     default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
@@ -518,7 +535,7 @@ def case_centric_df(
     primary_aliquot_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
     centric_index_finalizer: CentricIndexFinalizer,
     dataframe_writer: DataFrameWriter,
     setup_graph_indices: Any,
@@ -527,7 +544,7 @@ def case_centric_df(
     Builds case centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
-    request.addfinalizer(centric_index_finalizer(build.IndexType.CASE_CENTRIC))
+    centric_index_finalizer(build.IndexType.CASE_CENTRIC)
     log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
     builder = builders.CaseCentricBuilder(
         default_old_config,
@@ -546,17 +563,19 @@ def case_centric_df(
         observation_builder,
     )
 
-    builder.build(maf_metadata_df, maf_df, cnv_df, primary_aliquot_df)
-
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(
+        maf_metadata_df=maf_metadata_df,
+        maf_df=maf_df,
+        ascat_df=cnv_df,
+        primary_aliquot_df=primary_aliquot_df,
+    )
 
-    return dataframe_writer(cast(sql.DataFrame, builder.case_centric))
+    return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def gene_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def gene_centric_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
@@ -572,24 +591,26 @@ def gene_centric_df(
     Builds gene centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
-    request.addfinalizer(centric_index_finalizer(build.IndexType.GENE_CENTRIC))
+    centric_index_finalizer(build.IndexType.GENE_CENTRIC)
     log.info("\n\n\tBUILDING GENE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.GeneCentricBuilder(
         default_old_config, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(maf_df, cnv_df, sub_case_df, primary_aliquot_df)
-
     log.info("\n\n\tLOADING GENE_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(
+        maf_df=maf_df,
+        ascat_df=cnv_df,
+        case_df=sub_case_df,
+        primary_aliquot_df=primary_aliquot_df,
+    )
 
-    return dataframe_writer(cast(sql.DataFrame, builder.gene_centric))
+    return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def ssm_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def ssm_centric_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
@@ -604,24 +625,23 @@ def ssm_centric_df(
     Builds ssm centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
-    request.addfinalizer(centric_index_finalizer(build.IndexType.SSM_CENTRIC))
+    centric_index_finalizer(build.IndexType.SSM_CENTRIC)
     log.info("\n\n\tBUILDING SSM_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMCentricBuilder(
         default_old_config, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(maf_df, sub_case_df, primary_aliquot_df)
-
     log.info("\n\n\tLOADING SSM_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(
+        maf_df=maf_df, case_df=sub_case_df, primary_aliquot_df=primary_aliquot_df
+    )
 
-    return dataframe_writer(cast(sql.DataFrame, builder.ssm_centric))
+    return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def ssm_occurrence_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def ssm_occurrence_centric_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
@@ -636,26 +656,23 @@ def ssm_occurrence_centric_df(
     Builds ssm occurrence centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
-    request.addfinalizer(
-        centric_index_finalizer(build.IndexType.SSM_OCCURRENCE_CENTRIC)
-    )
+    centric_index_finalizer(build.IndexType.SSM_OCCURRENCE_CENTRIC)
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMOccurrenceCentricBuilder(
         default_old_config, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(maf_df, sub_case_df, primary_aliquot_df)
-
     log.info("\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(
+        maf_df=maf_df, case_df=sub_case_df, primary_aliquot_df=primary_aliquot_df
+    )
 
-    return dataframe_writer(cast(sql.DataFrame, builder.ssm_occurrence_centric))
+    return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def cnv_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def cnv_centric_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
@@ -668,24 +685,21 @@ def cnv_centric_df(
     """
     Builds cnv centric dataframe
     """
-    request.addfinalizer(centric_index_finalizer(build.IndexType.CNV_CENTRIC))
+    centric_index_finalizer(build.IndexType.CNV_CENTRIC)
     log.info("\n\n\tBUILDING CNV_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVCentricBuilder(
         default_old_config, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(cnv_df, sub_case_df)
-
     log.info("\n\n\tLOADING CNV_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(ascat_df=cnv_df, case_df=sub_case_df)
 
-    return dataframe_writer(cast(sql.DataFrame, builder.cnv_centric))
+    return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
-def cnv_occurrence_centric_df(
-    request: pytest.FixtureRequest,
+@pytest_asyncio.fixture(scope="session")
+async def cnv_occurrence_centric_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
     cnv_df: sql.DataFrame,
@@ -698,21 +712,17 @@ def cnv_occurrence_centric_df(
     """
     Builds cnv occurrence centric dataframe
     """
-    request.addfinalizer(
-        centric_index_finalizer(build.IndexType.CNV_OCCURRENCE_CENTRIC)
-    )
+    centric_index_finalizer(build.IndexType.CNV_OCCURRENCE_CENTRIC)
     log.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVOccurrenceCentricBuilder(
         default_old_config, sqlContext, consequence_builder, observation_builder
     )
 
-    builder.build(cnv_df, sub_case_df)
-
     log.info("\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n")
-    builder.load()
+    df = await builder.build(ascat_df=cnv_df, case_df=sub_case_df)
 
-    return dataframe_writer(cast(sql.DataFrame, builder.cnv_occurrence_centric))
+    return dataframe_writer(df)
 
 
 @pytest.fixture(scope="session")
@@ -723,7 +733,7 @@ def case_ssm_subtree(
     sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
 ) -> sql.DataFrame:

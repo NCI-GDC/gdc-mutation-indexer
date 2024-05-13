@@ -20,7 +20,8 @@ setup(
     ],
     license="Apache",
     include_package_data=True,
-    install_requires=[
+    install_requires=(
+        "aiohttp",
         "elasticsearch[async]~=7.6",
         "importlib-resources~=3.2",
         "marshmallow-dataclass~=8.5",
@@ -36,7 +37,7 @@ setup(
         "indexclient",
         "gdcmodels",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
-    ],
+    ),
     extras_require={
         "dev": (
             "click~=8.1",
@@ -44,6 +45,7 @@ setup(
             "deepdiff~=6.0",
             "pre-commit==1.21.0",
             "pytest~=7.0",
+            "pytest-asyncio",
             "pytest-cov~=4.0",
         ),
         "master": ("halo~=0.0", "pex~=2.1"),

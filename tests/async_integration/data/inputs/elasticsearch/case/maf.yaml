@@ -1,0 +1,6 @@
+- case_id: case-maf-0
+  project:
+    project_id: GDC-TEST
+- case_id: case-maf-1
+  project:
+    project_id: GDC-TEST

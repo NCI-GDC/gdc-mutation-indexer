@@ -45,7 +45,7 @@ maf_schema:
       name: case_id
   chromosome:
       name:  Chromosome
-      pattern: chr{}
+      prefix: chr
   is_canonical:
       name:  CANONICAL
       type: boolean
