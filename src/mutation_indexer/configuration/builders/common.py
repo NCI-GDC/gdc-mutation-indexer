@@ -44,13 +44,8 @@ class IndexBuilder(Builder):
     The core configuration values for running the any builder which produces an index
     """
 
-    @dataclasses.dataclass(frozen=True)
-    class TempBackup(Backup):
-        partition_by: str
-
     partition_size: int
     id_field: str
-    backup: TempBackup
 
 
 @dataclasses.dataclass(frozen=True)

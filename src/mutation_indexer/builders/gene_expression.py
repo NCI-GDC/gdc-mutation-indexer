@@ -97,7 +97,7 @@ class IndexBuilderInputs(TypedDict):
 
 
 class IndexBuilder(
-    bases.IndexBuilder[gene_expression.IndexBuilder, IndexBuilderInputs]
+    bases.IndexBuilder[gene_expression.GeneExpressionIndexBuilder, IndexBuilderInputs]
 ):
     """
     A builder class for loading gene expression data.
@@ -107,7 +107,7 @@ class IndexBuilder(
 
     def __init__(
         self,
-        config: gene_expression.IndexBuilder,
+        config: gene_expression.GeneExpressionIndexBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,
