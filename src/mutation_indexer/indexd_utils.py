@@ -69,7 +69,7 @@ class IndexClient(AsyncContextManager):
     async def __aenter__(self) -> Self:
         self.__session = await self._context.enter_async_context(
             aiohttp.ClientSession(
-                base_url=yarl.URL.build(host=self._config.host, port=self._config.port),
+                yarl.URL.build(host=self._config.host, port=self._config.port),
                 connector=self._connector,
                 connector_owner=not self._connector,
                 headers={"content-type": "application/json"},
@@ -90,7 +90,7 @@ class IndexClient(AsyncContextManager):
     async def get(self, dids: Iterable[str]) -> Iterator[Document]:
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
-        async with self._session.post("bulk/documents", data=dids) as response:
+        async with self._session.post("/bulk/documents", data=dids) as response:
             if response.status == 404:
                 return iter(())
 
