@@ -29,7 +29,6 @@ is_cached = true
 [builders.gene_expression.case.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.gene_expression.expression_value]
 is_cached = true
@@ -37,7 +36,6 @@ is_cached = true
 [builders.gene_expression.expression_value.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.gene_expression.gene_expression]
 id_field = "gene_expression_id"
@@ -58,7 +56,6 @@ is_cached = true
 [builders.gene_expression.gene_model.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.gene_expression.primary_aliquot]
 is_cached = true
@@ -66,7 +63,6 @@ is_cached = true
 [builders.gene_expression.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.ascat]
 is_cached = true
@@ -75,7 +71,6 @@ omit_cnv_data = true
 [builders.viz.ascat.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.ascat_metadata]
 is_cached = false
@@ -83,7 +78,6 @@ is_cached = false
 [builders.viz.ascat_metadata.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.case]
 include_as_arrays = [
@@ -98,7 +92,6 @@ repartition_size = 2048
 [builders.viz.case.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.case_centric]
 genes_threshold = 100
@@ -110,7 +103,6 @@ partition_size = 12
 [builders.viz.case_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.civic_dna]
 is_cached = false
@@ -121,7 +113,6 @@ schema = "builders/civic/dna.yaml"
 [builders.viz.civic_dna.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.civic_protein]
 is_cached = false
@@ -132,7 +123,6 @@ schema = "builders/civic/protein.yaml"
 [builders.viz.civic_protein.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.cnv_centric]
 id_field = "cnv_id"
@@ -143,7 +133,6 @@ partition_size = 12
 [builders.viz.cnv_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.cnv_occurrence_centric]
 id_field = "cnv_occurrence_id"
@@ -153,7 +142,6 @@ partition_size = 12
 [builders.viz.cnv_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.gene_centric]
 id_field = "gene_id"
@@ -163,7 +151,6 @@ partition_size = 12
 [builders.viz.gene_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
@@ -174,7 +161,6 @@ is_cached = true
 [builders.viz.gene_model.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.maf]
 is_cached = true
@@ -183,7 +169,6 @@ repartition_size = 2048
 [builders.viz.maf.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.maf_metadata]
 is_cached = true
@@ -192,7 +177,6 @@ prioritized_experimental_strategies = ["Targeted Sequencing", "WXS"]
 [builders.viz.maf_metadata.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.primary_aliquot]
 is_cached = true
@@ -200,7 +184,6 @@ is_cached = true
 [builders.viz.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.ssm_centric]
 id_field = "ssm_id"
@@ -211,7 +194,6 @@ partition_size = 12
 [builders.viz.ssm_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [builders.viz.ssm_occurrence_centric]
 id_field = "ssm_occurrence_id"
@@ -221,7 +203,6 @@ partition_size = 12
 [builders.viz.ssm_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
-partition_by = ""
 
 [elasticsearch]
 

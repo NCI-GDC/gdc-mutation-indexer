@@ -5,6 +5,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 
 import dataclasses
 
+from mutation_indexer.configuration.builders import common
+
 # these are directly imported to created a better interface when using the
 # gene_expression module
 from mutation_indexer.configuration.builders.common import (
@@ -12,6 +14,14 @@ from mutation_indexer.configuration.builders.common import (
     IndexBuilder,
     GeneModelBuilder,
 )
+
+
+class GeneExpressionIndexBuilder(IndexBuilder):
+    @dataclasses.dataclass(frozen=True)
+    class PartitionedBackup(common.Backup):
+        partition_by: str
+
+    backup: PartitionedBackup
 
 
 @dataclasses.dataclass(frozen=True)
@@ -24,4 +34,4 @@ class GeneExpression:
     case: Builder
     expression_value: Builder
     primary_aliquot: Builder
-    gene_expression: IndexBuilder
+    gene_expression: GeneExpressionIndexBuilder

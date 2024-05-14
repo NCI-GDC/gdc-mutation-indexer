@@ -190,8 +190,12 @@ def test_gene_expression_builder_writes_backup_to_path(
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
         "./data_release/test/v0/gene_expressions_test_v0.parquet"
     )
+    assert (
+        ge_config.builders.gene_expression.gene_expression.backup.partition_by
+        == "gene_id"
+    )
 
-    ge_builder.build(**inputs)
+    df = ge_builder.build(**inputs)
 
     parquet_dump = pathlib.Path(
         ge_config.builders.gene_expression.gene_expression.backup.path

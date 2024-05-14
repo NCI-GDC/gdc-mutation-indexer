@@ -193,16 +193,15 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         """
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
-            df.write.parquet(
-                self._config.backup.path,
-                mode="overwrite",
-                partitionBy=self._config.backup.partition_by or None,
-            )
+            self._write_backup(df)
 
         if self._config.backup.mode == build.BackupMode.BOTH:
             return self._safe_read()
 
         return df.cache() if self._config.is_cached else df
+
+    def _write_backup(self, df: sql.DataFrame) -> None:
+        df.write.parquet(self._config.backup.path, mode="overwrite")
 
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
         assert self._input_manager.check(inputs), "Missing required inputs."

@@ -17,7 +17,7 @@ class Backup:
 
     mode: build.BackupMode
     path: str
-    partition_by: str
+    # partition_by: str
 
 
 @dataclasses.dataclass(frozen=True)
