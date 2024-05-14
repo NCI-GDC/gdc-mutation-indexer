@@ -27,7 +27,6 @@ def assert_from_df(
     df: sql.DataFrame, row: sql.Row, join_by: str, mapping: dict
 ) -> None:
     item = row.asDict(recursive=True)
-    print(item.keys())
     filtered_dict = {}
     filtered_list = df.filter(F.col(join_by) == item[join_by]).collect()
     for it in filtered_list:
