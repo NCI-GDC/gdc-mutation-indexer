@@ -134,28 +134,11 @@ def get_es_client(
     Returns:
         An elasticsearch client
     """
-
-    class Connection(elasticsearch.AIOHttpConnection):
-        async def _create_aiohttp_session(self):
-            if self.loop is None:
-                self.loop = asyncio.get_running_loop()
-            self.session = aiohttp.ClientSession(
-                headers=self.headers,
-                skip_auto_headers=("accept", "accept-encoding", "user-agent"),
-                auto_decompress=True,
-                loop=self.loop,
-                cookie_jar=aiohttp.DummyCookieJar(),
-                response_class=ESClientResponse,
-                connector=connector,
-                connector_owner=False,
-            )
-
     return elasticsearch.AsyncElasticsearch(
         config.nodes.split(","),
         use_ssl=config.use_ssl,
         verify_certs=config.verify_certs,
         http_auth=(config.user, config.password),
-        connection_class=Connection,
     )
 
 
