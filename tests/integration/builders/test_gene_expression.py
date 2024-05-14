@@ -195,7 +195,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == "gene_id"
     )
 
-    df = ge_builder.build(**inputs)
+    ge_builder.build(**inputs)
 
     parquet_dump = pathlib.Path(
         ge_config.builders.gene_expression.gene_expression.backup.path
