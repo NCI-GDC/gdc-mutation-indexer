@@ -189,8 +189,7 @@ class DataFrameUtil:
 
         return df
 
-    @aioutils.to_thread
-    def get_dataframe(
+    async def get_dataframe(
         self,
         doc_ids: Iterable[str],
         schema: Optional[types.StructType] = None,
@@ -205,11 +204,14 @@ class DataFrameUtil:
 
         batches = more_itertools.ichunked(doc_ids, batch_size)
         tasks = tuple(
-            self._get_dataframe(
-                b, schema, include_document_ids, enforce_schema, has_header, comment
+            asyncio.create_task(
+                self._get_dataframe(
+                    b, schema, include_document_ids, enforce_schema, has_header, comment
+                )
             )
             for b in batches
         )
-        dfs = (t.result() for t in asyncio.as_completed(tasks))
+
+        dfs = [await t for t in asyncio.as_completed(tasks)]
 
         return functools.reduce(union, dfs)
