@@ -69,7 +69,7 @@ class IndexClient(AsyncContextManager):
     async def __aenter__(self) -> Self:
         self.__session = await self._context.enter_async_context(
             aiohttp.ClientSession(
-                yarl.URL.build(host=self._config.host, port=self._config.port),
+                base_url=yarl.URL.build(host=self._config.host, port=self._config.port),
                 connector=self._connector,
                 connector_owner=not self._connector,
                 headers={"content-type": "application/json"},
@@ -158,12 +158,12 @@ class DataFrameUtil:
 
     async def _get_dataframe(
         self,
-        dids: Iterable[str],
         schema: Optional[types.StructType],
         include_did: bool,
         enforce_schema: bool,
         has_header: bool,
         comment: Optional[str],
+        dids: Iterable[str],
     ) -> sql.DataFrame:
         urls = await self._get_urls(dids)
 
@@ -203,15 +203,14 @@ class DataFrameUtil:
             return df0.union(df1)
 
         batches = more_itertools.ichunked(doc_ids, batch_size)
-        tasks = tuple(
-            asyncio.create_task(
-                self._get_dataframe(
-                    b, schema, include_document_ids, enforce_schema, has_header, comment
-                )
-            )
-            for b in batches
+        get_dataframe = functools.partial(
+            self._get_dataframe,
+            schema,
+            include_document_ids,
+            enforce_schema,
+            has_header,
+            comment,
         )
-
-        dfs = [await t for t in asyncio.as_completed(tasks)]
+        dfs = await asyncio.gather(*map(get_dataframe, batches))
 
         return functools.reduce(union, dfs)
