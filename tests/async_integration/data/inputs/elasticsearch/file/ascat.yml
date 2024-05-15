@@ -1,0 +1,150 @@
+- file_id: ascat-0
+  data_type: Gene Level Copy Number
+  acl: [open]
+  experimental_strategy: Genotyping Array
+  analysis:
+    workflow_type: ASCAT2
+  cases:
+    - case_id: case-ascat-0
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: ascat-1
+  data_type: Gene Level Copy Number
+  acl: [open]
+  experimental_strategy: WGS
+  analysis:
+    workflow_type: AscatNGS
+  cases:
+    - case_id: case-ascat-1
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: ascat-closed
+  data_type: Gene Level Copy Number
+  acl: [closed]
+  experimental_strategy: Genotyping Array
+  analysis:
+    workflow_type: ASCAT2
+  cases:
+    - case_id: case-ascat-0
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: ascat-wrong-data-type
+  data_type: MAF
+  acl: [open]
+  experimental_strategy: WGS
+  analysis:
+    workflow_type: AscatNGS
+  cases:
+    - case_id: case-ascat-0
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: ascat-wrong-wgs
+  data_type: Gene Level Copy Number
+  acl: [open]
+  experimental_strategy: WGS
+  analysis:
+    workflow_type: ASCAT2
+  cases:
+    - case_id: case-ascat-0
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: ascat-wrong-genotyping
+  data_type: Gene Level Copy Number
+  acl: [open]
+  experimental_strategy: Genotyping Array
+  analysis:
+    workflow_type: AscatNGS
+  cases:
+    - case_id: case-ascat-0
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"

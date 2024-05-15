@@ -1,11 +1,12 @@
 import contextlib
 import dataclasses
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
 from unittest import mock
 
 import elasticsearch
 import pytest
 from elasticsearch import helpers
+import pytest_asyncio
 
 from mutation_indexer.builders import maf_metadata
 from mutation_indexer.configuration import elasticsearch as es_config
@@ -97,28 +98,30 @@ class File:
     cases: tuple[Case, ...] = (Case(),)
 
 
-@pytest.fixture(scope="class")
-def maf_metadata_file_index(es_client: elasticsearch.Elasticsearch) -> Iterator[None]:
+@pytest_asyncio.fixture(scope="class")
+async def maf_metadata_file_index(
+    es_client: elasticsearch.AsyncElasticsearch,
+) -> AsyncIterator[None]:
     try:
-        es_client.indices.create(
+        await es_client.indices.create(
             index=TEST_INDEX, settings=FILE_SETTINGS, mappings=FILE_MAPPINGS
         )
         yield None
     finally:
-        es_client.indices.delete(index=TEST_INDEX, ignore_unavailable=True)
+        await es_client.indices.delete(index=TEST_INDEX, ignore_unavailable=True)
 
 
 @pytest.mark.usefixtures("maf_metadata_file_index")
 class TestMAFFileFilterFactory:
     @pytest.fixture(autouse=True)
-    def initialize_fixtures(self, es_client: elasticsearch.Elasticsearch) -> None:
+    def initialize_fixtures(self, es_client: elasticsearch.AsyncElasticsearch) -> None:
         self.es_client = es_client
 
     def arrange_config(self) -> es_config.Read:
         return mock.MagicMock(spec=es_config.Read, file_index=TEST_INDEX)
 
-    @contextlib.contextmanager
-    def load_files(self, files: Iterable[File]) -> Iterator[None]:
+    @contextlib.asynccontextmanager
+    async def load_files(self, files: Iterable[File]) -> AsyncIterator[None]:
         actions = (
             {
                 "_id": file.file_id,
@@ -128,21 +131,22 @@ class TestMAFFileFilterFactory:
             for file in files
         )
 
-        helpers.bulk(self.es_client, actions)
-        self.es_client.indices.refresh(index=TEST_INDEX)
+        await helpers.async_bulk(self.es_client, actions)
+        await self.es_client.indices.refresh(index=TEST_INDEX)
 
         yield None
 
-        self.es_client.delete_by_query(
+        await self.es_client.delete_by_query(
             index=TEST_INDEX, body={"query": {"match_all": {}}}, refresh=True
         )
 
-    def test__get_filters__masked_somatic_mutations(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__masked_somatic_mutations(self) -> None:
         files = (File(file_id="file-0"),)
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=("GDC-TEST",),
@@ -152,14 +156,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-0",)), f"{filters}"
 
-    def test__get_filters__aggregated_somatic_mutations(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__aggregated_somatic_mutations(self) -> None:
         files = (
             File(
                 file_id="file-0",
@@ -172,7 +179,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=("GDC-TEST",),
@@ -182,14 +189,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-0",)), f"{filters}"
 
-    def test__get_filters__skip_non_mafs(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__skip_non_mafs(self) -> None:
         files = (
             File(file_id="file-0", data_format="Star Count"),
             File(file_id="file-1"),
@@ -197,7 +207,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -207,14 +217,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert "file-0" not in result_ids, f"{filters}"
 
-    def test__get_filters__skip_non_masked_or_aggregated_somatic_mutation(
+    @pytest.mark.asyncio
+    async def test__get_filters__skip_non_masked_or_aggregated_somatic_mutation(
         self,
     ) -> None:
         files = (
@@ -224,7 +237,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -234,14 +247,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert "file-1" not in result_ids, f"{filters}"
 
-    def test__get_filters__skip_masked_somatic_mutation_with_wrong_analysis(
+    @pytest.mark.asyncio
+    async def test__get_filters__skip_masked_somatic_mutation_with_wrong_analysis(
         self,
     ) -> None:
         files = (
@@ -256,7 +272,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -266,14 +282,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert "file-1" not in result_ids, f"{filters}"
 
-    def test__get_filters__skip_aggregated_somatic_mutation_with_wrong_analysis(
+    @pytest.mark.asyncio
+    async def test__get_filters__skip_aggregated_somatic_mutation_with_wrong_analysis(
         self,
     ) -> None:
         files = (
@@ -283,7 +302,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -293,14 +312,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert "file-0" not in result_ids, f"{filters}"
 
-    def test__get_filters__all_projects(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__all_projects(self) -> None:
         files = (
             File(file_id="file-0"),
             File(
@@ -311,7 +333,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -321,16 +343,21 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-0", "file-1")), f"{filters}"
 
-    def test__get_filters__single_project(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__single_project(self) -> None:
         files = (
-            File(file_id="file-0",),
+            File(
+                file_id="file-0",
+            ),
             File(
                 file_id="file-1",
                 cases=(Case(project=Project(project_id="GDC-TEST-ALT")),),
@@ -339,7 +366,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=("GDC-TEST",),
@@ -349,14 +376,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-0",)), f"{filters}"
 
-    def test__get_filters__select_wxs_over_targeted_sequencing(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__select_wxs_over_targeted_sequencing(self) -> None:
         files = (
             File(file_id="file-0", experimental_strategy="Targeted Sequencing"),
             File(file_id="file-1"),
@@ -364,7 +394,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -374,14 +404,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-1",)), f"{filters}"
 
-    def test__get_filters__select_targeted_sequencing_if_only_one(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__select_targeted_sequencing_if_only_one(self) -> None:
         files = (
             File(file_id="file-0", experimental_strategy="Targeted Sequencing"),
             File(file_id="file-1", experimental_strategy="Targeted Sequencing"),
@@ -389,7 +422,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -399,14 +432,17 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert result_ids == frozenset(("file-0", "file-1")), f"{filters}"
 
-    def test__get_filters__skip_non_wxs_or_targeted_sequencing(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__skip_non_wxs_or_targeted_sequencing(self) -> None:
         files = (
             File(file_id="file-0"),
             File(file_id="file-1", experimental_strategy="Genotyping Array"),
@@ -414,7 +450,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -424,29 +460,34 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 
         assert "file-1" not in result_ids, f"{filters}"
 
-    def test__get_filters__raise_runtime_error_if_no_matching_files(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__raise_runtime_error_if_no_matching_files(self) -> None:
         files = (File(file_id="file-0", data_type="Other"),)
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files), pytest.raises(
-            RuntimeError,
-            match=r"Invalid Data: No projects associated with any MAF files\.",
-        ):
-            _ = builder.get_filters(
-                acl=("open",),
-                projects=(),
-                prioritized_experimental_strategies=PRIORITIZED_STRATEGIES,
-            )
+        async with self.load_files(files):
+            with pytest.raises(
+                RuntimeError,
+                match=r"Invalid Data: No projects associated with any MAF files\.",
+            ):
+                _ = builder.get_filters(
+                    acl=("open",),
+                    projects=(),
+                    prioritized_experimental_strategies=PRIORITIZED_STRATEGIES,
+                )
 
-    def test__get_filters__select_matching_acl_only(self) -> None:
+    @pytest.mark.asyncio
+    async def test__get_filters__select_matching_acl_only(self) -> None:
         files = (
             File(
                 file_id="file-0",
@@ -458,7 +499,7 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files):
+        async with self.load_files(files):
             filters = builder.get_filters(
                 acl=("open",),
                 projects=(),
@@ -468,8 +509,10 @@ class TestMAFFileFilterFactory:
 
             result_ids = frozenset(
                 hit["_source"]["file_id"]
-                for hit in self.es_client.search(
-                    index=TEST_INDEX, query=query, _source=["file_id"]
+                for hit in (
+                    await self.es_client.search(
+                        index=TEST_INDEX, query=query, _source=["file_id"]
+                    )
                 )["hits"]["hits"]
             )
 

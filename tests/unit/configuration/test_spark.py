@@ -108,8 +108,6 @@ class TestSpark:
 
         args = frozenset(config.get_arguments())
 
-        print(args)
-
         assert args == frozenset(
             (
                 ("--conf", "spark.driver=None"),

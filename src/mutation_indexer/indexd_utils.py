@@ -1,12 +1,23 @@
+import asyncio
+import contextlib
+import functools
 import itertools
 import logging
-from typing import Iterable, Iterator, NamedTuple, Optional, Union
+from collections.abc import Iterable, Iterator
+from typing import Any, AsyncContextManager, NamedTuple, Optional
 
+import aiohttp
 import more_itertools
-from indexclient import client
+import yarl
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from typing_extensions import Self
+
+from mutation_indexer import aioutils
+from mutation_indexer.configuration import indexd
+
+logger = logging.getLogger(__name__)
 
 DOCUMENT_URL_SCHEMA = types.StructType(
     [
@@ -16,23 +27,94 @@ DOCUMENT_URL_SCHEMA = types.StructType(
 )
 
 
+class URLMetadata(NamedTuple):
+    url: str
+    type: str
+    state: str
+
+    @staticmethod
+    def from_json(url: str, metadata: dict) -> "URLMetadata":
+        return URLMetadata(
+            url=url, type=metadata.get("type", ""), state=metadata.get("state", "")
+        )
+
+
+class Document(NamedTuple):
+    did: str
+    urls_metadata: Iterable[URLMetadata]
+
+    @staticmethod
+    def from_json(doc: dict) -> "Document":
+        return Document(
+            did=doc["did"],
+            urls_metadata=tuple(
+                itertools.starmap(
+                    URLMetadata.from_json, doc.get("urls_metadata", {}).items()
+                )
+            ),
+        )
+
+
+class IndexClient(AsyncContextManager):
+    __slots__ = ("_config", "_connector", "_context", "__session")
+
+    def __init__(
+        self, config: indexd.IndexD, connector: Optional[aiohttp.BaseConnector] = None
+    ) -> None:
+        self._config = config
+        self._connector = connector
+        self._context = contextlib.AsyncExitStack()
+        self.__session: Optional[aiohttp.ClientSession] = None
+
+    async def __aenter__(self) -> Self:
+        indexd_url = yarl.URL.build(
+            scheme=self._config.scheme, host=self._config.host, port=self._config.port
+        )
+
+        self.__session = await self._context.enter_async_context(
+            aiohttp.ClientSession(
+                indexd_url,
+                connector=self._connector,
+                connector_owner=not self._connector,
+                headers={"content-type": "application/json"},
+            )
+        )
+
+        return self
+
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
+        await self._context.aclose()
+
+    @property
+    def _session(self) -> aiohttp.ClientSession:
+        assert self.__session, "Cannot access session before entering context."
+
+        return self.__session
+
+    async def get(self, dids: Iterable[str]) -> Iterator[Document]:
+        dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
+
+        try:
+            async with self._session.post("/bulk/documents", json=dids) as response:
+                if response.status == 404:
+                    return iter(())
+
+                response.raise_for_status()
+
+                data = await response.json(content_type=None)
+
+            return map(Document.from_json, data)
+        except:
+            logger.info(f"Failed to get docs: {dids}")
+            raise
+
+
 class DocumentUrl(NamedTuple):
     did: str
     url: str
 
 
-def _is_main_url(metadata: dict):
-    """Check if given metadata corresponds to main IndexD URL:
-        * type == cleversafe
-        * state == validated
-
-    Returns:
-        bool: True if main URL, False otherwise
-    """
-    return metadata.get("type") == "cleversafe" and metadata.get("state") == "validated"
-
-
-def _get_and_format_url(doc: client.Document) -> Optional[str]:
+def _get_url(doc: Document) -> Optional[DocumentUrl]:
     """Select main IndexD url if one exist and format it to something that Spark
     understands
 
@@ -42,55 +124,48 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
     Returns:
         str: formatted main URL
     """
-    for url, meta in doc.urls_metadata.items():
-        if _is_main_url(meta):
-            url = url.replace("s3://", "s3a://").replace(
+    for metadata in doc.urls_metadata:
+        if metadata.type == "cleversafe" and metadata.state == "validated":
+            url = metadata.url.replace("s3://", "s3a://").replace(
                 "cleversafe.service.consul/", ""
             )
-            return url
+
+            return DocumentUrl(doc.did, url)
+
+    logger.warning("File is missing: '{}'".format(doc.did))
 
     return None
 
 
 class DataFrameUtil:
+    __slots__ = ("_indexd", "_spark_session")
+
     def __init__(
         self,
-        indexd: client.IndexClient,
-        sql_context: sql.SQLContext,
-        logger: logging.Logger,
+        indexd: IndexClient,
+        spark_session: sql.SparkSession,
     ):
         self._indexd = indexd
-        self._sql_context = sql_context
-        self._logger = logger
+        self._spark_session = spark_session
 
-    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
-        batches = more_itertools.ichunked(doc_ids, batch_size)
-        docs = itertools.chain.from_iterable(
-            self._indexd.bulk_request(list(dids)) or () for dids in batches
-        )
+    async def _get_urls(self, dids: Iterable[str]) -> Iterable[DocumentUrl]:
+        docs = await self._indexd.get(dids)
 
-        for doc in docs:
-            url = _get_and_format_url(doc)
+        return tuple(filter(None, map(_get_url, docs)))
 
-            if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
-
-            else:
-                yield DocumentUrl(doc.did, url)
-
-    def _get_dataframe(
+    async def _get_dataframe(
         self,
-        urls: Union[str, Iterable[str]],
         schema: Optional[types.StructType],
-        include_file_name: bool,
+        include_did: bool,
         enforce_schema: bool,
         has_header: bool,
         comment: Optional[str],
+        dids: Iterable[str],
     ) -> sql.DataFrame:
-        urls = list(more_itertools.always_iterable(urls))
+        urls = await self._get_urls(dids)
 
-        df = self._sql_context.read.csv(
-            urls,
+        df = self._spark_session.read.csv(
+            [u.url for u in urls],
             schema=schema,
             sep="\t",
             comment=comment,
@@ -99,49 +174,45 @@ class DataFrameUtil:
             mode="FAILFAST",
         )
 
-        if include_file_name:
-            df = df.withColumn("_input_file_name", F.input_file_name())
+        if include_did:
+            did_df = self._spark_session.createDataFrame(
+                urls, schema=DOCUMENT_URL_SCHEMA
+            )
+            df = (
+                df.withColumn("_input_file_name", F.input_file_name())
+                .join(did_df, on="_input_file_name")
+                .drop("_input_file_name")
+            )
 
         return df
 
-    def get_dataframe(
+    async def get_dataframe(
         self,
         doc_ids: Iterable[str],
         schema: Optional[types.StructType] = None,
-        csv_batch_size: int = 500,
-        index_batch_size: int = 1000,
+        batch_size: int = 200,
         include_document_ids: bool = True,
         enforce_schema: bool = True,
         has_header: bool = True,
         comment: Optional[str] = None,
     ) -> sql.DataFrame:
-        doc_urls = tuple(self._get_doc_urls(doc_ids, index_batch_size))
-        urls = (doc_url.url for doc_url in doc_urls)
-        batches = more_itertools.ichunked(urls, csv_batch_size)
+        def union(df0: sql.DataFrame, df1: sql.DataFrame) -> sql.DataFrame:
+            return df0.union(df1)
 
-        document_df = self._get_dataframe(
-            more_itertools.first(batches, ()),
+        batches = more_itertools.ichunked(doc_ids, batch_size)
+        get_dataframe = functools.partial(
+            self._get_dataframe,
             schema,
             include_document_ids,
             enforce_schema,
             has_header,
             comment,
         )
+        dfs = await asyncio.gather(*map(get_dataframe, batches))
 
-        for batch in batches:
-            batch_df = self._get_dataframe(
-                batch, schema, include_document_ids, enforce_schema, has_header, comment
-            )
+        if dfs:
+            return functools.reduce(union, dfs)
+        elif schema:
+            return self._spark_session.createDataFrame((), schema)
 
-            document_df = document_df.union(batch_df)
-
-        if include_document_ids:
-            url_df = self._sql_context.createDataFrame(
-                doc_urls, schema=DOCUMENT_URL_SCHEMA
-            )
-
-            return document_df.join(url_df, on=["_input_file_name"], how="inner").drop(
-                "_input_file_name"
-            )
-
-        return document_df
+        raise ValueError("No documents found to load.")

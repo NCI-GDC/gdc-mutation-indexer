@@ -2,7 +2,7 @@ import collections
 import functools
 import json
 import types
-from collections.abc import Container, Iterable, Iterator, Mapping, Set
+from collections.abc import AsyncIterator, Container, Iterable, Iterator, Mapping, Set
 from typing import Deque, Final, Optional, Tuple, Union
 
 import elasticsearch
@@ -12,20 +12,21 @@ from elasticsearch import helpers
 from gdcmodels import mapper
 from pyspark import sql
 
+from mutation_indexer import aioutils
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
 
 
 def iterate_es_results(
-    es_client: elasticsearch.Elasticsearch,
+    es_client: elasticsearch.AsyncElasticsearch,
     index_name: str,
     doc_type: Optional[str] = None,
     query: Optional[dict] = None,
-) -> Iterable:
+) -> AsyncIterator:
     """
     Returns iterator over elasticsearch query results
     """
-    doc_iterator = helpers.scan(
+    return helpers.async_scan(
         es_client,
         index=index_name,
         doc_type=doc_type,
@@ -33,8 +34,6 @@ def iterate_es_results(
         size=100,
         query=query or {},
     )
-
-    return doc_iterator
 
 
 @functools.cache
@@ -268,7 +267,7 @@ class DataFrameUtil:
         self,
         config: es_config.Elasticsearch,
         spark_session: sql.SparkSession,
-        es_client: elasticsearch.Elasticsearch,
+        es_client: elasticsearch.AsyncElasticsearch,
         mappings_loader: MappingsLoader,
     ) -> None:
         self._config = config
@@ -279,6 +278,7 @@ class DataFrameUtil:
     def _get_index(self, index_type: build.IndexType) -> str:
         return _get_index(self._config, index_type)
 
+    @aioutils.to_thread
     def read(
         self,
         index_type: build.IndexType,
@@ -337,7 +337,7 @@ class DataFrameUtil:
 
         return reader.load(index)
 
-    def _create_index(self, index: str, index_type: build.IndexType) -> None:
+    async def _create_index(self, index: str, index_type: build.IndexType) -> None:
         """
         Creates the index based on the mapping associated with the given index
         type.
@@ -346,18 +346,18 @@ class DataFrameUtil:
             index: the name of the index to be created
             index_type: the index type correlating to the mapping for the new index
         """
-        if self._es_client.indices.exists(index=index):
+        if await self._es_client.indices.exists(index=index):
             raise Exception(
                 f"Index: {index} already exists. Cannot overwrite existing index."
             )
 
         mappings = self._mappings_loader.load_mappings(index_type)
 
-        self._es_client.indices.create(
+        await self._es_client.indices.create(
             index=index, mappings=mappings.mappings, settings=mappings.settings
         )
 
-    def write(
+    async def write(
         self, df: sql.DataFrame, index_type: build.IndexType, id_field: str
     ) -> None:
         """
@@ -370,7 +370,7 @@ class DataFrameUtil:
         """
         index = self._get_index(index_type)
 
-        self._create_index(index, index_type)
+        await self._create_index(index, index_type)
         (
             df.write.format(self.ES_FORMAT)
             .option("es.nodes", self._config.connection.nodes)
@@ -416,6 +416,7 @@ class RDDUtil:
     def _get_index(self, index_type: build.IndexType) -> str:
         return _get_index(self._config, index_type)
 
+    @aioutils.to_thread
     def get_rdd(
         self,
         index_type: build.IndexType,

@@ -4,7 +4,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
-from mutation_indexer import builders
+from mutation_indexer import aioutils, builders
 from mutation_indexer.builders import df_builders
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app
@@ -46,17 +46,16 @@ class GeneCentricBuilder(builders.BaseBuilder):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(
-        self,
-        maf_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
-        case_df: sql.DataFrame,
-        primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> Self:
+    @aioutils.to_thread
+    def _build(self, **kwargs: sql.DataFrame) -> Self:
         """
         Builds Gene Centric index
         """
+        maf_df = kwargs["maf_df"]
+        ascat_df = kwargs["ascat_df"]
+        case_df = kwargs["case_df"]
+        primary_aliquot_df = kwargs["primary_aliquot_df"]
+
         self.log("Building GeneCentric")
         # Check if we should load a pre-built dataframe
         if self.config.output_raw == "read":
@@ -107,7 +106,11 @@ class GeneCentricBuilder(builders.BaseBuilder):
         - join them together
         """
         self.log("Building Case with gene info from MAF and GeneModel")
-        case_and_gene_df = self._build_case_with_gene_id(maf_df, ascat_df, case_df,)
+        case_and_gene_df = self._build_case_with_gene_id(
+            maf_df,
+            ascat_df,
+            case_df,
+        )
 
         self.log("Building SSM subtree")
         ssm_df = self.build_ssm_subtree(maf_df, primary_aliquot_df)
@@ -148,11 +151,17 @@ class GeneCentricBuilder(builders.BaseBuilder):
         """
 
         # Consequence
-        cons_df = self.consequence_builder.build_for_ssm(maf_df, self.index_name,)
+        cons_df = self.consequence_builder.build_for_ssm(
+            maf_df,
+            self.index_name,
+        )
 
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name, selector="ssm",
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
+            selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
@@ -183,7 +192,9 @@ class GeneCentricBuilder(builders.BaseBuilder):
         """
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            ascat_df, self.index_name, selector="cnv",
+            ascat_df,
+            self.index_name,
+            selector="cnv",
         )
 
         # Build the final cnv dataframe

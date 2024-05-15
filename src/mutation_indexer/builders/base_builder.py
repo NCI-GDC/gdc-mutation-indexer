@@ -1,4 +1,5 @@
 import abc
+from collections.abc import Awaitable, Iterable
 import copy
 import logging
 from typing import ClassVar
@@ -8,7 +9,8 @@ from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 from typing_extensions import Self
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import utils
+from mutation_indexer.builders import bases, utils
+from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app, build
 
 logging.basicConfig(format=app.LOG_FORMAT)
@@ -76,22 +78,27 @@ class BaseBuilder(abc.ABC):
     index_name: ClassVar[str]
     id_field: ClassVar[str]
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config: adapter.ObsoleteConfig, sqlContext):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sqlContext = sqlContext
         self.debug = config.debug
         self.mappings_loader = es_utils.MappingsLoader()
 
+    async def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
+        await self._build(**inputs)
+
+        return await self.load()
+
     @abc.abstractmethod
-    def build(self, **kwargs: sql.DataFrame) -> Self:
+    def _build(self, **kwargs: sql.DataFrame) -> Awaitable[Self]:
         """
         Contains the ETL logic to construct a spark dataframe of
         the same structure as the required output index.
         """
         pass
 
-    def load(self):
+    async def load(self) -> sql.DataFrame:
         """
         Responsible for loading the dataframe resulting from :func:`build`
         into a destination, usually Elasticsearch.
@@ -102,13 +109,13 @@ class BaseBuilder(abc.ABC):
         )
 
         self.log("Creating {} index".format(index))
-        response = self.config.es.indices.create(
+        response = await self.config.es.indices.create(
             index=index, mappings=mapper.mappings, settings=mapper.settings
         )
         self.log(response)
 
         self.log("Repartitioning {}".format(self.index_name))
-        df = getattr(self, self.index_name).repartition(
+        df: sql.DataFrame = getattr(self, self.index_name).repartition(
             self.config.df_repartition, self.id_field
         )
 
@@ -151,7 +158,7 @@ class BaseBuilder(abc.ABC):
         )
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
-        df.unpersist()
+        return df.unpersist()
 
     def truncate_df_at_percentile(
         self,
@@ -218,3 +225,54 @@ class BaseBuilder(abc.ABC):
         """
         if self.debug:
             self.log("Count: {}".format(dataframe.count()))
+
+
+class BuilderAdapter(bases.Builder):
+    INPUTS = {
+        "case_centric": (
+            build.DataFrame.MAF_METADATA,
+            build.DataFrame.MAF,
+            build.DataFrame.ASCAT,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "cnv_centric": (build.DataFrame.ASCAT, build.DataFrame.CASE),
+        "cnv_occurrence_centric": (build.DataFrame.ASCAT, build.DataFrame.CASE),
+        "gene_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.ASCAT,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "ssm_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "ssm_occurrence_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+    }
+    OUTPUTS = {
+        "case_centric": build.DataFrame.CASE_CENTRIC,
+        "cnv_centric": build.DataFrame.CNV_CENTRIC,
+        "cnv_occurrence_centric": build.DataFrame.CNV_OCCURRENCE_CENTRIC,
+        "gene_centric": build.DataFrame.GENE_CENTRIC,
+        "ssm_centric": build.DataFrame.SSM_CENTRIC,
+        "ssm_occurrence_centric": build.DataFrame.SSM_OCCURRENCE_CENTRIC,
+    }
+
+    def __init__(self, builder: BaseBuilder) -> None:
+        self._builder = builder
+
+    @property
+    def inputs(self) -> Iterable[build.DataFrame]:
+        return self.INPUTS[self._builder.index_name]
+
+    @property
+    def output(self) -> build.DataFrame:
+        return self.OUTPUTS[self._builder.index_name]
+
+    def build(self, **inputs: sql.DataFrame) -> Awaitable[sql.DataFrame]:
+        return self._builder.build(**inputs)

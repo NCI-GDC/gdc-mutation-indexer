@@ -55,5 +55,5 @@ class GeneModelBuilder(Builder):
     """
 
     census_file: str
-    citobands_file: str
+    cytobands_file: str
     gene_model_file: str

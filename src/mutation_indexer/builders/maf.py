@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from typing import cast
 
+import importlib_resources as resources
 import more_itertools
 import yaml
-from pkg_resources import resource_filename
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -119,7 +120,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
         return df.drop("_civic_gene_id", "_civic_variant_id")
 
-    def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
+    async def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and augmenting them
         with additional features
@@ -139,7 +140,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         gene_model_df = input_dfs["gene_model_df"]
         maf_metadata_df = input_dfs["maf_metadata_df"]
 
-        df = self._build_document_dataframe(maf_metadata_df)
+        df = await self._build_document_dataframe(maf_metadata_df)
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -191,15 +192,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
                     assert val_type in ["float", "int", "str", "boolean"]
                     df = df.withColumn(column, df[column].cast(val_type))
 
-                elif "pattern" in self.schema[column]:
-                    pattern = self.schema[column]["pattern"]
-
-                    def apply_pattern(value):
-                        return pattern.format(value)
-
-                    df = df.withColumn(
-                        column, F.udf(apply_pattern, types.StringType())(df[column])
-                    )
+                elif "prefix" in self.schema[column]:
+                    prefix = self.schema[column]["prefix"]
+                    df = df.withColumn(column, F.concat(F.lit(prefix), F.col(column)))
                 else:
                     pass
         return df
@@ -234,26 +229,15 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         """
         Load the intended MAF schema from the local YAML file
         """
-        path = resource_filename("mutation_indexer.schemas", "maf.yml")
-        with open(path) as f:
-            return yaml.safe_load(f)["maf_schema"]
+        resource = resources.files(schemas).joinpath("maf.yml")
+
+        return yaml.safe_load(resource.read_bytes())
 
     def format_cosmic_id(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Turns StringType() cosmic_id field to ArrayType(StringType()) field
         """
-
-        def to_array(cosmic_string):
-            if cosmic_string is not None:
-                if ";" in cosmic_string:
-                    cosmic_string = cosmic_string.split(";")
-                else:
-                    cosmic_string = [cosmic_string]
-            return cosmic_string
-
-        to_array = F.udf(to_array, types.ArrayType(types.StringType()))
-        df = df.withColumn("cosmic_id", to_array(df["cosmic_id"]))
-        return df
+        return df.withColumn("cosmic_id", F.split("cosmic_id", ";"))
 
     def add_available_variation_data(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -263,26 +247,22 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
-        avd_udf = F.udf(
-            lambda x, y: [] if (x is None and y is not None) else ["ssm"],
-            types.ArrayType(types.StringType()),
-        )
         return df.withColumn(
             "available_variation_data",
-            avd_udf(F.col("tumor_sample_barcode"), F.col("case_id")),
+            F.when(
+                F.col("tumor_sample_barcode").isNull() & F.col("case_id").isNull(), []
+            )
+            .otherwise(["ssm"])
+            .cast(types.ArrayType(types.StringType())),
         )
 
     def add_mutation_type(self, df: sql.DataFrame) -> sql.DataFrame:
-        def mutation_type(mut_type):
-            types = {"Somatic": "Simple Somatic Mutation"}
-            if mut_type in types:
-                return types[mut_type]
-            else:
-                return None
-
-        mut_type_udf = F.udf(mutation_type, types.StringType())
-        df = df.withColumn("mutation_type", mut_type_udf("mutation_type"))
-        return df
+        return df.withColumn(
+            "mutation_type",
+            F.when(
+                F.col("mutation_type") == F.lit("Somatic"), "Simple Somatic Mutation"
+            ).otherwise(None),
+        )
 
     def format_chr(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -290,31 +270,22 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         chr1 -> 1
         """
         return df.withColumn(
-            "gene_chromosome",
-            F.udf(lambda x: x.replace("chr", ""), types.StringType())(
-                F.col("gene_chromosome")
-            ),
+            "gene_chromosome", F.regexp_replace("gene_chromosome", "chr", "")
         )
 
     def add_mutation_subtype(self, df: sql.DataFrame) -> sql.DataFrame:
-        def subtype(variant_type):
-            subtypes = {
-                "SNP": "Single base substitution",
-                "DEL": "Small deletion",
-                "INS": "Small insertion",
-                "DNP": "Di-nucleotide polymorphism",
-                "TNP": "Tri-nucleotide polymorphism",
-                "ONP": "Oligo-nucleotide polymorphism",
-            }
-            if variant_type in subtypes:
-                return subtypes[variant_type]
-            else:
-                return None
+        variant_type = F.col("variant_type")
+        mutation_subtype = (
+            F.when(variant_type == F.lit("SNP"), "Single base substitution")
+            .when(variant_type == F.lit("DEL"), "Small deletion")
+            .when(variant_type == F.lit("INS"), "Small insertion")
+            .when(variant_type == F.lit("DNP"), "Di-nucleotide polymorphism")
+            .when(variant_type == F.lit("TNP"), "Tri-nucleotide polymorphism")
+            .when(variant_type == F.lit("ONP"), "Oligo-nucleotide polymorphism")
+            .otherwise(None)
+        )
 
-        sub_type_udf = F.udf(subtype, types.StringType())
-        df = df.withColumn("mutation_subtype", sub_type_udf("variant_type"))
-
-        return df
+        return df.withColumn("mutation_subtype", mutation_subtype)
 
     def add_normal_genotype(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -377,35 +348,25 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
                                         cds_length: 2112,
                                         cds_end: 1273 + 2112
         """
-
-        def start(s):
-            s = (s and s.split("/")[0].split("-")[0].strip()) or -1
-            if s in [-1, "?"]:
-                return -1
-            return int(s.split("/")[0].split("-")[0])
-
-        def length(s):
-            if not (s and s.split("/")[1].strip()):
-                return -1
-            return int(s.split("/")[1])
-
-        def end(s):
-            if -1 in [start(s), length(s)]:
-                return -1
-            return start(s) + length(s)
-
-        df = df.withColumn(
-            "cds_start", F.udf(start, types.IntegerType())(F.col("cds_position"))
+        cds_position = F.col("cds_position")
+        cds_start = F.coalesce(
+            F.trim(F.split(F.split(cds_position, "/")[0], "-")[0]), F.lit("?")
         )
-        df = df.withColumn(
-            "cds_end", F.udf(end, types.IntegerType())(F.col("cds_position"))
+        cds_start = F.when(cds_start == F.lit("?"), -1).otherwise(
+            cds_start.cast("integer")
         )
-        df = df.withColumn(
-            "cds_length", F.udf(length, types.IntegerType())(F.col("cds_position"))
+        cds_length = F.coalesce(
+            F.trim(F.split(cds_position, "/")[1]).cast("integer"), F.lit(-1)
         )
-        return df
+        cds_end = F.when(cds_start == -1 | cds_length == -1, -1).otherwise(
+            cds_start + cds_length
+        )
 
-    def _build_document_dataframe(
+        return df.withColumns(
+            {"cds_start": cds_start, "cds_end": cds_end, "cds_length": cds_length}
+        )
+
+    async def _build_document_dataframe(
         self, maf_metadata_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -427,20 +388,27 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
         masked_somatic_mutaion = files.get("Masked Somatic Mutation", ())
         aggregated_somatic_mutation = files.get("Aggregated Somatic Mutation", ())
-
-        masked_somatic_mutation_df = self._doc_dataframe_util.get_dataframe(
-            masked_somatic_mutaion,
-            schema=schemas.load_schema("builders/maf/masked_somatic_mutation.yaml"),
-            comment="#",
-        )
-        aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
-            self._doc_dataframe_util.get_dataframe(
-                aggregated_somatic_mutation,
-                schema=schemas.load_schema(
-                    "builders/maf/aggregated_somatic_mutation.yaml"
+        masked_somatic_mutation_df, aggregated_somatic_mutation_df = (
+            await asyncio.gather(
+                self._doc_dataframe_util.get_dataframe(
+                    masked_somatic_mutaion,
+                    schema=schemas.load_schema(
+                        "builders/maf/masked_somatic_mutation.yaml"
+                    ),
+                    comment="#",
                 ),
-                comment="#",
-            ),
+                self._doc_dataframe_util.get_dataframe(
+                    aggregated_somatic_mutation,
+                    schema=schemas.load_schema(
+                        "builders/maf/aggregated_somatic_mutation.yaml"
+                    ),
+                    comment="#",
+                ),
+            )
+        )
+
+        aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
+            aggregated_somatic_mutation_df,
             (
                 pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
                 pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),

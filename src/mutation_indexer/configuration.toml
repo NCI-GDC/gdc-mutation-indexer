@@ -10,11 +10,11 @@ config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
     "CASE_CENTRIC",
-    "CNV_CENTRIC",
-    "CNV_OCCURRENCE_CENTRIC",
-    "GENE_CENTRIC",
-    "SSM_CENTRIC",
-    "SSM_OCCURRENCE_CENTRIC",
+    # "CNV_CENTRIC",
+    # "CNV_OCCURRENCE_CENTRIC",
+    # "GENE_CENTRIC",
+    # "SSM_CENTRIC",
+    # "SSM_OCCURRENCE_CENTRIC",
 ]
 jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
@@ -48,7 +48,7 @@ path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_rel
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+cytobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
 gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
 is_cached = true
 
@@ -153,7 +153,7 @@ path = ""
 
 [builders.viz.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+cytobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
 gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
 is_cached = true
 
@@ -226,6 +226,7 @@ spark_home = ""
 yarn_conf_dir = ""
 
 [indexd]
+scheme = "http"
 host = "indexd.service.consul"
 password = ""
 port = 80

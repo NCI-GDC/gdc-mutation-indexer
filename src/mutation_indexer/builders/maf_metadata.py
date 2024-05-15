@@ -43,13 +43,15 @@ class _ProjectBucket(TypedDict):
 
 
 class MAFFileFilterFactory:
+    __slots__ = ("_config", "_es_client")
+
     def __init__(
-        self, config: es_config.Read, es_client: elasticsearch.Elasticsearch
+        self, config: es_config.Read, es_client: elasticsearch.AsyncElasticsearch
     ) -> None:
         self._config = config
         self._es_client = es_client
 
-    def _get_project_strategy_aggregations(
+    async def _get_project_strategy_aggregations(
         self, filters: Sequence[dict], projects: Sequence[str]
     ) -> Sequence[_ProjectBucket]:
         """
@@ -98,12 +100,14 @@ class MAFFileFilterFactory:
 
             filters.append(projects_filter)
 
-        return self._es_client.search(
+        result = await self._es_client.search(
             index=self._config.file_index,
             size=0,
             aggs=aggs,
             query={"bool": {"must": filters}},
-        )["aggregations"]["cases"]["projects"]["buckets"]
+        )
+
+        return result["aggregations"]["cases"]["projects"]["buckets"]
 
     def _select_experimental_strategy(
         self,
@@ -142,7 +146,7 @@ class MAFFileFilterFactory:
 
         return strategy
 
-    def _build_experimental_strategy_filter(
+    async def _build_experimental_strategy_filter(
         self,
         filters: Sequence[dict],
         projects: Sequence[str],
@@ -167,18 +171,15 @@ class MAFFileFilterFactory:
         strategy_selector = functools.partial(
             self._select_experimental_strategy, prioritized_experimental_strategies
         )
-        project_buckets = self._get_project_strategy_aggregations(filters, projects)
+        project_buckets = await self._get_project_strategy_aggregations(
+            filters, projects
+        )
         projects_by_strategy = more_itertools.map_reduce(
             project_buckets,
             keyfunc=strategy_selector,
             valuefunc=lambda project: project["key"],
         )
         _ = projects_by_strategy.pop(_UNPRIORITIZED_STRATEGY, None)
-
-        if not projects_by_strategy:
-            raise RuntimeError(
-                "Invalid Data: No projects associated with any MAF files."
-            )
 
         return {
             "bool": {
@@ -205,7 +206,7 @@ class MAFFileFilterFactory:
             }
         }
 
-    def get_filters(
+    async def get_filters(
         self,
         acl: Sequence[str],
         projects: Sequence[str],
@@ -258,7 +259,7 @@ class MAFFileFilterFactory:
                 "minimum_should_match": 1,
             }
         }
-        strategy_filter = self._build_experimental_strategy_filter(
+        strategy_filter = await self._build_experimental_strategy_filter(
             (filter,), projects, prioritized_experimental_strategies
         )
 
@@ -305,16 +306,14 @@ class MAFMetadataBuilder(
 
         self._file_filter_factory = file_filter_factory
 
-    def _get_initial_weighted_df(
+    async def _get_initial_weighted_df(
         self, query: dict, include_fields: Union[Iterable[str], Literal[True]]
     ) -> sql.DataFrame:
-        return (
-            super()
-            ._get_initial_weighted_df(query, include_fields)
-            .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
-        )
+        df = await super()._get_initial_weighted_df(query, include_fields)
 
-    def _build_from_scratch(self, input_dfs: MAFMetadataInputs) -> sql.DataFrame:
+        return df.select("*", F.col("analysis.workflow_type").alias("workflow_type"))
+
+    async def _build_from_scratch(self, input_dfs: MAFMetadataInputs) -> sql.DataFrame:
         """
         Gets the maf file data (file_id, workflow_type, and data_type) and its
         associated case id.
@@ -328,14 +327,15 @@ class MAFMetadataBuilder(
             |---file_id
             +---workflow_type
         """
-        filters = self._file_filter_factory.get_filters(
+        filters = await self._file_filter_factory.get_filters(
             self._config.acl,
             self._config.projects,
             self._config.prioritized_experimental_strategies,
         )
-
-        return self._get_primary_aliquot_df(
+        df = await self._get_primary_aliquot_df(
             filters,
-            frozenset(("case",)),
+            entities=self.CASE_ONLY,
             include_fields=("data_type", "analysis.workflow_type"),
-        ).select("case_id", "data_type", "file_id", "workflow_type")
+        )
+
+        return df.select("case_id", "data_type", "file_id", "workflow_type")

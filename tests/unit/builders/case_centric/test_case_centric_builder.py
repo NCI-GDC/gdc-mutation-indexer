@@ -164,7 +164,10 @@ class TestCaseCentricBuilder:
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
-            map(lambda c: (c._id, dataclasses.asdict(c._source)), cases,)
+            map(
+                lambda c: (c._id, dataclasses.asdict(c._source)),
+                cases,
+            )
         )
         rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
         rdd_util.get_rdd.return_value = rdd
@@ -248,7 +251,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         assert hasattr(builder, "case_centric") and isinstance(
             builder.case_centric, sql.DataFrame
@@ -286,7 +289,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
         maf_gene = more_itertools.one(
@@ -341,7 +344,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
         result_available_variations = frozenset(result_case.available_variation_data)
@@ -404,7 +407,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -432,7 +435,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -462,7 +465,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -494,7 +497,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -540,7 +543,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -574,7 +577,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 
@@ -607,7 +610,7 @@ class TestCaseCentricBuilder:
             observation_builder,
         )
 
-        builder.build(**inputs)
+        builder._build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
 

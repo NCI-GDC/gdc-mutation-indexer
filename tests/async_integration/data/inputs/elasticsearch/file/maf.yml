@@ -1,0 +1,56 @@
+- file_id: maf-0
+  data_format: MAF
+  data_type: Masked Somatic Mutation
+  acl: [open]
+  experimental_strategy: Genotyping Array
+  analysis:
+    workflow_type: Aliquot Ensemble Somatic Variant Merging and Masking
+  cases:
+    - case_id: case-maf-0
+      project:
+        project_id: GDC-TEST
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"
+- file_id: maf-1
+  data_format: MAF
+  data_type: Aggregated Somatic Mutation
+  acl: [open]
+  experimental_strategy: Genotyping Array
+  analysis:
+    workflow_type: FoundationOne Variant Aggregation and Masking
+  cases:
+    - case_id: case-maf-1
+      project:
+        project_id: GDC-TEST
+      samples:
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-0
+          sample_type: Normal
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-0
+                  created_datetime: "2024-01-01T02:12:23.02203"
+        - created_datetime: "2024-01-01T02:12:23.02203"
+          sample_id: sample-1
+          sample_type: Primary Tumor
+          portions:
+            - analytes:
+              - aliquots:
+                - aliquot_id: aliquot-1
+                  created_datetime: "2024-01-01T02:12:23.02203"

@@ -1,3 +1,4 @@
+import asyncio
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -50,11 +51,13 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def _load_es_case_data(self) -> sql.DataFrame:
+    async def _load_es_case_data(self) -> sql.DataFrame:
         if (
             False and self.config.projects
         ):  # TODO: DEV-1256 Restore func w/ new config specific projects
-            query = {"query": {"terms": {"project.project_id": self.config.projects}}}
+            query: dict = {
+                "query": {"terms": {"project.project_id": self.config.projects}}
+            }
         else:
             query = {"query": {"match_all": {}}}
 
@@ -72,33 +75,35 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         self.logger.info(f"Included case fields: {fields}")
         self.logger.info(f"Included sample fields: {sample_fields}")
 
-        case_df = self._es_dataframe_util.read(
-            build.IndexType.CASE,
-            include_fields=fields,
-            include_as_arrays=self.config.case_include_as_arrays,
-            query=query,
-        )
-        sample_df = (
+        case_df, sample_rdd = await asyncio.gather(
+            self._es_dataframe_util.read(
+                build.IndexType.CASE,
+                include_fields=fields,
+                include_as_arrays=self.config.case_include_as_arrays,
+                query=query,
+            ),
             self._es_rdd_util.get_rdd(
-                build.IndexType.CASE, include_fields=sample_fields, query=query,
-            )
-            .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
-            .select("_source.*")
+                build.IndexType.CASE,
+                include_fields=sample_fields,
+                query=query,
+            ),
         )
+
+        sample_df = sample_rdd.toDF(
+            schema=schemas.load_schema("builders/case_centric/sample.yaml")
+        ).select("_source.*")
 
         return case_df.join(sample_df, on="case_id", how="left")
 
-    def build(
-        self,
-        maf_metadata_df: sql.DataFrame,
-        maf_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
-        primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> Self:
+    async def _build(self, **kwargs: sql.DataFrame) -> Self:
         """
         Builds Case Centric index
         """
+        maf_metadata_df = kwargs["maf_metadata_df"]
+        maf_df = kwargs["maf_df"]
+        ascat_df = kwargs["ascat_df"]
+        primary_aliquot_df = kwargs["primary_aliquot_df"]
+
         self.log("Building CaseCentric")
         # Check if we should load a pre-built dataframe
         if self.config.output_raw == "load":
@@ -106,7 +111,7 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
             if self.case_centric is not None:
                 return self
 
-        case_df = self._load_cases(
+        case_df = await self._load_cases(
             maf_metadata_df, ascat_df, self.config.df_repartition
         )
 
@@ -213,7 +218,10 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name, selector="ssm",
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
+            selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
@@ -245,7 +253,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            ascat_df, self.index_name, selector="cnv",
+            ascat_df,
+            self.index_name,
+            selector="cnv",
         )
 
         # Build the final cnv dataframe
