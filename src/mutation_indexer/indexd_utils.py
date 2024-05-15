@@ -76,10 +76,7 @@ class IndexClient(AsyncContextManager):
                 indexd_url,
                 connector=self._connector,
                 connector_owner=not self._connector,
-                headers={
-                    "content-type": "application/json",
-                    "accept": "application/json",
-                },
+                headers={"content-type": "application/json"},
             )
         )
 
@@ -103,7 +100,7 @@ class IndexClient(AsyncContextManager):
 
             response.raise_for_status()
 
-            data = await response.json()
+            data = await response.json(content_type=None)
 
         return map(Document.from_json, data)
 
