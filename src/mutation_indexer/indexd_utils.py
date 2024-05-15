@@ -101,17 +101,6 @@ class IndexClient(AsyncContextManager):
         return map(Document.from_json, data)
 
 
-def _is_main_url(metadata: dict):
-    """Check if given metadata corresponds to main IndexD URL:
-        * type == cleversafe
-        * state == validated
-
-    Returns:
-        bool: True if main URL, False otherwise
-    """
-    return metadata.get("type") == "cleversafe" and metadata.get("state") == "validated"
-
-
 class DocumentUrl(NamedTuple):
     did: str
     url: str
@@ -213,4 +202,9 @@ class DataFrameUtil:
         )
         dfs = await asyncio.gather(*map(get_dataframe, batches))
 
-        return functools.reduce(union, dfs)
+        if dfs:
+            return functools.reduce(union, dfs)
+        elif schema:
+            return self._spark_session.createDataFrame((), schema)
+
+        raise ValueError("No documents found to load.")
