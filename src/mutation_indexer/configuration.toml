@@ -226,6 +226,7 @@ spark_home = ""
 yarn_conf_dir = ""
 
 [indexd]
+scheme = "http"
 host = "indexd.service.consul"
 password = ""
 port = 80
