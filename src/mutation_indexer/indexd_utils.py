@@ -67,9 +67,11 @@ class IndexClient(AsyncContextManager):
         self.__session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self) -> Self:
+        indexd_url = yarl.URL.build(host=self._config.host, port=self._config.port)
+        logger.info(f"THIS IS THE URL: {indexd_url}")
         self.__session = await self._context.enter_async_context(
             aiohttp.ClientSession(
-                yarl.URL.build(host=self._config.host, port=int(self._config.port)),
+                indexd_url,
                 connector=self._connector,
                 connector_owner=not self._connector,
                 headers={"content-type": "application/json"},
