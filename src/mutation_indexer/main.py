@@ -28,44 +28,6 @@ from mutation_indexer.constants import build
 logger = logging.getLogger("mutation_indexer")
 
 
-class BuilderAdapter(bases.Builder):
-    INPUTS = {
-        "case_centric": (
-            build.DataFrame.MAF_METADATA,
-            build.DataFrame.MAF,
-            build.DataFrame.ASCAT,
-            build.DataFrame.PRIMARY_ALIQUOT,
-        ),
-        "cnv_centric": (),
-        "cnv_occurrence_centric": (),
-        "gene_centric": (),
-        "ssm_centric": (),
-        "ssm_occurrence_centric": (),
-    }
-    OUTPUTS = {
-        "case_centric": build.DataFrame.CASE_CENTRIC,
-        "cnv_centric": build.DataFrame.CNV_CENTRIC,
-        "cnv_occurrence_centric": build.DataFrame.CNV_OCCURRENCE_CENTRIC,
-        "gene_centric": build.DataFrame.GENE_CENTRIC,
-        "ssm_centric": build.DataFrame.SSM_CENTRIC,
-        "ssm_occurrence_centric": build.DataFrame.SSM_OCCURRENCE_CENTRIC,
-    }
-
-    def __init__(self, builder: base_builder.BaseBuilder) -> None:
-        self._builder = builder
-
-    @property
-    def inputs(self) -> Iterable[build.DataFrame]:
-        return self.INPUTS[self._builder.index_name]
-
-    @property
-    def output(self) -> build.DataFrame:
-        return self.OUTPUTS[self._builder.index_name]
-
-    def build(self, **inputs: sql.DataFrame) -> Awaitable[sql.DataFrame]:
-        return self._builder.build(**inputs)
-
-
 def _get_required_builders(
     builders: Mapping[build.DataFrame, bases.Builder],
     required: list[bases.Builder],
@@ -208,7 +170,9 @@ def _get_viz_builders(
         ),
     }
     adapters = tuple(
-        BuilderAdapter(b) for t, b in index_builders.items() if t in index_types
+        base_builder.BuilderAdapter(b)
+        for t, b in index_builders.items()
+        if t in index_types
     )
     input_builders: Iterable[bases.Builder] = (
         builders.ASCATMetadataBuilder(

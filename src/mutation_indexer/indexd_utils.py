@@ -70,7 +70,7 @@ class IndexClient(AsyncContextManager):
         indexd_url = yarl.URL.build(
             scheme=self._config.scheme, host=self._config.host, port=self._config.port
         )
-        logger.info(f"THIS IS THE URL: {indexd_url}")
+
         self.__session = await self._context.enter_async_context(
             aiohttp.ClientSession(
                 indexd_url,

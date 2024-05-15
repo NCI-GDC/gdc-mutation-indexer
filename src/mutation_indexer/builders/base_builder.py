@@ -1,5 +1,5 @@
 import abc
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Iterable
 import copy
 import logging
 from typing import ClassVar
@@ -9,7 +9,7 @@ from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
 from typing_extensions import Self
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import utils
+from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app, build
 
@@ -225,3 +225,54 @@ class BaseBuilder(abc.ABC):
         """
         if self.debug:
             self.log("Count: {}".format(dataframe.count()))
+
+
+class BuilderAdapter(bases.Builder):
+    INPUTS = {
+        "case_centric": (
+            build.DataFrame.MAF_METADATA,
+            build.DataFrame.MAF,
+            build.DataFrame.ASCAT,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "cnv_centric": (build.DataFrame.ASCAT, build.DataFrame.CASE),
+        "cnv_occurrence_centric": (build.DataFrame.ASCAT, build.DataFrame.CASE),
+        "gene_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.ASCAT,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "ssm_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+        "ssm_occurrence_centric": (
+            build.DataFrame.MAF,
+            build.DataFrame.CASE,
+            build.DataFrame.PRIMARY_ALIQUOT,
+        ),
+    }
+    OUTPUTS = {
+        "case_centric": build.DataFrame.CASE_CENTRIC,
+        "cnv_centric": build.DataFrame.CNV_CENTRIC,
+        "cnv_occurrence_centric": build.DataFrame.CNV_OCCURRENCE_CENTRIC,
+        "gene_centric": build.DataFrame.GENE_CENTRIC,
+        "ssm_centric": build.DataFrame.SSM_CENTRIC,
+        "ssm_occurrence_centric": build.DataFrame.SSM_OCCURRENCE_CENTRIC,
+    }
+
+    def __init__(self, builder: BaseBuilder) -> None:
+        self._builder = builder
+
+    @property
+    def inputs(self) -> Iterable[build.DataFrame]:
+        return self.INPUTS[self._builder.index_name]
+
+    @property
+    def output(self) -> build.DataFrame:
+        return self.OUTPUTS[self._builder.index_name]
+
+    def build(self, **inputs: sql.DataFrame) -> Awaitable[sql.DataFrame]:
+        return self._builder.build(**inputs)

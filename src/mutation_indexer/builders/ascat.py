@@ -6,7 +6,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
-from mutation_indexer import aioutils, indexd_utils, schemas
+from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
