@@ -76,7 +76,10 @@ class IndexClient(AsyncContextManager):
                 indexd_url,
                 connector=self._connector,
                 connector_owner=not self._connector,
-                headers={"content-type": "application/json"},
+                headers={
+                    "content-type": "application/json",
+                    "accept": "application/json",
+                },
             )
         )
 
