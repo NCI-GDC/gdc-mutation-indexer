@@ -90,7 +90,7 @@ class IndexClient(AsyncContextManager):
     async def get(self, dids: Iterable[str]) -> Iterator[Document]:
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
-        async with self._session.post("/bulk/documents", data=dids) as response:
+        async with self._session.post("/bulk/documents", json=dids) as response:
             if response.status == 404:
                 return iter(())
 
