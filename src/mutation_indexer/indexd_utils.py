@@ -94,18 +94,19 @@ class IndexClient(AsyncContextManager):
     async def get(self, dids: Iterable[str]) -> Iterator[Document]:
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
-        if not dids:
-            return iter(())
+        try:
+            async with self._session.post("/bulk/documents", json=dids) as response:
+                if response.status == 404:
+                    return iter(())
 
-        async with self._session.post("/bulk/documents", json=dids) as response:
-            if response.status == 404:
-                return iter(())
+                response.raise_for_status()
 
-            response.raise_for_status()
+                data = await response.json(content_type=None)
 
-            data = await response.json(content_type=None)
-
-        return map(Document.from_json, data)
+            return map(Document.from_json, data)
+        except:
+            logger.info(f"Failed to get docs: {dids}")
+            raise
 
 
 class DocumentUrl(NamedTuple):
