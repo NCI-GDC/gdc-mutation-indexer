@@ -97,7 +97,7 @@ class IndexBuilderInputs(TypedDict):
 
 
 class IndexBuilder(
-    bases.IndexBuilder[gene_expression.IndexBuilder, IndexBuilderInputs]
+    bases.IndexBuilder[gene_expression.GeneExpressionIndexBuilder, IndexBuilderInputs]
 ):
     """
     A builder class for loading gene expression data.
@@ -107,7 +107,7 @@ class IndexBuilder(
 
     def __init__(
         self,
-        config: gene_expression.IndexBuilder,
+        config: gene_expression.GeneExpressionIndexBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,
@@ -123,6 +123,13 @@ class IndexBuilder(
         )
 
         self._doc_dataframe_util = doc_dataframe_util
+
+    def _write_backup(self, df: sql.DataFrame) -> None:
+        df.write.parquet(
+            self._config.backup.path,
+            mode="overwrite",
+            partitionBy=self._config.backup.partition_by,
+        )
 
     def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
         """
@@ -168,14 +175,23 @@ class IndexBuilder(
             F.log2(F.col("uqfpkm") + 1).alias("log2_uqfpkm"),
         )
 
-        return gene_expression_df.select(
-            "case_id",
-            "gene_expression_id",
-            "gene_id",
-            "log2_uqfpkm",
-            "submitter_id",
-            "symbol",
-            "uqfpkm",
+        # Keep only the columns we need,
+        # repartition by gene_id so each partition has all cases for only one gene,
+        # and sort each partition by case_id in ascending order.
+        # The backup parquet file will have as many partitions as genes are and each
+        # partition will have all cases ordered.
+        return (
+            gene_expression_df.select(
+                "case_id",
+                "gene_expression_id",
+                "gene_id",
+                "log2_uqfpkm",
+                "submitter_id",
+                "symbol",
+                "uqfpkm",
+            )
+            .repartition("gene_id")
+            .sortWithinPartitions("case_id")
         )
 
     def _load_expression_values(
