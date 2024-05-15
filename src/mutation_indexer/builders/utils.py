@@ -7,10 +7,10 @@ from typing import Any, Optional
 
 import pkg_resources
 import yaml
+from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from gdcmodels import mapper, esmodels
 
 from mutation_indexer import es_utils
 from mutation_indexer.constants import build

@@ -1,285 +1,286 @@
+---
 fields:
-- &string_field
-  metadata: {}
-  name: Hugo_Symbol
-  nullable: true
-  type: string
-- <<: *string_field
-  name: Entrez_Gene_Id
-- <<: *string_field
-  name: Center
-- <<: *string_field
-  name: NCBI_Build
-- <<: *string_field
-  name: Chromosome
-- <<: *string_field
-  name: Start_Position
-- <<: *string_field
-  name: End_Position
-- <<: *string_field
-  name: Strand
-- <<: *string_field
-  name: Variant_Classification
-- <<: *string_field
-  name: Variant_Type
-- <<: *string_field
-  name: Reference_Allele
-- <<: *string_field
-  name: Tumor_Seq_Allele1
-- <<: *string_field
-  name: Tumor_Seq_Allele2
-- <<: *string_field
-  name: dbSNP_RS
-- <<: *string_field
-  name: dbSNP_Val_Status
-- <<: *string_field
-  name: Tumor_Sample_Barcode
-- <<: *string_field
-  name: Matched_Norm_Sample_Barcode
-- <<: *string_field
-  name: Match_Norm_Seq_Allele1
-- <<: *string_field
-  name: Match_Norm_Seq_Allele2
-- <<: *string_field
-  name: Tumor_Validation_Allele1
-- <<: *string_field
-  name: Tumor_Validation_Allele2
-- <<: *string_field
-  name: Match_Norm_Validation_Allele1
-- <<: *string_field
-  name: Match_Norm_Validation_Allele2
-- <<: *string_field
-  name: Verification_Status
-- <<: *string_field
-  name: Validation_Status
-- <<: *string_field
-  name: Mutation_Status
-- <<: *string_field
-  name: Sequencing_Phase
-- <<: *string_field
-  name: Sequence_Source
-- <<: *string_field
-  name: Validation_Method
-- <<: *string_field
-  name: Score
-- <<: *string_field
-  name: BAM_File
-- <<: *string_field
-  name: Sequencer
-- <<: *string_field
-  name: Tumor_Sample_UUID
-- <<: *string_field
-  name: Matched_Norm_Sample_UUID
-- <<: *string_field
-  name: HGVSc
-- <<: *string_field
-  name: HGVSp
-- <<: *string_field
-  name: HGVSp_Short
-- <<: *string_field
-  name: Transcript_ID
-- <<: *string_field
-  name: Exon_Number
-- <<: *string_field
-  name: t_depth
-- <<: *string_field
-  name: t_ref_count
-- <<: *string_field
-  name: t_alt_count
-- <<: *string_field
-  name: n_depth
-- <<: *string_field
-  name: n_ref_count
-- <<: *string_field
-  name: n_alt_count
-- <<: *string_field
-  name: all_effects
-- <<: *string_field
-  name: Allele
-- <<: *string_field
-  name: Gene
-- <<: *string_field
-  name: Feature
-- <<: *string_field
-  name: Feature_type
-- <<: *string_field
-  name: One_Consequence
-- <<: *string_field
-  name: Consequence
-- <<: *string_field
-  name: cDNA_position
-- <<: *string_field
-  name: CDS_position
-- <<: *string_field
-  name: Protein_position
-- <<: *string_field
-  name: Amino_acids
-- <<: *string_field
-  name: Codons
-- <<: *string_field
-  name: Existing_variation
-- <<: *string_field
-  name: DISTANCE
-- <<: *string_field
-  name: TRANSCRIPT_STRAND
-- <<: *string_field
-  name: SYMBOL
-- <<: *string_field
-  name: SYMBOL_SOURCE
-- <<: *string_field
-  name: HGNC_ID
-- <<: *string_field
-  name: BIOTYPE
-- <<: *string_field
-  name: CANONICAL
-- <<: *string_field
-  name: CCDS
-- <<: *string_field
-  name: ENSP
-- <<: *string_field
-  name: SWISSPROT
-- <<: *string_field
-  name: TREMBL
-- <<: *string_field
-  name: UNIPARC
-- <<: *string_field
-  name: UNIPROT_ISOFORM
-- <<: *string_field
-  name: RefSeq
-- <<: *string_field
-  name: MANE
-- <<: *string_field
-  name: APPRIS
-- <<: *string_field
-  name: FLAGS
-- <<: *string_field
-  name: SIFT
-- <<: *string_field
-  name: PolyPhen
-- <<: *string_field
-  name: EXON
-- <<: *string_field
-  name: INTRON
-- <<: *string_field
-  name: DOMAINS
-- <<: *string_field
-  name: 1000G_AF
-- <<: *string_field
-  name: 1000G_AFR_AF
-- <<: *string_field
-  name: 1000G_AMR_AF
-- <<: *string_field
-  name: 1000G_EAS_AF
-- <<: *string_field
-  name: 1000G_EUR_AF
-- <<: *string_field
-  name: 1000G_SAS_AF
-- <<: *string_field
-  name: ESP_AA_AF
-- <<: *string_field
-  name: ESP_EA_AF
-- <<: *string_field
-  name: gnomAD_AF
-- <<: *string_field
-  name: gnomAD_AFR_AF
-- <<: *string_field
-  name: gnomAD_AMR_AF
-- <<: *string_field
-  name: gnomAD_ASJ_AF
-- <<: *string_field
-  name: gnomAD_EAS_AF
-- <<: *string_field
-  name: gnomAD_FIN_AF
-- <<: *string_field
-  name: gnomAD_NFE_AF
-- <<: *string_field
-  name: gnomAD_OTH_AF
-- <<: *string_field
-  name: gnomAD_SAS_AF
-- <<: *string_field
-  name: MAX_AF
-- <<: *string_field
-  name: MAX_AF_POPS
-- <<: *string_field
-  name: gnomAD_non_cancer_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_AFR_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_AMI_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_AMR_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_ASJ_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_EAS_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_FIN_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_MID_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_NFE_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_OTH_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_SAS_AF
-- <<: *string_field
-  name: gnomAD_non_cancer_MAX_AF_adj
-- <<: *string_field
-  name: gnomAD_non_cancer_MAX_AF_POPS_adj
-- <<: *string_field
-  name: CLIN_SIG
-- <<: *string_field
-  name: SOMATIC
-- <<: *string_field
-  name: PUBMED
-- <<: *string_field
-  name: TRANSCRIPTION_FACTORS
-- <<: *string_field
-  name: MOTIF_NAME
-- <<: *string_field
-  name: MOTIF_POS
-- <<: *string_field
-  name: HIGH_INF_POS
-- <<: *string_field
-  name: MOTIF_SCORE_CHANGE
-- <<: *string_field
-  name: miRNA
-- <<: *string_field
-  name: IMPACT
-- <<: *string_field
-  name: PICK
-- <<: *string_field
-  name: VARIANT_CLASS
-- <<: *string_field
-  name: TSL
-- <<: *string_field
-  name: HGVS_OFFSET
-- <<: *string_field
-  name: PHENO
-- <<: *string_field
-  name: GENE_PHENO
-- <<: *string_field
-  name: CONTEXT
-- <<: *string_field
-  name: tumor_bam_uuid
-- <<: *string_field
-  name: normal_bam_uuid
-- <<: *string_field
-  name: case_id
-- <<: *string_field
-  name: GDC_FILTER
-- <<: *string_field
-  name: COSMIC
-- <<: *string_field
-  name: hotspot
-- <<: *string_field
-  name: RNA_Support
-- <<: *string_field
-  name: RNA_depth
-- <<: *string_field
-  name: RNA_ref_count
-- <<: *string_field
-  name: RNA_alt_count
-- <<: *string_field
-  name: callers
+  - &string_field
+    metadata: {}
+    name: Hugo_Symbol
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: Entrez_Gene_Id
+  - <<: *string_field
+    name: Center
+  - <<: *string_field
+    name: NCBI_Build
+  - <<: *string_field
+    name: Chromosome
+  - <<: *string_field
+    name: Start_Position
+  - <<: *string_field
+    name: End_Position
+  - <<: *string_field
+    name: Strand
+  - <<: *string_field
+    name: Variant_Classification
+  - <<: *string_field
+    name: Variant_Type
+  - <<: *string_field
+    name: Reference_Allele
+  - <<: *string_field
+    name: Tumor_Seq_Allele1
+  - <<: *string_field
+    name: Tumor_Seq_Allele2
+  - <<: *string_field
+    name: dbSNP_RS
+  - <<: *string_field
+    name: dbSNP_Val_Status
+  - <<: *string_field
+    name: Tumor_Sample_Barcode
+  - <<: *string_field
+    name: Matched_Norm_Sample_Barcode
+  - <<: *string_field
+    name: Match_Norm_Seq_Allele1
+  - <<: *string_field
+    name: Match_Norm_Seq_Allele2
+  - <<: *string_field
+    name: Tumor_Validation_Allele1
+  - <<: *string_field
+    name: Tumor_Validation_Allele2
+  - <<: *string_field
+    name: Match_Norm_Validation_Allele1
+  - <<: *string_field
+    name: Match_Norm_Validation_Allele2
+  - <<: *string_field
+    name: Verification_Status
+  - <<: *string_field
+    name: Validation_Status
+  - <<: *string_field
+    name: Mutation_Status
+  - <<: *string_field
+    name: Sequencing_Phase
+  - <<: *string_field
+    name: Sequence_Source
+  - <<: *string_field
+    name: Validation_Method
+  - <<: *string_field
+    name: Score
+  - <<: *string_field
+    name: BAM_File
+  - <<: *string_field
+    name: Sequencer
+  - <<: *string_field
+    name: Tumor_Sample_UUID
+  - <<: *string_field
+    name: Matched_Norm_Sample_UUID
+  - <<: *string_field
+    name: HGVSc
+  - <<: *string_field
+    name: HGVSp
+  - <<: *string_field
+    name: HGVSp_Short
+  - <<: *string_field
+    name: Transcript_ID
+  - <<: *string_field
+    name: Exon_Number
+  - <<: *string_field
+    name: t_depth
+  - <<: *string_field
+    name: t_ref_count
+  - <<: *string_field
+    name: t_alt_count
+  - <<: *string_field
+    name: n_depth
+  - <<: *string_field
+    name: n_ref_count
+  - <<: *string_field
+    name: n_alt_count
+  - <<: *string_field
+    name: all_effects
+  - <<: *string_field
+    name: Allele
+  - <<: *string_field
+    name: Gene
+  - <<: *string_field
+    name: Feature
+  - <<: *string_field
+    name: Feature_type
+  - <<: *string_field
+    name: One_Consequence
+  - <<: *string_field
+    name: Consequence
+  - <<: *string_field
+    name: cDNA_position
+  - <<: *string_field
+    name: CDS_position
+  - <<: *string_field
+    name: Protein_position
+  - <<: *string_field
+    name: Amino_acids
+  - <<: *string_field
+    name: Codons
+  - <<: *string_field
+    name: Existing_variation
+  - <<: *string_field
+    name: DISTANCE
+  - <<: *string_field
+    name: TRANSCRIPT_STRAND
+  - <<: *string_field
+    name: SYMBOL
+  - <<: *string_field
+    name: SYMBOL_SOURCE
+  - <<: *string_field
+    name: HGNC_ID
+  - <<: *string_field
+    name: BIOTYPE
+  - <<: *string_field
+    name: CANONICAL
+  - <<: *string_field
+    name: CCDS
+  - <<: *string_field
+    name: ENSP
+  - <<: *string_field
+    name: SWISSPROT
+  - <<: *string_field
+    name: TREMBL
+  - <<: *string_field
+    name: UNIPARC
+  - <<: *string_field
+    name: UNIPROT_ISOFORM
+  - <<: *string_field
+    name: RefSeq
+  - <<: *string_field
+    name: MANE
+  - <<: *string_field
+    name: APPRIS
+  - <<: *string_field
+    name: FLAGS
+  - <<: *string_field
+    name: SIFT
+  - <<: *string_field
+    name: PolyPhen
+  - <<: *string_field
+    name: EXON
+  - <<: *string_field
+    name: INTRON
+  - <<: *string_field
+    name: DOMAINS
+  - <<: *string_field
+    name: 1000G_AF
+  - <<: *string_field
+    name: 1000G_AFR_AF
+  - <<: *string_field
+    name: 1000G_AMR_AF
+  - <<: *string_field
+    name: 1000G_EAS_AF
+  - <<: *string_field
+    name: 1000G_EUR_AF
+  - <<: *string_field
+    name: 1000G_SAS_AF
+  - <<: *string_field
+    name: ESP_AA_AF
+  - <<: *string_field
+    name: ESP_EA_AF
+  - <<: *string_field
+    name: gnomAD_AF
+  - <<: *string_field
+    name: gnomAD_AFR_AF
+  - <<: *string_field
+    name: gnomAD_AMR_AF
+  - <<: *string_field
+    name: gnomAD_ASJ_AF
+  - <<: *string_field
+    name: gnomAD_EAS_AF
+  - <<: *string_field
+    name: gnomAD_FIN_AF
+  - <<: *string_field
+    name: gnomAD_NFE_AF
+  - <<: *string_field
+    name: gnomAD_OTH_AF
+  - <<: *string_field
+    name: gnomAD_SAS_AF
+  - <<: *string_field
+    name: MAX_AF
+  - <<: *string_field
+    name: MAX_AF_POPS
+  - <<: *string_field
+    name: gnomAD_non_cancer_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_AFR_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_AMI_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_AMR_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_ASJ_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_EAS_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_FIN_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_MID_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_NFE_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_OTH_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_SAS_AF
+  - <<: *string_field
+    name: gnomAD_non_cancer_MAX_AF_adj
+  - <<: *string_field
+    name: gnomAD_non_cancer_MAX_AF_POPS_adj
+  - <<: *string_field
+    name: CLIN_SIG
+  - <<: *string_field
+    name: SOMATIC
+  - <<: *string_field
+    name: PUBMED
+  - <<: *string_field
+    name: TRANSCRIPTION_FACTORS
+  - <<: *string_field
+    name: MOTIF_NAME
+  - <<: *string_field
+    name: MOTIF_POS
+  - <<: *string_field
+    name: HIGH_INF_POS
+  - <<: *string_field
+    name: MOTIF_SCORE_CHANGE
+  - <<: *string_field
+    name: miRNA
+  - <<: *string_field
+    name: IMPACT
+  - <<: *string_field
+    name: PICK
+  - <<: *string_field
+    name: VARIANT_CLASS
+  - <<: *string_field
+    name: TSL
+  - <<: *string_field
+    name: HGVS_OFFSET
+  - <<: *string_field
+    name: PHENO
+  - <<: *string_field
+    name: GENE_PHENO
+  - <<: *string_field
+    name: CONTEXT
+  - <<: *string_field
+    name: tumor_bam_uuid
+  - <<: *string_field
+    name: normal_bam_uuid
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: GDC_FILTER
+  - <<: *string_field
+    name: COSMIC
+  - <<: *string_field
+    name: hotspot
+  - <<: *string_field
+    name: RNA_Support
+  - <<: *string_field
+    name: RNA_depth
+  - <<: *string_field
+    name: RNA_ref_count
+  - <<: *string_field
+    name: RNA_alt_count
+  - <<: *string_field
+    name: callers
 type: struct

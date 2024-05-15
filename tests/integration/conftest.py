@@ -384,7 +384,7 @@ def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataF
     """
     cnv_dir = data_dir.joinpath("input/cnv")
 
-    with open(cnv_dir.joinpath("schema.yaml"), "r") as f:
+    with open(cnv_dir.joinpath("schema.yaml")) as f:
         schema = types.StructType.fromJson(yaml.safe_load(f))
 
     return spark_session.read.json(

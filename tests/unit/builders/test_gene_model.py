@@ -234,7 +234,6 @@ class TestGeneModelBuilder:
         for row_transcript, model_transcript in zip(
             result_row.transcripts, gene_model.transcripts
         ):
-
             assert row_transcript.transcript_id == model_transcript.id
             assert row_transcript.biotype == model_transcript.biotype
             assert row_transcript.cdna_coding_end == model_transcript.cdna_coding_end

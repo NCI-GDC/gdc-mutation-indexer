@@ -63,7 +63,9 @@ class DataFrameUtil:
         self._sql_context = sql_context
         self._logger = logger
 
-    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
+    def _get_doc_urls(
+        self, doc_ids: Iterable[str], batch_size: int
+    ) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
             self._indexd.bulk_request(list(dids)) or () for dids in batches

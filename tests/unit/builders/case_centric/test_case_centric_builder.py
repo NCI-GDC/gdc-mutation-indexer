@@ -164,7 +164,10 @@ class TestCaseCentricBuilder:
     ) -> es_utils.RDDUtil:
         context: pyspark.SparkContext = self.spark_session.sparkContext
         rdd = context.parallelize(
-            map(lambda c: (c._id, dataclasses.asdict(c._source)), cases,)
+            map(
+                lambda c: (c._id, dataclasses.asdict(c._source)),
+                cases,
+            )
         )
         rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
         rdd_util.get_rdd.return_value = rdd

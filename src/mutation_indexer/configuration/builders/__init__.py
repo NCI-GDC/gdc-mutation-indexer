@@ -12,5 +12,6 @@ class Builders:
     """
     Configuration values for running the collective builders
     """
+
     gene_expression: gene_expression.GeneExpression
     viz: viz.Viz

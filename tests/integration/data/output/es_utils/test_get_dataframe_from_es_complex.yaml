@@ -1,3 +1,4 @@
+---
 string_field: &string_field
   metadata: {}
   nullable: true
@@ -63,13 +64,13 @@ expected_schema:
                       containsNull: true
                       elementType: string
                       type: array
-                type: struct  
+                type: struct
           type: struct
         type: array
     - <<: *string_field
       name: file_id
     - <<: *string_field
-      name: updated_datetime              
+      name: updated_datetime
     - metadata: {}
       name: _metadata
       nullable: true
@@ -83,7 +84,7 @@ expected_schema:
 expected_data:
   213fd6e3-9462-492f-8917-56967be8fc9d:
     file_id: 213fd6e3-9462-492f-8917-56967be8fc9d
-    updated_datetime: "2018-07-20T22:27:55.342974+00:00"
+    updated_datetime: '2018-07-20T22:27:55.342974+00:00'
     acl:
       - open
     cases:
@@ -98,5 +99,5 @@ expected_data:
     _metadata:
       _id: 213fd6e3-9462-492f-8917-56967be8fc9d
       _index: graph_file
-      _score: "1.0"
+      _score: '1.0'
       _type: _doc

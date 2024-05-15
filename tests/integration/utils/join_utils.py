@@ -5,16 +5,15 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
+    Mapping,
     NamedTuple,
     Tuple,
     Union,
-    Mapping,
 )
-import more_itertools
 
+import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-
 
 RelationshipMapping = Mapping[str, Union[AbstractSet[str], "RelationshipMapping"]]
 

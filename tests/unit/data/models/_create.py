@@ -36,7 +36,7 @@ ASSERT_ROW_DEF = "\n{indent}def assert_equals(self, row: sql.Row) -> bool:\n"
 ASSERT_ROW = "{indent}assert row\n"
 ASSERT_STATEMENT_ATOMIC = "{indent}assert row.{prop} == self.{prop}\n"
 ASSERT_STATEMENT_STRUCT = """{indent}assert (
-{indent}    (row.{prop} is None and self.{prop} is None) 
+{indent}    (row.{prop} is None and self.{prop} is None)
 {indent}    or (self.{prop} and self.{prop}.assert_equals(row.{prop}))
 {indent})
 """
@@ -72,7 +72,10 @@ class ClassGenerator:
     __slots__ = ("_defaults", "_include_asserts", "_inflection")
 
     def __init__(
-        self, defaults: dict[str, Any], include_asserts: bool, inflection: Optional[inflect.engine] = None
+        self,
+        defaults: dict[str, Any],
+        include_asserts: bool,
+        inflection: Optional[inflect.engine] = None,
     ) -> None:
         self._defaults = defaults
         self._include_asserts = include_asserts
@@ -106,9 +109,7 @@ class ClassGenerator:
         else:
             python_type = self._get_python_class_name(name)
             default = f"({python_type}(),)"
-            model = self.create_model(
-                python_type, element_type, indents
-            )
+            model = self.create_model(python_type, element_type, indents)
 
         return (
             ARRAY_FIELD_TEMPLATE.format(
@@ -190,16 +191,12 @@ class ClassGenerator:
 
                 asserts["basic_fields"].append(name)
             elif "fields" not in spark_type:
-                cls_field, model = self._get_array_field(
-                    name, spark_type, indents
-                )
+                cls_field, model = self._get_array_field(name, spark_type, indents)
                 assert_type = "struct_array_fields" if model else "basic_array_fields"
 
                 asserts[assert_type].append(name)
             elif "elementType" not in spark_type:
-                cls_field, model = self._get_struct_field(
-                    name, spark_type, indents
-                )
+                cls_field, model = self._get_struct_field(name, spark_type, indents)
 
                 asserts["struct_fields"].append(name)
 

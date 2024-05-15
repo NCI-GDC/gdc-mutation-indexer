@@ -97,7 +97,9 @@ class SSMCentricBuilder(builders.BaseBuilder):
         # Observation
         self.log("Aggregating Observation from MAF")
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name,
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
         )
 
         self.log("Joining Cases with Observation, [right, case_id]")

@@ -82,7 +82,9 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
     def build_ssm_subtree(self, maf_df):
         # Consequence
         cons_df = self.consequence_builder.build_for_ssm(
-            maf_df, self.index_name, join_gene=True,
+            maf_df,
+            self.index_name,
+            join_gene=True,
         )
 
         # SSM
@@ -111,7 +113,9 @@ class SSMOccurrenceCentricBuilder(builders.BaseBuilder):
         self.log("Building case subtree")
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name,
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
         )
 
         self.log("Join observation with case")

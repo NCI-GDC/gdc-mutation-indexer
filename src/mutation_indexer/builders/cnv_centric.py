@@ -58,7 +58,10 @@ class CNVCentricBuilder(builders.BaseBuilder):
         cnv_df = get_cnv_df(ascat_df, self.index_name)
 
         self.log("Build Consequence")
-        cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name,)
+        cons_df = self.consequence_builder.build_for_cnv(
+            ascat_df,
+            self.index_name,
+        )
 
         self.log("Build Occurrence")
         occurrence_df = self.build_occurrence_df(ascat_df, case_df)
@@ -99,7 +102,10 @@ class CNVCentricBuilder(builders.BaseBuilder):
 
         # 1. Observation
         self.logger.info("Aggregating Observation from ASCAT")
-        obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name,)
+        obs_df = self.observation_builder.build_for_cnv(
+            ascat_df,
+            self.index_name,
+        )
 
         # 2. Join Case to Observation and create structs
         self.logger.info("Joining Cases with Observation, [right, case_id]")

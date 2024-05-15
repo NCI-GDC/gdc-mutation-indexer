@@ -80,7 +80,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
         )
         sample_df = (
             self._es_rdd_util.get_rdd(
-                build.IndexType.CASE, include_fields=sample_fields, query=query,
+                build.IndexType.CASE,
+                include_fields=sample_fields,
+                query=query,
             )
             .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
             .select("_source.*")
@@ -213,7 +215,10 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_ssm(
-            maf_df, primary_aliquot_df, self.index_name, selector="ssm",
+            maf_df,
+            primary_aliquot_df,
+            self.index_name,
+            selector="ssm",
         )
         obs_df = obs_df.drop("occurrence_id")
 
@@ -245,7 +250,9 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
 
         # Observation
         obs_df = self.observation_builder.build_for_cnv(
-            ascat_df, self.index_name, selector="cnv",
+            ascat_df,
+            self.index_name,
+            selector="cnv",
         )
 
         # Build the final cnv dataframe
