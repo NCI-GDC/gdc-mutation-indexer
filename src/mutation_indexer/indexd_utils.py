@@ -67,23 +67,23 @@ class IndexClient(AsyncContextManager):
         self.__session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self) -> Self:
-        indexd_url = yarl.URL.build(
-            scheme=self._config.scheme, host=self._config.host, port=self._config.port
-        )
-
-        self.__session = await self._context.enter_async_context(
-            aiohttp.ClientSession(
-                indexd_url,
-                connector=self._connector,
-                connector_owner=not self._connector,
-                headers={"content-type": "application/json"},
-            )
-        )
 
         return self
 
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self._context.aclose()
+
+    def _get_session(self) -> aiohttp.ClientSession:
+        indexd_url = yarl.URL.build(
+            scheme=self._config.scheme, host=self._config.host, port=self._config.port
+        )
+
+        return aiohttp.ClientSession(
+            indexd_url,
+            connector=self._connector,
+            connector_owner=self._connector is None,
+            headers={"content-type": "application/json"},
+        )
 
     @property
     def _session(self) -> aiohttp.ClientSession:
@@ -95,7 +95,9 @@ class IndexClient(AsyncContextManager):
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
         try:
-            async with self._session.post("/bulk/documents", json=dids) as response:
+            async with self._get_session() as session, session.post(
+                "/bulk/documents", json=dids
+            ) as response:
                 if response.status == 404:
                     return iter(())
 
