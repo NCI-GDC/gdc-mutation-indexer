@@ -343,7 +343,7 @@ async def _main(config: Optional[configuration.Configuration] = None):
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        async with aiohttp.TCPConnector() as connector, get_es_client(
+        async with aiohttp.TCPConnector(limit=30) as connector, get_es_client(
             config.elasticsearch.connection, connector
         ) as es_client, get_index_client(config.indexd, connector) as indexd:
             with initialize_spark() as spark_session:
