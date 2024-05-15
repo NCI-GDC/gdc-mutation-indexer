@@ -104,8 +104,8 @@ class IndexClient(AsyncContextManager):
                 data = await response.json(content_type=None)
 
             return map(Document.from_json, data)
-        except:
-            logger.info(f"Failed to get docs: {dids}")
+        except aiohttp.ClientOSError:
+            logger.warning(f"Failed to get docs: %s", dids)
             raise
 
 
