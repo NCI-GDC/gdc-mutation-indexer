@@ -681,18 +681,27 @@ TResourceConfig = TypeVar("TResourceConfig", bound=common.ResourceBuilder)
 class ResourceBuilder(
     Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs]
 ):
-    def _schema(self) -> types.StructType:
-        return schemas.load_schema(self._config.schema)
+    def _get_schema(self, schema: str) -> types.StructType:
+        return schemas.load_schema(schema)
 
-    def _load_resource_data(self) -> sql.DataFrame:
+    def _load_resource(
+        self, resource: common.ResourceBuilder.Resource
+    ) -> sql.DataFrame:
+        schema = self._get_schema(resource.schema)
+
         with resources.as_file(
-            resources.files(self._config.package).joinpath(self._config.resource)
-        ) as p:
-            df = self._spark_session.read.csv(
-                p.as_uri(), schema=self._schema(), header=True, sep="\t", comment="#"
-            )
+            resources.files(resource.package).joinpath(resource.resource)
+        ) as resource_file:
+            path = resource_file.as_uri()
 
-        return df
+            if resource.format == build.ResourceFormat.TSV:
+                return self._spark_session.read.csv(
+                    path, schema, header=True, sep="\t", comment="#"
+                )
+            if resource.format == build.ResourceFormat.JSON:
+                return self._spark_session.read.json(path, schema)
+            else:
+                raise ValueError("Unsupported resource format: %s", resource.format)
 
 
 def _walk_schema(field: types.StructField, child_name: str) -> types.StructField:

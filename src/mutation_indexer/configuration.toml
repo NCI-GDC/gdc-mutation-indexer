@@ -9,12 +9,12 @@ build_version = "v0"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
-    "CASE_CENTRIC",
-    "CNV_CENTRIC",
-    "CNV_OCCURRENCE_CENTRIC",
-    "GENE_CENTRIC",
-    "SSM_CENTRIC",
-    "SSM_OCCURRENCE_CENTRIC",
+  "CASE_CENTRIC",
+  "CNV_CENTRIC",
+  "CNV_OCCURRENCE_CENTRIC",
+  "GENE_CENTRIC",
+  "SSM_CENTRIC",
+  "SSM_OCCURRENCE_CENTRIC"
 ]
 jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
@@ -48,7 +48,7 @@ path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_rel
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+cytobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
 gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
 is_cached = true
 
@@ -80,10 +80,10 @@ path = ""
 
 [builders.viz.case]
 include_as_arrays = [
-    "project.disease_type",
-    "project.primary_site",
-    "*_ids",
-    "files.acl",
+  "project.disease_type",
+  "project.primary_site",
+  "*_ids",
+  "files.acl"
 ]
 is_cached = true
 repartition_size = 2048
@@ -105,23 +105,27 @@ path = ""
 
 [builders.viz.civic_dna]
 is_cached = false
-package = "mutation_indexer_resource.annotation.civic"
-resource = "dna.tsv.gz"
-schema = "builders/civic/dna.yaml"
 
 [builders.viz.civic_dna.backup]
 mode = "NEITHER"
 path = ""
 
+[builders.viz.civic_dna.resources.data]
+package = "mutation_indexer_resource.annotation.civic"
+resource = "dna.tsv.gz"
+schema = "builders/civic/dna.yaml"
+
 [builders.viz.civic_protein]
 is_cached = false
-package = "mutation_indexer_resource.annotation.civic"
-resource = "prot.tsv.gz"
-schema = "builders/civic/protein.yaml"
 
 [builders.viz.civic_protein.backup]
 mode = "NEITHER"
 path = ""
+
+[builders.viz.civic_protein.resources.data]
+package = "mutation_indexer_resource.annotation.civic"
+resource = "prot.tsv.gz"
+schema = "builders/civic/protein.yaml"
 
 [builders.viz.cnv_centric]
 id_field = "cnv_id"
@@ -153,7 +157,7 @@ path = ""
 
 [builders.viz.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
+cytobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
 gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
 is_cached = true
 

@@ -4,7 +4,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Sequence
+from collections.abc import Mapping, Sequence
 
 from mutation_indexer.constants import build
 
@@ -33,9 +33,14 @@ class Builder:
 
 @dataclasses.dataclass(frozen=True)
 class ResourceBuilder(Builder):
-    package: str
-    resource: str
-    schema: str
+    @dataclasses.dataclass(frozen=True)
+    class Resource:
+        format: build.ResourceFormat
+        package: str
+        resource: str
+        schema: str
+
+    resources: Mapping[str, Resource]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -55,5 +60,5 @@ class GeneModelBuilder(Builder):
     """
 
     census_file: str
-    citobands_file: str
+    cytobands_file: str
     gene_model_file: str

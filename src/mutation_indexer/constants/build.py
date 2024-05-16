@@ -1,5 +1,5 @@
 import enum
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class DataFrame(enum.IntEnum):
@@ -33,7 +33,7 @@ class IndexType(enum.IntEnum):
     SSM_OCCURRENCE_CENTRIC = enum.auto()
     GENE_EXPRESSION = enum.auto()
 
-    def get_mappings_details(self) -> Tuple[str, Optional[str]]:
+    def get_mappings_details(self) -> tuple[str, Optional[str]]:
         if self in (IndexType.CASE, IndexType.FILE):
             return "gdc_from_graph", self.name.lower()
 
@@ -51,3 +51,8 @@ class BackupMode(enum.Enum):
 
     def is_read(self) -> bool:
         return self == BackupMode.READ or self == BackupMode.BOTH
+
+
+class ResourceFormat(enum.Enum):
+    JSON = enum.auto()
+    TSV = enum.auto()

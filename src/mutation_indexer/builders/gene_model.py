@@ -1,7 +1,8 @@
+from typing import TypedDict
+
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
@@ -91,7 +92,7 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
         dataframes
         """
         cytobands_df = self._spark_session.read.csv(
-            self._config.citobands_file, sep="\t", header=True
+            self._config.cytobands_file, sep="\t", header=True
         )
 
         # Turn the cytoband column into an array of cytobands

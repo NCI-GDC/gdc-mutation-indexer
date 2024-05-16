@@ -63,8 +63,8 @@ class ObsoleteConfig:
         return self._config.builders.viz.gene_model.gene_model_file
 
     @property
-    def citobands_file(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.citobands_file
+    def cytobands_file(self) -> str:  # type: ignore
+        return self._config.builders.viz.gene_model.cytobands_file
 
     @property
     def census_file(self) -> str:  # type: ignore

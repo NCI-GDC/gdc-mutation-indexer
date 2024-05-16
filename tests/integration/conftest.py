@@ -52,7 +52,7 @@ def maf_urls(input_dir: pathlib.Path) -> list[str]:
 
 @pytest.fixture(scope="session")
 def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
-    citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
+    cytobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
     census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
     gene_model_file = str(input_dir.joinpath("genes.ndjson.gz"))
 
@@ -64,7 +64,7 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
         ),
     ) -> dict:
         for driver in drivers:
-            data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
+            data["builders"][driver]["gene_model"]["cytobands_file"] = cytobands_file
             data["builders"][driver]["gene_model"]["census_file"] = census_file
             data["builders"][driver]["gene_model"]["gene_model_file"] = gene_model_file
 

@@ -93,7 +93,9 @@ class GeneModel:
     cancer_gene_id: str = "de652d52-4579-4cd9-beb3-776f3bd6f039"
     canonical_transcript_id: str = "ENST00000456328"
     chromosome: str = "1"
-    description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    description: str = (
+        "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
+    )
     end: int = 14409
     ens_gene_id: str = "de652d52-4579-4cd9-beb3-776f3bd6f039"
     external_db_ids: ExternalIDs = ExternalIDs()
@@ -163,7 +165,7 @@ class TestGeneModelBuilder:
             spec=viz.GeneModelBuilder,
             backup=backup,
             is_cached=False,
-            citobands_file="cytobands",
+            cytobands_file="cytobands",
             census_file="census",
             gene_model_file="gene_model",
         )

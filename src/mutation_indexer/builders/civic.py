@@ -24,7 +24,7 @@ class DNABuilder(bases.ResourceBuilder[viz.ResourceBuilder, DNAInputs]):
         )
 
     def _build_from_scratch(self, input_dfs: DNAInputs) -> sql.DataFrame:
-        df = self._load_resource_data()
+        df = self._load_resource(self._config.resources["data"])
 
         return df.select(
             "chromosome",
@@ -52,7 +52,7 @@ class ProteinBuilder(bases.ResourceBuilder[viz.ResourceBuilder, ProteinInputs]):
         )
 
     def _build_from_scratch(self, input_dfs: ProteinInputs) -> sql.DataFrame:
-        df = self._load_resource_data()
+        df = self._load_resource(self._config.resources["data"])
 
         return df.select(
             "civic_gene_id",
