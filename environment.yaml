@@ -1,4 +1,4 @@
-name: driver
+name: mutation_indexer
 dependencies:
   - python~=3.9.0
   - pip

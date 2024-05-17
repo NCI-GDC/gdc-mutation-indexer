@@ -159,10 +159,6 @@ def get_file_args(config: configuration.Configuration) -> Iterable[tuple[str, st
     files = ",".join((f"{config.build.config_file}#configuration.toml",))
 
     yield (
-        "--spark.archives",
-        f"{config.build.python_env}#environment",
-    )
-    yield (
         "--conf",
         f"spark.yarn.dist.files={files}",
     )
