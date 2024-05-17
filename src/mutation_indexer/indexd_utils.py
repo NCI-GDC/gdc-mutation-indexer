@@ -92,16 +92,13 @@ class IndexClient(AsyncContextManager):
 
         return self.__session
 
-    async def get(self, dids: Iterable[str], retry: int = 3) -> Iterator[Document]:
+    async def get(self, dids: Iterable[str]) -> Iterator[Document]:
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
         try:
             async with self._get_session() as session, session.post(
                 "/bulk/documents", json=dids
             ) as response:
-                if retry:
-                    return await self.get(dids, retry - 1)
-
                 response.raise_for_status()
 
                 data = await response.json(content_type=None)
