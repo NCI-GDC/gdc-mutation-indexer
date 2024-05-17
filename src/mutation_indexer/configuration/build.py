@@ -2,9 +2,11 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
 import uuid
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import marshmallow_enum
 from marshmallow import fields, validate

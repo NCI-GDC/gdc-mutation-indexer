@@ -80,10 +80,10 @@ path = ""
 
 [builders.viz.case]
 include_as_arrays = [
-    "project.disease_type",
-    "project.primary_site",
     "*_ids",
     "files.acl",
+    "project.disease_type",
+    "project.primary_site",
 ]
 is_cached = true
 repartition_size = 2048
@@ -226,13 +226,14 @@ spark_home = ""
 yarn_conf_dir = ""
 
 [indexd]
-scheme = "http"
 host = "indexd.service.consul"
 password = ""
 port = 80
+scheme = "http"
 user = ""
 
 [spark]
+archives = "mutation_indexer.tar.gz#environment"
 master = "local[*]"
 
 [spark.app]
@@ -248,10 +249,10 @@ instances = 25
 memory = "40g"
 
 [spark.pyspark]
-python = "./mutation-indexer.pex"
+python = "environment/bin/python"
 
 [spark.pyspark.driver]
-python = "./mutation-indexer.pex"
+python = "environment/bin/python"
 
 [spark.sql]
 auto_broadcast_join_threshold = -1

@@ -7,8 +7,9 @@ import logging
 import os
 import tempfile
 import uuid
+from collections.abc import Iterable, Iterator, Mapping
 from os import path
-from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
+from typing import Any
 
 import elasticsearch
 import halo
@@ -72,7 +73,9 @@ def load_config_data(
     Returns:
         the final configuration data as a mapping.
     """
-    default_config = toml.loads(resources.read_text(mutation_indexer, "configuration.toml"))
+    default_config = toml.loads(
+        resources.read_text(mutation_indexer, "configuration.toml")
+    )
     default_config["build"]["config_file"] = final_config_file
     user_config = toml.load(user_config_file)
 
@@ -145,7 +148,7 @@ def get_config(
             write_manifest(config)
 
 
-def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
+def get_file_args(config: configuration.Configuration) -> Iterable[tuple[str, str]]:
     """
     Sets the spark-submit config values as well as jars params.
 
@@ -153,13 +156,12 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
         a tuple of argument flag and value.
     """
     build = config.build
-    files = ",".join(
-        (
-            f"{config.build.config_file}#configuration.toml",
-            path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
-        )
-    )
+    files = ",".join((f"{config.build.config_file}#configuration.toml",))
 
+    yield (
+        "--spark.archives",
+        f"{config.build.python_env}#environment",
+    )
     yield (
         "--conf",
         f"spark.yarn.dist.files={files}",

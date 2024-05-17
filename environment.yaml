@@ -1,0 +1,8 @@
+name: driver
+dependencies:
+  - python~=3.9.0
+  - pip
+  - pip:
+    - --index-url https://nexus.osdc.io/repository/pypi-all/simple
+    - -c requirements.txt
+    - "."

@@ -5,8 +5,10 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 For further docuentation on spark configuration please refer to:
 https://spark.apache.org/docs/2.4.5/configuration.html
 """
+
 import dataclasses
-from typing import Any, Iterable, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 
 def _to_camel_case(value: str) -> str:
@@ -20,10 +22,10 @@ class ConfigArgumentMixin:
     def _format_field(self, field: str) -> str:
         return _to_camel_case(field)
 
-    def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
+    def _get_field_argument(self, path: str, field: str, value: Any) -> tuple[str, str]:
         return ("--conf", f"{path}{field}={value}")
 
-    def _get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
+    def _get_arguments(self, path: str = "") -> Iterable[tuple[str, str]]:
         fields = (
             (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()
         )
@@ -106,6 +108,7 @@ class Spark(ConfigArgumentMixin):
     Config values for the spark-submit/spark session.
     """
 
+    archives: str
     master: str
     app: App
     driver: Driver
@@ -115,7 +118,7 @@ class Spark(ConfigArgumentMixin):
     submit: Submit
     yarn: Yarn
 
-    def get_arguments(self) -> Iterable[Tuple[str, str]]:
+    def get_arguments(self) -> Iterable[tuple[str, str]]:
         """
         Converts the values in this object to a series of cli arguments (name, value)
         which should be included with the `spark-submit` command.
