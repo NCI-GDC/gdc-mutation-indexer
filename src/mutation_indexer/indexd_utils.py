@@ -80,6 +80,7 @@ class IndexClient(AsyncContextManager):
 
         return aiohttp.ClientSession(
             indexd_url,
+            connector=aiohttp.TCPConnector(limit=25),
             # connector=self._connector,
             # connector_owner=self._connector is None,
             headers={"content-type": "application/json"},
