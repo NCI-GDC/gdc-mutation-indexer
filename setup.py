@@ -36,6 +36,7 @@ setup(
         "typing-extensions~=4.1",
         "indexclient",
         "gdcmodels",
+        "exceptiongroup",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ),
     extras_require={

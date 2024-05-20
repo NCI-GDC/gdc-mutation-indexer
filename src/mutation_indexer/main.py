@@ -61,9 +61,7 @@ def initialize_spark() -> Iterator[sql.SparkSession]:
         yield spark_session
 
 
-def get_index_client(
-    config: indexd.IndexD, connector: aiohttp.BaseConnector
-) -> indexd_utils.IndexClient:
+def get_index_client(config: indexd.IndexD) -> indexd_utils.IndexClient:
     """
     Builds the index client with the given configuration values.
 
@@ -73,20 +71,10 @@ def get_index_client(
     Returns:
         An indexd client
     """
-    return indexd_utils.IndexClient(config, connector)
+    return indexd_utils.IndexClient(config)
 
 
-class ESClientResponse(aiohttp.ClientResponse):
-    async def text(self, encoding=None, errors="strict"):
-        if self._body is None:
-            await self.read()
-
-        return self._body.decode("utf-8", "surrogatepass")  # type: ignore
-
-
-def get_es_client(
-    config: es_config.Connection, connector: aiohttp.BaseConnector
-) -> elasticsearch.AsyncElasticsearch:
+def get_es_client(config: es_config.Connection) -> elasticsearch.AsyncElasticsearch:
     """
     builds the elastic search client based on the configuration.
 
@@ -101,6 +89,7 @@ def get_es_client(
         use_ssl=config.use_ssl,
         verify_certs=config.verify_certs,
         http_auth=(config.user, config.password),
+        # ca_certs=config.ca_certs,
     )
 
 
@@ -146,7 +135,7 @@ def _get_viz_builders(
     index_builders: dict[build.IndexType, base_builder.BaseBuilder] = {
         build.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(
             old_config,
-            sql_context,
+            spark_session.newSession(),
             es_dataframe_util,
             es_rdd_util,
             case_field_selector,
@@ -154,19 +143,34 @@ def _get_viz_builders(
             observation_builder,
         ),
         build.IndexType.CNV_CENTRIC: builders.CNVCentricBuilder(
-            old_config, sql_context, consequence_builder, observation_builder
+            old_config,
+            spark_session.newSession(),
+            consequence_builder,
+            observation_builder,
         ),
         build.IndexType.CNV_OCCURRENCE_CENTRIC: builders.CNVOccurrenceCentricBuilder(
-            old_config, sql_context, consequence_builder, observation_builder
+            old_config,
+            spark_session.newSession(),
+            consequence_builder,
+            observation_builder,
         ),
         build.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
-            old_config, sql_context, consequence_builder, observation_builder
+            old_config,
+            spark_session.newSession(),
+            consequence_builder,
+            observation_builder,
         ),
         build.IndexType.SSM_CENTRIC: builders.SSMCentricBuilder(
-            old_config, sql_context, consequence_builder, observation_builder
+            old_config,
+            spark_session.newSession(),
+            consequence_builder,
+            observation_builder,
         ),
         build.IndexType.SSM_OCCURRENCE_CENTRIC: builders.SSMOccurrenceCentricBuilder(
-            old_config, sql_context, consequence_builder, observation_builder
+            old_config,
+            spark_session.newSession(),
+            consequence_builder,
+            observation_builder,
         ),
     }
     adapters = tuple(
@@ -176,24 +180,35 @@ def _get_viz_builders(
     )
     input_builders: Iterable[bases.Builder] = (
         builders.ASCATMetadataBuilder(
-            config.ascat_metadata, spark_session, es_dataframe_util, es_rdd_util
+            config.ascat_metadata,
+            spark_session.newSession(),
+            es_dataframe_util,
+            es_rdd_util,
         ),
-        builders.ASCATBuilder(config.ascat, spark_session, doc_dataframe_util),
+        builders.ASCATBuilder(
+            config.ascat, spark_session.newSession(), doc_dataframe_util
+        ),
         builders.CaseBuilder(
-            config.case, spark_session, es_dataframe_util, case_field_selector
+            config.case,
+            spark_session.newSession(),
+            es_dataframe_util,
+            case_field_selector,
         ),
-        civic.DNABuilder(config.civic_dna, spark_session),
-        civic.ProteinBuilder(config.civic_protein, spark_session),
-        builders.GeneModelBuilder(config.gene_model, spark_session),
-        builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
+        civic.DNABuilder(config.civic_dna, spark_session.newSession()),
+        civic.ProteinBuilder(config.civic_protein, spark_session.newSession()),
+        builders.GeneModelBuilder(config.gene_model, spark_session.newSession()),
+        builders.MAFBuilder(config.maf, spark_session.newSession(), doc_dataframe_util),
         builders.MAFMetadataBuilder(
             config.maf_metadata,
-            spark_session,
+            spark_session.newSession(),
             es_dataframe_util,
             file_filter_factory,
         ),
         builders.PrimaryAliquotBuilder(
-            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+            config.primary_aliquot,
+            spark_session.newSession(),
+            es_dataframe_util,
+            es_rdd_util,
         ),
     )
     all_builders = {b.output: b for b in itertools.chain(adapters, input_builders)}
@@ -223,10 +238,10 @@ def get_viz_builders(
 
     config_adapter = adapter.ObsoleteConfig(config, es_client)
     es_dataframe_util = es_utils.DataFrameUtil(
-        config.elasticsearch, spark_session, es_client, mappings_loader
+        config.elasticsearch, spark_session.newSession(), es_client, mappings_loader
     )
     es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
-    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, spark_session)
+    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, spark_session.newSession())
     case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
 
     viz_builders = _get_viz_builders(
@@ -343,9 +358,9 @@ async def _main(config: Optional[configuration.Configuration] = None):
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        async with aiohttp.TCPConnector(limit=10) as connector, get_es_client(
-            config.elasticsearch.connection, connector
-        ) as es_client, get_index_client(config.indexd, connector) as indexd:
+        async with get_es_client(
+            config.elasticsearch.connection
+        ) as es_client, get_index_client(config.indexd) as indexd:
             with initialize_spark() as spark_session:
                 builders = (
                     get_viz_builders(config, spark_session, es_client, indexd)

@@ -166,7 +166,6 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         Returns:
             A data frame with data from the file at the configured backup path
         """
-        logger.info(f"Reading: {self.output.name}")
 
         return self._spark_session.read.parquet(self._config.backup.path)
 
@@ -179,6 +178,8 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             An optional data frame based on the configured backup mode.
         """
         if self._config.backup.mode == build.BackupMode.READ:
+            logger.info(f"Reading: {self.output.name}")
+
             return await self._safe_read()
 
         return None
@@ -212,7 +213,11 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
             df = await self._build_from_scratch(inputs)
 
-        return await self._write(df)
+        df = await self._write(df)
+
+        logger.info(f"Completed: {self.output.name}")
+
+        return df
 
 
 def _sample_weight_col() -> sql.Column:

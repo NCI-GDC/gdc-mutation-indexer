@@ -35,14 +35,14 @@ class CaseCentricBuilder(builders.BaseBuilder, case.CaseLoaderMixin):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
         field_selector: es_utils.CaseFieldSelector,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, spark_session)
 
         self._es_dataframe_util = es_dataframe_util
         self._es_rdd_util = es_rdd_util

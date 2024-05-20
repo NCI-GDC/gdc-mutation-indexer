@@ -28,6 +28,7 @@ var/
 *.pex
 artifacts/
 wheelhouse*/
+condaenv*
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -1,8 +1,8 @@
 name: mutation_indexer
 dependencies:
-  - python~=3.9.0
+  - python~=3.10.0
   - pip
   - pip:
     - --index-url https://nexus.osdc.io/repository/pypi-all/simple
-    - -c requirements.txt
+    - -r requirements.txt
     - "."

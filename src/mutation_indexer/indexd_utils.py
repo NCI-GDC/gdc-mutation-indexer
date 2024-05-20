@@ -7,6 +7,7 @@ from collections.abc import Iterable, Iterator
 from typing import Any, AsyncContextManager, NamedTuple, Optional
 
 import aiohttp
+from exceptiongroup import ExceptionGroup
 import more_itertools
 import yarl
 from pyspark import sql
@@ -14,7 +15,6 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import Self
 
-from mutation_indexer import aioutils
 from mutation_indexer.configuration import indexd
 
 logger = logging.getLogger(__name__)
@@ -56,57 +56,51 @@ class Document(NamedTuple):
 
 
 class IndexClient(AsyncContextManager):
-    __slots__ = ("_config", "_connector", "_context", "__session")
+    __slots__ = ("_config", "_connector", "_context", "_throttle", "_host")
 
-    def __init__(
-        self, config: indexd.IndexD, connector: Optional[aiohttp.BaseConnector] = None
-    ) -> None:
+    def __init__(self, config: indexd.IndexD) -> None:
         self._config = config
-        self._connector = connector
         self._context = contextlib.AsyncExitStack()
-        self.__session: Optional[aiohttp.ClientSession] = None
+        self._throttle = asyncio.Semaphore(2)
+        self._host = yarl.URL.build(
+            scheme=self._config.scheme, host=self._config.host, port=self._config.port
+        )
 
     async def __aenter__(self) -> Self:
-
         return self
 
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self._context.aclose()
 
-    def _get_session(self) -> aiohttp.ClientSession:
-        indexd_url = yarl.URL.build(
-            scheme=self._config.scheme, host=self._config.host, port=self._config.port
-        )
-
-        return aiohttp.ClientSession(
-            indexd_url,
-            connector=aiohttp.TCPConnector(limit=25),
-            # connector=self._connector,
-            # connector_owner=self._connector is None,
-            headers={"content-type": "application/json"},
-        )
-
     @property
     def _session(self) -> aiohttp.ClientSession:
-        assert self.__session, "Cannot access session before entering context."
-
-        return self.__session
+        return aiohttp.ClientSession(headers={"content-type": "application/json"})
 
     async def get(self, dids: Iterable[str]) -> Iterator[Document]:
         dids = dids if isinstance(dids, (list, tuple)) else tuple(dids)
 
         try:
-            async with self._get_session() as session, session.post(
-                "/bulk/documents", json=dids
-            ) as response:
-                response.raise_for_status()
+            async with self._throttle, self._session as session:
+                async with session.post(
+                    self._host / "bulk/documents", json=dids
+                ) as response:
+                    if response.status != 200:
+                        msg = await response.text()
+                        logger.warning(
+                            "Status %s -- Failed to get documents: %s",
+                            response.status,
+                            msg or "<NO MESSAGE>",
+                        )
 
-                data = await response.json(content_type=None)
+                    response.raise_for_status()
 
-            return map(Document.from_json, data)
-        except aiohttp.ClientOSError:
-            logger.warning(f"Failed to get docs: %s", dids)
-            raise
+                    data = await response.json(content_type=None)
+        except:
+            logger.warning("Failed to load documents: %s", dids)
+
+            return iter(())
+
+        return map(Document.from_json, data)
 
 
 class DocumentUrl(NamedTuple):
@@ -124,21 +118,29 @@ def _get_url(doc: Document) -> Optional[DocumentUrl]:
     Returns:
         str: formatted main URL
     """
-    for metadata in doc.urls_metadata:
-        if metadata.type == "cleversafe" and metadata.state == "validated":
-            url = metadata.url.replace("s3://", "s3a://").replace(
-                "cleversafe.service.consul/", ""
-            )
 
-            return DocumentUrl(doc.did, url)
+    def is_cleaversafe(metadata: URLMetadata) -> bool:
+        return metadata.type == "cleversafe" and metadata.state == "validated"
 
-    logger.warning("File is missing: '{}'".format(doc.did))
+    def format_url(metadata: URLMetadata) -> str:
+        return metadata.url.replace("s3://", "s3a://").replace(
+            "cleversafe.service.consul/", ""
+        )
+
+    metadata = filter(is_cleaversafe, doc.urls_metadata)
+    urls = map(format_url, metadata)
+    url = more_itertools.first(urls, None)
+
+    if url:
+        return DocumentUrl(doc.did, url)
+
+    logger.warning("File is missing: '%s'", doc.did)
 
     return None
 
 
 class DataFrameUtil:
-    __slots__ = ("_indexd", "_spark_session")
+    __slots__ = ("_indexd", "__spark_session")
 
     def __init__(
         self,
@@ -146,7 +148,11 @@ class DataFrameUtil:
         spark_session: sql.SparkSession,
     ):
         self._indexd = indexd
-        self._spark_session = spark_session
+        self.__spark_session = spark_session
+
+    @property
+    def _spark_session(self) -> sql.SparkSession:
+        return self.__spark_session.newSession()
 
     async def _get_urls(self, dids: Iterable[str]) -> Iterable[DocumentUrl]:
         docs = await self._indexd.get(dids)
@@ -163,8 +169,9 @@ class DataFrameUtil:
         dids: Iterable[str],
     ) -> sql.DataFrame:
         urls = await self._get_urls(dids)
+        spark_session = self._spark_session
 
-        df = self._spark_session.read.csv(
+        df = spark_session.read.csv(
             [u.url for u in urls],
             schema=schema,
             sep="\t",
@@ -175,9 +182,7 @@ class DataFrameUtil:
         )
 
         if include_did:
-            did_df = self._spark_session.createDataFrame(
-                urls, schema=DOCUMENT_URL_SCHEMA
-            )
+            did_df = spark_session.createDataFrame(urls, schema=DOCUMENT_URL_SCHEMA)
             df = (
                 df.withColumn("_input_file_name", F.input_file_name())
                 .join(did_df, on="_input_file_name")
@@ -208,10 +213,16 @@ class DataFrameUtil:
             has_header,
             comment,
         )
-        dfs = await asyncio.gather(*map(get_dataframe, batches))
+        dfs = await asyncio.gather(*map(get_dataframe, batches), return_exceptions=True)
+        errors = tuple(d for d in dfs if isinstance(d, Exception))
+
+        if errors:
+            raise ExceptionGroup("Failed to load documents", errors)
 
         if dfs:
-            return functools.reduce(union, dfs)
+            return functools.reduce(
+                union, (d for d in dfs if isinstance(d, sql.DataFrame))
+            )
         elif schema:
             return self._spark_session.createDataFrame((), schema)
 

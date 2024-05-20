@@ -78,10 +78,12 @@ class BaseBuilder(abc.ABC):
     index_name: ClassVar[str]
     id_field: ClassVar[str]
 
-    def __init__(self, config: adapter.ObsoleteConfig, sqlContext):
+    def __init__(
+        self, config: adapter.ObsoleteConfig, spark_session: sql.SparkSession
+    ) -> None:
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self._spark_session = spark_session
         self.debug = config.debug
         self.mappings_loader = es_utils.MappingsLoader()
 
@@ -183,7 +185,7 @@ class BaseBuilder(abc.ABC):
             path = self.config.get_raw_output_path(self.index_name)
         try:
             self.logger.info("Using existing index from {}".format(path))
-            df = self.sqlContext.read.load(path)
+            df = self._spark_session.read.load(path)
             return df
         except Exception:
             self.logger.info("Couldn't find file at {}".format(path))

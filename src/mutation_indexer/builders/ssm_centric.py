@@ -32,11 +32,11 @@ class SSMCentricBuilder(builders.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        spark_session: sql.SparkSession,
         consequence_builder: builders.ConsequenceBuilder,
         observation_builder: builders.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, spark_session)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
