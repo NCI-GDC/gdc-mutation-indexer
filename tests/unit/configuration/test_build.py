@@ -1,9 +1,9 @@
 import uuid
-from typing import Any
 from collections.abc import Iterable, Iterator
+from typing import Any
 
-import pytest
 import importlib_resources as resources
+import pytest
 import toml
 from marshmallow import validate
 
@@ -100,7 +100,6 @@ def configuration_toml() -> Iterator[dict[str, Any]]:
 
 
 class TestLoadConfiguration:
-
     @pytest.mark.parametrize("data_release", ("dr40", "dr1", ""))
     @pytest.mark.parametrize("build_version", ("v1", "v20", ""))
     @pytest.mark.parametrize(

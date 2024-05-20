@@ -330,7 +330,9 @@ class TestMAFFileFilterFactory:
 
     def test__get_filters__single_project(self) -> None:
         files = (
-            File(file_id="file-0",),
+            File(
+                file_id="file-0",
+            ),
             File(
                 file_id="file-1",
                 cases=(Case(project=Project(project_id="GDC-TEST-ALT")),),

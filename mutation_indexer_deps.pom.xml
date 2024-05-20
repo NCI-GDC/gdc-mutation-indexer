@@ -39,7 +39,7 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-spark-30_2.12</artifactId>
-      <!-- This version should support 7.7.X. 
+      <!-- This version should support 7.7.X.
         See: https://www.elastic.co/support/matrix#matrix_compatibility -->
       <version>7.17.8</version>
       <exclusions>

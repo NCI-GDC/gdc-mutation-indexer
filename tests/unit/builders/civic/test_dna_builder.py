@@ -69,10 +69,12 @@ class TestDNABuilder:
         )
 
         return config
-    
+
     @contextlib.contextmanager
     def arrange_schemas(self) -> Iterator[None]:
-        with mock.patch("mutation_indexer.schemas.load_schema", return_value=self._input_schema):
+        with mock.patch(
+            "mutation_indexer.schemas.load_schema", return_value=self._input_schema
+        ):
             yield None
 
     @contextlib.contextmanager

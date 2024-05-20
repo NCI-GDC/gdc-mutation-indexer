@@ -12,8 +12,8 @@ from mutation_indexer.configuration import marshmallow_extensions
 # these are directly imported to created a better interface when using the viz module
 from mutation_indexer.configuration.builders.common import (
     Builder,
-    IndexBuilder,
     GeneModelBuilder,
+    IndexBuilder,
     ResourceBuilder,
 )
 

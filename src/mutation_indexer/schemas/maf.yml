@@ -1,147 +1,148 @@
-maf_schema: 
+---
+maf_schema:
   variant_caller:
-      name: callers
+    name: callers
   biotype:
-      name:  BIOTYPE
+    name: BIOTYPE
   canonical_transcript_id:
-      name:  Transcript_ID
+    name: Transcript_ID
   cosmic_id:
-      name:  COSMIC
+    name: COSMIC
   clin_sig:
-      name:  CLIN_SIG
+    name: CLIN_SIG
   dbsnp_val_status:
-      name:  dbSNP_Val_Status
+    name: dbSNP_Val_Status
   gene_chromosome:
-      name:  Chromosome
+    name: Chromosome
   gene_end:
-      name:  End_Position
-      type: int
-  gene_id: 
-      name:  Gene
-  gene_start: 
-      name:  Start_Position
-      type: int
+    name: End_Position
+    type: int
+  gene_id:
+    name: Gene
+  gene_start:
+    name: Start_Position
+    type: int
   name:
-      name:  Hugo_Symbol
+    name: Hugo_Symbol
   symbol:
-      name:  SYMBOL
+    name: SYMBOL
   ncbi_build:
-      name:  NCBI_Build
+    name: NCBI_Build
   start_position:
-      name:  Start_Position
-      type: int
+    name: Start_Position
+    type: int
   end_position:
-      name:  End_Position
-      type: int
+    name: End_Position
+    type: int
   variant_type:
-      name:  Variant_Type
+    name: Variant_Type
   tumor_allele:
-      name:  Allele
+    name: Allele
   reference_allele:
-      name:  Reference_Allele
+    name: Reference_Allele
   mutation_type:
-      name:  Mutation_Status
+    name: Mutation_Status
   case_id:
-      name: case_id
+    name: case_id
   chromosome:
-      name:  Chromosome
-      pattern: chr{}
+    name: Chromosome
+    pattern: chr{}
   is_canonical:
-      name:  CANONICAL
-      type: boolean
+    name: CANONICAL
+    type: boolean
   consequence_type:
-      name:  Consequence
+    name: Consequence
   ref_seq_accession:
-      name:  ESP_AA_AF
+    name: ESP_AA_AF
   aa_start:
-      name:  ESP_AA_AF
+    name: ESP_AA_AF
   aa_end:
-      name:  ESP_AA_AF
+    name: ESP_AA_AF
   aa_change:
-      name:  ESP_AA_AF
+    name: ESP_AA_AF
   vep_impact:
-      name:  IMPACT
+    name: IMPACT
   amino_acids:
-      name:  Amino_acids
+    name: Amino_acids
   existing_variation:
-      name:  Existing_variation
+    name: Existing_variation
   sift:
-      name:  SIFT
+    name: SIFT
   pubmed:
-      name:  PUBMED
+    name: PUBMED
   ccds:
-      name:  CCDS
+    name: CCDS
   cdna_position:
-      name:  cDNA_position
+    name: cDNA_position
   hgvsp:
-      name:  HGVSp
+    name: HGVSp
   ensp:
-      name:  ENSP
+    name: ENSP
   dbsnp_rs:
-      name:  dbSNP_RS
+    name: dbSNP_RS
   trembl:
-      name:  TREMBL
+    name: TREMBL
   uniparc:
-      name:  UNIPARC
+    name: UNIPARC
   codons:
-      name:  Codons
+    name: Codons
   polyphen:
-      name:  PolyPhen
+    name: PolyPhen
   hgvsc:
-      name:  HGVSc
+    name: HGVSc
   swissprot:
-      name:  SWISSPROT
+    name: SWISSPROT
   domains:
-      name:  DOMAINS
+    name: DOMAINS
   protein_position:
-      name:  Protein_position
+    name: Protein_position
   cds_position:
-      name:  CDS_position
+    name: CDS_position
   hgvsp_short:
-      name:  HGVSp_Short
+    name: HGVSp_Short
   mutation_status:
-      name:  Mutation_Status
+    name: Mutation_Status
   center:
-      name:  Center
+    name: Center
   match_norm_seq_allele1:
-      name:  Match_Norm_Seq_Allele1
+    name: Match_Norm_Seq_Allele1
   match_norm_seq_allele2:
-      name:  Match_Norm_Seq_Allele2
+    name: Match_Norm_Seq_Allele2
   tumor_seq_allele1:
-      name:  Tumor_Seq_Allele1
+    name: Tumor_Seq_Allele1
   tumor_seq_allele2:
-      name:  Tumor_Seq_Allele2
+    name: Tumor_Seq_Allele2
   tumor_validation_allele1:
-      name:  Tumor_Validation_Allele1
+    name: Tumor_Validation_Allele1
   tumor_validation_allele2:
-      name:  Tumor_Validation_Allele2
+    name: Tumor_Validation_Allele2
   validation_method:
-      name: Validation_Method
+    name: Validation_Method
   n_depth:
-      name:  n_depth
-      type: int
+    name: n_depth
+    type: int
   t_alt_count:
-      name:  t_alt_count
-      type: int
+    name: t_alt_count
+    type: int
   t_depth:
-      name:  t_depth
-      type: int
+    name: t_depth
+    type: int
   t_ref_count:
-      name:  t_ref_count
-      type: int
+    name: t_ref_count
+    type: int
   normal_bam_uuid:
-      name:  normal_bam_uuid
+    name: normal_bam_uuid
   tumor_bam_uuid:
-      name:  tumor_bam_uuid
+    name: tumor_bam_uuid
   matched_norm_sample_barcode:
-      name:  Matched_Norm_Sample_Barcode
+    name: Matched_Norm_Sample_Barcode
   matched_norm_sample_uuid:
-      name:  Matched_Norm_Sample_UUID
+    name: Matched_Norm_Sample_UUID
   tumor_sample_barcode:
-      name:  Tumor_Sample_Barcode
+    name: Tumor_Sample_Barcode
   tumor_sample_uuid:
-      name:  Tumor_Sample_UUID
+    name: Tumor_Sample_UUID
   all_effects:
-      name:  all_effects
+    name: all_effects
   transcript_id:
-      name:  Transcript_ID
+    name: Transcript_ID

@@ -1,9 +1,10 @@
+---
 mappings:
   _size:
     enabled: true
   _source:
     excludes:
-    - gene.*
+      - gene.*
   dynamic: strict
   properties:
     available_variation_data:
@@ -26,7 +27,7 @@ mappings:
       type: keyword
     case_id:
       copy_to:
-      - case_autocomplete
+        - case_autocomplete
       normalizer: clinical_normalizer
       type: keyword
     gene:
@@ -37,7 +38,7 @@ mappings:
       properties:
         project_id:
           copy_to:
-          - case_autocomplete
+            - case_autocomplete
           type: keyword
     samples:
       properties:
@@ -49,17 +50,17 @@ settings:
     analyzer:
       autocomplete_analyzed:
         filter:
-        - lowercase
-        - edge_ngram
+          - lowercase
+          - edge_ngram
         tokenizer: standard
       autocomplete_prefix:
         filter:
-        - lowercase
-        - edge_ngram
+          - lowercase
+          - edge_ngram
         tokenizer: keyword
       lowercase_keyword:
         filter:
-        - lowercase
+          - lowercase
         tokenizer: keyword
     filter:
       edge_ngram:
@@ -71,7 +72,7 @@ settings:
       clinical_normalizer:
         char_filter: []
         filter:
-        - lowercase
+          - lowercase
         type: custom
   index:
     mapping.total_fields.limit: 2000

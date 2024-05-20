@@ -1,936 +1,936 @@
 {
-    "_size": {
-        "enabled": true
+  "_size": {
+    "enabled": true
+  },
+  "_source": {
+    "excludes": [
+      "gene.*"
+    ]
+  },
+  "dynamic": "strict",
+  "properties": {
+    "available_variation_data": {
+      "type": "keyword"
     },
-    "_source": {
-        "excludes": [
-            "gene.*"
-        ]
+    "case_autocomplete": {
+      "fields": {
+        "analyzed": {
+          "analyzer": "autocomplete_analyzed",
+          "search_analyzer": "lowercase_keyword",
+          "type": "text"
+        },
+        "lowercase": {
+          "analyzer": "lowercase_keyword",
+          "type": "text"
+        },
+        "prefix": {
+          "analyzer": "autocomplete_prefix",
+          "search_analyzer": "lowercase_keyword",
+          "type": "text"
+        }
+      },
+      "type": "keyword"
     },
-    "dynamic": "strict",
-    "properties": {
-        "available_variation_data": {
-            "type": "keyword"
+    "case_id": {
+      "copy_to": [
+        "case_autocomplete"
+      ],
+      "type": "keyword"
+    },
+    "consent_type": {
+      "type": "keyword"
+    },
+    "days_to_consent": {
+      "type": "long"
+    },
+    "days_to_index": {
+      "type": "long"
+    },
+    "demographic": {
+      "properties": {
+        "age_at_index": {
+          "type": "long"
         },
-        "case_autocomplete": {
-            "fields": {
-                "analyzed": {
-                    "analyzer": "autocomplete_analyzed",
-                    "search_analyzer": "lowercase_keyword",
-                    "type": "text"
-                },
-                "lowercase": {
-                    "analyzer": "lowercase_keyword",
-                    "type": "text"
-                },
-                "prefix": {
-                    "analyzer": "autocomplete_prefix",
-                    "search_analyzer": "lowercase_keyword",
-                    "type": "text"
-                }
-            },
-            "type": "keyword"
+        "age_is_obfuscated": {
+          "type": "keyword"
         },
-        "case_id": {
-            "copy_to": [
-                "case_autocomplete"
-            ],
-            "type": "keyword"
+        "cause_of_death": {
+          "type": "keyword"
         },
-        "consent_type": {
-            "type": "keyword"
+        "days_to_birth": {
+          "type": "long"
         },
-        "days_to_consent": {
-            "type": "long"
+        "days_to_death": {
+          "type": "long"
         },
-        "days_to_index": {
-            "type": "long"
+        "demographic_id": {
+          "type": "keyword"
         },
-        "demographic": {
-            "properties": {
-                "age_at_index": {
-                    "type": "long"
-                },
-                "age_is_obfuscated": {
-                    "type": "keyword"
-                },
-                "cause_of_death": {
-                    "type": "keyword"
-                },
-                "days_to_birth": {
-                    "type": "long"
-                },
-                "days_to_death": {
-                    "type": "long"
-                },
-                "demographic_id": {
-                    "type": "keyword"
-                },
-                "ethnicity": {
-                    "type": "keyword"
-                },
-                "gender": {
-                    "type": "keyword"
-                },
-                "race": {
-                    "type": "keyword"
-                },
-                "state": {
-                    "type": "keyword"
-                },
-                "submitter_id": {
-                    "type": "keyword"
-                },
-                "vital_status": {
-                    "type": "keyword"
-                },
-                "year_of_birth": {
-                    "type": "long"
-                },
-                "year_of_death": {
-                    "type": "long"
-                }
-            }
+        "ethnicity": {
+          "type": "keyword"
         },
-        "diagnoses": {
-            "properties": {
-                "age_at_diagnosis": {
-                    "type": "long"
-                },
-                "ajcc_clinical_m": {
-                    "type": "keyword"
-                },
-                "ajcc_clinical_n": {
-                    "type": "keyword"
-                },
-                "ajcc_clinical_stage": {
-                    "type": "keyword"
-                },
-                "ajcc_clinical_t": {
-                    "type": "keyword"
-                },
-                "ajcc_pathologic_m": {
-                    "type": "keyword"
-                },
-                "ajcc_pathologic_n": {
-                    "type": "keyword"
-                },
-                "ajcc_pathologic_stage": {
-                    "type": "keyword"
-                },
-                "ajcc_pathologic_t": {
-                    "type": "keyword"
-                },
-                "ajcc_staging_system_edition": {
-                    "type": "keyword"
-                },
-                "ann_arbor_b_symptoms": {
-                    "type": "keyword"
-                },
-                "ann_arbor_clinical_stage": {
-                    "type": "keyword"
-                },
-                "ann_arbor_extranodal_involvement": {
-                    "type": "keyword"
-                },
-                "ann_arbor_pathologic_stage": {
-                    "type": "keyword"
-                },
-                "burkitt_lymphoma_clinical_variant": {
-                    "type": "keyword"
-                },
-                "cause_of_death": {
-                    "type": "keyword"
-                },
-                "circumferential_resection_margin": {
-                    "type": "long"
-                },
-                "classification_of_tumor": {
-                    "type": "keyword"
-                },
-                "cog_renal_stage": {
-                    "type": "keyword"
-                },
-                "colon_polyps_history": {
-                    "type": "keyword"
-                },
-                "days_to_diagnosis": {
-                    "type": "long"
-                },
-                "days_to_hiv_diagnosis": {
-                    "type": "long"
-                },
-                "days_to_last_follow_up": {
-                    "type": "long"
-                },
-                "days_to_last_known_disease_status": {
-                    "type": "long"
-                },
-                "days_to_new_event": {
-                    "type": "long"
-                },
-                "days_to_recurrence": {
-                    "type": "long"
-                },
-                "diagnosis_id": {
-                    "type": "keyword"
-                },
-                "esophageal_columnar_dysplasia_degree": {
-                    "type": "keyword"
-                },
-                "esophageal_columnar_metaplasia_present": {
-                    "type": "keyword"
-                },
-                "figo_stage": {
-                    "type": "keyword"
-                },
-                "gastric_esophageal_junction_involvement": {
-                    "type": "keyword"
-                },
-                "goblet_cells_columnar_mucosa_present": {
-                    "type": "keyword"
-                },
-                "hiv_positive": {
-                    "type": "keyword"
-                },
-                "hpv_positive_type": {
-                    "type": "keyword"
-                },
-                "hpv_status": {
-                    "type": "keyword"
-                },
-                "icd_10_code": {
-                    "type": "keyword"
-                },
-                "igcccg_stage": {
-                    "type": "keyword"
-                },
-                "inss_stage": {
-                    "type": "keyword"
-                },
-                "international_prognostic_index": {
-                    "type": "keyword"
-                },
-                "iss_stage": {
-                    "type": "keyword"
-                },
-                "last_known_disease_status": {
-                    "type": "keyword"
-                },
-                "laterality": {
-                    "type": "keyword"
-                },
-                "ldh_level_at_diagnosis": {
-                    "type": "long"
-                },
-                "ldh_normal_range_upper": {
-                    "type": "long"
-                },
-                "lymph_node_involved_site": {
-                    "type": "keyword"
-                },
-                "lymph_nodes_positive": {
-                    "type": "long"
-                },
-                "lymph_nodes_tested": {
-                    "type": "long"
-                },
-                "lymphatic_invasion_present": {
-                    "type": "keyword"
-                },
-                "masaoka_stage": {
-                    "type": "keyword"
-                },
-                "metastasis_at_diagnosis": {
-                    "type": "keyword"
-                },
-                "metastasis_at_diagnosis_site": {
-                    "type": "keyword"
-                },
-                "method_of_diagnosis": {
-                    "type": "keyword"
-                },
-                "micropapillary_features": {
-                    "type": "keyword"
-                },
-                "morphology": {
-                    "type": "keyword"
-                },
-                "new_event_anatomic_site": {
-                    "type": "keyword"
-                },
-                "new_event_type": {
-                    "type": "keyword"
-                },
-                "perineural_invasion_present": {
-                    "type": "keyword"
-                },
-                "peripancreatic_lymph_nodes_positive": {
-                    "type": "keyword"
-                },
-                "peripancreatic_lymph_nodes_tested": {
-                    "type": "long"
-                },
-                "primary_diagnosis": {
-                    "type": "keyword"
-                },
-                "primary_gleason_grade": {
-                    "type": "keyword"
-                },
-                "prior_malignancy": {
-                    "type": "keyword"
-                },
-                "prior_treatment": {
-                    "type": "keyword"
-                },
-                "progression_or_recurrence": {
-                    "type": "keyword"
-                },
-                "residual_disease": {
-                    "type": "keyword"
-                },
-                "secondary_gleason_grade": {
-                    "type": "keyword"
-                },
-                "site_of_resection_or_biopsy": {
-                    "type": "keyword"
-                },
-                "state": {
-                    "type": "keyword"
-                },
-                "submitter_id": {
-                    "type": "keyword"
-                },
-                "synchronous_malignancy": {
-                    "type": "keyword"
-                },
-                "tissue_or_organ_of_origin": {
-                    "type": "keyword"
-                },
-                "treatments": {
-                    "properties": {
-                        "days_to_treatment_end": {
-                            "type": "long"
-                        },
-                        "days_to_treatment_start": {
-                            "type": "long"
-                        },
-                        "initial_disease_status": {
-                            "type": "keyword"
-                        },
-                        "number_of_cycles": {
-                            "type": "long"
-                        },
-                        "regimen_or_line_of_therapy": {
-                            "type": "keyword"
-                        },
-                        "state": {
-                            "type": "keyword"
-                        },
-                        "submitter_id": {
-                            "type": "keyword"
-                        },
-                        "therapeutic_agents": {
-                            "type": "keyword"
-                        },
-                        "treatment_anatomic_site": {
-                            "type": "keyword"
-                        },
-                        "treatment_dose": {
-                            "type": "long"
-                        },
-                        "treatment_id": {
-                            "type": "keyword"
-                        },
-                        "treatment_intent_type": {
-                            "type": "keyword"
-                        },
-                        "treatment_or_therapy": {
-                            "type": "keyword"
-                        },
-                        "treatment_outcome": {
-                            "type": "keyword"
-                        },
-                        "treatment_type": {
-                            "type": "keyword"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "tumor_grade": {
-                    "type": "keyword"
-                },
-                "tumor_largest_dimension_diameter": {
-                    "type": "long"
-                },
-                "tumor_stage": {
-                    "type": "keyword"
-                },
-                "vascular_invasion_present": {
-                    "type": "keyword"
-                },
-                "vascular_invasion_type": {
-                    "type": "keyword"
-                },
-                "year_of_diagnosis": {
-                    "type": "long"
-                }
-            },
-            "type": "nested"
+        "gender": {
+          "type": "keyword"
         },
-        "disease_type": {
-            "copy_to": [
-                "case_autocomplete"
-            ],
-            "type": "keyword"
-        },
-        "exposures": {
-            "properties": {
-                "alcohol_days_per_week": {
-                    "type": "long"
-                },
-                "alcohol_history": {
-                    "type": "keyword"
-                },
-                "alcohol_intensity": {
-                    "type": "keyword"
-                },
-                "asbestos_exposure": {
-                    "type": "keyword"
-                },
-                "bmi": {
-                    "type": "float"
-                },
-                "cigarettes_per_day": {
-                    "type": "float"
-                },
-                "exposure_id": {
-                    "type": "keyword"
-                },
-                "height": {
-                    "type": "float"
-                },
-                "pack_years_smoked": {
-                    "type": "long"
-                },
-                "radon_exposure": {
-                    "type": "keyword"
-                },
-                "state": {
-                    "type": "keyword"
-                },
-                "submitter_id": {
-                    "type": "keyword"
-                },
-                "tobacco_smoking_onset_year": {
-                    "type": "long"
-                },
-                "tobacco_smoking_quit_year": {
-                    "type": "long"
-                },
-                "tobacco_smoking_status": {
-                    "type": "keyword"
-                },
-                "weight": {
-                    "type": "float"
-                },
-                "years_smoked": {
-                    "type": "float"
-                }
-            },
-            "type": "nested"
-        },
-        "family_histories": {
-            "properties": {
-                "family_history_id": {
-                    "type": "keyword"
-                },
-                "relationship_age_at_diagnosis": {
-                    "type": "long"
-                },
-                "relationship_gender": {
-                    "type": "keyword"
-                },
-                "relationship_primary_diagnosis": {
-                    "type": "keyword"
-                },
-                "relationship_type": {
-                    "type": "keyword"
-                },
-                "relative_with_cancer_history": {
-                    "type": "keyword"
-                },
-                "state": {
-                    "type": "keyword"
-                },
-                "submitter_id": {
-                    "type": "keyword"
-                }
-            },
-            "type": "nested"
-        },
-        "gene": {
-            "properties": {
-                "biotype": {
-                    "type": "keyword"
-                },
-                "cnv": {
-                    "properties": {
-                        "chromosome": {
-                            "type": "keyword"
-                        },
-                        "cnv_change": {
-                            "type": "keyword"
-                        },
-                        "cnv_id": {
-                            "type": "keyword"
-                        },
-                        "end_position": {
-                            "type": "long"
-                        },
-                        "gene_level_cn": {
-                            "type": "boolean"
-                        },
-                        "ncbi_build": {
-                            "type": "keyword"
-                        },
-                        "observation": {
-                            "properties": {
-                                "observation_id": {
-                                    "type": "keyword"
-                                },
-                                "sample": {
-                                    "properties": {
-                                        "tumor_sample_barcode": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_sample_uuid": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "src_file_id": {
-                                    "type": "keyword"
-                                },
-                                "variant_calling": {
-                                    "properties": {
-                                        "variant_caller": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "variant_status": {
-                                    "type": "keyword"
-                                }
-                            },
-                            "type": "nested"
-                        },
-                        "start_position": {
-                            "type": "long"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "gene_id": {
-                    "type": "keyword"
-                },
-                "is_cancer_gene_census": {
-                    "type": "boolean"
-                },
-                "ssm": {
-                    "properties": {
-                        "chromosome": {
-                            "type": "keyword"
-                        },
-                        "clinical_annotations": {
-                            "properties": {
-                                "civic": {
-                                    "properties": {
-                                        "gene_id": {
-                                            "type": "keyword"
-                                        },
-                                        "variant_id": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "consequence": {
-                            "properties": {
-                                "consequence_id": {
-                                    "type": "keyword"
-                                },
-                                "transcript": {
-                                    "properties": {
-                                        "aa_change": {
-                                            "type": "keyword"
-                                        },
-                                        "annotation": {
-                                            "properties": {
-                                                "amino_acids": {
-                                                    "type": "keyword"
-                                                },
-                                                "ccds": {
-                                                    "type": "keyword"
-                                                },
-                                                "cdna_position": {
-                                                    "type": "keyword"
-                                                },
-                                                "cds_end": {
-                                                    "type": "long"
-                                                },
-                                                "cds_length": {
-                                                    "type": "long"
-                                                },
-                                                "cds_position": {
-                                                    "type": "keyword"
-                                                },
-                                                "cds_start": {
-                                                    "type": "long"
-                                                },
-                                                "clin_sig": {
-                                                    "type": "keyword"
-                                                },
-                                                "codons": {
-                                                    "type": "keyword"
-                                                },
-                                                "dbsnp_rs": {
-                                                    "type": "keyword"
-                                                },
-                                                "dbsnp_val_status": {
-                                                    "type": "keyword"
-                                                },
-                                                "domains": {
-                                                    "type": "keyword"
-                                                },
-                                                "ensp": {
-                                                    "type": "keyword"
-                                                },
-                                                "existing_variation": {
-                                                    "type": "keyword"
-                                                },
-                                                "hgvsc": {
-                                                    "type": "keyword"
-                                                },
-                                                "hgvsp": {
-                                                    "type": "keyword"
-                                                },
-                                                "hgvsp_short": {
-                                                    "type": "keyword"
-                                                },
-                                                "polyphen_impact": {
-                                                    "type": "keyword"
-                                                },
-                                                "polyphen_score": {
-                                                    "type": "float"
-                                                },
-                                                "protein_position": {
-                                                    "type": "keyword"
-                                                },
-                                                "pubmed": {
-                                                    "type": "keyword"
-                                                },
-                                                "sift_impact": {
-                                                    "type": "keyword"
-                                                },
-                                                "sift_score": {
-                                                    "type": "float"
-                                                },
-                                                "swissprot": {
-                                                    "type": "keyword"
-                                                },
-                                                "transcript_id": {
-                                                    "type": "keyword"
-                                                },
-                                                "trembl": {
-                                                    "type": "keyword"
-                                                },
-                                                "uniparc": {
-                                                    "type": "keyword"
-                                                },
-                                                "vep_impact": {
-                                                    "type": "keyword"
-                                                }
-                                            }
-                                        },
-                                        "consequence_type": {
-                                            "type": "keyword"
-                                        },
-                                        "ref_seq_accession": {
-                                            "type": "keyword"
-                                        },
-                                        "transcript_id": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                }
-                            },
-                            "type": "nested"
-                        },
-                        "cosmic_id": {
-                            "type": "keyword"
-                        },
-                        "end_position": {
-                            "type": "long"
-                        },
-                        "genomic_dna_change": {
-                            "type": "keyword"
-                        },
-                        "mutation_subtype": {
-                            "type": "keyword"
-                        },
-                        "mutation_type": {
-                            "type": "keyword"
-                        },
-                        "ncbi_build": {
-                            "type": "keyword"
-                        },
-                        "observation": {
-                            "properties": {
-                                "center": {
-                                    "type": "keyword"
-                                },
-                                "input_bam_file": {
-                                    "properties": {
-                                        "normal_bam_uuid": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_bam_uuid": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "mutation_status": {
-                                    "type": "keyword"
-                                },
-                                "normal_genotype": {
-                                    "properties": {
-                                        "match_norm_seq_allele1": {
-                                            "type": "keyword"
-                                        },
-                                        "match_norm_seq_allele2": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "observation_id": {
-                                    "type": "keyword"
-                                },
-                                "read_depth": {
-                                    "properties": {
-                                        "n_depth": {
-                                            "type": "long"
-                                        },
-                                        "t_alt_count": {
-                                            "type": "long"
-                                        },
-                                        "t_depth": {
-                                            "type": "long"
-                                        },
-                                        "t_ref_count": {
-                                            "type": "long"
-                                        }
-                                    }
-                                },
-                                "sample": {
-                                    "properties": {
-                                        "matched_norm_sample_barcode": {
-                                            "type": "keyword"
-                                        },
-                                        "matched_norm_sample_uuid": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_sample_barcode": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_sample_uuid": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "tumor_genotype": {
-                                    "properties": {
-                                        "tumor_seq_allele1": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_seq_allele2": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "validation": {
-                                    "properties": {
-                                        "tumor_validation_allele1": {
-                                            "type": "keyword"
-                                        },
-                                        "tumor_validation_allele2": {
-                                            "type": "keyword"
-                                        },
-                                        "validation_method": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                },
-                                "variant_calling": {
-                                    "properties": {
-                                        "variant_caller": {
-                                            "type": "keyword"
-                                        },
-                                        "variant_process": {
-                                            "type": "keyword"
-                                        }
-                                    }
-                                }
-                            },
-                            "type": "nested"
-                        },
-                        "reference_allele": {
-                            "type": "keyword"
-                        },
-                        "ssm_id": {
-                            "type": "keyword"
-                        },
-                        "start_position": {
-                            "type": "long"
-                        },
-                        "tumor_allele": {
-                            "type": "keyword"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "symbol": {
-                    "type": "keyword"
-                }
-            },
-            "type": "nested"
-        },
-        "index_date": {
-            "type": "keyword"
-        },
-        "lost_to_followup": {
-            "type": "keyword"
-        },
-        "primary_site": {
-            "copy_to": [
-                "case_autocomplete"
-            ],
-            "type": "keyword"
-        },
-        "project": {
-            "properties": {
-                "dbgap_accession_number": {
-                    "type": "keyword"
-                },
-                "disease_type": {
-                    "copy_to": [
-                        "case_autocomplete"
-                    ],
-                    "type": "keyword"
-                },
-                "intended_release_date": {
-                    "type": "keyword"
-                },
-                "name": {
-                    "copy_to": [
-                        "case_autocomplete"
-                    ],
-                    "type": "keyword"
-                },
-                "primary_site": {
-                    "copy_to": [
-                        "case_autocomplete"
-                    ],
-                    "type": "keyword"
-                },
-                "program": {
-                    "properties": {
-                        "dbgap_accession_number": {
-                            "type": "keyword"
-                        },
-                        "name": {
-                            "type": "keyword"
-                        },
-                        "program_id": {
-                            "type": "keyword"
-                        }
-                    }
-                },
-                "project_id": {
-                    "copy_to": [
-                        "case_autocomplete"
-                    ],
-                    "type": "keyword"
-                }
-            }
-        },
-        "samples": {
-            "properties": {
-                "sample_type": {
-                    "type": "keyword"
-                }
-            }
+        "race": {
+          "type": "keyword"
         },
         "state": {
-            "type": "keyword"
+          "type": "keyword"
         },
         "submitter_id": {
-            "copy_to": [
-                "case_autocomplete"
-            ],
-            "type": "keyword"
+          "type": "keyword"
         },
-        "summary": {
-            "properties": {
-                "data_categories": {
-                    "properties": {
-                        "data_category": {
-                            "type": "keyword"
-                        },
-                        "file_count": {
-                            "type": "long"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "experimental_strategies": {
-                    "properties": {
-                        "experimental_strategy": {
-                            "type": "keyword"
-                        },
-                        "file_count": {
-                            "type": "long"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "file_count": {
-                    "type": "long"
-                },
-                "file_size": {
-                    "type": "long"
-                }
-            }
+        "vital_status": {
+          "type": "keyword"
         },
-        "tissue_source_site": {
-            "properties": {
-                "bcr_id": {
-                    "type": "keyword"
-                },
-                "code": {
-                    "type": "keyword"
-                },
-                "name": {
-                    "type": "keyword"
-                },
-                "project": {
-                    "type": "keyword"
-                },
-                "tissue_source_site_id": {
-                    "type": "keyword"
-                }
-            }
+        "year_of_birth": {
+          "type": "long"
+        },
+        "year_of_death": {
+          "type": "long"
         }
+      }
+    },
+    "diagnoses": {
+      "properties": {
+        "age_at_diagnosis": {
+          "type": "long"
+        },
+        "ajcc_clinical_m": {
+          "type": "keyword"
+        },
+        "ajcc_clinical_n": {
+          "type": "keyword"
+        },
+        "ajcc_clinical_stage": {
+          "type": "keyword"
+        },
+        "ajcc_clinical_t": {
+          "type": "keyword"
+        },
+        "ajcc_pathologic_m": {
+          "type": "keyword"
+        },
+        "ajcc_pathologic_n": {
+          "type": "keyword"
+        },
+        "ajcc_pathologic_stage": {
+          "type": "keyword"
+        },
+        "ajcc_pathologic_t": {
+          "type": "keyword"
+        },
+        "ajcc_staging_system_edition": {
+          "type": "keyword"
+        },
+        "ann_arbor_b_symptoms": {
+          "type": "keyword"
+        },
+        "ann_arbor_clinical_stage": {
+          "type": "keyword"
+        },
+        "ann_arbor_extranodal_involvement": {
+          "type": "keyword"
+        },
+        "ann_arbor_pathologic_stage": {
+          "type": "keyword"
+        },
+        "burkitt_lymphoma_clinical_variant": {
+          "type": "keyword"
+        },
+        "cause_of_death": {
+          "type": "keyword"
+        },
+        "circumferential_resection_margin": {
+          "type": "long"
+        },
+        "classification_of_tumor": {
+          "type": "keyword"
+        },
+        "cog_renal_stage": {
+          "type": "keyword"
+        },
+        "colon_polyps_history": {
+          "type": "keyword"
+        },
+        "days_to_diagnosis": {
+          "type": "long"
+        },
+        "days_to_hiv_diagnosis": {
+          "type": "long"
+        },
+        "days_to_last_follow_up": {
+          "type": "long"
+        },
+        "days_to_last_known_disease_status": {
+          "type": "long"
+        },
+        "days_to_new_event": {
+          "type": "long"
+        },
+        "days_to_recurrence": {
+          "type": "long"
+        },
+        "diagnosis_id": {
+          "type": "keyword"
+        },
+        "esophageal_columnar_dysplasia_degree": {
+          "type": "keyword"
+        },
+        "esophageal_columnar_metaplasia_present": {
+          "type": "keyword"
+        },
+        "figo_stage": {
+          "type": "keyword"
+        },
+        "gastric_esophageal_junction_involvement": {
+          "type": "keyword"
+        },
+        "goblet_cells_columnar_mucosa_present": {
+          "type": "keyword"
+        },
+        "hiv_positive": {
+          "type": "keyword"
+        },
+        "hpv_positive_type": {
+          "type": "keyword"
+        },
+        "hpv_status": {
+          "type": "keyword"
+        },
+        "icd_10_code": {
+          "type": "keyword"
+        },
+        "igcccg_stage": {
+          "type": "keyword"
+        },
+        "inss_stage": {
+          "type": "keyword"
+        },
+        "international_prognostic_index": {
+          "type": "keyword"
+        },
+        "iss_stage": {
+          "type": "keyword"
+        },
+        "last_known_disease_status": {
+          "type": "keyword"
+        },
+        "laterality": {
+          "type": "keyword"
+        },
+        "ldh_level_at_diagnosis": {
+          "type": "long"
+        },
+        "ldh_normal_range_upper": {
+          "type": "long"
+        },
+        "lymph_node_involved_site": {
+          "type": "keyword"
+        },
+        "lymph_nodes_positive": {
+          "type": "long"
+        },
+        "lymph_nodes_tested": {
+          "type": "long"
+        },
+        "lymphatic_invasion_present": {
+          "type": "keyword"
+        },
+        "masaoka_stage": {
+          "type": "keyword"
+        },
+        "metastasis_at_diagnosis": {
+          "type": "keyword"
+        },
+        "metastasis_at_diagnosis_site": {
+          "type": "keyword"
+        },
+        "method_of_diagnosis": {
+          "type": "keyword"
+        },
+        "micropapillary_features": {
+          "type": "keyword"
+        },
+        "morphology": {
+          "type": "keyword"
+        },
+        "new_event_anatomic_site": {
+          "type": "keyword"
+        },
+        "new_event_type": {
+          "type": "keyword"
+        },
+        "perineural_invasion_present": {
+          "type": "keyword"
+        },
+        "peripancreatic_lymph_nodes_positive": {
+          "type": "keyword"
+        },
+        "peripancreatic_lymph_nodes_tested": {
+          "type": "long"
+        },
+        "primary_diagnosis": {
+          "type": "keyword"
+        },
+        "primary_gleason_grade": {
+          "type": "keyword"
+        },
+        "prior_malignancy": {
+          "type": "keyword"
+        },
+        "prior_treatment": {
+          "type": "keyword"
+        },
+        "progression_or_recurrence": {
+          "type": "keyword"
+        },
+        "residual_disease": {
+          "type": "keyword"
+        },
+        "secondary_gleason_grade": {
+          "type": "keyword"
+        },
+        "site_of_resection_or_biopsy": {
+          "type": "keyword"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "submitter_id": {
+          "type": "keyword"
+        },
+        "synchronous_malignancy": {
+          "type": "keyword"
+        },
+        "tissue_or_organ_of_origin": {
+          "type": "keyword"
+        },
+        "treatments": {
+          "properties": {
+            "days_to_treatment_end": {
+              "type": "long"
+            },
+            "days_to_treatment_start": {
+              "type": "long"
+            },
+            "initial_disease_status": {
+              "type": "keyword"
+            },
+            "number_of_cycles": {
+              "type": "long"
+            },
+            "regimen_or_line_of_therapy": {
+              "type": "keyword"
+            },
+            "state": {
+              "type": "keyword"
+            },
+            "submitter_id": {
+              "type": "keyword"
+            },
+            "therapeutic_agents": {
+              "type": "keyword"
+            },
+            "treatment_anatomic_site": {
+              "type": "keyword"
+            },
+            "treatment_dose": {
+              "type": "long"
+            },
+            "treatment_id": {
+              "type": "keyword"
+            },
+            "treatment_intent_type": {
+              "type": "keyword"
+            },
+            "treatment_or_therapy": {
+              "type": "keyword"
+            },
+            "treatment_outcome": {
+              "type": "keyword"
+            },
+            "treatment_type": {
+              "type": "keyword"
+            }
+          },
+          "type": "nested"
+        },
+        "tumor_grade": {
+          "type": "keyword"
+        },
+        "tumor_largest_dimension_diameter": {
+          "type": "long"
+        },
+        "tumor_stage": {
+          "type": "keyword"
+        },
+        "vascular_invasion_present": {
+          "type": "keyword"
+        },
+        "vascular_invasion_type": {
+          "type": "keyword"
+        },
+        "year_of_diagnosis": {
+          "type": "long"
+        }
+      },
+      "type": "nested"
+    },
+    "disease_type": {
+      "copy_to": [
+        "case_autocomplete"
+      ],
+      "type": "keyword"
+    },
+    "exposures": {
+      "properties": {
+        "alcohol_days_per_week": {
+          "type": "long"
+        },
+        "alcohol_history": {
+          "type": "keyword"
+        },
+        "alcohol_intensity": {
+          "type": "keyword"
+        },
+        "asbestos_exposure": {
+          "type": "keyword"
+        },
+        "bmi": {
+          "type": "float"
+        },
+        "cigarettes_per_day": {
+          "type": "float"
+        },
+        "exposure_id": {
+          "type": "keyword"
+        },
+        "height": {
+          "type": "float"
+        },
+        "pack_years_smoked": {
+          "type": "long"
+        },
+        "radon_exposure": {
+          "type": "keyword"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "submitter_id": {
+          "type": "keyword"
+        },
+        "tobacco_smoking_onset_year": {
+          "type": "long"
+        },
+        "tobacco_smoking_quit_year": {
+          "type": "long"
+        },
+        "tobacco_smoking_status": {
+          "type": "keyword"
+        },
+        "weight": {
+          "type": "float"
+        },
+        "years_smoked": {
+          "type": "float"
+        }
+      },
+      "type": "nested"
+    },
+    "family_histories": {
+      "properties": {
+        "family_history_id": {
+          "type": "keyword"
+        },
+        "relationship_age_at_diagnosis": {
+          "type": "long"
+        },
+        "relationship_gender": {
+          "type": "keyword"
+        },
+        "relationship_primary_diagnosis": {
+          "type": "keyword"
+        },
+        "relationship_type": {
+          "type": "keyword"
+        },
+        "relative_with_cancer_history": {
+          "type": "keyword"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "submitter_id": {
+          "type": "keyword"
+        }
+      },
+      "type": "nested"
+    },
+    "gene": {
+      "properties": {
+        "biotype": {
+          "type": "keyword"
+        },
+        "cnv": {
+          "properties": {
+            "chromosome": {
+              "type": "keyword"
+            },
+            "cnv_change": {
+              "type": "keyword"
+            },
+            "cnv_id": {
+              "type": "keyword"
+            },
+            "end_position": {
+              "type": "long"
+            },
+            "gene_level_cn": {
+              "type": "boolean"
+            },
+            "ncbi_build": {
+              "type": "keyword"
+            },
+            "observation": {
+              "properties": {
+                "observation_id": {
+                  "type": "keyword"
+                },
+                "sample": {
+                  "properties": {
+                    "tumor_sample_barcode": {
+                      "type": "keyword"
+                    },
+                    "tumor_sample_uuid": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "src_file_id": {
+                  "type": "keyword"
+                },
+                "variant_calling": {
+                  "properties": {
+                    "variant_caller": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "variant_status": {
+                  "type": "keyword"
+                }
+              },
+              "type": "nested"
+            },
+            "start_position": {
+              "type": "long"
+            }
+          },
+          "type": "nested"
+        },
+        "gene_id": {
+          "type": "keyword"
+        },
+        "is_cancer_gene_census": {
+          "type": "boolean"
+        },
+        "ssm": {
+          "properties": {
+            "chromosome": {
+              "type": "keyword"
+            },
+            "clinical_annotations": {
+              "properties": {
+                "civic": {
+                  "properties": {
+                    "gene_id": {
+                      "type": "keyword"
+                    },
+                    "variant_id": {
+                      "type": "keyword"
+                    }
+                  }
+                }
+              }
+            },
+            "consequence": {
+              "properties": {
+                "consequence_id": {
+                  "type": "keyword"
+                },
+                "transcript": {
+                  "properties": {
+                    "aa_change": {
+                      "type": "keyword"
+                    },
+                    "annotation": {
+                      "properties": {
+                        "amino_acids": {
+                          "type": "keyword"
+                        },
+                        "ccds": {
+                          "type": "keyword"
+                        },
+                        "cdna_position": {
+                          "type": "keyword"
+                        },
+                        "cds_end": {
+                          "type": "long"
+                        },
+                        "cds_length": {
+                          "type": "long"
+                        },
+                        "cds_position": {
+                          "type": "keyword"
+                        },
+                        "cds_start": {
+                          "type": "long"
+                        },
+                        "clin_sig": {
+                          "type": "keyword"
+                        },
+                        "codons": {
+                          "type": "keyword"
+                        },
+                        "dbsnp_rs": {
+                          "type": "keyword"
+                        },
+                        "dbsnp_val_status": {
+                          "type": "keyword"
+                        },
+                        "domains": {
+                          "type": "keyword"
+                        },
+                        "ensp": {
+                          "type": "keyword"
+                        },
+                        "existing_variation": {
+                          "type": "keyword"
+                        },
+                        "hgvsc": {
+                          "type": "keyword"
+                        },
+                        "hgvsp": {
+                          "type": "keyword"
+                        },
+                        "hgvsp_short": {
+                          "type": "keyword"
+                        },
+                        "polyphen_impact": {
+                          "type": "keyword"
+                        },
+                        "polyphen_score": {
+                          "type": "float"
+                        },
+                        "protein_position": {
+                          "type": "keyword"
+                        },
+                        "pubmed": {
+                          "type": "keyword"
+                        },
+                        "sift_impact": {
+                          "type": "keyword"
+                        },
+                        "sift_score": {
+                          "type": "float"
+                        },
+                        "swissprot": {
+                          "type": "keyword"
+                        },
+                        "transcript_id": {
+                          "type": "keyword"
+                        },
+                        "trembl": {
+                          "type": "keyword"
+                        },
+                        "uniparc": {
+                          "type": "keyword"
+                        },
+                        "vep_impact": {
+                          "type": "keyword"
+                        }
+                      }
+                    },
+                    "consequence_type": {
+                      "type": "keyword"
+                    },
+                    "ref_seq_accession": {
+                      "type": "keyword"
+                    },
+                    "transcript_id": {
+                      "type": "keyword"
+                    }
+                  }
+                }
+              },
+              "type": "nested"
+            },
+            "cosmic_id": {
+              "type": "keyword"
+            },
+            "end_position": {
+              "type": "long"
+            },
+            "genomic_dna_change": {
+              "type": "keyword"
+            },
+            "mutation_subtype": {
+              "type": "keyword"
+            },
+            "mutation_type": {
+              "type": "keyword"
+            },
+            "ncbi_build": {
+              "type": "keyword"
+            },
+            "observation": {
+              "properties": {
+                "center": {
+                  "type": "keyword"
+                },
+                "input_bam_file": {
+                  "properties": {
+                    "normal_bam_uuid": {
+                      "type": "keyword"
+                    },
+                    "tumor_bam_uuid": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "mutation_status": {
+                  "type": "keyword"
+                },
+                "normal_genotype": {
+                  "properties": {
+                    "match_norm_seq_allele1": {
+                      "type": "keyword"
+                    },
+                    "match_norm_seq_allele2": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "observation_id": {
+                  "type": "keyword"
+                },
+                "read_depth": {
+                  "properties": {
+                    "n_depth": {
+                      "type": "long"
+                    },
+                    "t_alt_count": {
+                      "type": "long"
+                    },
+                    "t_depth": {
+                      "type": "long"
+                    },
+                    "t_ref_count": {
+                      "type": "long"
+                    }
+                  }
+                },
+                "sample": {
+                  "properties": {
+                    "matched_norm_sample_barcode": {
+                      "type": "keyword"
+                    },
+                    "matched_norm_sample_uuid": {
+                      "type": "keyword"
+                    },
+                    "tumor_sample_barcode": {
+                      "type": "keyword"
+                    },
+                    "tumor_sample_uuid": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "tumor_genotype": {
+                  "properties": {
+                    "tumor_seq_allele1": {
+                      "type": "keyword"
+                    },
+                    "tumor_seq_allele2": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "validation": {
+                  "properties": {
+                    "tumor_validation_allele1": {
+                      "type": "keyword"
+                    },
+                    "tumor_validation_allele2": {
+                      "type": "keyword"
+                    },
+                    "validation_method": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "variant_calling": {
+                  "properties": {
+                    "variant_caller": {
+                      "type": "keyword"
+                    },
+                    "variant_process": {
+                      "type": "keyword"
+                    }
+                  }
+                }
+              },
+              "type": "nested"
+            },
+            "reference_allele": {
+              "type": "keyword"
+            },
+            "ssm_id": {
+              "type": "keyword"
+            },
+            "start_position": {
+              "type": "long"
+            },
+            "tumor_allele": {
+              "type": "keyword"
+            }
+          },
+          "type": "nested"
+        },
+        "symbol": {
+          "type": "keyword"
+        }
+      },
+      "type": "nested"
+    },
+    "index_date": {
+      "type": "keyword"
+    },
+    "lost_to_followup": {
+      "type": "keyword"
+    },
+    "primary_site": {
+      "copy_to": [
+        "case_autocomplete"
+      ],
+      "type": "keyword"
+    },
+    "project": {
+      "properties": {
+        "dbgap_accession_number": {
+          "type": "keyword"
+        },
+        "disease_type": {
+          "copy_to": [
+            "case_autocomplete"
+          ],
+          "type": "keyword"
+        },
+        "intended_release_date": {
+          "type": "keyword"
+        },
+        "name": {
+          "copy_to": [
+            "case_autocomplete"
+          ],
+          "type": "keyword"
+        },
+        "primary_site": {
+          "copy_to": [
+            "case_autocomplete"
+          ],
+          "type": "keyword"
+        },
+        "program": {
+          "properties": {
+            "dbgap_accession_number": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "program_id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "project_id": {
+          "copy_to": [
+            "case_autocomplete"
+          ],
+          "type": "keyword"
+        }
+      }
+    },
+    "samples": {
+      "properties": {
+        "sample_type": {
+          "type": "keyword"
+        }
+      }
+    },
+    "state": {
+      "type": "keyword"
+    },
+    "submitter_id": {
+      "copy_to": [
+        "case_autocomplete"
+      ],
+      "type": "keyword"
+    },
+    "summary": {
+      "properties": {
+        "data_categories": {
+          "properties": {
+            "data_category": {
+              "type": "keyword"
+            },
+            "file_count": {
+              "type": "long"
+            }
+          },
+          "type": "nested"
+        },
+        "experimental_strategies": {
+          "properties": {
+            "experimental_strategy": {
+              "type": "keyword"
+            },
+            "file_count": {
+              "type": "long"
+            }
+          },
+          "type": "nested"
+        },
+        "file_count": {
+          "type": "long"
+        },
+        "file_size": {
+          "type": "long"
+        }
+      }
+    },
+    "tissue_source_site": {
+      "properties": {
+        "bcr_id": {
+          "type": "keyword"
+        },
+        "code": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "project": {
+          "type": "keyword"
+        },
+        "tissue_source_site_id": {
+          "type": "keyword"
+        }
+      }
     }
+  }
 }

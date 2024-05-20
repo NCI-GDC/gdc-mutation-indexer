@@ -1,26 +1,27 @@
+---
 fields:
-- &string_field
-  metadata: {}
-  name: chromosome
-  nullable: true
-  type: string
-- <<: *string_field
-  name: cnv_change
-- <<: *string_field
-  name: cnv_id
-- &long_field
-  metadata: {}
-  name: end_position
-  nullable: true
-  type: long
-- metadata: {}
-  name: gene_level_cn
-  nullable: false
-  type: boolean
-- metadata: {}
-  name: ncbi_build
-  nullable: false
-  type: string
-- <<: *long_field
-  name: start_position
+  - &string_field
+    metadata: {}
+    name: chromosome
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: cnv_change
+  - <<: *string_field
+    name: cnv_id
+  - &long_field
+    metadata: {}
+    name: end_position
+    nullable: true
+    type: long
+  - metadata: {}
+    name: gene_level_cn
+    nullable: false
+    type: boolean
+  - metadata: {}
+    name: ncbi_build
+    nullable: false
+    type: string
+  - <<: *long_field
+    name: start_position
 type: struct

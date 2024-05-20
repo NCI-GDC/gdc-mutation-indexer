@@ -29,7 +29,7 @@ def _minimize_type(data: str, type: str) -> str:
 
 
 def _minimize_file(path: pathlib.Path) -> None:
-    with open(path, "r") as f:
+    with open(path) as f:
         data = "".join(f.readlines())
 
     types = _get_types(data)

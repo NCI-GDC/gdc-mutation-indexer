@@ -1,73 +1,74 @@
+---
 case:
   case_centric:
-  - gene
-  - transcripts
+    - gene
+    - transcripts
   cnv_centric:
-  - observation
+    - observation
   cnv_occurrence_centric:
-  - observation
+    - observation
   gene_centric:
-  - ssm
+    - ssm
   ssm_centric:
-  - observation
+    - observation
   ssm_occurrence_centric:
-  - observation
+    - observation
 cnv:
   case_centric:
-  - consequence
-  - observation
+    - consequence
+    - observation
   cnv_centric:
-  - consequence
-  - occurrence
+    - consequence
+    - occurrence
   cnv_occurrence_centric:
-  - consequence
-  - observation
+    - consequence
+    - observation
   gene_centric:
-  - consequence
-  - observation
+    - consequence
+    - observation
   ssm_centric:
-  - observation
+    - observation
   ssm_occurrence_centric:
-  - observation
+    - observation
 gene:
   case_centric:
-  - ssm
-  - cnv
+    - ssm
+    - cnv
   gene_centric:
-  - case
+    - case
 observation:
   case_centric:
-  - sample
-  - src_file_id
+    - sample
+    - src_file_id
   cnv_centric:
-  - sample
-  - src_file_id
+    - sample
+    - src_file_id
   cnv_occurrence_centric:
-  - sample
-  - src_file_id
+    - sample
+    - src_file_id
   gene_centric:
-  - sample
-  - src_file_id
+    - sample
+    - src_file_id
 ssm:
   case_centric:
-  - consequence
-  - observation
+    - consequence
+    - observation
   gene_centric:
-  - consequence
-  - observation
+    - consequence
+    - observation
   ssm_centric:
-  - consequence
-  - occurrence
+    - consequence
+    - occurrence
   ssm_occurrence_centric:
-  - consequence
+    - consequence
 transcript:
   case_centric:
-  - annotation
+    - annotation
   gene_centric:
-  - annotation
+    - annotation
   ssm_centric:
-  - annotation
-  - gene
+    - annotation
+    - gene
   ssm_occurrence_centric:
-  - annotation
-  - gene
+    - annotation
+    - gene

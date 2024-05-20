@@ -42,7 +42,6 @@ setup(
             "click~=8.1",
             "coverage[toml]~=7.0",
             "deepdiff~=6.0",
-            "pre-commit==1.21.0",
             "pytest~=7.0",
             "pytest-cov~=4.0",
         ),

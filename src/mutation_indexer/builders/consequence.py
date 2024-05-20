@@ -5,7 +5,6 @@ from pyspark.sql import functions as F
 
 from mutation_indexer.builders import df_builders, utils
 
-
 ALL_EFFECTS_KEYS = (
     "do_not_use",
     "consequence_type",

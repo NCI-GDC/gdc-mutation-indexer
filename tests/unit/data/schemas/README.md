@@ -1,6 +1,6 @@
 # Schemas
-The schemas module offers commands for managing and creating and managing schemas used 
-to load test inputs. Though, it can be useful in some cases for production schemas; 
+The schemas module offers commands for managing and creating and managing schemas used
+to load test inputs. Though, it can be useful in some cases for production schemas;
 these will be found in the main export/schemas directory.
 
 ### Contents
@@ -49,7 +49,7 @@ type: struct
 ## Translate Mapping
 This command attempts to create a schema from a Elasticsearch mapping file. This script
 should be used with caution due to Elasticsearch not differentiating between arrays and
-singular objects of atomic types. E.g. a list of terms as well as a singular `keyword` 
+singular objects of atomic types. E.g. a list of terms as well as a singular `keyword`
 in an Elasticsearch mapping both have a type of `keyword`
 
 ### Example

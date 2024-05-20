@@ -1,13 +1,13 @@
 import logging
 import pathlib
+import tempfile
 from collections.abc import Iterable, Iterator
 from typing import Any, Optional
 from unittest import mock
-import tempfile
 
 import elasticsearch
-from elasticsearch import helpers
 import pytest
+from elasticsearch import helpers
 from indexclient import client
 from pyspark import sql
 

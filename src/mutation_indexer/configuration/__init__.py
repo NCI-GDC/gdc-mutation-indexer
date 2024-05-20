@@ -3,11 +3,11 @@ For documentation concerning Mutation Indexer configuration please refer to the 
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
 
+import dataclasses
 import itertools
 import types
 from typing import Any, Iterable, Optional
 
-import dataclasses
 import marshmallow
 import marshmallow_dataclass
 
@@ -28,6 +28,7 @@ _DEFAULT_ACL = ("open",)
 @dataclasses.dataclass(frozen=True)
 class DataReleaseAndBuildVersion:
     """Should be specified in configuration.toml."""
+
     data_release: Optional[str]
     build_version: Optional[str]
 
