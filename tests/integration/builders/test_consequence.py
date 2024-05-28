@@ -15,7 +15,6 @@ class TestConsequenceBuilder:
 
     @pytest.fixture(scope="class")
     def builder(self) -> builders.ConsequenceBuilder:
-
         return builders.ConsequenceBuilder(None, None)
 
     @pytest.mark.parametrize(

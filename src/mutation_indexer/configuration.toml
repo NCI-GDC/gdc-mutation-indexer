@@ -9,12 +9,12 @@ build_version = "v0"
 config_file = "./.configs/test-config.toml"
 data_release = "test"
 index_types = [
-    "CASE_CENTRIC",
-    "CNV_CENTRIC",
-    "CNV_OCCURRENCE_CENTRIC",
-    "GENE_CENTRIC",
-    "SSM_CENTRIC",
-    "SSM_OCCURRENCE_CENTRIC",
+  "CASE_CENTRIC",
+  "CNV_CENTRIC",
+  "CNV_OCCURRENCE_CENTRIC",
+  "GENE_CENTRIC",
+  "SSM_CENTRIC",
+  "SSM_OCCURRENCE_CENTRIC"
 ]
 jar_dir = "artifacts/jars"
 manifest_dir = "./.manifests"
@@ -81,10 +81,10 @@ path = ""
 
 [builders.viz.case]
 include_as_arrays = [
-    "project.disease_type",
-    "project.primary_site",
-    "*_ids",
-    "files.acl",
+  "project.disease_type",
+  "project.primary_site",
+  "*_ids",
+  "files.acl"
 ]
 is_cached = true
 repartition_size = 2048

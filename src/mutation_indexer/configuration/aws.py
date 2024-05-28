@@ -12,6 +12,7 @@ class S3:
     """
     Configuration values for interacting with aws S3 resources.
     """
+
     host: str
     access_key: str
     secret_key: marshmallow_extensions.SecretString
@@ -22,4 +23,5 @@ class AWS:
     """
     Configuration values for aws resources.
     """
+
     s3: S3

@@ -11,8 +11,8 @@ from mutation_indexer.configuration.builders import common
 # gene_expression module
 from mutation_indexer.configuration.builders.common import (
     Builder,
-    IndexBuilder,
     GeneModelBuilder,
+    IndexBuilder,
 )
 
 

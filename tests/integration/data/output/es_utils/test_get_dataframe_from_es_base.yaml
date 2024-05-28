@@ -1,3 +1,4 @@
+---
 string_field: &string_field
   metadata: {}
   nullable: true

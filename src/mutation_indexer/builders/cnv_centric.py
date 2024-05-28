@@ -5,15 +5,19 @@ from pyspark.sql import SQLContext
 from pyspark.sql.functions import collect_set, struct
 from typing_extensions import Self
 
-from mutation_indexer import builders
-from mutation_indexer.builders.df_builders import get_cnv_df
+from mutation_indexer.builders import (
+    base_builder,
+    consequence,
+    df_builders,
+    observation,
+)
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import app
 
 logging.basicConfig(format=app.LOG_FORMAT)
 
 
-class CNVCentricBuilder(builders.BaseBuilder):
+class CNVCentricBuilder(base_builder.BaseBuilder):
     """
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
@@ -34,8 +38,8 @@ class CNVCentricBuilder(builders.BaseBuilder):
         self,
         config: adapter.ObsoleteConfig,
         sqlContext: SQLContext,
-        consequence_builder: builders.ConsequenceBuilder,
-        observation_builder: builders.ObservationBuilder,
+        consequence_builder: consequence.ConsequenceBuilder,
+        observation_builder: observation.ObservationBuilder,
     ):
         super().__init__(config, sqlContext)
 
@@ -55,10 +59,13 @@ class CNVCentricBuilder(builders.BaseBuilder):
                 return self
 
         self.log("Select CNV data from ASCAT")
-        cnv_df = get_cnv_df(ascat_df, self.index_name)
+        cnv_df = df_builders.get_cnv_df(ascat_df, self.index_name)
 
         self.log("Build Consequence")
-        cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name,)
+        cons_df = self.consequence_builder.build_for_cnv(
+            ascat_df,
+            self.index_name,
+        )
 
         self.log("Build Occurrence")
         occurrence_df = self.build_occurrence_df(ascat_df, case_df)
@@ -99,7 +106,10 @@ class CNVCentricBuilder(builders.BaseBuilder):
 
         # 1. Observation
         self.logger.info("Aggregating Observation from ASCAT")
-        obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name,)
+        obs_df = self.observation_builder.build_for_cnv(
+            ascat_df,
+            self.index_name,
+        )
 
         # 2. Join Case to Observation and create structs
         self.logger.info("Joining Cases with Observation, [right, case_id]")

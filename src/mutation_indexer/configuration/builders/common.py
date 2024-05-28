@@ -12,7 +12,7 @@ from mutation_indexer.constants import build
 @dataclasses.dataclass(frozen=True)
 class Backup:
     """
-    Configuration values for backing up the output of a builder
+    Configuration values for backing up the output of a builder.
     """
 
     mode: build.BackupMode
@@ -22,7 +22,7 @@ class Backup:
 @dataclasses.dataclass(frozen=True)
 class Builder:
     """
-    The core configuration values for running any builder
+    The core configuration values for running any builder.
     """
 
     is_cached: bool
@@ -41,7 +41,7 @@ class ResourceBuilder(Builder):
 @dataclasses.dataclass(frozen=True)
 class IndexBuilder(Builder):
     """
-    The core configuration values for running the any builder which produces an index
+    The core configuration values for running the any builder which produces an index.
     """
 
     partition_size: int
@@ -51,7 +51,7 @@ class IndexBuilder(Builder):
 @dataclasses.dataclass(frozen=True)
 class GeneModelBuilder(Builder):
     """
-    Configuration values for running the gene model builder
+    Configuration values for running the gene model builder.
     """
 
     census_file: str

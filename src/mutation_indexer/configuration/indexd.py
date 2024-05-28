@@ -12,6 +12,7 @@ class IndexD:
     """
     Configuration values for interacting with indexd
     """
+
     host: str
     port: int
     user: str

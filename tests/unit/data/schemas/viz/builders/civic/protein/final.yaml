@@ -1,13 +1,14 @@
+---
 fields:
-- &string_field
-  metadata: {}
-  name: civic_gene_id
-  nullable: true
-  type: string
-- <<: *string_field
-  name: civic_variant_id
-- <<: *string_field
-  name: hgvsp_short
-- <<: *string_field
-  name: name
+  - &string_field
+    metadata: {}
+    name: civic_gene_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: civic_variant_id
+  - <<: *string_field
+    name: hgvsp_short
+  - <<: *string_field
+    name: name
 type: struct

@@ -1,113 +1,114 @@
+---
 fields:
-- &string_field
-  metadata: {}
-  name: ssm_id
-  nullable: true
-  type: string
-- <<: *string_field
-  name: case_id
-- <<: *string_field
-  name: occurrence_id
-- metadata: {}
-  name: observation
-  nullable: false
-  type:
-    containsNull: false
-    elementType:
-      fields:
-      - <<: *string_field
-        name: center
-      - metadata: {}
-        name: input_bam_file
-        nullable: false
-        type:
-          fields:
+  - &string_field
+    metadata: {}
+    name: ssm_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: occurrence_id
+  - metadata: {}
+    name: observation
+    nullable: false
+    type:
+      containsNull: false
+      elementType:
+        fields:
           - <<: *string_field
-            name: normal_bam_uuid
-          - <<: *string_field
-            name: tumor_bam_uuid
-          type: struct
-      - <<: *string_field
-        name: mutation_status
-      - metadata: {}
-        name: normal_genotype
-        nullable: false
-        type:
-          fields:
-          - <<: *string_field
-            name: match_norm_seq_allele1
-          - <<: *string_field
-            name: match_norm_seq_allele2
-          type: struct
-      - <<: *string_field
-        name: observation_id
-      - metadata: {}
-        name: read_depth
-        nullable: false
-        type:
-          fields:
-          - &integer_field
-            metadata: {}
-            name: n_depth
-            nullable: true
-            type: integer
-          - <<: *integer_field
-            name: t_alt_count
-          - <<: *integer_field
-            name: t_depth
-          - <<: *integer_field
-            name: t_ref_count
-          type: struct
-      - metadata: {}
-        name: sample
-        nullable: false
-        type:
-          fields:
-          - <<: *string_field
-            name: matched_norm_sample_barcode
-          - <<: *string_field
-            name: matched_norm_sample_uuid
-          - <<: *string_field
-            name: tumor_sample_barcode
-          - <<: *string_field
-            name: tumor_sample_uuid
-          type: struct
-      - metadata: {}
-        name: tumor_genotype
-        nullable: false
-        type:
-          fields:
-          - <<: *string_field
-            name: tumor_seq_allele1
-          - <<: *string_field
-            name: tumor_seq_allele2
-          type: struct
-      - metadata: {}
-        name: validation
-        nullable: false
-        type:
-          fields:
-          - <<: *string_field
-            name: tumor_validation_allele1
-          - <<: *string_field
-            name: tumor_validation_allele2
-          - <<: *string_field
-            name: validation_method
-          type: struct
-      - metadata: {}
-        name: variant_calling
-        nullable: false
-        type:
-          fields:
+            name: center
           - metadata: {}
-            name: variant_caller
+            name: input_bam_file
             nullable: false
-            type: string
+            type:
+              fields:
+                - <<: *string_field
+                  name: normal_bam_uuid
+                - <<: *string_field
+                  name: tumor_bam_uuid
+              type: struct
+          - <<: *string_field
+            name: mutation_status
           - metadata: {}
-            name: variant_process
+            name: normal_genotype
             nullable: false
-            type: string
-          type: struct
-      type: struct
-    type: array
+            type:
+              fields:
+                - <<: *string_field
+                  name: match_norm_seq_allele1
+                - <<: *string_field
+                  name: match_norm_seq_allele2
+              type: struct
+          - <<: *string_field
+            name: observation_id
+          - metadata: {}
+            name: read_depth
+            nullable: false
+            type:
+              fields:
+                - &integer_field
+                  metadata: {}
+                  name: n_depth
+                  nullable: true
+                  type: integer
+                - <<: *integer_field
+                  name: t_alt_count
+                - <<: *integer_field
+                  name: t_depth
+                - <<: *integer_field
+                  name: t_ref_count
+              type: struct
+          - metadata: {}
+            name: sample
+            nullable: false
+            type:
+              fields:
+                - <<: *string_field
+                  name: matched_norm_sample_barcode
+                - <<: *string_field
+                  name: matched_norm_sample_uuid
+                - <<: *string_field
+                  name: tumor_sample_barcode
+                - <<: *string_field
+                  name: tumor_sample_uuid
+              type: struct
+          - metadata: {}
+            name: tumor_genotype
+            nullable: false
+            type:
+              fields:
+                - <<: *string_field
+                  name: tumor_seq_allele1
+                - <<: *string_field
+                  name: tumor_seq_allele2
+              type: struct
+          - metadata: {}
+            name: validation
+            nullable: false
+            type:
+              fields:
+                - <<: *string_field
+                  name: tumor_validation_allele1
+                - <<: *string_field
+                  name: tumor_validation_allele2
+                - <<: *string_field
+                  name: validation_method
+              type: struct
+          - metadata: {}
+            name: variant_calling
+            nullable: false
+            type:
+              fields:
+                - metadata: {}
+                  name: variant_caller
+                  nullable: false
+                  type: string
+                - metadata: {}
+                  name: variant_process
+                  nullable: false
+                  type: string
+              type: struct
+        type: struct
+      type: array
 type: struct

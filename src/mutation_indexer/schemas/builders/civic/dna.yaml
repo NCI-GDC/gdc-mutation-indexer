@@ -1,3 +1,4 @@
+---
 fields:
   - &string_field
     metadata: {}
@@ -10,8 +11,7 @@ fields:
     name: source
   - <<: *string_field
     name: chromosome
-  - &long_field
-    metadata: {}
+  - metadata: {}
     name: start_position
     nullable: true
     type: long
