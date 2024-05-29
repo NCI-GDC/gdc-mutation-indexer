@@ -387,7 +387,7 @@ class PrimaryAliquotBuilder(
     def _get_primary_aliquot_df(
         self,
         filters: Iterable[dict],
-        entities: Set[str] = frozenset(("case", "file")),
+        entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
         include_fields: Union[Iterable[str], Literal[True]] = True,
     ) -> sql.DataFrame:
         """
@@ -635,7 +635,7 @@ class InclusivePrimaryAliquotBuilder(
             |---sample_id
             +---*additional_selections
         """
-        sample_include_fields = (
+        sample_include_fields: Union[Literal[True], Iterable[str]] = (
             include_fields
             if include_fields is True
             else filter(
@@ -692,7 +692,12 @@ class ResourceBuilder(
             resources.files(self._config.package).joinpath(self._config.resource)
         ) as p:
             df = self._spark_session.read.csv(
-                p.as_uri(), schema=self._schema(), header=True, sep="\t", comment="#"
+                p.as_uri(),
+                schema=self._schema(),
+                header=True,
+                sep="\t",
+                comment="#",
+                enforceSchema=True,
             )
 
         return df
