@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
 setup(
     name="gdc-mutation-indexer",
@@ -45,6 +45,9 @@ setup(
             "pytest~=7.0",
             "pytest-cov~=4.0",
         ),
-        "master": ("halo~=0.0", "pex~=2.1"),
+        "master": ("halo", "pex", "wheel"),
+    },
+    entry_points={
+        "console_scripts": ("mutation-indexer = mutation_indexer.client:main [master]",)
     },
 )

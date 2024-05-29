@@ -1,12 +1,12 @@
 from unittest import mock
 
-from mutation_indexer import builders, main
+from mutation_indexer import builders, driver
 from mutation_indexer.builders import civic
 from mutation_indexer.constants import build
 
 
 def test__get_viz_builders__all_builders() -> None:
-    viz_builders = main.get_viz_builders(
+    viz_builders = driver.get_viz_builders(
         mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
     )
     generic_builders = {b.output: b for b in viz_builders.builders}
@@ -84,7 +84,7 @@ def test__get_viz_builders__all_builders() -> None:
 def test__get_ge_builders__all_builders() -> None:
     config = mock.MagicMock()
     config.build.index_types = (build.IndexType.GENE_EXPRESSION,)
-    ge_builders = main.get_ge_builders(config, mock.MagicMock(), mock.MagicMock())
+    ge_builders = driver.get_ge_builders(config, mock.MagicMock(), mock.MagicMock())
     generic_builders = {b.output: b for b in ge_builders.builders}
 
     assert generic_builders.keys() == frozenset(
@@ -114,7 +114,7 @@ def test__get_ge_builders__all_builders() -> None:
 def test__get_ge_builders__excludes() -> None:
     config = mock.MagicMock()
     config.build.index_types = ()
-    ge_builders = main.get_ge_builders(config, mock.MagicMock(), mock.MagicMock())
+    ge_builders = driver.get_ge_builders(config, mock.MagicMock(), mock.MagicMock())
     generic_builders = frozenset(ge_builders.builders)
 
     assert build.DataFrame.GENE_EXPRESSION not in generic_builders

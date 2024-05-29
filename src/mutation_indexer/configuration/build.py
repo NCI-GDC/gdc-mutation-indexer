@@ -2,12 +2,14 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
+import pathlib
 import uuid
 from typing import Any, Sequence
 
 import marshmallow_enum
-from marshmallow import fields, validate
+from marshmallow import exceptions, fields, validate
 
 from mutation_indexer.configuration import marshmallow_extensions
 from mutation_indexer.constants import build
@@ -32,8 +34,8 @@ class IndexTypesValidator(validate.Validator):
         if (types <= _GENE_EXPRESSION_INDICES) ^ (types <= _VIZ_INDICES):
             return value
 
-        raise validate.ValidationError(
-            "Can only build indices exclusively for Gene Expresion or Viz."
+        raise exceptions.ValidationError(
+            "Can only build indices exclusively for Gene Expression or Viz."
         )
 
 
@@ -43,9 +45,19 @@ class Build:
     Configuration values for the entire build being process by mutation indexer.
     """
 
-    study_label: str
-    data_release: str
     build_version: str
+    config_file: str
+    data_release: str
+    driver: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
+    error_log: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
     index_types: Sequence[build.IndexType] = dataclasses.field(
         metadata={
             "metadata": {
@@ -54,6 +66,26 @@ class Build:
                 ),
             },
             "validate": IndexTypesValidator(),
+        }
+    )
+    jar_dir: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
+    manifest_dir: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
+    output_log: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
+    pex_file: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
         }
     )
     projects: Sequence[str] = dataclasses.field(
@@ -65,9 +97,12 @@ class Build:
             },
         }
     )
-    jar_dir: str
-    manifest_dir: str
-    config_file: str
+    spark_submit: pathlib.Path = dataclasses.field(
+        metadata={
+            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
+        }
+    )
+    study_label: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
     acl: Sequence[str] = dataclasses.field(
         metadata={

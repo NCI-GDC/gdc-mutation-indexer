@@ -6,8 +6,10 @@ secret_key = ""
 [build]
 acl = []
 build_version = "v0"
-config_file = "./.configs/test-config.toml"
+config_file = ""
 data_release = "test"
+driver = ""
+error_log = "$HOME/mutation-indexer-error.log"
 index_types = [
   "CASE_CENTRIC",
   "CNV_CENTRIC",
@@ -17,8 +19,11 @@ index_types = [
   "SSM_OCCURRENCE_CENTRIC"
 ]
 jar_dir = "artifacts/jars"
-manifest_dir = "./.manifests"
+manifest_dir = "$HOME/manifests"
+output_log = "$HOME/mutation-indexer.log"
+pex_file = "./mutation-indexer.pex"
 projects = []
+spark_submit = "$SPARK_HOME/bin/spark-submit"
 study_label = ""
 
 [builders]
@@ -44,8 +49,8 @@ partition_size = 12
 
 [builders.gene_expression.gene_expression.backup]
 mode = "WRITE"
-path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
 partition_by = "gene_id"
+path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
@@ -81,10 +86,10 @@ path = ""
 
 [builders.viz.case]
 include_as_arrays = [
-  "project.disease_type",
-  "project.primary_site",
   "*_ids",
-  "files.acl"
+  "files.acl",
+  "project.disease_type",
+  "project.primary_site"
 ]
 is_cached = true
 repartition_size = 2048
@@ -264,11 +269,7 @@ partitions = 200
 deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
-pex_python = "python3.9"
-pex_root = "/mnt/tmp/.pex"
 tmpdir = "/mnt/tmp"
 
 [spark.yarn.executor_env]
-pex_python = "python3.9"
-pex_root = "/mnt/tmp/.pex"
 tmpdir = "/mnt/tmp"
