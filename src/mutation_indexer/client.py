@@ -5,6 +5,7 @@ import datetime
 import itertools
 import logging
 import os
+import pathlib
 import tempfile
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, cast
@@ -120,14 +121,16 @@ def get_config(
     config = None
 
     try:
-        with tempfile.NamedTemporaryFile(mode="w+") as tmp_file:
-            config_data = load_config_data(user_config_file, tmp_file.name)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = pathlib.Path(tmp_dir) / "configuration.toml"
+            config_data = load_config_data(user_config_file, config_file.as_posix())
             config = cast(
                 configuration.Configuration,
                 configuration.CONFIG_SCHEMA.load(config_data),
             )
 
-            toml.dump(config_data, tmp_file)
+            with open(config_file, "w+") as f:
+                toml.dump(config_data, f)
 
             yield config
 
