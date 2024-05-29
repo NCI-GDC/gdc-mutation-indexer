@@ -77,6 +77,9 @@ class SecretStringField(fields.String):
         return super()._serialize(value, attr, obj, **kwargs)
 
 
+Path = marshmallow_dataclass.NewType("Path", typ=pathlib.Path, field=ResolvedPath)
+
+
 SecretString = marshmallow_dataclass.NewType(
     "SecretString", typ=str, field=SecretStringField
 )

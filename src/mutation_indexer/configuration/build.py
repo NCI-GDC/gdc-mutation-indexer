@@ -48,16 +48,8 @@ class Build:
     build_version: str
     config_file: str
     data_release: str
-    driver: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
-    error_log: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
+    driver: marshmallow_extensions.Path
+    error_log: marshmallow_extensions.Path
     index_types: Sequence[build.IndexType] = dataclasses.field(
         metadata={
             "metadata": {
@@ -68,26 +60,10 @@ class Build:
             "validate": IndexTypesValidator(),
         }
     )
-    jar_dir: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
-    manifest_dir: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
-    output_log: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
-    pex_file: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
+    jar_dir: marshmallow_extensions.Path
+    manifest_dir: marshmallow_extensions.Path
+    output_log: marshmallow_extensions.Path
+    pex_file: marshmallow_extensions.Path
     projects: Sequence[str] = dataclasses.field(
         metadata={
             "metadata": {
@@ -97,11 +73,7 @@ class Build:
             },
         }
     )
-    spark_submit: pathlib.Path = dataclasses.field(
-        metadata={
-            "metadata": {"marshmallow_field": marshmallow_extensions.ResolvedPath()}
-        }
-    )
+    spark_submit: marshmallow_extensions.Path
     study_label: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
     acl: Sequence[str] = dataclasses.field(
