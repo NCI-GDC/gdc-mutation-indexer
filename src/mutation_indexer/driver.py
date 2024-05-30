@@ -53,6 +53,9 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.AsyncElasticsea
         use_ssl=config.use_ssl,
         verify_certs=config.verify_certs,
         http_auth=(config.user, config.password),
+        sniff_on_start=True,
+        sniff_on_connection_fail=True,
+        sniffer_timeout=60,
     )
 
 
