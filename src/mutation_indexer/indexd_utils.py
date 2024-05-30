@@ -63,7 +63,7 @@ class IndexClient(AsyncContextManager):
         self._context = contextlib.AsyncExitStack()
         self._throttle = asyncio.Semaphore(2)
         self._host = yarl.URL.build(
-            scheme=self._config.scheme, host=self._config.host, port=self._config.port
+            scheme="http", host="indexd_pgread.service.consul", port=80
         )
 
     async def __aenter__(self) -> Self:
