@@ -65,30 +65,38 @@ class TestIndexTypesValidator:
 class TestBuild:
     def test__is_viz_build__true_if_no_gene_expression(self) -> None:
         viz_build = configuration.build.Build(
-            study_label="",
-            data_release="",
             build_version="",
+            config_file="",
+            data_release="",
+            driver="",
+            error_log="",
             index_types=(build.IndexType.GENE_CENTRIC,),
-            projects=(),
             jar_dir="",
             manifest_dir="",
-            config_file="",
-            build_id=uuid.uuid4(),
+            output_log="",
+            spark_submit="",
+            study_label="",
+            pex_file="",
+            projects=(),
         )
 
         assert viz_build.is_viz_build()
 
     def test__is_viz_build__false_if_gene_expression(self) -> None:
         ge_build = configuration.build.Build(
-            study_label="",
-            data_release="",
             build_version="",
+            config_file="",
+            data_release="",
+            driver="",
+            error_log="",
             index_types=(build.IndexType.GENE_EXPRESSION,),
-            projects=(),
             jar_dir="",
             manifest_dir="",
-            config_file="",
-            build_id=uuid.uuid4(),
+            output_log="",
+            spark_submit="",
+            study_label="",
+            pex_file="",
+            projects=(),
         )
 
         assert not ge_build.is_viz_build()
