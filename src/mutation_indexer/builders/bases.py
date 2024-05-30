@@ -1,8 +1,9 @@
 import abc
+import asyncio
 import copy
 import functools
 import logging
-from collections.abc import Iterable, Iterator, Mapping, Set
+from collections.abc import Awaitable, Iterable, Iterator, Mapping, Set
 from importlib import resources
 from typing import (
     Generic,
@@ -22,7 +23,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypeGuard
 
-from mutation_indexer import es_utils, pyspark_extensions, schemas
+from mutation_indexer import aioutils, es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
 
@@ -72,7 +73,7 @@ class Builder(Protocol):
         """The required data frames to build this builder's output."""
         pass
 
-    def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:  # type: ignore
+    def build(self, **inputs: sql.DataFrame) -> Awaitable[sql.DataFrame]:  # type: ignore
         """
         From the given inputs builds the defined output data frame.
 
@@ -144,7 +145,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         return self._input_manager.required_dataframes
 
     @abc.abstractmethod
-    def _build_from_scratch(self, input_dfs: TInputDFs) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: TInputDFs) -> Awaitable[sql.DataFrame]:
         """
         The functionality to build a new data frame from the required inputs.
 
@@ -156,6 +157,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         """
         pass
 
+    @aioutils.to_thread
     def _safe_read(self) -> sql.DataFrame:
         """
         Safely reads a backed up parquet file into a data frame. If the file does not
@@ -164,11 +166,10 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         Returns:
             A data frame with data from the file at the configured backup path
         """
-        logger.info(f"Reading: {self.output.name}")
 
         return self._spark_session.read.parquet(self._config.backup.path)
 
-    def _read(self) -> Optional[sql.DataFrame]:
+    async def _read(self) -> Optional[sql.DataFrame]:
         """
         Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
@@ -177,11 +178,13 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
             An optional data frame based on the configured backup mode.
         """
         if self._config.backup.mode == build.BackupMode.READ:
-            return self._safe_read()
+            logger.info(f"Reading: {self.output.name}")
+
+            return await self._safe_read()
 
         return None
 
-    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+    async def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Writes the data frame to any configured or required data store. I.e. memory,
         disk, or elasticsearch. If the df is written to disk and the backup mode is
@@ -193,27 +196,28 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         """
         if self._config.backup.mode.is_write():
             logger.info(f"Writing: {self.output.name}")
-            self._write_backup(df)
+            df.write.parquet(self._config.backup.path, mode="overwrite")
 
         if self._config.backup.mode == build.BackupMode.BOTH:
-            return self._safe_read()
+            df = await self._safe_read()
 
         return df.cache() if self._config.is_cached else df
 
-    def _write_backup(self, df: sql.DataFrame) -> None:
-        df.write.parquet(self._config.backup.path, mode="overwrite")
-
-    def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
+    async def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
         assert self._input_manager.check(inputs), "Missing required inputs."
 
-        df = self._read()
+        df = await self._read()
 
         if not df:
             logger.info(f"Building: {self.output.name}")
 
-            df = self._build_from_scratch(inputs)
+            df = await self._build_from_scratch(inputs)
 
-        return self._write(df)
+        df = await self._write(df)
+
+        logger.info(f"Completed: {self.output.name}")
+
+        return df
 
 
 def _sample_weight_col() -> sql.Column:
@@ -273,6 +277,8 @@ class PrimaryAliquotBuilder(
 ):
     __slots__ = ("_es_dataframe_util", "_additional_selections")
 
+    CASE_ONLY = frozenset(("case",))
+
     def __init__(
         self,
         config: TConfig,
@@ -319,7 +325,7 @@ class PrimaryAliquotBuilder(
         self,
         query: dict,
         include_fields: Union[Iterable[str], Literal[True]],
-    ) -> sql.DataFrame:
+    ) -> Awaitable[sql.DataFrame]:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
         criteria in the query and includes the fields given in include_fields.
@@ -343,14 +349,15 @@ class PrimaryAliquotBuilder(
             query=query,
         )
 
-    def _get_weighted_df(
+    async def _get_weighted_df(
         self,
         query: dict,
         include_fields: Union[Iterable[str], Literal[True]],
     ) -> sql.DataFrame:
+        df = await self._get_initial_weighted_df(query, include_fields)
+
         return (
-            self._get_initial_weighted_df(query, include_fields)
-            .select(
+            df.select(
                 "file_id",
                 F.col("created_datetime").cast("timestamp"),
                 pyspark_extensions.explode_nested_doc("cases").alias("case"),
@@ -384,7 +391,7 @@ class PrimaryAliquotBuilder(
             )
         )
 
-    def _get_primary_aliquot_df(
+    async def _get_primary_aliquot_df(
         self,
         filters: Iterable[dict],
         entities: Set[str] = frozenset(("case", "file")),
@@ -411,7 +418,7 @@ class PrimaryAliquotBuilder(
         """
         query = {"query": {"bool": {"must": filters}}}
         include_fields = _add_required_include_fields(include_fields)
-        weighted_df = self._get_weighted_df(query, include_fields)
+        weighted_df = await self._get_weighted_df(query, include_fields)
         weighted_file_df = None
         weighted_case_df = None
 
@@ -526,7 +533,7 @@ class InclusivePrimaryAliquotBuilder(
 
         self._es_rdd_util = es_rdd_util
 
-    def _get_aliquot_level_df(self, filters: Iterable[dict]) -> sql.DataFrame:
+    async def _get_aliquot_level_df(self, filters: Iterable[dict]) -> sql.DataFrame:
         """
         Loads the aliquot data from elasticsearch.
 
@@ -585,12 +592,11 @@ class InclusivePrimaryAliquotBuilder(
 
             query["query"]["bool"]["must"].append(project_clause)
 
+        rdd = await self._es_rdd_util.get_rdd(
+            build.IndexType.FILE, include_fields=included_fields, query=query
+        )
         aliquot_df = _expand_aliquots(
-            self._es_rdd_util.get_rdd(
-                build.IndexType.FILE, include_fields=included_fields, query=query
-            )
-            .toDF(aliquot_data_schema)
-            .select("_source.*")
+            rdd.toDF(aliquot_data_schema).select("_source.*")
         ).select(
             "file_id",
             "case_id",
@@ -603,10 +609,10 @@ class InclusivePrimaryAliquotBuilder(
 
         return aliquot_df
 
-    def _get_primary_aliquot_df(
+    async def _get_primary_aliquot_df(
         self,
         filters: Iterable[dict],
-        entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
+        entities: Set[str] = frozenset(("case", "file")),
         include_fields: Union[Iterable[str], Literal[True]] = True,
     ) -> sql.DataFrame:
         """
@@ -635,7 +641,7 @@ class InclusivePrimaryAliquotBuilder(
             |---sample_id
             +---*additional_selections
         """
-        sample_include_fields = (
+        sample_include_fields: Union[Literal[True], Iterable[str]] = (
             include_fields
             if include_fields is True
             else filter(
@@ -643,11 +649,10 @@ class InclusivePrimaryAliquotBuilder(
                 include_fields,
             )
         )
-        primary_aliquot_df = super()._get_primary_aliquot_df(
-            filters, entities, sample_include_fields
+        primary_aliquot_df, aliquot_df = await asyncio.gather(
+            super()._get_primary_aliquot_df(filters, entities, sample_include_fields),
+            self._get_aliquot_level_df(filters),
         )
-
-        aliquot_df = self._get_aliquot_level_df(filters)
         primary_aliquot_df = primary_aliquot_df.join(
             aliquot_df, on=["file_id", "case_id", "sample_id"], how="left"
         )
@@ -687,6 +692,7 @@ class ResourceBuilder(
     def _schema(self) -> types.StructType:
         return schemas.load_schema(self._config.schema)
 
+    @aioutils.to_thread
     def _load_resource_data(self) -> sql.DataFrame:
         with resources.as_file(
             resources.files(self._config.package).joinpath(self._config.resource)
@@ -799,12 +805,12 @@ class IndexBuilder(
 
         return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
 
-    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+    async def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         df = self._cast_booleans(df)
-        df = super()._write(df)
+        df = await super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 
         logger.info(f"Writing to ES: {self.output.name}")
-        self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+        await self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
         return df

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import cast
 
@@ -119,7 +120,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
         return df.drop("_civic_gene_id", "_civic_variant_id")
 
-    def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
+    async def _build_from_scratch(self, input_dfs: MAFInputs) -> sql.DataFrame:
         """
         Builds a master MAF dataframe by combining individual MAFs and augmenting them
         with additional features
@@ -139,7 +140,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         gene_model_df = input_dfs["gene_model_df"]
         maf_metadata_df = input_dfs["maf_metadata_df"]
 
-        df = self._build_document_dataframe(maf_metadata_df)
+        df = await self._build_document_dataframe(maf_metadata_df)
 
         df = self.add_available_variation_data(df)
         # Add label identifying the mutation
@@ -405,7 +406,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         )
         return df
 
-    def _build_document_dataframe(
+    async def _build_document_dataframe(
         self, maf_metadata_df: sql.DataFrame
     ) -> sql.DataFrame:
         """
@@ -428,12 +429,15 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         masked_somatic_mutaion = files.get("Masked Somatic Mutation", ())
         aggregated_somatic_mutation = files.get("Aggregated Somatic Mutation", ())
 
-        masked_somatic_mutation_df = self._doc_dataframe_util.get_dataframe(
-            masked_somatic_mutaion,
-            schema=schemas.load_schema("builders/maf/masked_somatic_mutation.yaml"),
-            comment="#",
-        )
-        aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
+        (
+            masked_somatic_mutation_df,
+            aggregated_somatic_mutation_df,
+        ) = await asyncio.gather(
+            self._doc_dataframe_util.get_dataframe(
+                masked_somatic_mutaion,
+                schema=schemas.load_schema("builders/maf/masked_somatic_mutation.yaml"),
+                comment="#",
+            ),
             self._doc_dataframe_util.get_dataframe(
                 aggregated_somatic_mutation,
                 schema=schemas.load_schema(
@@ -441,6 +445,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
                 ),
                 comment="#",
             ),
+        )
+        aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
+            aggregated_somatic_mutation_df,
             (
                 pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),
                 pyspark_extensions.DefaultColumn(name="tumor_bam_uuid"),

@@ -23,8 +23,8 @@ class DNABuilder(bases.ResourceBuilder[viz.ResourceBuilder, DNAInputs]):
             output=build.DataFrame.CIVIC_DNA,
         )
 
-    def _build_from_scratch(self, input_dfs: DNAInputs) -> sql.DataFrame:
-        df = self._load_resource_data()
+    async def _build_from_scratch(self, input_dfs: DNAInputs) -> sql.DataFrame:
+        df = await self._load_resource_data()
 
         return df.select(
             "chromosome",
@@ -51,8 +51,8 @@ class ProteinBuilder(bases.ResourceBuilder[viz.ResourceBuilder, ProteinInputs]):
             output=build.DataFrame.CIVIC_PROTEIN,
         )
 
-    def _build_from_scratch(self, input_dfs: ProteinInputs) -> sql.DataFrame:
-        df = self._load_resource_data()
+    async def _build_from_scratch(self, input_dfs: ProteinInputs) -> sql.DataFrame:
+        df = await self._load_resource_data()
 
         return df.select(
             "civic_gene_id",

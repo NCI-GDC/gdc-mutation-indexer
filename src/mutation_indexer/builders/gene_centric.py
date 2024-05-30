@@ -4,6 +4,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
+from mutation_indexer import aioutils
 from mutation_indexer.builders import (
     base_builder,
     consequence,
@@ -41,26 +42,23 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        spark_session: sql.SparkSession,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
-    ):
-        super().__init__(config, sqlContext)
+    ) -> None:
+        super().__init__(config, spark_session)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(
-        self,
-        maf_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
-        case_df: sql.DataFrame,
-        primary_aliquot_df: sql.DataFrame,
-        **kwargs: sql.DataFrame,
-    ) -> Self:
+    @aioutils.to_thread
+    def _build(self, **kwargs: sql.DataFrame) -> Self:
         """
         Builds Gene Centric index
         """
+        maf_df, ascat_df, case_df, primary_aliquot_df = (
+            kwargs[k] for k in ("maf_df", "ascat_df", "case_df", "primary_aliquot_df")
+        )
         self.log("Building GeneCentric")
         # Check if we should load a pre-built dataframe
         if self.config.output_raw == "read":

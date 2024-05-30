@@ -15,17 +15,15 @@ async-timeout==4.0.3
 attrs==23.2.0
     # via aiohttp
 certifi==2024.2.2
-    # via
-    #   elasticsearch
-    #   requests
-charset-normalizer==3.3.2
-    # via requests
+    # via elasticsearch
 deepdiff==6.7.1
     # via gdcmodels
 elasticsearch==7.17.9
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
+exceptiongroup==1.2.1
+    # via gdc-mutation-indexer (setup.py)
 frozenlist==1.4.1
     # via
     #   aiohttp
@@ -33,24 +31,16 @@ frozenlist==1.4.1
 gdcmodels==5.1.1
     # via gdc-mutation-indexer (setup.py)
 idna==3.7
-    # via
-    #   requests
-    #   yarl
-importlib-resources==3.3.1
-    # via gdc-mutation-indexer (setup.py)
-indexclient==2.4.0
+    # via yarl
+importlib-resources==6.4.0
     # via gdc-mutation-indexer (setup.py)
 marshmallow==3.21.2
-    # via
-    #   marshmallow-dataclass
-    #   marshmallow-enum
+    # via marshmallow-dataclass
 marshmallow-dataclass==8.6.1
-    # via gdc-mutation-indexer (setup.py)
-marshmallow-enum==1.5.1
     # via gdc-mutation-indexer (setup.py)
 mergedeep==1.3.4
     # via gdcmodels
-more-itertools==8.14.0
+more-itertools==10.2.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
@@ -74,11 +64,9 @@ python-json-logger==2.0.7
     # via gdc-mutation-indexer (setup.py)
 pyyaml==6.0.1
     # via gdcmodels
-requests==2.32.2
-    # via indexclient
 toml==0.10.2
     # via gdc-mutation-indexer (setup.py)
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
@@ -87,11 +75,11 @@ typing-extensions==4.11.0
 typing-inspect==0.9.0
     # via marshmallow-dataclass
 urllib3==1.26.18
-    # via
-    #   elasticsearch
-    #   requests
+    # via elasticsearch
 yarl==1.9.4
     # via aiohttp
+zipp==3.19.0
+    # via importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

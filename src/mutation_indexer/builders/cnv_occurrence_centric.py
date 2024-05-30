@@ -4,6 +4,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from typing_extensions import Self
 
+from mutation_indexer import aioutils
 from mutation_indexer.builders import (
     base_builder,
     consequence,
@@ -37,21 +38,22 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        spark_session: sql.SparkSession,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
-    ):
-        super().__init__(config, sqlContext)
+    ) -> None:
+        super().__init__(config, spark_session)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
 
-    def build(
-        self, ascat_df: sql.DataFrame, case_df: sql.DataFrame, **kwargs: sql.DataFrame
-    ) -> Self:
+    @aioutils.to_thread
+    def _build(self, **kwargs: sql.DataFrame) -> Self:
         """
         Builds CNV Occurrence Centric index
         """
+        ascat_df, case_df = (kwargs[k] for k in ("ascat_df", "case_df"))
+
         # Check if we should load a pre-built dataframe
         if self.config.output_raw == "read":
             self.cnv_occurrence_centric = self.load_raw()

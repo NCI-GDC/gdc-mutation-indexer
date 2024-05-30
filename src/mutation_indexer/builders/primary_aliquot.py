@@ -43,7 +43,9 @@ class PrimaryAliquotBuilder(
         )
         self._es_rdd_util = es_rdd_util
 
-    def _build_from_scratch(self, input_dfs: PrimaryAliquotInputs) -> sql.DataFrame:
+    async def _build_from_scratch(
+        self, input_dfs: PrimaryAliquotInputs
+    ) -> sql.DataFrame:
         """
         Gets the file data associated with the best match sample for every
         case in the current processes configured project(s)
@@ -74,10 +76,11 @@ class PrimaryAliquotBuilder(
             else [{"match_all": {}}]
         )
         include_fields = ("experimental_strategy",)
-
-        return self._get_primary_aliquot_df(
+        primary_aliquot_df = await self._get_primary_aliquot_df(
             filters, entities=frozenset(("case", "file")), include_fields=include_fields
-        ).select(
+        )
+
+        return primary_aliquot_df.select(
             "aliquot_id",
             "case_id",
             "entity",

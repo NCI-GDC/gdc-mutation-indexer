@@ -1,8 +1,11 @@
+import asyncio
+
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import TypedDict
 
+from mutation_indexer import aioutils
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
@@ -48,11 +51,11 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
             output=build.DataFrame.GENE_MODEL,
         )
 
-    def _build_from_scratch(self, input_dfs: GeneModelInputs) -> sql.DataFrame:
+    async def _build_from_scratch(self, input_dfs: GeneModelInputs) -> sql.DataFrame:
         """
         Builds Gene Model dataframe
         """
-        gene_df, cytobands_df, census_df = self.read_gene_model_files()
+        gene_df, cytobands_df, census_df = await self.read_gene_model_files()
 
         # Join gene model with cytobands data:
         gene_df = gene_df.join(
@@ -85,13 +88,23 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
 
         return gene_df
 
-    def read_gene_model_files(self):
+    @aioutils.to_thread
+    def _load_csv(self, path: str) -> sql.DataFrame:
+        return self._spark_session.read.csv(path, sep="\t", header=True)
+
+    @aioutils.to_thread
+    def _load_json(self, path: str) -> sql.DataFrame:
+        return self._spark_session.read.json(path)
+
+    async def read_gene_model_files(self):
         """
         Reads the gene model, cytobands and census files into Spark
         dataframes
         """
-        cytobands_df = self._spark_session.read.csv(
-            self._config.citobands_file, sep="\t", header=True
+        cytobands_df, census_df, gene_model_df = await asyncio.gather(
+            self._load_csv(self._config.citobands_file),
+            self._load_csv(self._config.census_file),
+            self._load_json(self._config.gene_model_file),
         )
 
         # Turn the cytoband column into an array of cytobands
@@ -102,13 +115,6 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
                 F.array("cytoband"),
             ).otherwise(F.split("cytoband", ",")),
         )
-
-        census_df = self._spark_session.read.csv(
-            self._config.census_file, sep="\t", header=True
-        )
-
-        gene_model_df = self._spark_session.read.json(self._config.gene_model_file)
-
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(
             F.col("external_db_ids.*"), *gene_model_df.drop("external_db_ids").columns
