@@ -68,7 +68,12 @@ marshmallow==3.21.2
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
+    #   marshmallow-enum
 marshmallow-dataclass==8.6.1
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
+marshmallow-enum==1.5.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)

@@ -35,8 +35,12 @@ idna==3.7
 importlib-resources==6.4.0
     # via gdc-mutation-indexer (setup.py)
 marshmallow==3.21.2
-    # via marshmallow-dataclass
+    # via
+    #   marshmallow-dataclass
+    #   marshmallow-enum
 marshmallow-dataclass==8.6.1
+    # via gdc-mutation-indexer (setup.py)
+marshmallow-enum==1.5.1
     # via gdc-mutation-indexer (setup.py)
 mergedeep==1.3.4
     # via gdcmodels
