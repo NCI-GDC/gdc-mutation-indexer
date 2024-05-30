@@ -1,12 +1,13 @@
 import abc
+import asyncio
 import copy
 import logging
-from collections.abc import Awaitable, Iterable
-from typing import ClassVar
+from collections.abc import Awaitable, Callable, Iterable
+from typing import ClassVar, TypeVar
 
 from pyspark import sql
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
-from typing_extensions import Self
+from typing_extensions import ParamSpec, Self
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases, utils
@@ -70,6 +71,21 @@ def cast_booleans(df, mapping):
     return df.select(*select_expr)
 
 
+ES_LOCK = asyncio.Lock()
+TReturn = TypeVar("TReturn")
+TParams = ParamSpec("TParams")
+
+
+def _es_lock(
+    func: Callable[TParams, Awaitable[TReturn]]
+) -> Callable[TParams, Awaitable[TReturn]]:
+    async def wrapper(*args: TParams.args, **kwargs: TParams.kwargs) -> TReturn:
+        async with ES_LOCK:
+            return await func(*args, **kwargs)
+
+    return wrapper
+
+
 class BaseBuilder(abc.ABC):
     """
     BaseBuilder contains the structure necessary for a Builder object.
@@ -100,6 +116,7 @@ class BaseBuilder(abc.ABC):
         """
         pass
 
+    @_es_lock
     async def load(self) -> sql.DataFrame:
         """
         Responsible for loading the dataframe resulting from :func:`build`
