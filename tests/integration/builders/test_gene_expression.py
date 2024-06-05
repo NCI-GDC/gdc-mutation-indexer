@@ -188,7 +188,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == build.BackupMode.WRITE
     )
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "./data_release/test/v0/gene_expressions_test_v0.parquet"
+        "/test/v0/gene_expressions_test_v0.parquet"
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.partition_by
