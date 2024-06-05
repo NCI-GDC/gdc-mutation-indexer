@@ -25,10 +25,6 @@ def ge_config() -> Iterator[configuration.Configuration]:
 
         def pre_load(data: dict) -> dict:
             data["build"]["index_types"] = ["GENE_EXPRESSION"]
-
-            backup = data["builders"]["gene_expression"]["gene_expression"]["backup"]
-            backup["path"] = tmpdir + "/" + backup["path"]
-
             return data
 
         yield test_setup.load_configuration(pre_load)
@@ -187,8 +183,9 @@ def test_gene_expression_builder_writes_backup_to_path(
         ge_config.builders.gene_expression.gene_expression.backup.mode
         == build.BackupMode.WRITE
     )
-    assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "/test/v0/gene_expressions_test_v0.parquet"
+    assert (
+        ge_config.builders.gene_expression.gene_expression.backup.path
+        == "s3a://gene-expression-data/test/v0/gene_expressions_test_v0.parquet"
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.partition_by
