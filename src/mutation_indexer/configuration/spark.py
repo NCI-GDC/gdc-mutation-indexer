@@ -5,6 +5,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 For further docuentation on spark configuration please refer to:
 https://spark.apache.org/docs/2.4.5/configuration.html
 """
+
 import dataclasses
 from typing import Any, Iterable, Tuple
 
@@ -86,8 +87,6 @@ class Submit(ConfigArgumentMixin):
 
 @dataclasses.dataclass(frozen=True)
 class Env(ConfigArgumentMixin):
-    pex_python: str
-    pex_root: str
     tmpdir: str
 
     def _format_field(self, field: str) -> str:

@@ -5,10 +5,10 @@ import datetime
 import itertools
 import logging
 import os
+import pathlib
 import tempfile
-import uuid
-from os import path
-from typing import Any, Iterable, Iterator, Mapping, Optional, Tuple
+from collections.abc import Iterable, Iterator, Mapping
+from typing import Any, cast
 
 import elasticsearch
 import halo
@@ -18,9 +18,7 @@ import toml
 
 import mutation_indexer
 from mutation_indexer import configuration
-from mutation_indexer.configuration import environment
-
-ROOT_DIR = path.dirname(__file__)
+from mutation_indexer.configuration import build, environment
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -83,18 +81,6 @@ def load_config_data(
     return default_config
 
 
-def get_manifest_file(manifest_dir: str, build_id: uuid.UUID) -> str:
-    """
-    Returns:
-        the path to the manifest file into which the build's configuration will be
-        recorded.
-    """
-    return path.join(
-        manifest_dir,
-        f"{datetime.datetime.now().isoformat()}-{build_id}.toml",
-    )
-
-
 def write_manifest(config: configuration.Configuration) -> None:
     """
     Writes the configuration data into the manifest with all secret values obfuscated.
@@ -103,10 +89,13 @@ def write_manifest(config: configuration.Configuration) -> None:
         config: the configuration with which the build was run.
     """
     build = config.build
-    file_name = get_manifest_file(build.manifest_dir, build.build_id)
+    file_name = (
+        build.manifest_dir
+        / f"{datetime.datetime.now().isoformat()}-{build.build_id}.toml"
+    )
     data: dict = configuration.OBFUSCATED_CONFIG_SCHEMA.dump(config)  # type: ignore
 
-    os.makedirs(build.manifest_dir, exist_ok=True)
+    build.manifest_dir.mkdir(parents=True, exist_ok=True)
 
     with open(file_name, "w+") as f:
         toml.dump(data, f)
@@ -133,9 +122,12 @@ def get_config(
 
     try:
         with tempfile.TemporaryDirectory() as temp_directory:
-            config_file = path.join(temp_directory, "configuration.toml")
-            config_data = load_config_data(user_config_file, config_file)
-            config: Any = configuration.CONFIG_SCHEMA.load(config_data)  # type: ignore
+            config_file = pathlib.Path(temp_directory) / "configuration.toml"
+            config_data = load_config_data(user_config_file, config_file.as_posix())
+            config = cast(
+                configuration.Configuration,
+                configuration.CONFIG_SCHEMA.load(config_data),
+            )
 
             with open(config_file, "w+") as f:
                 toml.dump(config_data, f)
@@ -147,18 +139,17 @@ def get_config(
             write_manifest(config)
 
 
-def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, str]]:
+def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     """
     Sets the spark-submit config values as well as jars params.
 
     Yields:
         a tuple of argument flag and value.
     """
-    build = config.build
     files = ",".join(
         (
-            f"{config.build.config_file}#configuration.toml",
-            path.join(ROOT_DIR, "mutation-indexer.pex#mutation-indexer.pex"),
+            f"{config.config_file}#configuration.toml",
+            f"{config.pex_file}#mutation-indexer.pex",
         )
     )
 
@@ -168,7 +159,7 @@ def get_file_args(config: configuration.Configuration) -> Iterable[Tuple[str, st
     )
     yield (
         "--jars",
-        ",".join(path.join(build.jar_dir, jar) for jar in os.listdir(build.jar_dir)),
+        ",".join(map(str, config.jar_dir.glob("**/*.jar"))),
     )
 
 
@@ -181,30 +172,23 @@ async def run_spark_command(config: configuration.Configuration) -> None:
         config: the configuration for the build.
     """
     config_arguments = config.spark.get_arguments()
-    file_arguments = get_file_args(config)
+    file_arguments = get_file_args(config.build)
     arguments = more_itertools.flatten(
         itertools.chain(config_arguments, file_arguments)
     )
-    spark_home = os.getenv("SPARK_HOME", "")
-    spark_command = path.join(spark_home, "bin/spark-submit")
     final_command = " ".join(
         more_itertools.value_chain(
-            "sudo -E -u ubuntu",
-            spark_command,
+            str(config.build.spark_submit),
             arguments,
-            path.join(ROOT_DIR, "bin/export.py"),
+            str(config.build.driver),
         )
     )
-    home_dir = os.environ.get("HOME", "")
 
-    output_file = path.join(tempfile.gettempdir() or home_dir, "mutation-indexer.log")
-    error_file = path.join(
-        tempfile.gettempdir() or home_dir, "mutation-indexer-error.log"
-    )
-
-    with open(output_file, "wb+") as out_f, open(error_file, "wb+") as error_f:
+    with open(config.build.output_log, "wb+") as out_file, open(
+        config.build.error_log, "wb+"
+    ) as error_file:
         process = await asyncio.create_subprocess_shell(
-            final_command, stdout=out_f, stderr=error_f
+            final_command, stdout=out_file, stderr=error_file
         )
 
         await process.wait()
@@ -226,21 +210,13 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             config.elasticsearch.connection.password,
         ),
     ) as es_client:
-        indices = frozenset(
-            [
-                index
-                for index in config.elasticsearch.write.indices.values()
-                if await es_client.indices.exists(index=index)
-            ]
-        )
-        missing_indices = config.elasticsearch.write.indices.keys() - indices
-
-        if missing_indices:
-            logger.warning(f"Build failed to build indices: {missing_indices}.")
+        indices = [
+            config.elasticsearch.write.indices[i] for i in config.build.index_types
+        ]
 
         try:
             await es_client.indices.forcemerge(
-                index=",".join(indices), max_num_segments=1
+                index=indices, max_num_segments=1, ignore_unavailable=True
             )
         except Exception as ex:
             logger.warning(f"Error occurred while merging: {ex}.")
@@ -258,7 +234,7 @@ def set_environment_variables(env: environment.Environment) -> None:
     os.environ["YARN_CONF_DIR"] = env.yarn_conf_dir
 
 
-async def main() -> None:
+async def _main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args()
 
@@ -279,9 +255,12 @@ async def main() -> None:
                 spinner.succeed("Indices built")
 
 
-if __name__ == "__main__":
+def main() -> None:
     try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(main())
+        asyncio.run(_main())
     except:
-        logger.critical("Appliction failed.", exc_info=True)
+        logger.critical("Application failed.", exc_info=True)
+
+
+if __name__ == "__main__":
+    main()

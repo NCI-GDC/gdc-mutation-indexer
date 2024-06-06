@@ -97,12 +97,8 @@ class TestSpark:
             sql=None,
             submit=None,
             yarn=spark.Yarn(
-                app_master_env=spark.Env(
-                    pex_python="python3", pex_root="pex", tmpdir="/tmp"
-                ),
-                executor_env=spark.Env(
-                    pex_python="python3.X", pex_root=".pex", tmpdir="/mnt/tmp"
-                ),
+                app_master_env=spark.Env(tmpdir="/tmp"),
+                executor_env=spark.Env(tmpdir="/mnt/tmp"),
             ),
         )
 
@@ -116,14 +112,10 @@ class TestSpark:
                 ("--conf", "spark.yarn.executorEnv.TMPDIR=/mnt/tmp"),
                 ("--conf", "spark.yarn.appMasterEnv.TMPDIR=/tmp"),
                 ("--conf", "spark.submit=None"),
-                ("--conf", "spark.yarn.executorEnv.PEX_ROOT=.pex"),
-                ("--conf", "spark.yarn.appMasterEnv.PEX_PYTHON=python3"),
                 ("--conf", "spark.executor=None"),
                 ("--conf", "spark.sql=None"),
                 ("--conf", "spark.pyspark=None"),
-                ("--conf", "spark.yarn.executorEnv.PEX_PYTHON=python3.X"),
                 ("--conf", "spark.app=None"),
                 ("--conf", "spark.master=name"),
-                ("--conf", "spark.yarn.appMasterEnv.PEX_ROOT=pex"),
             )
         )
