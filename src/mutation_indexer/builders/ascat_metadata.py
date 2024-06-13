@@ -51,8 +51,8 @@ class ASCATMetadataBuilder(
         file_weights = (
             workflow_type == F.lit(ABSOLUTE),
             workflow_type == F.lit(ASCAT3),
-            workflow_type == F.lit(ASCAT2),
             workflow_type == F.lit(ASCAT_NGS),
+            workflow_type == F.lit(ASCAT2),
         )
 
         # apply file weights as a higher order weight to the defaults.
@@ -105,20 +105,20 @@ class ASCATMetadataBuilder(
                         {
                             "bool": {
                                 "must": [
-                                    {
-                                        "term": {
-                                            "experimental_strategy": "Genotyping Array"
-                                        }
-                                    },
-                                    {"term": {"analysis.workflow_type": ASCAT2}},
+                                    {"term": {"experimental_strategy": "WGS"}},
+                                    {"term": {"analysis.workflow_type": ASCAT_NGS}},
                                 ]
                             },
                         },
                         {
                             "bool": {
                                 "must": [
-                                    {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": ASCAT_NGS}},
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT2}},
                                 ]
                             },
                         },
