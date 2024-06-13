@@ -9,3 +9,5 @@ fields:
     name: case_id
   - <<: *string_field
     name: file_id
+  - <<: *string_field
+    name: workflow_type

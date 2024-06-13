@@ -5,6 +5,14 @@ fields:
     name: file_id
     nullable: true
     type: string
+  - metadata: {}
+    name: analysis
+    nullable: true
+    type:
+      fields:
+        - <<: *string_field
+          name: workflow_type
+      type: struct
   - <<: *string_field
     name: created_datetime
   - <<: *string_field
