@@ -418,8 +418,8 @@ class TestASCATMetadataBuilder:
     @pytest.mark.parametrize(
         ("unprioritized_workflow", "prioritized_workflow"),
         (
-            (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT2),
-            (ascat_metadata.ASCAT2, ascat_metadata.ASCAT3),
+            (ascat_metadata.ASCAT2, ascat_metadata.ASCAT_NGS),
+            (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT3),
             (ascat_metadata.ASCAT3, ascat_metadata.ABSOLUTE),
         ),
     )
