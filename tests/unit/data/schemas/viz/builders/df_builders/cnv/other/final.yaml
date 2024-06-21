@@ -42,10 +42,8 @@ fields:
             nullable: false
             type:
               fields:
-                - metadata: {}
+                - <<: *string_field
                   name: variant_caller
-                  nullable: false
-                  type: string
               type: struct
           - metadata: {}
             name: variant_status
