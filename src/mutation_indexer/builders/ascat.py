@@ -325,7 +325,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "synonyms",
             "transcripts",
             "uniprotkb_swissprot",
-            F.lit("ASCAT").alias("variant_caller"),
+            F.col("workflow_type").alias("variant_caller"),
             F.lit("Tumor Only").alias("variant_status"),
         )
 

@@ -33,6 +33,7 @@ class Metadata:
     aliquot_id: str = "aliquot-0"
     case_id: str = "case-0"
     file_id: str = "file-0"
+    workflow_type: str = "ASCAT3"
 
 
 DEFAULT_ASCAT_DOCUMENTS = (
@@ -153,6 +154,7 @@ class TestAscatBuilder:
         assert ascat_row.src_file_id == metadata.file_id
         assert ascat_row.start_position == gene_model.gene_start
         assert ascat_row.symbol == gene_model.symbol
+        assert ascat_row.variant_caller == metadata.workflow_type
 
     @pytest.mark.parametrize(
         ("metadata", "ascat_documents", "gene_model"),
