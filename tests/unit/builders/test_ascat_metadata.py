@@ -10,10 +10,16 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
+from mutation_indexer.builders import ascat_metadata
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
+
+
+@dataclasses.dataclass
+class Analysis:
+    workflow_type: str = "AscatNGS"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -83,6 +89,7 @@ class Case:
 @dataclasses.dataclass(frozen=True)
 class File:
     file_id: str = "f-0"
+    analysis: Analysis = Analysis()
     created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
     experimental_strategy: str = "WXS"
     cases: tuple[Case, ...] = (Case(),)
@@ -153,6 +160,7 @@ class TestASCATMetadataBuilder:
     def test__build__single_row(self) -> None:
         file = File(
             file_id="file-0",
+            analysis=Analysis(workflow_type=ascat_metadata.ABSOLUTE),
             cases=(
                 Case(
                     case_id="case-0",
@@ -189,6 +197,7 @@ class TestASCATMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-0"
+        assert result_row.workflow_type == ascat_metadata.ABSOLUTE
 
     @pytest.mark.parametrize(
         ("primay_sample_type", "other_sample_type"),
@@ -405,6 +414,34 @@ class TestASCATMetadataBuilder:
         result_rows = result_df.collect()
 
         assert all(row.aliquot_id == "a-0" for row in result_rows)
+
+    @pytest.mark.parametrize(
+        ("unprioritized_workflow", "prioritized_workflow"),
+        (
+            (ascat_metadata.ASCAT2, ascat_metadata.ASCAT_NGS),
+            (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT3),
+            (ascat_metadata.ASCAT3, ascat_metadata.ABSOLUTE),
+        ),
+    )
+    def test__build__workflow_type(
+        self, unprioritized_workflow: str, prioritized_workflow: str
+    ) -> None:
+        files = (
+            File(analysis=Analysis(workflow_type=unprioritized_workflow)),
+            File(analysis=Analysis(workflow_type=prioritized_workflow)),
+        )
+        config = self._arrange_config()
+        df_util = self._arrange_es_dataframe_util(files=files)
+        rdd_util = self._arrange_es_rdd_util(files=files)
+        builder = builders.ASCATMetadataBuilder(
+            config, mock.MagicMock(), df_util, rdd_util
+        )
+
+        result_df = builder.build()
+        result_rows = result_df.collect()
+
+        assert len(result_rows) == 1
+        assert result_rows[0].workflow_type == prioritized_workflow
 
     def test__build__missing_analytes(self) -> None:
         aliquots = (Aliquot(aliquot_id="a-0"), Aliquot(aliquot_id="a-1"))

@@ -1,7 +1,10 @@
 import abc
 import copy
+import dataclasses
 import functools
+import itertools
 import logging
+import operator
 from collections.abc import Iterable, Iterator, Mapping, Set
 from importlib import resources
 from typing import (
@@ -9,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     Protocol,
+    Sequence,
     TypeVar,
     Union,
     get_type_hints,
@@ -216,32 +220,6 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
         return self._write(df)
 
 
-def _sample_weight_col() -> sql.Column:
-    """
-    Builds the sample weight column based on the sample type.
-
-    Returns:
-        Weighted sample column
-    """
-    weights = (
-        ("Primary Tumor", 1),
-        ("Primary Blood Derived Cancer - Bone Marrow", 2),
-        ("Primary Blood Derived Cancer - Peripheral Blood", 3),
-        ("Metastatic", 4),
-        ("Additional Metastatic", 5),
-        ("Recurrent Tumor", 6),
-        ("Recurrent Blood Derived Cancer - Bone Marrow", 7),
-        ("Recurrent Blood Derived Cancer - Peripheral Blood", 8),
-        ("Additional - New Primary", 9),
-    )
-    when_clause = F.when(F.lit(1) != F.lit(1), 0)
-
-    for sample_type, weight in weights:
-        when_clause = when_clause.when(F.col("sample_type") == sample_type, weight)
-
-    return when_clause.otherwise(len(weights) + 1).alias("sample_weight")
-
-
 def _combine_weighted_entity_dfs(
     weighted_file_df: Optional[sql.DataFrame],
     weighted_case_df: Optional[sql.DataFrame],
@@ -273,6 +251,18 @@ class PrimaryAliquotBuilder(
 ):
     __slots__ = ("_es_dataframe_util", "_additional_selections")
 
+    @dataclasses.dataclass(frozen=True)
+    class Weight:
+        condition: sql.Column
+        value: int
+
+        def __add__(
+            self, other: "PrimaryAliquotBuilder.Weight"
+        ) -> "PrimaryAliquotBuilder.Weight":
+            return PrimaryAliquotBuilder.Weight(
+                self.condition & other.condition, self.value + other.value
+            )
+
     def __init__(
         self,
         config: TConfig,
@@ -291,6 +281,7 @@ class PrimaryAliquotBuilder(
             output: The DataFrame which is the resulting output of this builder.
             additional_selections: An additional set of fields to include when selecting
                 data from the newly created primary aliquot data frame.
+
         """
         super().__init__(config, spark_session, input_type, output)
 
@@ -311,7 +302,7 @@ class PrimaryAliquotBuilder(
             "case_id",
             "sample_id",
             "case",
-            "sample_weight",
+            "_weight",
             *self._additional_selections,
         )
 
@@ -341,6 +332,111 @@ class PrimaryAliquotBuilder(
             build.IndexType.FILE,
             include_fields=include_fields,
             query=query,
+        )
+
+    def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
+        """A matrix of conditions used to weight the aliquots for selection.
+
+        The matrix is represented as an ordered collection of sequences where each
+        sequence is a dimension in the matrix. The most desireable conditions in each
+        dimension should be listed first, but dimensions should be listed least to most
+        important.
+
+        NOTE: see _convert_weight_matrix method for more details.
+        NOTE: This needs to be calculated at runtime AFTER the spark session has been
+            initiated otherwise F.col/F.lit will fail to be instantiated.
+        """
+        sample_type = F.col("sample_type")
+
+        return (
+            (
+                sample_type == F.lit("Primary Tumor"),  # <-- highest priority
+                sample_type == F.lit("Primary Blood Derived Cancer - Bone Marrow"),
+                sample_type == F.lit("Primary Blood Derived Cancer - Peripheral Blood"),
+                sample_type == F.lit("Metastatic"),
+                sample_type == F.lit("Additional Metastatic"),
+                sample_type == F.lit("Recurrent Tumor"),
+                sample_type == F.lit("Recurrent Blood Derived Cancer - Bone Marrow"),
+                sample_type
+                == F.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
+                sample_type == F.lit("Additional - New Primary"),
+                F.lit(1) == F.lit(1),  # This is a default value.
+            ),
+        )
+
+    def _convert_weight_matrix(self) -> Iterable[Weight]:
+        """Get the wights to be associated with each sample row.
+
+        This translates the base matrix to a single set of weighted values to apply to
+        the sample row. It does this by first calculating the magnitude of the matrix
+        which is equal to the length of the largest dimension. Then weights are
+        calculated based on the order in the dimension (the dimension weight) times the
+        order of magnitude where the order of magnitude is determined by the order of
+        the dimension in the weight matrix. The matrix is then flattened by combining
+        all combinations of weight conditions and adding all of their unique values to
+        calculate their total weight.
+
+        condition: (dimension weight) * (magnitude ** order) = (weight)
+        condition0 & condition1: (weight0) + (weight1) = (total weight)
+
+        Example:
+            weight_matrix (implied weight within dimension):
+                <0 order>
+                    sample_type == "Tumor": (0)
+                    sample_type == "Metastatic": (1)
+                    sample_type == "Normal": (2)
+                <1st order>
+                    workflow_type == "ABSOLUTE": (0)
+                    workflow_type == "ASCAT": (1)
+
+            weights:
+                sample_type == "Tumor & workflow_type == "ABSOLUTE":
+                    (0 * (3 ** 0)) + (0 * (3 ** 1)) = 0
+                sample_type == "Metastatic" & workflow_type == "ABSOLUTE":
+                    (1 * (3 ** 0)) + (0 * (3 ** 1)) = 1
+                sample_type == "Normal" & workflow_type == "ABSOLUTE":
+                    (2 * (3 ** 0)) + (0 * (3 ** 1)) = 2
+                sample_type == "Tumor & workflow_type == "ASCAT":
+                    (0 * (3 ** 0)) + (1 * (3 ** 1)) = 3
+                sample_type == "Metastatic" & workflow_type == "ASCAT":
+                    (1 * (3 ** 0)) + (1 * (3 ** 1)) = 4
+                sample_type == "Normal" & workflow_type == "ASCAT":
+                    (2 * (3 ** 0)) + (1 * (3 ** 1)) = 5
+
+        Returns:
+            The weights to be applied to the sample rows in the weighted data frame.
+        """
+        weight_matrix = self._weight_matrix()
+
+        def _convert_to_weights() -> Iterator[Iterator[PrimaryAliquotBuilder.Weight]]:
+            magnitude = max(len(d) for d in weight_matrix)
+
+            for order, dimension in enumerate(weight_matrix):
+                yield (
+                    PrimaryAliquotBuilder.Weight(
+                        condition, weight * (magnitude**order)
+                    )
+                    for weight, condition in enumerate(dimension)
+                )
+
+        return (
+            functools.reduce(operator.add, weights)
+            for weights in itertools.product(*_convert_to_weights())
+        )
+
+    def _weight_col(self) -> sql.Column:
+        """
+        Builds the sample weight column based on the weights in the weight matrix.
+
+        Returns:
+            The `_weight` column.
+        """
+        when_clause = F.when(F.lit(1) != F.lit(1), 0)  # dummy when clause
+
+        return functools.reduce(
+            lambda c, w: c.when(w.condition, w.value),
+            self._convert_weight_matrix(),
+            when_clause,
         )
 
     def _get_weighted_df(
@@ -379,7 +475,7 @@ class PrimaryAliquotBuilder(
                 "case_id",
                 "sample_id",
                 "case",
-                _sample_weight_col(),
+                self._weight_col().alias("_weight"),
                 *self._additional_selections,
             )
         )
@@ -387,7 +483,7 @@ class PrimaryAliquotBuilder(
     def _get_primary_aliquot_df(
         self,
         filters: Iterable[dict],
-        entities: Set[str] = frozenset(("case", "file")),
+        entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
         include_fields: Union[Iterable[str], Literal[True]] = True,
     ) -> sql.DataFrame:
         """
@@ -432,7 +528,7 @@ class PrimaryAliquotBuilder(
             sql.Window()
             .partitionBy("entity", "entity_id")
             .orderBy(
-                F.col("sample_weight"),
+                F.col("_weight"),
                 F.col("created_datetime"),
                 F.col("file_id"),
             )
@@ -635,7 +731,7 @@ class InclusivePrimaryAliquotBuilder(
             |---sample_id
             +---*additional_selections
         """
-        sample_include_fields = (
+        sample_include_fields: Union[Iterable[str], Literal[True]] = (
             include_fields
             if include_fields is True
             else filter(

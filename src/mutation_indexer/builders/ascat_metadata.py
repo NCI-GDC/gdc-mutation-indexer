@@ -1,11 +1,19 @@
-from typing import TypedDict
+from collections.abc import Iterable
+from typing import Sequence, TypedDict, Union
 
 from pyspark import sql
+from pyspark.sql import functions as F
+from typing_extensions import Literal, override
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+
+ABSOLUTE = "ABSOLUTE LiftOver"
+ASCAT3 = "ASCAT3"
+ASCAT2 = "ASCAT2"
+ASCAT_NGS = "AscatNGS"
 
 
 class ASCATMetadataInputs(TypedDict):
@@ -32,12 +40,36 @@ class ASCATMetadataBuilder(
             spark_session,
             es_dataframe_util,
             es_rdd_util,
+            additional_selections=("workflow_type",),
             input_type=ASCATMetadataInputs,
             output=build.DataFrame.ASCAT_METADATA,
         )
 
-    def _build_from_scratch(self, input_dfs: ASCATMetadataInputs) -> sql.DataFrame:
-        filters = [
+    @override
+    def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
+        workflow_type = F.col("workflow_type")
+        file_weights = (
+            workflow_type == F.lit(ABSOLUTE),
+            workflow_type == F.lit(ASCAT3),
+            workflow_type == F.lit(ASCAT_NGS),
+            workflow_type == F.lit(ASCAT2),
+        )
+
+        # apply file weights as a higher order weight to the defaults.
+        return (*super()._weight_matrix(), file_weights)
+
+    @override
+    def _get_initial_weighted_df(
+        self, query: dict, include_fields: Union[Iterable[str], Literal[True]]
+    ) -> sql.DataFrame:
+        return (
+            super()
+            ._get_initial_weighted_df(query, include_fields)
+            .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
+        )
+
+    def _get_filters(self) -> list[dict]:
+        return [
             {
                 "bool": {
                     "must": [
@@ -54,23 +86,52 @@ class ASCATMetadataBuilder(
                                             "experimental_strategy": "Genotyping Array"
                                         }
                                     },
-                                    {"term": {"analysis.workflow_type": "ASCAT2"}},
+                                    {"term": {"analysis.workflow_type": ABSOLUTE}},
                                 ]
-                            }
+                            },
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT3}},
+                                ]
+                            },
                         },
                         {
                             "bool": {
                                 "must": [
                                     {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": "AscatNGS"}},
+                                    {"term": {"analysis.workflow_type": ASCAT_NGS}},
                                 ]
-                            }
+                            },
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "term": {
+                                            "experimental_strategy": "Genotyping Array"
+                                        }
+                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT2}},
+                                ]
+                            },
                         },
                     ],
                 }
             }
         ]
 
+    def _build_from_scratch(self, input_dfs: ASCATMetadataInputs) -> sql.DataFrame:
+        filters = self._get_filters()
+
         return self._get_primary_aliquot_df(
-            filters, entities=frozenset(("case",))
-        ).select("aliquot_id", "case_id", "file_id")
+            filters,
+            entities=frozenset(("case",)),
+            include_fields=("analysis.workflow_type",),
+        ).select("aliquot_id", "case_id", "file_id", "workflow_type")
