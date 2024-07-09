@@ -284,7 +284,6 @@ class DataFrameUtil:
         index_type: build.IndexType,
         include_fields: Union[Iterable[str], bool] = True,
         exclude_fields: Iterable[str] = (),
-        source_fields: Iterable[str] = (),
         include_as_arrays: Iterable[str] = (),
         query: Optional[dict] = None,
         read_metadata: bool = False,
@@ -296,7 +295,6 @@ class DataFrameUtil:
             index_type: The index from which the data will be loaded
             include_fields: The fields which will be included when reading
             exclude_fields: The fields which will not be included when reading
-            source_fields: TODO
             include_as_arrays: The fields which need to be read as arrays and not
                 simple types (e.g. field: ["this", "is", "example"])
                 NOTE: This does NOT apply to arrays of objects
@@ -331,9 +329,6 @@ class DataFrameUtil:
 
         if exclude_fields and isinstance(exclude_fields, Iterable):
             reader = reader.option("es.read.field.exclude", ",".join(exclude_fields))
-
-        if source_fields:
-            reader = reader.option("es.read.source.filter", ",".join(source_fields))
 
         if include_as_arrays and isinstance(include_as_arrays, Iterable):
             reader = reader.option(
@@ -426,6 +421,7 @@ class RDDUtil:
         index_type: build.IndexType,
         include_fields: Union[Iterable[str], bool] = True,
         exclude_fields: Optional[Iterable[str]] = None,
+        source_fields: Iterable[str] = (),
         include_as_arrays: Iterable[str] = (),
         exclude_as_arrays: Iterable[str] = (),
         query: Optional[dict] = None,
@@ -442,6 +438,7 @@ class RDDUtil:
         Args:
             index: The index from which the data will be loaded
             include_fields: The fields which will be included when read
+            source_fields: TODO
             include_as_arrays: The fields which need to be read as arrays and not
                 simple types (e.g. field: ["this", "is", "example"])
                 NOTE: This does NOT apply to arrays of objects
@@ -472,6 +469,9 @@ class RDDUtil:
 
         if exclude_fields and isinstance(exclude_fields, Iterable):
             config["es.read.field.exclude"] = ",".join(exclude_fields)
+
+        if source_fields:
+            config["es.read.source.filter"] = ",".join(source_fields)
 
         if include_as_arrays and isinstance(include_as_arrays, Iterable):
             config["es.read.field.as.array.include"] = ",".join(include_as_arrays)
