@@ -77,7 +77,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
                 source_fields=fields,
                 query=query,
             )
-            .toDF()
+            .toDF(schema=("_id", "_source"))
             .select("_source.*")
         )
 
