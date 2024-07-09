@@ -84,6 +84,8 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             include_as_arrays=self.config.case_include_as_arrays,
             query=query,
         )
+        self.logger.warn(f"Loaded fields: {case_df.columns}")
+        case_df = case_df.drop("samples")
         sample_df = (
             self._es_rdd_util.get_rdd(
                 build.IndexType.CASE,
