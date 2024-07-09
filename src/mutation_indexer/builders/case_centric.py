@@ -67,34 +67,19 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         fields = self._field_selector.select_for(
             build.IndexType.CASE,
             build.IndexType.CASE_CENTRIC,
-            excluded_fields=("samples",),
-        )
-        sample_fields = self._field_selector.select_for(
-            build.IndexType.CASE,
-            build.IndexType.CASE_CENTRIC,
-            included_fields=("samples",),
         )
 
         self.logger.info(f"Included case fields: {fields}")
-        self.logger.info(f"Included sample fields: {sample_fields}")
 
-        case_df = self._es_dataframe_util.read(
-            build.IndexType.CASE,
-            include_fields=fields,
-            include_as_arrays=self.config.case_include_as_arrays,
-            query=query,
-        )
-        sample_df = (
+        return (
             self._es_rdd_util.get_rdd(
                 build.IndexType.CASE,
-                include_fields=sample_fields,
+                source_fields=fields,
                 query=query,
             )
-            .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
+            .toDF(schema=("_id", "_source"))
             .select("_source.*")
         )
-
-        return case_df.join(sample_df, on="case_id", how="left")
 
     def build(
         self,
