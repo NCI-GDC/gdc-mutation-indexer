@@ -80,7 +80,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
 
         case_df = self._es_dataframe_util.read(
             build.IndexType.CASE,
-            include_fields=fields,
+            source_fields=fields,
             include_as_arrays=self.config.case_include_as_arrays,
             query=query,
         )
