@@ -67,7 +67,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         fields = self._field_selector.select_for(
             build.IndexType.CASE,
             build.IndexType.CASE_CENTRIC,
-            excluded_fields=("samples",),
+            excluded_fields=("samples", "follow_ups.other_clinical_attributes"),
         )
         sample_fields = self._field_selector.select_for(
             build.IndexType.CASE,
