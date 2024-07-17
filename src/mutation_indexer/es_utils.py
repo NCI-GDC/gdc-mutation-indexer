@@ -1,16 +1,26 @@
 import collections
 import functools
 import json
-import types
-from collections.abc import Container, Iterable, Iterator, Mapping, Set
-from typing import Deque, Final, Optional, Tuple, Union
+from collections.abc import (
+    Collection,
+    Container,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+    Set,
+)
+from types import MappingProxyType
+from typing import DefaultDict, Deque, Final, Optional, Tuple, Union
 
 import elasticsearch
 import gdcmodels
 import pyspark
 from elasticsearch import helpers
-from gdcmodels import mapper
+from gdcmodels import esmodels, mapper
 from pyspark import sql
+from pyspark.sql import types
+from typing_extensions import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -53,7 +63,7 @@ class MappingsLoader:
 
     __slots__ = ()
 
-    def load_mappings(self, index_type: build.IndexType) -> mapper.ModelMapper:
+    def load_mapper(self, index_type: build.IndexType) -> mapper.ModelMapper:
         """
         Loads the mapping for the given index.
 
@@ -183,7 +193,7 @@ class CaseFieldSelector:
 
     __slots__ = ("_mappings_loader",)
 
-    CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = types.MappingProxyType(
+    CASE_PREFIXES: Final[Mapping[build.IndexType, str]] = MappingProxyType(
         {
             build.IndexType.CASE: "",
             build.IndexType.CASE_CENTRIC: "",
@@ -210,7 +220,7 @@ class CaseFieldSelector:
         path_to_fields = (
             collections.deque(prefix.split(".")) if prefix else collections.deque()
         )
-        mappings = self._mappings_loader.load_mappings(index_type).mappings
+        mappings = self._mappings_loader.load_mapper(index_type).mappings
         fields = _extract_fields(
             mappings["properties"], excluded_fields, included_fields, path_to_fields
         )
@@ -222,7 +232,7 @@ class CaseFieldSelector:
         *index_types: build.IndexType,
         excluded_fields: Container[str] = (),
         included_fields: Optional[Iterable[str]] = None,
-    ) -> Iterable[str]:
+    ) -> Set[str]:
         """
         Selects all common case fields found in the given indices.
 
@@ -247,6 +257,208 @@ class CaseFieldSelector:
         )
 
 
+SQL_TYPES: Mapping[str, types.DataType] = MappingProxyType(
+    {
+        "boolean": types.BooleanType(),
+        "double": types.DoubleType(),
+        "float": types.DoubleType(),
+        "integer": types.LongType(),
+        "keyword": types.StringType(),
+        "long": types.LongType(),
+    }
+)
+"""A mapping of elasticsearch types to their associated SQL types."""
+
+
+Tree = dict[str, "Tree"]
+
+
+class DefaultTree(DefaultDict[str, Tree]):
+    """A tree structure for which all paths are valid."""
+
+    def __init__(self) -> None:
+        super().__init__(default_factory=DefaultTree)
+
+    def __contains__(self, key: object) -> bool:
+        return isinstance(key, str)
+
+
+def _parse_tree(paths: Iterable[str]) -> Tree:
+    """Parses a tree structure based on the given paths.
+
+    Example:
+        paths:
+            - samples.sample_id
+            - samples.aliquots.aliquot_id
+        return:
+            {
+                "samples": {
+                    "sample_id": {},
+                    "aliquots": {
+                        "aliquot_id": {}
+                    }
+                }
+            }
+
+    Args:
+        paths: The paths representing the path to elements in a tree structure.
+
+    Returns:
+        A tree structure of the various paths described in the input.
+    """
+    tree: Tree = {}
+
+    for path in (p.split(".") for p in paths):
+        functools.reduce(lambda a, e: a.setdefault(e, {}), path, tree)
+
+    return tree
+
+
+def _walk_struct(
+    struct: types.StructType, path: Sequence[str]
+) -> Optional[types.StructField]:
+    """Walks the provided path within the given SQL structure.
+
+    Args:
+        struct: The root structure at the origin of the given path.
+        path: A series of field names which represent the path to the desired field.
+
+    Returns:
+        The structure field found at the end of the path if the path exists; otherwise
+        `None`.
+    """
+
+    def get_field(
+        struct: types.StructType, field_name: str
+    ) -> Optional[types.StructField]:
+        """Gets the field with the given name if it exists.
+
+        Args:
+            struct: The structure which should contain the field.
+            field_name: The name of the field in the structure.
+
+        Returns:
+            The field with the given name; otherwise `None`.
+        """
+        if field_name in struct.fieldNames():
+            return struct[field_name]
+
+        return None
+
+    def walk_struct(struct: types.StructType, field_name: str) -> types.StructType:
+        """Walks to the given field assuming it is a substructure.
+
+        Args:
+            struct: The structure to be traversed.
+            field_name: The name of the field containing the substructure.
+
+        Returns:
+            The substructure contained in the in the field specified. If the field
+            either does not exist or is not a `StructType` then a dummy structure
+            containing no fields is returned.
+        """
+        field = get_field(struct, field_name)
+
+        if not field:
+            return types.StructType([])
+
+        data_type = field.dataType
+
+        while isinstance(data_type, types.ArrayType):
+            data_type = data_type.elementType
+
+        if isinstance(data_type, types.StructType):
+            return data_type
+
+        return types.StructType([])
+
+    assert len(path) >= 1, "Path must have at least one element"
+
+    parent = functools.reduce(walk_struct, path[:-1], struct)
+
+    return get_field(parent, path[-1])
+
+
+class SchemaLoader:
+    """A class for loading a schema for a data frame based on an elasticsearch mapping."""
+
+    def _convert_properties(
+        self, properties: esmodels.Properties, included: Tree
+    ) -> Iterator[types.StructField]:
+        """Converts a set of properties to their equivalent SQL structures.
+
+        Args:
+            properties: The set of properties that need to be converted.
+            included: A tree of representing the properties to included in this
+                conversion. All keys represent the current properties which should be
+                included and their values represent any properties in a substructure
+                which should also be included.
+
+        Yields:
+            The converted fields which belong to a parent structure.
+        """
+        for name, details in properties.items():
+            if name not in included:
+                continue
+            elif "properties" in details:
+                fields = self._convert_properties(details["properties"], included[name])
+
+                yield types.StructField(name, types.StructType(list(fields)))
+            elif "type" in details and details["type"] in SQL_TYPES:
+                yield types.StructField(name, SQL_TYPES[details["type"]])
+            else:
+                raise ValueError(f"Invalid Property: {name}({details})")
+
+    def _convert_to_arrays(
+        self, struct: types.StructType, include_as_arrays: Iterable[str]
+    ) -> None:
+        """Converts the fields found at the given array paths in the struct to arrays.
+
+        Args:
+            struct: The structure which needs needs the elements at the given array
+                paths to be converted to ArrayTypes.
+            include_as_arrays: The property paths which will be arrays in the resulting
+                data from elasticsearch.
+        """
+        paths = (a.split(".") for a in include_as_arrays)
+        array_fields = (_walk_struct(struct, p) for p in paths)
+        array_fields = filter(None, array_fields)
+
+        for field in array_fields:
+            field.dataType = types.ArrayType(field.dataType)
+
+    def load(
+        self,
+        mappings: esmodels.ESMapping,
+        source_filter: Union[Literal[True], Iterable[str]],
+        include_as_arrays: Iterable[str],
+    ) -> types.StructType:
+        """Loads the schema from the mappings.
+
+        Args:
+            mappings: The elasticsearch mapping on which the resulting schema is based.
+            source_filter: The source properties which are the only ones that should be
+                included in the resulting schema.
+            include_as_arrays: As the mapping does not convey which properties are
+                arrays, this is a list of fields which need to be converted to array
+                types.
+
+        Returns:
+            The schema of the data that will be loaded from the given mapping with the
+            given source_filter & include_as_arrays applied.
+        """
+        included = (
+            DefaultTree() if source_filter is True else _parse_tree(source_filter)
+        )
+        struct = types.StructType(
+            list(self._convert_properties(mappings["properties"], included))
+        )
+
+        self._convert_to_arrays(struct, include_as_arrays)
+
+        return struct
+
+
 def _get_index(config: es_config.Elasticsearch, index_type: build.IndexType) -> str:
     if index_type == build.IndexType.FILE:
         return config.read.file_index
@@ -260,8 +472,49 @@ def _get_index(config: es_config.Elasticsearch, index_type: build.IndexType) -> 
     raise ValueError(f"Index not configured: {index_type.name}")
 
 
+def _get_nested_document_properties(mappings: esmodels.ESMapping) -> frozenset[str]:
+    """Gets all properties from the mapping with the nested type.
+
+    Args:
+        mappings: The mapping in which the nested document properties are located.
+
+    Returns:
+        A frozenset of all properties which nested documents.
+    """
+
+    def scan_properties(
+        properties: esmodels.Properties, path: Iterable[str] = ()
+    ) -> Iterator[str]:
+        """Scans properties for any with a nested types.
+
+        This functionality recurses through any properties which contain a substructure.
+
+        Args:
+            properties: The properties to scan for nested documents.
+            path: The path traversed so far to find these properties.
+
+        Yields:
+            The path to any nested documents.
+        """
+        for name, details in properties.items():
+            property_path = (*path, name)
+
+            if details.get("type") == "nested":
+                yield ".".join(property_path)
+
+            yield from scan_properties(details.get("properties", {}), property_path)
+
+    return frozenset(scan_properties(mappings["properties"]))
+
+
 class DataFrameUtil:
-    __slots__ = ("_config", "_spark_session", "_es_client", "_mappings_loader")
+    __slots__ = (
+        "_config",
+        "_spark_session",
+        "_es_client",
+        "_mappings_loader",
+        "_schema_loader",
+    )
     ES_FORMAT = "org.elasticsearch.spark.sql"
 
     def __init__(
@@ -270,11 +523,13 @@ class DataFrameUtil:
         spark_session: sql.SparkSession,
         es_client: elasticsearch.Elasticsearch,
         mappings_loader: MappingsLoader,
+        schema_loader: SchemaLoader,
     ) -> None:
         self._config = config
         self._spark_session = spark_session
         self._es_client = es_client
         self._mappings_loader = mappings_loader
+        self._schema_loader = schema_loader
 
     def _get_index(self, index_type: build.IndexType) -> str:
         return _get_index(self._config, index_type)
@@ -282,60 +537,83 @@ class DataFrameUtil:
     def read(
         self,
         index_type: build.IndexType,
-        include_fields: Union[Iterable[str], bool] = True,
-        exclude_fields: Iterable[str] = (),
+        source_filter: Union[Literal[True], Collection[str]] = True,
         include_as_arrays: Iterable[str] = (),
         query: Optional[dict] = None,
         read_metadata: bool = False,
     ) -> sql.DataFrame:
         """
-        A utility for reading data from ES natively into spark.
+        A utility for reading data from ES natively into a spark data frame.
 
         Args:
             index_type: The index from which the data will be loaded
-            include_fields: The fields which will be included when reading
-            exclude_fields: The fields which will not be included when reading
+            source_filter: The properties to which this query should be restricted. True
+                means all properties should be included.
             include_as_arrays: The fields which need to be read as arrays and not
-                simple types (e.g. field: ["this", "is", "example"])
-                NOTE: This does NOT apply to arrays of objects
+                simple types (e.g. field: ["these", "are", "values"])
+                NOTE: Nested documents will automatically be accounted for.
             query: The query to use in ES to limit the records returned
 
         Returns:
             A data frame containing the data from the elasticsearch index
         """
-        index = self._get_index(index_type)
-        reader = (
-            self._spark_session.read.format(self.ES_FORMAT)
-            .option("es.read.metadata", read_metadata)
-            .option("es.nodes", self._config.connection.nodes)
-            .option("es.net.http.auth.user", self._config.connection.user)
-            .option("es.net.http.auth.pass", self._config.connection.password)
-            .option("es.net.ssl", self._config.connection.use_ssl)
-            .option("es.nodes.wan.only", True)
-            .option("es.nodes.resolve.hostname", False)
-            .option("es.resource.read", index)
-            .option(
-                "es.net.ssl.cert.allow.self.signed",
-                not self._config.connection.verify_certs,
-            )
-            .option("es.nodes.resolve.hostname", False)
+        mappings = self._mappings_loader.load_mapper(index_type).mappings
+        # We need to insure that all nested documents are included as arrays.
+        include_as_arrays = _get_nested_document_properties(mappings).union(
+            include_as_arrays
         )
+        source_schema = self._schema_loader.load(
+            mappings, source_filter, include_as_arrays
+        )
+        schema = types.StructType(
+            [
+                types.StructField("_id", types.StringType()),
+                types.StructField("_source", source_schema),
+            ]
+        )
+        config = {
+            "es.read.metadata": str(read_metadata),
+            "es.nodes": self._config.connection.nodes,
+            "es.net.http.auth.user": self._config.connection.user,
+            "es.net.http.auth.pass": self._config.connection.password,
+            "es.net.ssl": str(self._config.connection.use_ssl),
+            "es.net.ssl.cert.allow.self.signed": str(
+                not self._config.connection.verify_certs
+            ),
+            "es.nodes.resolve.hostname": str(False),
+            "es.resource": _get_index(self._config, index_type),
+        }
 
         if query:
-            reader = reader.option("es.query", json.dumps(query))
+            config["es.query"] = json.dumps(query)
 
-        if include_fields and isinstance(include_fields, Iterable):
-            reader = reader.option("es.read.field.include", ",".join(include_fields))
-
-        if exclude_fields and isinstance(exclude_fields, Iterable):
-            reader = reader.option("es.read.field.exclude", ",".join(exclude_fields))
+        if isinstance(source_filter, Collection):
+            # In order to filter the resulting data, we should preferably use the config
+            # `es.read.source.filter`. This will use the elasticsearch `_source` field
+            # when querying the data and insure that only the bare minimum data is
+            # communicated over the network. However, when the number of properties in
+            # the filter get too numerous, then this will cause a memory issue and cause
+            # the query to fail in elasticsearch. Hence, in these cases, we should use
+            # `es.read.field.include` which will ensure the executor only includes the
+            # given fields when reading the data from elasticsearch.
+            if len(source_filter) <= self._config.read.max_source_filter_length:
+                config["es.read.source.filter"] = ",".join(source_filter)
+            else:
+                config["es.read.field.include"] = ",".join(source_filter)
 
         if include_as_arrays and isinstance(include_as_arrays, Iterable):
-            reader = reader.option(
-                "es.read.field.as.array.include", ",".join(include_as_arrays)
-            )
+            config["es.read.field.as.array.include"] = ",".join(include_as_arrays)
 
-        return reader.load(index)
+        return (
+            self._spark_session.sparkContext.newAPIHadoopRDD(
+                "org.elasticsearch.hadoop.mr.EsInputFormat",
+                "org.apache.hadoop.io.NullWritable",
+                "org.elasticsearch.hadoop.mr.LinkedMapWritable",
+                conf=config,
+            )
+            .toDF(schema=schema)
+            .select("_source.*")
+        )
 
     def _create_index(self, index: str, index_type: build.IndexType) -> None:
         """
@@ -351,7 +629,7 @@ class DataFrameUtil:
                 f"Index: {index} already exists. Cannot overwrite existing index."
             )
 
-        mappings = self._mappings_loader.load_mappings(index_type)
+        mappings = self._mappings_loader.load_mapper(index_type)
 
         self._es_client.indices.create(
             index=index, mappings=mappings.mappings, settings=mappings.settings

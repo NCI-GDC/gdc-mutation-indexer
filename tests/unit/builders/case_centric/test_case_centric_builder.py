@@ -1,9 +1,7 @@
-import dataclasses
 from collections.abc import Iterable, Set
 from unittest import mock
 
 import more_itertools
-import pyspark
 import pytest
 from pyspark import sql
 from pyspark.sql import types
@@ -12,7 +10,7 @@ from typing_extensions import TypedDict
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import adapter
 from tests.unit import utils
-from tests.unit.builders.case_centric.inputs import case, cnv, sample, ssm
+from tests.unit.builders.case_centric.inputs import case, cnv, ssm
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
 
@@ -159,21 +157,6 @@ class TestCaseCentricBuilder:
 
         return dataframe_util
 
-    def arrange_rdd_util(
-        self, cases: Iterable[sample.Hit] = (sample.Hit(),)
-    ) -> es_utils.RDDUtil:
-        context: pyspark.SparkContext = self.spark_session.sparkContext
-        rdd = context.parallelize(
-            map(
-                lambda c: (c._id, dataclasses.asdict(c._source)),
-                cases,
-            )
-        )
-        rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
-        rdd_util.get_rdd.return_value = rdd
-
-        return rdd_util
-
     def arrange_field_selector(self) -> es_utils.CaseFieldSelector:
         return mock.MagicMock(
             spec=es_utils.CaseFieldSelector, select_for=mock.MagicMock(return_value=())
@@ -236,7 +219,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
@@ -245,7 +227,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -261,8 +242,6 @@ class TestCaseCentricBuilder:
 
     def test__build__data_translated(self) -> None:
         es_case = case.Case()
-        es_hit = sample.Hit()
-        es_sample = more_itertools.one(es_hit._source and es_hit._source.samples or ())
         raw_maf = models.MAF(gene_id="MAFGENE")
         raw_ascat = models.ASCAT(gene_id="ASCATGENE")
         ssm_consequence = ssm.Consequences()
@@ -272,7 +251,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util((es_case,))
-        rdd_util = self.arrange_rdd_util((es_hit,))
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder((ssm_consequence,))
         observation_builder = self.arrange_observation_builder(
@@ -283,7 +261,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -300,7 +277,6 @@ class TestCaseCentricBuilder:
         )
 
         es_case.assert_equals(result_case)
-        es_sample.assert_equals(more_itertools.one(result_case.samples))
         assert_maf_translated(maf_gene, raw_maf)
         ssm.assert_consequences_translated(maf_gene, ssm_consequence)
         ssm.assert_observation_translated(maf_gene, ssm_observation)
@@ -329,7 +305,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
@@ -338,7 +313,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -392,7 +366,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
@@ -401,7 +374,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -420,7 +392,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
@@ -429,7 +400,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -448,7 +418,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder(
@@ -459,7 +428,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -480,7 +448,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder(
@@ -491,7 +458,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -526,7 +492,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder(
@@ -537,7 +502,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -560,7 +524,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder(
@@ -571,7 +534,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,
@@ -593,7 +555,6 @@ class TestCaseCentricBuilder:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
-        rdd_util = self.arrange_rdd_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder(
@@ -604,7 +565,6 @@ class TestCaseCentricBuilder:
             config,
             sql_context,
             dataframe_util,
-            rdd_util,
             field_selector,
             consequence_builder,
             observation_builder,

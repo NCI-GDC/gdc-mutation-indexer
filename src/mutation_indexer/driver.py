@@ -172,7 +172,6 @@ def get_viz_index_builders(
                 old_config,
                 sql_context,
                 es_dataframe_util,
-                es_rdd_util,
                 case_field_selector,
                 consequence_builder,
                 observation_builder,
@@ -218,7 +217,11 @@ def get_viz_builders(
     config_adapter = adapter.ObsoleteConfig(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     es_dataframe_util = es_utils.DataFrameUtil(
-        config.elasticsearch, spark_session, es_client, mappings_loader
+        config.elasticsearch,
+        spark_session,
+        es_client,
+        mappings_loader,
+        es_utils.SchemaLoader(),
     )
     es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
@@ -318,11 +321,15 @@ def get_ge_builders(
     """
     indexd = get_index_client(config.indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
+    mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
-        config.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
+        config.elasticsearch,
+        spark_session,
+        es_client,
+        mappings_loader,
+        es_utils.SchemaLoader(),
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
-    mappings_loader = es_utils.MappingsLoader()
 
     return gdc_mutation_export.Builders(
         tuple(

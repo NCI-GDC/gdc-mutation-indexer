@@ -11,7 +11,7 @@ kwargs:
             cases.case_id:
               - c65d7c98-9678-401b-9f4d-0e1e83be3697
 
-  include_fields:
+  source_filter:
     - file_id
     - acl
     - updated_datetime
@@ -22,5 +22,3 @@ kwargs:
   include_as_arrays:
     - acl
     - cases.project.primary_site
-
-  read_metadata: true

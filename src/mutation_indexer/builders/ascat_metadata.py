@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Collection
 from typing import Sequence, TypedDict, Union
 
 from pyspark import sql
@@ -60,7 +60,7 @@ class ASCATMetadataBuilder(
 
     @override
     def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Iterable[str], Literal[True]]
+        self, query: dict, include_fields: Union[Collection[str], Literal[True]]
     ) -> sql.DataFrame:
         return (
             super()

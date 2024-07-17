@@ -3,7 +3,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 from typing_extensions import Self
 
-from mutation_indexer import es_utils, schemas
+from mutation_indexer import es_utils
 from mutation_indexer.builders import (
     base_builder,
     case,
@@ -42,7 +42,6 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         config: adapter.ObsoleteConfig,
         sqlContext: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
-        es_rdd_util: es_utils.RDDUtil,
         field_selector: es_utils.CaseFieldSelector,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
@@ -50,7 +49,6 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         super().__init__(config, sqlContext)
 
         self._es_dataframe_util = es_dataframe_util
-        self._es_rdd_util = es_rdd_util
         self._field_selector = field_selector
 
         self.consequence_builder = consequence_builder
@@ -62,39 +60,21 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         ):  # TODO: DEV-1256 Restore func w/ new config specific projects
             query = {"query": {"terms": {"project.project_id": self.config.projects}}}
         else:
-            query = {"query": {"match_all": {}}}
+            query: dict = {"query": {"match_all": {}}}
 
         fields = self._field_selector.select_for(
             build.IndexType.CASE,
             build.IndexType.CASE_CENTRIC,
-            excluded_fields=("samples",),
-        )
-        sample_fields = self._field_selector.select_for(
-            build.IndexType.CASE,
-            build.IndexType.CASE_CENTRIC,
-            included_fields=("samples",),
         )
 
         self.logger.info(f"Included case fields: {fields}")
-        self.logger.info(f"Included sample fields: {sample_fields}")
 
-        case_df = self._es_dataframe_util.read(
+        return self._es_dataframe_util.read(
             build.IndexType.CASE,
-            include_fields=fields,
+            source_filter=fields,
             include_as_arrays=self.config.case_include_as_arrays,
             query=query,
         )
-        sample_df = (
-            self._es_rdd_util.get_rdd(
-                build.IndexType.CASE,
-                include_fields=sample_fields,
-                query=query,
-            )
-            .toDF(schema=schemas.load_schema("builders/case_centric/sample.yaml"))
-            .select("_source.*")
-        )
-
-        return case_df.join(sample_df, on="case_id", how="left")
 
     def build(
         self,

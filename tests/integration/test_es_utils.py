@@ -54,6 +54,7 @@ def test_data_frame_util_read(
         spark_session,
         mock.MagicMock(),
         es_utils.MappingsLoader(),
+        es_utils.SchemaLoader(),
     )
 
     # Act
@@ -86,9 +87,13 @@ def test_data_frame_util_write(
     conf = test_setup.load_configuration(load_config)
     case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
     mappings_loader = mock.MagicMock()
-    mappings_loader.load_mappings.return_value = model_mapper
+    mappings_loader.load_mapper.return_value = model_mapper
     util = es_utils.DataFrameUtil(
-        conf.elasticsearch, spark_session, es_client, mappings_loader
+        conf.elasticsearch,
+        spark_session,
+        es_client,
+        mappings_loader,
+        es_utils.SchemaLoader(),
     )
     case_data = (
         {

@@ -5,7 +5,7 @@ import functools
 import itertools
 import logging
 import operator
-from collections.abc import Iterable, Iterator, Mapping, Set
+from collections.abc import Collection, Iterable, Iterator, Mapping, Set
 from importlib import resources
 from typing import (
     Generic,
@@ -239,7 +239,7 @@ def _combine_weighted_entity_dfs(
 
 def _add_required_include_fields(
     include_fields: Union[Iterable[str], Literal[True]]
-) -> Union[Iterable[str], Literal[True]]:
+) -> Collection[str]:
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
 
@@ -309,7 +309,7 @@ class PrimaryAliquotBuilder(
     def _get_initial_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Iterable[str], Literal[True]],
+        include_fields: Union[Collection[str], Literal[True]],
     ) -> sql.DataFrame:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
@@ -330,7 +330,7 @@ class PrimaryAliquotBuilder(
         """
         return self._es_dataframe_util.read(
             build.IndexType.FILE,
-            include_fields=include_fields,
+            source_filter=include_fields,
             query=query,
         )
 
@@ -442,7 +442,7 @@ class PrimaryAliquotBuilder(
     def _get_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Iterable[str], Literal[True]],
+        include_fields: Union[Collection[str], Literal[True]],
     ) -> sql.DataFrame:
         return (
             self._get_initial_weighted_df(query, include_fields)
@@ -870,7 +870,7 @@ class IndexBuilder(
                 elif "properties" in value:
                     yield from get_boolean_paths(value["properties"], f"{subpath}.")
 
-        mappings = self._mappings_loader.load_mappings(self._index_type).mappings
+        mappings = self._mappings_loader.load_mapper(self._index_type).mappings
 
         return get_boolean_paths(mappings.get("properties", {}))
 

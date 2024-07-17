@@ -221,6 +221,7 @@ verify_certs = false
 [elasticsearch.read]
 case_index = "graph_case"
 file_index = "graph_file"
+max_source_filter_length = 200
 
 [elasticsearch.write]
 batch_size_bytes = "16mb"

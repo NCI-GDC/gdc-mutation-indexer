@@ -94,7 +94,7 @@ def assert_all_paths_are_booleans(
 
 
 def test__cast_booleans__case_centric(case_centric_df: sql.DataFrame) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(build.IndexType.CASE_CENTRIC)
+    index_mapper = es_utils.MappingsLoader().load_mapper(build.IndexType.CASE_CENTRIC)
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
     result_df = base_builder.cast_booleans(case_centric_df, index_mapper.mappings)
@@ -104,7 +104,7 @@ def test__cast_booleans__case_centric(case_centric_df: sql.DataFrame) -> None:
 
 
 def test__cast_booleans__cnv_centric(cnv_centric_df: sql.DataFrame) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(build.IndexType.CNV_CENTRIC)
+    index_mapper = es_utils.MappingsLoader().load_mapper(build.IndexType.CNV_CENTRIC)
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
     result_df = base_builder.cast_booleans(cnv_centric_df, index_mapper.mappings)
@@ -116,7 +116,7 @@ def test__cast_booleans__cnv_centric(cnv_centric_df: sql.DataFrame) -> None:
 def test__cast_booleans__cnv_occurrence_centric(
     cnv_occurrence_centric_df: sql.DataFrame,
 ) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(
+    index_mapper = es_utils.MappingsLoader().load_mapper(
         build.IndexType.CNV_OCCURRENCE_CENTRIC
     )
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
@@ -130,7 +130,7 @@ def test__cast_booleans__cnv_occurrence_centric(
 
 
 def test__cast_booleans__gene_centric(gene_centric_df: sql.DataFrame) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(build.IndexType.GENE_CENTRIC)
+    index_mapper = es_utils.MappingsLoader().load_mapper(build.IndexType.GENE_CENTRIC)
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
     result_df = base_builder.cast_booleans(gene_centric_df, index_mapper.mappings)
@@ -140,7 +140,7 @@ def test__cast_booleans__gene_centric(gene_centric_df: sql.DataFrame) -> None:
 
 
 def test__cast_booleans__ssm_centric(ssm_centric_df: sql.DataFrame) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(build.IndexType.SSM_CENTRIC)
+    index_mapper = es_utils.MappingsLoader().load_mapper(build.IndexType.SSM_CENTRIC)
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
     result_df = base_builder.cast_booleans(ssm_centric_df, index_mapper.mappings)
@@ -152,7 +152,7 @@ def test__cast_booleans__ssm_centric(ssm_centric_df: sql.DataFrame) -> None:
 def test__cast_booleans__ssm_occurrence_centric(
     ssm_occurrence_centric_df: sql.DataFrame,
 ) -> None:
-    index_mapper = es_utils.MappingsLoader().load_mappings(
+    index_mapper = es_utils.MappingsLoader().load_mapper(
         build.IndexType.SSM_OCCURRENCE_CENTRIC
     )
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)

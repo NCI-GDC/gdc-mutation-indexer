@@ -97,7 +97,7 @@ class BaseBuilder(abc.ABC):
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-        mapper = self.mappings_loader.load_mappings(
+        mapper = self.mappings_loader.load_mapper(
             build.IndexType[self.index_name.upper()]
         )
 

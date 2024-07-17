@@ -89,7 +89,7 @@ class IndexManager(ContextManager["IndexManager"]):
 
     def _create_index(self, index_type: build.IndexType) -> None:
         index_name = self._graph_indices[index_type]
-        model_mapper = self._mappings_loader.load_mappings(index_type)
+        model_mapper = self._mappings_loader.load_mapper(index_type)
 
         if self._es.indices.exists(index=index_name):
             self._logger.info(f"Deleting existing index: {index_name}")

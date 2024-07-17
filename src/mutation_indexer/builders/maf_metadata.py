@@ -1,6 +1,6 @@
 import functools
 import logging
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from typing import Union
 
 import elasticsearch
@@ -306,7 +306,7 @@ class MAFMetadataBuilder(
         self._file_filter_factory = file_filter_factory
 
     def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Iterable[str], Literal[True]]
+        self, query: dict, include_fields: Union[Collection[str], Literal[True]]
     ) -> sql.DataFrame:
         return (
             super()

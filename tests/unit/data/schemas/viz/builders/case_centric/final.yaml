@@ -1711,113 +1711,6 @@ fields:
       elementType: string
       type: array
   - metadata: {}
-    name: slide_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - <<: *string_field
-    name: state
-  - metadata: {}
-    name: submitter_aliquot_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - metadata: {}
-    name: submitter_analyte_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - metadata: {}
-    name: submitter_diagnosis_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - <<: *string_field
-    name: submitter_id
-  - metadata: {}
-    name: submitter_portion_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - metadata: {}
-    name: submitter_sample_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - metadata: {}
-    name: submitter_slide_ids
-    nullable: true
-    type:
-      containsNull: true
-      elementType: string
-      type: array
-  - metadata: {}
-    name: summary
-    nullable: true
-    type:
-      fields:
-        - metadata: {}
-          name: data_categories
-          nullable: true
-          type:
-            containsNull: true
-            elementType:
-              fields:
-                - <<: *string_field
-                  name: data_category
-                - <<: *long_field
-                  name: file_count
-              type: struct
-            type: array
-        - metadata: {}
-          name: experimental_strategies
-          nullable: true
-          type:
-            containsNull: true
-            elementType:
-              fields:
-                - <<: *string_field
-                  name: experimental_strategy
-                - <<: *long_field
-                  name: file_count
-              type: struct
-            type: array
-        - <<: *long_field
-          name: file_count
-        - <<: *long_field
-          name: file_size
-      type: struct
-  - metadata: {}
-    name: tissue_source_site
-    nullable: true
-    type:
-      fields:
-        - <<: *string_field
-          name: bcr_id
-        - <<: *string_field
-          name: code
-        - <<: *string_field
-          name: name
-        - <<: *string_field
-          name: project
-        - <<: *string_field
-          name: tissue_source_site_id
-      type: struct
-  - <<: *string_field
-    name: updated_datetime
-  - metadata: {}
     name: samples
     nullable: true
     type:
@@ -2335,6 +2228,113 @@ fields:
             name: updated_datetime
         type: struct
       type: array
+  - metadata: {}
+    name: slide_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: state
+  - metadata: {}
+    name: submitter_aliquot_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_analyte_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_diagnosis_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - <<: *string_field
+    name: submitter_id
+  - metadata: {}
+    name: submitter_portion_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_sample_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: submitter_slide_ids
+    nullable: true
+    type:
+      containsNull: true
+      elementType: string
+      type: array
+  - metadata: {}
+    name: summary
+    nullable: true
+    type:
+      fields:
+        - metadata: {}
+          name: data_categories
+          nullable: true
+          type:
+            containsNull: true
+            elementType:
+              fields:
+                - <<: *string_field
+                  name: data_category
+                - <<: *long_field
+                  name: file_count
+              type: struct
+            type: array
+        - metadata: {}
+          name: experimental_strategies
+          nullable: true
+          type:
+            containsNull: true
+            elementType:
+              fields:
+                - <<: *string_field
+                  name: experimental_strategy
+                - <<: *long_field
+                  name: file_count
+              type: struct
+            type: array
+        - <<: *long_field
+          name: file_count
+        - <<: *long_field
+          name: file_size
+      type: struct
+  - metadata: {}
+    name: tissue_source_site
+    nullable: true
+    type:
+      fields:
+        - <<: *string_field
+          name: bcr_id
+        - <<: *string_field
+          name: code
+        - <<: *string_field
+          name: name
+        - <<: *string_field
+          name: project
+        - <<: *string_field
+          name: tissue_source_site_id
+      type: struct
+  - <<: *string_field
+    name: updated_datetime
   - metadata: {}
     name: available_variation_data
     nullable: true
