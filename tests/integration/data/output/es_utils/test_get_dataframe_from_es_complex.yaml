@@ -71,14 +71,6 @@ expected_schema:
       name: file_id
     - <<: *string_field
       name: updated_datetime
-    - metadata: {}
-      name: _metadata
-      nullable: true
-      type:
-        keyType: string
-        valueType: string
-        valueContainsNull: true
-        type: map
   type: struct
 
 expected_data:
@@ -96,8 +88,3 @@ expected_data:
         diagnoses:
           - treatments:
               - state: live
-    _metadata:
-      _id: 213fd6e3-9462-492f-8917-56967be8fc9d
-      _index: graph_file
-      _score: '1.0'
-      _type: _doc

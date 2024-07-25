@@ -18,9 +18,9 @@ class TestCaseFieldSelector:
             index: mock.MagicMock(mappings=mapping)
             for index, mapping in zip(indices, mappings)
         }
-        load_mappings = mock.MagicMock(side_effect=lambda i: index_mappings[i])
+        load_mapper = mock.MagicMock(side_effect=lambda i: index_mappings[i])
 
-        return mock.MagicMock(spec=es_utils.MappingsLoader, load_mappings=load_mappings)
+        return mock.MagicMock(spec=es_utils.MappingsLoader, load_mapper=load_mapper)
 
     def test__select_for__basic_field(self):
         mapping = {"properties": {"field0": {"type": "keyword"}}}

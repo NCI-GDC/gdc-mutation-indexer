@@ -124,7 +124,7 @@ def select_mapping(
     if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
 
-    model_mapper = es_utils.MappingsLoader().load_mappings(
+    model_mapper = es_utils.MappingsLoader().load_mapper(
         build.IndexType[index_name.upper()]
     )
     mapping = model_mapper.select_mapping(mapping_name, selector)

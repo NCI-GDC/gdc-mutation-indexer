@@ -46,6 +46,7 @@ def primary_aliquot_df(
         spark_session,
         es_client,
         es_utils.MappingsLoader(),
+        es_utils.SchemaLoader(),
     )
     primary_aliquot_builder = gene_expression.PrimaryAliquotBuilder(
         default_config.builders.gene_expression.primary_aliquot,
@@ -105,7 +106,11 @@ def ge_builder(
 ) -> Iterable[gene_expression.IndexBuilder]:
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
-        ge_config.elasticsearch, spark_session, es_client, mappings_loader
+        ge_config.elasticsearch,
+        spark_session,
+        es_client,
+        mappings_loader,
+        es_utils.SchemaLoader(),
     )
     doc_dataframe_util = indexd_utils.DataFrameUtil(
         indexd, spark_session, logger=mock.MagicMock()

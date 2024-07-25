@@ -417,6 +417,7 @@ def case_df(
         spark_session,
         es_client,
         es_utils.MappingsLoader(),
+        es_utils.SchemaLoader(),
     )
     df = builders.CaseBuilder(
         default_config.builders.viz.case,
@@ -537,9 +538,7 @@ def case_centric_df(
             spark_session,
             es_client,
             es_utils.MappingsLoader(),
-        ),
-        es_utils.RDDUtil(
-            default_config.elasticsearch, sqlContext.sparkSession.sparkContext
+            es_utils.SchemaLoader(),
         ),
         es_utils.CaseFieldSelector(),
         consequence_builder,
@@ -739,9 +738,7 @@ def case_ssm_subtree(
             spark_session,
             es_client,
             es_utils.MappingsLoader(),
-        ),
-        es_utils.RDDUtil(
-            default_config.elasticsearch, sqlContext.sparkSession.sparkContext
+            es_utils.SchemaLoader(),
         ),
         es_utils.CaseFieldSelector(),
         consequence_builder,

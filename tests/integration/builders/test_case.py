@@ -65,7 +65,11 @@ class TestCaseBuilder:
 
         conf = test_setup.load_configuration(load_config)
         es_dataframe_util = es_utils.DataFrameUtil(
-            conf.elasticsearch, spark_session, es_client, es_utils.MappingsLoader()
+            conf.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
         )
         field_selector = es_utils.CaseFieldSelector()
         df = builders.CaseBuilder(
