@@ -68,7 +68,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                 "end_position",
                 "gene_level_cn",
                 "ncbi_build",
-                "occurrence",
                 "start_position",
                 "variant_status",
                 F.array(
