@@ -16,7 +16,7 @@ from mutation_indexer import (
     indexd_utils,
 )
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.builders import base_builder, bases, civic, maf_metadata
+from mutation_indexer.builders import base_builder, bases, maf_metadata
 from mutation_indexer.configuration import adapter
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
@@ -122,19 +122,26 @@ def _get_viz_builders(
         builders.CaseBuilder(
             config.case, spark_session, es_dataframe_util, case_field_selector
         ),
-        civic.DNABuilder(config.civic_dna, spark_session),
-        civic.ProteinBuilder(config.civic_protein, spark_session),
+        # civic.DNABuilder(config.civic_dna, spark_session),
+        # civic.ProteinBuilder(config.civic_protein, spark_session),
         builders.GeneModelBuilder(config.gene_model, spark_session),
-        builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
+        # builders.MAFBuilder(config.maf, spark_session, doc_dataframe_util),
         builders.MAFMetadataBuilder(
             config.maf_metadata, spark_session, es_dataframe_util, file_filter_factory
         ),
-        builders.PrimaryAliquotBuilder(
-            config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
-        ),
+        # builders.PrimaryAliquotBuilder(
+        #     config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
+        # ),
+        builders.CNVBuilder(config.cnv, spark_session),
     )
 
     yield from input_builders
+    yield builders.CNVCentricBuilder(
+        config.cnv_centric, spark_session, es_dataframe_util, mappings_loader
+    )
+    yield builders.CNVOccurrenceCentricBuilder(
+        config.cnv_occurrence_centric, spark_session, es_dataframe_util, mappings_loader
+    )
 
 
 def get_viz_index_builders(
@@ -165,7 +172,7 @@ def get_viz_index_builders(
         A mapping of the build.IndexType to the builder which will build and then load
         the said index into es.
     """
-
+    return {}
     return types.MappingProxyType(
         {
             build.IndexType.CASE_CENTRIC: builders.CaseCentricBuilder(

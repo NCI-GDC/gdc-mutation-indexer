@@ -2,6 +2,7 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
 from typing import Sequence
 
@@ -116,6 +117,7 @@ class Viz:
     case: CaseBuilder
     civic_dna: ResourceBuilder
     civic_protein: ResourceBuilder
+    cnv: Builder
     gene_model: GeneModelBuilder
     maf_metadata: MAFMetadataBuilder
     maf: MAFBuilder

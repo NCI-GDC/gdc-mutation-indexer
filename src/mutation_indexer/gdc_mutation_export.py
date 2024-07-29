@@ -59,6 +59,7 @@ class Exporter:
 
             inputs[output.to_param()] = builder.build(**inputs)
 
+        return
         # TODO: Remove when old index builders ported to new base
         for index_type in self._index_types:
             if index_type not in self._index_builders:

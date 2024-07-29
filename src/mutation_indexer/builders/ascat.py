@@ -289,9 +289,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         ascat_df = _add_uuids(ascat_df)
 
         return ascat_df.select(
-            "_id",
             "aliquot_id",
-            F.lit("cnv").alias("available_variation_data"),
             "biotype",
             "canonical_transcript_id",
             "canonical_transcript_length",
@@ -324,6 +322,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "symbol",
             "synonyms",
             "transcripts",
+            F.col("sample_id").alias("tumor_sample_uuid"),
             "uniprotkb_swissprot",
             F.col("workflow_type").alias("variant_caller"),
             F.lit("Tumor Only").alias("variant_status"),

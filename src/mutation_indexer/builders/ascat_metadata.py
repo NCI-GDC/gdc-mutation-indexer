@@ -133,5 +133,8 @@ class ASCATMetadataBuilder(
         return self._get_primary_aliquot_df(
             filters,
             entities=frozenset(("case",)),
-            include_fields=("analysis.workflow_type",),
-        ).select("aliquot_id", "case_id", "file_id", "workflow_type")
+            include_fields=(
+                "analysis.workflow_type",
+                # "cases.samples.barcode"
+            ),
+        ).select("aliquot_id", "case_id", "file_id", "sample_id", "workflow_type")
