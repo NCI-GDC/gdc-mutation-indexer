@@ -24,26 +24,22 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
 
     def _build_observations(self, ascat_df: sql.DataFrame) -> sql.DataFrame:
         return (
-            (
-                ascat_df.groupBy("cnv_id", "case_id", "occurrence_id").agg(
-                    F.collect_set(
-                        F.struct(
-                            "observation_id",
-                            # F.struct(
-                            #     # TODO: add this sample data to ascat
-                            #     # "tumor_sample_barcode",
-                            #     "tumor_sample_uuid",
-                            # ).alias("sample"),
-                            "src_file_id",
-                            F.struct("variant_caller").alias("variant_calling"),
-                            "variant_status",
-                        )
-                    ).alias("observation")
-                )
+            ascat_df.groupBy("cnv_id", "case_id", "occurrence_id").agg(
+                F.collect_set(
+                    F.struct(
+                        "observation_id",
+                        # F.struct(
+                        #     # TODO: add this sample data to ascat
+                        #     # "tumor_sample_barcode",
+                        #     "tumor_sample_uuid",
+                        # ).alias("sample"),
+                        "src_file_id",
+                        F.struct("variant_caller").alias("variant_calling"),
+                        "variant_status",
+                    )
+                ).alias("observation")
             )
-            .select("cnv_id", "case_id", "occurrence_id", "observation")
-            .repartition(CNV_PARTITION, "case_id", "cnv_id")
-        )
+        ).select("cnv_id", "case_id", "occurrence_id", "observation")
 
     def _build_occurrences(
         self, ascat_df: sql.DataFrame, case_df: sql.DataFrame
@@ -51,25 +47,24 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         observation_df = self._build_observations(ascat_df)
 
         return (
-            (
-                observation_df.join(case_df, on="case_id", how="left")
-                .groupBy("cnv_id")
-                .agg(
-                    F.collect_set(
-                        F.struct(
-                            F.struct(*case_df.columns, "observation").alias("case"),
-                            "occurrence_id",
-                        )
-                    ).alias("occurrence")
-                )
+            observation_df.join(case_df, on="case_id", how="left")
+            .groupBy("cnv_id")
+            .agg(
+                F.collect_set(
+                    F.struct(
+                        F.struct(*case_df.columns, "observation").alias("case"),
+                        "occurrence_id",
+                    )
+                ).alias("occurrence")
             )
-            .select("cnv_id", "occurrence")
-            .repartition(CNV_PARTITION, "cnv_id")
-        )
+        ).select("cnv_id", "occurrence")
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
-        ascat_df = input_dfs["ascat_df"]
-        occurrence_df = self._build_occurrences(ascat_df, input_dfs["case_df"])
+        ascat_df = input_dfs["ascat_df"].repartition(
+            CNV_PARTITION, "cnv_id", "case_id", "occurrence_id"
+        )
+        case_df = input_dfs["case_df"].repartition(CNV_PARTITION, "case_id")
+        occurrence_df = self._build_occurrences(ascat_df, case_df)
 
         return (
             ascat_df.select(
@@ -93,7 +88,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                     )
                 ).alias("consequence"),
             )
-            .repartition(CNV_PARTITION, "cnv_id")
             .join(occurrence_df, on="cnv_id", how="left")
             .repartition(CNV_PARTITION, "cnv_id")
         )
