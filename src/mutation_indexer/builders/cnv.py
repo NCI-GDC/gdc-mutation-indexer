@@ -25,11 +25,11 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                 F.collect_set(
                     F.struct(
                         "observation_id",
-                        F.struct(
-                            # TODO: add this sample data to ascat
-                            # "tumor_sample_barcode",
-                            "tumor_sample_uuid",
-                        ).alias("sample"),
+                        # F.struct(
+                        #     # TODO: add this sample data to ascat
+                        #     # "tumor_sample_barcode",
+                        #     "tumor_sample_uuid",
+                        # ).alias("sample"),
                         "src_file_id",
                         F.struct("variant_caller").alias("variant_calling"),
                         "variant_status",
@@ -78,7 +78,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                         F.struct(
                             "biotype",
                             "gene_id",
-                            "is_cancer_gene_census",
+                            # "is_cancer_gene_census",
                             "symbol",
                         ).alias("gene"),
                     )

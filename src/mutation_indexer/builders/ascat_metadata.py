@@ -137,4 +137,4 @@ class ASCATMetadataBuilder(
                 "analysis.workflow_type",
                 # "cases.samples.barcode"
             ),
-        ).select("aliquot_id", "case_id", "file_id", "sample_id", "workflow_type")
+        ).select("aliquot_id", "case_id", "file_id", "workflow_type")
