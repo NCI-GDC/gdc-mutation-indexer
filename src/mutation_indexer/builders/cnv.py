@@ -69,8 +69,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         )
         case_df = input_dfs["case_df"].repartition(CNV_PARTITION * 10, "case_id")
         occurrence_df = self._build_occurrences(ascat_df, case_df)
-
-        return ascat_df.select(
+        cnv_df = ascat_df.select(
             "chromosome",
             "cnv_change",
             "cnv_id",
@@ -89,4 +88,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                     ).alias("gene"),
                 )
             ).alias("consequence"),
-        ).join(occurrence_df, on="cnv_id", how="left")
+        ).drop_duplicates(subset=["cnv_id"])
+
+        return cnv_df.join(occurrence_df, on="cnv_id", how="left")
