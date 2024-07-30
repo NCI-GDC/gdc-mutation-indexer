@@ -76,7 +76,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         )
         case_df = (
             input_dfs["case_df"]
-            .where("available_variation_data", "cnv")
+            .where(F.array_contains("available_variation_data", F.lit("cnv")))
             .repartition(CNV_PARTITION * 10, "case_id")
         )
         logger.info(f"CASE COUNT: {case_df.count()}")
