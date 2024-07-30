@@ -108,7 +108,10 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             )
             .select("cnv_id", "cnv.*", "consequence")
         )
-        return cnv_df.join(occurrence_df, on="cnv_id", how="left").select(
+
+        logger.info(f"OCCURRENCE COUNT: {occurrence_df.count()}")
+
+        cnv_df = cnv_df.join(occurrence_df, on="cnv_id").select(
             "chromosome",
             "consequence",
             "cnv_change",
@@ -119,3 +122,9 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             "occurrence",
             "start_position",
         )
+
+        logger.info(
+            f"CNV W/O OCCURRENCE: {cnv_df.where(F.size('occurrence') > 0).count()}"
+        )
+
+        return cnv_df
