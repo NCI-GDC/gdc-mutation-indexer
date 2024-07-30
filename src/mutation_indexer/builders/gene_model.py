@@ -78,7 +78,7 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
         # Elasticsearch 6+ is strict about how booleans are represented.
         # This column really needs to be lowercase.
         gene_df = gene_df.withColumn(
-            "is_cancer_gene_census", F.lower(gene_df.is_cancer_gene_census)
+            "is_cancer_gene_census", F.lower("is_cancer_gene_census").cast("boolean")
         )
 
         gene_df = _rename_columns(gene_df)

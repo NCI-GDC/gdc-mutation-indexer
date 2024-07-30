@@ -874,6 +874,9 @@ class IndexBuilder(
 
         return get_boolean_paths(mappings.get("properties", {}))
 
+    def _safe_read(self) -> sql.DataFrame:
+        return self._es_dataframe_util.read(self._index_type)
+
     def _cast_booleans(self, df: sql.DataFrame) -> sql.DataFrame:
         """
         Ensure all the boolean fields in data frame are booleans before save to ES
@@ -896,8 +899,6 @@ class IndexBuilder(
         return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
 
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = self._cast_booleans(df)
-        df = super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 
         logger.info(f"Writing to ES: {self.output.name}")

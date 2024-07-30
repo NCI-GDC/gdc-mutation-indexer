@@ -13,7 +13,7 @@ logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class CNVOccurrenceCentricInputs(TypedDict):
-    cnv_df: sql.DataFrame
+    cnv_centric_df: sql.DataFrame
 
 
 class CNVOccurrenceCentricBuilder(
@@ -39,7 +39,7 @@ class CNVOccurrenceCentricBuilder(
         self, input_dfs: CNVOccurrenceCentricInputs
     ) -> sql.DataFrame:
         return (
-            input_dfs["cnv_df"]
+            input_dfs["cnv_centric_df"]
             .select(
                 F.struct(
                     "chromosome",
@@ -50,7 +50,6 @@ class CNVOccurrenceCentricBuilder(
                     "gene_level_cn",
                     "ncbi_build",
                     "start_position",
-                    "variant_status",
                 ).alias("cnv"),
                 F.explode("occurrence").alias("occurrence"),
             )

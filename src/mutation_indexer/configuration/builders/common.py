@@ -6,6 +6,9 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 from typing import Sequence
 
+from marshmallow import fields
+
+from mutation_indexer.configuration import marshmallow_extensions
 from mutation_indexer.constants import build
 
 
@@ -46,6 +49,16 @@ class IndexBuilder(Builder):
 
     partition_size: int
     id_field: str
+    include_as_arrays: Sequence[str] = dataclasses.field(
+        default=(),
+        metadata={
+            "metadata": {
+                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
+                    fields.String()
+                )
+            }
+        },
+    )
 
 
 @dataclasses.dataclass(frozen=True)

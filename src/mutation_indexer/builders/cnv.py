@@ -13,7 +13,11 @@ class CNVInputs(TypedDict):
     case_df: sql.DataFrame
 
 
-CNV_PARTITION = 240
+CNV_PARTITION = 24
+
+
+class CNVConfig(common.Builder):
+    final_partitions: int = CNV_PARTITION
 
 
 class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
@@ -61,33 +65,28 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
         ascat_df = input_dfs["ascat_df"].repartition(
-            CNV_PARTITION, "cnv_id", "case_id", "occurrence_id"
+            CNV_PARTITION * 10, "cnv_id", "case_id", "occurrence_id"
         )
-        case_df = input_dfs["case_df"].repartition(CNV_PARTITION, "case_id")
+        case_df = input_dfs["case_df"].repartition(CNV_PARTITION * 10, "case_id")
         occurrence_df = self._build_occurrences(ascat_df, case_df)
 
-        return (
-            ascat_df.select(
-                "chromosome",
-                "cnv_change",
-                "cnv_id",
-                "end_position",
-                "gene_level_cn",
-                "ncbi_build",
-                "start_position",
-                "variant_status",
-                F.array(
+        return ascat_df.select(
+            "chromosome",
+            "cnv_change",
+            "cnv_id",
+            "end_position",
+            "gene_level_cn",
+            "ncbi_build",
+            "start_position",
+            F.array(
+                F.struct(
+                    "consequence_id",
                     F.struct(
-                        "consequence_id",
-                        F.struct(
-                            "biotype",
-                            "gene_id",
-                            # "is_cancer_gene_census",
-                            "symbol",
-                        ).alias("gene"),
-                    )
-                ).alias("consequence"),
-            )
-            .join(occurrence_df, on="cnv_id", how="left")
-            .coalesce(24)
-        )
+                        "biotype",
+                        "gene_id",
+                        # "is_cancer_gene_census",
+                        "symbol",
+                    ).alias("gene"),
+                )
+            ).alias("consequence"),
+        ).join(occurrence_df, on="cnv_id", how="left")
