@@ -55,9 +55,10 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         self, ascat_df: sql.DataFrame, case_df: sql.DataFrame
     ) -> sql.DataFrame:
         observation_df = self._build_observations(ascat_df)
+        logger.info(f"OBSERVATION COUNT: {observation_df.count()}")
 
         return (
-            observation_df.join(case_df, on="case_id", how="left")
+            observation_df.join(case_df, on="case_id")
             .select(
                 "cnv_id",
                 F.struct(
@@ -73,13 +74,16 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         ascat_df = input_dfs["ascat_df"].repartition(
             CNV_PARTITION * 10, "cnv_id", "case_id", "occurrence_id"
         )
-        case_df = input_dfs["case_df"].repartition(CNV_PARTITION * 10, "case_id")
+        case_df = (
+            input_dfs["case_df"]
+            .where("available_variation_data", "cnv")
+            .repartition(CNV_PARTITION * 10, "case_id")
+        )
+        logger.info(f"CASE COUNT: {case_df.count()}")
         occurrence_df = self._build_occurrences(ascat_df, case_df)
         cnv_df = (
             ascat_df.groupBy("cnv_id")
             .agg(
-                # These values are unique across all rows in the ascat df with the same
-                # cnv_id
                 F.first(
                     F.struct(
                         "chromosome",
@@ -104,7 +108,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             )
             .select("cnv_id", "cnv.*", "consequence")
         )
-
         return cnv_df.join(occurrence_df, on="cnv_id", how="left").select(
             "chromosome",
             "consequence",
