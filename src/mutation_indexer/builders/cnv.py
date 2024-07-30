@@ -1,3 +1,4 @@
+import logging
 from typing import TypedDict
 
 from pyspark import sql
@@ -6,6 +7,8 @@ from pyspark.sql import functions as F
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
+
+logger = logging.getLogger(__name__)
 
 
 class CNVInputs(TypedDict):
@@ -28,22 +31,25 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
 
     def _build_observations(self, ascat_df: sql.DataFrame) -> sql.DataFrame:
         return (
-            ascat_df.groupBy("cnv_id", "case_id", "occurrence_id").agg(
-                F.collect_set(
-                    F.struct(
-                        "observation_id",
-                        # F.struct(
-                        #     # TODO: add this sample data to ascat
-                        #     # "tumor_sample_barcode",
-                        #     "tumor_sample_uuid",
-                        # ).alias("sample"),
-                        "src_file_id",
-                        F.struct("variant_caller").alias("variant_calling"),
-                        "variant_status",
-                    )
-                ).alias("observation")
+            ascat_df.select(
+                "cnv_id",
+                "case_id",
+                "occurrence_id",
+                F.struct(
+                    "observation_id",
+                    # F.struct(
+                    #     # TODO: add this sample data to ascat
+                    #     # "tumor_sample_barcode",
+                    #     "tumor_sample_uuid",
+                    # ).alias("sample"),
+                    "src_file_id",
+                    F.struct("variant_caller").alias("variant_calling"),
+                    "variant_status",
+                ).alias("observation"),
             )
-        ).select("cnv_id", "case_id", "occurrence_id", "observation")
+            .groupBy("cnv_id", "case_id", "occurrence_id")
+            .agg(F.collect_list("observation").alias("observation"))
+        )
 
     def _build_occurrences(
         self, ascat_df: sql.DataFrame, case_df: sql.DataFrame
@@ -52,16 +58,16 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
 
         return (
             observation_df.join(case_df, on="case_id", how="left")
-            .groupBy("cnv_id")
-            .agg(
-                F.collect_set(
-                    F.struct(
-                        F.struct(*case_df.columns, "observation").alias("case"),
-                        "occurrence_id",
-                    )
-                ).alias("occurrence")
+            .select(
+                "cnv_id",
+                F.struct(
+                    F.struct(*case_df.columns, "observation").alias("case"),
+                    "occurrence_id",
+                ).alias("occurrence"),
             )
-        ).select("cnv_id", "occurrence")
+            .groupBy("cnv_id")
+            .agg(F.collect_list("occurrence").alias("occurrence"))
+        )
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
         ascat_df = input_dfs["ascat_df"].repartition(
@@ -72,6 +78,8 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         cnv_df = (
             ascat_df.groupBy("cnv_id")
             .agg(
+                # These values are unique across all rows in the ascat df with the same
+                # cnv_id
                 F.first(
                     F.struct(
                         "chromosome",
@@ -97,4 +105,17 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             .select("cnv_id", "cnv.*", "consequence")
         )
 
-        return cnv_df.join(occurrence_df, on="cnv_id", how="left")
+        logger.info(f"CNV COUNT: {cnv_df.count()}")
+        logger.info(f"OCCURRENCE COUNT: {occurrence_df.count()}")
+
+        return cnv_df.join(occurrence_df, on="cnv_id", how="left").select(
+            "chromosome",
+            "consequence",
+            "cnv_change",
+            "cnv_id",
+            "end_position",
+            "gene_level_cn",
+            "ncbi_build",
+            "occurrence",
+            "start_position",
+        )
