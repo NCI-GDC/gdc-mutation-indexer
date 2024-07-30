@@ -70,6 +70,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         cnv_df = ascat_df.drop_duplicates(subset=["cnv_id"]).select(
             "chromosome",
             "cnv_change",
+            "cnv_id",
             "end_position",
             "gene_level_cn",
             "ncbi_build",
