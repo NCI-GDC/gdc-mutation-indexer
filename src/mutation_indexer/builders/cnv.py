@@ -46,6 +46,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
     def _build_occurrences(
         self, ascat_df: sql.DataFrame, case_df: sql.DataFrame
     ) -> sql.DataFrame:
+        ascat_df.repartition(CNV_PARTITION * 10, "cnv_id", "case_id", "occurrence_id")
         observation_df = self._build_observations(ascat_df)
 
         return (
@@ -62,7 +63,7 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         )
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
-        ascat_df = input_dfs["ascat_df"]
+        ascat_df = input_dfs["ascat_df"].repartition(CNV_PARTITION, "cnv_id")
         case_df = input_dfs["case_df"].where(
             F.array_contains("available_variation_data", F.lit("cnv"))
         )
