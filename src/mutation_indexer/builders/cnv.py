@@ -1,4 +1,3 @@
-import logging
 from typing import TypedDict
 
 from pyspark import sql
@@ -7,8 +6,6 @@ from pyspark.sql import functions as F
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
-
-logger = logging.getLogger(__name__)
 
 
 class CNVInputs(TypedDict):
@@ -50,7 +47,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         self, ascat_df: sql.DataFrame, case_df: sql.DataFrame
     ) -> sql.DataFrame:
         observation_df = self._build_observations(ascat_df)
-        logger.info(f"OBSERVATION COUNT: {observation_df.count()}")
 
         return (
             observation_df.join(case_df, on="case_id")
@@ -66,49 +62,32 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         )
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
-        ascat_df = input_dfs["ascat_df"].repartition(
-            CNV_PARTITION * 10, "cnv_id", "case_id", "occurrence_id"
+        ascat_df = input_dfs["ascat_df"]
+        case_df = input_dfs["case_df"].where(
+            F.array_contains("available_variation_data", F.lit("cnv"))
         )
-        case_df = (
-            input_dfs["case_df"]
-            .where(F.array_contains("available_variation_data", F.lit("cnv")))
-            .repartition(CNV_PARTITION * 10, "case_id")
-        )
-        logger.info(f"CASE COUNT: {case_df.count()}")
         occurrence_df = self._build_occurrences(ascat_df, case_df)
-        cnv_df = (
-            ascat_df.groupBy("cnv_id")
-            .agg(
-                F.first(
+        cnv_df = ascat_df.drop_duplicates(subset=["cnv_id"]).select(
+            "chromosome",
+            "cnv_change",
+            "end_position",
+            "gene_level_cn",
+            "ncbi_build",
+            "start_position",
+            F.array(
+                F.struct(
+                    "consequence_id",
                     F.struct(
-                        "chromosome",
-                        "cnv_change",
-                        "end_position",
-                        "gene_level_cn",
-                        "ncbi_build",
-                        "start_position",
-                    ),
-                ).alias("cnv"),
-                F.collect_set(
-                    F.struct(
-                        "consequence_id",
-                        F.struct(
-                            "biotype",
-                            "gene_id",
-                            "is_cancer_gene_census",
-                            "symbol",
-                        ).alias("gene"),
-                    )
-                ).alias("consequence"),
-            )
-            .select("cnv_id", "cnv.*", "consequence")
+                        "biotype",
+                        "gene_id",
+                        "is_cancer_gene_census",
+                        "symbol",
+                    ).alias("gene"),
+                )
+            ).alias("consequence"),
         )
 
-        logger.info(
-            f"OCCURRENCE COUNT: {occurrence_df.where(F.size('occurrence') > 0).count()}"
-        )
-
-        cnv_df = cnv_df.join(occurrence_df, on="cnv_id").select(
+        return cnv_df.join(occurrence_df, on="cnv_id").select(
             "chromosome",
             "consequence",
             "cnv_change",
@@ -119,9 +98,3 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             "occurrence",
             "start_position",
         )
-
-        logger.info(
-            f"CNV W/O OCCURRENCE: {cnv_df.where(F.size('occurrence') > 0).count()}"
-        )
-
-        return cnv_df

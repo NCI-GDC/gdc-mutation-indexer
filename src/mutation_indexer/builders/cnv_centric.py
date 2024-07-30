@@ -38,5 +38,6 @@ class CNVCentricBuilder(bases.IndexBuilder[common.IndexBuilder, CNVCentricInputs
             "end_position",
             "gene_level_cn",
             "ncbi_build",
+            "occurrence",
             "start_position",
         )
