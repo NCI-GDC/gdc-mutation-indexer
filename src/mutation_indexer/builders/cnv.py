@@ -105,9 +105,6 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             .select("cnv_id", "cnv.*", "consequence")
         )
 
-        logger.info(f"CNV COUNT: {cnv_df.count()}")
-        logger.info(f"OCCURRENCE COUNT: {occurrence_df.count()}")
-
         return cnv_df.join(occurrence_df, on="cnv_id", how="left").select(
             "chromosome",
             "consequence",
