@@ -13,7 +13,7 @@ class CNVInputs(TypedDict):
     case_df: sql.DataFrame
 
 
-CNV_PARTITION = 200
+CNV_PARTITION = 240
 
 
 class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
