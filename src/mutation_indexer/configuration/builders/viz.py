@@ -77,6 +77,15 @@ class CaseCentricBuilder(IndexBuilder):
     """
 
     genes_threshold: int
+    include_as_arrays: Sequence[str] = dataclasses.field(
+        metadata={
+            "metadata": {
+                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
+                    fields.String()
+                )
+            }
+        },
+    )
 
 
 @dataclasses.dataclass(frozen=True)
