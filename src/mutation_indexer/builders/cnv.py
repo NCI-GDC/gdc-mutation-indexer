@@ -30,11 +30,8 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         )
 
     def _build_observations(self, ascat_df: sql.DataFrame) -> sql.DataFrame:
-        return (
-            ascat_df.select(
-                "cnv_id",
-                "case_id",
-                "occurrence_id",
+        return ascat_df.groupBy("cnv_id", "case_id", "occurrence_id").agg(
+            F.collect_list(
                 F.struct(
                     "observation_id",
                     # F.struct(
@@ -45,10 +42,8 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
                     "src_file_id",
                     F.struct("variant_caller").alias("variant_calling"),
                     "variant_status",
-                ).alias("observation"),
-            )
-            .groupBy("cnv_id", "case_id", "occurrence_id")
-            .agg(F.collect_list("observation").alias("observation"))
+                )
+            ).alias("observation")
         )
 
     def _build_occurrences(
@@ -59,15 +54,15 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
 
         return (
             observation_df.join(case_df, on="case_id")
-            .select(
-                "cnv_id",
-                F.struct(
-                    F.struct(*case_df.columns, "observation").alias("case"),
-                    "occurrence_id",
+            .groupBy("cnv_id")
+            .agg(
+                F.collect_list(
+                    F.struct(
+                        F.struct(*case_df.columns, "observation").alias("case"),
+                        "occurrence_id",
+                    )
                 ).alias("occurrence"),
             )
-            .groupBy("cnv_id")
-            .agg(F.collect_list("occurrence").alias("occurrence"))
         )
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
@@ -109,7 +104,9 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
             .select("cnv_id", "cnv.*", "consequence")
         )
 
-        logger.info(f"OCCURRENCE COUNT: {occurrence_df.count()}")
+        logger.info(
+            f"OCCURRENCE COUNT: {occurrence_df.where(F.size('occurrence') > 0).count()}"
+        )
 
         cnv_df = cnv_df.join(occurrence_df, on="cnv_id").select(
             "chromosome",
