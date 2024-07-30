@@ -60,10 +60,10 @@ class CNVBuilder(bases.InputBuilder[common.Builder, CNVInputs]):
         ).select("cnv_id", "occurrence")
 
     def _build_from_scratch(self, input_dfs: CNVInputs) -> sql.DataFrame:
-        ascat_df = input_dfs["ascat_df"].repartitionByRange(
+        ascat_df = input_dfs["ascat_df"].repartition(
             CNV_PARTITION, "cnv_id", "case_id", "occurrence_id"
         )
-        case_df = input_dfs["case_df"].repartitionByRange(CNV_PARTITION, "case_id")
+        case_df = input_dfs["case_df"].repartition(CNV_PARTITION, "case_id")
         occurrence_df = self._build_occurrences(ascat_df, case_df)
 
         return (
