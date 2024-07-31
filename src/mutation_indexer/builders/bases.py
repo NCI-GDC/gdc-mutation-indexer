@@ -875,7 +875,9 @@ class IndexBuilder(
         return get_boolean_paths(mappings.get("properties", {}))
 
     def _safe_read(self) -> sql.DataFrame:
-        return self._es_dataframe_util.read(self._index_type)
+        return self._es_dataframe_util.read(
+            self._index_type, include_as_arrays=self._config.include_as_arrays
+        )
 
     def _cast_booleans(self, df: sql.DataFrame) -> sql.DataFrame:
         """
