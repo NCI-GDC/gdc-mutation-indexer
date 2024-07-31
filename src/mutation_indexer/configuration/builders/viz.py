@@ -77,15 +77,6 @@ class CaseCentricBuilder(IndexBuilder):
     """
 
     genes_threshold: int
-    include_as_arrays: Sequence[str] = dataclasses.field(
-        metadata={
-            "metadata": {
-                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    fields.String()
-                )
-            }
-        },
-    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -104,6 +95,12 @@ class SSMCentricBuilder(IndexBuilder):
     """
 
     occurrences_threshold: int
+    include_as_arrays = ()
+
+
+@dataclasses.dataclass(frozen=True)
+class DefaultedCentricBuilder(IndexBuilder):
+    include_as_arrays = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -123,8 +120,8 @@ class Viz:
     maf: MAFBuilder
     primary_aliquot: Builder
     case_centric: CaseCentricBuilder
-    gene_centric: IndexBuilder
+    gene_centric: DefaultedCentricBuilder
     cnv_centric: CNVCentricBuilder
-    cnv_occurrence_centric: IndexBuilder
+    cnv_occurrence_centric: DefaultedCentricBuilder
     ssm_centric: SSMCentricBuilder
-    ssm_occurrence_centric: IndexBuilder
+    ssm_occurrence_centric: DefaultedCentricBuilder
