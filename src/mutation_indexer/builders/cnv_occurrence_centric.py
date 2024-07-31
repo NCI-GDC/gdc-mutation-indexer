@@ -40,6 +40,7 @@ class CNVOccurrenceCentricBuilder(
     ) -> sql.DataFrame:
         return (
             input_dfs["cnv_centric_df"]
+            .repartition(240)
             .select(
                 F.struct(
                     "chromosome",
