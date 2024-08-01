@@ -6,7 +6,11 @@
 #
 --index-url https://nexus.osdc.io/repository/pypi-all/simple
 
-aiohttp==3.9.5
+aiohappyeyeballs==2.3.4
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+aiohttp==3.10.0
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -113,7 +117,7 @@ packaging==24.1
     # via
     #   -c requirements.txt
     #   marshmallow
-pex==2.3.1
+pex==2.13.1
     # via gdc-mutation-indexer (setup.py)
 py4j==0.10.9.5
     # via
