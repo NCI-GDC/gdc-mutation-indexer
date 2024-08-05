@@ -6,7 +6,11 @@
 #
 --index-url https://nexus.osdc.io/repository/pypi-all/simple
 
-aiohttp==3.9.5
+aiohappyeyeballs==2.3.4
+    # via
+    #   -c requirements.txt
+    #   aiohttp
+aiohttp==3.10.0
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -22,7 +26,7 @@ attrs==23.2.0
     # via
     #   -c requirements.txt
     #   aiohttp
-certifi==2024.2.2
+certifi==2024.7.4
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -49,7 +53,7 @@ frozenlist==1.4.1
     #   -c requirements.txt
     #   aiohttp
     #   aiosignal
-gdcmodels==5.1.1
+gdcmodels==5.2.0
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
@@ -60,22 +64,26 @@ idna==3.7
     #   -c requirements.txt
     #   requests
     #   yarl
+importlib-metadata==8.2.0
+    # via
+    #   -c requirements.txt
+    #   typeguard
 importlib-resources==3.3.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-indexclient==2.4.0
+indexclient==2.4.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
 log-symbols==0.0.14
     # via halo
-marshmallow==3.21.2
+marshmallow==3.21.3
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
     #   marshmallow-enum
-marshmallow-dataclass==8.6.1
+marshmallow-dataclass==8.7.0
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
@@ -109,11 +117,11 @@ ordered-set==4.1.0
     # via
     #   -c requirements.txt
     #   deepdiff
-packaging==24.0
+packaging==24.1
     # via
     #   -c requirements.txt
     #   marshmallow
-pex==2.3.1
+pex==2.14.0
     # via gdc-mutation-indexer (setup.py)
 py4j==0.10.9.5
     # via
@@ -131,7 +139,7 @@ pyyaml==6.0.1
     # via
     #   -c requirements.txt
     #   gdcmodels
-requests==2.32.2
+requests==2.32.3
     # via
     #   -c requirements.txt
     #   indexclient
@@ -145,18 +153,23 @@ toml==0.10.2
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-typing-extensions==4.11.0
+typeguard==4.0.1
+    # via
+    #   -c requirements.txt
+    #   marshmallow-dataclass
+typing-extensions==4.12.2
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
     #   marshmallow-dataclass
+    #   typeguard
     #   typing-inspect
 typing-inspect==0.9.0
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -167,6 +180,10 @@ yarl==1.9.4
     # via
     #   -c requirements.txt
     #   aiohttp
+zipp==3.19.2
+    # via
+    #   -c requirements.txt
+    #   importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
