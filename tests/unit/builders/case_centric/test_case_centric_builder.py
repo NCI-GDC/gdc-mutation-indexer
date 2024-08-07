@@ -18,6 +18,7 @@ from tests.unit.data.models import viz as models
 class Inputs(TypedDict):
     maf_metadata_df: sql.DataFrame
     maf_df: sql.DataFrame
+    ascat_metadata_df: sql.DataFrame
     ascat_df: sql.DataFrame
     primary_aliquot_df: sql.DataFrame
 
@@ -71,6 +72,11 @@ def maf_schema() -> types.StructType:
 
 
 @pytest.fixture(scope="class")
+def ascat_metadata_schema() -> types.StructType:
+    return schemas.Viz.Builders.ASCATMetadata.FINAL.load()
+
+
+@pytest.fixture(scope="class")
 def ascat_schema() -> types.StructType:
     return schemas.Viz.Builders.ASCAT.FINAL.load()
 
@@ -113,6 +119,7 @@ class TestCaseCentricBuilder:
         create_dataframe: utils.CreateDataFrame,
         maf_metadata_schema: types.StructType,
         maf_schema: types.StructType,
+        ascat_metadata_schema: types.StructType,
         ascat_schema: types.StructType,
         primary_aliquot_schema: types.StructType,
         case_schema: types.StructType,
@@ -125,6 +132,7 @@ class TestCaseCentricBuilder:
         self.create_dataframe = create_dataframe
         self.maf_metadata_schema = maf_metadata_schema
         self.maf_schema = maf_schema
+        self.ascat_metadata_schema = ascat_metadata_schema
         self.ascat_schema = ascat_schema
         self.primary_aliquot_schema = primary_aliquot_schema
         self.case_schema = case_schema
@@ -198,11 +206,15 @@ class TestCaseCentricBuilder:
         self,
         maf_metadata: Iterable[models.MAFMetadata] = (models.MAFMetadata(),),
         mafs: Iterable[models.MAF] = (models.MAF(),),
+        ascat_metadata: Iterable[models.ASCATMetadata] = (models.ASCATMetadata(),),
         ascats: Iterable[models.ASCAT] = (models.ASCAT(),),
         primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
     ) -> Inputs:
         maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
         maf_df = self.create_dataframe(mafs, self.maf_schema)
+        ascat_metadata_df = self.create_dataframe(
+            ascat_metadata, self.ascat_metadata_schema
+        )
         ascat_df = self.create_dataframe(ascats, self.ascat_schema)
         primary_aliquot_df = self.create_dataframe(
             primary_aliquots, self.primary_aliquot_schema
@@ -211,6 +223,7 @@ class TestCaseCentricBuilder:
         return Inputs(
             maf_metadata_df=maf_metadata_df,
             maf_df=maf_df,
+            ascat_metadata_df=ascat_metadata_df,
             ascat_df=ascat_df,
             primary_aliquot_df=primary_aliquot_df,
         )
@@ -300,7 +313,7 @@ class TestCaseCentricBuilder:
         expected_available_variations: Set[str],
     ) -> None:
         maf_metadata = models.MAFMetadata(case_id=maf_case_id)
-        raw_ascat = models.ASCAT(case_id=cnv_case_id)
+        ascat_metadata = models.ASCATMetadata(case_id=cnv_case_id)
 
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
@@ -308,7 +321,9 @@ class TestCaseCentricBuilder:
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
-        inputs = self.arrange_inputs(maf_metadata=(maf_metadata,), ascats=(raw_ascat,))
+        inputs = self.arrange_inputs(
+            maf_metadata=(maf_metadata,), ascat_metadata=(ascat_metadata,)
+        )
         builder = builders.CaseCentricBuilder(
             config,
             sql_context,

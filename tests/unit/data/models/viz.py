@@ -5,12 +5,19 @@ from tests.unit.data.models.builders import *
 
 
 @dataclasses.dataclass(frozen=True)
+class ASCATMetadata:
+    aliquot_id: str = "aliquot-0"
+    case_id: str = "case-0"
+    file_id: str = "file-0"
+    workflow_type: str = "ASCAT3"
+
+
+@dataclasses.dataclass(frozen=True)
 class ASCAT:
     _id: Optional[dict] = dataclasses.field(
         default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
     )
     aliquot_id: Optional[str] = "aliquot-0"
-    available_variation_data: Optional[str] = "cnv"
     biotype: Optional[str] = "protein_coding"
     canonical_transcript_id: Optional[str] = "ENST00000456328"
     canonical_transcript_length: Optional[int] = None
@@ -45,12 +52,13 @@ class ASCAT:
     observation_id: Optional[str] = "b1627f65-d28b-568c-9f76-1a24bd4fe82d"
     occurrence_id: Optional[str] = "2d7b55e0-9122-5a30-9a42-81c06fe5183f"
     omim_gene: Optional[tuple[str, ...]] = ()
+    src_file_id: str = "file-0"
     start_position: Optional[int] = 11869
     symbol: Optional[str] = "DDX11L1"
     synonyms: Optional[tuple[str, ...]] = ()
     transcripts: Optional[tuple[Transcript, ...]] = (Transcript(),)
     uniprotkb_swissprot: Optional[tuple[str, ...]] = ()
-    variant_caller: Optional[str] = "ASCAT"
+    variant_caller: Optional[str] = "ASCAT2"
     variant_status: Optional[str] = "Tumor Only"
 
 

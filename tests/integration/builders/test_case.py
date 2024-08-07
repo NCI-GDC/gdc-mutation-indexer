@@ -72,9 +72,15 @@ class TestCaseBuilder:
             es_utils.SchemaLoader(),
         )
         field_selector = es_utils.CaseFieldSelector()
+        ascat_metadata_df = cnv_df.select("case_id")
         df = builders.CaseBuilder(
             conf.builders.viz.case, spark_session, es_dataframe_util, field_selector
-        ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
+        ).build(
+            maf_metadata_df=maf_metadata_df,
+            maf_df=maf_df,
+            ascat_metadata_df=ascat_metadata_df,
+            ascat_df=cnv_df,
+        )
 
         assert df.count() == expected_count
         for row in df.collect():

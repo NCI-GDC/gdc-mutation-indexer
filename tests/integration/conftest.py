@@ -419,12 +419,18 @@ def case_df(
         es_utils.MappingsLoader(),
         es_utils.SchemaLoader(),
     )
+    ascat_metadata_df = cnv_df.select("case_id")
     df = builders.CaseBuilder(
         default_config.builders.viz.case,
         spark_session,
         es_dataframe_util,
         es_utils.CaseFieldSelector(),
-    ).build(maf_metadata_df=maf_metadata_df, maf_df=maf_df, ascat_df=cnv_df)
+    ).build(
+        maf_metadata_df=maf_metadata_df,
+        maf_df=maf_df,
+        ascat_metadata_df=ascat_metadata_df,
+        ascat_df=cnv_df,
+    )
 
     return dataframe_writer(df)
 
@@ -544,8 +550,11 @@ def case_centric_df(
         consequence_builder,
         observation_builder,
     )
+    ascat_metadata_df = cnv_df.select("case_id")
 
-    builder.build(maf_metadata_df, maf_df, cnv_df, primary_aliquot_df)
+    builder.build(
+        maf_metadata_df, maf_df, ascat_metadata_df, cnv_df, primary_aliquot_df
+    )
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
     builder.load()

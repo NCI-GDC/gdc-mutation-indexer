@@ -13,10 +13,6 @@ fields:
       type: struct
   - <<: *string_field
     name: aliquot_id
-  - metadata: {}
-    name: available_variation_data
-    nullable: false
-    type: string
   - <<: *string_field
     name: biotype
   - <<: *string_field

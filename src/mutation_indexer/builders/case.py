@@ -17,12 +17,14 @@ AVAILABLE_VARIATION_DATA = "available_variation_data"
 
 
 def _load_available_variation_data(
-    maf_metadata_df: sql.DataFrame, ascat_df: sql.DataFrame
+    maf_metadata_df: sql.DataFrame, ascat_metadata_df: sql.DataFrame
 ) -> sql.DataFrame:
     ssm_data_df = maf_metadata_df.select(
         "case_id", F.lit("ssm").alias(AVAILABLE_VARIATION_DATA)
     )
-    cnv_data_df = ascat_df.select("case_id", AVAILABLE_VARIATION_DATA)
+    cnv_data_df = ascat_metadata_df.select(
+        "case_id", F.lit("cnv").alias(AVAILABLE_VARIATION_DATA)
+    )
     available_variation_df = ssm_data_df.union(cnv_data_df)
 
     # Finally, group by case
@@ -61,7 +63,7 @@ class CaseLoaderMixin(abc.ABC):
 
 class CaseInputs(TypedDict):
     maf_metadata_df: sql.DataFrame
-    ascat_df: sql.DataFrame
+    ascat_metadata_df: sql.DataFrame
 
 
 class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMixin):
@@ -109,6 +111,6 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
     def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
         return self._load_cases(
             input_dfs["maf_metadata_df"],
-            input_dfs["ascat_df"],
+            input_dfs["ascat_metadata_df"],
             self._config.repartition_size,
         )
