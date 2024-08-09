@@ -208,7 +208,6 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         ascat {}
         |---_id
         |---aliquot_id
-        |---available_variation_data
         |---biotype
         |---canonical_transcript_id
         |---canonical_transcript_length
@@ -291,7 +290,6 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         return ascat_df.select(
             "_id",
             "aliquot_id",
-            F.lit("cnv").alias("available_variation_data"),
             "biotype",
             "canonical_transcript_id",
             "canonical_transcript_length",
