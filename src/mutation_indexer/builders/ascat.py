@@ -3,7 +3,6 @@ from collections.abc import Iterable
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, schemas
@@ -108,18 +107,18 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
 
     METHOD:
     This is calculated by grouping all copy_numbers in a file and getting a count
-    of their occurances/frequency. Then the counts are grouped again by file; in
+    of their occurrence/frequency. Then the counts are grouped again by file; in
     this aggregation, the min and max copy number are taken as the upper and
-    lower ploity for a given count/frequency.
+    lower ploidy for a given count/frequency.
 
     Then the maximum count/frequency is calculated from aggregating the original
     counts based on file id and taking the max count. This data frame now has the
     count of the modal value(s).
 
     Using the above two data frames the modal count is then inner joined into the
-    ploity data frame to give us the ploity values for a given file. This is then
+    ploidy data frame to give us the ploidy values for a given file. This is then
     joined into the original data frame by file id to give every row a
-    upper_ploity_number and lower_ploity_number which is used to select the
+    upper_ploidy_number and lower_ploidy_number which is used to select the
     cnv_change column in the returned data frame.
 
     Args:
@@ -130,30 +129,48 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
 
         data {}
         |---cnv_change
+        |---chromosome
         |---file_id
         +---gene_id
     """
-    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
-        F.count("*").alias("count")
+    count_window = sql.Window().partitionBy("file_id", "copy_number")
+    lower_ploidy_window = (
+        sql.Window()
+        .partitionBy("file_id")
+        .orderBy(F.col("_count").desc(), F.col("copy_number").asc())
+    )  # The first element of this window will be the lowest mode value for the file.
+    upper_ploidy_window = (
+        sql.Window()
+        .partitionBy("file_id")
+        .orderBy(F.col("_count").desc(), F.col("copy_number").desc())
+    )  # The first element of this window will be the highest mode value for the file.
+
+    document_df = (
+        document_df.na.drop(
+            subset="copy_number"
+        )  # TODO: Should these be dropped before or after counting?
+        .withColumn("_count", F.count("*").over(count_window))
+        .withColumns(
+            {
+                "_lower_ploidy_number": F.first("copy_number").over(
+                    lower_ploidy_window
+                ),
+                "_upper_ploidy_number": F.first("copy_number").over(
+                    upper_ploidy_window
+                ),
+            }
+        )
     )
-    ploidy_window = sql.Window().partitionBy("file_id", "count")
-    mode_window = sql.Window().partitionBy("file_id").orderBy(F.col("count").desc())
-    ploidy_df = ploidy_df.select(
-        "file_id",
-        F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
-        F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
-        F.row_number().over(mode_window).alias("row_number"),
-    ).where(F.col("row_number") == 1)
-    document_df = document_df.join(ploidy_df, on="file_id")
     cnv_change = (
-        F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-        .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+        F.when(F.col("copy_number") > F.col("_upper_ploidy_number"), "Gain")
+        .when(F.col("copy_number") < F.col("_lower_ploidy_number"), "Loss")
         .otherwise(None)
         .alias("cnv_change")
     )
 
     return document_df.select(
         cnv_change,
+        "chromosome",
         "file_id",
         "gene_id",
     ).na.drop(subset="cnv_change")
@@ -181,26 +198,24 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
 
     def _build_document_df(self, doc_ids: Iterable[str]) -> sql.DataFrame:
         document_df = self._document_dataframe_util.get_dataframe(
-            doc_ids, schema=schemas.load_schema("builders/ascat/ascat_document.yaml")
+            doc_ids,
+            schema=schemas.load_schema("builders/ascat/ascat_document.yaml"),
+        ).select(
+            "copy_number",
+            F.regexp_replace("chromosome", "chr", "").alias("chromosome"),
+            F.col("did").alias("file_id"),
+            _strip_gene_id().alias("gene_id"),
         )
 
-        document_df = (
-            document_df.withColumn(
-                "chromosome",
-                F.coalesce(
-                    F.regexp_replace("chromosome", "chr", "").cast(types.IntegerType()),
-                    F.lit(-1),
-                ),
-            )
-            .where(F.col("chromosome").between(1, 22))
+        return (
+            _add_cnv_change(document_df)
+            .where(utils.is_between_chr1_and_chr22())
             .select(
-                "copy_number",
-                F.col("did").alias("file_id"),
-                _strip_gene_id().alias("gene_id"),
+                "cnv_change",
+                "file_id",
+                "gene_id",
             )
         )
-
-        return _add_cnv_change(document_df)
 
     def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
         """Builds the ASCAT dataframe
