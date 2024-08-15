@@ -122,9 +122,14 @@ class Viz:
             FILE: Schema
 
         class Observation:
-            @_init_schemas
             class CNV:
-                FINAL: Schema
+                @_init_schemas
+                class CNV:
+                    FINAL: Schema
+
+                @_init_schemas
+                class Other:
+                    FINAL: Schema
 
             @_init_schemas
             class Other:

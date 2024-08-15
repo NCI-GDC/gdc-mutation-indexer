@@ -42,10 +42,8 @@ observation:
     - src_file_id
   cnv_centric:
     - sample
-    - src_file_id
   cnv_occurrence_centric:
     - sample
-    - src_file_id
   gene_centric:
     - sample
     - src_file_id

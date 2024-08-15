@@ -37,7 +37,12 @@ def other_ssm_observation_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def cnv_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.FINAL.load()
+    return schemas.Viz.Builders.Observation.CNV.CNV.FINAL.load()
+
+
+@pytest.fixture(scope="class")
+def cnv_other_observation_schema() -> types.StructType:
+    return schemas.Viz.Builders.Observation.CNV.Other.FINAL.load()
 
 
 class TestObservationBuilder:
@@ -51,6 +56,7 @@ class TestObservationBuilder:
         ssm_observation_schema: types.StructType,
         other_ssm_observation_schema: types.StructType,
         cnv_observation_schema: types.StructType,
+        cnv_other_observation_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.maf_schema = maf_schema
@@ -60,7 +66,10 @@ class TestObservationBuilder:
             "ssm": ssm_observation_schema,
             "other": other_ssm_observation_schema,
         }
-        self.cnv_observation_schema = cnv_observation_schema
+        self.cnv_schemas = {
+            "cnv": cnv_observation_schema,
+            "other": cnv_other_observation_schema,
+        }
 
     def arrange_maf_df(
         self, mafs: Tuple[models.MAF, ...] = (models.MAF(),)
@@ -163,16 +172,18 @@ class TestObservationBuilder:
         )
 
     @pytest.mark.parametrize(
-        ("index", "selector"),
+        ("index", "selector", "final_schema"),
         (
-            pytest.param("case_centric", "cnv", id="case_centric"),
-            pytest.param("cnv_centric", None, id="cnv_centric"),
-            pytest.param("cnv_occurrence_centric", None, id="cnv_occurrence_centric"),
-            pytest.param("gene_centric", "cnv", id="gene_centric"),
+            pytest.param("case_centric", "cnv", "other", id="case_centric"),
+            pytest.param("cnv_centric", None, "cnv", id="cnv_centric"),
+            pytest.param(
+                "cnv_occurrence_centric", None, "cnv", id="cnv_occurrence_centric"
+            ),
+            pytest.param("gene_centric", "cnv", "other", id="gene_centric"),
         ),
     )
     def test__build_for_cnv__final_schema(
-        self, index: str, selector: Optional[str]
+        self, index: str, selector: Optional[str], final_schema: str
     ) -> None:
         ascat_df = self.arrange_ascat_df()
         builder = self.arrange_builder()
@@ -180,7 +191,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_cnv(ascat_df, index, selector)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.cnv_observation_schema
+        assert result_df.schema == self.cnv_schemas[final_schema]
 
     def test__build_for_cnv__data_translated(self) -> None:
         ascat = models.ASCAT()

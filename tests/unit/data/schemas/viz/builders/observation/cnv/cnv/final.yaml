@@ -1,0 +1,37 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: cnv_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: occurrence_id
+  - metadata: {}
+    name: observation
+    nullable: false
+    type:
+      containsNull: false
+      elementType:
+        fields:
+          - <<: *string_field
+            name: observation_id
+          - <<: *string_field
+            name: src_file_id
+          - metadata: {}
+            name: variant_calling
+            nullable: false
+            type:
+              fields:
+                - <<: *string_field
+                  name: variant_caller
+              type: struct
+          - metadata: {}
+            name: variant_status
+            nullable: false
+            type: string
+        type: struct
+      type: array
+type: struct
