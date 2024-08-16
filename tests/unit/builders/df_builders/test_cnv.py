@@ -23,7 +23,7 @@ def consequence_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.FINAL.load()
+    return schemas.Viz.Builders.Observation.CNV.Other.FINAL.load()
 
 
 @pytest.fixture(scope="class")

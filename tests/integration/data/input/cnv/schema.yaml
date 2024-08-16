@@ -339,4 +339,8 @@ fields:
     name: cnv_change
     nullable: true
     type: string
+  - metadata: {}
+    name: src_file_id
+    type: string
+    nullable: true
 type: struct
