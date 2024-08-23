@@ -50,7 +50,7 @@ partition_size = 12
 [builders.gene_expression.gene_expression.backup]
 mode = "WRITE"
 partition_by = "gene_id"
-path = "./data_release/{data_release}/{build_version}/gene_expressions_{data_release}_{build_version}.parquet"
+path = "./data_release/{data_release}/{build_version}/gene_expression_{data_release}_{build_version}.parquet"
 
 [builders.gene_expression.gene_model]
 census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
