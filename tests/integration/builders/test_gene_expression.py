@@ -207,3 +207,11 @@ def test_gene_expression_builder_writes_backup_to_path(
     )
     assert parquet_dump.exists()
     assert parquet_dump.is_dir()
+
+    from pyspark.sql import SparkSession
+
+    spark = SparkSession.builder.getOrCreate()
+    df = spark.read.parquet(str(parquet_dump))
+    type_dict = dict(df.dtypes)
+    assert type_dict["log2_uqfpkm"] == "float"
+    assert type_dict["uqfpkm"] == "float"
