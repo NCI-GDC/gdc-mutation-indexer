@@ -9,15 +9,15 @@ fields:
     name: gene_expression_id
   - <<: *string_field
     name: gene_id
-  - &double_field
+  - &float_field
     metadata: {}
     name: log2_uqfpkm
     nullable: true
-    type: double
+    type: float
   - <<: *string_field
     name: submitter_id
   - <<: *string_field
     name: symbol
-  - <<: *double_field
+  - <<: *float_field
     name: uqfpkm
 type: struct
