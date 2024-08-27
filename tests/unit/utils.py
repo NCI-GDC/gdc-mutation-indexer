@@ -9,7 +9,7 @@ from pyspark.sql import types
 
 from mutation_indexer import es_utils
 
-DECIMAL_CONTEXT = decimal.Context(prec=10)
+DECIMAL_CONTEXT = decimal.Context(prec=6)  # 32 bit float has 6 to 7 significant digits.
 
 
 class DataClass(Protocol):
