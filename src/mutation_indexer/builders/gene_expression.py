@@ -228,5 +228,5 @@ class IndexBuilder(
             F.col("did").alias("file_id"),
             F.element_at(F.split("gene_id", "\\."), 1).alias("gene_id"),
             F.col("gene_name").alias("symbol"),
-            F.col("fpkm_uq_unstranded").cast(FloatType()).alias("uqfpkm"),
+            F.col("fpkm_uq_unstranded").alias("uqfpkm"),
         )
