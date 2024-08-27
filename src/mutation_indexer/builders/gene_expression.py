@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql.types import FloatType
+from pyspark.sql import types
 
 from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
@@ -173,7 +173,7 @@ class IndexBuilder(
         ).select(
             "*",
             utils.uuid5_col("case_id", "gene_id").alias("gene_expression_id"),
-            F.log2(F.col("uqfpkm") + 1).cast(FloatType()).alias("log2_uqfpkm"),
+            F.log2(F.col("uqfpkm") + 1).cast(types.FloatType()).alias("log2_uqfpkm"),
         )
 
         # Keep only the columns we need,
