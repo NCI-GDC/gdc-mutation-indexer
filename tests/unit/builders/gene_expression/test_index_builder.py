@@ -133,7 +133,7 @@ class TestGeneExpressionBuilder:
         assert result_row.gene_id == star_count.gene_id == gene_model._gene_id
         assert result_row.submitter_id == primary_aliquot.submitter_id
         assert result_row.symbol == star_count.gene_name
-        assert result_row.uqfpkm == star_count.fpkm_uq_unstranded
+        utils.assert_float_equal(result_row.uqfpkm, star_count.fpkm_uq_unstranded)
 
     @pytest.mark.parametrize("chromosome", ("0", "23", "Y"))
     def test__build__exclude_non_chr1_to_22(self, chromosome: str) -> None:

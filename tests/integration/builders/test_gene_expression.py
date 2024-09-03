@@ -180,6 +180,7 @@ def test_gene_expression_builder_writes_backup_to_path(
     ge_builder: gene_expression.IndexBuilder,
     gene_model_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    spark_session: sql.SparkSession,
 ) -> None:
     ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
     inputs = gene_expression.IndexBuilderInputs(
@@ -193,7 +194,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == build.BackupMode.WRITE
     )
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "./data_release/test/v0/gene_expressions_test_v0.parquet"
+        "./data_release/test/v0/gene_expression_test_v0.parquet"
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.partition_by
@@ -207,3 +208,8 @@ def test_gene_expression_builder_writes_backup_to_path(
     )
     assert parquet_dump.exists()
     assert parquet_dump.is_dir()
+
+    df = spark_session.read.parquet(str(parquet_dump))
+    type_dict = dict(df.dtypes)
+    assert type_dict["log2_uqfpkm"] == "float"
+    assert type_dict["uqfpkm"] == "float"

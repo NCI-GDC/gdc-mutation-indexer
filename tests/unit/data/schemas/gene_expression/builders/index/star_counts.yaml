@@ -20,12 +20,12 @@ fields:
     name: stranded_first
   - <<: *long_field
     name: stranded_second
-  - &double_field
+  - &float_field
     metadata: {}
     name: tpm_unstranded
     nullable: true
-    type: double
-  - <<: *double_field
+    type: float
+  - <<: *float_field
     name: fpkm_unstranded
-  - <<: *double_field
+  - <<: *float_field
     name: fpkm_uq_unstranded

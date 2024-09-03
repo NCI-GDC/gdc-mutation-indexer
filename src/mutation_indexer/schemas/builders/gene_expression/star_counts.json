@@ -46,13 +46,13 @@
       "metadata": {},
       "name": "fpkm_unstranded",
       "nullable": true,
-      "type": "double"
+      "type": "float"
     },
     {
       "metadata": {},
       "name": "fpkm_uq_unstranded",
       "nullable": true,
-      "type": "double"
+      "type": "float"
     }
   ]
 }
