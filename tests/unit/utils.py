@@ -1,7 +1,7 @@
 import decimal
 import uuid
 from collections.abc import Callable, Iterable
-from typing import Any, Optional, Protocol, Union
+from typing import Any, ClassVar, Optional, Protocol, Union
 from unittest import mock
 
 from pyspark import sql
@@ -13,7 +13,7 @@ DECIMAL_CONTEXT = decimal.Context(prec=6)  # 32 bit float has 6 to 7 significant
 
 
 class DataClass(Protocol):
-    __dataclass_fields__: Any
+    __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
 CreateDataFrame = Callable[[Iterable[DataClass], types.StructType], sql.DataFrame]

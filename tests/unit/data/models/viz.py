@@ -360,6 +360,7 @@ class CNVObservation:
             variant_caller: Optional[str] = "ASCAT"
 
         observation_id: Optional[str] = "obs-0"
+        src_file_id: Optional[str] = "file-0"
         variant_calling: Optional[VariantCalling] = VariantCalling()
         variant_status: Optional[str] = "Tumor Only"
 
@@ -385,3 +386,231 @@ class CIVIC:
         civic_variant_id: Optional[str] = "dna_variant"
         name: Optional[str] = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
         hgvsp_short: Optional[str] = "p.A569S"
+
+
+@dataclasses.dataclass(frozen=True)
+class Case:
+    @dataclasses.dataclass(frozen=True)
+    class Demographic:
+        age_at_index: Optional[int] = 22
+        age_is_obfuscated: Optional[str] = None
+        cause_of_death: Optional[str] = "Cancer Related"
+        days_to_birth: Optional[int] = -8223
+        days_to_death: Optional[int] = 505
+        demographic_id: Optional[str] = "a4c9844b-3a9e-4941-8148-077bae8ffcab"
+        ethnicity: Optional[str] = "hispanic or latino"
+        gender: Optional[str] = "female"
+        race: Optional[str] = "white"
+        state: Optional[str] = "released"
+        submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+        vital_status: Optional[str] = "Dead"
+        year_of_birth: Optional[int] = 1945
+        year_of_death: Optional[int] = 2009
+
+    @dataclasses.dataclass(frozen=True)
+    class Diagnosis:
+        @dataclasses.dataclass(frozen=True)
+        class PathologyDetail:
+            anaplasia_present: Optional[str] = "Unknown"
+            anaplasia_present_type: Optional[str] = "Unknown"
+            bone_marrow_malignant_cells: Optional[str] = "No"
+            breslow_thickness: Optional[float] = 2.7
+            circumferential_resection_margin: Optional[float] = None
+            columnar_mucosa_present: Optional[str] = None
+            dysplasia_degree: Optional[str] = None
+            dysplasia_type: Optional[str] = None
+            greatest_tumor_dimension: Optional[float] = None
+            gross_tumor_weight: Optional[float] = None
+            largest_extrapelvic_peritoneal_focus: Optional[
+                str
+            ] = "Macroscopic (2cm or less)"
+            lymph_node_involved_site: Optional[str] = "Retroperitoneal"
+            lymph_node_involvement: Optional[str] = "Positive"
+            lymph_nodes_positive: Optional[int] = 1
+            lymph_nodes_tested: Optional[int] = 14
+            lymphatic_invasion_present: Optional[str] = "No"
+            margin_status: Optional[str] = None
+            metaplasia_present: Optional[str] = None
+            morphologic_architectural_pattern: Optional[str] = "Cohesive"
+            non_nodal_regional_disease: Optional[str] = None
+            non_nodal_tumor_deposits: Optional[str] = None
+            number_proliferating_cells: Optional[int] = None
+            pathology_detail_id: Optional[str] = "29d2d011-87ce-4815-b704-250422e26334"
+            percent_tumor_invasion: Optional[float] = None
+            perineural_invasion_present: Optional[str] = "No"
+            peripancreatic_lymph_nodes_positive: Optional[str] = "4 or More"
+            peripancreatic_lymph_nodes_tested: Optional[int] = 34
+            prostatic_chips_positive_count: Optional[float] = None
+            prostatic_chips_total_count: Optional[float] = None
+            prostatic_involvement_percent: Optional[float] = None
+            state: Optional[str] = "released"
+            submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+            transglottic_extension: Optional[str] = None
+            tumor_largest_dimension_diameter: Optional[float] = 8.3
+            vascular_invasion_present: Optional[str] = "No"
+            vascular_invasion_type: Optional[str] = "Intramural"
+
+        @dataclasses.dataclass(frozen=True)
+        class Treatment:
+            chemo_concurrent_to_radiation: Optional[str] = "Yes"
+            days_to_treatment_end: Optional[int] = 397
+            days_to_treatment_start: Optional[int] = 214
+            initial_disease_status: Optional[str] = "Residual Disease"
+            number_of_cycles: Optional[int] = 5
+            regimen_or_line_of_therapy: Optional[str] = "FOLFOX"
+            state: Optional[str] = "released"
+            submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+            therapeutic_agents: Optional[str] = "Gemtuzumab Ozogamicin"
+            treatment_anatomic_site: Optional[str] = "Body, total"
+            treatment_dose: Optional[int] = 25
+            treatment_frequency: Optional[str] = "Once Weekly"
+            treatment_id: Optional[str] = "d4ac03f0-cc74-45a4-93e8-2088a94e3d0d"
+            treatment_intent_type: Optional[str] = "Adjuvant"
+            treatment_or_therapy: Optional[str] = "yes"
+            treatment_outcome: Optional[str] = "Unknown"
+            treatment_type: Optional[str] = "Stem Cell Transplantation, NOS"
+
+        age_at_diagnosis: Optional[int] = 8223
+        ajcc_clinical_m: Optional[str] = "M0"
+        ajcc_clinical_n: Optional[str] = "N3"
+        ajcc_clinical_stage: Optional[str] = "Stage IIC"
+        ajcc_clinical_t: Optional[str] = "T1"
+        ajcc_pathologic_m: Optional[str] = "M0"
+        ajcc_pathologic_n: Optional[str] = "N3"
+        ajcc_pathologic_stage: Optional[str] = "Stage IIIC"
+        ajcc_pathologic_t: Optional[str] = "T0"
+        ajcc_staging_system_edition: Optional[str] = "7th"
+        ann_arbor_b_symptoms: Optional[str] = "No"
+        ann_arbor_clinical_stage: Optional[str] = "Stage II"
+        ann_arbor_extranodal_involvement: Optional[str] = "Yes"
+        ann_arbor_pathologic_stage: Optional[str] = "Stage IV"
+        burkitt_lymphoma_clinical_variant: Optional[str] = "Endemic"
+        classification_of_tumor: Optional[str] = "primary"
+        cog_renal_stage: Optional[str] = "Stage IV"
+        days_to_diagnosis: Optional[int] = 0
+        days_to_last_follow_up: Optional[float] = 288.0
+        days_to_last_known_disease_status: Optional[float] = 292.0
+        days_to_recurrence: Optional[float] = 1246.0
+        diagnosis_id: Optional[str] = "6a6ce3d0-7f46-416c-980d-e39b639746fe"
+        esophageal_columnar_dysplasia_degree: Optional[str] = "Unknown"
+        esophageal_columnar_metaplasia_present: Optional[str] = "Unknown"
+        figo_stage: Optional[str] = "Stage IC"
+        figo_staging_edition_year: Optional[str] = "2009"
+        gastric_esophageal_junction_involvement: Optional[str] = "Unknown"
+        goblet_cells_columnar_mucosa_present: Optional[str] = "Unknown"
+        icd_10_code: Optional[str] = "C92.0"
+        igcccg_stage: Optional[str] = "Good Prognosis"
+        inss_stage: Optional[str] = "Stage 4"
+        international_prognostic_index: Optional[str] = "Low-Intermediate Risk"
+        iss_stage: Optional[str] = "II"
+        last_known_disease_status: Optional[str] = "not reported"
+        laterality: Optional[str] = "Left"
+        masaoka_stage: Optional[str] = "Stage IIb"
+        metastasis_at_diagnosis: Optional[str] = "No Metastasis"
+        metastasis_at_diagnosis_site: Optional[str] = None
+        method_of_diagnosis: Optional[str] = "Surgical Resection"
+        micropapillary_features: Optional[str] = None
+        morphology: Optional[str] = "9861/3"
+        pathology_details: Optional[tuple[PathologyDetail, ...]] = (PathologyDetail(),)
+        pregnant_at_diagnosis: Optional[str] = "No"
+        primary_diagnosis: Optional[str] = "Acute myeloid leukemia, NOS"
+        primary_gleason_grade: Optional[str] = "Pattern 4"
+        prior_malignancy: Optional[str] = "yes"
+        prior_treatment: Optional[str] = "No"
+        progression_or_recurrence: Optional[str] = "not reported"
+        residual_disease: Optional[str] = "Not Reported"
+        secondary_gleason_grade: Optional[str] = "Pattern 3"
+        site_of_resection_or_biopsy: Optional[str] = "Not Reported"
+        state: Optional[str] = "released"
+        submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+        synchronous_malignancy: Optional[str] = "Not Reported"
+        tissue_or_organ_of_origin: Optional[str] = "Bone marrow"
+        treatments: Optional[tuple[Treatment, ...]] = (Treatment(),)
+        tumor_grade: Optional[str] = "Not Reported"
+        year_of_diagnosis: Optional[int] = 2013
+
+    @dataclasses.dataclass(frozen=True)
+    class Exposure:
+        alcohol_days_per_week: Optional[float] = 4.0
+        alcohol_history: Optional[str] = "Not Reported"
+        alcohol_intensity: Optional[str] = "Occasional Drinker"
+        asbestos_exposure: Optional[str] = None
+        cigarettes_per_day: Optional[float] = 1.095890410958904
+        exposure_id: Optional[str] = "a990ee00-9075-5ab8-acd1-02152e1fbbce"
+        pack_years_smoked: Optional[float] = 20.0
+        radon_exposure: Optional[str] = None
+        state: Optional[str] = "released"
+        submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+        tobacco_smoking_onset_year: Optional[int] = 1973
+        tobacco_smoking_quit_year: Optional[int] = 2007
+        tobacco_smoking_status: Optional[str] = "Lifelong Non-Smoker"
+        years_smoked: Optional[float] = 25.0
+
+    @dataclasses.dataclass(frozen=True)
+    class FamilyHistory:
+        family_history_id: Optional[str] = "ea9c9292-5f48-405e-8eff-2faf0f4767ab"
+        relationship_age_at_diagnosis: Optional[float] = None
+        relationship_gender: Optional[str] = "female"
+        relationship_primary_diagnosis: Optional[str] = "Melanoma"
+        relationship_type: Optional[str] = "First Degree Relative, NOS"
+        relative_with_cancer_history: Optional[str] = "unknown"
+        state: Optional[str] = "released"
+        submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+
+    @dataclasses.dataclass(frozen=True)
+    class Project:
+        @dataclasses.dataclass(frozen=True)
+        class Program:
+            dbgap_accession_number: Optional[str] = "phs000218"
+            name: Optional[str] = "TARGET"
+            program_id: Optional[str] = "f1c391e9-8488-55a8-b777-302e786ea11d"
+
+        dbgap_accession_number: Optional[str] = "phs000218"
+        disease_type: Optional[tuple[str, ...]] = (
+            "Not Applicable",
+            "Myeloid Leukemias",
+        )
+        intended_release_date: Optional[str] = None
+        name: Optional[str] = "TARGET"
+        primary_site: Optional[tuple[str, ...]] = (
+            "Unknown",
+            "Hematopoietic and reticuloendothelial systems",
+        )
+        program: Optional[Program] = Program()
+        project_id: Optional[str] = "TARGET-AML"
+
+    @dataclasses.dataclass(frozen=True)
+    class Sample:
+        preservation_method: Optional[str] = "Unknown"
+        sample_type: Optional[str] = "Bone Marrow Normal"
+        specimen_type: Optional[str] = "Bone Marrow NOS"
+        tissue_type: Optional[str] = "Normal"
+        tumor_descriptor: Optional[str] = "Not Applicable"
+
+    @dataclasses.dataclass(frozen=True)
+    class TissueSourceSite:
+        bcr_id: Optional[str] = "NCH"
+        code: Optional[str] = "02"
+        name: Optional[str] = "TARGET"
+        project: Optional[str] = "Uterine Corpus Endometrial Carcinoma"
+        tissue_source_site_id: Optional[str] = "cee96273-f2ef-52a4-8f36-64f19a81eb32"
+
+    case_id: Optional[str] = "case-0"
+    consent_type: Optional[str] = "Informed Consent"
+    days_to_consent: Optional[int] = -2
+    demographic: Optional[Demographic] = Demographic()
+    diagnoses: Optional[tuple[Diagnosis, ...]] = (Diagnosis(),)
+    disease_type: Optional[str] = "['Not Applicable', 'Myeloid Leukemias']"
+    exposures: Optional[tuple[Exposure, ...]] = (Exposure(),)
+    family_histories: Optional[tuple[FamilyHistory, ...]] = (FamilyHistory(),)
+    index_date: Optional[str] = "Diagnosis"
+    lost_to_followup: Optional[str] = "Yes"
+    primary_site: Optional[
+        str
+    ] = "['Unknown', 'Hematopoietic and reticuloendothelial systems']"
+    project: Optional[Project] = Project()
+    samples: Optional[tuple[Sample, ...]] = (Sample(),)
+    state: Optional[str] = "released"
+    submitter_id: Optional[str] = "1385db59-6d8e-4d6e-a8aa-4ddee67f9289"
+    tissue_source_site: Optional[TissueSourceSite] = TissueSourceSite()
+    available_variation_data: Optional[tuple[str, ...]] = None

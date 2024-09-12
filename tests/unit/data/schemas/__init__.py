@@ -93,6 +93,10 @@ class Viz:
                 FINAL: Schema
 
         @_init_schemas
+        class CNVCentric:
+            FINAL: Schema
+
+        @_init_schemas
         class Consequence:
             @_init_schemas
             class SSM:
