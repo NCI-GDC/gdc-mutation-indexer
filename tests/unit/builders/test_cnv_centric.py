@@ -40,21 +40,6 @@ def final_schema() -> types.StructType:
     return schemas.Viz.Builders.CNVCentric.FINAL.load()
 
 
-def convert_lists(data: dict) -> dict:
-    for key, item in data.items():
-        if isinstance(item, list) and isinstance(next(iter(item), None), dict):
-            for subitem in item:
-                convert_lists(subitem)
-
-        if isinstance(item, dict):
-            convert_lists(item)
-
-        if isinstance(item, list):
-            data[key] = tuple(item)
-
-    return data
-
-
 def assert_cnv_transformed(row: sql.Row, ascat: models.ASCAT) -> None:
     assert row.cnv_id == ascat.cnv_id
     assert row.chromosome == ascat.chromosome
@@ -87,7 +72,7 @@ def assert_observation_transformed(occurrence: sql.Row, ascat: models.ASCAT) -> 
 def assert_case_transformed(occurrence: sql.Row, case: models.Case) -> None:
     final_case = occurrence.case.asDict(recursive=True)
     _ = final_case.pop("observation")
-    final_case = convert_lists(final_case)
+    final_case = utils.convert_lists(final_case)
     expected_case = dataclasses.asdict(case)
 
     assert not deepdiff.DeepDiff(final_case, expected_case)
