@@ -1,10 +1,9 @@
+import unittest
 from collections.abc import Iterable
 
 import more_itertools
-import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 
 from mutation_indexer.builders import df_builders
 from tests.unit import utils
@@ -12,52 +11,16 @@ from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
 
 
-@pytest.fixture(scope="class")
-def maf_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def consequence_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.SSM.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.SSM.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_occurrence_schema() -> types.StructType:
-    return schemas.Viz.Builders.DFBuilders.SSM.Occurrence.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_other_schema() -> types.StructType:
-    return schemas.Viz.Builders.DFBuilders.SSM.Other.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_ssm_schema() -> types.StructType:
-    return schemas.Viz.Builders.DFBuilders.SSM.FINAL.load()
-
-
-class TestGetSSMDataFrame:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        maf_schema: types.StructType,
-        final_ssm_schema: types.StructType,
-    ) -> None:
-        self.create_dataframe = create_dataframe
-        self.maf_schema = maf_schema
-        self.final_ssm_schema = final_ssm_schema
+class TestGetSSMDataFrame(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
+        cls._final_ssm_schema = schemas.Viz.Builders.DFBuilders.SSM.FINAL.load()
 
     def _arrange_maf_df(
         self, mafs: Iterable[models.MAF] = (models.MAF(),)
     ) -> sql.DataFrame:
-        return self.create_dataframe(mafs, self.maf_schema)
+        return utils.create_dataframe(mafs, self._maf_schema)
 
     def test__single_row(self) -> None:
         maf = models.MAF()
@@ -68,7 +31,7 @@ class TestGetSSMDataFrame:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_ssm_schema
+        assert result_df.schema == self._final_ssm_schema
 
         result_row = more_itertools.one(result_df.collect())
 
@@ -87,28 +50,21 @@ class TestGetSSMDataFrame:
         assert result_row.clinical_annotations.civic.variant_id == maf.civic_variant_id
 
 
-class TestBuildSSMSubtree:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        maf_schema: types.StructType,
-        consequence_schema: types.StructType,
-        observation_schema: types.StructType,
-        final_occurrence_schema: types.StructType,
-        final_other_schema: types.StructType,
-    ) -> None:
-        self.create_dataframe = create_dataframe
-        self.maf_schema = maf_schema
-        self.consequence_schema = consequence_schema
-        self.observation_schema = observation_schema
-        self.final_occurrence_schema = final_occurrence_schema
-        self.final_other_schema = final_other_schema
+class TestBuildSSMSubtree(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
+        cls._consequence_schema = schemas.Viz.Builders.Consequence.SSM.FINAL.load()
+        cls._observation_schema = schemas.Viz.Builders.Observation.SSM.FINAL.load()
+        cls._final_occurrence_schema = (
+            schemas.Viz.Builders.DFBuilders.SSM.Occurrence.FINAL.load()
+        )
+        cls._final_other_schema = schemas.Viz.Builders.DFBuilders.SSM.Other.FINAL.load()
 
     def _arrange_maf_df(
         self, mafs: Iterable[models.MAF] = (models.MAF(),)
     ) -> sql.DataFrame:
-        return self.create_dataframe(mafs, self.maf_schema)
+        return utils.create_dataframe(mafs, self._maf_schema)
 
     def _arrange_consequence_df(
         self,
@@ -116,7 +72,9 @@ class TestBuildSSMSubtree:
         drop_aa_change: bool = False,
         drop_genes: bool = False,
     ) -> sql.DataFrame:
-        df: sql.DataFrame = self.create_dataframe(consequences, self.consequence_schema)
+        df: sql.DataFrame = utils.create_dataframe(
+            consequences, self._consequence_schema
+        )
 
         if drop_genes:
             df = df.withColumn(
@@ -133,7 +91,7 @@ class TestBuildSSMSubtree:
         self,
         observations: Iterable[models.SSMObservation] = (models.SSMObservation(),),
     ) -> sql.DataFrame:
-        df = self.create_dataframe(observations, self.observation_schema)
+        df = utils.create_dataframe(observations, self._observation_schema)
 
         return df
 
@@ -148,7 +106,7 @@ class TestBuildSSMSubtree:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_occurrence_schema
+        assert result_df.schema == self._final_occurrence_schema
 
         result_row = more_itertools.one(result_df.collect())
 
@@ -244,7 +202,7 @@ class TestBuildSSMSubtree:
         assert result_aa_change and aa_change
         assert tuple(result_aa_change) == aa_change
 
-    @pytest.mark.parametrize("index_name", ("case_centric", "gene_centric"))
+    @utils.parametrize(("case_centric",), ("gene_centric",))
     def test__other(self, index_name: str) -> None:
         maf = models.MAF()
         maf_df = self._arrange_maf_df((maf,))
@@ -260,7 +218,7 @@ class TestBuildSSMSubtree:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_other_schema
+        assert result_df.schema == self._final_other_schema
 
         result_row = more_itertools.one(result_df.collect())
 

@@ -1,19 +1,17 @@
 import dataclasses
 import datetime
+import unittest
 from collections.abc import Iterable
 from typing import Optional
 from unittest import mock
 
 import more_itertools
-import pytest
-from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.builders import ascat_metadata
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
-from tests.unit import utils
+from tests.unit import fixtures, utils
 from tests.unit.data import schemas
 
 
@@ -104,29 +102,11 @@ class File:
         )
 
 
-@pytest.fixture(scope="class")
-def file_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCATMetadata.FILE.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCATMetadata.FINAL.load()
-
-
-class TestASCATMetadataBuilder:
-    @pytest.fixture(autouse=True)
-    def init_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        create_dataframe: utils.CreateDataFrame,
-        file_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self._spark_session = spark_session
-        self._create_dataframe = create_dataframe
-        self._file_schema = file_schema
-        self._final_schema = final_schema
+class TestASCATMetadataBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._file_schema = schemas.Viz.Builders.ASCATMetadata.FILE.load()
+        cls._final_schema = schemas.Viz.Builders.ASCATMetadata.FINAL.load()
 
     def _arrange_config(self) -> viz.Builder:
         return mock.MagicMock(
@@ -141,14 +121,14 @@ class TestASCATMetadataBuilder:
         self, files: Iterable[File] = (File(),)
     ) -> es_utils.DataFrameUtil:
         util = mock.MagicMock()
-        util.read.return_value = self._create_dataframe(files, self._file_schema)
+        util.read.return_value = utils.create_dataframe(files, self._file_schema)
 
         return util
 
     def _arrange_es_rdd_util(
         self, files: Iterable[File] = (File(),)
     ) -> es_utils.RDDUtil:
-        spark_context = self._spark_session.sparkContext
+        spark_context = fixtures.SPARK_SESSION.sparkContext
         util = mock.MagicMock(spec=es_utils.RDDUtil)
 
         util.get_rdd.return_value = spark_context.parallelize(
@@ -199,28 +179,25 @@ class TestASCATMetadataBuilder:
         assert result_row.file_id == "file-0"
         assert result_row.workflow_type == ascat_metadata.ABSOLUTE
 
-    @pytest.mark.parametrize(
-        ("primay_sample_type", "other_sample_type"),
+    @utils.parametrize(
+        ("Primary Tumor", "Primary Blood Derived Cancer - Bone Marrow"),
         (
-            ("Primary Tumor", "Primary Blood Derived Cancer - Bone Marrow"),
-            (
-                "Primary Blood Derived Cancer - Bone Marrow",
-                "Primary Blood Derived Cancer - Peripheral Blood",
-            ),
-            ("Primary Blood Derived Cancer - Peripheral Blood", "Metastatic"),
-            ("Metastatic", "Additional Metastatic"),
-            ("Additional Metastatic", "Recurrent Tumor"),
-            ("Recurrent Tumor", "Recurrent Blood Derived Cancer - Bone Marrow"),
-            (
-                "Recurrent Blood Derived Cancer - Bone Marrow",
-                "Recurrent Blood Derived Cancer - Peripheral Blood",
-            ),
-            (
-                "Recurrent Blood Derived Cancer - Peripheral Blood",
-                "Additional - New Primary",
-            ),
-            ("Additional - New Primary", "OTHER"),
+            "Primary Blood Derived Cancer - Bone Marrow",
+            "Primary Blood Derived Cancer - Peripheral Blood",
         ),
+        ("Primary Blood Derived Cancer - Peripheral Blood", "Metastatic"),
+        ("Metastatic", "Additional Metastatic"),
+        ("Additional Metastatic", "Recurrent Tumor"),
+        ("Recurrent Tumor", "Recurrent Blood Derived Cancer - Bone Marrow"),
+        (
+            "Recurrent Blood Derived Cancer - Bone Marrow",
+            "Recurrent Blood Derived Cancer - Peripheral Blood",
+        ),
+        (
+            "Recurrent Blood Derived Cancer - Peripheral Blood",
+            "Additional - New Primary",
+        ),
+        ("Additional - New Primary", "OTHER"),
     )
     def test__build__sample_type_selection(
         self, primay_sample_type: str, other_sample_type: str
@@ -256,37 +233,33 @@ class TestASCATMetadataBuilder:
 
         assert result_row.aliquot_id == "a-1"
 
-    @pytest.mark.parametrize(
-        ("primary_datetime", "other_datetime"),
-        (
-            (
-                datetime.datetime.max - datetime.timedelta(microseconds=1),
-                datetime.datetime.max,
+    @utils.parametrize(
+        microsecond_diff=(
+            datetime.datetime.max - datetime.timedelta(microseconds=1),
+            datetime.datetime.max,
+        ),
+        timezone_diff=(
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-5)),
             ),
-            (
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-5)),
-                ),
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-6)),
-                ),
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-6)),
             ),
         ),
-        ids=("microsecond_diff", "timezone_diff"),
     )
     def test__build__file_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
@@ -340,37 +313,33 @@ class TestASCATMetadataBuilder:
 
         assert all(row.aliquot_id is None for row in result_rows)
 
-    @pytest.mark.parametrize(
-        ("primary_datetime", "other_datetime"),
-        (
-            (
-                datetime.datetime.max - datetime.timedelta(microseconds=1),
-                datetime.datetime.max,
+    @utils.parametrize(
+        microsecond_diff=(
+            datetime.datetime.max - datetime.timedelta(microseconds=1),
+            datetime.datetime.max,
+        ),
+        timezone_diff=(
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-5)),
             ),
-            (
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-5)),
-                ),
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-6)),
-                ),
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-6)),
             ),
         ),
-        ids=("microsecond_diff", "timezone_diff"),
     )
     def test__build__aliquot_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
@@ -415,13 +384,10 @@ class TestASCATMetadataBuilder:
 
         assert all(row.aliquot_id == "a-0" for row in result_rows)
 
-    @pytest.mark.parametrize(
-        ("unprioritized_workflow", "prioritized_workflow"),
-        (
-            (ascat_metadata.ASCAT2, ascat_metadata.ASCAT_NGS),
-            (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT3),
-            (ascat_metadata.ASCAT3, ascat_metadata.ABSOLUTE),
-        ),
+    @utils.parametrize(
+        (ascat_metadata.ASCAT2, ascat_metadata.ASCAT_NGS),
+        (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT3),
+        (ascat_metadata.ASCAT3, ascat_metadata.ABSOLUTE),
     )
     def test__build__workflow_type(
         self, unprioritized_workflow: str, prioritized_workflow: str

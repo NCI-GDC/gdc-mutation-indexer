@@ -1,7 +1,9 @@
+import unittest
+
 from mutation_indexer.configuration import spark
 
 
-class TestSpark:
+class TestSpark(unittest.TestCase):
     def test__get_arguments__flat(self) -> None:
         config = spark.Spark(
             master="name",

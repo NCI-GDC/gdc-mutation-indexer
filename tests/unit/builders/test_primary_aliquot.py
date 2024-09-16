@@ -1,17 +1,17 @@
 import dataclasses
 import datetime
+import unittest
 from typing import Iterable, Optional, Tuple
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from tests.unit import fixtures, utils
 from tests.unit.data import schemas
 
 
@@ -96,30 +96,14 @@ class ESFile:
         )
 
 
-@pytest.fixture(scope="class")
-def input_file_schema() -> types.StructType:
-    return schemas.Viz.Builders.PrimaryAliquot.FILE.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
-
-
-class TestPrimaryAliquotBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        input_file_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.input_file_schema = input_file_schema
-        self.final_schema = final_schema
+class TestPrimaryAliquotBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._input_file_schema = schemas.Viz.Builders.PrimaryAliquot.FILE.load()
+        cls._final_schema = schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
 
     def _arrange_es_rdd_util(self, files: Iterable[ESFile]) -> es_utils.RDDUtil:
-        spark_context = self.spark_session.sparkContext
+        spark_context = fixtures.SPARK_SESSION.sparkContext
         rdd_util = mock.MagicMock(spec=es_utils.RDDUtil)
 
         rdd_util.get_rdd.return_value = spark_context.parallelize(
@@ -134,10 +118,7 @@ class TestPrimaryAliquotBuilder:
     ) -> es_utils.DataFrameUtil:
         files = files if isinstance(files, tuple) else tuple(files)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
-        file_df = self.spark_session.createDataFrame(
-            files,  # type: ignore
-            schema=self.input_file_schema,
-        )
+        file_df = utils.create_dataframe(files, self._input_file_schema)
 
         dataframe_util.read.return_value = file_df
 
@@ -152,8 +133,8 @@ class TestPrimaryAliquotBuilder:
 
     def _arrange_builder(
         self,
-        es_files: Tuple[ESFile, ...],
-        aliquot_data: Optional[Tuple[ESFile, ...]] = None,
+        es_files: Iterable[ESFile],
+        aliquot_data: Optional[Iterable[ESFile]] = None,
     ) -> builders.PrimaryAliquotBuilder:
         aliquot_data = es_files if aliquot_data is None else aliquot_data
         config = self._arrange_config()
@@ -165,43 +146,39 @@ class TestPrimaryAliquotBuilder:
             config, spark_session, dataframe_util, rdd_util
         )
 
-    @pytest.mark.parametrize(
-        ("files", "aliquot_data"),
-        (((ESFile(),), (ESFile(),)), ((ESFile(),), ())),
-        ids=("aliquot_exists", "no_aliquots"),
+    @utils.parametrize[Iterable[ESFile], Iterable[ESFile]](
+        aliquot_exists=((ESFile(),), (ESFile(),)),
+        ids=((ESFile(),), ()),
     )
     def test__build__positive_joins(
-        self, files: Tuple[ESFile, ...], aliquot_data: Tuple[ESFile, ...]
+        self, files: Iterable[ESFile], aliquot_data: Iterable[ESFile]
     ) -> None:
         builder = self._arrange_builder(files, aliquot_data)
 
         result_df = builder.build()
 
         assert result_df.count() == 2
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
-    @pytest.mark.parametrize(
-        ("primay_sample_type", "other_sample_type"),
+    @utils.parametrize(
+        ("Primary Tumor", "Primary Blood Derived Cancer - Bone Marrow"),
         (
-            ("Primary Tumor", "Primary Blood Derived Cancer - Bone Marrow"),
-            (
-                "Primary Blood Derived Cancer - Bone Marrow",
-                "Primary Blood Derived Cancer - Peripheral Blood",
-            ),
-            ("Primary Blood Derived Cancer - Peripheral Blood", "Metastatic"),
-            ("Metastatic", "Additional Metastatic"),
-            ("Additional Metastatic", "Recurrent Tumor"),
-            ("Recurrent Tumor", "Recurrent Blood Derived Cancer - Bone Marrow"),
-            (
-                "Recurrent Blood Derived Cancer - Bone Marrow",
-                "Recurrent Blood Derived Cancer - Peripheral Blood",
-            ),
-            (
-                "Recurrent Blood Derived Cancer - Peripheral Blood",
-                "Additional - New Primary",
-            ),
-            ("Additional - New Primary", "OTHER"),
+            "Primary Blood Derived Cancer - Bone Marrow",
+            "Primary Blood Derived Cancer - Peripheral Blood",
         ),
+        ("Primary Blood Derived Cancer - Peripheral Blood", "Metastatic"),
+        ("Metastatic", "Additional Metastatic"),
+        ("Additional Metastatic", "Recurrent Tumor"),
+        ("Recurrent Tumor", "Recurrent Blood Derived Cancer - Bone Marrow"),
+        (
+            "Recurrent Blood Derived Cancer - Bone Marrow",
+            "Recurrent Blood Derived Cancer - Peripheral Blood",
+        ),
+        (
+            "Recurrent Blood Derived Cancer - Peripheral Blood",
+            "Additional - New Primary",
+        ),
+        ("Additional - New Primary", "OTHER"),
     )
     def test__build__sample_type_selection(
         self, primay_sample_type: str, other_sample_type: str
@@ -238,37 +215,33 @@ class TestPrimaryAliquotBuilder:
         assert result_case_row.aliquot_id == "a-1"
         assert result_file_row.aliquot_id == "a-1"
 
-    @pytest.mark.parametrize(
-        ("primary_datetime", "other_datetime"),
-        (
-            (
-                datetime.datetime.max - datetime.timedelta(microseconds=1),
-                datetime.datetime.max,
+    @utils.parametrize(
+        microsecond_diff=(
+            datetime.datetime.max - datetime.timedelta(microseconds=1),
+            datetime.datetime.max,
+        ),
+        timezone_diff=(
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-5)),
             ),
-            (
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-5)),
-                ),
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-6)),
-                ),
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-6)),
             ),
         ),
-        ids=("microsecond_diff", "timezone_diff"),
     )
     def test__build__file_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime
@@ -311,37 +284,33 @@ class TestPrimaryAliquotBuilder:
 
         assert all(row.aliquot_id is None for row in result_rows)
 
-    @pytest.mark.parametrize(
-        ("primary_datetime", "other_datetime"),
-        (
-            (
-                datetime.datetime.max - datetime.timedelta(microseconds=1),
-                datetime.datetime.max,
+    @utils.parametrize(
+        microsecond_diff=(
+            datetime.datetime.max - datetime.timedelta(microseconds=1),
+            datetime.datetime.max,
+        ),
+        timezone_diff=(
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-5)),
             ),
-            (
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-5)),
-                ),
-                datetime.datetime(
-                    1970,
-                    1,
-                    12,
-                    8,
-                    45,
-                    34,
-                    203025,
-                    datetime.timezone(datetime.timedelta(hours=-6)),
-                ),
+            datetime.datetime(
+                1970,
+                1,
+                12,
+                8,
+                45,
+                34,
+                203025,
+                datetime.timezone(datetime.timedelta(hours=-6)),
             ),
         ),
-        ids=("microsecond_diff", "timezone_diff"),
     )
     def test__build__aliquot_created_datetime(
         self, primary_datetime: datetime.datetime, other_datetime: datetime.datetime

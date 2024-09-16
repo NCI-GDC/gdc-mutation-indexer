@@ -36,7 +36,8 @@ tox:
     - apt-get install -y maven
     - mvn -version
     - pip install 'tox < 4'
-    - tox -e py
+    - tox -e unit
+    - tox -e integration
 
 release:
   variables:

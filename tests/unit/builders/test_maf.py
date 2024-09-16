@@ -1,17 +1,17 @@
 import dataclasses
+import unittest
 from collections.abc import Iterable
 from typing import Optional
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
-from tests.unit import utils
+from tests.unit import fixtures, utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
 
@@ -71,7 +71,7 @@ class MAF:
     One_Consequence: str = "missense_variant"
     Consequence: str = "missense_variant;NMD_transcript_variant"
     cDNA_position: str = "1734/13108"
-    CDS_position: str = "1705/10464"
+    CDS_position: Optional[str] = "1705/10464"
     Protein_position: str = "569/3487"
     Amino_acids: str = "A/S"
     Codons: str = "Gct/Tct"
@@ -178,36 +178,6 @@ class MAF:
         data["1000G_SAS_AF"] = data.pop("ThousandG_SAS_AF")
 
         return sql.Row(*(data[f.name] for f in fields))
-
-
-@pytest.fixture(scope="class")
-def gene_model_schema() -> types.StructType:
-    return schemas.Builders.GeneModel.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def civic_dna_schema() -> types.StructType:
-    return schemas.Viz.Builders.CIVIC.DNA.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def civic_protein_schema() -> types.StructType:
-    return schemas.Viz.Builders.CIVIC.Protein.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def masked_somatic_mutation_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.MASKED_SOMATIC_MUTATION.load()
-
-
-@pytest.fixture(scope="class")
-def aggregated_somatic_mutation_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.AGGREGATED_SOMATIC_MUTATION.load()
-
-
-@pytest.fixture(scope="class")
-def final_maf_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.FINAL.load()
 
 
 def arrange_config() -> viz.MAFBuilder:
@@ -348,27 +318,19 @@ def assert_core_maf_transformed(
         assert_transcripts_equal(result_transcript, expected_transcript)
 
 
-class TestMAFBuilder:
-    @pytest.fixture(autouse=True)
-    def load_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        create_dataframe: utils.CreateDataFrame,
-        gene_model_schema: types.StructType,
-        civic_dna_schema: types.StructType,
-        civic_protein_schema: types.StructType,
-        masked_somatic_mutation_schema: types.StructType,
-        aggregated_somatic_mutation_schema: types.StructType,
-        final_maf_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.create_dataframe = create_dataframe
-        self.gene_model_schema = gene_model_schema
-        self.civic_dna_schema = civic_dna_schema
-        self.civic_protein_schema = civic_protein_schema
-        self.masked_somatic_mutation_schema = masked_somatic_mutation_schema
-        self.aggregated_somatic_mutation_schema = aggregated_somatic_mutation_schema
-        self.final_maf_schema = final_maf_schema
+class TestMAFBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._gene_model_schema = schemas.Builders.GeneModel.FINAL.load()
+        cls._civic_dna_schema = schemas.Viz.Builders.CIVIC.DNA.FINAL.load()
+        cls._civic_protein_schema = schemas.Viz.Builders.CIVIC.Protein.FINAL.load()
+        cls._masked_somatic_mutation_schema = (
+            schemas.Viz.Builders.MAF.MASKED_SOMATIC_MUTATION.load()
+        )
+        cls._aggregated_somatic_mutation_schema = (
+            schemas.Viz.Builders.MAF.AGGREGATED_SOMATIC_MUTATION.load()
+        )
+        cls._final_maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
 
     def arrange_builder(
         self,
@@ -376,18 +338,18 @@ class TestMAFBuilder:
         aggregated_somatic_mutation_mafs: tuple[MAF, ...] = (),
     ) -> builders.MAFBuilder:
         mafs = tuple(
-            maf.to_sql_row(self.masked_somatic_mutation_schema.fields)
+            maf.to_sql_row(self._masked_somatic_mutation_schema.fields)
             for maf in masked_somatic_mutation_mafs
         )
-        masked_somatic_mutation_df = self.spark_session.createDataFrame(
-            mafs, schema=self.masked_somatic_mutation_schema
+        masked_somatic_mutation_df = fixtures.SPARK_SESSION.createDataFrame(
+            mafs, schema=self._masked_somatic_mutation_schema
         )
         mafs = tuple(
-            maf.to_sql_row(self.aggregated_somatic_mutation_schema.fields)
+            maf.to_sql_row(self._aggregated_somatic_mutation_schema.fields)
             for maf in aggregated_somatic_mutation_mafs
         )
-        aggregated_somatic_mutation_df = self.spark_session.createDataFrame(
-            mafs, schema=self.aggregated_somatic_mutation_schema
+        aggregated_somatic_mutation_df = fixtures.SPARK_SESSION.createDataFrame(
+            mafs, schema=self._aggregated_somatic_mutation_schema
         )
 
         config = arrange_config()
@@ -407,10 +369,10 @@ class TestMAFBuilder:
         dna_annotations: Iterable[models.CIVIC.DNA] = (),
         protein_annotations: Iterable[models.CIVIC.Protein] = (),
     ) -> dict[str, sql.DataFrame]:
-        gene_model_df = self.create_dataframe(gene_model, self.gene_model_schema)
-        dna_df = self.create_dataframe(dna_annotations, self.civic_dna_schema)
-        protein_df = self.create_dataframe(
-            protein_annotations, self.civic_protein_schema
+        gene_model_df = utils.create_dataframe(gene_model, self._gene_model_schema)
+        dna_df = utils.create_dataframe(dna_annotations, self._civic_dna_schema)
+        protein_df = utils.create_dataframe(
+            protein_annotations, self._civic_protein_schema
         )
         maf_metadata_df = mock.MagicMock()
 
@@ -428,7 +390,7 @@ class TestMAFBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_maf_schema
+        assert result_df.schema == self._final_maf_schema
 
     def test__build__masked_somatic_mutation_maf_transformed(self) -> None:
         gene_model = models.GeneModel()
@@ -477,10 +439,8 @@ class TestMAFBuilder:
         assert result_row.t_depth == int(maf.t_depth)
         assert result_row.t_ref_count == int(maf.t_ref_count)
 
-    @pytest.mark.parametrize(
-        ("bool_value", "expected_value"),
-        (("True", True), ("False", False), ("", None), (None, None)),
-        ids=("true", "false", "empty", "null"),
+    @utils.parametrize[Optional[str], Optional[bool]](
+        ture=("True", True), false=("False", False), empty=("", None), null=(None, None)
     )
     def test__build__cast_str_to_bool(
         self, bool_value: Optional[str], expected_value: Optional[bool]
@@ -504,20 +464,11 @@ class TestMAFBuilder:
 
         assert result_df.count() == 0
 
-    @pytest.mark.parametrize(
-        ("tumor_sample_barcode", "case_id", "available_variation_data"),
-        (
-            ("MBCProject_3808_T1_WES_1", None, ["ssm"]),
-            ("MBCProject_3808_T1_WES_1", "case-0", ["ssm"]),
-            (None, None, ["ssm"]),
-            (None, "case-0", []),
-        ),
-        ids=(
-            "barcode_only",
-            "barcode_and_case_id",
-            "neither_barcode_nor_case_id",
-            "only_case_id",
-        ),
+    @utils.parametrize[Optional[str], Optional[str], list[str]](
+        barcode_onely=("MBCProject_3808_T1_WES_1", None, ["ssm"]),
+        barcode_and_case_id=("MBCProject_3808_T1_WES_1", "case-0", ["ssm"]),
+        neither_barcode_nor_case_id=(None, None, ["ssm"]),
+        only_case_id=(None, "case-0", []),
     )
     def test__build__available_variation_data_added(
         self,
@@ -537,18 +488,14 @@ class TestMAFBuilder:
 
         assert result_row.available_variation_data == available_variation_data
 
-    @pytest.mark.parametrize(
-        ("variant_type", "genomic_dna_change"),
-        (
-            ("SNP", "chr1:g.1C>A"),
-            ("DNP", "chr1:g.1_100delinsA"),
-            ("TNP", "chr1:g.1_100delinsA"),
-            ("ONP", "chr1:g.1_100delinsA"),
-            ("DEL", "chr1:g.1delC"),
-            ("INS", "chr1:g.1_100insA"),
-            ("OTHER", "1"),
-        ),
-        ids=("SNP", "DNP", "TNP", "ONP", "DEL", "INS", "OTHER"),
+    @utils.parametrize(
+        SNP=("SNP", "chr1:g.1C>A"),
+        DNP=("DNP", "chr1:g.1_100delinsA"),
+        TNP=("TNP", "chr1:g.1_100delinsA"),
+        ONP=("ONP", "chr1:g.1_100delinsA"),
+        DEL=("DEL", "chr1:g.1delC"),
+        INS=("INS", "chr1:g.1_100insA"),
+        OTHER=("OTHER", "1"),
     )
     def test__build__genomic_dna_change(
         self, variant_type: str, genomic_dna_change: str
@@ -569,9 +516,8 @@ class TestMAFBuilder:
 
         assert result_row.genomic_dna_change == genomic_dna_change
 
-    @pytest.mark.parametrize(
-        ("mutation_status", "mutation_type"),
-        (("Somatic", "Simple Somatic Mutation"), ("Normal", None)),
+    @utils.parametrize[str, Optional[str]](
+        ("Somatic", "Simple Somatic Mutation"), ("Normal", None)
     )
     def test__build__mutation_type(
         self, mutation_status: str, mutation_type: Optional[str]
@@ -585,21 +531,17 @@ class TestMAFBuilder:
 
         assert result_row.mutation_type == mutation_type
 
-    @pytest.mark.parametrize(
-        ("variant_type", "mutation_subtype"),
-        (
-            ("SNP", "Single base substitution"),
-            ("DNP", "Di-nucleotide polymorphism"),
-            ("TNP", "Tri-nucleotide polymorphism"),
-            ("ONP", "Oligo-nucleotide polymorphism"),
-            ("DEL", "Small deletion"),
-            ("INS", "Small insertion"),
-            ("OTHER", None),
-        ),
-        ids=("SNP", "DNP", "TNP", "ONP", "DEL", "INS", "OTHER"),
+    @utils.parametrize[str, Optional[str]](
+        SNP=("SNP", "Single base substitution"),
+        DNP=("DNP", "Di-nucleotide polymorphism"),
+        TNP=("TNP", "Tri-nucleotide polymorphism"),
+        ONP=("ONP", "Oligo-nucleotide polymorphism"),
+        DEL=("DEL", "Small deletion"),
+        INS=("INS", "Small insertion"),
+        OTHER=("OTHER", None),
     )
     def test__build__mutation_subtype(
-        self, variant_type: str, mutation_subtype: str
+        self, variant_type: str, mutation_subtype: Optional[str]
     ) -> None:
         maf = MAF(Variant_Type=variant_type)
         inputs = self.arrange_inputs()
@@ -634,27 +576,16 @@ class TestMAFBuilder:
             "ssm_occurrence", ssm_id, maf.case_id
         )
 
-    @pytest.mark.parametrize(
-        ("cds_position", "cds_start", "cds_end", "cds_length"),
-        (
-            ("1273/2112", 1273, 3385, 2112),
-            ("1270-1274/2110", 1270, 3380, 2110),
-            ("2-?/569", 2, 571, 569),
-            ("?-2/569", -1, -1, 569),
-            ("", -1, -1, -1),
-            (None, -1, -1, -1),
-        ),
-        ids=(
-            "basic",
-            "range_start",
-            "range_start_with_unknown_end",
-            "range_start_with_unknown_start",
-            "empty",
-            "null",
-        ),
+    @utils.parametrize[Optional[str], int, int, int](
+        basic=("1273/2112", 1273, 3385, 2112),
+        range_start=("1270-1274/2110", 1270, 3380, 2110),
+        range_start_with_unknown_end=("2-?/569", 2, 571, 569),
+        range_start_with_unknown_start=("?-2/569", -1, -1, 569),
+        empty=("", -1, -1, -1),
+        null=(None, -1, -1, -1),
     )
     def test__build__cds_lengths(
-        self, cds_position: str, cds_start: int, cds_end: int, cds_length: int
+        self, cds_position: Optional[str], cds_start: int, cds_end: int, cds_length: int
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
@@ -668,15 +599,11 @@ class TestMAFBuilder:
         assert result_row.cds_end == cds_end
         assert result_row.cds_length == cds_length
 
-    @pytest.mark.parametrize(
-        ("polyphen", "polyphen_impact", "polyphen_score"),
-        (
-            ("benign(0.305)", "benign", 0.305),
-            ("benign(3)", "benign", 3),
-            ("", "", None),
-            (None, None, None),
-        ),
-        ids=("decimal", "whole_number", "empty", "null"),
+    @utils.parametrize[Optional[str], Optional[str], Optional[float]](
+        decimal=("benign(0.305)", "benign", 0.305),
+        whole_number=("benign(3)", "benign", 3),
+        empty=("", "", None),
+        null=(None, None, None),
     )
     def test__build__polyphen_impact_and_score(
         self,
@@ -695,15 +622,11 @@ class TestMAFBuilder:
         assert result_row.polyphen_impact == polyphen_impact
         assert result_row.polyphen_score == polyphen_score
 
-    @pytest.mark.parametrize(
-        ("sift", "sift_impact", "sift_score"),
-        (
-            ("tolerated(0.12)", "tolerated", 0.12),
-            ("tolerated(1)", "tolerated", 1),
-            ("", "", None),
-            (None, None, None),
-        ),
-        ids=("decimal", "whole_number", "empty", "null"),
+    @utils.parametrize[Optional[str], Optional[str], Optional[float]](
+        decimal=("tolerated(0.12)", "tolerated", 0.12),
+        while_number=("tolerated(1)", "tolerated", 1),
+        empty=("", "", None),
+        null=(None, None, None),
     )
     def test__build__sift_impact_and_score(
         self,
@@ -808,15 +731,11 @@ class TestMAFBuilder:
 
         assert result_row.chromosome == "chr1"
 
-    @pytest.mark.parametrize(
-        ("cosmic", "cosmic_id"),
-        (
-            ("one;two", ["one", "two"]),
-            ("single", ["single"]),
-            ("", [""]),
-            (None, None),
-        ),
-        ids=("multiple", "single", "empty", "null"),
+    @utils.parametrize[Optional[str], Optional[list[str]]](
+        multiple=("one;two", ["one", "two"]),
+        single=("single", ["single"]),
+        empty=("", [""]),
+        null=(None, None),
     )
     def test__build__cosmic_id(
         self, cosmic: Optional[str], cosmic_id: Optional[list[str]]

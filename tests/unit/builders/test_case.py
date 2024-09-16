@@ -2,18 +2,19 @@ import dataclasses
 import random
 import string
 import sys
-from typing import Dict, FrozenSet, Iterable, Optional, Tuple
+import unittest
+from collections.abc import Set
+from typing import Dict, Iterable, Optional, Tuple
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
-from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from tests.unit import fixtures, utils
 from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
@@ -305,16 +306,6 @@ class Case:
     state: str = dataclasses.field(default_factory=random_string)
     submitter_id: str = dataclasses.field(default_factory=random_string)
     tissue_source_site: TissueSourceSite = TissueSourceSite()
-
-
-@pytest.fixture(scope="class")
-def case_schema() -> types.StructType:
-    return schemas.Viz.Builders.Case.RAW.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.Case.FINAL.load()
 
 
 def assert_demographics_equal(
@@ -738,17 +729,11 @@ def assert_cases_equal(result_case: sql.Row, case: Case) -> None:
         assert_sample_equal(result_sample, sample)
 
 
-class TestCaseBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        case_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.case_schema = case_schema
-        self.final_schema = final_schema
+class TestCaseBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._case_schema = schemas.Viz.Builders.Case.RAW.load()
+        cls._final_schema = schemas.Viz.Builders.Case.FINAL.load()
 
     def arrange_config(self) -> viz.CaseBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
@@ -767,10 +752,7 @@ class TestCaseBuilder:
     ) -> es_utils.DataFrameUtil:
         util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
-        util.read.return_value = self.spark_session.createDataFrame(
-            cases,  # type: ignore
-            schema=self.case_schema,
-        )
+        util.read.return_value = utils.create_dataframe(cases, self._case_schema)
 
         return util
 
@@ -782,10 +764,10 @@ class TestCaseBuilder:
         def to_rows(case_ids: Iterable[str]) -> Tuple[sql.Row, ...]:
             return tuple(sql.Row(case_id=case_id) for case_id in case_ids)
 
-        maf_metadata_df = self.spark_session.createDataFrame(
+        maf_metadata_df = fixtures.SPARK_SESSION.createDataFrame(
             to_rows(maf_metadata_case_ids), schema=CASE_ID_SCHEMA
         )
-        ascat_metadata_df = self.spark_session.createDataFrame(
+        ascat_metadata_df = fixtures.SPARK_SESSION.createDataFrame(
             to_rows(ascat_metadata_case_ids), schema=CASE_ID_SCHEMA
         ).withColumn("available_variation_data", F.lit("cnv"))
 
@@ -813,7 +795,7 @@ class TestCaseBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
     def test__build__data_translated(self) -> None:
         config = self.arrange_config()
@@ -831,21 +813,17 @@ class TestCaseBuilder:
 
         assert_cases_equal(result_row, case)
 
-    @pytest.mark.parametrize(
-        ("maf_metadata_cases", "ascat_metadata_cases", "available_variation_data"),
-        (
-            ((), (), frozenset(())),
-            (("case-0",), (), frozenset(("ssm",))),
-            ((), ("case-0",), frozenset(("cnv",))),
-            (("case-0",), ("case-0",), frozenset(("cnv", "ssm"))),
-        ),
-        ids=("neither", "only-in-metadata", "only-in-ascat", "metadata-and-ascat"),
+    @utils.parametrize[Iterable[str], Iterable[str], Set[str]](
+        neither=((), (), frozenset(())),
+        only_in_metadata=(("case-0",), (), frozenset(("ssm",))),
+        only_in_ascat=((), ("case-0",), frozenset(("cnv",))),
+        metadata_and_ascat=(("case-0",), ("case-0",), frozenset(("cnv", "ssm"))),
     )
     def test__build__available_variation_data(
         self,
         maf_metadata_cases: Iterable[str],
         ascat_metadata_cases: Iterable[str],
-        available_variation_data: FrozenSet[str],
+        available_variation_data: Set[str],
     ) -> None:
         config = self.arrange_config()
         case = Case(case_id="case-0")

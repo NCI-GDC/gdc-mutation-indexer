@@ -1,17 +1,17 @@
 import dataclasses
 import datetime
+import unittest
 from typing import Tuple
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.builders import maf_metadata
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from tests.unit import utils
 from tests.unit.data import schemas
 
 
@@ -41,27 +41,11 @@ class ESFile:
     file_id: str = "file-0"
 
 
-@pytest.fixture(scope="class")
-def file_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAFMetadata.FILE.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAFMetadata.FINAL.load()
-
-
-class TestMAFMetadataBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        file_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.file_schema = file_schema
-        self.final_schema = final_schema
+class TestMAFMetadataBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._file_schema = schemas.Viz.Builders.MAFMetadata.FILE.load()
+        cls._final_schema = schemas.Viz.Builders.MAFMetadata.FINAL.load()
 
     def arrange_filter_factory(self) -> maf_metadata.MAFFileFilterFactory:
         filter_builder = mock.MagicMock(spec=maf_metadata.MAFFileFilterFactory)
@@ -87,9 +71,8 @@ class TestMAFMetadataBuilder:
 
         conf.projects = None
 
-        es_dataframe_util.read.return_value = self.spark_session.createDataFrame(
-            files,  # type: ignore
-            schema=self.file_schema,
+        es_dataframe_util.read.return_value = utils.create_dataframe(
+            files, self._file_schema
         )
 
         return builders.MAFMetadataBuilder(
@@ -102,7 +85,7 @@ class TestMAFMetadataBuilder:
         result_df = builder.build()
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
     def test__build__input_data_transformed(self) -> None:
         file = ESFile()

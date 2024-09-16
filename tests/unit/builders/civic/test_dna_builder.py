@@ -1,12 +1,11 @@
 import contextlib
 import dataclasses
+import unittest
 from collections.abc import Iterable, Iterator
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer.builders import civic
 from mutation_indexer.configuration.builders import viz
@@ -26,33 +25,17 @@ class CIVICDatum:
     alternative_allele: str = "T"
 
 
-@pytest.fixture(scope="class")
-def input_schema() -> types.StructType:
-    return schemas.Viz.Builders.CIVIC.DNA.INPUT.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.CIVIC.DNA.FINAL.load()
-
-
-class TestDNABuilder:
-    @pytest.fixture(autouse=True)
-    def load_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        input_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self._create_dataframe = create_dataframe
-        self._input_schema = input_schema
-        self._final_schema = final_schema
+class TestDNABuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._input_schema = schemas.Viz.Builders.CIVIC.DNA.INPUT.load()
+        cls._final_schema = schemas.Viz.Builders.CIVIC.DNA.FINAL.load()
 
     def arrange_spark_session(
         self, data: Iterable[CIVICDatum] = (CIVICDatum(),)
     ) -> sql.SparkSession:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
-        spark_session.read.csv.return_value = self._create_dataframe(
+        spark_session.read.csv.return_value = utils.create_dataframe(
             data, self._input_schema
         )
 

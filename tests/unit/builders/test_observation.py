@@ -1,116 +1,55 @@
-from typing import Optional, Tuple
+import unittest
+from collections.abc import Iterable
+from typing import Optional
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders
+from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
 
 
-@pytest.fixture(scope="class")
-def maf_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def primary_aliquot_schema() -> types.StructType:
-    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ssm_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.SSM.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def other_ssm_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.Other.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def cnv_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.CNV.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def cnv_other_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.Other.FINAL.load()
-
-
-class TestObservationBuilder:
-    @pytest.fixture(autouse=True)
-    def fixture_set_up(
-        self,
-        spark_session: sql.SparkSession,
-        maf_schema: types.StructType,
-        ascat_schema: types.StructType,
-        primary_aliquot_schema: types.StructType,
-        ssm_observation_schema: types.StructType,
-        other_ssm_observation_schema: types.StructType,
-        cnv_observation_schema: types.StructType,
-        cnv_other_observation_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.maf_schema = maf_schema
-        self.ascat_schema = ascat_schema
-        self.primary_aliquot_schema = primary_aliquot_schema
-        self.ssm_schemas = {
-            "ssm": ssm_observation_schema,
-            "other": other_ssm_observation_schema,
+class TestObservationBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
+        cls._ascat_schema = schemas.Viz.Builders.ASCAT.FINAL.load()
+        cls._primary_aliquot_schema = schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
+        cls._ssm_schemas = {
+            "ssm": schemas.Viz.Builders.Observation.SSM.FINAL.load(),
+            "other": schemas.Viz.Builders.Observation.Other.FINAL.load(),
         }
-        self.cnv_schemas = {
-            "cnv": cnv_observation_schema,
-            "other": cnv_other_observation_schema,
+        cls._cnv_schemas = {
+            "cnv": schemas.Viz.Builders.Observation.CNV.CNV.FINAL.load(),
+            "other": schemas.Viz.Builders.Observation.CNV.Other.FINAL.load(),
         }
 
     def arrange_maf_df(
-        self, mafs: Tuple[models.MAF, ...] = (models.MAF(),)
+        self, mafs: Iterable[models.MAF] = (models.MAF(),)
     ) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(
-            mafs,  # type: ignore
-            schema=self.maf_schema,
-        )
+        return utils.create_dataframe(mafs, self._maf_schema)
 
     def arrange_ascat_df(
-        self, ascats: Tuple[models.ASCAT, ...] = (models.ASCAT(),)
+        self, ascats: Iterable[models.ASCAT] = (models.ASCAT(),)
     ) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(
-            ascats,  # type: ignore
-            schema=self.ascat_schema,
-        )
+        return utils.create_dataframe(ascats, self._ascat_schema)
 
     def arrange_primary_aliquot_df(
         self,
-        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
-            models.PrimaryAliquot(),
-        ),
+        primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
     ) -> sql.DataFrame:
-        return self.spark_session.createDataFrame(
-            primary_aliquots,  # type: ignore
-            schema=self.primary_aliquot_schema,
-        )
+        return utils.create_dataframe(primary_aliquots, self._primary_aliquot_schema)
 
     def arrange_builder(self) -> builders.ObservationBuilder:
         return builders.ObservationBuilder()
 
-    @pytest.mark.parametrize(
-        ("index_name", "selector", "final_schema"),
-        (
-            pytest.param("case_centric", "ssm", "other", id="case_centric"),
-            pytest.param("gene_centric", "ssm", "other", id="gene_centric"),
-            pytest.param("ssm_centric", None, "ssm", id="ssm_centric"),
-            pytest.param(
-                "ssm_occurrence_centric", None, "ssm", id="ssm_occurrence_centric"
-            ),
-        ),
+    @utils.parametrize[str, Optional[str], str](
+        case_centric=("case_centric", "ssm", "other"),
+        gene_centric=("gene_centric", "ssm", "other"),
+        ssm_centric=("ssm_centric", None, "ssm"),
+        ssm_occurrence_centric=("ssm_occurrence_centric", None, "ssm"),
     )
     def test__build_for_ssm__final_schema(
         self, index_name: str, selector: Optional[str], final_schema: str
@@ -124,7 +63,7 @@ class TestObservationBuilder:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.ssm_schemas[final_schema]
+        assert result_df.schema == self._ssm_schemas[final_schema]
 
     def test__build_for_ssm__caller_split(self) -> None:
         maf_df = self.arrange_maf_df((models.MAF(variant_caller="muse;varscan2"),))
@@ -163,7 +102,6 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(
             maf_df, primary_aliquot_df, "case_centric", "ssm"
         )
-        result_df.show()
         result_row = more_itertools.one(result_df.collect())
 
         assert not any(
@@ -171,16 +109,11 @@ class TestObservationBuilder:
             for observation in result_row.observation
         )
 
-    @pytest.mark.parametrize(
-        ("index", "selector", "final_schema"),
-        (
-            pytest.param("case_centric", "cnv", "other", id="case_centric"),
-            pytest.param("cnv_centric", None, "cnv", id="cnv_centric"),
-            pytest.param(
-                "cnv_occurrence_centric", None, "cnv", id="cnv_occurrence_centric"
-            ),
-            pytest.param("gene_centric", "cnv", "other", id="gene_centric"),
-        ),
+    @utils.parametrize[str, Optional[str], str](
+        case_centric=("case_centric", "cnv", "other"),
+        cnv_centric=("cnv_centric", None, "cnv"),
+        cnv_occurrence_centric=("cnv_occurrence_centric", None, "cnv"),
+        gene_centric=("gene_centric", "cnv", "other"),
     )
     def test__build_for_cnv__final_schema(
         self, index: str, selector: Optional[str], final_schema: str
@@ -191,7 +124,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_cnv(ascat_df, index, selector)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.cnv_schemas[final_schema]
+        assert result_df.schema == self._cnv_schemas[final_schema]
 
     def test__build_for_cnv__data_translated(self) -> None:
         ascat = models.ASCAT()

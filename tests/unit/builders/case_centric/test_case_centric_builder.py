@@ -1,10 +1,9 @@
+import unittest
 from collections.abc import Iterable, Set
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 from typing_extensions import TypedDict
 
 from mutation_indexer import builders, es_utils
@@ -61,85 +60,25 @@ def assert_maf_translated(result_gene: sql.Row, maf: models.MAF) -> None:
     assert result_civic.variant_id == maf.civic_variant_id
 
 
-@pytest.fixture(scope="class")
-def maf_metadata_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAFMetadata.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def maf_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ascat_metadata_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCATMetadata.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def primary_aliquot_schema() -> types.StructType:
-    return schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def case_schema() -> types.StructType:
-    return schemas.Viz.Builders.CaseCentric.CASE.load()
-
-
-@pytest.fixture(scope="class")
-def ssm_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.Other.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def cnv_observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.Other.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ssm_consequence_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.CaseCentric.FINAL.load()
-
-
-class TestCaseCentricBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        create_dataframe: utils.CreateDataFrame,
-        maf_metadata_schema: types.StructType,
-        maf_schema: types.StructType,
-        ascat_metadata_schema: types.StructType,
-        ascat_schema: types.StructType,
-        primary_aliquot_schema: types.StructType,
-        case_schema: types.StructType,
-        ssm_observation_schema: types.StructType,
-        cnv_observation_schema: types.StructType,
-        ssm_consequence_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.create_dataframe = create_dataframe
-        self.maf_metadata_schema = maf_metadata_schema
-        self.maf_schema = maf_schema
-        self.ascat_metadata_schema = ascat_metadata_schema
-        self.ascat_schema = ascat_schema
-        self.primary_aliquot_schema = primary_aliquot_schema
-        self.case_schema = case_schema
-        self.ssm_observation_schema = ssm_observation_schema
-        self.cnv_observation_schema = cnv_observation_schema
-        self.ssm_consequence_schema = ssm_consequence_schema
-        self.final_schema = final_schema
+class TestCaseCentricBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._maf_metadata_schema = schemas.Viz.Builders.MAFMetadata.FINAL.load()
+        cls._maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
+        cls._ascat_metadata_schema = schemas.Viz.Builders.ASCATMetadata.FINAL.load()
+        cls._ascat_schema = schemas.Viz.Builders.ASCAT.FINAL.load()
+        cls._primary_aliquot_schema = schemas.Viz.Builders.PrimaryAliquot.FINAL.load()
+        cls._case_schema = schemas.Viz.Builders.CaseCentric.CASE.load()
+        cls._ssm_observation_schema = (
+            schemas.Viz.Builders.Observation.Other.FINAL.load()
+        )
+        cls._cnv_observation_schema = (
+            schemas.Viz.Builders.Observation.CNV.Other.FINAL.load()
+        )
+        cls._ssm_consequence_schema = (
+            schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
+        )
+        cls._final_schema = schemas.Viz.Builders.CaseCentric.FINAL.load()
 
     def arrange_config(self) -> adapter.ObsoleteConfig:
         return mock.MagicMock(
@@ -159,7 +98,7 @@ class TestCaseCentricBuilder:
     def arrange_dataframe_util(
         self, cases: Iterable[case.Case] = (case.Case(),)
     ) -> es_utils.DataFrameUtil:
-        case_df = self.create_dataframe(cases, self.case_schema)
+        case_df = utils.create_dataframe(cases, self._case_schema)
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
         dataframe_util.read.return_value = case_df
 
@@ -175,12 +114,12 @@ class TestCaseCentricBuilder:
         ssm_observations: Iterable[ssm.Observations] = (ssm.Observations(),),
         cnv_observations: Iterable[cnv.Observations] = (cnv.Observations(),),
     ) -> builders.ObservationBuilder:
-        ssm_observation_df = self.create_dataframe(
-            ssm_observations, self.ssm_observation_schema
+        ssm_observation_df = utils.create_dataframe(
+            ssm_observations, self._ssm_observation_schema
         )
         build_for_ssm = mock.MagicMock(return_value=ssm_observation_df)
-        cnv_observation_df = self.create_dataframe(
-            cnv_observations, self.cnv_observation_schema
+        cnv_observation_df = utils.create_dataframe(
+            cnv_observations, self._cnv_observation_schema
         )
         build_for_cnv = mock.MagicMock(return_value=cnv_observation_df)
 
@@ -193,8 +132,8 @@ class TestCaseCentricBuilder:
     def arrange_consequence_builder(
         self, consequences: Iterable[ssm.Consequences] = (ssm.Consequences(),)
     ) -> builders.ConsequenceBuilder:
-        consequence_df = self.create_dataframe(
-            consequences, self.ssm_consequence_schema
+        consequence_df = utils.create_dataframe(
+            consequences, self._ssm_consequence_schema
         )
         build_for_ssm = mock.MagicMock(return_value=consequence_df)
 
@@ -210,14 +149,16 @@ class TestCaseCentricBuilder:
         ascats: Iterable[models.ASCAT] = (models.ASCAT(),),
         primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
     ) -> Inputs:
-        maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
-        maf_df = self.create_dataframe(mafs, self.maf_schema)
-        ascat_metadata_df = self.create_dataframe(
-            ascat_metadata, self.ascat_metadata_schema
+        maf_metadata_df = utils.create_dataframe(
+            maf_metadata, self._maf_metadata_schema
         )
-        ascat_df = self.create_dataframe(ascats, self.ascat_schema)
-        primary_aliquot_df = self.create_dataframe(
-            primary_aliquots, self.primary_aliquot_schema
+        maf_df = utils.create_dataframe(mafs, self._maf_schema)
+        ascat_metadata_df = utils.create_dataframe(
+            ascat_metadata, self._ascat_metadata_schema
+        )
+        ascat_df = utils.create_dataframe(ascats, self._ascat_schema)
+        primary_aliquot_df = utils.create_dataframe(
+            primary_aliquots, self._primary_aliquot_schema
         )
 
         return Inputs(
@@ -251,7 +192,7 @@ class TestCaseCentricBuilder:
             builder.case_centric, sql.DataFrame
         )
         assert builder.case_centric.count() == 1
-        assert builder.case_centric.schema == self.final_schema
+        assert builder.case_centric.schema == self._final_schema
 
     def test__build__data_translated(self) -> None:
         es_case = case.Case()
@@ -296,15 +237,11 @@ class TestCaseCentricBuilder:
         assert_ascat_translated(ascat_gene, raw_ascat)
         cnv.assert_observation_translated(ascat_gene, cnv_observation)
 
-    @pytest.mark.parametrize(
-        ("maf_case_id", "cnv_case_id", "expected_available_variations"),
-        (
-            ("case-1", "case-1", frozenset({})),
-            ("case-0", "case-4", frozenset({"ssm"})),
-            ("case-6", "case-0", frozenset({"cnv"})),
-            ("case-0", "case-0", frozenset({"ssm", "cnv"})),
-        ),
-        ids=("no_data", "ssm_only", "cnv_only", "both"),
+    @utils.parametrize[str, str, Set[str]](
+        no_data=("case-1", "case-1", frozenset({})),
+        ssm_only=("case-0", "case-4", frozenset({"ssm"})),
+        cnv_only=("case-6", "case-0", frozenset({"cnv"})),
+        both=("case-0", "case-0", frozenset({"ssm", "cnv"})),
     )
     def test__build__available_variation_data(
         self,
@@ -340,22 +277,12 @@ class TestCaseCentricBuilder:
 
         assert result_available_variations == expected_available_variations
 
-    @pytest.mark.parametrize(
-        ("gene_id", "biotype", "symbol", "is_cancer_gene_census", "expected_count"),
-        (
-            ("gene-1", "b-0", "sym-0", "true", 2),
-            ("gene-0", "b-1", "sym-0", "true", 2),
-            ("gene-0", "b-0", "sym-1", "true", 2),
-            ("gene-0", "b-0", "sym-0", "false", 2),
-            ("gene-0", "b-0", "sym-0", "true", 1),
-        ),
-        ids=(
-            "distinct_id",
-            "distinct_biotype",
-            "distinct_symbol",
-            "differing_cancer_gene_census",
-            "same_gene",
-        ),
+    @utils.parametrize(
+        distinct_id=("gene-1", "b-0", "sym-0", "true", 2),
+        distinct_biotype=("gene-0", "b-1", "sym-0", "true", 2),
+        distinct_symbol=("gene-0", "b-0", "sym-1", "true", 2),
+        differing_cancer_gene_census=("gene-0", "b-0", "sym-0", "false", 2),
+        same_gene=("gene-0", "b-0", "sym-0", "true", 1),
     )
     def test__build__distinct_genes(
         self,

@@ -1,9 +1,8 @@
 import math
+import unittest
 from unittest import mock
 
 import more_itertools
-import pytest
-from pyspark.sql import types
 
 from mutation_indexer import indexd_utils
 from mutation_indexer.builders import gene_expression
@@ -14,41 +13,17 @@ from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 
 
-@pytest.fixture(scope="class")
-def gene_model_schema() -> types.StructType:
-    return schemas.Builders.GeneModel.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def primary_aliquot_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def star_counts_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.Index.STAR_COUNTS.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.Index.FINAL.load()
-
-
-class TestGeneExpressionBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        gene_model_schema: types.StructType,
-        primary_aliquot_schema: types.StructType,
-        star_counts_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.create_dataframe = create_dataframe
-        self.gene_model_schema = gene_model_schema
-        self.primary_aliquot_schema = primary_aliquot_schema
-        self.star_counts_schema = star_counts_schema
-        self.final_schema = final_schema
+class TestGeneExpressionBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._gene_model_schema = schemas.Builders.GeneModel.FINAL.load()
+        cls._primary_aliquot_schema = (
+            schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
+        )
+        cls._star_counts_schema = (
+            schemas.GeneExpression.Builders.Index.STAR_COUNTS.load()
+        )
+        cls._final_schema = schemas.GeneExpression.Builders.Index.FINAL.load()
 
     def arrange_inputs(
         self,
@@ -57,9 +32,9 @@ class TestGeneExpressionBuilder:
             models.PrimaryAliquot(),
         ),
     ) -> gene_expression.IndexBuilderInputs:
-        gene_model_df = self.create_dataframe(gene_models, self.gene_model_schema)
-        primary_aliquot_df = self.create_dataframe(
-            primary_aliquots, self.primary_aliquot_schema
+        gene_model_df = utils.create_dataframe(gene_models, self._gene_model_schema)
+        primary_aliquot_df = utils.create_dataframe(
+            primary_aliquots, self._primary_aliquot_schema
         )
 
         return gene_expression.IndexBuilderInputs(
@@ -70,15 +45,15 @@ class TestGeneExpressionBuilder:
         self,
         star_counts: tuple[models.STARCounts, ...] = (models.STARCounts(),),
     ) -> indexd_utils.DataFrameUtil:
-        star_counts_df = self.create_dataframe(star_counts, self.star_counts_schema)
+        star_counts_df = utils.create_dataframe(star_counts, self._star_counts_schema)
         dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
         dataframe_util.get_dataframe.return_value = star_counts_df
 
         return dataframe_util
 
-    def arrange_config(self) -> ge_config.IndexBuilder:
+    def arrange_config(self) -> ge_config.GeneExpressionIndexBuilder:
         config = mock.MagicMock(
-            spec=gene_expression.IndexBuilder,
+            spec=ge_config.GeneExpressionIndexBuilder,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
@@ -106,7 +81,7 @@ class TestGeneExpressionBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
     def test__build__data_translated(self) -> None:
         config = self.arrange_config()
@@ -135,7 +110,7 @@ class TestGeneExpressionBuilder:
         assert result_row.symbol == star_count.gene_name
         utils.assert_float_equal(result_row.uqfpkm, star_count.fpkm_uq_unstranded)
 
-    @pytest.mark.parametrize("chromosome", ("0", "23", "Y"))
+    @utils.parametrize(("0",), ("23",), ("Y",))
     def test__build__exclude_non_chr1_to_22(self, chromosome: str) -> None:
         config = self.arrange_config()
         spark_session = mock.MagicMock()

@@ -1,12 +1,11 @@
 import dataclasses
 import decimal
+import unittest
 from collections.abc import Iterable
 from typing import Optional
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders
 from tests.unit import utils
@@ -49,79 +48,39 @@ class AllEffects:
         )
 
 
-@pytest.fixture(scope="class")
-def ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def maf_schema() -> types.StructType:
-    return schemas.Viz.Builders.MAF.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_ssm_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_with_genes_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.SSM.WithoutAAChange.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_with_aa_change_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.SSM.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_cnv_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.CNV.FINAL.load()
-
-
-class TestConsequenceBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        ascat_schema: types.StructType,
-        maf_schema: types.StructType,
-        final_ssm_schema: types.StructType,
-        final_with_genes_schema: types.StructType,
-        final_with_aa_change_schema: types.StructType,
-        final_cnv_schema: types.StructType,
-    ) -> None:
-        self.create_dataframe = create_dataframe
-        self.ascat_schema = ascat_schema
-        self.maf_schema = maf_schema
-        self.final_ssm_schemas = {
+class TestConsequenceBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._ascat_schema = schemas.Viz.Builders.ASCAT.FINAL.load()
+        cls._maf_schema = schemas.Viz.Builders.MAF.FINAL.load()
+        final_ssm_schema = schemas.Viz.Builders.Consequence.SSM.WithoutGene.FINAL.load()
+        final_with_genes_schema = (
+            schemas.Viz.Builders.Consequence.SSM.WithoutAAChange.FINAL.load()
+        )
+        final_with_aa_change_schema = schemas.Viz.Builders.Consequence.SSM.FINAL.load()
+        cls._final_ssm_schemas = {
             "case_centric": final_ssm_schema,
             "gene_centric": final_ssm_schema,
             "ssm_centric": final_with_aa_change_schema,
             "ssm_occurrence_centric": final_with_genes_schema,
         }
-        self.final_cnv_schema = final_cnv_schema
+        cls._final_cnv_schema = schemas.Viz.Builders.Consequence.CNV.FINAL.load()
 
     def arrange_ascat_df(
         self, ascats: Iterable[models.ASCAT] = (models.ASCAT(),)
     ) -> sql.DataFrame:
-        return self.create_dataframe(ascats, self.ascat_schema)
+        return utils.create_dataframe(ascats, self._ascat_schema)
 
     def arrange_maf_df(
         self, mafs: Iterable[models.MAF] = (models.MAF(),)
     ) -> sql.DataFrame:
-        return self.create_dataframe(mafs, self.maf_schema)
+        return utils.create_dataframe(mafs, self._maf_schema)
 
-    @pytest.mark.parametrize(
-        ("index_name", "join_gene", "add_gene_aa_change"),
-        (
-            pytest.param("case_centric", False, False, id="case_centric"),
-            pytest.param("gene_centric", False, False, id="gene_centric"),
-            pytest.param("ssm_centric", True, True, id="ssm_centric"),
-            pytest.param(
-                "ssm_occurrence_centric", True, False, id="ssm_occurrence_centric"
-            ),
-        ),
+    @utils.parametrize(
+        case_centric=("case_centric", False, False),
+        gene_centirc=("gene_centric", False, False),
+        ssm_centric=("ssm_centric", True, True),
+        ssm_occurrence_centric=("ssm_occurrence_centric", True, False),
     )
     def test__build_for_ssm__single_row(
         self, index_name: str, join_gene: bool, add_gene_aa_change: bool
@@ -134,7 +93,7 @@ class TestConsequenceBuilder:
         )
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_ssm_schemas[index_name]
+        assert result_df.schema == self._final_ssm_schemas[index_name]
 
     def test__build_for_ssm__data_translated(self) -> None:
         all_effects = AllEffects(
@@ -226,7 +185,7 @@ class TestConsequenceBuilder:
         maf_df = self.arrange_maf_df()
         builder = builders.ConsequenceBuilder()
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             builder.build_for_ssm(maf_df, "case_centric", False, True)
 
     def test__build_for_ssm__filter_non_matching_all_effects(self) -> None:
@@ -288,10 +247,10 @@ class TestConsequenceBuilder:
 
         assert result_consequence.transcript.aa_change == "A609S"
 
-    @pytest.mark.parametrize(
-        ("aa_change", "expected_start"),
-        (("p.A207T", 207), ("p.F114_I120del", 114), (None, None)),
-        ids=("valid_start", "valid_start_with_end", "no_valid_start"),
+    @utils.parametrize[Optional[str], Optional[int]](
+        valid_start=("p.A207T", 207),
+        valid_start_with_end=("p.F114_I120del", 114),
+        no_valid_start=(None, None),
     )
     def test__build_for_ssm__aa_start(
         self, aa_change: Optional[str], expected_start: Optional[int]
@@ -307,14 +266,11 @@ class TestConsequenceBuilder:
 
         assert result_consequence.transcript.aa_start == expected_start
 
-    @pytest.mark.parametrize(
-        ("aa_change", "expected_end"),
-        (
-            pytest.param("p.F114_I120del", 120, id="valid_end"),
-            pytest.param("p.A207T", 207, id="no_end_but_valid_start"),
-            pytest.param("p.E1371Rfs*16", 1371, id="ignore_trailing_numeric_values"),
-            pytest.param(None, None, id="no_valid_end_or_start"),
-        ),
+    @utils.parametrize[Optional[str], Optional[int]](
+        valid_end=("p.F114_I120del", 120),
+        no_end_but_valid_start=("p.A207T", 207),
+        ignore_trailing_numeric_values=("p.E1371Rfs*16", 1371),
+        no_valid_end_or_start=(None, None),
     )
     def test__build_for_ssm__aa_end(
         self, aa_change: Optional[str], expected_end: Optional[int]
@@ -343,12 +299,9 @@ class TestConsequenceBuilder:
 
         assert result_consequence.transcript.aa_change is None
 
-    @pytest.mark.parametrize(
-        ("polyphen", "expected_impact"),
-        (
-            pytest.param("benign(0.007)", "benign"),
-            pytest.param(None, "", id="None-empty"),
-        ),
+    @utils.parametrize[Optional[str], str](
+        benign=("benign(0.007)", "benign"),
+        none_empty=(None, ""),
     )
     def test__build_for_ssm__extract_polyphen_impact_value(
         self, polyphen: Optional[str], expected_impact: str
@@ -365,16 +318,9 @@ class TestConsequenceBuilder:
 
         assert result_annotation.polyphen_impact == expected_impact
 
-    @pytest.mark.parametrize(
-        ("polyphen", "expected_score"),
-        (
-            pytest.param(
-                "possibly_damaging(0.895)",
-                decimal.Decimal("0.895"),
-                id="possibly_damaging(0.895)-0.895",
-            ),
-            pytest.param(None, None),
-        ),
+    @utils.parametrize[Optional[str], Optional[decimal.Decimal]](
+        possibly_damaging_0895=("possibly_damaging(0.895)", decimal.Decimal("0.895")),
+        none_none=(None, None),
     )
     def test__build_for_ssm__extract_polyphen_score_value(
         self, polyphen: Optional[str], expected_score: Optional[decimal.Decimal]
@@ -391,12 +337,12 @@ class TestConsequenceBuilder:
 
         utils.assert_float_equal(result_annotation.polyphen_score, expected_score)
 
-    @pytest.mark.parametrize(
-        ("sift", "expected_impact"),
-        (
-            pytest.param("tolerated_low_confidence(1)", "tolerated_low_confidence"),
-            pytest.param(None, "", id="None-empty"),
+    @utils.parametrize[Optional[str], str](
+        tolerated_low_confidence=(
+            "tolerated_low_confidence(1)",
+            "tolerated_low_confidence",
         ),
+        none_empty=(None, ""),
     )
     def test__build_for_ssm__extract_sift_impact_value(
         self, sift: Optional[str], expected_impact: str
@@ -413,16 +359,9 @@ class TestConsequenceBuilder:
 
         assert result_annotation.sift_impact == expected_impact
 
-    @pytest.mark.parametrize(
-        ("sift", "expected_score"),
-        (
-            pytest.param(
-                "deleterious(0.02)",
-                decimal.Decimal("0.02"),
-                id="deleterious(0.02)-0.02",
-            ),
-            pytest.param(None, None),
-        ),
+    @utils.parametrize[Optional[str], Optional[decimal.Decimal]](
+        deleterious=("deleterious(0.02)", decimal.Decimal("0.02")),
+        none_none=(None, None),
     )
     def test__build_for_ssm__extract_sift_score_value(
         self, sift: Optional[str], expected_score: Optional[decimal.Decimal]
@@ -453,12 +392,9 @@ class TestConsequenceBuilder:
             "ssm_consequence", maf.ssm_id, all_effects.transcript_id
         )
 
-    @pytest.mark.parametrize(
-        ("index_name", "join_gene", "add_gene_aa_change"),
-        (
-            pytest.param("case_centric", False, False, id="case_centric"),
-            pytest.param("ssm_centric", True, True, id="ssm_centric"),
-        ),
+    @utils.parametrize(
+        case_centric=("case_centric", False, False),
+        ssm_centric=("ssm_centric", True, True),
     )
     def test__build_for_ssm__consequence_grouped_by_ssm_id(
         self, index_name: str, join_gene: bool, add_gene_aa_change: bool
@@ -490,15 +426,12 @@ class TestConsequenceBuilder:
         assert len(result_consequences["ssm-0"].consequence) == 1
         assert len(result_consequences["ssm-1"].consequence) == 2
 
-    @pytest.mark.parametrize(
-        ("aa_changes", "expected_output"),
-        (
-            pytest.param(("a",), ["gene a"], id="single_value"),
-            pytest.param((None,), [], id="null_value"),
-            pytest.param(("",), [], id="empty_value"),
-            pytest.param(("a", "a"), ["gene a"], id="duplicate_values"),
-            pytest.param(("b", "a"), ["gene a", "gene b"], id="unsorted_values"),
-        ),
+    @utils.parametrize[Iterable[Optional[str]], list[str]](
+        single_value=(("a",), ["gene a"]),
+        null_value=((None,), []),
+        empty_value=(("",), []),
+        duplicate_values=(("a", "a"), ["gene a"]),
+        unsorted_values=(("b", "a"), ["gene a", "gene b"]),
     )
     def test__build_for_ssm__gene_aa_change_all_effects(
         self, aa_changes: Iterable[Optional[str]], expected_output: list[str]
@@ -515,7 +448,7 @@ class TestConsequenceBuilder:
 
         assert result_row.gene_aa_change == expected_output
 
-    @pytest.mark.parametrize("index_name", ("cnv_centric", "cnv_occurrence_centric"))
+    @utils.parametrize(("cnv_centric",), ("cnv_occurrence_centric",))
     def test__build_for_cnv__gene_data_generated(self, index_name: str) -> None:
         ascat = models.ASCAT()
         ascat_df = self.arrange_ascat_df((ascat,))
@@ -524,7 +457,7 @@ class TestConsequenceBuilder:
         result_df = builder.build_for_cnv(ascat_df, index_name)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_cnv_schema
+        assert result_df.schema == self._final_cnv_schema
 
         result_row = more_itertools.one(result_df.collect())
 

@@ -1,31 +1,27 @@
-import uuid
-from collections.abc import Iterable, Iterator
-from typing import Any
+import itertools
+import unittest
+from collections.abc import Iterable
 
 import importlib_resources as resources
-import pytest
 import toml
-from marshmallow import validate
+from marshmallow import exceptions
 
 from mutation_indexer import configuration
 from mutation_indexer.constants import build
+from tests.unit import utils
 
 
-class TestIndexTypesValidator:
-    @pytest.mark.parametrize(
-        "viz_indices",
-        (
-            (build.IndexType.GENE_CENTRIC,),
-            (
-                build.IndexType.CASE_CENTRIC,
-                build.IndexType.CNV_CENTRIC,
-                build.IndexType.CNV_OCCURRENCE_CENTRIC,
-                build.IndexType.GENE_CENTRIC,
-                build.IndexType.SSM_CENTRIC,
-                build.IndexType.SSM_OCCURRENCE_CENTRIC,
-            ),
+class TestIndexTypesValidator(unittest.TestCase):
+    @utils.parametrize[Iterable[build.IndexType]](
+        partial=(build.IndexType.GENE_CENTRIC,),
+        all=(
+            build.IndexType.CASE_CENTRIC,
+            build.IndexType.CNV_CENTRIC,
+            build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.GENE_CENTRIC,
+            build.IndexType.SSM_CENTRIC,
+            build.IndexType.SSM_OCCURRENCE_CENTRIC,
         ),
-        ids=("partial", "all"),
     )
     def test__call__viz_indices(self, viz_indices: Iterable[build.IndexType]) -> None:
         validator = configuration.build.IndexTypesValidator()
@@ -38,31 +34,27 @@ class TestIndexTypesValidator:
 
         assert ge_indices == validator(ge_indices)
 
-    @pytest.mark.parametrize(
-        "indices",
-        (
-            (build.IndexType.GENE_EXPRESSION, build.IndexType.CNV_CENTRIC),
-            (
-                build.IndexType.GENE_EXPRESSION,
-                build.IndexType.CASE_CENTRIC,
-                build.IndexType.CNV_CENTRIC,
-                build.IndexType.CNV_OCCURRENCE_CENTRIC,
-                build.IndexType.GENE_CENTRIC,
-                build.IndexType.SSM_CENTRIC,
-                build.IndexType.SSM_OCCURRENCE_CENTRIC,
-            ),
-            (),
+    @utils.parametrize[Iterable[build.IndexType]](
+        partial=(build.IndexType.GENE_EXPRESSION, build.IndexType.CNV_CENTRIC),
+        all=(
+            build.IndexType.GENE_EXPRESSION,
+            build.IndexType.CASE_CENTRIC,
+            build.IndexType.CNV_CENTRIC,
+            build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.GENE_CENTRIC,
+            build.IndexType.SSM_CENTRIC,
+            build.IndexType.SSM_OCCURRENCE_CENTRIC,
         ),
-        ids=("partial", "all", "none"),
+        none=(),
     )
     def test__call__both(self, indices: Iterable[build.IndexType]) -> None:
         validator = configuration.build.IndexTypesValidator()
 
-        with pytest.raises(validate.ValidationError):
+        with self.assertRaises(exceptions.ValidationError):
             validator(indices)
 
 
-class TestBuild:
+class TestBuild(unittest.TestCase):
     def test__is_viz_build__true_if_no_gene_expression(self) -> None:
         viz_build = configuration.build.Build(
             build_version="",
@@ -102,28 +94,27 @@ class TestBuild:
         assert not ge_build.is_viz_build()
 
 
-@pytest.fixture
-def configuration_toml() -> Iterator[dict[str, Any]]:
-    yield toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
-
-
-class TestLoadConfiguration:
-    @pytest.mark.parametrize("data_release", ("dr40", "dr1", ""))
-    @pytest.mark.parametrize("build_version", ("v1", "v20", ""))
-    @pytest.mark.parametrize(
-        "backup_path",
-        (
-            "",
-            "path",
-            "{data_release}",
-            "{build_version}",
-            "{data_release}/{build_version}/file.parquet",
-            "/path/{data_release}/{build_version}/file_{data_release}_{build_version}.parquet",
-        ),
+class TestLoadConfiguration(unittest.TestCase):
+    @utils.parametrize(
+        *itertools.product(
+            ("dr40", "dr1", ""),
+            ("v1", "v20", ""),
+            (
+                "",
+                "path",
+                "{data_release}",
+                "{build_version}",
+                "{data_release}/{build_version}/file.parquet",
+                "/path/{data_release}/{build_version}/file_{data_release}_{build_version}.parquet",
+            ),
+        )
     )
     def test_backup_path_honors_datarelease_and_buildversion(
-        self, configuration_toml, data_release, build_version, backup_path
+        self, data_release: str, build_version: str, backup_path: str
     ) -> None:
+        configuration_toml = toml.loads(
+            resources.read_text("mutation_indexer", "configuration.toml")
+        )
         configuration_toml["build"]["data_release"] = data_release
         configuration_toml["build"]["build_version"] = build_version
         configuration_toml["builders"]["gene_expression"]["gene_expression"]["backup"][

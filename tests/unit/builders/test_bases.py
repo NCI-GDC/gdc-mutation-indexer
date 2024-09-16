@@ -1,13 +1,15 @@
-from typing import AbstractSet, Generic, Mapping, Optional, Type, TypeVar
+import unittest
+from collections.abc import Mapping, Set
+from typing import Generic, Optional, Type, TypeVar
 from unittest import mock
 
-import pytest
 from pyspark import sql
 from typing_extensions import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
+from tests.unit import utils
 
 TInputs = TypeVar("TInputs", bound=Mapping[str, object])
 
@@ -22,30 +24,26 @@ class DummyInputs(TypedDict):
     gene_model_df: sql.DataFrame
 
 
-class TestDataFrameInputManager:
+class TestDataFrameInputManager(unittest.TestCase):
     def test__init__all_inputs_must_be_dataframes(self) -> None:
         class BadInputs(TypedDict):
             case_df: sql.DataFrame
             maf_df: str
 
-        with pytest.raises(AssertionError):
+        with self.assertRaises(AssertionError):
             bases.InputDataFrameManger(BadInputs)
 
-    @pytest.mark.parametrize(
-        ("input", "input_type"),
-        (
-            ({}, EmptyInputs),
-            (
-                {
-                    "case_df": mock.MagicMock(),
-                    "maf_df": mock.MagicMock(),
-                    "gene_model_df": mock.MagicMock(),
-                },
-                DummyInputs,
-            ),
-            ({"extra_df": mock.MagicMock()}, EmptyInputs),
+    @utils.parametrize(
+        empty=({}, EmptyInputs),
+        exact_match=(
+            {
+                "case_df": mock.MagicMock(),
+                "maf_df": mock.MagicMock(),
+                "gene_model_df": mock.MagicMock(),
+            },
+            DummyInputs,
         ),
-        ids=("empty", "exact_match", "extra"),
+        extra=({"extra_df": mock.MagicMock()}, EmptyInputs),
     )
     def test__check__all_keys_are_contained(
         self, input: dict, input_type: Type[TypedDict]
@@ -59,32 +57,28 @@ class TestDataFrameInputManager:
 
         assert not manager.check({"maf_df": mock.MagicMock()})
 
-    @pytest.mark.parametrize(
-        ("input_type", "expected_dfs"),
-        (
-            (EmptyInputs, frozenset()),
-            (
-                DummyInputs,
-                frozenset(
-                    (
-                        build.DataFrame.CASE,
-                        build.DataFrame.MAF,
-                        build.DataFrame.GENE_MODEL,
-                    )
-                ),
+    @utils.parametrize(
+        empty=(EmptyInputs, frozenset()),
+        dummy=(
+            DummyInputs,
+            frozenset(
+                (
+                    build.DataFrame.CASE,
+                    build.DataFrame.MAF,
+                    build.DataFrame.GENE_MODEL,
+                )
             ),
         ),
-        ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: Type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: Type[TypedDict], expected_dfs: Set[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
         assert frozenset(manager.required_dataframes) == expected_dfs
 
 
-class TestInputBuilder:
+class TestInputBuilder(unittest.TestCase):
     class DummyBuilder(Generic[TInputs], bases.InputBuilder[common.Builder, TInputs]):
         def __init__(
             self,
@@ -145,57 +139,47 @@ class TestInputBuilder:
                 scratch_df,
             )
 
-    @pytest.mark.parametrize(
-        ("builder", "expected_inputs"),
+    @utils.parametrize[bases.Builder, Set[build.DataFrame]](
+        (Builder0(), frozenset()),
         (
-            (Builder0(), frozenset()),
-            (
-                Builder1(),
-                frozenset(
-                    (
-                        build.DataFrame.CASE,
-                        build.DataFrame.MAF,
-                        build.DataFrame.GENE_MODEL,
-                    )
-                ),
+            Builder1(),
+            frozenset(
+                (
+                    build.DataFrame.CASE,
+                    build.DataFrame.MAF,
+                    build.DataFrame.GENE_MODEL,
+                )
             ),
         ),
     )
     def test__inputs(
         self,
-        builder: bases.InputBuilder,
-        expected_inputs: AbstractSet[build.DataFrame],
+        builder: bases.Builder,
+        expected_inputs: Set[build.DataFrame],
     ) -> None:
         assert frozenset(builder.inputs) == expected_inputs
 
-    @pytest.mark.parametrize(
-        ("builder", "expected_output"),
-        (
-            (Builder0(), build.DataFrame.MAF_METADATA),
-            (Builder1(), build.DataFrame.GENE_MODEL),
-        ),
+    @utils.parametrize[bases.Builder, build.DataFrame](
+        (Builder0(), build.DataFrame.MAF_METADATA),
+        (Builder1(), build.DataFrame.GENE_MODEL),
     )
     def test__output(
         self,
-        builder: bases.InputBuilder,
+        builder: bases.Builder,
         expected_output: build.DataFrame,
     ) -> None:
         assert builder.output == expected_output
 
-    @pytest.mark.parametrize(
-        ("builder", "inputs"),
-        (
-            (Builder0(), {}),
-            (
-                Builder1(),
-                {
-                    "case_df": mock.MagicMock(),
-                    "maf_df": mock.MagicMock(),
-                    "gene_model_df": mock.MagicMock(),
-                },
-            ),
+    @utils.parametrize[bases.Builder, Mapping[str, sql.DataFrame]](
+        empty=(Builder0(), {}),
+        dummy=(
+            Builder1(),
+            {
+                "case_df": mock.MagicMock(),
+                "maf_df": mock.MagicMock(),
+                "gene_model_df": mock.MagicMock(),
+            },
         ),
-        ids=("empty", "dummy"),
     )
     def test__build__all_inputs_given(
         self,
@@ -212,7 +196,7 @@ class TestInputBuilder:
         builder = TestInputBuilder.Builder1()
         inputs = {"maf_df": mock.MagicMock()}
 
-        with pytest.raises(AssertionError, match=r"Missing required inputs\."):
+        with self.assertRaises(AssertionError, msg=r"Missing required inputs\."):
             builder.build(**inputs)
 
     def test__build__backup_both(self) -> None:
@@ -297,9 +281,7 @@ class TestInputBuilder:
         df.write.parquet.assert_not_called()
         spark_session.read.parquet.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "is_cached", (True, False), ids=("is_cached", "is_not_cached")
-    )
+    @utils.parametrize(is_cached=(True,), is_not_cached=(False,))
     def test__build__caching(self, is_cached: bool) -> None:
         cached_df = mock.MagicMock(spec=sql.DataFrame)
         df = mock.MagicMock(spec=sql.DataFrame)

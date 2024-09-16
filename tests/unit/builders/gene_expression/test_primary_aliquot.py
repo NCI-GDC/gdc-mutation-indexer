@@ -1,39 +1,26 @@
+import unittest
+from collections.abc import Iterable
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import gene_expression
 from mutation_indexer.configuration.builders import gene_expression as ge_config
 from mutation_indexer.constants import build
+from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 
 
-@pytest.fixture(scope="class")
-def input_file_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FILE.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
-
-
-class TestPrimaryAliquotBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        input_file_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.input_file_schema = input_file_schema
-        self.final_schema = final_schema
+class TestPrimaryAliquotBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._input_file_schema = (
+            schemas.GeneExpression.Builders.PrimaryAliquot.FILE.load()
+        )
+        cls._final_schema = schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
 
     def arrange_config(self) -> ge_config.Builder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
@@ -43,13 +30,12 @@ class TestPrimaryAliquotBuilder:
         )
 
     def arrange_es_dataframe_util(
-        self, data: tuple[models.File, ...]
+        self, data: Iterable[models.File]
     ) -> es_utils.DataFrameUtil:
         dataframe_util = mock.MagicMock(spec=es_utils.DataFrameUtil)
 
-        dataframe_util.read.return_value = self.spark_session.createDataFrame(
-            data,  # type: ignore
-            schema=self.input_file_schema,
+        dataframe_util.read.return_value = utils.create_dataframe(
+            data, schema=self._input_file_schema
         )
 
         return dataframe_util
@@ -69,7 +55,7 @@ class TestPrimaryAliquotBuilder:
         result_df = builder.build()
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
     def test__build__data_translated(self) -> None:
         es_file = models.File()

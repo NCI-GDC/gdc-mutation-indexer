@@ -1,11 +1,10 @@
 import dataclasses
+import unittest
 from collections.abc import Iterable, Mapping
 from unittest import mock
 
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders
 from mutation_indexer.configuration.builders import viz
@@ -51,47 +50,19 @@ def _arrange_dataframe_util(dataframe: sql.DataFrame) -> mock.MagicMock:
     return dataframe_util
 
 
-@pytest.fixture(scope="class")
-def input_ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.DOCUMENT.load()
-
-
-@pytest.fixture(scope="class")
-def input_gene_model_schema() -> types.StructType:
-    return schemas.Builders.GeneModel.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def ascat_metadata_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCATMetadata.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.FINAL.load()
-
-
-class TestAscatBuilder:
-    @pytest.fixture(autouse=True)
-    def initialize_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        input_ascat_schema: types.StructType,
-        ascat_metadata_schema: types.StructType,
-        input_gene_model_schema: types.StructType,
-        final_ascat_schema: types.StructType,
-    ) -> None:
-        self.create_dataframe = create_dataframe
-        self.input_ascat_schema = input_ascat_schema
-        self.ascat_metadata_schema = ascat_metadata_schema
-        self.input_gene_model_schema = input_gene_model_schema
-        self.final_ascat_schema = final_ascat_schema
+class TestAscatBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._input_ascat_schema = schemas.Viz.Builders.ASCAT.DOCUMENT.load()
+        cls._input_gene_model_schema = schemas.Builders.GeneModel.FINAL.load()
+        cls._ascat_metadata_schema = schemas.Viz.Builders.ASCATMetadata.FINAL.load()
+        cls._final_ascat_schema = schemas.Viz.Builders.ASCAT.FINAL.load()
 
     def _arrange_doc_dataframe_util(
         self, ascat_document_data: tuple[AscatDocument, ...]
     ) -> mock.MagicMock:
-        ascat_document_df = self.create_dataframe(
-            ascat_document_data, self.input_ascat_schema
+        ascat_document_df = utils.create_dataframe(
+            ascat_document_data, self._input_ascat_schema
         )
 
         return _arrange_dataframe_util(ascat_document_df)
@@ -119,8 +90,12 @@ class TestAscatBuilder:
         metadata: tuple[Metadata, ...] = (Metadata(),),
         gene_model: tuple[models.GeneModel, ...] = (models.GeneModel(),),
     ) -> Mapping[str, sql.DataFrame]:
-        ascat_metadata_df = self.create_dataframe(metadata, self.ascat_metadata_schema)
-        gene_model_df = self.create_dataframe(gene_model, self.input_gene_model_schema)
+        ascat_metadata_df = utils.create_dataframe(
+            metadata, self._ascat_metadata_schema
+        )
+        gene_model_df = utils.create_dataframe(
+            gene_model, self._input_gene_model_schema
+        )
 
         return {
             "ascat_metadata_df": ascat_metadata_df,
@@ -134,7 +109,7 @@ class TestAscatBuilder:
         ascat_df = builder.build(**inputs)
 
         assert ascat_df.count() == 1
-        assert ascat_df.schema == self.final_ascat_schema
+        assert ascat_df.schema == self._final_ascat_schema
 
     def test__build__input_data_transformed(self) -> None:
         metadata = Metadata()
@@ -156,33 +131,25 @@ class TestAscatBuilder:
         assert ascat_row.symbol == gene_model.symbol
         assert ascat_row.variant_caller == metadata.workflow_type
 
-    @pytest.mark.parametrize(
-        ("metadata", "ascat_documents", "gene_model"),
-        (
-            (
-                (Metadata(file_id="file-1"),),
-                DEFAULT_ASCAT_DOCUMENTS,
-                (models.GeneModel(),),
-            ),
-            (
-                (Metadata(),),
-                (
-                    AscatDocument(did="file-1"),
-                    AscatDocument(did="file-1", copy_number=30),
-                    AscatDocument(did="file-1", copy_number=30),
-                ),
-                (models.GeneModel(),),
-            ),
-            (
-                (Metadata(),),
-                DEFAULT_ASCAT_DOCUMENTS,
-                (models.GeneModel(_gene_id="ENSG00000238008"),),
-            ),
+    @utils.parametrize(
+        missing_es_file=(
+            (Metadata(file_id="file-1"),),
+            DEFAULT_ASCAT_DOCUMENTS,
+            (models.GeneModel(),),
         ),
-        ids=(
-            "missing_es_file",
-            "missing_ascat_document",
-            "missing_gene_model_record",
+        missing_ascat_document=(
+            (Metadata(),),
+            (
+                AscatDocument(did="file-1"),
+                AscatDocument(did="file-1", copy_number=30),
+                AscatDocument(did="file-1", copy_number=30),
+            ),
+            (models.GeneModel(),),
+        ),
+        missing_gene_model_record=(
+            (Metadata(),),
+            DEFAULT_ASCAT_DOCUMENTS,
+            (models.GeneModel(_gene_id="ENSG00000238008"),),
         ),
     )
     def test__build__failed_joins(
@@ -197,7 +164,7 @@ class TestAscatBuilder:
         ascat_df = builder.build(**inputs)
 
         assert ascat_df.count() == 0
-        assert ascat_df.schema == self.final_ascat_schema
+        assert ascat_df.schema == self._final_ascat_schema
 
     def test__build__gene_id_stripped(self) -> None:
         ascat_documents = (
@@ -214,16 +181,13 @@ class TestAscatBuilder:
 
         assert ascat_row.gene_id == "ENSG00000238009"
 
-    @pytest.mark.parametrize(
-        ("copy_numbers", "cnv_change"),
-        (
-            ((100, 50, 50), "Gain"),
-            ((1, 0, 0), "Gain"),
-            ((100, 200, 200), "Loss"),
-            ((0, 2, 2), "Loss"),
-            ((40, 20, 20, 30, 30), "Gain"),
-            ((1, 2, 2, 3, 3), "Loss"),
-        ),
+    @utils.parametrize[tuple[int, ...], str](
+        ((100, 50, 50), "Gain"),
+        ((1, 0, 0), "Gain"),
+        ((100, 200, 200), "Loss"),
+        ((0, 2, 2), "Loss"),
+        ((40, 20, 20, 30, 30), "Gain"),
+        ((1, 2, 2, 3, 3), "Loss"),
     )
     def test__build__copy_number_maps_to_cnv_change(
         self, copy_numbers: tuple[int, ...], cnv_change: str
@@ -240,9 +204,8 @@ class TestAscatBuilder:
 
         assert ascat_row.cnv_change == cnv_change
 
-    @pytest.mark.parametrize(
-        "copy_numbers",
-        ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
+    @utils.parametrize[Iterable[int]](
+        ((30,),), ((31, 32, 33),), ((33, 20, 20, 40, 40),)
     )
     def test__build__neutral_copy_numbers_filtered(
         self, copy_numbers: Iterable[int]
@@ -354,27 +317,23 @@ class TestAscatBuilder:
         assert result_row.canonical_transcript_length_cds == None
         assert result_row.canonical_transcript_length_genomic == None
 
-    @pytest.mark.parametrize(
-        ("gene_model", "ascat_documents"),
-        (
+    @utils.parametrize(
+        non_protein_coding=(
+            models.GeneModel(biotype="transcribed_unprocessed_pseudogene"),
+            (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+        ),
+        gm_x_chromosome=(
+            models.GeneModel(chromosome="X"),
+            (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+        ),
+        ascat_x_chromosome=(
+            models.GeneModel(),
             (
-                models.GeneModel(biotype="transcribed_unprocessed_pseudogene"),
-                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
-            ),
-            (
-                models.GeneModel(chromosome="X"),
-                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
-            ),
-            (
-                models.GeneModel(),
-                (
-                    AscatDocument(copy_number=30, chromosome="X"),
-                    AscatDocument(),
-                    AscatDocument(),
-                ),
+                AscatDocument(copy_number=30, chromosome="X"),
+                AscatDocument(),
+                AscatDocument(),
             ),
         ),
-        ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
     def test__build__filter_gene_model(
         self, gene_model: models.GeneModel, ascat_documents: tuple[AscatDocument, ...]

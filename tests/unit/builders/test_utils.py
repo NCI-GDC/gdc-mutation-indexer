@@ -1,132 +1,121 @@
 import random
-from typing import Any, Tuple
+import unittest
+from collections.abc import Iterable
+from typing import Any
 
 import more_itertools
-import pytest
 from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders import utils
+from tests.unit import fixtures
+from tests.unit import utils as test_utils
 
 
-@pytest.mark.parametrize(
-    ("percentile", "expected_count"), ((0, 1), (15, 4), (58, 6), (86, 7), (100, 8))
-)
-def test__filter_arrays_by_relative_size(
-    spark_session: sql.SparkSession, percentile: int, expected_count: int
-) -> None:
-    arrays = [
-        (1,),
-        (1, 2),
-        (1, 2),
-        (1, 2),
-        (1, 2, 3),
-        (1, 2, 3),
-        (1, 2, 3, 4),
-        (1, 2, 3, 4, 5, 6),
-    ]
-    random.shuffle(arrays)
-    df = spark_session.createDataFrame(
-        ((a,) for a in arrays),
-        types.StructType(
-            [types.StructField("array", types.ArrayType(types.IntegerType()))]
-        ),
-    )
+class TestUtils(unittest.TestCase):
+    @test_utils.parametrize((0, 1), (15, 4), (58, 6), (86, 7), (100, 8))
+    def test__filter_arrays_by_relative_size(
+        self, percentile: int, expected_count: int
+    ) -> None:
+        arrays = [
+            (1,),
+            (1, 2),
+            (1, 2),
+            (1, 2),
+            (1, 2, 3),
+            (1, 2, 3),
+            (1, 2, 3, 4),
+            (1, 2, 3, 4, 5, 6),
+        ]
+        random.shuffle(arrays)
+        df = fixtures.SPARK_SESSION.createDataFrame(
+            ((a,) for a in arrays),
+            types.StructType(
+                [types.StructField("array", types.ArrayType(types.IntegerType()))]
+            ),
+        )
 
-    result = utils.filter_arrays_by_relative_size(df, "array", percentile)
+        result = utils.filter_arrays_by_relative_size(df, "array", percentile)
 
-    assert result.count() == expected_count
+        assert result.count() == expected_count
 
+    def test__sanitize_aa_change__remove_p_dot(self) -> None:
+        input_data = (
+            sql.Row(aa_change="a"),
+            sql.Row(aa_change="p.b"),
+            sql.Row(aa_change="cp."),
+        )
+        input_df = fixtures.SPARK_SESSION.createDataFrame(input_data)
 
-def test__sanitize_aa_change__remove_p_dot(spark_session: sql.SparkSession) -> None:
-    input_data = (
-        sql.Row(aa_change="a"),
-        sql.Row(aa_change="p.b"),
-        sql.Row(aa_change="cp."),
-    )
-    input_df = spark_session.createDataFrame(input_data)
+        result_df = utils.sanitize_aa_change(input_df)
+        result_data = frozenset(r.aa_change for r in result_df.collect())
 
-    result_df = utils.sanitize_aa_change(input_df)
-    result_data = frozenset(r.aa_change for r in result_df.collect())
+        assert result_data == frozenset({"a", "b", "c"})
 
-    assert result_data == frozenset({"a", "b", "c"})
+    def test__extract_impact__remove_score(self) -> None:
+        input_data = (
+            sql.Row(field="possibly_damaging(0.475)"),
+            sql.Row(field="deleterious_low_confidence(0)"),
+            sql.Row(field="zero_decimal(0.)"),
+            sql.Row(field=""),
+        )
+        input_df = fixtures.SPARK_SESSION.createDataFrame(input_data)
+        expected_data = frozenset(
+            {"possibly_damaging", "deleterious_low_confidence", "zero_decimal", ""}
+        )
 
+        result_df = utils.extract_impact(input_df, "field", "field_impact")
+        result_data = frozenset(r.field_impact for r in result_df.collect())
 
-def test__extract_impact__remove_score(spark_session: sql.SparkSession) -> None:
-    input_data = (
-        sql.Row(field="possibly_damaging(0.475)"),
-        sql.Row(field="deleterious_low_confidence(0)"),
-        sql.Row(field="zero_decimal(0.)"),
-        sql.Row(field=""),
-    )
-    input_df = spark_session.createDataFrame(input_data)
-    expected_data = frozenset(
-        {"possibly_damaging", "deleterious_low_confidence", "zero_decimal", ""}
-    )
+        assert result_data == expected_data
 
-    result_df = utils.extract_impact(input_df, "field", "field_impact")
-    result_data = frozenset(r.field_impact for r in result_df.collect())
+    def test__extract_score__remove_impact(self) -> None:
+        input_data = (
+            sql.Row(field="possibly_damaging(0.475)"),
+            sql.Row(field="deleterious_low_confidence(0.)"),
+            sql.Row(field="zero_decimal(0.1)"),
+            sql.Row(field=""),
+        )
+        input_df = fixtures.SPARK_SESSION.createDataFrame(input_data)
 
-    assert result_data == expected_data
+        result_df = utils.extract_score(input_df, "field", "field_score")
+        result_data = frozenset(r.field_score for r in result_df.collect())
 
+        assert result_data == frozenset({0.475, 0.0, 0.1, None})
 
-def test__extract_score__remove_impact(spark_session: sql.SparkSession) -> None:
-    input_data = (
-        sql.Row(field="possibly_damaging(0.475)"),
-        sql.Row(field="deleterious_low_confidence(0.)"),
-        sql.Row(field="zero_decimal(0.1)"),
-        sql.Row(field=""),
-    )
-    input_df = spark_session.createDataFrame(input_data)
+    def test__sanitize_gene_aa_change__sort_drop_dups_nulls_and_empty(self) -> None:
+        input_data = (sql.Row(gene_aa_change=["c", "a", "a", "", None, "b", "c", "c"]),)
+        input_df = fixtures.SPARK_SESSION.createDataFrame(input_data)
 
-    result_df = utils.extract_score(input_df, "field", "field_score")
-    result_data = frozenset(r.field_score for r in result_df.collect())
+        result_df = utils.sanitize_gene_aa_change(input_df)
+        result_row = more_itertools.one(result_df.collect())
 
-    assert result_data == frozenset({0.475, 0.0, 0.1, None})
+        assert result_row.gene_aa_change == ["a", "b", "c"]
 
+    def test__convert_empty_str_to_null_in_col__nulls(self) -> None:
+        input_data = (sql.Row(value="a"), sql.Row(value=""), sql.Row(value="c"))
+        input_df = fixtures.SPARK_SESSION.createDataFrame(input_data)
 
-def test__sanitize_gene_aa_change__sort_drop_dups_nulls_and_empty(
-    spark_session: sql.SparkSession,
-) -> None:
-    input_data = (sql.Row(gene_aa_change=["c", "a", "a", "", None, "b", "c", "c"]),)
-    input_df = spark_session.createDataFrame(input_data)
+        result_df = utils.convert_empty_str_to_null_in_col(input_df, "value")
+        result_data = frozenset(r.value for r in result_df.collect())
 
-    result_df = utils.sanitize_gene_aa_change(input_df)
-    result_row = more_itertools.one(result_df.collect())
+        assert result_data == frozenset({"a", None, "c"})
 
-    assert result_row.gene_aa_change == ["a", "b", "c"]
+    def test__extract_aas_position__aa_start_and_end(self) -> None:
+        """
+        Test aa_start and aa_end extraction
+        """
+        input_df = fixtures.SPARK_SESSION.createDataFrame(
+            (sql.Row(aa_change="p.L1201R"),)
+        )
 
+        result_df = utils.extract_aas_position(input_df)
+        result_row = more_itertools.one(result_df.collect())
 
-def test__convert_empty_str_to_null_in_col__nulls(
-    spark_session: sql.SparkSession,
-) -> None:
-    input_data = (sql.Row(value="a"), sql.Row(value=""), sql.Row(value="c"))
-    input_df = spark_session.createDataFrame(input_data)
+        assert result_row.aa_start == 1201
+        assert result_row.aa_end == 1201
 
-    result_df = utils.convert_empty_str_to_null_in_col(input_df, "value")
-    result_data = frozenset(r.value for r in result_df.collect())
-
-    assert result_data == frozenset({"a", None, "c"})
-
-
-def test__extract_aas_position__aa_start_and_end(
-    spark_session: sql.SparkSession,
-) -> None:
-    """
-    Test aa_start and aa_end extraction
-    """
-    input_df = spark_session.createDataFrame((sql.Row(aa_change="p.L1201R"),))
-
-    result_df = utils.extract_aas_position(input_df)
-    result_row = more_itertools.one(result_df.collect())
-
-    assert result_row.aa_start == 1201
-    assert result_row.aa_end == 1201
-
-
-@pytest.mark.parametrize(
-    ("inputs", "expected_uuid"),
-    (
+    @test_utils.parametrize[Iterable[Any], str](
         (
             ("ssm", "GRCh38", "chr4", "112382545", "112382545", "SNP", "A", "T"),
             "3439eab1-0c63-50cd-bad7-1ae8ffa8aa01",
@@ -139,14 +128,13 @@ def test__extract_aas_position__aa_start_and_end(
             ),
             "f4222c55-fea2-5b23-a204-482f33492800",
         ),
-    ),
-)
-def test__generate_uuid5__fixed_output_for(
-    inputs: Tuple[Any, ...], expected_uuid: str
-) -> None:
-    """
-    Test uuid5 generation
-    """
-    result_uuid = utils.generate_uuid5(*inputs)
+    )
+    def test__generate_uuid5__fixed_output_for(
+        self, inputs: Iterable[Any], expected_uuid: str
+    ) -> None:
+        """
+        Test uuid5 generation
+        """
+        result_uuid = utils.generate_uuid5(*inputs)
 
-    assert result_uuid == expected_uuid
+        assert result_uuid == expected_uuid

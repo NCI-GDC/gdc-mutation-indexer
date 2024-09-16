@@ -1,43 +1,17 @@
 import dataclasses
+import unittest
 from collections.abc import Iterable
 from unittest import mock
 
 import deepdiff
 import more_itertools
-import pytest
 from pyspark import sql
-from pyspark.sql import types
 
 from mutation_indexer import builders
 from mutation_indexer.configuration import adapter
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
-
-
-@pytest.fixture(scope="class")
-def ascat_schema() -> types.StructType:
-    return schemas.Viz.Builders.ASCAT.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def case_schema() -> types.StructType:
-    return schemas.Viz.Builders.Case.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def consequence_schema() -> types.StructType:
-    return schemas.Viz.Builders.Consequence.CNV.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def observation_schema() -> types.StructType:
-    return schemas.Viz.Builders.Observation.CNV.CNV.FINAL.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.CNVOccurrenceCentric.FINAL.load()
 
 
 def assert_cnv_transformed(row: sql.Row, ascat: models.ASCAT) -> None:
@@ -89,23 +63,14 @@ def assert_occurrence_transformed(
     assert_case_transformed(row, case)
 
 
-class TestCNVOccurrenceCentricBuilder:
-    @pytest.fixture(autouse=True)
-    def init_fixtures(
-        self,
-        create_dataframe: utils.CreateDataFrame,
-        ascat_schema: types.StructType,
-        case_schema: types.StructType,
-        consequence_schema: types.StructType,
-        observation_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self._create_dataframe = create_dataframe
-        self._ascat_schema = ascat_schema
-        self._case_schema = case_schema
-        self._consequence_schema = consequence_schema
-        self._observation_schema = observation_schema
-        self._final_schema = final_schema
+class TestCNVOccurrenceCentricBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._ascat_schema = schemas.Viz.Builders.ASCAT.FINAL.load()
+        cls._case_schema = schemas.Viz.Builders.Case.FINAL.load()
+        cls._consequence_schema = schemas.Viz.Builders.Consequence.CNV.FINAL.load()
+        cls._observation_schema = schemas.Viz.Builders.Observation.CNV.CNV.FINAL.load()
+        cls._final_schema = schemas.Viz.Builders.CNVOccurrenceCentric.FINAL.load()
 
     def _arrange_config(self) -> adapter.ObsoleteConfig:
         return mock.MagicMock(
@@ -119,7 +84,7 @@ class TestCNVOccurrenceCentricBuilder:
     ) -> builders.ConsequenceBuilder:
         builder = mock.MagicMock(spec=builders.ConsequenceBuilder)
 
-        builder.build_for_cnv.return_value = self._create_dataframe(
+        builder.build_for_cnv.return_value = utils.create_dataframe(
             consequences, self._consequence_schema
         )
 
@@ -130,7 +95,7 @@ class TestCNVOccurrenceCentricBuilder:
     ) -> builders.ObservationBuilder:
         builder = mock.MagicMock(spec=builders.ObservationBuilder)
 
-        builder.build_for_cnv.return_value = self._create_dataframe(
+        builder.build_for_cnv.return_value = utils.create_dataframe(
             observations, self._observation_schema
         )
 
@@ -142,8 +107,8 @@ class TestCNVOccurrenceCentricBuilder:
         cases: Iterable[models.Case] = (models.Case(),),
     ) -> dict:
         return {
-            "ascat_df": self._create_dataframe(ascats, self._ascat_schema),
-            "case_df": self._create_dataframe(cases, self._case_schema),
+            "ascat_df": utils.create_dataframe(ascats, self._ascat_schema),
+            "case_df": utils.create_dataframe(cases, self._case_schema),
         }
 
     def test__build__single_row(self) -> None:

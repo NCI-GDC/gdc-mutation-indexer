@@ -1,8 +1,8 @@
 import itertools
+import unittest
 from typing import Dict, Iterable, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
-import pytest
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -10,6 +10,7 @@ from pyspark.sql import types
 from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils
+from tests.unit import fixtures, utils
 
 
 class UrlMetadata(TypedDict):
@@ -47,12 +48,7 @@ def stub_input_file_name() -> sql.Column:
     )
 
 
-class TestDataFrameUtil:
-    @pytest.fixture(autouse=True)
-    def import_fixtures(self, data_dir: str, spark_session: sql.SparkSession) -> None:
-        self.data_dir = data_dir
-        self.spark_session = spark_session
-
+class TestDataFrameUtil(unittest.TestCase):
     def arrange_index_client(
         self,
         documents: Iterable[Optional[Iterable[client.Document]]] = (
@@ -84,9 +80,9 @@ class TestDataFrameUtil:
             for ds in document_contents
         )
 
-        sql_context.createDataFrame.side_effect = self.spark_session.createDataFrame
+        sql_context.createDataFrame.side_effect = fixtures.SPARK_SESSION.createDataFrame
         sql_context.read.csv.side_effect = (
-            self.spark_session.createDataFrame(tuple(d), schema) for d in data
+            fixtures.SPARK_SESSION.createDataFrame(tuple(d), schema) for d in data
         )
 
         return sql_context
@@ -224,15 +220,10 @@ class TestDataFrameUtil:
 
         assert result_df.count() == 0
 
-    @pytest.mark.parametrize(
-        ("type", "state"),
-        (("archive", "validated"), ("cleversafe", "blocked")),
-        ids=("invalid_type", "invalid_state"),
+    @utils.parametrize(
+        invalid_type=("archive", "validated"), invalid_state=("cleversafe", "blocked")
     )
-    @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__filter_url(
-        self, input_file_name: mock.MagicMock, type: str, state: str
-    ) -> None:
+    def test__get_dataframe__filter_url(self, type: str, state: str) -> None:
         documents = (
             arrange_document(
                 urls_metadata={
@@ -241,14 +232,17 @@ class TestDataFrameUtil:
             ),
         )
 
-        input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client((documents,))
-        schema = types.StructType([types.StructField("doc_data", types.StringType())])
-        sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        with mock.patch("pyspark.sql.functions.input_file_name") as input_file_name:
+            input_file_name.side_effect = stub_input_file_name
+            indexd = self.arrange_index_client((documents,))
+            schema = types.StructType(
+                [types.StructField("doc_data", types.StringType())]
+            )
+            sql_context = self.arrange_sql_context(((),), schema)
+            logger = mock.MagicMock()
+            util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0",), schema)
+            result_df = util.get_dataframe(("file-0",), schema)
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
         sql_context.read.csv.assert_called_once_with(

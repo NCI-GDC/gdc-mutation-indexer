@@ -1,14 +1,14 @@
 import functools
+import unittest
 from collections.abc import Iterable
 from unittest import mock
 
-import pytest
-
 from mutation_indexer import es_utils
 from mutation_indexer.constants import build
+from tests.unit import utils
 
 
-class TestCaseFieldSelector:
+class TestCaseFieldSelector(unittest.TestCase):
     def arrange_mappings_loader(
         self,
         *mappings: dict,
@@ -155,14 +155,11 @@ class TestCaseFieldSelector:
 
         assert fields == frozenset({"case_id", "field1"})
 
-    @pytest.mark.parametrize(
-        ("index", "prefix"),
-        (
-            pytest.param(build.IndexType.CNV_CENTRIC, "occurrence.case"),
-            pytest.param(build.IndexType.CNV_OCCURRENCE_CENTRIC, "case"),
-            pytest.param(build.IndexType.SSM_CENTRIC, "occurrence.case"),
-            pytest.param(build.IndexType.SSM_OCCURRENCE_CENTRIC, "case"),
-        ),
+    @utils.parametrize(
+        (build.IndexType.CNV_CENTRIC, "occurrence.case"),
+        (build.IndexType.CNV_OCCURRENCE_CENTRIC, "case"),
+        (build.IndexType.SSM_CENTRIC, "occurrence.case"),
+        (build.IndexType.SSM_OCCURRENCE_CENTRIC, "case"),
     )
     def test__select_for__remove_case_prefix(self, index: build.IndexType, prefix: str):
         mapping = functools.reduce(
@@ -193,13 +190,10 @@ class TestCaseFieldSelector:
 
         assert fields == frozenset({"case_id"})
 
-    @pytest.mark.parametrize(
-        "index",
-        (
-            pytest.param(build.IndexType.FILE),
-            pytest.param(build.IndexType.GENE_CENTRIC),
-            pytest.param(build.IndexType.GENE_EXPRESSION),
-        ),
+    @utils.parametrize(
+        (build.IndexType.FILE,),
+        (build.IndexType.GENE_CENTRIC,),
+        (build.IndexType.GENE_EXPRESSION,),
     )
     def test__select_for__raises_value_error_for_unknown_indices(
         self, index: build.IndexType
@@ -212,7 +206,7 @@ class TestCaseFieldSelector:
         loader = self.arrange_mappings_loader(mapping, indices=(index,))
         selector = es_utils.CaseFieldSelector(loader)
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             selector.select_for(index)
 
     def test__select_for__multiple_indices_fields_are_intersected(self) -> None:

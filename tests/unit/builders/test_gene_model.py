@@ -1,15 +1,15 @@
 import dataclasses
-from typing import Dict, Optional, Tuple
+import unittest
+from typing import Optional
 from unittest import mock
 
 import more_itertools
-import pytest
-from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from tests.unit import utils
 from tests.unit.data import schemas
 
 
@@ -57,10 +57,10 @@ class Transcript:
     cdna_coding_start: int = 0
     coding_region_end: int = 0
     coding_region_start: int = 0
-    domains: Tuple[Domain, ...] = (Domain(),)
+    domains: tuple[Domain, ...] = (Domain(),)
     end: int = 14409
     end_exon: Optional[int] = None
-    exons: Tuple[Exon, ...] = (Exon(),)
+    exons: tuple[Exon, ...] = (Exon(),)
     id: str = "ENST00000456328"
     is_canonical: bool = False
     length: int = 1657
@@ -77,16 +77,16 @@ class Transcript:
 
 @dataclasses.dataclass(frozen=True)
 class ExternalIDs:
-    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
-    hgnc: Tuple[str, ...] = ("HGNC:37102",)
-    omim_gene: Tuple[str, ...] = ()
-    uniprotkb_swissprot: Tuple[str, ...] = ()
+    entrez_gene: tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
+    hgnc: tuple[str, ...] = ("HGNC:37102",)
+    omim_gene: tuple[str, ...] = ()
+    uniprotkb_swissprot: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
 class GeneModel:
     _gene_id: str = "ENSG00000223972"
-    _id: Dict[str, str] = dataclasses.field(
+    _id: dict[str, str] = dataclasses.field(
         default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
     )
     biotype: str = "transcribed_unprocessed_pseudogene"
@@ -101,49 +101,41 @@ class GeneModel:
     start: int = 11869
     strand: int = 1
     symbol: str = "DDX11L1"
-    synonyms: Tuple[str, ...] = ()
-    transcripts: Tuple[Transcript, ...] = (Transcript(),)
+    synonyms: tuple[str, ...] = ()
+    transcripts: tuple[Transcript, ...] = (Transcript(),)
 
 
-@pytest.fixture(scope="class")
-def input_schema() -> types.StructType:
-    return schemas.Builders.GeneModel.RAW.load()
-
-
-@pytest.fixture(scope="class")
-def final_schema() -> types.StructType:
-    return schemas.Builders.GeneModel.FINAL.load()
-
-
-class TestGeneModelBuilder:
-    @pytest.fixture(autouse=True)
-    def import_fixtures(
-        self,
-        spark_session: sql.SparkSession,
-        input_schema: types.StructType,
-        final_schema: types.StructType,
-    ) -> None:
-        self.spark_session = spark_session
-        self.input_schema = input_schema
-        self.final_schema = final_schema
+class TestGeneModelBuilder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._input_schema = schemas.Builders.GeneModel.RAW.load()
+        cls._final_schema = schemas.Builders.GeneModel.FINAL.load()
 
     def _arrange_builder(
         self,
-        cytobands: Tuple[Cytoband, ...],
-        census: Tuple[Census, ...],
-        gene_model: Tuple[GeneModel, ...],
+        cytobands: tuple[Cytoband, ...],
+        census: tuple[Census, ...],
+        gene_model: tuple[GeneModel, ...],
     ) -> builders.GeneModelBuilder:
-        cytoband_df = self.spark_session.createDataFrame(
-            cytobands,  # type: ignore
-            "ens_gene_id: string, cytoband: string",
+        cytoband_df = utils.create_dataframe(
+            cytobands,
+            types.StructType(
+                [
+                    types.StructField("ens_gene_id", types.StringType()),
+                    types.StructField("cytoband", types.StringType()),
+                ]
+            ),
         )
-        census_df = self.spark_session.createDataFrame(
-            census, ("cancer_gene_id", "is_cancer_gene_census")  # type: ignore
+        census_df = utils.create_dataframe(
+            census,
+            types.StructType(
+                [
+                    types.StructField("cancer_gene_id", types.StringType()),
+                    types.StructField("is_cancer_gene_census", types.StringType()),
+                ]
+            ),
         )
-        gene_model_df = self.spark_session.createDataFrame(
-            gene_model,  # type: ignore
-            self.input_schema,
-        )
+        gene_model_df = utils.create_dataframe(gene_model, self._input_schema)
         dataframes = {
             "cytobands": cytoband_df,
             "census": census_df,
@@ -170,20 +162,11 @@ class TestGeneModelBuilder:
 
         return builders.GeneModelBuilder(config, sql_context)
 
-    @pytest.mark.parametrize(
-        ("cytoband_gene_id", "census_gene_id"),
-        (
-            ("ENSG00000223972", "ENSG00000223972"),
-            ("ENSG00000223971", "ENSG00000223972"),
-            ("ENSG00000223972", "ENSG00000223971"),
-            ("ENSG00000223971", "ENSG00000223971"),
-        ),
-        ids=(
-            "both_cytoband_and_census_exist",
-            "no_cytoband_data_exists",
-            "no_census_data_exists",
-            "neither_cytoband_or_census_exist",
-        ),
+    @utils.parametrize(
+        both_cytoband_and_census_exist=("ENSG00000223972", "ENSG00000223972"),
+        no_cytoband_data_exists=("ENSG00000223971", "ENSG00000223972"),
+        no_census_data_exists=("ENSG00000223972", "ENSG00000223971"),
+        neither_cytoband_or_census_exist=("ENSG00000223971", "ENSG00000223971"),
     )
     def test__build__joins(self, cytoband_gene_id: str, census_gene_id: str) -> None:
         builder = self._arrange_builder(
@@ -195,7 +178,7 @@ class TestGeneModelBuilder:
         result_df = builder.build()
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+        assert result_df.schema == self._final_schema
 
     def test__build__input_data_transformed(self) -> None:
         cytoband = Cytoband()
@@ -289,7 +272,7 @@ class TestGeneModelBuilder:
                 assert row_exon.start == exon.start
                 assert row_exon.start_phase == exon.start_phase
 
-    @pytest.mark.parametrize(("cytobands",), (("8di",), ("123,456",)))
+    @utils.parametrize(("8di",), ("123,456",))
     def test__build__cytobands_split(self, cytobands: str) -> None:
         builder = self._arrange_builder(
             (Cytoband(cytoband=cytobands),), (Census(),), (GeneModel(),)
@@ -300,7 +283,7 @@ class TestGeneModelBuilder:
 
         assert result_row.cytoband == cytobands.split(",")
 
-    @pytest.mark.parametrize(("cytobands",), (("",), (None,)), ids=("Empty", "None"))
+    @utils.parametrize[Optional[str]](empty=("",), none=(None,))
     def test__build__cytobands_null_or_empty(self, cytobands: Optional[str]) -> None:
         builder = self._arrange_builder(
             (Cytoband(cytoband=cytobands),), (Census(),), (GeneModel(),)
