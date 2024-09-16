@@ -8,6 +8,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+logger = logging.getLogger(__name__)
+
 DOCUMENT_URL_SCHEMA = types.StructType(
     [
         types.StructField("did", types.StringType()),
@@ -54,14 +56,10 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
 
 class DataFrameUtil:
     def __init__(
-        self,
-        indexd: client.IndexClient,
-        sql_context: sql.SQLContext,
-        logger: logging.Logger,
-    ):
+        self, indexd: client.IndexClient, spark_session: sql.SparkSession
+    ) -> None:
         self._indexd = indexd
-        self._sql_context = sql_context
-        self._logger = logger
+        self._spark_session = spark_session
 
     def _get_doc_urls(
         self, doc_ids: Iterable[str], batch_size: int
@@ -75,7 +73,7 @@ class DataFrameUtil:
             url = _get_and_format_url(doc)
 
             if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
+                logger.warning("File is missing: '{}'".format(doc.did))
 
             else:
                 yield DocumentUrl(doc.did, url)
@@ -91,7 +89,7 @@ class DataFrameUtil:
     ) -> sql.DataFrame:
         urls = list(more_itertools.always_iterable(urls))
 
-        df = self._sql_context.read.csv(
+        df = self._spark_session.read.csv(
             urls,
             schema=schema,
             sep="\t",
@@ -138,7 +136,7 @@ class DataFrameUtil:
             document_df = document_df.union(batch_df)
 
         if include_document_ids:
-            url_df = self._sql_context.createDataFrame(
+            url_df = self._spark_session.createDataFrame(
                 doc_urls, schema=DOCUMENT_URL_SCHEMA
             )
 

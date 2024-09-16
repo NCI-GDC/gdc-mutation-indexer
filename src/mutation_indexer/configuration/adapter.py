@@ -2,7 +2,6 @@ import uuid
 from collections.abc import Mapping, Sequence
 
 import elasticsearch
-from indexclient import client
 
 from mutation_indexer import configuration
 
@@ -17,11 +16,9 @@ class ObsoleteConfig:
         self,
         config: configuration.Configuration,
         elasticsearch: elasticsearch.Elasticsearch,
-        indexd: client.IndexClient,
     ) -> None:
         self._config = config
         self._elasticsearch = elasticsearch
-        self._indexd = indexd
 
         self.graph_case_doc_type = None
         self.graph_file_doc_type = None
@@ -262,10 +259,6 @@ class ObsoleteConfig:
     @property
     def es(self) -> elasticsearch.Elasticsearch:
         return self._elasticsearch
-
-    @property
-    def indexd(self) -> client.IndexClient:
-        return self._indexd
 
     def get_raw_output_path(self, index_name: str) -> str:
         paths = {
