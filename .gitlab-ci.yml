@@ -35,9 +35,8 @@ tox:
     - apt-get update
     - apt-get install -y maven
     - mvn -version
-    - pip install 'tox < 4'
-    - tox -e unit
-    - tox -e integration
+    - pip install tox
+    - tox
 
 release:
   variables:
