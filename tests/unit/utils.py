@@ -1,7 +1,7 @@
 import decimal
 import uuid
 from collections.abc import Callable, Iterable
-from typing import Any, Optional, Protocol, Union
+from typing import Any, ClassVar, Optional, Protocol, Union
 from unittest import mock
 
 from pyspark import sql
@@ -13,7 +13,7 @@ DECIMAL_CONTEXT = decimal.Context(prec=6)  # 32 bit float has 6 to 7 significant
 
 
 class DataClass(Protocol):
-    __dataclass_fields__: Any
+    __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
 CreateDataFrame = Callable[[Iterable[DataClass], types.StructType], sql.DataFrame]
@@ -59,3 +59,26 @@ def arrange_empty_mappings_loader() -> es_utils.MappingsLoader:
     loader.load_mapper.return_value = mock.MagicMock(mappings={}, settings={})
 
     return loader
+
+
+def convert_lists(data: dict) -> dict:
+    """Converts all lists in the dict into tuples for comparing with models.
+
+    Args:
+        data: The dictionary containing the lists to convert.
+
+    Returns:
+        The dictionary that was passed into the function.
+    """
+    for key, item in data.items():
+        if isinstance(item, list) and isinstance(next(iter(item), None), dict):
+            for subitem in item:
+                convert_lists(subitem)
+
+        if isinstance(item, dict):
+            convert_lists(item)
+
+        if isinstance(item, list):
+            data[key] = tuple(item)
+
+    return data
