@@ -147,6 +147,11 @@ class TestCNVCentricBuilder:
         }
 
     def test__build__single_row(self) -> None:
+        """Tests a singular row.
+
+        A baseline test to insure that the default configuration yields one row and it
+        has the expected structure.
+        """
         config = self._arrange_config()
         consequence_builder = self._arrange_consequence_builder()
         observation_builder = self._arrange_observation_builder()
@@ -163,6 +168,7 @@ class TestCNVCentricBuilder:
         assert result_df.schema == self._final_schema
 
     def test__build__data_transformed(self) -> None:
+        """Tests that data from sources are transformed to the output."""
         ascat = models.ASCAT()
         case = models.Case()
         consequence = models.CNVConsequence(
