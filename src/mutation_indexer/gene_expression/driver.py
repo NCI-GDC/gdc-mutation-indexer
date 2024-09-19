@@ -1,34 +1,44 @@
+import contextlib
+from collections.abc import Iterable, Iterator
 from typing import NamedTuple
 
 import elasticsearch
 from pyspark import sql
 
-from mutation_indexer import builders, driver, es_utils, indexd_utils
-from mutation_indexer.builders.bases import Builder
-from mutation_indexer.configuration import Configuration
+from mutation_indexer import builders, configuration, driver, es_utils, indexd_utils
+from mutation_indexer.builders import bases
 
 
 class Dependencies(NamedTuple):
     spark_session: sql.SparkSession
     es_client: elasticsearch.Elasticsearch
     es_dataframe_util: es_utils.DataFrameUtil
-    es_rdd_util: es_utils.RDDUtil
     doc_dataframe_util: indexd_utils.DataFrameUtil
-    case_field_selector: es_utils.CaseFieldSelector
-    consequence_builder: builders.ConsequenceBuilder
-    observation_builder: builders.ObservationBuilder
+    mappings_loader: es_utils.MappingsLoader
 
 
 class Driver(driver.Driver):
+    @contextlib.contextmanager
     @classmethod
-    def _load_builders(cls, config: Configuration) -> driver.Iterator[Builder]:
-        ge_config = config.builders.gene_expression
+    def _load_dependencies(
+        cls, config: configuration.Configuration
+    ) -> Iterator[Dependencies]:
+        """Loads all dependencies required by builders associated with this driver.
 
-        with cls.load_es_client(
-            config.elasticsearch.connection
-        ) as es_client, cls.load_spark_session() as spark_session:
-            mappings_loader = es_utils.MappingsLoader()
-            schema_loader = es_utils.SchemaLoader()
+        Args:
+            config: The configuration for this given run of the driver.
+
+        Returns:
+            A context manager in which all dependencies for the builders can be found.
+        """
+        mappings_loader = es_utils.MappingsLoader()
+        schema_loader = es_utils.SchemaLoader()
+
+        with contextlib.ExitStack() as stack:
+            es_client = stack.enter_context(
+                cls.load_es_client(config.elasticsearch.connection)
+            )
+            spark_session = stack.enter_context(cls.load_spark_session())
             es_dataframe_util = es_utils.DataFrameUtil(
                 config.elasticsearch,
                 spark_session,
@@ -40,14 +50,34 @@ class Driver(driver.Driver):
                 cls.load_index_client(config.indexd), spark_session
             )
 
-            yield builders.GeneModelBuilder(ge_config.gene_model, spark_session)
-            yield builders.GeneExpressionPrimaryAliquotBuilder(
-                ge_config.primary_aliquot, spark_session, es_dataframe_util
-            )
-            yield builders.GeneExpressionIndexBuilder(
-                ge_config.gene_expression,
+            yield Dependencies(
                 spark_session,
+                es_client,
                 es_dataframe_util,
-                mappings_loader,
                 doc_dataframe_util,
+                mappings_loader,
+            )
+
+    @contextlib.contextmanager
+    @classmethod
+    def _load_builders(
+        cls, config: configuration.Configuration
+    ) -> driver.Iterator[Iterable[bases.Builder]]:
+        ge_config = config.builders.gene_expression
+
+        with cls._load_dependencies(config) as deps:
+            yield (
+                builders.GeneModelBuilder(ge_config.gene_model, deps.spark_session),
+                builders.GeneExpressionPrimaryAliquotBuilder(
+                    ge_config.primary_aliquot,
+                    deps.spark_session,
+                    deps.es_dataframe_util,
+                ),
+                builders.GeneExpressionIndexBuilder(
+                    ge_config.gene_expression,
+                    deps.spark_session,
+                    deps.es_dataframe_util,
+                    deps.mappings_loader,
+                    deps.doc_dataframe_util,
+                ),
             )

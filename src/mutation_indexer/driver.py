@@ -3,7 +3,7 @@ import argparse
 import contextlib
 import logging
 import runpy
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import ContextManager
 
 import elasticsearch
@@ -28,7 +28,7 @@ class Driver(abc.ABC):
     @classmethod
     def load_spark_session(cls) -> Iterator[sql.SparkSession]:
         """
-        Initializes the spark session.
+        Loads the spark session.
 
         Returns:
             The context manager for spark session for the current driver.
@@ -41,7 +41,7 @@ class Driver(abc.ABC):
     @classmethod
     def load_index_client(cls, config: indexd.IndexD) -> client.IndexClient:
         """
-        Builds the index client with the given configuration values.
+        Loads the index client with the given configuration values.
 
         Args:
             config: The connection configuration for setting up the client.
@@ -60,7 +60,7 @@ class Driver(abc.ABC):
         config: es_config.Connection,
     ) -> ContextManager[elasticsearch.Elasticsearch]:
         """
-        builds the elastic search client based on the configuration.
+        Loads the elastic search client based on the configuration.
 
         Args:
             config: The connection configuration for setting up the client.
@@ -80,11 +80,23 @@ class Driver(abc.ABC):
     @abc.abstractmethod
     def _load_builders(
         cls, config: configuration.Configuration
-    ) -> Iterator[bases.Builder]:
+    ) -> ContextManager[Iterable[bases.Builder]]:
+        """Loads the builders that need to be run by the driver.
+
+        NOTE: These drivers MUST be loaded in topological orders.
+
+        Args:
+            config: The configuration associated with the this run of the driver.
+
+        Returns:
+            A context manager containing an iterable of the builders in topological
+            order.
+        """
         raise NotImplementedError()
 
     @classmethod
     def run(cls) -> None:
+        """A function for running the spark driver to build the desired data."""
         try:
             config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
                 toml.load("configuration.toml")
@@ -92,23 +104,27 @@ class Driver(abc.ABC):
 
             mutation_indexer_logging.add_build_id(config.build.build_id)
 
-            builders = cls._load_builders(config)
-            inputs: dict[str, sql.DataFrame] = {}
+            with cls._load_builders(config) as builders:
+                inputs: dict[str, sql.DataFrame] = {}
 
-            for builder in builders:
-                inputs[build.DataFrame.to_param(builder.output)] = builder.build(
-                    **inputs
-                )
+                logger.info("Build %s started.", config.build.build_id)
+
+                for builder in builders:
+                    inputs[build.DataFrame.to_param(builder.output)] = builder.build(
+                        **inputs
+                    )
+
+                logger.info("Build %s completed.", config.build.build_id)
         except Exception as ex:
             logger.critical("Driver failed", exc_info=ex)
 
 
 def get_argument_parser() -> argparse.ArgumentParser:
     """
-    Get the argument parser for the client application.
+    Get the argument parser for the driver application.
 
     Returns:
-        An argument parser with the required parameters to run the client application.
+        An argument parser with the required parameters to run the driver application.
     """
     parser = argparse.ArgumentParser()
 

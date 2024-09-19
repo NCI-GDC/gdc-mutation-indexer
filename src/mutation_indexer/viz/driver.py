@@ -1,3 +1,5 @@
+"""A module containing the Driver which runs the build of the viz indices."""
+
 import contextlib
 import inspect
 import itertools
@@ -15,6 +17,8 @@ from mutation_indexer.constants import build
 
 
 class BaseBuilderAdapter(bases.Builder):
+    """An adapter class allowing a BaseBuilder to be used as a Builder."""
+
     __slots__ = ("_builder",)
 
     def __init__(self, builder: builders.BaseBuilder) -> None:
@@ -53,16 +57,25 @@ class Dependencies(NamedTuple):
 
 
 def _load_input_builders(
-    config: configuration.Configuration, dependencies: Dependencies
+    config: configuration.Configuration, deps: Dependencies
 ) -> Iterable[bases.Builder]:
+    """Loads all input builders associated with the viz driver.
+
+    Args:
+        config: The configuration associated with the current run.
+        deps: The dependencies of the builders.
+
+    Returns:
+        An iterable of instances of the input builders.
+    """
     viz = config.builders.viz
-    spark_session = dependencies.spark_session
-    es_dataframe_util = dependencies.es_dataframe_util
-    es_rdd_util = dependencies.es_rdd_util
-    doc_dataframe_util = dependencies.doc_dataframe_util
-    case_field_selector = dependencies.case_field_selector
+    spark_session = deps.spark_session
+    es_dataframe_util = deps.es_dataframe_util
+    es_rdd_util = deps.es_rdd_util
+    doc_dataframe_util = deps.doc_dataframe_util
+    case_field_selector = deps.case_field_selector
     file_filter_factory = maf_metadata.MAFFileFilterFactory(
-        config.elasticsearch.read, dependencies.es_client
+        config.elasticsearch.read, deps.es_client
     )
 
     return (
@@ -87,15 +100,24 @@ def _load_input_builders(
 
 
 def _load_index_builders(
-    config: configuration.Configuration, dependencies: Dependencies
+    config: configuration.Configuration, deps: Dependencies
 ) -> Iterable[bases.Builder]:
+    """Loads all the index builders configured for this run the the viz driver.
+
+    Args:
+        config: The configuration associated with this run.
+        deps: The dependencies of the builders.
+
+    Returns:
+        An iterable of all the configured index builders.
+    """
     indices = config.build.index_types
-    sql_context = cast(sql.SQLContext, dependencies.spark_session)
-    old_config = adapter.ObsoleteConfig(config, dependencies.es_client)
-    es_dataframe_util = dependencies.es_dataframe_util
-    case_field_selector = dependencies.case_field_selector
-    consequence_builder = dependencies.consequence_builder
-    observation_builder = dependencies.observation_builder
+    sql_context = cast(sql.SQLContext, deps.spark_session)
+    old_config = adapter.ObsoleteConfig(config, deps.es_client)
+    es_dataframe_util = deps.es_dataframe_util
+    case_field_selector = deps.case_field_selector
+    consequence_builder = deps.consequence_builder
+    observation_builder = deps.observation_builder
 
     old_builders = (
         builders.CaseCentricBuilder(
@@ -127,12 +149,53 @@ def _load_index_builders(
     return tuple(b for b in index_builders if b.index in indices)
 
 
+def _remove_unused_builders(
+    input_builders: Iterable[bases.Builder], index_builders: Iterable[bases.Builder]
+) -> Iterable[bases.Builder]:
+    """Remove all builders not required directly or indirectly by the index builders.
+
+    Args:
+        input_builders: All input builders associated with the viz driver.
+        index_builders: The index builders which were configured to run as part of this
+            build.
+
+    Returns:
+        All index builders as well as any input builders required to run their build
+        functionality. The builders are returned in topological order.
+    """
+    graph = nx.Graph()
+
+    for builder in itertools.chain(input_builders, index_builders):
+        graph.add_node(builder.output, builder=builder)
+        graph.add_edges_from((i, builder.output) for i in builder.inputs)
+
+    reversed_graph = nx.reverse(graph)
+    required_outputs = set()
+
+    for builder in index_builders:
+        required_outputs |= nx.descendants(reversed_graph, builder.output)
+
+    return (
+        graph.nodes.data()[n]["builder"]
+        for n in nx.topological_sort(graph)
+        if n in required_outputs
+    )
+
+
 class Driver(driver.Driver):
     @contextlib.contextmanager
     @classmethod
     def _load_dependencies(
         cls, config: configuration.Configuration
     ) -> Iterator[Dependencies]:
+        """Loads all dependencies required by builders associated with this driver.
+
+        Args:
+            config: The configuration for this given run of the driver.
+
+        Returns:
+            A context manager in which all dependencies for the builders can be found.
+        """
         index_client = cls.load_index_client(config.indexd)
         mappings_loader = es_utils.MappingsLoader()
         schema_loader = es_utils.SchemaLoader()
@@ -161,27 +224,13 @@ class Driver(driver.Driver):
                 observation_builder=builders.ObservationBuilder(),
             )
 
+    @contextlib.contextmanager
     @classmethod
     def _load_builders(
         cls, config: configuration.Configuration
-    ) -> Iterator[bases.Builder]:
+    ) -> Iterator[Iterable[bases.Builder]]:
         with cls._load_dependencies(config) as dependencies:
             input_builders = _load_input_builders(config, dependencies)
             index_builders = _load_index_builders(config, dependencies)
-            graph = nx.Graph()
 
-            for builder in itertools.chain(input_builders, index_builders):
-                graph.add_node(builder.output, builder=builder)
-                graph.add_edges_from((i, builder.output) for i in builder.inputs)
-
-            reversed_graph = nx.reverse(graph)
-            required_outputs = set()
-
-            for builder in index_builders:
-                required_outputs |= nx.descendants(reversed_graph, builder.output)
-
-            yield from (
-                graph.nodes.data()[n]["builder"]
-                for n in nx.topological_sort(graph)
-                if n in required_outputs
-            )
+            yield _remove_unused_builders(input_builders, index_builders)
