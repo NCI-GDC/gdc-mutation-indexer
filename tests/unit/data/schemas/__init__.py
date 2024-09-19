@@ -97,6 +97,10 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
+        class CNVOccurrenceCentric:
+            FINAL: Schema
+
+        @_init_schemas
         class Consequence:
             @_init_schemas
             class SSM:
