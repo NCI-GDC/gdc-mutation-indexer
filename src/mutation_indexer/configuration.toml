@@ -8,7 +8,6 @@ acl = []
 build_version = "v0"
 config_file = ""
 data_release = "test"
-driver = ""
 error_log = "$HOME/mutation-indexer-error.log"
 index_types = [
   "CASE_CENTRIC",

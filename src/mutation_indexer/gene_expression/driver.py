@@ -20,12 +20,13 @@ class Dependencies(NamedTuple):
 
 
 class Driver(driver.Driver):
-    def _load_builders(self, config: Configuration) -> driver.Iterator[Builder]:
+    @classmethod
+    def _load_builders(cls, config: Configuration) -> driver.Iterator[Builder]:
         ge_config = config.builders.gene_expression
 
-        with driver.load_es_client(
+        with cls.load_es_client(
             config.elasticsearch.connection
-        ) as es_client, driver.load_spark_session() as spark_session:
+        ) as es_client, cls.load_spark_session() as spark_session:
             mappings_loader = es_utils.MappingsLoader()
             schema_loader = es_utils.SchemaLoader()
             es_dataframe_util = es_utils.DataFrameUtil(
@@ -36,7 +37,7 @@ class Driver(driver.Driver):
                 schema_loader,
             )
             doc_dataframe_util = indexd_utils.DataFrameUtil(
-                driver.load_index_client(config.indexd), spark_session
+                cls.load_index_client(config.indexd), spark_session
             )
 
             yield builders.GeneModelBuilder(ge_config.gene_model, spark_session)
@@ -50,7 +51,3 @@ class Driver(driver.Driver):
                 mappings_loader,
                 doc_dataframe_util,
             )
-
-
-if __name__ == "__main__":
-    Driver().run()

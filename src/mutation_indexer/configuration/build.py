@@ -4,7 +4,6 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-import pathlib
 import uuid
 from typing import Any, Sequence
 
@@ -48,7 +47,6 @@ class Build:
     build_version: str
     config_file: str
     data_release: str
-    driver: marshmallow_extensions.ResolvedPath
     error_log: marshmallow_extensions.ResolvedPath
     index_types: Sequence[build.IndexType] = dataclasses.field(
         metadata={

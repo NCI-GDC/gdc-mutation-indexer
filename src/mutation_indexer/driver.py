@@ -1,6 +1,8 @@
 import abc
+import argparse
 import contextlib
 import logging
+import runpy
 from collections.abc import Iterator
 from typing import ContextManager
 
@@ -14,70 +16,75 @@ from mutation_indexer import logging as mutation_indexer_logging
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
-from mutation_indexer.constants import build
+from mutation_indexer.constants import app, build
 
-logger = logging.getLogger("mutation_indexer")
-
-
-@contextlib.contextmanager
-def load_spark_session() -> Iterator[sql.SparkSession]:
-    """
-    Initializes the spark session.
-
-    Returns:
-        The context manager for spark session for the current driver.
-    """
-    with sql.SparkSession.builder.getOrCreate() as spark_session:
-        spark_session.sparkContext.setLogLevel("FATAL")
-
-        yield spark_session
-
-
-def load_index_client(config: indexd.IndexD) -> client.IndexClient:
-    """
-    Builds the index client with the given configuration values.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An indexd client
-    """
-    return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}",  # type: ignore
-        auth=(config.user, config.password),  # type: ignore
-    )  # type: ignore
-
-
-def load_es_client(
-    config: es_config.Connection,
-) -> ContextManager[elasticsearch.Elasticsearch]:
-    """
-    builds the elastic search client based on the configuration.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An elasticsearch client
-    """
-
-    return elasticsearch.Elasticsearch(
-        config.nodes.split(","),
-        use_ssl=config.use_ssl,
-        verify_certs=config.verify_certs,
-        http_auth=(config.user, config.password),
-    )
+logger = logging.getLogger(__name__)
 
 
 class Driver(abc.ABC):
+    """A base for various submodule drivers to build a collection of data in Spark."""
+
+    @contextlib.contextmanager
+    @classmethod
+    def load_spark_session(cls) -> Iterator[sql.SparkSession]:
+        """
+        Initializes the spark session.
+
+        Returns:
+            The context manager for spark session for the current driver.
+        """
+        with sql.SparkSession.builder.getOrCreate() as spark_session:
+            spark_session.sparkContext.setLogLevel("FATAL")
+
+            yield spark_session
+
+    @classmethod
+    def load_index_client(cls, config: indexd.IndexD) -> client.IndexClient:
+        """
+        Builds the index client with the given configuration values.
+
+        Args:
+            config: The connection configuration for setting up the client.
+
+        Returns:
+            An indexd client
+        """
+        return client.IndexClient(
+            baseurl=f"{config.host}:{config.port}",  # type: ignore
+            auth=(config.user, config.password),  # type: ignore
+        )  # type: ignore
+
+    @classmethod
+    def load_es_client(
+        cls,
+        config: es_config.Connection,
+    ) -> ContextManager[elasticsearch.Elasticsearch]:
+        """
+        builds the elastic search client based on the configuration.
+
+        Args:
+            config: The connection configuration for setting up the client.
+
+        Returns:
+            An elasticsearch client
+        """
+
+        return elasticsearch.Elasticsearch(
+            config.nodes.split(","),
+            use_ssl=config.use_ssl,
+            verify_certs=config.verify_certs,
+            http_auth=(config.user, config.password),
+        )
+
+    @classmethod
     @abc.abstractmethod
     def _load_builders(
-        self, config: configuration.Configuration
+        cls, config: configuration.Configuration
     ) -> Iterator[bases.Builder]:
         raise NotImplementedError()
 
-    def run(self) -> None:
+    @classmethod
+    def run(cls) -> None:
         try:
             config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
                 toml.load("configuration.toml")
@@ -85,7 +92,7 @@ class Driver(abc.ABC):
 
             mutation_indexer_logging.add_build_id(config.build.build_id)
 
-            builders = self._load_builders(config)
+            builders = cls._load_builders(config)
             inputs: dict[str, sql.DataFrame] = {}
 
             for builder in builders:
@@ -94,3 +101,27 @@ class Driver(abc.ABC):
                 )
         except Exception as ex:
             logger.critical("Driver failed", exc_info=ex)
+
+
+def get_argument_parser() -> argparse.ArgumentParser:
+    """
+    Get the argument parser for the client application.
+
+    Returns:
+        An argument parser with the required parameters to run the client application.
+    """
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("driver", type=str, choices=app.DRIVERS, required=True)
+
+    return parser
+
+
+if __name__ == "__main__":
+    try:
+        parser = get_argument_parser()
+        args = parser.parse_args()
+
+        runpy.run_module(app.DRIVERS[args.driver], run_name="__main__", alter_sys=True)
+    except Exception as ex:
+        logger.critical("Call to driver module failed.", exc_info=ex)
