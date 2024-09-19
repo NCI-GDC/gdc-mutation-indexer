@@ -173,6 +173,10 @@ class Viz:
                 class Other:
                     FINAL: Schema
 
+        @_init_schemas
+        class SSMCentric:
+            FINAL: Schema
+
 
 class GeneExpression:
     class Builders:
