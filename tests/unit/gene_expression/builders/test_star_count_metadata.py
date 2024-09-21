@@ -6,24 +6,24 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import gene_expression
 from mutation_indexer.configuration.builders import gene_expression as ge_config
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import builders
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 
 
 @pytest.fixture(scope="class")
 def input_file_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FILE.load()
+    return schemas.GeneExpression.Builders.STARCountMetadata.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
+    return schemas.GeneExpression.Builders.STARCountMetadata.FINAL.load()
 
 
-class TestPrimaryAliquotBuilder:
+class TestSTARCountMetadataBuilder:
     @pytest.fixture(autouse=True)
     def initialize_fixtures(
         self,
@@ -56,12 +56,12 @@ class TestPrimaryAliquotBuilder:
 
     def arrange_builder(
         self, data: tuple[models.File, ...] = (models.File(),)
-    ) -> gene_expression.PrimaryAliquotBuilder:
+    ) -> builders.STARCountMetadataBuilder:
         config = self.arrange_config()
         util = self.arrange_es_dataframe_util(data)
         spark_session = mock.MagicMock(spec=sql.SparkSession)
 
-        return gene_expression.PrimaryAliquotBuilder(config, spark_session, util)
+        return builders.STARCountMetadataBuilder(config, spark_session, util)
 
     def test__build__single_row(self) -> None:
         builder = self.arrange_builder()

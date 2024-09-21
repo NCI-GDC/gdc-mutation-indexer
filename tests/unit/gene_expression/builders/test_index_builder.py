@@ -21,7 +21,7 @@ def gene_model_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def primary_aliquot_schema() -> types.StructType:
-    return schemas.GeneExpression.Builders.PrimaryAliquot.FINAL.load()
+    return schemas.GeneExpression.Builders.STARCountMetadata.FINAL.load()
 
 
 @pytest.fixture(scope="class")

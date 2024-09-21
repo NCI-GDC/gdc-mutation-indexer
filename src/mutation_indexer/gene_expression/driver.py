@@ -5,8 +5,9 @@ from typing import NamedTuple
 import elasticsearch
 from pyspark import sql
 
-from mutation_indexer import builders, configuration, driver, es_utils, indexd_utils
+from mutation_indexer import configuration, driver, es_utils, indexd_utils
 from mutation_indexer.builders import bases
+from mutation_indexer.gene_expression import builders
 
 
 class Dependencies(NamedTuple):
@@ -68,12 +69,12 @@ class Driver(driver.Driver):
         with cls._load_dependencies(config) as deps:
             yield (
                 builders.GeneModelBuilder(ge_config.gene_model, deps.spark_session),
-                builders.GeneExpressionPrimaryAliquotBuilder(
+                builders.STARCountMetadataBuilder(
                     ge_config.primary_aliquot,
                     deps.spark_session,
                     deps.es_dataframe_util,
                 ),
-                builders.GeneExpressionIndexBuilder(
+                builders.IndexBuilder(
                     ge_config.gene_expression,
                     deps.spark_session,
                     deps.es_dataframe_util,

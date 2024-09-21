@@ -178,6 +178,6 @@ class GeneExpression:
             STAR_COUNTS: Schema
 
         @_init_schemas
-        class PrimaryAliquot:
+        class STARCountMetadata:
             FINAL: Schema
             FILE: Schema
