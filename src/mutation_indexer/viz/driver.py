@@ -10,13 +10,14 @@ import elasticsearch
 import networkx as nx
 from pyspark import sql
 
-from mutation_indexer import builders, configuration, driver, es_utils, indexd_utils
-from mutation_indexer.builders import bases, civic, maf_metadata
+from mutation_indexer import configuration, driver, es_utils, indexd_utils
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
+from mutation_indexer.viz import builders
+from mutation_indexer.viz.builders import maf_metadata
 
 
-class BaseBuilderAdapter(bases.Builder):
+class BaseBuilderAdapter(builders.Builder):
     """An adapter class allowing a BaseBuilder to be used as a Builder."""
 
     __slots__ = ("_builder",)
@@ -36,7 +37,8 @@ class BaseBuilderAdapter(bases.Builder):
     def inputs(self) -> Iterable[build.DataFrame]:
         return tuple(
             build.DataFrame.from_param(p)
-            for p in inspect.signature(self.build).parameters.keys()
+            for p in inspect.signature(self._builder.build).parameters.keys()
+            if p != "kwargs"
         )
 
     def build(self, **inputs: sql.DataFrame) -> sql.DataFrame:
@@ -58,7 +60,7 @@ class Dependencies(NamedTuple):
 
 def _load_input_builders(
     config: configuration.Configuration, deps: Dependencies
-) -> Iterable[bases.Builder]:
+) -> Iterable[builders.Builder]:
     """Loads all input builders associated with the viz driver.
 
     Args:
@@ -86,8 +88,8 @@ def _load_input_builders(
         builders.CaseBuilder(
             viz.case, spark_session, es_dataframe_util, case_field_selector
         ),
-        civic.DNABuilder(viz.civic_dna, spark_session),
-        civic.ProteinBuilder(viz.civic_protein, spark_session),
+        builders.DNABuilder(viz.civic_dna, spark_session),
+        builders.ProteinBuilder(viz.civic_protein, spark_session),
         builders.GeneModelBuilder(viz.gene_model, spark_session),
         builders.MAFBuilder(viz.maf, spark_session, doc_dataframe_util),
         builders.MAFMetadataBuilder(
@@ -101,7 +103,7 @@ def _load_input_builders(
 
 def _load_index_builders(
     config: configuration.Configuration, deps: Dependencies
-) -> Iterable[bases.Builder]:
+) -> Iterable[builders.Builder]:
     """Loads all the index builders configured for this run the the viz driver.
 
     Args:
@@ -150,8 +152,9 @@ def _load_index_builders(
 
 
 def _remove_unused_builders(
-    input_builders: Iterable[bases.Builder], index_builders: Iterable[bases.Builder]
-) -> Iterable[bases.Builder]:
+    input_builders: Iterable[builders.Builder],
+    index_builders: Iterable[builders.Builder],
+) -> Iterable[builders.Builder]:
     """Remove all builders not required directly or indirectly by the index builders.
 
     Args:
@@ -163,28 +166,22 @@ def _remove_unused_builders(
         All index builders as well as any input builders required to run their build
         functionality. The builders are returned in topological order.
     """
-    graph = nx.Graph()
+    graph = nx.DiGraph()
+    builders = {b.output: b for b in itertools.chain(input_builders, index_builders)}
+    required_outputs = {b.output for b in index_builders}
 
-    for builder in itertools.chain(input_builders, index_builders):
-        graph.add_node(builder.output, builder=builder)
+    for builder in builders.values():
         graph.add_edges_from((i, builder.output) for i in builder.inputs)
 
-    reversed_graph = nx.reverse(graph)
-    required_outputs = set()
-
     for builder in index_builders:
-        required_outputs |= nx.descendants(reversed_graph, builder.output)
+        required_outputs.update(nx.bfs_tree(graph, builder.output, reverse=True).nodes)
 
-    return (
-        graph.nodes.data()[n]["builder"]
-        for n in nx.topological_sort(graph)
-        if n in required_outputs
-    )
+    return (builders[o] for o in nx.topological_sort(graph) if o in required_outputs)
 
 
 class Driver(driver.Driver):
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def _load_dependencies(
         cls, config: configuration.Configuration
     ) -> Iterator[Dependencies]:
@@ -224,11 +221,11 @@ class Driver(driver.Driver):
                 observation_builder=builders.ObservationBuilder(),
             )
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def _load_builders(
         cls, config: configuration.Configuration
-    ) -> Iterator[Iterable[bases.Builder]]:
+    ) -> Iterator[Iterable[builders.Builder]]:
         with cls._load_dependencies(config) as dependencies:
             input_builders = _load_input_builders(config, dependencies)
             index_builders = _load_index_builders(config, dependencies)

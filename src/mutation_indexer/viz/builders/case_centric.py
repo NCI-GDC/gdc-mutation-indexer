@@ -4,15 +4,15 @@ from pyspark.sql import types
 from typing_extensions import Self
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import (
+from mutation_indexer.configuration import adapter
+from mutation_indexer.constants import build
+from mutation_indexer.viz.builders import (
     base_builder,
     case,
     consequence,
     df_builders,
     observation,
 )
-from mutation_indexer.configuration import adapter
-from mutation_indexer.constants import build
 
 
 class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):

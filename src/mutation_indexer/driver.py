@@ -4,7 +4,7 @@ import contextlib
 import logging
 import runpy
 from collections.abc import Iterable, Iterator
-from typing import ContextManager
+from typing import ContextManager, Optional, cast
 
 import elasticsearch
 import toml
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 class Driver(abc.ABC):
     """A base for various submodule drivers to build a collection of data in Spark."""
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def load_spark_session(cls) -> Iterator[sql.SparkSession]:
         """
         Loads the spark session.
@@ -66,7 +66,7 @@ class Driver(abc.ABC):
             config: The connection configuration for setting up the client.
 
         Returns:
-            An elasticsearch client
+            A context wrapping an elasticsearch client
         """
 
         return elasticsearch.Elasticsearch(
@@ -95,11 +95,12 @@ class Driver(abc.ABC):
         raise NotImplementedError()
 
     @classmethod
-    def run(cls) -> None:
+    def run(cls, config: Optional[configuration.Configuration] = None) -> None:
         """A function for running the spark driver to build the desired data."""
         try:
-            config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
-                toml.load("configuration.toml")
+            config = config or cast(
+                configuration.Configuration,
+                configuration.CONFIG_SCHEMA.load(toml.load("configuration.toml")),
             )
 
             mutation_indexer_logging.add_build_id(config.build.build_id)

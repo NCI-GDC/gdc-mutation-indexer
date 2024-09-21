@@ -36,6 +36,7 @@ setup(
         "indexclient",
         "gdcmodels",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
+        "networkx",
     ],
     extras_require={
         "dev": (
