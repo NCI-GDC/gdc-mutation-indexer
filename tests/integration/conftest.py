@@ -110,7 +110,7 @@ def source_es_client(
 def default_old_config(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
 ) -> adapter.ObsoleteConfig:
-    return adapter.ObsoleteConfig(default_config, es_client, mock.MagicMock())
+    return adapter.ObsoleteConfig(default_config, es_client)
 
 
 @pytest.fixture(scope="session")

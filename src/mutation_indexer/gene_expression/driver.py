@@ -18,8 +18,8 @@ class Dependencies(NamedTuple):
 
 
 class Driver(driver.Driver):
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def _load_dependencies(
         cls, config: configuration.Configuration
     ) -> Iterator[Dependencies]:
@@ -58,8 +58,8 @@ class Driver(driver.Driver):
                 mappings_loader,
             )
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def _load_builders(
         cls, config: configuration.Configuration
     ) -> driver.Iterator[Iterable[bases.Builder]]:

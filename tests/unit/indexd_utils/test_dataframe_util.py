@@ -98,8 +98,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0",))
         result_rows = result_df.collect()
@@ -135,8 +134,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client((documents,))
         sql_context = self.arrange_sql_context((document_data,))
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0", "file-1"))
         result_rows = {
@@ -175,8 +173,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client(documents)
         sql_context = self.arrange_sql_context(document_data)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         util.get_dataframe(("file-0", "file-1"), index_batch_size=1, csv_batch_size=1)
 
@@ -215,8 +212,7 @@ class TestDataFrameUtil:
         schema = types.StructType([types.StructField("doc_data", types.StringType())])
         indexd = self.arrange_index_client(None)
         sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0", "file-1"))
 
@@ -245,8 +241,7 @@ class TestDataFrameUtil:
         indexd = self.arrange_index_client((documents,))
         schema = types.StructType([types.StructField("doc_data", types.StringType())])
         sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0",), schema)
 
@@ -279,8 +274,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client((documents,))
         sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
@@ -304,8 +298,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
@@ -330,8 +323,7 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        util = indexd_utils.DataFrameUtil(indexd, sql_context)
 
         schema = mock.MagicMock()
         comment = mock.MagicMock()

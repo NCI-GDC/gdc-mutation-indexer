@@ -4,7 +4,7 @@ import contextlib
 import logging
 import runpy
 from collections.abc import Iterable, Iterator
-from typing import ContextManager
+from typing import ContextManager, Optional
 
 import elasticsearch
 import toml
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 class Driver(abc.ABC):
     """A base for various submodule drivers to build a collection of data in Spark."""
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def load_spark_session(cls) -> Iterator[sql.SparkSession]:
         """
         Loads the spark session.
@@ -95,10 +95,15 @@ class Driver(abc.ABC):
         raise NotImplementedError()
 
     @classmethod
-    def run(cls) -> None:
-        """A function for running the spark driver to build the desired data."""
+    def run(cls, config: Optional[configuration.Configuration] = None) -> None:
+        """A function for running the spark driver to build the desired data.
+
+        Args:
+            config: An optional configuration to use in place of loading from the
+                configuration.toml.
+        """
         try:
-            config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
+            config = config or configuration.CONFIG_SCHEMA.load(
                 toml.load("configuration.toml")
             )
 

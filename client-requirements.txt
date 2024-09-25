@@ -113,6 +113,10 @@ mypy-extensions==1.0.0
     # via
     #   -c requirements.txt
     #   typing-inspect
+networkx==3.2.1
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
 ordered-set==4.1.0
     # via
     #   -c requirements.txt

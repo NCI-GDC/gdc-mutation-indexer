@@ -112,9 +112,7 @@ def ge_builder(
         mappings_loader,
         es_utils.SchemaLoader(),
     )
-    doc_dataframe_util = indexd_utils.DataFrameUtil(
-        indexd, spark_session, logger=mock.MagicMock()
-    )
+    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
     yield gene_expression.IndexBuilder(
         ge_config.builders.gene_expression.gene_expression,

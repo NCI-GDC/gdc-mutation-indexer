@@ -66,6 +66,8 @@ mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-re
     # via gdc-mutation-indexer (setup.py)
 mypy-extensions==1.0.0
     # via typing-inspect
+networkx==3.2.1
+    # via gdc-mutation-indexer (setup.py)
 ordered-set==4.1.0
     # via deepdiff
 packaging==24.1

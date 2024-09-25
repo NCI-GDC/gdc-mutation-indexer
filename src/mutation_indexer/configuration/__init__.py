@@ -6,10 +6,12 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 import itertools
 import types
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable, Mapping
+from typing import Any, ClassVar, Optional, Protocol, TypeVar
 
 import marshmallow
 import marshmallow_dataclass
+from typing_extensions import Literal, Self
 
 from mutation_indexer.configuration import (
     aws,
@@ -67,8 +69,30 @@ def _get_builders_from_data(data: dict) -> Iterable[dict]:
     return builders
 
 
+T = TypeVar("T", covariant=True)
+
+
+class Schema(Protocol[T]):
+    def load(self, data: Mapping[str, Any]) -> T:
+        ...
+
+    def dump(self, obj: Any) -> dict:
+        ...
+
+
+class SchemaInit(Protocol[T]):
+    def __call__(
+        self,
+        unknown: Optional[Literal["exclude", "include", "raises"]] = None,
+        context: Optional[dict] = None,
+    ) -> Schema[T]:
+        ...
+
+
 @marshmallow_dataclass.dataclass(frozen=True)
 class Configuration:
+    Schema: ClassVar[SchemaInit[Self]]
+
     aws: aws.AWS
     build: build.Build
     builders: builders.Builders
@@ -134,7 +158,5 @@ class Configuration:
         return data
 
 
-CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="exclude")
-OBFUSCATED_CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(
-    context={"is_obfuscated": True}
-)
+CONFIG_SCHEMA = Configuration.Schema(unknown=marshmallow.EXCLUDE)
+OBFUSCATED_CONFIG_SCHEMA = Configuration.Schema(context={"is_obfuscated": True})

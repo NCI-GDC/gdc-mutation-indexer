@@ -1,11 +1,10 @@
-import uuid
 from collections.abc import Iterable, Iterator
 from typing import Any
 
 import importlib_resources as resources
 import pytest
 import toml
-from marshmallow import validate
+from marshmallow import exceptions
 
 from mutation_indexer import configuration
 from mutation_indexer.constants import build
@@ -58,7 +57,7 @@ class TestIndexTypesValidator:
     def test__call__both(self, indices: Iterable[build.IndexType]) -> None:
         validator = configuration.build.IndexTypesValidator()
 
-        with pytest.raises(validate.ValidationError):
+        with pytest.raises(exceptions.ValidationError):
             validator(indices)
 
 
@@ -68,7 +67,6 @@ class TestBuild:
             build_version="",
             config_file="",
             data_release="",
-            driver="",
             error_log="",
             index_types=(build.IndexType.GENE_CENTRIC,),
             jar_dir="",
@@ -87,7 +85,6 @@ class TestBuild:
             build_version="",
             config_file="",
             data_release="",
-            driver="",
             error_log="",
             index_types=(build.IndexType.GENE_EXPRESSION,),
             jar_dir="",
