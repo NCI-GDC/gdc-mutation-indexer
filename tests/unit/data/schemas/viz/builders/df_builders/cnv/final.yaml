@@ -8,6 +8,8 @@ fields:
   - <<: *string_field
     name: cnv_change
   - <<: *string_field
+    name: cnv_change_5
+  - <<: *string_field
     name: cnv_id
   - &long_field
     metadata: {}
