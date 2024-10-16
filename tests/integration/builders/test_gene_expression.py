@@ -158,9 +158,7 @@ def test_gene_expression_builder(
     primary_aliquot_df: sql.DataFrame,
 ) -> None:
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
-    inputs = gene_expression.IndexBuilderInputs(
-        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
-    )
+    inputs = dict(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
 
     ge_builder.build(**inputs)
 
@@ -183,9 +181,7 @@ def test_gene_expression_builder_writes_backup_to_path(
     spark_session: sql.SparkSession,
 ) -> None:
     ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
-    inputs = gene_expression.IndexBuilderInputs(
-        gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
-    )
+    inputs = dict(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
     # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
     assert ge_config.build.build_version == "v0"
     assert ge_config.build.data_release == "test"
