@@ -11,7 +11,7 @@ from elasticsearch import helpers
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils, indexd_utils
+from mutation_indexer import configuration, es_utils
 from mutation_indexer.builders import gene_expression
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
@@ -112,16 +112,12 @@ def ge_builder(
         mappings_loader,
         es_utils.SchemaLoader(),
     )
-    doc_dataframe_util = indexd_utils.DataFrameUtil(
-        indexd, spark_session, logger=mock.MagicMock()
-    )
 
     yield gene_expression.IndexBuilder(
         ge_config.builders.gene_expression.gene_expression,
         spark_session,
         es_dataframe_util,
         mappings_loader,
-        doc_dataframe_util,
     )
 
     # Delete the index
