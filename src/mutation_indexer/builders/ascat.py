@@ -130,6 +130,7 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
 
         data {}
         |---cnv_change
+        |---cnv_change_5
         |---file_id
         +---gene_id
     """
@@ -151,12 +152,18 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .otherwise(None)
         .alias("cnv_change")
     )
+    # TODO: update cnv_change_5 logic in DEV-3067
+    document_df = document_df.withColumn(
+        "cnv_change_5", F.lit(None).cast(types.StringType())
+    )
 
+    # TODO: update subset logic in DEV-3067
     return document_df.select(
         cnv_change,
+        "cnv_change_5",
         "file_id",
         "gene_id",
-    ).na.drop(subset="cnv_change")
+    ).na.drop(subset=["cnv_change"])
 
 
 class ASCATInputs(TypedDict):
@@ -216,6 +223,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         |---case_id
         |---chromosome
         |---cnv_change
+        |---cnv_change_5
         |---cnv_id
         |---consequence_id
         |---cytoband
@@ -298,6 +306,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "case_id",
             "chromosome",
             "cnv_change",
+            "cnv_change_5",
             "cnv_id",
             "consequence_id",
             "cytoband",
