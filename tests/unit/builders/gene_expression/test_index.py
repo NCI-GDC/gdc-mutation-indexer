@@ -3,11 +3,12 @@ from unittest import mock
 
 import more_itertools
 import pytest
+from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import indexd_utils
-from mutation_indexer.builders import gene_expression
-from mutation_indexer.configuration.builders import gene_expression as ge_config
+from mutation_indexer.builders.gene_expression import index
+from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
@@ -56,15 +57,13 @@ class TestGeneExpressionBuilder:
         primary_aliquots: tuple[models.PrimaryAliquot, ...] = (
             models.PrimaryAliquot(),
         ),
-    ) -> gene_expression.IndexBuilderInputs:
+    ) -> dict[str, sql.DataFrame]:
         gene_model_df = self.create_dataframe(gene_models, self.gene_model_schema)
         primary_aliquot_df = self.create_dataframe(
             primary_aliquots, self.primary_aliquot_schema
         )
 
-        return gene_expression.IndexBuilderInputs(
-            gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df
-        )
+        return dict(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
 
     def arrange_doc_dataframe_util(
         self,
@@ -76,9 +75,9 @@ class TestGeneExpressionBuilder:
 
         return dataframe_util
 
-    def arrange_config(self) -> ge_config.IndexBuilder:
+    def arrange_config(self) -> gene_expression.GeneExpressionIndexBuilder:
         config = mock.MagicMock(
-            spec=gene_expression.IndexBuilder,
+            spec=gene_expression.GeneExpressionIndexBuilder,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
@@ -95,7 +94,7 @@ class TestGeneExpressionBuilder:
         doc_dataframe_util = self.arrange_doc_dataframe_util()
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs()
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
@@ -118,7 +117,7 @@ class TestGeneExpressionBuilder:
         gene_model = models.GeneModel()
         primary_aliquot = models.PrimaryAliquot()
         inputs = self.arrange_inputs((gene_model,), (primary_aliquot,))
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
@@ -144,7 +143,7 @@ class TestGeneExpressionBuilder:
         mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel(chromosome=chromosome)
         inputs = self.arrange_inputs((gene_model,))
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
@@ -164,7 +163,7 @@ class TestGeneExpressionBuilder:
         mappings_loader = utils.arrange_empty_mappings_loader()
         gene_model = models.GeneModel(biotype="other")
         inputs = self.arrange_inputs((gene_model,))
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
@@ -185,7 +184,7 @@ class TestGeneExpressionBuilder:
         gene_model = models.GeneModel()
         primary_aliquot = models.PrimaryAliquot()
         inputs = self.arrange_inputs((gene_model,), (primary_aliquot,))
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,
@@ -208,7 +207,7 @@ class TestGeneExpressionBuilder:
         doc_dataframe_util = self.arrange_doc_dataframe_util((star_count,))
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self.arrange_inputs()
-        builder = gene_expression.IndexBuilder(
+        builder = index.IndexBuilder(
             config,
             spark_session,
             es_dataframe_util,

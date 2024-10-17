@@ -6,8 +6,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import gene_expression
-from mutation_indexer.configuration.builders import gene_expression as ge_config
+from mutation_indexer.builders.gene_expression import primary_aliquot
+from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -35,11 +35,11 @@ class TestPrimaryAliquotBuilder:
         self.input_file_schema = input_file_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> ge_config.Builder:
+    def arrange_config(self) -> gene_expression.Builder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
-            spec=ge_config.Builder, projects=(), is_cached=False, backup=backup
+            spec=gene_expression.Builder, projects=(), is_cached=False, backup=backup
         )
 
     def arrange_es_dataframe_util(
@@ -56,12 +56,12 @@ class TestPrimaryAliquotBuilder:
 
     def arrange_builder(
         self, data: tuple[models.File, ...] = (models.File(),)
-    ) -> gene_expression.PrimaryAliquotBuilder:
+    ) -> primary_aliquot.PrimaryAliquotBuilder:
         config = self.arrange_config()
         util = self.arrange_es_dataframe_util(data)
         spark_session = mock.MagicMock(spec=sql.SparkSession)
 
-        return gene_expression.PrimaryAliquotBuilder(config, spark_session, util)
+        return primary_aliquot.PrimaryAliquotBuilder(config, spark_session, util)
 
     def test__build__single_row(self) -> None:
         builder = self.arrange_builder()
