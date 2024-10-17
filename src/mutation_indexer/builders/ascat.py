@@ -106,6 +106,9 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     Loss while any value greater than the maximum mode is considered a Gain. All
     other values are neutral and are dropped from the data.
 
+    Also adds the new cnv_change_5_category value to the data frame. The implementation
+    will be added in DEV-3067.
+
     METHOD:
     This is calculated by grouping all copy_numbers in a file and getting a count
     of their occurances/frequency. Then the counts are grouped again by file; in
@@ -130,6 +133,7 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
 
         data {}
         |---cnv_change
+        |---cnv_change_5_category
         |---file_id
         +---gene_id
     """
@@ -151,9 +155,15 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .otherwise(None)
         .alias("cnv_change")
     )
+    # TODO: update cnv_change_5_category logic in DEV-3084
+    document_df = document_df.withColumn(
+        "cnv_change_5_category", F.lit(None).cast(types.StringType())
+    )
 
+    # TODO: update subset logic in DEV-3084
     return document_df.select(
         cnv_change,
+        "cnv_change_5_category",
         "file_id",
         "gene_id",
     ).na.drop(subset="cnv_change")
@@ -216,6 +226,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         |---case_id
         |---chromosome
         |---cnv_change
+        |---cnv_change_5_category
         |---cnv_id
         |---consequence_id
         |---cytoband
@@ -298,6 +309,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "case_id",
             "chromosome",
             "cnv_change",
+            "cnv_change_5_category",
             "cnv_id",
             "consequence_id",
             "cytoband",

@@ -13,6 +13,8 @@ fields:
     name: chromosome
   - <<: *string_field
     name: cnv_change
+  - <<: *string_field
+    name: cnv_change_5_category
   - &long_field
     metadata: {}
     name: end_position
