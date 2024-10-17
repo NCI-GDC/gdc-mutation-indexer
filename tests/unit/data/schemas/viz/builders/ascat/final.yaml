@@ -33,7 +33,7 @@ fields:
   - <<: *string_field
     name: cnv_change
   - <<: *string_field
-    name: cnv_change_5
+    name: cnv_change_5_category
   - <<: *string_field
     name: cnv_id
   - <<: *string_field

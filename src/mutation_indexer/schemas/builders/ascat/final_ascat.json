@@ -78,7 +78,7 @@
     },
     {
       "metadata": {},
-      "name": "cnv_change_5",
+      "name": "cnv_change_5_category",
       "nullable": true,
       "type": "string"
     },

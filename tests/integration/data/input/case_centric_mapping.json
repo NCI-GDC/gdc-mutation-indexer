@@ -482,7 +482,7 @@
             "cnv_change": {
               "type": "keyword"
             },
-            "cnv_change_5": {
+            "cnv_change_5_category": {
               "type": "keyword"
             },
             "cnv_id": {
