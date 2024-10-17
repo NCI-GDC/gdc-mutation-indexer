@@ -288,6 +288,9 @@ def _get_ge_builders(
         builders.GeneExpressionPrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util
         ),
+        builders.ExpressionValueBuilder(
+            config.expression_value, spark_session, doc_dataframe_util
+        ),
     )
 
     yield from input_builders
@@ -298,7 +301,6 @@ def _get_ge_builders(
             spark_session,
             es_dataframe_util,
             mappings_loader,
-            doc_dataframe_util,
         )
 
 
