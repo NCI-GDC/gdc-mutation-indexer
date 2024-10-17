@@ -21,11 +21,13 @@ setup(
     license="Apache",
     include_package_data=True,
     install_requires=[
+        "boto3",
         "elasticsearch[async]~=7.6",
         "importlib-resources~=3.2",
         "marshmallow-dataclass~=8.5",
         "marshmallow-enum~=1.5",
         "more-itertools~=8.9",
+        "numpy",
         "pyspark~=3.3.1",
         "python-json-logger~=2.0",
         # `setuptools` is required for references to `pkg_resources` in mutation

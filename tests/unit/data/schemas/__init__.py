@@ -189,3 +189,7 @@ class GeneExpression:
         class PrimaryAliquot:
             FINAL: Schema
             FILE: Schema
+
+        @_init_schemas
+        class UQFPKM:
+            UQFPKM: Schema

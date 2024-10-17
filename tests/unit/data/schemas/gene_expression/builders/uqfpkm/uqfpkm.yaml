@@ -1,0 +1,14 @@
+---
+fields:
+  - metadata: {}
+    name: gene_id
+    nullable: true
+    type: string
+  - metadata: {}
+    name: values
+    nullable: false
+    type:
+      containsNull: true
+      elementType: float
+      type: array
+type: struct

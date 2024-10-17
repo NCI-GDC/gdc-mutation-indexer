@@ -24,6 +24,11 @@ class GeneExpressionIndexBuilder(IndexBuilder):
     backup: PartitionedBackup
 
 
+class ValueArrayBuilder(Builder):
+    bucket: str
+    key_pattern: str
+
+
 @dataclasses.dataclass(frozen=True)
 class GeneExpression:
     """

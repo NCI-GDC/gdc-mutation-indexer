@@ -14,6 +14,7 @@ class DataFrame(enum.IntEnum):
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
+    UQFPKM = enum.auto()
 
     def to_param(self) -> str:
         return f"{self.name}_df".lower()
