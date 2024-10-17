@@ -44,9 +44,9 @@ class PrimaryAliquotBuilder(
     ) -> None:
         """
         Args:
-            config: The app configuration object
-            sqlContext: The sql context object for the current pyspark run
-            es_dataframe_util: The util for creating dataframes from data in elasticsearch
+            config: The app configuration object.
+            spark_session: The spark session for the current pyspark run.
+            es_dataframe_util: The util for creating dataframes from data in elasticsearch.
         """
         super().__init__(
             config,
@@ -61,13 +61,11 @@ class PrimaryAliquotBuilder(
         Gets the case and it's associated file data for the mutation index.
 
         Args:
-            workflow_types: A collection of analysis workflow types to
-                filter files on.
+            input_dfs: The required input data frames to build the primary aliquots.
 
         Returns:
-            (GeneExpressionPrimaryAliquotData): An object containing the primary aliquot
-            dataframe as well as a list of all the file urls associated with the primary
-            aliquots.
+            A data frame containing the files and their associated cases selected by
+            primary aliquot selection for the gene expression data.
 
             primary_aliquot {}
             |---file_id

@@ -98,11 +98,25 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
 
 
 @pytest.fixture
+def expression_value_df(
+    ge_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
+    indexd: client.IndexClient,
+    gene_model_df: sql.DataFrame,
+    primary_aliquot_df: sql.DataFrame,
+) -> sql.DataFrame:
+    return gene_expression.ExpressionValueBuilder(
+        ge_config.builders.gene_expression.expression_value,
+        spark_session,
+        indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
+    ).build(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
+
+
+@pytest.fixture
 def ge_builder(
     ge_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
-    indexd: client.IndexClient,
 ) -> Iterable[gene_expression.IndexBuilder]:
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
@@ -150,13 +164,11 @@ def test_gene_expression_builder(
     ge_config: configuration.Configuration,
     ge_builder: gene_expression.IndexBuilder,
     es_client: elasticsearch.Elasticsearch,
-    gene_model_df: sql.DataFrame,
-    primary_aliquot_df: sql.DataFrame,
+    expression_value_df: sql.DataFrame,
 ) -> None:
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
-    inputs = dict(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
 
-    ge_builder.build(**inputs)
+    ge_builder.build(expression_value_df=expression_value_df)
 
     es_client.indices.refresh()
 
@@ -172,12 +184,10 @@ def test_gene_expression_builder(
 def test_gene_expression_builder_writes_backup_to_path(
     ge_config: configuration.Configuration,
     ge_builder: gene_expression.IndexBuilder,
-    gene_model_df: sql.DataFrame,
-    primary_aliquot_df: sql.DataFrame,
+    expression_value_df: sql.DataFrame,
     spark_session: sql.SparkSession,
 ) -> None:
     ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]
-    inputs = dict(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
     # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
     assert ge_config.build.build_version == "v0"
     assert ge_config.build.data_release == "test"
@@ -193,7 +203,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == "gene_id"
     )
 
-    ge_builder.build(**inputs)
+    ge_builder.build(expression_value_df=expression_value_df)
 
     parquet_dump = pathlib.Path(
         ge_config.builders.gene_expression.gene_expression.backup.path
