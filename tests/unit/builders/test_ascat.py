@@ -218,9 +218,9 @@ class TestAscatBuilder:
         ("copy_numbers", "cnv_change"),
         (
             ((100, 50, 50), "Gain"),
-            ((1, 0, 0), "Gain"),
+            ((5, 1, 1), "Gain"),
             ((100, 200, 200), "Loss"),
-            ((0, 2, 2), "Loss"),
+            ((-1, 2, 2), "Loss"),
             ((40, 20, 20, 30, 30), "Gain"),
             ((1, 2, 2, 3, 3), "Loss"),
         ),
@@ -241,10 +241,38 @@ class TestAscatBuilder:
         assert ascat_row.cnv_change == cnv_change
 
     @pytest.mark.parametrize(
+        ("copy_numbers", "cnv_change_5_category"),
+        (
+            ((200, 50, 50), "Amplification"),
+            ((200, 50, 50, 30, 30), "Amplification"),
+            ((75, 50, 50), "Gain"),
+            ((75, 50, 50, 30, 30), "Gain"),
+            ((50, 50, 0), "Homozygous Deletion"),
+            ((50, 50, 20, 20, 0), "Homozygous Deletion"),
+            ((100, 200, 200), "Loss"),
+            ((100, 200, 200, 300, 300), "Loss"),
+        ),
+    )
+    def test__build__copy_number_maps_to_cnv_change_5_category(
+        self, copy_numbers: tuple[int, ...], cnv_change_5_category: str
+    ) -> None:
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+        ascat_row = more_itertools.one(ascat_df.collect())
+
+        assert ascat_row.cnv_change_5_category == cnv_change_5_category
+
+    @pytest.mark.parametrize(
         "copy_numbers",
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )
-    def test__build__neutral_copy_numbers_filtered(
+    def test__build__cnv_change_neutral_copy_numbers_filtered(
         self, copy_numbers: Iterable[int]
     ) -> None:
         ascat_documents = tuple(
