@@ -5,7 +5,14 @@ fields:
     nullable: true
     type: string
   - metadata: {}
-    name: values
+    name: log2_uqfpkm
+    nullable: false
+    type:
+      containsNull: true
+      elementType: float
+      type: array
+  - metadata: {}
+    name: uqfpkm
     nullable: false
     type:
       containsNull: true

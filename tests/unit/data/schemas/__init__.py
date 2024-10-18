@@ -177,6 +177,10 @@ class Viz:
 class GeneExpression:
     class Builders:
         @_init_schemas
+        class Binary:
+            FINAL: Schema
+
+        @_init_schemas
         class ExpressionValue:
             FINAL: Schema
             STAR_COUNTS: Schema
@@ -189,7 +193,3 @@ class GeneExpression:
         class PrimaryAliquot:
             FINAL: Schema
             FILE: Schema
-
-        @_init_schemas
-        class UQFPKM:
-            UQFPKM: Schema
