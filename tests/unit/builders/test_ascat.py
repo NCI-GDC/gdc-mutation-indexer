@@ -272,7 +272,7 @@ class TestAscatBuilder:
         "copy_numbers",
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )
-    def test__build__cnv_change_neutral_copy_numbers_filtered(
+    def test__build__neutral_copy_numbers_filtered(
         self, copy_numbers: Iterable[int]
     ) -> None:
         ascat_documents = tuple(
