@@ -27,6 +27,7 @@ class ASCAT:
     chromosome: Optional[str] = "1"
     cnv_id: Optional[str] = "cnv-0"
     cnv_change: Optional[str] = "Gain"
+    cnv_change_5_category: Optional[str] = "Gain"
     consequence_id: Optional[str] = "377b6f05-34e8-51d0-81a6-3a8781032253"
     cytoband: Optional[tuple[str, ...]] = ("1p36.33",)
     description: Optional[
