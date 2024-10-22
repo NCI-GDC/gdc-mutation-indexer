@@ -177,6 +177,11 @@ class Viz:
 class GeneExpression:
     class Builders:
         @_init_schemas
+        class ExpressionValue:
+            FINAL: Schema
+            STAR_COUNTS: Schema
+
+        @_init_schemas
         class Index:
             FINAL: Schema
             STAR_COUNTS: Schema
