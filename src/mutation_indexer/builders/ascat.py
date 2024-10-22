@@ -114,6 +114,10 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         - "Loss": copy_number < lower_ploidy_number
     All other values are neutral and are dropped from the data.
 
+    There is a scenario where the ploidy will be 0. This is not possible in real-life,
+    but we want to document how we programmatically determine a category for this edge
+    case. In the event upper_ploidy = 0, we will classify it as "Amplification".
+
     METHOD:
     This is calculated by grouping all copy_numbers in a file and getting a count
     of their occurances/frequency. Then the counts are grouped again by file; in
@@ -161,11 +165,9 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .alias("cnv_change")
     )
     cnv_change_5_category = (
-        F.when(
-            F.col("copy_number") >= F.col("upper_ploidy_number") * 2, "Amplification"
-        )
+        F.when(F.col("copy_number") == 0, "Homozygous Deletion")
+        .when(F.col("copy_number") >= F.col("upper_ploidy_number") * 2, "Amplification")
         .when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-        .when(F.col("copy_number") == 0, "Homozygous Deletion")
         .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
         .otherwise(None)
         .alias("cnv_change_5_category")
