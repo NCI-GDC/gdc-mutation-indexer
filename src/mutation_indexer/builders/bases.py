@@ -44,6 +44,10 @@ BASE_PRIMARY_ALIQUOT_FIELDS = frozenset(
         "cases.case_id",
         "cases.samples.sample_id",
         "cases.samples.sample_type",
+        "cases.samples.tissue_type",
+        "cases.samples.tumor_descriptor",
+        "cases.samples.preservation_method",
+        "cases.samples.specimen_type",
     )
 )
 
@@ -549,6 +553,10 @@ class PrimaryAliquotBuilder(
                 "case",
                 "sample.sample_id",
                 "sample.sample_type",
+                "sample.tissue_type",
+                "sample.tumor_descriptor",
+                "sample.preservation_method",
+                "sample.specimen_type",
                 *self._additional_selections,
             )
             .select(
