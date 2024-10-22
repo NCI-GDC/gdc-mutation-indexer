@@ -10,6 +10,7 @@ from importlib import resources
 from typing import (
     Generic,
     Literal,
+    NamedTuple,
     Optional,
     Protocol,
     Sequence,
@@ -246,6 +247,100 @@ def _add_required_include_fields(
     return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
+class MatrixDimension(NamedTuple):
+    value_column: str
+    prioritized_values: Iterable[str]
+
+    def to_columns(self) -> Sequence[sql.Column]:
+        value_column = F.col(self.value_column)
+
+        return (
+            *(value_column == F.lit(v) for v in self.prioritized_values),
+            F.lit(1) == F.lit(1),
+        )
+
+
+SAMPLE_TYPE_MATRIX = (
+    MatrixDimension(
+        "sample_type",
+        (
+            "Primary Tumor",
+            "Primary Blood Derived Cancer - Bone Marrow",
+            "Primary Blood Derived Cancer - Peripheral Blood",
+            "Metastatic",
+            "Additional Metastatic",
+            "Recurrent Tumor",
+            "Recurrent Blood Derived Cancer - Bone Marrow",
+            "Recurrent Blood Derived Cancer - Peripheral Blood",
+            "Additional - New Primary",
+        ),
+    ),
+)
+
+
+DECOMPOSITION_MATRIX = (
+    MatrixDimension(
+        "specimen_type",
+        (
+            "Solid Tissue",
+            "Human Original Cells",
+            "Lymphoid",
+            "Lymphocytes",
+            "Peripheral Whole Blood",
+            "Peripheral Blood NOS",
+            "Peripheral Blood Components NOS",
+            "Buffy Coat",
+            "Whole Bone Marrow",
+            "Mononuclear Cells from Bone Marrow",
+            "Bone Marrow NOS",
+            "Bone Marrow Components NOS",
+            "Granulocytes",
+            "Sorted Cells",
+            "3D Organoid",
+            "3D Air-Liquid Interface Organoid",
+            "3D Neurosphere",
+            "2D Modified Conditionally Reprogrammed Cells",
+            "2D Classical Conditionally Reprogrammed Cells",
+            "Adherent Cell Line",
+            "Derived Cell Lines and Sorted Cells",
+            "Derived Cell Line",
+            "Mixed Adherent Suspension",
+            "Liquid Suspension Cell Line",
+            "EBV Immortalized",
+            "Cell",
+            "Pleural Effusion",
+            "Plasma",
+            "Serum",
+            "Saliva",
+            "Sputum",
+        ),
+    ),
+    MatrixDimension(
+        "preservation_method",
+        (
+            "Fresh",
+            "Snap Frozen",
+            "Cryopreserved",
+            "Frozen",
+            "EDTA",
+            "OCT",
+            "FFPE",
+        ),
+    ),
+    MatrixDimension(
+        "tumor_descriptor",
+        (
+            "Primary",
+            "Metastatic",
+            "Recurrence",
+            "New Primary",
+            "Xenograft",
+        ),
+    ),
+    MatrixDimension("tissue_type", ("Tumor", "Abnormal", "Peritumoral")),
+)
+
+
 class PrimaryAliquotBuilder(
     Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
 ):
@@ -346,23 +441,10 @@ class PrimaryAliquotBuilder(
         NOTE: This needs to be calculated at runtime AFTER the spark session has been
             initiated otherwise F.col/F.lit will fail to be instantiated.
         """
-        sample_type = F.col("sample_type")
-
-        return (
-            (
-                sample_type == F.lit("Primary Tumor"),  # <-- highest priority
-                sample_type == F.lit("Primary Blood Derived Cancer - Bone Marrow"),
-                sample_type == F.lit("Primary Blood Derived Cancer - Peripheral Blood"),
-                sample_type == F.lit("Metastatic"),
-                sample_type == F.lit("Additional Metastatic"),
-                sample_type == F.lit("Recurrent Tumor"),
-                sample_type == F.lit("Recurrent Blood Derived Cancer - Bone Marrow"),
-                sample_type
-                == F.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
-                sample_type == F.lit("Additional - New Primary"),
-                F.lit(1) == F.lit(1),  # This is a default value.
-            ),
-        )
+        if False:
+            return tuple(d.to_columns() for d in SAMPLE_TYPE_MATRIX)
+        else:
+            return tuple(d.to_columns() for d in DECOMPOSITION_MATRIX)
 
     def _convert_weight_matrix(self) -> Iterable[Weight]:
         """Get the wights to be associated with each sample row.
