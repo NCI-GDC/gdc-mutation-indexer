@@ -1,5 +1,5 @@
 from collections.abc import Collection
-from typing import Sequence, TypedDict, Union
+from typing import TypedDict, Union
 
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -46,17 +46,12 @@ class ASCATMetadataBuilder(
         )
 
     @override
-    def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
-        workflow_type = F.col("workflow_type")
-        file_weights = (
-            workflow_type == F.lit(ABSOLUTE),
-            workflow_type == F.lit(ASCAT3),
-            workflow_type == F.lit(ASCAT_NGS),
-            workflow_type == F.lit(ASCAT2),
+    def _weight_matrix(self) -> bases.Matrix:
+        dimension = bases.MatrixDimension(
+            "workflow_type", (ABSOLUTE, ASCAT3, ASCAT_NGS, ASCAT2)
         )
 
-        # apply file weights as a higher order weight to the defaults.
-        return (*super()._weight_matrix(), file_weights)
+        return super()._weight_matrix().prepend(dimension)
 
     @override
     def _get_initial_weighted_df(

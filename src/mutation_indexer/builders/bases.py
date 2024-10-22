@@ -1,12 +1,8 @@
 import abc
 import copy
-import dataclasses
 import functools
-import itertools
 import logging
-import operator
 from collections.abc import Collection, Iterable, Iterator, Mapping, Set
-from importlib import resources
 from typing import (
     Generic,
     Literal,
@@ -20,6 +16,7 @@ from typing import (
     runtime_checkable,
 )
 
+import importlib_resources as resources
 import more_itertools
 from gdcmodels import esmodels
 from pyspark import sql
@@ -253,95 +250,110 @@ def _add_required_include_fields(
 
 class MatrixDimension(NamedTuple):
     value_column: str
-    prioritized_values: Iterable[str]
+    prioritized_values: Sequence[str]
 
-    def to_columns(self) -> Sequence[sql.Column]:
+    def to_column(self) -> sql.Column:
         value_column = F.col(self.value_column)
-
-        return (
-            *(value_column == F.lit(v) for v in self.prioritized_values),
-            F.lit(1) == F.lit(1),
+        values = F.map_from_arrays(
+            F.array(*map(F.lit, self.prioritized_values)),
+            F.array(*map(F.lit, range(len(self.prioritized_values)))),
         )
 
+        return F.coalesce(values[value_column], F.lit(len(self.prioritized_values)))
 
-SAMPLE_TYPE_MATRIX = (
-    MatrixDimension(
-        "sample_type",
-        (
-            "Primary Tumor",
-            "Primary Blood Derived Cancer - Bone Marrow",
-            "Primary Blood Derived Cancer - Peripheral Blood",
-            "Metastatic",
-            "Additional Metastatic",
-            "Recurrent Tumor",
-            "Recurrent Blood Derived Cancer - Bone Marrow",
-            "Recurrent Blood Derived Cancer - Peripheral Blood",
-            "Additional - New Primary",
+
+class Matrix(NamedTuple):
+    dimensions: Sequence[MatrixDimension]
+
+    def prepend(self, dimension: MatrixDimension) -> "Matrix":
+        return Matrix((dimension, *self.dimensions))
+
+    def to_column(self) -> sql.Column:
+        return F.array(*(d.to_column() for d in self.dimensions))
+
+
+SAMPLE_TYPE_MATRIX = Matrix(
+    (
+        MatrixDimension(
+            "sample_type",
+            (
+                "Primary Tumor",
+                "Primary Blood Derived Cancer - Bone Marrow",
+                "Primary Blood Derived Cancer - Peripheral Blood",
+                "Metastatic",
+                "Additional Metastatic",
+                "Recurrent Tumor",
+                "Recurrent Blood Derived Cancer - Bone Marrow",
+                "Recurrent Blood Derived Cancer - Peripheral Blood",
+                "Additional - New Primary",
+            ),
         ),
-    ),
+    )
 )
 
 
-DECOMPOSITION_MATRIX = (
-    MatrixDimension(
-        "specimen_type",
-        (
-            "Solid Tissue",
-            "Human Original Cells",
-            "Lymphoid",
-            "Lymphocytes",
-            "Peripheral Whole Blood",
-            "Peripheral Blood NOS",
-            "Peripheral Blood Components NOS",
-            "Buffy Coat",
-            "Whole Bone Marrow",
-            "Mononuclear Cells from Bone Marrow",
-            "Bone Marrow NOS",
-            "Bone Marrow Components NOS",
-            "Granulocytes",
-            "Sorted Cells",
-            "3D Organoid",
-            "3D Air-Liquid Interface Organoid",
-            "3D Neurosphere",
-            "2D Modified Conditionally Reprogrammed Cells",
-            "2D Classical Conditionally Reprogrammed Cells",
-            "Adherent Cell Line",
-            "Derived Cell Lines and Sorted Cells",
-            "Derived Cell Line",
-            "Mixed Adherent Suspension",
-            "Liquid Suspension Cell Line",
-            "EBV Immortalized",
-            "Cell",
-            "Pleural Effusion",
-            "Plasma",
-            "Serum",
-            "Saliva",
-            "Sputum",
+DECOMPOSITION_MATRIX = Matrix(
+    (
+        MatrixDimension("tissue_type", ("Tumor", "Abnormal", "Peritumoral")),
+        MatrixDimension(
+            "tumor_descriptor",
+            (
+                "Primary",
+                "Metastatic",
+                "Recurrence",
+                "New Primary",
+                "Xenograft",
+            ),
         ),
-    ),
-    MatrixDimension(
-        "preservation_method",
-        (
-            "Fresh",
-            "Snap Frozen",
-            "Cryopreserved",
-            "Frozen",
-            "EDTA",
-            "OCT",
-            "FFPE",
+        MatrixDimension(
+            "preservation_method",
+            (
+                "Fresh",
+                "Snap Frozen",
+                "Cryopreserved",
+                "Frozen",
+                "EDTA",
+                "OCT",
+                "FFPE",
+            ),
         ),
-    ),
-    MatrixDimension(
-        "tumor_descriptor",
-        (
-            "Primary",
-            "Metastatic",
-            "Recurrence",
-            "New Primary",
-            "Xenograft",
+        MatrixDimension(
+            "specimen_type",
+            (
+                "Solid Tissue",
+                "Human Original Cells",
+                "Lymphoid",
+                "Lymphocytes",
+                "Peripheral Whole Blood",
+                "Peripheral Blood NOS",
+                "Peripheral Blood Components NOS",
+                "Buffy Coat",
+                "Whole Bone Marrow",
+                "Mononuclear Cells from Bone Marrow",
+                "Bone Marrow NOS",
+                "Bone Marrow Components NOS",
+                "Granulocytes",
+                "Sorted Cells",
+                "3D Organoid",
+                "3D Air-Liquid Interface Organoid",
+                "3D Neurosphere",
+                "2D Modified Conditionally Reprogrammed Cells",
+                "2D Classical Conditionally Reprogrammed Cells",
+                "Adherent Cell Line",
+                "Derived Cell Lines and Sorted Cells",
+                "Derived Cell Line",
+                "Mixed Adherent Suspension",
+                "Liquid Suspension Cell Line",
+                "EBV Immortalized",
+                "Cell",
+                "Pleural Effusion",
+                "Plasma",
+                "Serum",
+                "Saliva",
+                "Sputum",
+            ),
         ),
-    ),
-    MatrixDimension("tissue_type", ("Tumor", "Abnormal", "Peritumoral")),
+    )
 )
 
 
@@ -349,18 +361,6 @@ class PrimaryAliquotBuilder(
     Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
 ):
     __slots__ = ("_es_dataframe_util", "_additional_selections")
-
-    @dataclasses.dataclass(frozen=True)
-    class Weight:
-        condition: sql.Column
-        value: int
-
-        def __add__(
-            self, other: "PrimaryAliquotBuilder.Weight"
-        ) -> "PrimaryAliquotBuilder.Weight":
-            return PrimaryAliquotBuilder.Weight(
-                self.condition & other.condition, self.value + other.value
-            )
 
     def __init__(
         self,
@@ -433,7 +433,7 @@ class PrimaryAliquotBuilder(
             query=query,
         )
 
-    def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
+    def _weight_matrix(self) -> Matrix:
         """A matrix of conditions used to weight the aliquots for selection.
 
         The matrix is represented as an ordered collection of sequences where each
@@ -446,84 +446,9 @@ class PrimaryAliquotBuilder(
             initiated otherwise F.col/F.lit will fail to be instantiated.
         """
         if False:
-            return tuple(d.to_columns() for d in SAMPLE_TYPE_MATRIX)
+            return SAMPLE_TYPE_MATRIX
         else:
-            return tuple(d.to_columns() for d in DECOMPOSITION_MATRIX)
-
-    def _convert_weight_matrix(self) -> Iterable[Weight]:
-        """Get the wights to be associated with each sample row.
-
-        This translates the base matrix to a single set of weighted values to apply to
-        the sample row. It does this by first calculating the magnitude of the matrix
-        which is equal to the length of the largest dimension. Then weights are
-        calculated based on the order in the dimension (the dimension weight) times the
-        order of magnitude where the order of magnitude is determined by the order of
-        the dimension in the weight matrix. The matrix is then flattened by combining
-        all combinations of weight conditions and adding all of their unique values to
-        calculate their total weight.
-
-        condition: (dimension weight) * (magnitude ** order) = (weight)
-        condition0 & condition1: (weight0) + (weight1) = (total weight)
-
-        Example:
-            weight_matrix (implied weight within dimension):
-                <0 order>
-                    sample_type == "Tumor": (0)
-                    sample_type == "Metastatic": (1)
-                    sample_type == "Normal": (2)
-                <1st order>
-                    workflow_type == "ABSOLUTE": (0)
-                    workflow_type == "ASCAT": (1)
-
-            weights:
-                sample_type == "Tumor & workflow_type == "ABSOLUTE":
-                    (0 * (3 ** 0)) + (0 * (3 ** 1)) = 0
-                sample_type == "Metastatic" & workflow_type == "ABSOLUTE":
-                    (1 * (3 ** 0)) + (0 * (3 ** 1)) = 1
-                sample_type == "Normal" & workflow_type == "ABSOLUTE":
-                    (2 * (3 ** 0)) + (0 * (3 ** 1)) = 2
-                sample_type == "Tumor & workflow_type == "ASCAT":
-                    (0 * (3 ** 0)) + (1 * (3 ** 1)) = 3
-                sample_type == "Metastatic" & workflow_type == "ASCAT":
-                    (1 * (3 ** 0)) + (1 * (3 ** 1)) = 4
-                sample_type == "Normal" & workflow_type == "ASCAT":
-                    (2 * (3 ** 0)) + (1 * (3 ** 1)) = 5
-
-        Returns:
-            The weights to be applied to the sample rows in the weighted data frame.
-        """
-        weight_matrix = self._weight_matrix()
-
-        def _convert_to_weights() -> Iterator[Iterator[PrimaryAliquotBuilder.Weight]]:
-            magnitude = max(len(d) for d in weight_matrix)
-
-            for order, dimension in enumerate(weight_matrix):
-                yield (
-                    PrimaryAliquotBuilder.Weight(
-                        condition, weight * (magnitude**order)
-                    )
-                    for weight, condition in enumerate(dimension)
-                )
-
-        return (
-            functools.reduce(operator.add, weights)
-            for weights in itertools.product(*_convert_to_weights())
-        )
-
-    def _weight_col(self) -> sql.Column:
-        """
-        Builds the sample weight column based on the weights in the weight matrix.
-
-        Returns:
-            The `_weight` column.
-        """
-        when_clause = F.when(F.lit(1) != F.lit(1), 0)  # dummy when clause
-
-        return functools.reduce(
-            lambda c, w: c.when(w.condition, w.value),
-            self._convert_weight_matrix(),
-            when_clause,
-        )
+            return DECOMPOSITION_MATRIX
 
     def _get_weighted_df(
         self,
@@ -565,7 +490,7 @@ class PrimaryAliquotBuilder(
                 "case_id",
                 "sample_id",
                 "case",
-                self._weight_col().alias("_weight"),
+                self._weight_matrix().to_column().alias("_weight"),
                 *self._additional_selections,
             )
         )
@@ -993,4 +918,5 @@ class IndexBuilder(
         logger.info(f"Writing to ES: {self.output.name}")
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
 
+        return df
         return df
