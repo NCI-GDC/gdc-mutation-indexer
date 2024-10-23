@@ -228,7 +228,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         # Iterate over the output schema rather than the input dataframe.
         # As long as we don't modify the schema after loading it, this should
         # ensure that we output columns in a consistent order.
-        return df.select(*[standardize(k, v) for k, v in self.schema.items()])
+        return df.select(*(standardize(k, v) for k, v in self.schema.items()))
 
     def get_schema(self) -> dict[str, dict[str, str]]:
         """
@@ -432,6 +432,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
             masked_somatic_mutaion,
             schema=schemas.load_schema("builders/maf/masked_somatic_mutation.yaml"),
             comment="#",
+            include_document_ids=True,
         )
         aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
             self._doc_dataframe_util.get_dataframe(
@@ -440,6 +441,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
                     "builders/maf/aggregated_somatic_mutation.yaml"
                 ),
                 comment="#",
+                include_document_ids=True,
             ),
             (
                 pyspark_extensions.DefaultColumn(name="normal_bam_uuid"),

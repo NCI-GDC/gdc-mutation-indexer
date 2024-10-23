@@ -146,3 +146,5 @@ maf_schema:
     name: all_effects
   transcript_id:
     name: Transcript_ID
+  src_file_id:
+    name: did
