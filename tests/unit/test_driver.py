@@ -91,6 +91,7 @@ def test__get_ge_builders__all_builders() -> None:
         (
             build.DataFrame.GENE_MODEL,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.EXPRESSION_VALUE,
             build.DataFrame.GENE_EXPRESSION,
         )
     )
@@ -104,6 +105,10 @@ def test__get_ge_builders__all_builders() -> None:
     assert isinstance(
         generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.GeneExpressionPrimaryAliquotBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.EXPRESSION_VALUE],
+        builders.ExpressionValueBuilder,
     )
     assert isinstance(
         generic_builders[build.DataFrame.GENE_EXPRESSION],
