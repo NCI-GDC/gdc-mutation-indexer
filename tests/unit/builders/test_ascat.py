@@ -269,6 +269,45 @@ class TestAscatBuilder:
         assert ascat_row.cnv_change_5_category == cnv_change_5_category
 
     @pytest.mark.parametrize(
+        ("copy_numbers", "cnv_change_5_categories"),
+        (
+            # (
+            #     (0, 0, 0),
+            #     ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
+            # ),
+            (
+                (2, 0, 0),
+                ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
+            ),
+            # (
+            #     (0, 0, 5, 5),
+            #     ("Homozygous Deletion", "Homozygous Deletion"),
+            # ),
+        ),
+    )
+    def test__build__copy_number_maps_to_cnv_change_5_category_edge_cases(
+        self, copy_numbers: tuple[int, ...], cnv_change_5_categories: tuple[str, ...]
+    ) -> None:
+        """These tests are designed to document how cnv_change_5_cateogry behaves
+        when ploidy values are 0. This is not possible in real-life, but we want to
+        document how the code behaves for these edge cases.
+        """
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+        ascat_rows = ascat_df.collect()
+        assert len(ascat_rows) == len(cnv_change_5_categories)
+        for ascat_row, cnv_change_5_category in zip(
+            ascat_rows, cnv_change_5_categories
+        ):
+            assert ascat_row.cnv_change_5_category == cnv_change_5_category
+
+    @pytest.mark.parametrize(
         "copy_numbers",
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )

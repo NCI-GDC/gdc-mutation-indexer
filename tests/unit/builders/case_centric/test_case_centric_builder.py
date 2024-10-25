@@ -33,6 +33,7 @@ def assert_ascat_translated(result_gene: sql.Row, ascat: models.ASCAT) -> None:
     assert result_cnv.cnv_id == ascat.cnv_id
     assert result_cnv.chromosome == ascat.chromosome
     assert result_cnv.cnv_change == ascat.cnv_change
+    assert result_cnv.cnv_change_5_category == ascat.cnv_change_5_category
     assert result_cnv.end_position == ascat.end_position
     assert result_cnv.gene_level_cn == ascat.gene_level_cn
     assert result_cnv.ncbi_build == ascat.ncbi_build

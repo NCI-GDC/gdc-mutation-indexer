@@ -71,6 +71,7 @@ class TestGetCNVDataFrame:
 
         assert result_row.chromosome == ascat.chromosome
         assert result_row.cnv_change == ascat.cnv_change
+        assert result_row.cnv_change_5_category == ascat.cnv_change_5_category
         assert result_row.cnv_id == ascat.cnv_id
         assert result_row.end_position == ascat.end_position
         assert result_row.gene_level_cn == ascat.gene_level_cn
@@ -134,6 +135,7 @@ class TestBuildCNVSubtree:
         assert result_row.gene_id == ascat.gene_id
         assert result_row.chromosome == ascat.chromosome
         assert result_row.cnv_change == ascat.cnv_change
+        assert result_row.cnv_change_5_category == ascat.cnv_change_5_category
         assert result_row.end_position == ascat.end_position
         assert result_row.gene_level_cn == ascat.gene_level_cn
         assert result_row.ncbi_build == ascat.ncbi_build
@@ -173,6 +175,7 @@ class TestBuildCNVSubtree:
         assert result_row.case_id == ascat.case_id
         assert result_row.chromosome == ascat.chromosome
         assert result_row.cnv_change == ascat.cnv_change
+        assert result_row.cnv_change_5_category == ascat.cnv_change_5_category
         assert result_row.end_position == ascat.end_position
         assert result_row.gene_level_cn == ascat.gene_level_cn
         assert result_row.ncbi_build == ascat.ncbi_build
