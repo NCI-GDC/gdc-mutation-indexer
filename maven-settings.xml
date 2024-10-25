@@ -1,0 +1,10 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+    <mirrors>
+        <mirror>
+            <!-- https://help.sonatype.com/en/maven-repositories.html -->
+            <id>nexus</id>
+            <mirrorOf>*</mirrorOf>
+            <url>https://nexus.osdc.io/repository/maven-public/</url>
+        </mirror>
+    </mirrors>
+</settings>

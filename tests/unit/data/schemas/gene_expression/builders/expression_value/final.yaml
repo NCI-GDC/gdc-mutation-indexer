@@ -1,0 +1,23 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: case_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: gene_expression_id
+  - <<: *string_field
+    name: gene_id
+  - &float_field
+    metadata: {}
+    name: log2_uqfpkm
+    nullable: true
+    type: float
+  - <<: *string_field
+    name: submitter_id
+  - <<: *string_field
+    name: symbol
+  - <<: *float_field
+    name: uqfpkm
+type: struct
