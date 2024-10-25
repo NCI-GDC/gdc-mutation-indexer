@@ -271,18 +271,18 @@ class TestAscatBuilder:
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change_5_categories"),
         (
-            # (
-            #     (0, 0, 0),
-            #     ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
-            # ),
+            (
+                (0, 0, 0),
+                ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
+            ),
             (
                 (2, 0, 0),
                 ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
             ),
-            # (
-            #     (0, 0, 5, 5),
-            #     ("Homozygous Deletion", "Homozygous Deletion"),
-            # ),
+            (
+                (0, 0, 5, 5),
+                ("Homozygous Deletion", "Homozygous Deletion"),
+            ),
         ),
     )
     def test__build__copy_number_maps_to_cnv_change_5_category_edge_cases(
