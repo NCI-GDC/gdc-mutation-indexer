@@ -243,14 +243,20 @@ class TestAscatBuilder:
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change_5_category"),
         (
-            ((200, 50, 50), "Amplification"),
-            ((200, 50, 50, 30, 30), "Amplification"),
-            ((75, 50, 50), "Gain"),
-            ((75, 50, 50, 30, 30), "Gain"),
-            ((50, 50, 0), "Homozygous Deletion"),
-            ((50, 50, 20, 20, 0), "Homozygous Deletion"),
-            ((100, 200, 200), "Loss"),
-            ((100, 200, 200, 300, 300), "Loss"),
+            pytest.param(
+                (200, 50, 50), "Amplification", id="amplification_single_mode"
+            ),
+            pytest.param(
+                (200, 50, 50, 30, 30), "Amplification", id="amplification_multiple_mode"
+            ),
+            pytest.param((75, 50, 50), "Gain", id="gain_single_mode"),
+            pytest.param((75, 50, 50, 30, 30), "Gain", id="gain_multiple_mode"),
+            pytest.param((50, 50, 0), "Homozygous Deletion", id="deletion_single_mode"),
+            pytest.param(
+                (50, 50, 20, 20, 0), "Homozygous Deletion", id="deletion_multiple_mode"
+            ),
+            pytest.param((100, 200, 200), "Loss", id="loss_single_mode"),
+            pytest.param((100, 200, 200, 300, 300), "Loss", id="loss_multiple_mode"),
         ),
     )
     def test__build__copy_number_maps_to_cnv_change_5_category(
@@ -271,17 +277,20 @@ class TestAscatBuilder:
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change_5_categories"),
         (
-            (
+            pytest.param(
                 (0, 0, 0),
                 ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
+                id="mode_equals_0",
             ),
-            (
+            pytest.param(
                 (2, 0, 0),
                 ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
+                id="copy_number_not_0_mode_0",
             ),
-            (
+            pytest.param(
                 (0, 0, 5, 5),
                 ("Homozygous Deletion", "Homozygous Deletion"),
+                id="copy_number_0_multiple_mode",
             ),
         ),
     )
