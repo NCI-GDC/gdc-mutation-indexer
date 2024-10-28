@@ -36,7 +36,7 @@ def _generate_uuids(
     aliquot_id: str,
 ) -> dict[str, str]:
     """Creates a uuid struct the following uuids (based on):
-        cnv_id (chromosome, start_position, end_position, copy_number)
+        cnv_id (chromosome, start_position, end_position, cnv_change_5_category)
         consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
         occurrence_id (cnv_id, case_id)
         observation_id (cnv_id, case_id, aliquot_id)
