@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 class DataFrame(enum.IntEnum):
     ASCAT = enum.auto()
     ASCAT_METADATA = enum.auto()
+    BINARY = enum.auto()
     CASE = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()
@@ -14,6 +15,7 @@ class DataFrame(enum.IntEnum):
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
+    UQFPKM = enum.auto()
 
     def to_param(self) -> str:
         return f"{self.name}_df".lower()

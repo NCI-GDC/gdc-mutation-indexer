@@ -26,6 +26,23 @@ attrs==23.2.0
     # via
     #   -c requirements.txt
     #   aiohttp
+boto3==1.35.49
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
+boto3-stubs==1.35.49
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
+botocore==1.35.49
+    # via
+    #   -c requirements.txt
+    #   boto3
+    #   s3transfer
+botocore-stubs==1.35.49
+    # via
+    #   -c requirements.txt
+    #   boto3-stubs
 certifi==2024.7.4
     # via
     #   -c requirements.txt
@@ -76,6 +93,11 @@ indexclient==2.4.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
+jmespath==1.0.1
+    # via
+    #   -c requirements.txt
+    #   boto3
+    #   botocore
 log-symbols==0.0.14
     # via halo
 marshmallow==3.21.3
@@ -109,10 +131,18 @@ mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-re
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
+mypy-boto3-s3==1.35.46
+    # via
+    #   -c requirements.txt
+    #   boto3-stubs
 mypy-extensions==1.0.0
     # via
     #   -c requirements.txt
     #   typing-inspect
+numpy==2.0.2
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
 ordered-set==4.1.0
     # via
     #   -c requirements.txt
@@ -131,6 +161,10 @@ pyspark==3.3.4
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
+python-dateutil==2.9.0.post0
+    # via
+    #   -c requirements.txt
+    #   botocore
 python-json-logger==2.0.7
     # via
     #   -c requirements.txt
@@ -143,8 +177,15 @@ requests==2.32.3
     # via
     #   -c requirements.txt
     #   indexclient
+s3transfer==0.10.3
+    # via
+    #   -c requirements.txt
+    #   boto3
 six==1.16.0
-    # via halo
+    # via
+    #   -c requirements.txt
+    #   halo
+    #   python-dateutil
 spinners==0.0.24
     # via halo
 termcolor==2.4.0
@@ -157,12 +198,22 @@ typeguard==4.0.1
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
+types-awscrt==0.23.0
+    # via
+    #   -c requirements.txt
+    #   botocore-stubs
+types-s3transfer==0.10.3
+    # via
+    #   -c requirements.txt
+    #   boto3-stubs
 typing-extensions==4.12.2
     # via
     #   -c requirements.txt
+    #   boto3-stubs
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
     #   marshmallow-dataclass
+    #   mypy-boto3-s3
     #   typeguard
     #   typing-inspect
 typing-inspect==0.9.0
@@ -172,6 +223,7 @@ typing-inspect==0.9.0
 urllib3==1.26.19
     # via
     #   -c requirements.txt
+    #   botocore
     #   elasticsearch
     #   requests
 wheel==0.43.0
