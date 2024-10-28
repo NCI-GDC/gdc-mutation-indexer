@@ -106,24 +106,33 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
     Loss while any value greater than the maximum mode is considered a Gain. All
     other values are neutral and are dropped from the data.
 
-    Also adds the new cnv_change_5_category value to the data frame. The implementation
-    will be added in DEV-3067.
+    Adds the cnv_change_5_category to the data frame. This is calculated based on
+    the following criteria:
+        - "Amplification": copy_number >= upper_ploidy_number * 2
+        - "Gain": copy_number > upper_poidy_number
+        - "Homozygous Deletion": copy_number == 0
+        - "Loss": copy_number < lower_ploidy_number
+    All other values are neutral and are dropped from the data.
+
+    There is a scenario where the ploidy will be 0. This is not possible in real-life,
+    but we want to document how we programmatically determine a category for this edge
+    case. In the event upper_ploidy = 0, we will classify it as "Amplification".
 
     METHOD:
     This is calculated by grouping all copy_numbers in a file and getting a count
     of their occurances/frequency. Then the counts are grouped again by file; in
     this aggregation, the min and max copy number are taken as the upper and
-    lower ploity for a given count/frequency.
+    lower ploidy for a given count/frequency.
 
     Then the maximum count/frequency is calculated from aggregating the original
     counts based on file id and taking the max count. This data frame now has the
     count of the modal value(s).
 
     Using the above two data frames the modal count is then inner joined into the
-    ploity data frame to give us the ploity values for a given file. This is then
+    ploidy data frame to give us the ploidy values for a given file. This is then
     joined into the original data frame by file id to give every row a
-    upper_ploity_number and lower_ploity_number which is used to select the
-    cnv_change column in the returned data frame.
+    upper_ploidy_number and lower_ploidy_number which is used to select the
+    cnv_change and cnv_change_5_category columns in the returned data frame.
 
     Args:
         document_df: the data frame of ascat document data
@@ -155,18 +164,21 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .otherwise(None)
         .alias("cnv_change")
     )
-    # TODO: update cnv_change_5_category logic in DEV-3084
-    document_df = document_df.withColumn(
-        "cnv_change_5_category", F.lit(None).cast(types.StringType())
+    cnv_change_5_category = (
+        F.when(F.col("copy_number") == 0, "Homozygous Deletion")
+        .when(F.col("copy_number") >= F.col("upper_ploidy_number") * 2, "Amplification")
+        .when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
+        .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+        .otherwise(None)
+        .alias("cnv_change_5_category")
     )
 
-    # TODO: update subset logic in DEV-3084
     return document_df.select(
         cnv_change,
-        "cnv_change_5_category",
+        cnv_change_5_category,
         "file_id",
         "gene_id",
-    ).na.drop(subset="cnv_change")
+    ).na.drop(subset="cnv_change_5_category")
 
 
 class ASCATInputs(TypedDict):

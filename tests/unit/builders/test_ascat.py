@@ -218,9 +218,9 @@ class TestAscatBuilder:
         ("copy_numbers", "cnv_change"),
         (
             ((100, 50, 50), "Gain"),
-            ((1, 0, 0), "Gain"),
+            ((5, 1, 1), "Gain"),
             ((100, 200, 200), "Loss"),
-            ((0, 2, 2), "Loss"),
+            ((-1, 2, 2), "Loss"),
             ((40, 20, 20, 30, 30), "Gain"),
             ((1, 2, 2, 3, 3), "Loss"),
         ),
@@ -239,6 +239,82 @@ class TestAscatBuilder:
         ascat_row = more_itertools.one(ascat_df.collect())
 
         assert ascat_row.cnv_change == cnv_change
+
+    @pytest.mark.parametrize(
+        ("copy_numbers", "cnv_change_5_category"),
+        (
+            pytest.param(
+                (200, 50, 50), "Amplification", id="amplification_single_mode"
+            ),
+            pytest.param(
+                (200, 50, 50, 30, 30), "Amplification", id="amplification_multiple_mode"
+            ),
+            pytest.param((75, 50, 50), "Gain", id="gain_single_mode"),
+            pytest.param((75, 50, 50, 30, 30), "Gain", id="gain_multiple_mode"),
+            pytest.param((50, 50, 0), "Homozygous Deletion", id="deletion_single_mode"),
+            pytest.param(
+                (50, 50, 20, 20, 0), "Homozygous Deletion", id="deletion_multiple_mode"
+            ),
+            pytest.param((100, 200, 200), "Loss", id="loss_single_mode"),
+            pytest.param((100, 200, 200, 300, 300), "Loss", id="loss_multiple_mode"),
+        ),
+    )
+    def test__build__copy_number_maps_to_cnv_change_5_category(
+        self, copy_numbers: tuple[int, ...], cnv_change_5_category: str
+    ) -> None:
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+        ascat_row = more_itertools.one(ascat_df.collect())
+
+        assert ascat_row.cnv_change_5_category == cnv_change_5_category
+
+    @pytest.mark.parametrize(
+        ("copy_numbers", "cnv_change_5_categories"),
+        (
+            pytest.param(
+                (0, 0, 0),
+                ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
+                id="mode_equals_0",
+            ),
+            pytest.param(
+                (2, 0, 0),
+                ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
+                id="copy_number_not_0_mode_0",
+            ),
+            pytest.param(
+                (0, 0, 5, 5),
+                ("Homozygous Deletion", "Homozygous Deletion"),
+                id="copy_number_0_multiple_mode",
+            ),
+        ),
+    )
+    def test__build__copy_number_maps_to_cnv_change_5_category_edge_cases(
+        self, copy_numbers: tuple[int, ...], cnv_change_5_categories: tuple[str, ...]
+    ) -> None:
+        """These tests are designed to document how cnv_change_5_cateogry behaves
+        when ploidy values are 0. This is not possible in real-life, but we want to
+        document how the code behaves for these edge cases.
+        """
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+        ascat_rows = ascat_df.collect()
+        assert len(ascat_rows) == len(cnv_change_5_categories)
+        for ascat_row, cnv_change_5_category in zip(
+            ascat_rows, cnv_change_5_categories
+        ):
+            assert ascat_row.cnv_change_5_category == cnv_change_5_category
 
     @pytest.mark.parametrize(
         "copy_numbers",

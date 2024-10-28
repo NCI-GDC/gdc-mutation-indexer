@@ -161,7 +161,7 @@ def test__get_gene_df__ssm_drop_fields(maf_df: sql.DataFrame, index_type: str) -
     ("cnv_centric", "cnv_occurrence_centric"),
 )
 def test__get_gene_df__cnv_drop_fields(cnv_df: sql.DataFrame, index_type: str) -> None:
-    fields_to_delete = ("cnv_id", "cnv_change")
+    fields_to_delete = ("cnv_id", "cnv_change_5_category")
 
     df = df_builders.get_gene_df(cnv_df, index_type, drop_fields=fields_to_delete)
 
