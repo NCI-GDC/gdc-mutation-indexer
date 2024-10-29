@@ -27,7 +27,7 @@ def _generate_uuids(
     chromosome: str,
     start_position: int,
     end_position: int,
-    cnv_change: int,
+    cnv_change_5_category: int,
     symbol: str,
     gene_id: str,
     is_cancer_gene_census: bool,
@@ -36,14 +36,16 @@ def _generate_uuids(
     aliquot_id: str,
 ) -> dict[str, str]:
     """Creates a uuid struct the following uuids (based on):
-        cnv_id (chromosome, start_position, end_position, copy_number)
+        cnv_id (chromosome, start_position, end_position, cnv_change_5_category)
         consequence_id (symbol, gene_id, is_cancer_gene_census, biotype)
         occurrence_id (cnv_id, case_id)
         observation_id (cnv_id, case_id, aliquot_id)
 
     Returns: UUIDS_STRUCT
     """
-    cnv_id = utils.generate_uuid5(chromosome, start_position, end_position, cnv_change)
+    cnv_id = utils.generate_uuid5(
+        chromosome, start_position, end_position, cnv_change_5_category
+    )
 
     return {
         "cnv_id": cnv_id,
@@ -65,7 +67,7 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         gene_chromosome
         start_position
         end_position
-        copy_number
+        cnv_change_5_category
         symbol
         gene_id
         is_cancer_gene_census
@@ -83,7 +85,7 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         "gene_chromosome",
         "start_position",
         "end_position",
-        "cnv_change",
+        "cnv_change_5_category",
         "symbol",
         "gene_id",
         "is_cancer_gene_census",
