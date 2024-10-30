@@ -42,3 +42,14 @@ class STARCounts:
     tpm_unstranded: float = 22.10
     fpkm_unstranded: float = 33902.3
     fpkm_uq_unstranded: float = 22901.8
+
+
+@dataclasses.dataclass(frozen=True)
+class ExpressionValue:
+    case_id: str = "case-0"
+    gene_expression_id: str = "ge-0"
+    gene_id: str = "ENSG00000238009"
+    log2_uqfpkm: float = 342.293
+    submitter_id: str = "sub-case-0"
+    symbol: str = "STAR-GENE"
+    uqfpkm: float = 432.903
