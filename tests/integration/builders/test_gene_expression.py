@@ -11,7 +11,7 @@ from elasticsearch import helpers
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils, indexd_utils
+from mutation_indexer import configuration, es_utils
 from mutation_indexer.builders import gene_expression
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup

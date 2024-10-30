@@ -1,0 +1,21 @@
+---
+fields:
+  - metadata: {}
+    name: gene_id
+    nullable: true
+    type: string
+  - metadata: {}
+    name: log2_uqfpkm
+    nullable: false
+    type:
+      containsNull: true
+      elementType: float
+      type: array
+  - metadata: {}
+    name: uqfpkm
+    nullable: false
+    type:
+      containsNull: true
+      elementType: float
+      type: array
+type: struct
