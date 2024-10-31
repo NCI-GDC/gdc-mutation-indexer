@@ -44,6 +44,7 @@ def assert_cnv_transformed(row: sql.Row, ascat: models.ASCAT) -> None:
     assert row.cnv_id == ascat.cnv_id
     assert row.chromosome == ascat.chromosome
     assert row.cnv_change == ascat.cnv_change
+    assert row.cnv_change_5_category == ascat.cnv_change_5_category
     assert row.end_position == ascat.end_position
     assert row.gene_level_cn == ascat.gene_level_cn
     assert row.ncbi_build == ascat.ncbi_build

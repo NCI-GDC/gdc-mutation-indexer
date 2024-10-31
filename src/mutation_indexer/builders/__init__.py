@@ -7,6 +7,7 @@ from mutation_indexer.builders.cnv_centric import CNVCentricBuilder
 from mutation_indexer.builders.cnv_occurrence_centric import CNVOccurrenceCentricBuilder
 from mutation_indexer.builders.consequence import ConsequenceBuilder
 from mutation_indexer.builders.gene_centric import GeneCentricBuilder
+from mutation_indexer.builders.gene_expression import ExpressionValueBuilder
 from mutation_indexer.builders.gene_expression import (
     IndexBuilder as GeneExpressionIndexBuilder,
 )
@@ -30,6 +31,7 @@ __all__ = (
     "CNVCentricBuilder",
     "CNVOccurrenceCentricBuilder",
     "ConsequenceBuilder",
+    "ExpressionValueBuilder",
     "GeneCentricBuilder",
     "GeneExpressionIndexBuilder",
     "GeneExpressionPrimaryAliquotBuilder",

@@ -188,7 +188,6 @@ class GeneExpression:
         @_init_schemas
         class Index:
             FINAL: Schema
-            STAR_COUNTS: Schema
 
         @_init_schemas
         class PrimaryAliquot:
