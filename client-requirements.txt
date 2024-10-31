@@ -6,11 +6,11 @@
 #
 --index-url https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 
-aiohappyeyeballs==2.3.4
+aiohappyeyeballs==2.4.3
     # via
     #   -c requirements.txt
     #   aiohttp
-aiohttp==3.10.0
+aiohttp==3.10.10
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -22,16 +22,16 @@ async-timeout==4.0.3
     # via
     #   -c requirements.txt
     #   aiohttp
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   -c requirements.txt
     #   aiohttp
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   -c requirements.txt
     #   elasticsearch
     #   requests
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via
     #   -c requirements.txt
     #   requests
@@ -43,23 +43,23 @@ deepdiff==6.7.1
     # via
     #   -c requirements.txt
     #   gdcmodels
-elasticsearch==7.17.9
+elasticsearch==7.17.12
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
-frozenlist==1.4.1
+frozenlist==1.5.0
     # via
     #   -c requirements.txt
     #   aiohttp
     #   aiosignal
-gdcmodels==5.4.1
+gdcmodels==5.5
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
 halo==0.0.31
     # via gdc-mutation-indexer (setup.py)
-idna==3.7
+idna==3.10
     # via
     #   -c requirements.txt
     #   requests
@@ -72,18 +72,18 @@ importlib-resources==3.3.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-indexclient==2.4.1
+indexclient==2.6
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
 log-symbols==0.0.14
     # via halo
-marshmallow==3.21.3
+marshmallow==3.23.0
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
     #   marshmallow-enum
-marshmallow-dataclass==8.7.0
+marshmallow-dataclass==8.7.1
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
@@ -100,7 +100,7 @@ more-itertools==8.14.0
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
-multidict==6.0.5
+multidict==6.1.0
     # via
     #   -c requirements.txt
     #   aiohttp
@@ -123,6 +123,10 @@ packaging==24.1
     #   marshmallow
 pex==2.14.0
     # via gdc-mutation-indexer (setup.py)
+propcache==0.2.0
+    # via
+    #   -c requirements.txt
+    #   yarl
 py4j==0.10.9.5
     # via
     #   -c requirements.txt
@@ -135,7 +139,7 @@ python-json-logger==2.0.7
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   -c requirements.txt
     #   gdcmodels
@@ -153,7 +157,7 @@ toml==0.10.2
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-typeguard==4.0.1
+typeguard==4.4.0
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
@@ -163,20 +167,21 @@ typing-extensions==4.12.2
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
     #   marshmallow-dataclass
+    #   multidict
     #   typeguard
     #   typing-inspect
 typing-inspect==0.9.0
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
-urllib3==1.26.19
+urllib3==1.26.20
     # via
     #   -c requirements.txt
     #   elasticsearch
     #   requests
 wheel==0.43.0
     # via gdc-mutation-indexer (setup.py)
-yarl==1.9.4
+yarl==1.17.0
     # via
     #   -c requirements.txt
     #   aiohttp
