@@ -34,7 +34,7 @@ setup(
         "toml~=0.10",
         "typing-extensions~=4.1",
         "indexclient",
-        "gdcmodels",
+        "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/temp-include-cnv-id-in-case-centric",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
     extras_require={

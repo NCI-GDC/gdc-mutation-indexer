@@ -53,7 +53,7 @@ frozenlist==1.4.1
     #   -c requirements.txt
     #   aiohttp
     #   aiosignal
-gdcmodels==5.4.1
+gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/temp-include-cnv-id-in-case-centric
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
