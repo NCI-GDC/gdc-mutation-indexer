@@ -1,5 +1,9 @@
 ---
 fields:
+  - metadata: {}
+    name: aliquot_id
+    nullable: true
+    type: string
   - &string_field
     metadata: {}
     name: chromosome
