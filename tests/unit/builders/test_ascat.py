@@ -1,5 +1,6 @@
+import collections
 import dataclasses
-from collections.abc import Iterable, Mapping
+from typing import Iterable, Mapping
 from unittest import mock
 
 import more_itertools
@@ -304,6 +305,7 @@ class TestAscatBuilder:
         ascat_documents = tuple(
             AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
         )
+        expected_count = collections.Counter(cnv_change_5_categories)
 
         inputs = self._arrange_input_dataframes()
         builder = self._arrange_builder(ascat_documents)
@@ -311,10 +313,10 @@ class TestAscatBuilder:
         ascat_df = builder.build(**inputs)
         ascat_rows = ascat_df.collect()
         assert len(ascat_rows) == len(cnv_change_5_categories)
-        for ascat_row, cnv_change_5_category in zip(
-            ascat_rows, cnv_change_5_categories
-        ):
-            assert ascat_row.cnv_change_5_category == cnv_change_5_category
+        actual_count = collections.Counter(
+            [ascat_row.cnv_change_5_category for ascat_row in ascat_rows]
+        )
+        assert actual_count == expected_count
 
     @pytest.mark.parametrize(
         "copy_numbers",
