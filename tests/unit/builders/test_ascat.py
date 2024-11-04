@@ -1,8 +1,8 @@
-import collections
 import dataclasses
 from typing import Iterable, Mapping
 from unittest import mock
 
+import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -305,18 +305,19 @@ class TestAscatBuilder:
         ascat_documents = tuple(
             AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
         )
-        expected_count = collections.Counter(cnv_change_5_categories)
 
         inputs = self._arrange_input_dataframes()
         builder = self._arrange_builder(ascat_documents)
 
         ascat_df = builder.build(**inputs)
         ascat_rows = ascat_df.collect()
-        assert len(ascat_rows) == len(cnv_change_5_categories)
-        actual_count = collections.Counter(
-            [ascat_row.cnv_change_5_category for ascat_row in ascat_rows]
+        actual_cnv_change_5_categories = tuple(
+            row.cnv_change_5_category for row in ascat_rows
         )
-        assert actual_count == expected_count
+        assert len(actual_cnv_change_5_categories) == len(cnv_change_5_categories)
+        assert not deepdiff.DeepDiff(
+            actual_cnv_change_5_categories, cnv_change_5_categories, ignore_order=True
+        )
 
     @pytest.mark.parametrize(
         "copy_numbers",
