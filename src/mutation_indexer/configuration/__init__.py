@@ -15,6 +15,7 @@ from mutation_indexer.configuration import (
     aws,
     build,
     builders,
+    databases,
     elasticsearch,
     environment,
     indexd,
@@ -76,6 +77,7 @@ class Configuration:
     environment: environment.Environment
     indexd: indexd.IndexD
     spark: spark.Spark
+    databases: databases.Databases
 
     @marshmallow.pre_load
     def _add_projects_to_builders(self, data: dict, **kwargs: Any) -> dict:

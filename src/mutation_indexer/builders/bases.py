@@ -29,6 +29,7 @@ from typing_extensions import TypeGuard
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 
 TConfig = TypeVar("TConfig", bound=common.Builder)
 TIndexConfig = TypeVar("TIndexConfig", bound=common.IndexBuilder)
@@ -902,5 +903,40 @@ class IndexBuilder(
 
         logger.info(f"Writing to ES: {self.output.name}")
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+
+        return df
+
+
+class SQLiteBuilder(
+    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC
+):
+    __slots__ = ("_database",)
+
+    def __init__(
+        self,
+        config: TConfig,
+        spark_session: sql.SparkSession,
+        database: sqlite.SQLiteDatabase,
+        input_type: type[TInputDFs],
+        output: build.DataFrame,
+    ) -> None:
+        super().__init__(config, spark_session, input_type, output)
+
+        self._database = database
+
+    @property
+    @abc.abstractmethod
+    def _create(self) -> str:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def _insert(self) -> str:
+        pass
+
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        df = super()._write(df)
+
+        self._database.write(df, self._insert, self._create)
 
         return df

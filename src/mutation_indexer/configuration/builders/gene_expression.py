@@ -39,5 +39,6 @@ class GeneExpression:
     gene_model: GeneModelBuilder
     case: Builder
     expression_value: Builder
+    gene: Builder
     primary_aliquot: Builder
     gene_expression: GeneExpressionIndexBuilder
