@@ -1,4 +1,8 @@
-"""A module for supporting the building of the binary data utilized by the GE service."""
+"""A module for supporting the building of the binary data utilized by the GE service.
+
+For documentation on the formatting of the data please refer to the GE service.
+https://github.com/NCI-GDC/gene-expression/blob/main/README.md#data-cache
+"""
 
 import io
 from collections.abc import Iterable
