@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from unittest import mock
 
 import deepdiff
