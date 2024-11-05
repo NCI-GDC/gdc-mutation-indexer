@@ -2,6 +2,7 @@ import dataclasses
 from collections.abc import Iterable, Mapping
 from unittest import mock
 
+import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -310,11 +311,13 @@ class TestAscatBuilder:
 
         ascat_df = builder.build(**inputs)
         ascat_rows = ascat_df.collect()
-        assert len(ascat_rows) == len(cnv_change_5_categories)
-        for ascat_row, cnv_change_5_category in zip(
-            ascat_rows, cnv_change_5_categories
-        ):
-            assert ascat_row.cnv_change_5_category == cnv_change_5_category
+        actual_cnv_change_5_categories = tuple(
+            row.cnv_change_5_category for row in ascat_rows
+        )
+        assert len(actual_cnv_change_5_categories) == len(cnv_change_5_categories)
+        assert not deepdiff.DeepDiff(
+            actual_cnv_change_5_categories, cnv_change_5_categories, ignore_order=True
+        )
 
     @pytest.mark.parametrize(
         "copy_numbers",
