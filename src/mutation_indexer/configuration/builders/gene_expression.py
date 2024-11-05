@@ -24,6 +24,12 @@ class GeneExpressionIndexBuilder(IndexBuilder):
     backup: PartitionedBackup
 
 
+class BinaryBuilder(Builder):
+    bucket: str
+    log2_uqfpkm_key: str
+    uqfpkm_key: str
+
+
 @dataclasses.dataclass(frozen=True)
 class GeneExpression:
     """
