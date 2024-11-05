@@ -1,3 +1,5 @@
+"""A module for supporting the building of the binary data utilized by the GE service."""
+
 import io
 from collections.abc import Iterable
 from typing import TypedDict
@@ -25,6 +27,13 @@ class BinaryBuilder(bases.InputBuilder[gene_expression.BinaryBuilder, BinaryInpu
         spark_session: sql.SparkSession,
         s3_client: s3.Client,
     ) -> None:
+        """A builder for creating the binary files which store numpy GE data for the API.
+
+        Args:
+            config: The configuration for the binary builder.
+            spark_session: The spark session associated with the run of the build.
+            s3_client: The s3 client used for uploading the binary files to s3.
+        """
         super().__init__(
             config,
             spark_session,
