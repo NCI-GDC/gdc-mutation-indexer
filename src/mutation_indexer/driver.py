@@ -325,6 +325,7 @@ def _get_ge_builders(
         )
 
     yield gene_expression.CaseBuilder(config.case, spark_session, sqlite_db)
+    yield gene_expression.GeneBuilder(config.gene, spark_session, sqlite_db)
 
 
 def get_ge_builders(

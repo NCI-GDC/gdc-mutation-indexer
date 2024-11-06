@@ -5,21 +5,15 @@ import pytest
 from pyspark import sql
 
 from mutation_indexer.configuration import databases
-from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
+
+CREATE = "CREATE TABLE IF NOT EXISTS cases(case_id TEXT PRIMARY KEY, submitter_id TEXT)"
+INSERT = "INSERT INTO cases (case_id, submitter_id) VALUES (?, ?)"
 
 
 class TestSQLiteDatabase:
     def _arrange_config(self) -> databases.SQLiteDatabase:
-        return mock.MagicMock(
-            tables={
-                build.SQLTable.CASE: mock.MagicMock(
-                    name="cases",
-                    create="CREATE TABLE IF NOT EXISTS cases(case_id TEXT PRIMARY KEY, submitter_id TEXT)",
-                    insert="INSERT INTO cases (case_id, submitter_id) VALUES (?, ?)",
-                )
-            }
-        )
+        return mock.MagicMock()
 
     def test__enter__creates_db_and_table(self) -> None:
         config = self._arrange_config()
@@ -79,7 +73,7 @@ class TestSQLiteDatabase:
         )
 
         with sqlite.SQLiteDatabase(config, mock.MagicMock()) as db:
-            db.write(df, build.SQLTable.CASE)
+            db.write(df, INSERT, CREATE)
 
             with sqlite3.connect(db.dbfile) as connection:
                 cursor = connection.execute(
@@ -99,4 +93,4 @@ class TestSQLiteDatabase:
 
         with sqlite.SQLiteDatabase(config, mock.MagicMock()) as db:
             with pytest.raises(ValueError, match=r"Cannot write to unknown table:.*"):
-                db.write(df, build.SQLTable.GENE)
+                db.write(df, INSERT, CREATE)
