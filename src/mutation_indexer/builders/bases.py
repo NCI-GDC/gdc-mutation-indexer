@@ -937,6 +937,7 @@ class SQLiteBuilder(
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         df = super()._write(df)
 
+        logger.info(f"Writing: {self._output.name} to SQLite DB.")
         self._database.write(df, self._insert, self._create)
 
         return df

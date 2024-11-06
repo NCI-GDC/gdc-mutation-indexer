@@ -36,8 +36,4 @@ class GeneBuilder(bases.SQLiteBuilder[gene_expression.Builder, GeneInputs]):
         return "INSERT INTO genes (gene_id, symbol) VALUES (?, ?)"
 
     def _build_from_scratch(self, input_dfs: GeneInputs) -> sql.DataFrame:
-        return (
-            input_dfs["expression_value_df"]
-            .select("case_id", "submitter_id")
-            .distinct()
-        )
+        return input_dfs["expression_value_df"].select("gene_id", "symbol").distinct()
