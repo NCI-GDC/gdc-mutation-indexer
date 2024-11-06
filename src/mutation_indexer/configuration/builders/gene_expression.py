@@ -16,12 +16,23 @@ from mutation_indexer.configuration.builders.common import (
 )
 
 
+@dataclasses.dataclass(frozen=True)
 class GeneExpressionIndexBuilder(IndexBuilder):
     @dataclasses.dataclass(frozen=True)
     class PartitionedBackup(common.Backup):
         partition_by: str
 
     backup: PartitionedBackup
+
+
+@dataclasses.dataclass(frozen=True)
+class CaseBuilder(Builder):
+    @dataclasses.dataclass(frozen=True)
+    class Destination:
+        bucket: str
+        key: str
+
+    destination: Destination
 
 
 @dataclasses.dataclass(frozen=True)

@@ -21,6 +21,8 @@ setup(
     license="Apache",
     include_package_data=True,
     install_requires=[
+        "boto3",
+        "boto3-stubs[s3]",
         "elasticsearch[async]~=7.6",
         "importlib-resources~=3.2",
         "marshmallow-dataclass~=8.5",
