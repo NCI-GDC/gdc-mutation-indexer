@@ -16,6 +16,7 @@ from mutation_indexer.configuration.builders.common import (
 )
 
 
+@dataclasses.dataclass(frozen=True)
 class GeneExpressionIndexBuilder(IndexBuilder):
     @dataclasses.dataclass(frozen=True)
     class PartitionedBackup(common.Backup):
@@ -28,6 +29,16 @@ class BinaryBuilder(Builder):
     bucket: str
     log2_uqfpkm_key: str
     uqfpkm_key: str
+
+
+@dataclasses.dataclass(frozen=True)
+class CaseBuilder(Builder):
+    @dataclasses.dataclass(frozen=True)
+    class Destination:
+        bucket: str
+        key: str
+
+    destination: Destination
 
 
 @dataclasses.dataclass(frozen=True)

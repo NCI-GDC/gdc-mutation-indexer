@@ -1,0 +1,111 @@
+import marshal
+from collections.abc import Callable, Iterable, Mapping
+from typing import IO
+from unittest import mock
+
+import more_itertools
+import mypy_boto3_s3 as s3
+import pytest
+from pyspark import sql
+from pyspark.sql import types
+
+from mutation_indexer.builders.gene_expression import case
+from mutation_indexer.configuration.builders import gene_expression
+from mutation_indexer.constants import build
+from tests.unit import utils
+from tests.unit.data import schemas
+from tests.unit.data.models import gene_expression as models
+
+
+@pytest.fixture(scope="class")
+def value_schema() -> types.StructType:
+    return schemas.GeneExpression.Builders.ExpressionValue.FINAL.load()
+
+
+@pytest.fixture(scope="class")
+def final_schema() -> types.StructType:
+    return schemas.GeneExpression.Builders.Case.FINAL.load()
+
+
+class TestCaseBuilder:
+    @pytest.fixture(autouse=True)
+    def init_fixtures(
+        self,
+        create_dataframe: utils.CreateDataFrame,
+        value_schema: types.StructType,
+        final_schema: types.StructType,
+    ) -> None:
+        self._create_dataframe = create_dataframe
+        self._value_schema = value_schema
+        self._final_schema = final_schema
+
+    def _arrange_config(self) -> gene_expression.CaseBuilder:
+        return mock.MagicMock(
+            spec=gene_expression.CaseBuilder,
+            is_cached=False,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+            destination=mock.MagicMock(bucket="bucket-test-gdc", key="test/case.bin"),
+        )
+
+    def _arrange_s3_client(
+        self, validate: Callable[..., None] = lambda *args, **kwargs: None
+    ) -> mock.MagicMock:
+        return mock.MagicMock(
+            spec=s3.Client, upload_fileobj=mock.MagicMock(side_effect=validate)
+        )
+
+    def _arrange_inputs(
+        self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
+    ) -> Mapping[str, sql.DataFrame]:
+        return {
+            "expression_value_df": self._create_dataframe(values, self._value_schema)
+        }
+
+    def _arrange_builder(
+        self, config: gene_expression.CaseBuilder, s3_client: s3.Client
+    ) -> case.CaseBuilder:
+        return case.CaseBuilder(config, mock.MagicMock(), s3_client)
+
+    def test__build__single_row(self) -> None:
+        config = self._arrange_config()
+        s3_client = self._arrange_s3_client()
+        inputs = self._arrange_inputs()
+        builder = self._arrange_builder(config, s3_client)
+
+        result_df = builder.build(**inputs)
+
+        assert result_df.count() == 1
+        assert result_df.schema == self._final_schema
+
+    def test__build__data_ordered_by_case_id(self) -> None:
+        case_ids = ("case-3", "case-1", "case-0", "case-2", "case-1")
+        values = (models.ExpressionValue(case_id=i) for i in case_ids)
+        config = self._arrange_config()
+        s3_client = self._arrange_s3_client()
+        inputs = self._arrange_inputs(values)
+        builder = self._arrange_builder(config, s3_client)
+
+        result_df = builder.build(**inputs)
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.cases == sorted(frozenset(case_ids))
+
+    def test__build__data_uploaded(self) -> None:
+        config = self._arrange_config()
+        values = (
+            models.ExpressionValue(case_id="case-2"),
+            models.ExpressionValue(case_id="case-1"),
+        )
+
+        def validate_upload(data: IO[bytes], Bucket: str, Key: str) -> None:
+            assert Bucket == config.destination.bucket
+            assert Key == config.destination.key
+            assert marshal.load(data) == ["case-1", "case-2"]
+
+        s3_client = self._arrange_s3_client(validate_upload)
+        inputs = self._arrange_inputs(values)
+        builder = self._arrange_builder(config, s3_client)
+
+        _ = builder.build(**inputs)
+
+        s3_client.upload_fileobj.assert_called_once()

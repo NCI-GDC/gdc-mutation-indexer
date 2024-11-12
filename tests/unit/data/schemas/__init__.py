@@ -180,6 +180,9 @@ class GeneExpression:
         class Binary:
             FINAL: Schema
 
+        class Case:
+            FINAL: Schema
+
         @_init_schemas
         class ExpressionValue:
             FINAL: Schema

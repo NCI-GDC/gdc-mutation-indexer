@@ -1,0 +1,10 @@
+---
+fields:
+  - metadata: {}
+    name: cases
+    nullable: false
+    type:
+      containsNull: false
+      elementType: string
+      type: array
+type: struct
