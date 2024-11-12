@@ -16,6 +16,16 @@ async-timeout==4.0.3
     # via aiohttp
 attrs==24.2.0
     # via aiohttp
+boto3==1.35.54
+    # via gdc-mutation-indexer (setup.py)
+boto3-stubs==1.35.54
+    # via gdc-mutation-indexer (setup.py)
+botocore==1.35.54
+    # via
+    #   boto3
+    #   s3transfer
+botocore-stubs==1.35.54
+    # via boto3-stubs
 certifi==2024.8.30
     # via
     #   elasticsearch
@@ -44,6 +54,10 @@ importlib-resources==3.3.1
     # via gdc-mutation-indexer (setup.py)
 indexclient==2.6
     # via gdc-mutation-indexer (setup.py)
+jmespath==1.0.1
+    # via
+    #   boto3
+    #   botocore
 marshmallow==3.23.0
     # via
     #   marshmallow-dataclass
@@ -64,6 +78,8 @@ multidict==6.1.0
     #   yarl
 mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0
     # via gdc-mutation-indexer (setup.py)
+mypy-boto3-s3==1.35.46
+    # via boto3-stubs
 mypy-extensions==1.0.0
     # via typing-inspect
 ordered-set==4.1.0
@@ -76,28 +92,41 @@ py4j==0.10.9.5
     # via pyspark
 pyspark==3.3.4
     # via gdc-mutation-indexer (setup.py)
+python-dateutil==2.9.0.post0
+    # via botocore
 python-json-logger==2.0.7
     # via gdc-mutation-indexer (setup.py)
 pyyaml==6.0.2
     # via gdcmodels
 requests==2.32.3
     # via indexclient
+s3transfer==0.10.3
+    # via boto3
+six==1.16.0
+    # via python-dateutil
 toml==0.10.2
     # via gdc-mutation-indexer (setup.py)
 typeguard==4.4.0
     # via marshmallow-dataclass
+types-awscrt==0.23.0
+    # via botocore-stubs
+types-s3transfer==0.10.3
+    # via boto3-stubs
 typing-extensions==4.12.2
     # via
+    #   boto3-stubs
     #   gdc-mutation-indexer (setup.py)
     #   gdcmodels
     #   marshmallow-dataclass
     #   multidict
+    #   mypy-boto3-s3
     #   typeguard
     #   typing-inspect
 typing-inspect==0.9.0
     # via marshmallow-dataclass
 urllib3==1.26.20
     # via
+    #   botocore
     #   elasticsearch
     #   requests
 yarl==1.17.0
