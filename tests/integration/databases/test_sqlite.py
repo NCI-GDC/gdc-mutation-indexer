@@ -15,18 +15,11 @@ class TestSQLiteDatabase:
     def _arrange_config(self) -> databases.SQLiteDatabase:
         return mock.MagicMock()
 
-    def test__enter__creates_db_and_table(self) -> None:
+    def test__enter__creates_db(self) -> None:
         config = self._arrange_config()
 
         with sqlite.SQLiteDatabase(config, mock.MagicMock()) as db:
             assert db.dbfile.exists() and db.dbfile.is_file()
-
-            with sqlite3.connect(db.dbfile) as connection:
-                cursor = connection.execute(
-                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='cases'"
-                )
-
-                assert cursor.fetchone() == (1,)
 
     def test__exit__uploads_and_deletes_db_file(self) -> None:
         config = self._arrange_config()
@@ -61,7 +54,7 @@ class TestSQLiteDatabase:
         with pytest.raises(
             RuntimeError, match=r"Cannot access DB outside of a context\."
         ):
-            db._dbfile
+            db.dbfile
 
     def test__write__data_writes_to_table(
         self, spark_session: sql.SparkSession
@@ -82,7 +75,7 @@ class TestSQLiteDatabase:
 
                 assert cursor.fetchone() == ("case-0", "sub-case-0")
 
-    def test__write__unconfigured_table_raises(
+    def test__write__nonexistant_table_raises(
         self, spark_session: sql.SparkSession
     ) -> None:
         config = self._arrange_config()
@@ -92,5 +85,5 @@ class TestSQLiteDatabase:
         )
 
         with sqlite.SQLiteDatabase(config, mock.MagicMock()) as db:
-            with pytest.raises(ValueError, match=r"Cannot write to unknown table:.*"):
-                db.write(df, INSERT, CREATE)
+            with pytest.raises(sqlite3.OperationalError, match="no such table: cases"):
+                db.write(df, INSERT)
