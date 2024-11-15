@@ -33,7 +33,8 @@ class SQLiteDatabase:
     def dbfile(self) -> pathlib.Path:
         """The path to the file storing the database.
 
-        WARNING: Cannot be accessed outside of context.
+        Raises:
+            RuntimeError: When accessed outside of context.
         """
         if not self._dbfile:
             raise RuntimeError("Cannot access DB outside of a context.")
