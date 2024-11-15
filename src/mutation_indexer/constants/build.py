@@ -11,6 +11,7 @@ class DataFrame(enum.IntEnum):
     EXPRESSION_VALUE = enum.auto()
     GENE_EXPRESSION = enum.auto()
     GENE_MODEL = enum.auto()
+    GENE_SQL = enum.auto()
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()

@@ -186,6 +186,10 @@ class GeneExpression:
             STAR_COUNTS: Schema
 
         @_init_schemas
+        class Gene:
+            FINAL: Schema
+
+        @_init_schemas
         class Index:
             FINAL: Schema
 
