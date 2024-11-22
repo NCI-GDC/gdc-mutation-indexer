@@ -12,6 +12,7 @@ from pyspark.sql import types
 from mutation_indexer.builders.gene_expression import case
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -109,3 +110,89 @@ class TestCaseBuilder:
         _ = builder.build(**inputs)
 
         s3_client.upload_fileobj.assert_called_once()
+
+
+@pytest.fixture(scope="class")
+def sql_schema() -> types.StructType:
+    return schemas.GeneExpression.Builders.Case.SQL.load()
+
+
+class TestCaseSQLBuilder:
+    @pytest.fixture(autouse=True)
+    def init_fixtures(
+        self,
+        create_dataframe: utils.CreateDataFrame,
+        value_schema: types.StructType,
+        sql_schema: types.StructType,
+    ) -> None:
+        self._create_dataframe = create_dataframe
+        self._value_schema = value_schema
+        self._final_schema = sql_schema
+
+    def _arrange_config(self) -> gene_expression.Builder:
+        return mock.MagicMock(
+            is_cached=False,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+        )
+
+    def _arrange_database(self) -> mock.MagicMock:
+        return mock.MagicMock(spec=sqlite.SQLiteDatabase)
+
+    def _arrange_inputs(
+        self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
+    ) -> Mapping[str, sql.DataFrame]:
+        return {
+            "expression_value_df": self._create_dataframe(values, self._value_schema)
+        }
+
+    def test__build__single_row(
+        self,
+    ) -> None:
+        config = self._arrange_config()
+        database = self._arrange_database()
+        inputs = self._arrange_inputs()
+        builder = case.CaseSQLBuilder(config, mock.MagicMock(), database)
+
+        result_df = builder.build(**inputs)
+
+        assert result_df.count() == 1
+        assert result_df.schema == self._final_schema
+
+    def test__build__data_transformed(
+        self,
+    ) -> None:
+        config = self._arrange_config()
+        database = self._arrange_database()
+
+        values = (
+            models.ExpressionValue(
+                case_id="case-0", submitter_id="sub-case-0", uqfpkm=34.5
+            ),
+            models.ExpressionValue(
+                case_id="case-0", submitter_id="sub-case-0", uqfpkm=4.8
+            ),
+            models.ExpressionValue(
+                case_id="case-1", submitter_id="sub-case-1", uqfpkm=0.4
+            ),
+        )
+        inputs = self._arrange_inputs(values=values)
+        builder = case.CaseSQLBuilder(config, mock.MagicMock(), database)
+
+        result_df = builder.build(**inputs)
+        result_rows = frozenset(tuple(r) for r in result_df.collect())
+
+        assert result_rows == frozenset(
+            (("case-0", "sub-case-0"), ("case-1", "sub-case-1"))
+        )
+
+    def test__build__data_written(
+        self,
+    ) -> None:
+        config = self._arrange_config()
+        database = self._arrange_database()
+        inputs = self._arrange_inputs()
+        builder = case.CaseSQLBuilder(config, mock.MagicMock(), database)
+
+        _ = builder.build(**inputs)
+
+        database.write.assert_called_once()

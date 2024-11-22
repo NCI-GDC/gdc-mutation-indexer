@@ -1,0 +1,10 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: case_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: submitter_id
+type: struct
