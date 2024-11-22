@@ -29,6 +29,7 @@ from typing_extensions import TypeGuard
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 
 TConfig = TypeVar("TConfig", bound=common.Builder)
 TIndexConfig = TypeVar("TIndexConfig", bound=common.IndexBuilder)
@@ -902,5 +903,63 @@ class IndexBuilder(
 
         logger.info(f"Writing to ES: {self.output.name}")
         self._es_dataframe_util.write(df, self._index_type, self._config.id_field)
+
+        return df
+
+
+class SQLiteBuilder(
+    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC
+):
+    __slots__ = ("_database",)
+
+    def __init__(
+        self,
+        config: TConfig,
+        spark_session: sql.SparkSession,
+        database: sqlite.SQLiteDatabase,
+        input_type: type[TInputDFs],
+        output: build.DataFrame,
+    ) -> None:
+        """A base builder for building and writing data to a SQLite database.
+
+        Args:
+            config: The configuration for the builder in this run.
+            spark_session: The spark session associated with this run.
+            database: The SQLite database to which the data should be written.
+            input_type: The type of the input mapping which is expected as kwargs to the
+                build method.
+            output: The output data frame of this builder.
+        """
+        super().__init__(config, spark_session, input_type, output)
+
+        self._database = database
+
+    @property
+    @abc.abstractmethod
+    def _create(self) -> str:
+        """The SQL command for creating the table in the database."""
+        pass
+
+    @property
+    @abc.abstractmethod
+    def _insert(self) -> str:
+        """The SQL command for inserting values into the table in the database."""
+        pass
+
+    def _write(self, df: sql.DataFrame) -> sql.DataFrame:
+        """Extends the base write by ALWAYS writing the data to the SQLite database.
+
+        NOTE: See InputBuilder._write for base functionality.
+
+        Args:
+            df: The data frame containing the data built by this builder.
+
+        Return:
+            A data frame with the same data as the input data frame.
+        """
+        df = super()._write(df)
+
+        logger.info(f"Writing: {self._output.name} to SQLite DB.")
+        self._database.write(df, self._insert, self._create)
 
         return df
