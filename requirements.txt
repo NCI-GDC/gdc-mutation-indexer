@@ -82,6 +82,8 @@ mypy-boto3-s3==1.35.46
     # via boto3-stubs
 mypy-extensions==1.0.0
     # via typing-inspect
+numpy==2.0.2
+    # via gdc-mutation-indexer (setup.py)
 ordered-set==4.1.0
     # via deepdiff
 packaging==24.1

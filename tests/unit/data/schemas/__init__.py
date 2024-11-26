@@ -177,6 +177,10 @@ class Viz:
 class GeneExpression:
     class Builders:
         @_init_schemas
+        class Binary:
+            FINAL: Schema
+
+        @_init_schemas
         class Case:
             FINAL: Schema
             SQL: Schema
