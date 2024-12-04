@@ -94,7 +94,7 @@ class CaseSQLBuilder(bases.SQLiteBuilder[gene_expression.Builder, CaseSQLInputs]
             spark_session,
             database,
             input_type=CaseSQLInputs,
-            output=build.DataFrame.CASE,
+            output=build.DataFrame.CASE_SQL,
         )
 
     @property
