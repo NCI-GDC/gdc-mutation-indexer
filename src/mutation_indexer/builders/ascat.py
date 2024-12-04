@@ -158,7 +158,11 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
         F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
         F.row_number().over(mode_window).alias("row_number"),
-    ).where(F.col("row_number") == 1)
+    ).where(
+        (F.col("row_number") == 1)
+        & (F.col("lower_ploidy_number") != 0)
+        & (F.col("upper_ploidy_number") != 0)
+    )
     document_df = document_df.join(ploidy_df, on="file_id")
     cnv_change = (
         F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
