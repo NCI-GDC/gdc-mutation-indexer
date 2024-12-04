@@ -48,7 +48,10 @@ class GeneExpression:
     """
 
     gene_model: GeneModelBuilder
-    case: Builder
+    case: CaseBuilder
+    case_sql: Builder
+    binary: BinaryBuilder
     expression_value: Builder
+    gene_sql: Builder
     primary_aliquot: Builder
     gene_expression: GeneExpressionIndexBuilder

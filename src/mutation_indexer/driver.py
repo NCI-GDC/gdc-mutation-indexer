@@ -3,7 +3,9 @@ import logging
 import types
 from collections.abc import Container, Iterator, Mapping
 
+import boto3
 import elasticsearch
+import mypy_boto3_s3 as s3
 import toml
 from indexclient import client
 from pyspark import sql
@@ -17,11 +19,12 @@ from mutation_indexer import (
 )
 from mutation_indexer import logging as mutation_indexer_logging
 from mutation_indexer.builders import base_builder, bases, civic, maf_metadata
-from mutation_indexer.configuration import adapter
+from mutation_indexer.configuration import adapter, aws
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
 from mutation_indexer.configuration.builders import gene_expression, viz
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 
 logger = logging.getLogger("mutation_indexer")
 
@@ -53,6 +56,16 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
     return client.IndexClient(
         baseurl=f"{config.host}:{config.port}",
         auth=(config.user, config.password),
+    )
+
+
+def get_s3_client(config: aws.S3) -> s3.Client:
+    return boto3.client(
+        "s3",
+        endpoint_url=config.host,
+        aws_access_key_id=config.access_key,
+        aws_secret_access_key=config.secret_key,
+        verify=False,
     )
 
 
@@ -263,6 +276,8 @@ def _get_ge_builders(
     doc_dataframe_util: indexd_utils.DataFrameUtil,
     index_types: Container[build.IndexType],
     mappings_loader: es_utils.MappingsLoader,
+    s3_client: s3.Client,
+    database: sqlite.SQLiteDatabase,
 ) -> Iterator[bases.Builder]:
     """
     Builds the input builders required for the gene expression export process.
@@ -283,12 +298,14 @@ def _get_ge_builders(
     Returns:
         An iterator of the Builder objects required for this build.
     """
+    from mutation_indexer.builders import gene_expression
+
     input_builders = (
         builders.GeneModelBuilder(config.gene_model, spark_session),
-        builders.GeneExpressionPrimaryAliquotBuilder(
+        gene_expression.PrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util
         ),
-        builders.ExpressionValueBuilder(
+        gene_expression.ExpressionValueBuilder(
             config.expression_value, spark_session, doc_dataframe_util
         ),
     )
@@ -296,18 +313,27 @@ def _get_ge_builders(
     yield from input_builders
 
     if build.IndexType.GENE_EXPRESSION in index_types:
-        yield builders.GeneExpressionIndexBuilder(
+        yield gene_expression.IndexBuilder(
             config.gene_expression,
             spark_session,
             es_dataframe_util,
             mappings_loader,
         )
 
+    yield from (
+        gene_expression.CaseBuilder(config.case, spark_session, s3_client),
+        gene_expression.CaseSQLBuilder(config.case_sql, spark_session, database),
+        gene_expression.BinaryBuilder(config.binary, spark_session, s3_client),
+        gene_expression.GeneSQLBuilder(config.gene_sql, spark_session, database),
+    )
+
 
 def get_ge_builders(
     config: configuration.Configuration,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
+    s3_client: s3.Client,
+    database: sqlite.SQLiteDatabase,
 ) -> gdc_mutation_export.Builders:
     """
     Builds the exporters Builders object with the required builders for the viz process.
@@ -342,10 +368,40 @@ def get_ge_builders(
                 doc_dataframe_util,
                 config.build.index_types,
                 mappings_loader,
+                s3_client,
+                database,
             )
         ),
         {},
     )
+
+
+@contextlib.contextmanager
+def _get_exporter(
+    config: configuration.Configuration,
+) -> Iterator[gdc_mutation_export.Exporter]:
+    with get_es_client(
+        config.elasticsearch.connection
+    ) as es_client, initialize_spark() as spark_session:
+        if config.build.is_viz_build():
+            yield gdc_mutation_export.Exporter(
+                spark_session.sparkContext,
+                config.build.index_types,
+                get_viz_builders(config, spark_session, es_client),
+            )
+        else:
+            s3_client = get_s3_client(config.aws.s3)
+
+            with sqlite.SQLiteDatabase(
+                config.databases.gene_expression, s3_client
+            ) as database:
+                yield gdc_mutation_export.Exporter(
+                    spark_session.sparkContext,
+                    config.build.index_types,
+                    get_ge_builders(
+                        config, spark_session, es_client, s3_client, database
+                    ),
+                )
 
 
 def main():
@@ -358,18 +414,8 @@ def main():
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        with get_es_client(
-            config.elasticsearch.connection
-        ) as es_client, initialize_spark() as spark_session:
-            builders = (
-                get_viz_builders(config, spark_session, es_client)
-                if config.build.is_viz_build()
-                else get_ge_builders(config, spark_session, es_client)
-            )
-            exporter = gdc_mutation_export.Exporter(
-                spark_session.sparkContext, config.build.index_types, builders
-            )
-
+        with _get_exporter(config) as exporter:
             exporter.run()
+
     except Exception as ex:
         logger.critical("Driver failed", exc_info=ex)

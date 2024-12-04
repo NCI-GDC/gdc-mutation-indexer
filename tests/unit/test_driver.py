@@ -84,15 +84,21 @@ def test__get_viz_builders__all_builders() -> None:
 def test__get_ge_builders__all_builders() -> None:
     config = mock.MagicMock()
     config.build.index_types = (build.IndexType.GENE_EXPRESSION,)
-    ge_builders = driver.get_ge_builders(config, mock.MagicMock(), mock.MagicMock())
+    ge_builders = driver.get_ge_builders(
+        config, mock.MagicMock(), mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
+    )
     generic_builders = {b.output: b for b in ge_builders.builders}
 
     assert generic_builders.keys() == frozenset(
         (
-            build.DataFrame.GENE_MODEL,
-            build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.BINARY,
+            build.DataFrame.CASE,
+            build.DataFrame.CASE_SQL,
             build.DataFrame.EXPRESSION_VALUE,
             build.DataFrame.GENE_EXPRESSION,
+            build.DataFrame.GENE_MODEL,
+            build.DataFrame.GENE_SQL,
+            build.DataFrame.PRIMARY_ALIQUOT,
         )
     )
     assert isinstance(
