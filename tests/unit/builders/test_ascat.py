@@ -3,7 +3,6 @@ import itertools
 from collections.abc import Iterable, Mapping
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -201,6 +200,18 @@ class TestAscatBuilder:
         assert ascat_df.count() == 0
         assert ascat_df.schema == self.final_ascat_schema
 
+    def test__build__zero_ploidy_documents_removed(self) -> None:
+        ascat_documents = tuple(
+            AscatDocument(copy_number=copy_number) for copy_number in (0, 0, 0, 0, 2)
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+
+        assert ascat_df.count() == 0
+
     def test__build__gene_id_stripped(self) -> None:
         ascat_documents = (
             AscatDocument(gene_id="ENSG00000238009.9"),
@@ -275,50 +286,6 @@ class TestAscatBuilder:
         ascat_row = more_itertools.one(ascat_df.collect())
 
         assert ascat_row.cnv_change_5_category == cnv_change_5_category
-
-    @pytest.mark.parametrize(
-        ("copy_numbers", "cnv_change_5_categories"),
-        (
-            pytest.param(
-                (0, 0, 0),
-                ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
-                id="mode_equals_0",
-            ),
-            pytest.param(
-                (2, 0, 0),
-                ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
-                id="copy_number_not_0_mode_0",
-            ),
-            pytest.param(
-                (0, 0, 5, 5),
-                ("Homozygous Deletion", "Homozygous Deletion"),
-                id="copy_number_0_multiple_mode",
-            ),
-        ),
-    )
-    def test__build__copy_number_maps_to_cnv_change_5_category_edge_cases(
-        self, copy_numbers: tuple[int, ...], cnv_change_5_categories: tuple[str, ...]
-    ) -> None:
-        """These tests are designed to document how cnv_change_5_cateogry behaves
-        when ploidy values are 0. This is not possible in real-life, but we want to
-        document how the code behaves for these edge cases.
-        """
-        ascat_documents = tuple(
-            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
-        )
-
-        inputs = self._arrange_input_dataframes()
-        builder = self._arrange_builder(ascat_documents)
-
-        ascat_df = builder.build(**inputs)
-        ascat_rows = ascat_df.collect()
-        actual_cnv_change_5_categories = tuple(
-            row.cnv_change_5_category for row in ascat_rows
-        )
-        assert len(actual_cnv_change_5_categories) == len(cnv_change_5_categories)
-        assert not deepdiff.DeepDiff(
-            actual_cnv_change_5_categories, cnv_change_5_categories, ignore_order=True
-        )
 
     def test__build__only_include_chr1_to_22_and_protein_coding_genes_for_ploidy(
         self,
