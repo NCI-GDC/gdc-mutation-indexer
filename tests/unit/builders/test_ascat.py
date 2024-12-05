@@ -1,4 +1,5 @@
 import dataclasses
+import itertools
 from collections.abc import Iterable, Mapping
 from unittest import mock
 
@@ -318,6 +319,50 @@ class TestAscatBuilder:
         assert not deepdiff.DeepDiff(
             actual_cnv_change_5_categories, cnv_change_5_categories, ignore_order=True
         )
+
+    def test__build__only_include_chr1_to_22_and_protein_coding_genes_for_ploidy(
+        self,
+    ) -> None:
+        # Only these genes should be used to calculate the cnv change. With a mode value
+        # of 2, the only cnv generated should be a loss.
+        valid_genes = (
+            AscatDocument(gene_id="chr4", copy_number=2),
+            AscatDocument(gene_id="chr13", copy_number=2),
+            AscatDocument(gene_id="chr21", copy_number=1),
+        )
+        # These genes should be filtered before calculation.
+        non_protein_coding_genes = itertools.repeat(
+            AscatDocument(gene_id="non-protein-coding", copy_number=0), 3
+        )
+        x_genes = itertools.repeat(AscatDocument(gene_id="X", copy_number=0), 3)
+        y_genes = itertools.repeat(AscatDocument(gene_id="Y", copy_number=0), 3)
+        ascat_data = (
+            *valid_genes,
+            *non_protein_coding_genes,
+            *x_genes,
+            *y_genes,
+        )
+
+        inputs = self._arrange_input_dataframes(
+            gene_model=(
+                models.GeneModel(
+                    _gene_id="non-protein_coding", biotype="non-protein-coding"
+                ),
+                models.GeneModel(_gene_id="X", chromosome="X"),
+                models.GeneModel(_gene_id="Y", chromosome="Y"),
+                *(
+                    models.GeneModel(_gene_id=f"chr{i}", chromosome=str(i))
+                    for i in range(1, 23)
+                ),
+            )
+        )
+        builder = self._arrange_builder(ascat_documents=ascat_data)
+
+        ascat_df = builder.build(**inputs)
+        assert ascat_df.count() == 1
+
+        ascat_row = ascat_df.first()
+        assert ascat_row and ascat_row.cnv_change_5_category == "Loss"
 
     @pytest.mark.parametrize(
         "copy_numbers",

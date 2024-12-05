@@ -175,12 +175,9 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .alias("cnv_change_5_category")
     )
 
-    return document_df.select(
-        cnv_change,
-        cnv_change_5_category,
-        "file_id",
-        "gene_id",
-    ).na.drop(subset="cnv_change_5_category")
+    return document_df.select("*", cnv_change, cnv_change_5_category).na.drop(
+        subset="cnv_change_5_category"
+    )
 
 
 class ASCATInputs(TypedDict):
@@ -224,7 +221,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             )
         )
 
-        return _add_cnv_change(document_df)
+        return document_df
 
     def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
         """Builds the ASCAT dataframe
@@ -306,9 +303,11 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         document_df = self._build_document_df(
             r.file_id for r in ascat_metadata_df.select("file_id").toLocalIterator()
         )
-        ascat_df = document_df.join(ascat_metadata_df, on=["file_id"]).join(
-            gene_model_df, on=["gene_id"]
-        )
+        # Joining w/ gene model removes X/Y chromosomes & non-protein coding genes.
+        # This should be done before calculating the cnv change value.
+        ascat_df = document_df.join(gene_model_df, on="gene_id", how="inner")
+        ascat_df = _add_cnv_change(ascat_df)
+        ascat_df = ascat_df.join(ascat_metadata_df, on="file_id", how="inner")
         ascat_df = utils.add_canonical_transcript_lengths(ascat_df)
         ascat_df = _add_uuids(ascat_df)
 
