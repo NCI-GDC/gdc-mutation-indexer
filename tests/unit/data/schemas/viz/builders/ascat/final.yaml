@@ -38,6 +38,11 @@ fields:
     name: cnv_id
   - <<: *string_field
     name: consequence_id
+  - &integer_field
+    metadata: {}
+    name: copy_number
+    nullable: true
+    type: integer
   - metadata: {}
     name: cytoband
     nullable: true
@@ -96,6 +101,8 @@ fields:
       containsNull: true
       elementType: string
       type: array
+  - <<: *integer_field
+    name: sample_ploidy_integer
   - <<: *string_field
     name: src_file_id
   - <<: *long_field
