@@ -213,7 +213,11 @@ class TestAscatBuilder:
         assert ascat_df.count() == 0
 
     @pytest.mark.parametrize(
-        ("copy_numbers", "expected"), (((2, 2, 3), 2), ((2, 2, 5, 5, 1), 4))
+        ("copy_numbers", "expected"),
+        (
+            pytest.param((2, 2, 3), 2, id="single-mode-value"),
+            pytest.param((2, 2, 5, 5, 1), 4, id="multiple-mode-values"),
+        ),
     )
     def test__build__mean_sample_ploidy_added(
         self, copy_numbers: Iterable[int], expected: int
