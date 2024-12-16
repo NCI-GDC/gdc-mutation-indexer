@@ -72,8 +72,15 @@ fields:
                     containsNull: false
                     elementType:
                       fields:
+                        - &integer_field
+                          metadata: {}
+                          name: copy_number
+                          nullable: true
+                          type: integer
                         - <<: *string_field
                           name: observation_id
+                        - <<: *integer_field
+                          name: sample_ploidy_integer
                         - <<: *string_field
                           name: src_file_id
                         - metadata: {}

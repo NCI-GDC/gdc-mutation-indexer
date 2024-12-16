@@ -12,7 +12,9 @@ class VariantCalling:
 
 @dataclasses.dataclass(frozen=True)
 class Observation:
+    copy_number: Optional[int] = 3
     observation_id: Optional[str] = "obs-1"
+    sample_ploidy_integer: Optional[int] = 2
     variant_calling: VariantCalling = VariantCalling()
     variant_status: Optional[str] = "Tumor Only"
 
@@ -32,7 +34,9 @@ def assert_observation_translated(
     result_observation = more_itertools.one(result_cnv.observation)
     observation = more_itertools.one(observations.observation)
 
+    assert result_observation.copy_number == observation.copy_number
     assert result_observation.observation_id == observation.observation_id
+    assert result_observation.sample_ploidy_integer == observation.sample_ploidy_integer
     assert result_observation.variant_status == observation.variant_status
     assert (
         result_observation.variant_calling.variant_caller
