@@ -29,6 +29,7 @@ class ASCAT:
     cnv_change: Optional[str] = "Gain"
     cnv_change_5_category: Optional[str] = "Gain"
     consequence_id: Optional[str] = "377b6f05-34e8-51d0-81a6-3a8781032253"
+    copy_number: Optional[int] = 5
     cytoband: Optional[tuple[str, ...]] = ("1p36.33",)
     description: Optional[
         str
@@ -53,6 +54,7 @@ class ASCAT:
     observation_id: Optional[str] = "b1627f65-d28b-568c-9f76-1a24bd4fe82d"
     occurrence_id: Optional[str] = "2d7b55e0-9122-5a30-9a42-81c06fe5183f"
     omim_gene: Optional[tuple[str, ...]] = ()
+    sample_ploidy_integer: Optional[int] = 2
     src_file_id: str = "file-0"
     start_position: Optional[int] = 11869
     symbol: Optional[str] = "DDX11L1"
@@ -360,7 +362,9 @@ class CNVObservation:
         class VariantCalling:
             variant_caller: Optional[str] = "ASCAT"
 
+        copy_number: Optional[int] = 5
         observation_id: Optional[str] = "obs-0"
+        sample_ploidy_integer: Optional[int] = 2
         src_file_id: Optional[str] = "file-0"
         variant_calling: Optional[VariantCalling] = VariantCalling()
         variant_status: Optional[str] = "Tumor Only"
