@@ -205,7 +205,9 @@ class TestObservationBuilder:
         assert result_row.cnv_id == ascat.cnv_id
         assert result_row.case_id == ascat.case_id
         assert result_row.occurrence_id == ascat.occurrence_id
+        assert result_observation.copy_number == ascat.copy_number
         assert result_observation.observation_id == ascat.observation_id
+        assert result_observation.sample_ploidy_integer == ascat.sample_ploidy_integer
         assert result_observation.variant_calling.variant_caller == ascat.variant_caller
         assert result_observation.variant_status == ascat.variant_status
 

@@ -2610,8 +2610,12 @@ fields:
                       containsNull: false
                       elementType:
                         fields:
+                          - <<: *integer_field
+                            name: copy_number
                           - <<: *string_field
                             name: observation_id
+                          - <<: *integer_field
+                            name: sample_ploidy_integer
                           - metadata: {}
                             name: variant_calling
                             nullable: false

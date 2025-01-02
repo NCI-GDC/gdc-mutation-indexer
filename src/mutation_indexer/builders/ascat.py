@@ -101,65 +101,108 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
     return ascat_df.select("*", "uuids.*")
 
 
-def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
-    """
-    Adds the cnv_change value to the data frame. This is calculated based on the
-    modal values in each file. Any value less then the smallest modal value is a
-    Loss while any value greater than the maximum mode is considered a Gain. All
-    other values are neutral and are dropped from the data.
+def _add_ploidy_values(document_df: sql.DataFrame) -> sql.DataFrame:
+    """Add the ploidy data to the given data frame.
 
-    Adds the cnv_change_5_category to the data frame. This is calculated based on
-    the following criteria:
-        - "Amplification": copy_number >= upper_ploidy_number * 2
-        - "Gain": copy_number > upper_poidy_number
-        - "Homozygous Deletion": copy_number == 0
-        - "Loss": copy_number < lower_ploidy_number
-    All other values are neutral and are dropped from the data.
+    NOTE: Files with an lower/upper ploidy value of 0 are considered to be contaminated
+    data and are removed from the document when calculating these ploidy values.
 
-    There is a scenario where the ploidy will be 0. This is not possible in real-life,
-    but we want to document how we programmatically determine a category for this edge
-    case. In the event upper_ploidy = 0, we will classify it as "Amplification".
+    STEPS:
+        1) A ploidy data frame is created by aggregating the rows by file_id and
+        copy_number. This aggregation takes the count of each such group thus giving the
+        frequency of a given copy_number in a file.
 
-    METHOD:
-    This is calculated by grouping all copy_numbers in a file and getting a count
-    of their occurances/frequency. Then the counts are grouped again by file; in
-    this aggregation, the min and max copy number are taken as the upper and
-    lower ploidy for a given count/frequency.
+        2a) A lower and upper ploidy are added wherein each of these represent the min
+        and max copy_number of a subset of rows with the same file_id and frequency.
+        Because this is not necessarily the values with the highest count/frequency for
+        the file, these are not guaranteed to be the true ploidy/modal values.
 
-    Then the maximum count/frequency is calculated from aggregating the original
-    counts based on file id and taking the max count. This data frame now has the
-    count of the modal value(s).
+        2b) Add row numbers to each subset of rows based on file_id ordered by the count
+        of the copy_number occurrences in the file calculated in step 1. This should
+        result in the group with the highest count or frequency with a row number of 1.
 
-    Using the above two data frames the modal count is then inner joined into the
-    ploidy data frame to give us the ploidy values for a given file. This is then
-    joined into the original data frame by file id to give every row a
-    upper_ploidy_number and lower_ploidy_number which is used to select the
-    cnv_change and cnv_change_5_category columns in the returned data frame.
+        3) Using the fact that the highest frequency value is associated with the row
+        number of 1, the data frame is filtered to only those with said value. Thus the
+        data frame is left with only the true modal values for each file.
 
     Args:
-        document_df: the data frame of ascat document data
+        document_df: The data frame containing the data from the cnv document. This must
+            include the file_id and copy_number columns.
 
     Returns:
-        the bare info needed from the ascat document including cnv_change
-
-        data {}
-        |---cnv_change
-        |---cnv_change_5_category
-        |---file_id
-        +---gene_id
+        A copy of the given document data frame with the upper_ploidy_number and
+        lower_ploidy_number columns added.
     """
     ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
         F.count("*").alias("count")
     )
     ploidy_window = sql.Window().partitionBy("file_id", "count")
-    mode_window = sql.Window().partitionBy("file_id").orderBy(F.col("count").desc())
-    ploidy_df = ploidy_df.select(
-        "file_id",
-        F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
-        F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
-        F.row_number().over(mode_window).alias("row_number"),
-    ).where(F.col("row_number") == 1)
-    document_df = document_df.join(ploidy_df, on="file_id")
+    mode_window = (
+        sql.Window().partitionBy("file_id").orderBy(F.col("count").desc_nulls_last())
+    )
+    ploidy_df = (
+        ploidy_df.select(
+            "file_id",
+            F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
+            F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
+            F.row_number().over(mode_window).alias("row_number"),
+        )
+        .where(
+            (F.col("row_number") == 1)
+            & (F.col("lower_ploidy_number") != 0)
+            & (F.col("upper_ploidy_number") != 0)
+        )
+        .select("file_id", "upper_ploidy_number", "lower_ploidy_number")
+    )
+
+    return document_df.join(ploidy_df, on="file_id", how="inner")
+
+
+def _add_cnv_change_data(document_df: sql.DataFrame) -> sql.DataFrame:
+    """
+    Adds the cnv change related values to the data frame.
+
+    Added columns:
+        copy_number: This value is the raw copy_number value contained in the file for a
+            given gene. It is used to calculate the cnv_change & cnv_change_5_category.
+
+        ploidy_integer: This value is calculated from the lower and upper ploidy value
+            of each file. These values are the minimum/maximum modal copy_number values
+            respectively within each file. In most cases, this will be a single value
+            (2), but in cases where the upper and lower are distinct, the ceiling value
+            of the mean is used.
+
+            NOTE: Files with a 0 upper or lower ploidy value are considered contaminated
+            data and are removed from indexing. Thus ploidy values are always greater
+            than 0.
+
+        cnv_change: This value is based on the copy_number for a gene and its file's
+            ploidy values. It is calculated as follows:
+                - "Loss": copy_number is less than the lower ploidy.
+                - None: copy_number is (inclusively) between the upper and lower ploidy.
+                - "Gain": copy_number is greater than the upper ploidy.
+
+        cnv_change_5_category: This value is based on the copy_number for a gene and its
+            file's ploidy values. It is calculated as follows:
+                - "Homozygous Deletion": copy_number equal to 0
+                - "Loss": copy_number is less than the lower ploidy value.
+                - None: copy_number is (inclusively) between the upper and lower ploidy.
+                - "Gain": copy_number greater than the upper ploidy but less than double
+                    the upper ploidy
+                - "Amplification": copy_number is greater than or equal to double the
+                    upper ploidy.
+
+            NOTE: All cnv_change_5_category values of None, i.e. gene with no change,
+            are not indexed and thus removed from the data.
+
+    Args:
+        document_df: The data frame containing the copy number data. This must include
+            the file_id and copy_number columns
+
+    Returns:
+        A copy of the given data frame with the above columns added.
+    """
+    document_df = _add_ploidy_values(document_df)
     cnv_change = (
         F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
         .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
@@ -174,12 +217,13 @@ def _add_cnv_change(document_df: sql.DataFrame) -> sql.DataFrame:
         .otherwise(None)
         .alias("cnv_change_5_category")
     )
+    mean_ploidy = (F.col("upper_ploidy_number") + F.col("lower_ploidy_number")) / 2
 
     return document_df.select(
+        "*",
         cnv_change,
         cnv_change_5_category,
-        "file_id",
-        "gene_id",
+        F.ceil(mean_ploidy).cast("integer").alias("sample_ploidy_integer"),
     ).na.drop(subset="cnv_change_5_category")
 
 
@@ -224,7 +268,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             )
         )
 
-        return _add_cnv_change(document_df)
+        return document_df
 
     def _build_from_scratch(self, input_dfs: ASCATInputs) -> sql.DataFrame:
         """Builds the ASCAT dataframe
@@ -306,9 +350,11 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
         document_df = self._build_document_df(
             r.file_id for r in ascat_metadata_df.select("file_id").toLocalIterator()
         )
-        ascat_df = document_df.join(ascat_metadata_df, on=["file_id"]).join(
-            gene_model_df, on=["gene_id"]
-        )
+        # Joining w/ gene model removes X/Y chromosomes & non-protein coding genes.
+        # This should be done before calculating the cnv change value.
+        ascat_df = document_df.join(gene_model_df, on="gene_id", how="inner")
+        ascat_df = _add_cnv_change_data(ascat_df)
+        ascat_df = ascat_df.join(ascat_metadata_df, on="file_id", how="inner")
         ascat_df = utils.add_canonical_transcript_lengths(ascat_df)
         ascat_df = _add_uuids(ascat_df)
 
@@ -326,6 +372,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "cnv_change_5_category",
             "cnv_id",
             "consequence_id",
+            "copy_number",
             "cytoband",
             "description",
             "end_position",
@@ -343,6 +390,7 @@ class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
             "observation_id",
             "occurrence_id",
             "omim_gene",
+            "sample_ploidy_integer",
             F.col("file_id").alias("src_file_id"),
             "start_position",
             "symbol",

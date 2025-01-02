@@ -64,7 +64,9 @@ def assert_consequence_transformed(row: sql.Row, ascat: models.ASCAT) -> None:
 def assert_observation_transformed(occurrence: sql.Row, ascat: models.ASCAT) -> None:
     observation = more_itertools.one(occurrence.case.observation)
 
+    assert observation.copy_number == ascat.copy_number
     assert observation.observation_id == ascat.observation_id
+    assert observation.sample_ploidy_integer == ascat.sample_ploidy_integer
     assert observation.src_file_id == ascat.src_file_id
     assert observation.variant_calling.variant_caller == ascat.variant_caller
     assert observation.variant_status == ascat.variant_status
