@@ -6,44 +6,44 @@
 #
 --index-url https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 
-aiohappyeyeballs==2.4.3
+aiohappyeyeballs==2.4.4
     # via
     #   -c requirements.txt
     #   aiohttp
-aiohttp==3.10.10
+aiohttp==3.11.10
     # via
     #   -c requirements.txt
     #   elasticsearch
-aiosignal==1.3.1
+aiosignal==1.3.2
     # via
     #   -c requirements.txt
     #   aiohttp
-async-timeout==4.0.3
+async-timeout==5.0.1
     # via
     #   -c requirements.txt
     #   aiohttp
-attrs==24.2.0
+attrs==24.3.0
     # via
     #   -c requirements.txt
     #   aiohttp
-boto3==1.35.54
+boto3==1.35.81
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-boto3-stubs==1.35.54
+boto3-stubs==1.35.81
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-botocore==1.35.54
+botocore==1.35.81
     # via
     #   -c requirements.txt
     #   boto3
     #   s3transfer
-botocore-stubs==1.35.54
+botocore-stubs==1.35.81
     # via
     #   -c requirements.txt
     #   boto3-stubs
-certifi==2024.8.30
+certifi==2024.12.14
     # via
     #   -c requirements.txt
     #   elasticsearch
@@ -70,7 +70,7 @@ frozenlist==1.5.0
     #   -c requirements.txt
     #   aiohttp
     #   aiosignal
-gdcmodels==5.5
+gdcmodels==5.8
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
@@ -100,7 +100,7 @@ jmespath==1.0.1
     #   botocore
 log-symbols==0.0.14
     # via halo
-marshmallow==3.23.0
+marshmallow==3.23.1
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
@@ -131,7 +131,7 @@ mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-re
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-mypy-boto3-s3==1.35.46
+mypy-boto3-s3==1.35.76.post1
     # via
     #   -c requirements.txt
     #   boto3-stubs
@@ -139,19 +139,24 @@ mypy-extensions==1.0.0
     # via
     #   -c requirements.txt
     #   typing-inspect
+numpy==2.0.2
+    # via
+    #   -c requirements.txt
+    #   gdc-mutation-indexer (setup.py)
 ordered-set==4.1.0
     # via
     #   -c requirements.txt
     #   deepdiff
-packaging==24.1
+packaging==24.2
     # via
     #   -c requirements.txt
     #   marshmallow
-pex==2.14.0
+pex==2.27.1
     # via gdc-mutation-indexer (setup.py)
-propcache==0.2.0
+propcache==0.2.1
     # via
     #   -c requirements.txt
+    #   aiohttp
     #   yarl
 py4j==0.10.9.5
     # via
@@ -177,32 +182,32 @@ requests==2.32.3
     # via
     #   -c requirements.txt
     #   indexclient
-s3transfer==0.10.3
+s3transfer==0.10.4
     # via
     #   -c requirements.txt
     #   boto3
-six==1.16.0
+six==1.17.0
     # via
     #   -c requirements.txt
     #   halo
     #   python-dateutil
 spinners==0.0.24
     # via halo
-termcolor==2.4.0
+termcolor==2.5.0
     # via halo
 toml==0.10.2
     # via
     #   -c requirements.txt
     #   gdc-mutation-indexer (setup.py)
-typeguard==4.4.0
+typeguard==4.4.1
     # via
     #   -c requirements.txt
     #   marshmallow-dataclass
-types-awscrt==0.23.0
+types-awscrt==0.23.4
     # via
     #   -c requirements.txt
     #   botocore-stubs
-types-s3transfer==0.10.3
+types-s3transfer==0.10.4
     # via
     #   -c requirements.txt
     #   boto3-stubs
@@ -227,13 +232,13 @@ urllib3==1.26.20
     #   botocore
     #   elasticsearch
     #   requests
-wheel==0.43.0
+wheel==0.45.1
     # via gdc-mutation-indexer (setup.py)
-yarl==1.17.0
+yarl==1.18.3
     # via
     #   -c requirements.txt
     #   aiohttp
-zipp==3.20.2
+zipp==3.21.0
     # via
     #   -c requirements.txt
     #   importlib-metadata

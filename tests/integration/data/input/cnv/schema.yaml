@@ -347,4 +347,12 @@ fields:
     name: src_file_id
     type: string
     nullable: true
+  - metadata: {}
+    name: copy_number
+    type: integer
+    nullable: true
+  - metadata: {}
+    name: sample_ploidy_integer
+    type: integer
+    nullable: true
 type: struct

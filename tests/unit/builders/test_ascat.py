@@ -1,8 +1,8 @@
 import dataclasses
+import itertools
 from collections.abc import Iterable, Mapping
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -17,7 +17,7 @@ from tests.unit.data.models import viz as models
 
 
 @dataclasses.dataclass(frozen=True)
-class AscatDocument:
+class CNVDatum:
     did: str = "file-0"
     gene_id: str = "ENSG00000238009"
     gene_name: str = "RP11-34P13.7"
@@ -37,10 +37,10 @@ class Metadata:
     workflow_type: str = "ASCAT3"
 
 
-DEFAULT_ASCAT_DOCUMENTS = (
-    AscatDocument(),
-    AscatDocument(copy_number=30),
-    AscatDocument(copy_number=30),
+DEFAULT_CNV_DATA = (
+    CNVDatum(),
+    CNVDatum(copy_number=30),
+    CNVDatum(copy_number=30),
 )
 
 
@@ -89,17 +89,15 @@ class TestAscatBuilder:
         self.final_ascat_schema = final_ascat_schema
 
     def _arrange_doc_dataframe_util(
-        self, ascat_document_data: tuple[AscatDocument, ...]
+        self, cnv_data: tuple[CNVDatum, ...]
     ) -> mock.MagicMock:
-        ascat_document_df = self.create_dataframe(
-            ascat_document_data, self.input_ascat_schema
-        )
+        ascat_document_df = self.create_dataframe(cnv_data, self.input_ascat_schema)
 
         return _arrange_dataframe_util(ascat_document_df)
 
     def _arrange_builder(
         self,
-        ascat_documents: tuple[AscatDocument, ...] = DEFAULT_ASCAT_DOCUMENTS,
+        cnv_data: tuple[CNVDatum, ...] = DEFAULT_CNV_DATA,
     ) -> builders.ASCATBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         config = mock.MagicMock(
@@ -111,7 +109,7 @@ class TestAscatBuilder:
             acl=(),
         )
         mock_sql_context = mock.MagicMock()
-        doc_dataframe_util = self._arrange_doc_dataframe_util(ascat_documents)
+        doc_dataframe_util = self._arrange_doc_dataframe_util(cnv_data)
 
         return builders.ASCATBuilder(config, mock_sql_context, doc_dataframe_util)
 
@@ -140,9 +138,10 @@ class TestAscatBuilder:
     def test__build__input_data_transformed(self) -> None:
         metadata = Metadata()
         gene_model = models.GeneModel()
+        ascat = DEFAULT_CNV_DATA[0]
 
         inputs = self._arrange_input_dataframes((metadata,))
-        builder = self._arrange_builder()
+        builder = self._arrange_builder(cnv_data=DEFAULT_CNV_DATA)
 
         ascat_df = builder.build(**inputs)
         ascat_row = more_itertools.one(ascat_df.collect())
@@ -150,6 +149,7 @@ class TestAscatBuilder:
         assert ascat_row.aliquot_id == metadata.aliquot_id
         assert ascat_row.biotype == gene_model.biotype
         assert ascat_row.case_id == metadata.case_id
+        assert ascat_row.copy_number == ascat.copy_number
         assert ascat_row.end_position == gene_model.gene_end
         assert ascat_row.gene_chromosome == gene_model.chromosome
         assert ascat_row.src_file_id == metadata.file_id
@@ -162,21 +162,21 @@ class TestAscatBuilder:
         (
             (
                 (Metadata(file_id="file-1"),),
-                DEFAULT_ASCAT_DOCUMENTS,
+                DEFAULT_CNV_DATA,
                 (models.GeneModel(),),
             ),
             (
                 (Metadata(),),
                 (
-                    AscatDocument(did="file-1"),
-                    AscatDocument(did="file-1", copy_number=30),
-                    AscatDocument(did="file-1", copy_number=30),
+                    CNVDatum(did="file-1"),
+                    CNVDatum(did="file-1", copy_number=30),
+                    CNVDatum(did="file-1", copy_number=30),
                 ),
                 (models.GeneModel(),),
             ),
             (
                 (Metadata(),),
-                DEFAULT_ASCAT_DOCUMENTS,
+                DEFAULT_CNV_DATA,
                 (models.GeneModel(_gene_id="ENSG00000238008"),),
             ),
         ),
@@ -189,7 +189,7 @@ class TestAscatBuilder:
     def test__build__failed_joins(
         self,
         metadata: tuple[Metadata, ...],
-        ascat_documents: tuple[AscatDocument, ...],
+        ascat_documents: tuple[CNVDatum, ...],
         gene_model: tuple[models.GeneModel, ...],
     ) -> None:
         inputs = self._arrange_input_dataframes(metadata, gene_model)
@@ -200,11 +200,45 @@ class TestAscatBuilder:
         assert ascat_df.count() == 0
         assert ascat_df.schema == self.final_ascat_schema
 
+    def test__build__zero_ploidy_documents_removed(self) -> None:
+        ascat_documents = tuple(
+            CNVDatum(copy_number=copy_number) for copy_number in (0, 0, 0, 0, 2)
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+
+        assert ascat_df.count() == 0
+
+    @pytest.mark.parametrize(
+        ("copy_numbers", "expected"),
+        (
+            pytest.param((2, 2, 3), 2, id="single-mode-value"),
+            pytest.param((2, 2, 5, 5, 1), 4, id="multiple-mode-values"),
+        ),
+    )
+    def test__build__mean_sample_ploidy_added(
+        self, copy_numbers: Iterable[int], expected: int
+    ) -> None:
+        ascat_documents = tuple(
+            CNVDatum(copy_number=copy_number) for copy_number in copy_numbers
+        )
+
+        inputs = self._arrange_input_dataframes()
+        builder = self._arrange_builder(ascat_documents)
+
+        ascat_df = builder.build(**inputs)
+        ascat_row = more_itertools.one(ascat_df.collect())
+
+        assert ascat_row.sample_ploidy_integer == expected
+
     def test__build__gene_id_stripped(self) -> None:
         ascat_documents = (
-            AscatDocument(gene_id="ENSG00000238009.9"),
-            AscatDocument(copy_number=30),
-            AscatDocument(copy_number=30),
+            CNVDatum(gene_id="ENSG00000238009.9"),
+            CNVDatum(copy_number=30),
+            CNVDatum(copy_number=30),
         )
 
         inputs = self._arrange_input_dataframes()
@@ -230,7 +264,7 @@ class TestAscatBuilder:
         self, copy_numbers: tuple[int, ...], cnv_change: str
     ) -> None:
         ascat_documents = tuple(
-            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+            CNVDatum(copy_number=copy_number) for copy_number in copy_numbers
         )
 
         inputs = self._arrange_input_dataframes()
@@ -264,7 +298,7 @@ class TestAscatBuilder:
         self, copy_numbers: tuple[int, ...], cnv_change_5_category: str
     ) -> None:
         ascat_documents = tuple(
-            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+            CNVDatum(copy_number=copy_number) for copy_number in copy_numbers
         )
 
         inputs = self._arrange_input_dataframes()
@@ -275,49 +309,49 @@ class TestAscatBuilder:
 
         assert ascat_row.cnv_change_5_category == cnv_change_5_category
 
-    @pytest.mark.parametrize(
-        ("copy_numbers", "cnv_change_5_categories"),
-        (
-            pytest.param(
-                (0, 0, 0),
-                ("Homozygous Deletion", "Homozygous Deletion", "Homozygous Deletion"),
-                id="mode_equals_0",
-            ),
-            pytest.param(
-                (2, 0, 0),
-                ("Homozygous Deletion", "Homozygous Deletion", "Amplification"),
-                id="copy_number_not_0_mode_0",
-            ),
-            pytest.param(
-                (0, 0, 5, 5),
-                ("Homozygous Deletion", "Homozygous Deletion"),
-                id="copy_number_0_multiple_mode",
-            ),
-        ),
-    )
-    def test__build__copy_number_maps_to_cnv_change_5_category_edge_cases(
-        self, copy_numbers: tuple[int, ...], cnv_change_5_categories: tuple[str, ...]
+    def test__build__only_include_chr1_to_22_and_protein_coding_genes_for_ploidy(
+        self,
     ) -> None:
-        """These tests are designed to document how cnv_change_5_cateogry behaves
-        when ploidy values are 0. This is not possible in real-life, but we want to
-        document how the code behaves for these edge cases.
-        """
-        ascat_documents = tuple(
-            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+        # Only these genes should be used to calculate the cnv change. With a mode value
+        # of 2, the only cnv generated should be a loss.
+        valid_genes = (
+            CNVDatum(gene_id="chr4", copy_number=2),
+            CNVDatum(gene_id="chr13", copy_number=2),
+            CNVDatum(gene_id="chr21", copy_number=1),
+        )
+        # These genes should be filtered before calculation.
+        non_protein_coding_genes = itertools.repeat(
+            CNVDatum(gene_id="non-protein-coding", copy_number=0), 3
+        )
+        x_genes = itertools.repeat(CNVDatum(gene_id="X", copy_number=0), 3)
+        y_genes = itertools.repeat(CNVDatum(gene_id="Y", copy_number=0), 3)
+        ascat_data = (
+            *valid_genes,
+            *non_protein_coding_genes,
+            *x_genes,
+            *y_genes,
         )
 
-        inputs = self._arrange_input_dataframes()
-        builder = self._arrange_builder(ascat_documents)
+        inputs = self._arrange_input_dataframes(
+            gene_model=(
+                models.GeneModel(
+                    _gene_id="non-protein_coding", biotype="non-protein-coding"
+                ),
+                models.GeneModel(_gene_id="X", chromosome="X"),
+                models.GeneModel(_gene_id="Y", chromosome="Y"),
+                *(
+                    models.GeneModel(_gene_id=f"chr{i}", chromosome=str(i))
+                    for i in range(1, 23)
+                ),
+            )
+        )
+        builder = self._arrange_builder(cnv_data=ascat_data)
 
         ascat_df = builder.build(**inputs)
-        ascat_rows = ascat_df.collect()
-        actual_cnv_change_5_categories = tuple(
-            row.cnv_change_5_category for row in ascat_rows
-        )
-        assert len(actual_cnv_change_5_categories) == len(cnv_change_5_categories)
-        assert not deepdiff.DeepDiff(
-            actual_cnv_change_5_categories, cnv_change_5_categories, ignore_order=True
-        )
+        assert ascat_df.count() == 1
+
+        ascat_row = ascat_df.first()
+        assert ascat_row and ascat_row.cnv_change_5_category == "Loss"
 
     @pytest.mark.parametrize(
         "copy_numbers",
@@ -327,7 +361,7 @@ class TestAscatBuilder:
         self, copy_numbers: Iterable[int]
     ) -> None:
         ascat_documents = tuple(
-            AscatDocument(copy_number=copy_number) for copy_number in copy_numbers
+            CNVDatum(copy_number=copy_number) for copy_number in copy_numbers
         )
 
         inputs = self._arrange_input_dataframes()
@@ -438,25 +472,25 @@ class TestAscatBuilder:
         (
             (
                 models.GeneModel(biotype="transcribed_unprocessed_pseudogene"),
-                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+                (CNVDatum(copy_number=30), CNVDatum(), CNVDatum()),
             ),
             (
                 models.GeneModel(chromosome="X"),
-                (AscatDocument(copy_number=30), AscatDocument(), AscatDocument()),
+                (CNVDatum(copy_number=30), CNVDatum(), CNVDatum()),
             ),
             (
                 models.GeneModel(),
                 (
-                    AscatDocument(copy_number=30, chromosome="X"),
-                    AscatDocument(),
-                    AscatDocument(),
+                    CNVDatum(copy_number=30, chromosome="X"),
+                    CNVDatum(),
+                    CNVDatum(),
                 ),
             ),
         ),
         ids=("non_protein_coding", "gm_x_chromosome", "ascat_x_chromosome"),
     )
     def test__build__filter_gene_model(
-        self, gene_model: models.GeneModel, ascat_documents: tuple[AscatDocument, ...]
+        self, gene_model: models.GeneModel, ascat_documents: tuple[CNVDatum, ...]
     ) -> None:
         inputs = self._arrange_input_dataframes(gene_model=(gene_model,))
         builder = self._arrange_builder(ascat_documents)
