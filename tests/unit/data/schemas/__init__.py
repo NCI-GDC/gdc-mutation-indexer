@@ -71,6 +71,11 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
+        class SegmentCnvMetadata:
+            FILE: Schema
+            FINAL: Schema
+
+        @_init_schemas
         class Case:
             FINAL: Schema
             RAW: Schema
