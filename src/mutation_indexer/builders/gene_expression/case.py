@@ -89,6 +89,14 @@ class CaseSQLBuilder(bases.SQLiteBuilder[gene_expression.Builder, CaseSQLInputs]
         spark_session: sql.SparkSession,
         database: sqlite.SQLiteDatabase,
     ) -> None:
+        """A builder for constructing and writing the case data for the GE SQLite DB.
+
+        Args:
+            config: The configuration for running this builder provided at runtime.
+            spark_session: The spark session for the current run of the mutation
+                indexer.
+            database: The SQLite database to which the final data should be written.
+        """
         super().__init__(
             config,
             spark_session,
@@ -106,6 +114,17 @@ class CaseSQLBuilder(bases.SQLiteBuilder[gene_expression.Builder, CaseSQLInputs]
         return "INSERT INTO cases (case_id, submitter_id) VALUES (?, ?)"
 
     def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
+        """Builds a dataframe representing the case data for the GE database.
+
+        Args:
+            input_dfs: The required input data frames for building the data. Dee the
+                CaseInputs class for more details.
+
+        Returns:
+            case_sql_df:
+            |--- case_id
+            +--- submitter_id
+        """
         return (
             input_dfs["expression_value_df"]
             .select("case_id", "submitter_id")
