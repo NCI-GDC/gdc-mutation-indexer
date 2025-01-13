@@ -20,6 +20,7 @@ from tests.unit.data import schemas
 @dataclasses.dataclass
 class Analysis:
     workflow_type: str = "AscatNGS"
+    analysis_id: str = "analysis-0"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -160,7 +161,9 @@ class TestASCATMetadataBuilder:
     def test__build__single_row(self) -> None:
         file = File(
             file_id="file-0",
-            analysis=Analysis(workflow_type=ascat_metadata.ABSOLUTE),
+            analysis=Analysis(
+                workflow_type=ascat_metadata.ABSOLUTE, analysis_id="analysis-0"
+            ),
             cases=(
                 Case(
                     case_id="case-0",
@@ -198,6 +201,7 @@ class TestASCATMetadataBuilder:
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-0"
         assert result_row.workflow_type == ascat_metadata.ABSOLUTE
+        assert result_row.analysis_id == "analysis-0"
 
     @pytest.mark.parametrize(
         ("primay_sample_type", "other_sample_type"),

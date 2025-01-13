@@ -11,3 +11,5 @@ fields:
     name: file_id
   - <<: *string_field
     name: workflow_type
+  - <<: *string_field
+    name: analysis_id
