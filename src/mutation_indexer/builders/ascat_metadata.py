@@ -40,7 +40,7 @@ class ASCATMetadataBuilder(
             spark_session,
             es_dataframe_util,
             es_rdd_util,
-            additional_selections=("workflow_type",),
+            additional_selections=("workflow_type", "analysis_id"),
             input_type=ASCATMetadataInputs,
             output=build.DataFrame.ASCAT_METADATA,
         )
@@ -65,7 +65,11 @@ class ASCATMetadataBuilder(
         return (
             super()
             ._get_initial_weighted_df(query, include_fields)
-            .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
+            .select(
+                "*",
+                F.col("analysis.workflow_type").alias("workflow_type"),
+                F.col("analysis.analysis_id").alias("analysis_id"),
+            )
         )
 
     def _get_filters(self) -> list[dict]:
@@ -133,5 +137,5 @@ class ASCATMetadataBuilder(
         return self._get_primary_aliquot_df(
             filters,
             entities=frozenset(("case",)),
-            include_fields=("analysis.workflow_type",),
-        ).select("aliquot_id", "case_id", "file_id", "workflow_type")
+            include_fields=("analysis.workflow_type", "analysis.analysis_id"),
+        ).select("aliquot_id", "case_id", "file_id", "workflow_type", "analysis_id")

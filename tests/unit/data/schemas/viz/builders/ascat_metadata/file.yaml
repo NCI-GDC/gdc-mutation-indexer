@@ -12,6 +12,8 @@ fields:
       fields:
         - <<: *string_field
           name: workflow_type
+        - <<: *string_field
+          name: analysis_id
       type: struct
   - <<: *string_field
     name: created_datetime
