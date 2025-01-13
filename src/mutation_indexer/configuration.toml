@@ -190,6 +190,13 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
+[builders.viz.segment_cnv_metadata]
+is_cached = false
+
+[builders.viz.segment_cnv_metadata.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.ssm_centric]
 id_field = "ssm_id"
 is_cached = true
