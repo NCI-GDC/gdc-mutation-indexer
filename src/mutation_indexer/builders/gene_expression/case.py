@@ -57,7 +57,7 @@ class CaseBuilder(bases.InputBuilder[gene_expression.CaseBuilder, CaseInputs]):
         row = more_itertools.one(df.collect())
         data = marshal.dumps(row.cases)
 
-        logger.info(f"Uploading {len(row.cases)} case ids.")
+        logger.info(f"Writing: {len(row.cases)} case ids.")
 
         with io.BytesIO(data) as b:
             self._s3_client.upload_fileobj(
