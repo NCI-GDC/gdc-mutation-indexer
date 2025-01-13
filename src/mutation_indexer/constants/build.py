@@ -7,6 +7,7 @@ class DataFrame(enum.IntEnum):
     ASCAT_METADATA = enum.auto()
     BINARY = enum.auto()
     CASE = enum.auto()
+    CASE_SQL = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()
     EXPRESSION_VALUE = enum.auto()
