@@ -5,6 +5,7 @@ https://github.com/NCI-GDC/gene-expression/blob/main/README.md#data-cache
 """
 
 import io
+import logging
 import marshal
 from typing import TypedDict
 
@@ -17,6 +18,8 @@ from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
+
+logger = logging.getLogger(__name__)
 
 
 class CaseInputs(TypedDict):
@@ -53,6 +56,8 @@ class CaseBuilder(bases.InputBuilder[gene_expression.CaseBuilder, CaseInputs]):
         df = super()._write(df)
         row = more_itertools.one(df.collect())
         data = marshal.dumps(row.cases)
+
+        logger.info(f"Uploading {len(row.cases)} case ids.")
 
         with io.BytesIO(data) as b:
             self._s3_client.upload_fileobj(
