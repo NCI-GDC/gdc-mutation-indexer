@@ -16,6 +16,7 @@ from pyspark.sql import functions as F
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 
 
 class CaseInputs(TypedDict):
@@ -74,4 +75,58 @@ class CaseBuilder(bases.InputBuilder[gene_expression.CaseBuilder, CaseInputs]):
             .groupBy(F.lit(1))
             .agg(F.sort_array(F.collect_set("case_id")).alias("cases"))
             .select("cases")
+        )
+
+
+class CaseSQLInputs(TypedDict):
+    expression_value_df: sql.DataFrame
+
+
+class CaseSQLBuilder(bases.SQLiteBuilder[gene_expression.Builder, CaseSQLInputs]):
+    def __init__(
+        self,
+        config: gene_expression.Builder,
+        spark_session: sql.SparkSession,
+        database: sqlite.SQLiteDatabase,
+    ) -> None:
+        """A builder for constructing and writing the case data for the GE SQLite DB.
+
+        Args:
+            config: The configuration for running this builder provided at runtime.
+            spark_session: The spark session for the current run of the mutation
+                indexer.
+            database: The SQLite database to which the final data should be written.
+        """
+        super().__init__(
+            config,
+            spark_session,
+            database,
+            input_type=CaseSQLInputs,
+            output=build.DataFrame.CASE_SQL,
+        )
+
+    @property
+    def _create(self) -> str:
+        return "CREATE TABLE cases(case_id TEXT PRIMARY KEY, submitter_id TEXT)"
+
+    @property
+    def _insert(self) -> str:
+        return "INSERT INTO cases (case_id, submitter_id) VALUES (?, ?)"
+
+    def _build_from_scratch(self, input_dfs: CaseInputs) -> sql.DataFrame:
+        """Builds a dataframe representing the case data for the GE database.
+
+        Args:
+            input_dfs: The required input data frames for building the data. Dee the
+                CaseInputs class for more details.
+
+        Returns:
+            case_sql_df:
+            |--- case_id
+            +--- submitter_id
+        """
+        return (
+            input_dfs["expression_value_df"]
+            .select("case_id", "submitter_id")
+            .distinct()
         )

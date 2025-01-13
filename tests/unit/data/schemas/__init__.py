@@ -183,6 +183,7 @@ class GeneExpression:
         @_init_schemas
         class Case:
             FINAL: Schema
+            SQL: Schema
 
         @_init_schemas
         class ExpressionValue:
