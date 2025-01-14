@@ -157,6 +157,8 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         "spark.ui.enabled", False
     ).config(
         "spark.driver.memory", "2g"
+    ).config(
+        "spark.driver.bindAddress", "127.0.0.1"
     ).getOrCreate() as spark_session:
         spark_session.sparkContext.setLogLevel("FATAL")
         spark_session.sql("set spark.sql.caseSensitive=true")
