@@ -41,6 +41,10 @@ class SegmentCnvMetadataBuilder(
         self._es_dataframe_util = es_dataframe_util
 
     def _get_es_query(self) -> dict:
+        # TODO: DEV-3243
+        # Change the following query to query for:
+        #   data_type == "Allele-specific Copy Number Segment"
+        # instead of the current data_type and workflow_type filters
         return {
             "query": {
                 "bool": {
