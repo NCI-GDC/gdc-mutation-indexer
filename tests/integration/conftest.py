@@ -28,29 +28,29 @@ log = logging.getLogger("tests.integration")
 log.setLevel(logging.INFO)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def dataframes_dir() -> Iterator[pathlib.Path]:
     with tempfile.TemporaryDirectory() as df_dir:
         yield pathlib.Path(df_dir)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def data_dir() -> Iterator[pathlib.Path]:
     with resources.as_file(resources.files("tests.integration")) as module:
         yield module.joinpath("data")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def input_dir(data_dir: pathlib.Path) -> pathlib.Path:
     return data_dir.joinpath("input")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def maf_urls(input_dir: pathlib.Path) -> list[str]:
     return [str(p) for p in input_dir.joinpath("maf").glob("**/*.maf")]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
     citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
     census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
@@ -73,14 +73,14 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
     return pre_load
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def default_config(
     configure_gene_model: Callable[[dict], dict]
 ) -> configuration.Configuration:
     return test_setup.load_configuration(configure_gene_model)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def es_client(
     default_config: configuration.Configuration,
 ) -> Iterator[elasticsearch.Elasticsearch]:
@@ -98,7 +98,7 @@ def es_client(
         yield es_client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def source_es_client(
     es_client: elasticsearch.Elasticsearch,
 ) -> elasticsearch.Elasticsearch:
@@ -106,14 +106,14 @@ def source_es_client(
     return es_client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def default_old_config(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
 ) -> adapter.ObsoleteConfig:
     return adapter.ObsoleteConfig(default_config, es_client, mock.MagicMock())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def setup_graph_indices(
     default_config: configuration.Configuration,
     es_client: elasticsearch.Elasticsearch,
@@ -147,7 +147,7 @@ def files_with_linked_cases(
         yield loader.load_docs(build.IndexType.FILE, input_path)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def spark_session() -> Generator[sql.SparkSession, None, None]:
     with sql.SparkSession.builder.master("local[*]").appName(
         "sqlContextFixture"
@@ -157,6 +157,8 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         "spark.ui.enabled", False
     ).config(
         "spark.driver.memory", "2g"
+    ).config(
+        "spark.driver.bindAddress", "127.0.0.1"
     ).getOrCreate() as spark_session:
         spark_session.sparkContext.setLogLevel("FATAL")
         spark_session.sql("set spark.sql.caseSensitive=true")
@@ -164,7 +166,7 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         yield spark_session
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def sqlContext(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
@@ -173,7 +175,7 @@ def sqlContext(
     return sql.SQLContext(spark_session.sparkContext)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def all_maf_cases() -> Set[str]:
     """
     Returns all case_ids expected to build and have 'ssm' in available_variation_data
@@ -203,7 +205,7 @@ def all_maf_cases() -> Set[str]:
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def all_cases(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
 ) -> Set[str]:
@@ -220,7 +222,7 @@ def all_cases(
     return {hit["_source"]["case_id"] for hit in hits}
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def dataframe_writer(
     spark_session: sql.SparkSession, dataframes_dir: pathlib.Path
 ) -> DataFrameWriter:
@@ -234,7 +236,7 @@ def dataframe_writer(
     return write
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def gene_model_df(
     default_config: configuration.Configuration,
     spark_session: sql.SparkSession,
@@ -247,7 +249,7 @@ def gene_model_df(
     return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def civic_dna_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
@@ -256,7 +258,7 @@ def civic_dna_df(
     return builder.build()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def civic_protein_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
@@ -267,7 +269,7 @@ def civic_protein_df(
     return builder.build()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def maf_df(
     default_config: configuration.Configuration,
     sqlContext: sql.SQLContext,
@@ -377,7 +379,7 @@ def maf_df(
     return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataFrame:
     """
     Builds combined cnv dataframe once. Reused throughout test suite
@@ -392,7 +394,7 @@ def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataF
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def maf_metadata_df(
     sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]
 ) -> sql.DataFrame:
@@ -401,7 +403,7 @@ def maf_metadata_df(
     ).cache()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def case_df(
     default_config: configuration.Configuration,
     spark_session: sql.SparkSession,
@@ -435,7 +437,7 @@ def case_df(
     return dataframe_writer(df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def ssm_transcript_df(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
@@ -451,7 +453,7 @@ def ssm_transcript_df(
     ).build_all_effects_cols(maf_df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
     """
     Builds a dataframe of primary aliquot selections for each of the cases in
@@ -488,19 +490,19 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
     return sqlContext.createDataFrame(primary_aliquots, schema)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def consequence_builder(
     default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
     return builders.ConsequenceBuilder(default_old_config, sqlContext)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def observation_builder() -> builders.ObservationBuilder:
     return builders.ObservationBuilder()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def centric_index_finalizer(
     default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
 ) -> CentricIndexFinalizer:
@@ -512,7 +514,7 @@ def centric_index_finalizer(
     return lambda it: functools.partial(finalizer, it)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def case_centric_df(
     request: pytest.FixtureRequest,
     default_config: configuration.Configuration,
@@ -562,7 +564,7 @@ def case_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.case_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def gene_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
@@ -595,7 +597,7 @@ def gene_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.gene_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def ssm_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
@@ -627,7 +629,7 @@ def ssm_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.ssm_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def ssm_occurrence_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
@@ -661,7 +663,7 @@ def ssm_occurrence_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.ssm_occurrence_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def cnv_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
@@ -691,7 +693,7 @@ def cnv_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.cnv_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def cnv_occurrence_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
@@ -723,7 +725,7 @@ def cnv_occurrence_centric_df(
     return dataframe_writer(cast(sql.DataFrame, builder.cnv_occurrence_centric))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def case_ssm_subtree(
     default_config: configuration.Configuration,
     default_old_config: adapter.ObsoleteConfig,
@@ -757,7 +759,7 @@ def case_ssm_subtree(
     return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def gene_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
@@ -777,7 +779,7 @@ def gene_ssm_subtree(
     return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def ssm_occurrence_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
     sqlContext: sql.SQLContext,
