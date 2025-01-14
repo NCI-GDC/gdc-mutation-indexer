@@ -312,18 +312,18 @@ def _get_ge_builders(
 
     yield from input_builders
 
-    # if build.IndexType.GENE_EXPRESSION in index_types:
-    # yield gene_expression.IndexBuilder(
-    #     config.gene_expression,
-    #     spark_session,
-    #     es_dataframe_util,
-    #     mappings_loader,
-    # )
+    if build.IndexType.GENE_EXPRESSION in index_types:
+        yield gene_expression.IndexBuilder(
+            config.gene_expression,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+        )
 
     yield from (
         gene_expression.CaseBuilder(config.case, spark_session, s3_client),
         gene_expression.CaseSQLBuilder(config.case_sql, spark_session, database),
-        # gene_expression.BinaryBuilder(config.binary, spark_session, s3_client),
+        gene_expression.BinaryBuilder(config.binary, spark_session, s3_client),
         gene_expression.GeneSQLBuilder(config.gene_sql, spark_session, database),
     )
 
