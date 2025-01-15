@@ -182,6 +182,12 @@ class TestSegmentCnvMetadataBuilder:
         return builder
 
     def test__build__joins_single_record(self) -> None:
+        """Test joining ascat_metadata dataframe and copy number segment dataframe.
+
+        Given an ascat_metadata dataframe with one gene-level copy number file
+        When SegmentCnvMetadataBuilder build is called
+        Then return a dataframe with one result and correct schema.
+        """
         file = File(
             file_id="file-1",
             analysis=Analysis(
@@ -220,6 +226,12 @@ class TestSegmentCnvMetadataBuilder:
         )
 
     def test__build__input_data_transformed(self) -> None:
+        """Test the correctness of the output segment cnv metadata dataframe.
+
+        Given an ascat_metadata dataframe with one gene-level copy number file
+        When SegmentCnvMetadataBuilder build is called
+        Then return a dataframe with the correct data returned.
+        """
         file = File(
             file_id="file-1",
             analysis=Analysis(
@@ -260,6 +272,13 @@ class TestSegmentCnvMetadataBuilder:
         assert result_row.analysis_id == "analysis-0"
 
     def test__build__failed_join(self) -> None:
+        """Test that joins do not occur if criteria is not met.
+
+        Given an ascat_metadata dataframe with one gene-level copy number file
+            and a copy numer segment file with a differing analysis_id
+        When SegmentCnvMetadataBuilder build is called
+        Then return a dataframe with no results and correct schema.
+        """
         file = File(
             file_id="file-1",
             analysis=Analysis(
@@ -298,6 +317,14 @@ class TestSegmentCnvMetadataBuilder:
         )
 
     def test__build__filter_non_matching_analysis_ids(self) -> None:
+        """Test that non-matching files are filtered out.
+
+        Given an ascat_metadata dataframe with two gene-level copy number file
+            and a copy numer segment file that matches analysis_id for only
+            one gene-level copy number file
+        When SegmentCnvMetadataBuilder build is called
+        Then return a dataframe with one result and correct data.
+        """
         file = File(
             file_id="file-1",
             analysis=Analysis(
