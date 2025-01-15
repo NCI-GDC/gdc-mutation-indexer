@@ -185,7 +185,7 @@ class TestSegmentCnvMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS.value,
+                workflow_type=build.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -223,7 +223,7 @@ class TestSegmentCnvMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS.value,
+                workflow_type=build.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -256,14 +256,14 @@ class TestSegmentCnvMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-1"
-        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS.value
+        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS
         assert result_row.analysis_id == "analysis-0"
 
     def test__build__failed_join(self) -> None:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS.value,
+                workflow_type=build.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-9999",
             ),
             cases=(
@@ -301,7 +301,7 @@ class TestSegmentCnvMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS.value,
+                workflow_type=build.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -343,5 +343,5 @@ class TestSegmentCnvMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-1"
-        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS.value
+        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS
         assert result_row.analysis_id == "analysis-0"

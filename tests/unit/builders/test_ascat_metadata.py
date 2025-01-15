@@ -10,6 +10,7 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
+from mutation_indexer.builders import ascat_metadata
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 from tests.unit import utils
@@ -161,8 +162,7 @@ class TestASCATMetadataBuilder:
         file = File(
             file_id="file-0",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ABSOLUTE.value,
-                analysis_id="analysis-0",
+                workflow_type=ascat_metadata.ABSOLUTE, analysis_id="analysis-0"
             ),
             cases=(
                 Case(
@@ -200,7 +200,7 @@ class TestASCATMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-0"
-        assert result_row.workflow_type == build.WorkflowType.ABSOLUTE.value
+        assert result_row.workflow_type == ascat_metadata.ABSOLUTE
         assert result_row.analysis_id == "analysis-0"
 
     @pytest.mark.parametrize(
@@ -422,9 +422,9 @@ class TestASCATMetadataBuilder:
     @pytest.mark.parametrize(
         ("unprioritized_workflow", "prioritized_workflow"),
         (
-            (build.WorkflowType.ASCAT2.value, build.WorkflowType.ASCAT_NGS.value),
-            (build.WorkflowType.ASCAT_NGS.value, build.WorkflowType.ASCAT3.value),
-            (build.WorkflowType.ASCAT3.value, build.WorkflowType.ABSOLUTE.value),
+            (ascat_metadata.ASCAT2, ascat_metadata.ASCAT_NGS),
+            (ascat_metadata.ASCAT_NGS, ascat_metadata.ASCAT3),
+            (ascat_metadata.ASCAT3, ascat_metadata.ABSOLUTE),
         ),
     )
     def test__build__workflow_type(

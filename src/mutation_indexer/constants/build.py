@@ -59,7 +59,7 @@ class BackupMode(enum.Enum):
         return self == BackupMode.READ or self == BackupMode.BOTH
 
 
-class WorkflowType(str, enum.Enum):
+class WorkflowType:
     ABSOLUTE = "ABSOLUTE LiftOver"
     ASCAT3 = "ASCAT3"
     ASCAT2 = "ASCAT2"

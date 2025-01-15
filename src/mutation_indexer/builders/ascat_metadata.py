@@ -10,6 +10,11 @@ from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
+ABSOLUTE = "ABSOLUTE LiftOver"
+ASCAT3 = "ASCAT3"
+ASCAT2 = "ASCAT2"
+ASCAT_NGS = "AscatNGS"
+
 
 class ASCATMetadataInputs(TypedDict):
     pass
@@ -44,10 +49,10 @@ class ASCATMetadataBuilder(
     def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
         workflow_type = F.col("workflow_type")
         file_weights = (
-            workflow_type == F.lit(build.WorkflowType.ABSOLUTE.value),
-            workflow_type == F.lit(build.WorkflowType.ASCAT3.value),
-            workflow_type == F.lit(build.WorkflowType.ASCAT_NGS.value),
-            workflow_type == F.lit(build.WorkflowType.ASCAT2.value),
+            workflow_type == F.lit(ABSOLUTE),
+            workflow_type == F.lit(ASCAT3),
+            workflow_type == F.lit(ASCAT_NGS),
+            workflow_type == F.lit(ASCAT2),
         )
 
         # apply file weights as a higher order weight to the defaults.
@@ -85,11 +90,7 @@ class ASCATMetadataBuilder(
                                             "experimental_strategy": "Genotyping Array"
                                         }
                                     },
-                                    {
-                                        "term": {
-                                            "analysis.workflow_type": build.WorkflowType.ABSOLUTE.value
-                                        }
-                                    },
+                                    {"term": {"analysis.workflow_type": ABSOLUTE}},
                                 ]
                             },
                         },
@@ -101,11 +102,7 @@ class ASCATMetadataBuilder(
                                             "experimental_strategy": "Genotyping Array"
                                         }
                                     },
-                                    {
-                                        "term": {
-                                            "analysis.workflow_type": build.WorkflowType.ASCAT3.value
-                                        }
-                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT3}},
                                 ]
                             },
                         },
@@ -113,11 +110,7 @@ class ASCATMetadataBuilder(
                             "bool": {
                                 "must": [
                                     {"term": {"experimental_strategy": "WGS"}},
-                                    {
-                                        "term": {
-                                            "analysis.workflow_type": build.WorkflowType.ASCAT_NGS.value
-                                        }
-                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT_NGS}},
                                 ]
                             },
                         },
@@ -129,11 +122,7 @@ class ASCATMetadataBuilder(
                                             "experimental_strategy": "Genotyping Array"
                                         }
                                     },
-                                    {
-                                        "term": {
-                                            "analysis.workflow_type": build.WorkflowType.ASCAT2.value
-                                        }
-                                    },
+                                    {"term": {"analysis.workflow_type": ASCAT2}},
                                 ]
                             },
                         },

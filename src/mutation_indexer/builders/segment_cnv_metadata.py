@@ -52,7 +52,7 @@ class SegmentCnvMetadataBuilder(
                         {"term": {"data_type": DATA_TYPE}},
                         {
                             "term": {
-                                "analysis.workflow_type": build.WorkflowType.ASCAT_NGS.value
+                                "analysis.workflow_type": build.WorkflowType.ASCAT_NGS
                             }
                         },
                         {"terms": {"acl": self._config.acl}},
