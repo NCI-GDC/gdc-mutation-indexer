@@ -61,8 +61,8 @@ class SegmentCnvMetadataBuilder(
             }
         }
 
-    def _get_es_source_fields(self) -> list[str]:
-        return ["file_id", "analysis.analysis_id"]
+    def _get_es_source_fields(self) -> tuple[str, ...]:
+        return ("file_id", "analysis.analysis_id")
 
     def _build_from_scratch(self, input_dfs: SegmentCnvMetadataInputs) -> sql.DataFrame:
         ascat_metadata_df = input_dfs["ascat_metadata_df"]
