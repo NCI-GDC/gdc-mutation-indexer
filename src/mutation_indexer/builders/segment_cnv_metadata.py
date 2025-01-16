@@ -11,12 +11,12 @@ from mutation_indexer.constants import build
 DATA_TYPE = "Copy Number Segment"
 
 
-class SegmentCnvMetadataInputs(TypedDict):
+class SegmentCNVMetadataInputs(TypedDict):
     ascat_metadata_df: sql.DataFrame
 
 
-class SegmentCnvMetadataBuilder(
-    bases.InputBuilder[viz.Builder, SegmentCnvMetadataInputs]
+class SegmentCNVMetadataBuilder(
+    bases.InputBuilder[viz.Builder, SegmentCNVMetadataInputs]
 ):
     def __init__(
         self,
@@ -26,14 +26,15 @@ class SegmentCnvMetadataBuilder(
     ) -> None:
         """Input dataframe builder that retrieves copy number segment files.
 
-        Then, it uses the output of ASCATMetadataBuilder and joins the copy number segment
-        files with the primary aliquot on analysis_id. This ensures that the copy number
-        segment file will be the sibling file of the gene-level copy number file.
+        Then, it uses the output of ASCATMetadataBuilder and joins the copy number
+        segment files with the primary aliquot on analysis_id. This ensures that the
+        copy number segment file will be the sibling file of the gene-level copy
+        number file.
         """
         super().__init__(
             config,
             spark_session,
-            input_type=SegmentCnvMetadataInputs,
+            input_type=SegmentCNVMetadataInputs,
             output=build.DataFrame.SEGMENT_CNV_METADATA,
         )
 
@@ -63,7 +64,7 @@ class SegmentCnvMetadataBuilder(
     def _get_es_source_fields(self) -> tuple[str, ...]:
         return ("file_id", "analysis.analysis_id")
 
-    def _build_from_scratch(self, input_dfs: SegmentCnvMetadataInputs) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: SegmentCNVMetadataInputs) -> sql.DataFrame:
         ascat_metadata_df = input_dfs["ascat_metadata_df"]
         segment_cnv_metadata_df = self._es_dataframe_util.read(
             build.IndexType.FILE,
