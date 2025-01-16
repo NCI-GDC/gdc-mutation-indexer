@@ -66,22 +66,22 @@ class SegmentCnvMetadataBuilder(
 
     def _build_from_scratch(self, input_dfs: SegmentCnvMetadataInputs) -> sql.DataFrame:
         ascat_metadata_df = input_dfs["ascat_metadata_df"]
-        segment_cnv_df = self._es_dataframe_util.read(
+        segment_cnv_metadata_df = self._es_dataframe_util.read(
             build.IndexType.FILE,
             source_filter=self._get_es_source_fields(),
             query=self._get_es_query(),
         )
-        segment_cnv_df = segment_cnv_df.select(
+        segment_cnv_metadata_df = segment_cnv_metadata_df.select(
             "file_id", F.col("analysis.analysis_id").alias("analysis_id")
         )
-        segment_cnv_df = ascat_metadata_df.join(
-            segment_cnv_df, on="analysis_id", how="inner"
+        segment_cnv_metadata_df = ascat_metadata_df.join(
+            segment_cnv_metadata_df, on="analysis_id", how="inner"
         ).select(
             ascat_metadata_df.aliquot_id,
-            segment_cnv_df.analysis_id,
+            segment_cnv_metadata_df.analysis_id,
             ascat_metadata_df.case_id,
-            segment_cnv_df.file_id,
+            segment_cnv_metadata_df.file_id,
             ascat_metadata_df.workflow_type,
         )
 
-        return segment_cnv_df
+        return segment_cnv_metadata_df
