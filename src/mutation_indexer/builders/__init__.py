@@ -19,7 +19,7 @@ from mutation_indexer.builders.maf import MAFBuilder
 from mutation_indexer.builders.maf_metadata import MAFMetadataBuilder
 from mutation_indexer.builders.observation import ObservationBuilder
 from mutation_indexer.builders.primary_aliquot import PrimaryAliquotBuilder
-from mutation_indexer.builders.segment_cnv_metadata import SegmentCnvMetadataBuilder
+from mutation_indexer.builders.segment_cnv_metadata import SegmentCNVMetadataBuilder
 from mutation_indexer.builders.ssm_centric import SSMCentricBuilder
 from mutation_indexer.builders.ssm_occurrence_centric import SSMOccurrenceCentricBuilder
 
@@ -41,7 +41,7 @@ __all__ = (
     "MAFMetadataBuilder",
     "ObservationBuilder",
     "PrimaryAliquotBuilder",
-    "SegmentCnvMetadataBuilder",
+    "SegmentCNVMetadataBuilder",
     "SSMCentricBuilder",
     "SSMOccurrenceCentricBuilder",
 )

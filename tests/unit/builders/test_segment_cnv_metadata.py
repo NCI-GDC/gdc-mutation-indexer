@@ -17,7 +17,7 @@ from tests.unit import utils
 from tests.unit.data import schemas
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = "AscatNGS"
     analysis_id: str = "analysis-0"
@@ -122,15 +122,15 @@ def ascat_metadata_schema() -> types.StructType:
 
 @pytest.fixture(scope="class")
 def file_schema() -> types.StructType:
-    return schemas.Viz.Builders.SegmentCnvMetadata.FILE.load()
+    return schemas.Viz.Builders.SegmentCNVMetadata.FILE.load()
 
 
 @pytest.fixture(scope="class")
 def final_schema() -> types.StructType:
-    return schemas.Viz.Builders.SegmentCnvMetadata.FINAL.load()
+    return schemas.Viz.Builders.SegmentCNVMetadata.FINAL.load()
 
 
-class TestSegmentCnvMetadataBuilder:
+class TestSegmentCNVMetadataBuilder:
     @pytest.fixture(autouse=True)
     def init_fixtures(
         self,
@@ -174,10 +174,10 @@ class TestSegmentCnvMetadataBuilder:
 
     def _arrange_builder(
         self, segment_cnv_data: tuple[File, ...]
-    ) -> builders.SegmentCnvMetadataBuilder:
+    ) -> builders.SegmentCNVMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=segment_cnv_data)
-        builder = builders.SegmentCnvMetadataBuilder(config, mock.MagicMock(), df_util)
+        builder = builders.SegmentCNVMetadataBuilder(config, mock.MagicMock(), df_util)
 
         return builder
 
@@ -185,7 +185,7 @@ class TestSegmentCnvMetadataBuilder:
         """Test joining ascat_metadata dataframe and copy number segment dataframe.
 
         Given an ascat_metadata dataframe with one gene-level copy number file
-        When SegmentCnvMetadataBuilder build is called
+        When SegmentCNVMetadataBuilder build is called
         Then return a dataframe with one result and correct schema.
         """
         file = File(
@@ -229,7 +229,7 @@ class TestSegmentCnvMetadataBuilder:
         """Test the correctness of the output segment cnv metadata dataframe.
 
         Given an ascat_metadata dataframe with one gene-level copy number file
-        When SegmentCnvMetadataBuilder build is called
+        When SegmentCNVMetadataBuilder build is called
         Then return a dataframe with the correct data returned.
         """
         file = File(
@@ -276,7 +276,7 @@ class TestSegmentCnvMetadataBuilder:
 
         Given an ascat_metadata dataframe with one gene-level copy number file
             and a copy numer segment file with a differing analysis_id
-        When SegmentCnvMetadataBuilder build is called
+        When SegmentCNVMetadataBuilder build is called
         Then return a dataframe with no results and correct schema.
         """
         file = File(
@@ -322,7 +322,7 @@ class TestSegmentCnvMetadataBuilder:
         Given an ascat_metadata dataframe with two gene-level copy number file
             and a copy numer segment file that matches analysis_id for only
             one gene-level copy number file
-        When SegmentCnvMetadataBuilder build is called
+        When SegmentCNVMetadataBuilder build is called
         Then return a dataframe with one result and correct data.
         """
         file = File(
