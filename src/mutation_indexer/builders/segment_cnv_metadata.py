@@ -65,6 +65,15 @@ class SegmentCNVMetadataBuilder(
         return ("file_id", "analysis.analysis_id")
 
     def _build_from_scratch(self, input_dfs: SegmentCNVMetadataInputs) -> sql.DataFrame:
+        """Builds the SegmentCNVMetadata dataframe.
+
+        segment_cnv_metadata {}
+        |---aliquot_id
+        |---analysis_id
+        |---case_id
+        |---file_id
+        |---workflow_type
+        """
         ascat_metadata_df = input_dfs["ascat_metadata_df"]
         segment_cnv_metadata_df = self._es_dataframe_util.read(
             build.IndexType.FILE,
