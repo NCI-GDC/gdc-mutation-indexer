@@ -18,19 +18,18 @@ class SegmentCnvMetadataInputs(TypedDict):
 class SegmentCnvMetadataBuilder(
     bases.InputBuilder[viz.Builder, SegmentCnvMetadataInputs]
 ):
-    """Input dataframe builder that retrieves copy number segment files.
-
-    Then, it uses the output of ASCATMetadataBuilder and joins the copy number segment
-    files with the primary aliquot on analysis_id. This ensures that the copy number
-    segment file will be the sibling file of the gene-level copy number file.
-    """
-
     def __init__(
         self,
         config: viz.Builder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:
+        """Input dataframe builder that retrieves copy number segment files.
+
+        Then, it uses the output of ASCATMetadataBuilder and joins the copy number segment
+        files with the primary aliquot on analysis_id. This ensures that the copy number
+        segment file will be the sibling file of the gene-level copy number file.
+        """
         super().__init__(
             config,
             spark_session,
