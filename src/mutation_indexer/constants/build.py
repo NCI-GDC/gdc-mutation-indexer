@@ -17,6 +17,7 @@ class DataFrame(enum.IntEnum):
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
+    SEGMENT_CNV_METADATA = enum.auto()
     UQFPKM = enum.auto()
 
     def to_param(self) -> str:
@@ -56,3 +57,10 @@ class BackupMode(enum.Enum):
 
     def is_read(self) -> bool:
         return self == BackupMode.READ or self == BackupMode.BOTH
+
+
+class WorkflowType:
+    ABSOLUTE = "ABSOLUTE LiftOver"
+    ASCAT3 = "ASCAT3"
+    ASCAT2 = "ASCAT2"
+    ASCAT_NGS = "AscatNGS"

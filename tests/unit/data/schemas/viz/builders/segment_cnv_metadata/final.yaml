@@ -1,0 +1,15 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: aliquot_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: file_id
+  - <<: *string_field
+    name: workflow_type
+  - <<: *string_field
+    name: analysis_id
