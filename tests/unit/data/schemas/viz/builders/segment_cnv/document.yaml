@@ -6,14 +6,13 @@ fields:
     nullable: true
     type: string
   - <<: *string_field
-    name: gene_id
-  - <<: *string_field
-    name: gene_name
+    name: aliquot_id
   - <<: *string_field
     name: chromosome
   - &integer_field
-    <<: *string_field
+    metadata: {}
     name: start
+    nullable: true
     type: integer
   - <<: *integer_field
     name: end
