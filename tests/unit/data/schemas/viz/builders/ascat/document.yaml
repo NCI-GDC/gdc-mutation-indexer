@@ -20,7 +20,7 @@ fields:
   - <<: *integer_field
     name: copy_number
   - <<: *integer_field
-    name: major_copy_number
+    name: min_copy_number
   - <<: *integer_field
-    name: minor_copy_number
+    name: max_copy_number
 type: struct
