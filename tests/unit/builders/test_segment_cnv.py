@@ -234,11 +234,11 @@ class TestSegmentCNVBuilder:
         )
         file0_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number, did="file-0")
-            for copy_number in (3, 3, 6)
+            for copy_number in (5, 5, 10, 10, 20)
         )
         file1_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number, did="file-1")
-            for copy_number in (6, 6, 3)
+            for copy_number in (3, 5, 5, 10, 10)
         )
         segment_cnv_data = file0_data + file1_data
         builder = self._arrange_builder(
