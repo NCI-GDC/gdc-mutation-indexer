@@ -2,6 +2,7 @@ import dataclasses
 from collections.abc import Mapping
 from unittest import mock
 
+import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -28,8 +29,8 @@ class SegmentCNVDocumentData:
     did: str = "file-0"
     aliquot_id: str = "aliquot-0"
     chromosome: str = "chr1"
-    start: int = 50
-    end: int = 100
+    start_position: int = 50
+    end_position: int = 100
     copy_number: int = 3
     major_copy_number: int = 2
     minor_copy_number: int = 1
@@ -105,7 +106,6 @@ class TestSegmentCNVBuilder:
 
         return builder
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     def test__build__single_row(self) -> None:
         """Test joining segment_cnv_metadata dataframe with segment cnv file data.
 
@@ -114,7 +114,10 @@ class TestSegmentCNVBuilder:
         Then return a dataframe with one result and correct schema.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(
+                SegmentCNVMetadataInputData(file_id="file-0"),
+                SegmentCNVMetadataInputData(file_id="file-1"),
+            )
         )
         segment_cnv_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number) for copy_number in (3, 3, 6)
@@ -125,9 +128,10 @@ class TestSegmentCNVBuilder:
         segment_cnv_df = builder.build(**inputs)
 
         assert segment_cnv_df.count() == 1
-        assert segment_cnv_df.schema == self._final_schema
+        assert not deepdiff.DeepDiff(
+            segment_cnv_df.schema, self._final_schema, ignore_order=True
+        )
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     def test__build__input_data_transformed(self) -> None:
         """Test the correctness of the output segment cnv dataframe.
 
@@ -146,17 +150,21 @@ class TestSegmentCNVBuilder:
         segment_cnv_df = builder.build(**inputs)
 
         assert segment_cnv_df.count() == 1
-        assert segment_cnv_df.schema == self._final_schema
+        assert not deepdiff.DeepDiff(
+            segment_cnv_df.schema, self._final_schema, ignore_order=True
+        )
         result_row = more_itertools.one(segment_cnv_df.collect())
 
-        assert result_row.chromosome == "chr1"
+        assert result_row.src_file_id == "file-0"
+        assert result_row.chromosome == "1"
         assert result_row.length == 51
         assert result_row.start_position == 50
         assert result_row.end_position == 100
         assert result_row.cnv_change == "Gain"
         assert result_row.cnv_change_5_category == "Amplification"
+        assert result_row.variant_caller == "AscatNGS"
+        assert result_row.variant_status == "Tumor Only"
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     def test__build__uuids_generated(self) -> None:
         """Test the correctness of the generated uuids.
 
@@ -176,7 +184,7 @@ class TestSegmentCNVBuilder:
         assert segment_cnv_df.count() == 1
         result_row = more_itertools.one(segment_cnv_df.collect())
 
-        segment_cnv_id = utils.generate_uuid5("chr1", 50, 100, "Amplification")
+        segment_cnv_id = utils.generate_uuid5("1", 50, 100, "Amplification")
         assert result_row.segment_cnv_id == segment_cnv_id
         assert result_row.occurrence_id == utils.generate_uuid5(
             segment_cnv_id, "case-0"
@@ -185,7 +193,6 @@ class TestSegmentCNVBuilder:
             segment_cnv_id, "case-0", "aliquot-0"
         )
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     def test__build__calculate_length_weighted_mode(self) -> None:
         """Test the correctness of the length-weighted mode calculation.
 
@@ -199,7 +206,9 @@ class TestSegmentCNVBuilder:
         )
         copy_numbers, starts, ends = (3, 6), (10, 10), (15, 100)
         segment_cnv_data = tuple(
-            SegmentCNVDocumentData(copy_number=copy_number, start=start, end=end)
+            SegmentCNVDocumentData(
+                copy_number=copy_number, start_position=start, end_position=end
+            )
             for copy_number, start, end in zip(copy_numbers, starts, ends)
         )
         builder = self._arrange_builder(segment_cnv_data=segment_cnv_data)
@@ -210,7 +219,45 @@ class TestSegmentCNVBuilder:
 
         assert result_row.cnv_change_5_category == "Loss"
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
+    def test__build__multiple_files(self) -> None:
+        """Test calculating correct cnv_change data with multiple files.
+
+        Given a segment_cnv_metadata dataframe with two segment files
+        When SegmentCNVBuilder build is called
+        Then return a dataframe with two results and correct cnv_change data.
+        """
+        segment_cnv_metadata = tuple(
+            SegmentCNVMetadataInputData(file_id=f"file-{i}") for i in range(2)
+        )
+        inputs = self._arrange_input_dataframes(
+            segment_cnv_metadata=segment_cnv_metadata
+        )
+        file0_data = tuple(
+            SegmentCNVDocumentData(copy_number=copy_number, did="file-0")
+            for copy_number in (3, 3, 6)
+        )
+        file1_data = tuple(
+            SegmentCNVDocumentData(copy_number=copy_number, did="file-1")
+            for copy_number in (6, 6, 3)
+        )
+        segment_cnv_data = file0_data + file1_data
+        builder = self._arrange_builder(
+            segment_cnv_data=segment_cnv_data,
+        )
+        segment_cnv_df = builder.build(**inputs)
+
+        assert segment_cnv_df.count() == 2
+        file0_row = more_itertools.one(
+            segment_cnv_df.where(segment_cnv_df["src_file_id"] == "file-0").collect()
+        )
+        file1_row = more_itertools.one(
+            segment_cnv_df.where(segment_cnv_df["src_file_id"] == "file-1").collect()
+        )
+        assert file0_row.cnv_change == "Gain"
+        assert file0_row.cnv_change_5_category == "Amplification"
+        assert file1_row.cnv_change == "Loss"
+        assert file1_row.cnv_change_5_category == "Loss"
+
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change"),
         (
@@ -263,7 +310,6 @@ class TestSegmentCNVBuilder:
 
         assert result_row.cnv_change == cnv_change
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change_5_category"),
         (
@@ -336,7 +382,6 @@ class TestSegmentCNVBuilder:
 
         assert result_row.cnv_change_5_category == cnv_change_5_category
 
-    @pytest.mark.xfail(reason="SegmentCNVBuilder not implemented yet")
     def test__build__filter_neutral_values(self) -> None:
         """Test to ensure cnv_change_5_category neutral rows are filtered.
 
@@ -353,6 +398,23 @@ class TestSegmentCNVBuilder:
                 SegmentCNVDocumentData(copy_number=copy_number)
                 for copy_number in copy_numbers
             )
+        )
+        segment_cnv_df = builder.build(**inputs)
+
+        assert segment_cnv_df.count() == 0
+
+    def test__build__filter_chromosomes(self) -> None:
+        """Test to filter out chromosomes that don't fall between 1 and 22.
+
+        Given a segment_cnv data where the chromosome is not between 1 and 22
+        When SegmentCNVBuilder build is called
+        Then the dataframe is returned with zero rows.
+        """
+        inputs = self._arrange_input_dataframes(
+            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+        )
+        builder = self._arrange_builder(
+            segment_cnv_data=(SegmentCNVDocumentData(chromosome="chr23"),)
         )
         segment_cnv_df = builder.build(**inputs)
 

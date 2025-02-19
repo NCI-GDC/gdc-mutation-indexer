@@ -11,11 +11,11 @@ fields:
     name: chromosome
   - &integer_field
     metadata: {}
-    name: start
+    name: start_position
     nullable: true
     type: integer
   - <<: *integer_field
-    name: end
+    name: end_position
   - <<: *integer_field
     name: copy_number
   - <<: *integer_field
