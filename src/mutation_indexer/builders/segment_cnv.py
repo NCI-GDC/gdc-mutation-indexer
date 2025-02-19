@@ -71,22 +71,6 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
 
         self._document_dataframe_util = document_dataframe_util
 
-    # def _format_chromosome(self, document_df: sql.DataFrame) -> sql.DataFrame:
-    #     """Formats the chromosome column.
-
-    #     The chromosome will have a "chr" prefix that will be truncated, leaving behind
-    #     only the integer portion of the field.
-    #     """
-    #     document_df = document_df.withColumn(
-    #         "chromosome",
-    #         F.coalesce(
-    #             F.regexp_replace("chromosome", "chr", "").cast(types.IntegerType()),
-    #             F.lit(-1),
-    #         ),
-    #     )
-
-    #     return document_df
-
     def _filter_by_chromosome(self, document_df: sql.DataFrame) -> sql.DataFrame:
         """Filters out rows in dataframe based on chromosome value.
 
