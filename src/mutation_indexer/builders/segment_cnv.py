@@ -88,7 +88,7 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
 
         """
         chromosome_field = "chromosome"
-        chromosome_integer_field = chromosome_field + "_integer"
+        chromosome_integer_field = "chromosome_integer"
         document_df = (
             document_df.withColumn(
                 chromosome_integer_field,
