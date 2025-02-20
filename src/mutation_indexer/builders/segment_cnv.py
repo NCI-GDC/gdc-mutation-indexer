@@ -153,13 +153,13 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
             Thus the data frame is left with only the true modal values for each file.
         """
         ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
-            F.sum("length").alias("weighted_copy_number")
+            F.sum("length").alias("total_weight")
         )
-        ploidy_window = sql.Window().partitionBy("file_id", "weighted_copy_number")
+        ploidy_window = sql.Window().partitionBy("file_id", "total_weight")
         mode_window = (
             sql.Window()
             .partitionBy("file_id")
-            .orderBy(F.col("weighted_copy_number").desc_nulls_last())
+            .orderBy(F.col("total_weight").desc_nulls_last())
         )
         ploidy_df = (
             ploidy_df.select(
@@ -260,8 +260,8 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
 
         return document_df
 
-    def _calculate_segment_length(self, document_df: sql.DataFrame) -> sql.DataFrame:
-        """Calculates segment length for each row in dataframe.
+    def _add_segment_length(self, document_df: sql.DataFrame) -> sql.DataFrame:
+        """Adds segment length column to dataframe.
 
         The segment length will be end_position - start_position + 1.
         """
@@ -294,7 +294,7 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
         segment_cnv_df = document_df.join(
             segment_cnv_metadata_df, on="file_id", how="inner"
         )
-        segment_cnv_df = self._calculate_segment_length(segment_cnv_df)
+        segment_cnv_df = self._add_segment_length(segment_cnv_df)
         segment_cnv_df = self._add_cnv_change_data(segment_cnv_df)
         segment_cnv_df = self._add_uuids(segment_cnv_df)
         segment_cnv_df = segment_cnv_df.select(

@@ -204,7 +204,7 @@ class TestSegmentCNVBuilder:
         inputs = self._arrange_input_dataframes(
             segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
         )
-        copy_numbers, starts, ends = (3, 6), (10, 10), (15, 100)
+        copy_numbers, starts, ends = (3, 6, 6, 6), (10, 10, 11, 12), (100, 15, 16, 17)
         segment_cnv_data = tuple(
             SegmentCNVDocumentData(
                 copy_number=copy_number, start_position=start, end_position=end
@@ -214,10 +214,12 @@ class TestSegmentCNVBuilder:
         builder = self._arrange_builder(segment_cnv_data=segment_cnv_data)
         segment_cnv_df = builder.build(**inputs)
 
-        assert segment_cnv_df.count() == 1
-        result_row = more_itertools.one(segment_cnv_df.collect())
-
-        assert result_row.cnv_change_5_category == "Loss"
+        assert segment_cnv_df.count() == 3
+        result_rows = segment_cnv_df.collect()
+        assert all(
+            result_row.cnv_change_5_category == "Amplification"
+            for result_row in result_rows
+        )
 
     def test__build__multiple_files(self) -> None:
         """Test calculating correct cnv_change data with multiple files.
