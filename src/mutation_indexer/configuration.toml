@@ -190,6 +190,13 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
+[builders.viz.segment_cnv]
+is_cached = true
+
+[builders.viz.segment_cnv.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.segment_cnv_metadata]
 is_cached = false
 

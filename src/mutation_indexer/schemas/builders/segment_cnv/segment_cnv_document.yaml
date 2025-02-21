@@ -1,0 +1,25 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: did
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: aliquot_id
+  - <<: *string_field
+    name: chromosome
+  - &integer_field
+    metadata: {}
+    name: start_position
+    nullable: true
+    type: integer
+  - <<: *integer_field
+    name: end_position
+  - <<: *integer_field
+    name: copy_number
+  - <<: *integer_field
+    name: major_copy_number
+  - <<: *integer_field
+    name: minor_copy_number
+type: struct

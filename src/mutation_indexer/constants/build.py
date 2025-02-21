@@ -18,6 +18,7 @@ class DataFrame(enum.IntEnum):
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
     SEGMENT_CNV_METADATA = enum.auto()
+    SEGMENT_CNV = enum.auto()
     UQFPKM = enum.auto()
 
     def to_param(self) -> str:
