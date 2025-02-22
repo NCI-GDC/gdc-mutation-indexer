@@ -304,6 +304,7 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
             F.col("file_id").alias("src_file_id"),
             "occurrence_id",
             "observation_id",
+            "copy_number",
             "chromosome",
             "start_position",
             "end_position",

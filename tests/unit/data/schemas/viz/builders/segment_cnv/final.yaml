@@ -23,18 +23,23 @@ fields:
     name: variant_status
     nullable: false
     type: string
-  - &integer_field
+  - &long_field
     metadata: {}
     name: length
     nullable: true
     type: integer
-  - <<: *integer_field
+  - <<: *long_field
     name: start_position
-  - <<: *integer_field
+  - <<: *long_field
     name: end_position
   - <<: *string_field
     name: cnv_change
   - <<: *string_field
     name: cnv_change_5_category
-  - <<: *integer_field
+  - &integer_field
+    metadata: {}
     name: sample_ploidy_integer
+    nullable: true
+    type: integer
+  - <<: *integer_field
+    name: copy_number
