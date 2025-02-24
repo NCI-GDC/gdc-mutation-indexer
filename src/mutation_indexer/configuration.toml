@@ -197,6 +197,16 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
+[builders.viz.segment_cnv_centric]
+id_field = "segment_cnv_id"
+is_cached = true
+occurrences_threshold = 100
+partition_size = 12
+
+[builders.viz.segment_cnv_centric.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.segment_cnv_metadata]
 is_cached = false
 

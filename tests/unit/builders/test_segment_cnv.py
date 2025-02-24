@@ -158,6 +158,7 @@ class TestSegmentCNVBuilder:
         assert result_row.src_file_id == "file-0"
         assert result_row.copy_number == 6
         assert result_row.chromosome == "1"
+        assert result_row.copy_number == 6
         assert result_row.length == 51
         assert result_row.start_position == 50
         assert result_row.end_position == 100

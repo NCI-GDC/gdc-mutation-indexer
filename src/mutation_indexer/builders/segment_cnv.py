@@ -306,6 +306,7 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
             "observation_id",
             "copy_number",
             "chromosome",
+            "copy_number",
             "start_position",
             "end_position",
             "length",
