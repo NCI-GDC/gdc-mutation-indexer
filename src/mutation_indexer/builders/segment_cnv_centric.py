@@ -67,21 +67,20 @@ class IndexBuilder(
                 |____ variant_calling {}
                         |____ variant_caller
         """
-        obs_df = segment_cnv_df.withColumn(
-            "variant_calling", F.struct("variant_caller").alias("variant_calling")
+        obs_cols = (
+            F.col("observation_id"),
+            F.col("copy_number"),
+            F.col("sample_ploidy_integer"),
+            F.col("src_file_id"),
+            F.struct("variant_caller").alias("variant_calling"),
+            F.col("variant_status"),
         )
-        obs_ignored_col = ("sample",)
-        obs_cols = utils.struct_select(
-            self.INDEX_NAME, "observation", ignore=obs_ignored_col
-        )
-        # don't use struct select, just ignore sample struct under observation
-        obs_filtered_cols = filter(lambda col: not isinstance(col, str), obs_cols)
         obs_df = (
-            obs_df.select(
+            segment_cnv_df.select(
                 "segment_cnv_id",
                 "case_id",
                 "occurrence_id",
-                F.struct(*obs_filtered_cols).alias("observation"),
+                F.struct(*obs_cols).alias("observation"),
             )
             .groupby("segment_cnv_id", "case_id", "occurrence_id")
             .agg(F.collect_set("observation").alias("observation"))
@@ -182,3 +181,17 @@ class IndexBuilder(
         )
 
         return segment_cnv_centric_df
+
+
+# TODO: add build() and load() function to this class
+# create protocol that defines build and load that can be used in driver
+# create adapter class that has build() and load()
+# build() will call _build_from_scratch() (need to overwrite _write method so it doesn't get written to es automatically)
+# load() will call _write() which will write to elasticsearch
+
+
+# the alternative:
+# just create another list of NEW STYLE index builders, and in driver, populate that list with this and put it as
+# another property in the exporter
+
+# then, just call build() on this list in the run() function

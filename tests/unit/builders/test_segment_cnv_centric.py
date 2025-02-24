@@ -81,9 +81,12 @@ def assert_occurrence_grouped_transformed(
     cases: tuple[models.Case, ...],
 ) -> None:
     assert len(row.occurrence) == 2
+    sorted_occurrences_by_obs_id = sorted(
+        row.occurrence, key=lambda occ: occ.occurrence_id
+    )
 
     for i, (segment_cnv, case) in enumerate(zip(segment_cnvs, cases)):
-        occurrence = row.occurrence[i]
+        occurrence = sorted_occurrences_by_obs_id[i]
         assert occurrence.occurrence_id == segment_cnv.occurrence_id
 
         assert_observation_transformed(occurrence, segment_cnv)
