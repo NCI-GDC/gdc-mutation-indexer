@@ -134,7 +134,6 @@ def ascat_metadata_df(
         es_rdd_util,
     ).build()
 
-    df.show()
     return df
 
 
@@ -182,7 +181,6 @@ def case_df(
         es_utils.CaseFieldSelector(),
     ).build(maf_metadata_df=maf_metadata_df, ascat_metadata_df=ascat_metadata_df)
 
-    df.show()
     return df
 
 
@@ -208,7 +206,6 @@ def segment_cnv_metadata_df(
         es_dataframe_util,
     ).build(ascat_metadata_df=ascat_metadata_df)
 
-    df.show()
     return df
 
 
@@ -225,7 +222,6 @@ def segment_cnv_df(
         indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
     ).build(segment_cnv_metadata_df=segment_cnv_metadata_df)
 
-    df.show()
     return df
 
 

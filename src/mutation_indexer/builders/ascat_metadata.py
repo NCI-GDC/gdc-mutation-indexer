@@ -145,11 +145,8 @@ class ASCATMetadataBuilder(
     def _build_from_scratch(self, input_dfs: ASCATMetadataInputs) -> sql.DataFrame:
         filters = self._get_filters()
 
-        # TODO
-        df = self._get_primary_aliquot_df(
+        return self._get_primary_aliquot_df(
             filters,
             entities=frozenset(("case",)),
             include_fields=("analysis.workflow_type", "analysis.analysis_id"),
         ).select("aliquot_id", "case_id", "file_id", "workflow_type", "analysis_id")
-        df.show()
-        return df

@@ -74,6 +74,8 @@ class IndexBuilder(
         obs_cols = utils.struct_select(
             self.INDEX_NAME, "observation", ignore=obs_ignored_col
         )
+        # don't use struct select, just ignore sample struct under observation
+        # put aliquot_id as tumor_sample_
         obs_filtered_cols = filter(lambda col: not isinstance(col, str), obs_cols)
         obs_df = (
             obs_df.select(

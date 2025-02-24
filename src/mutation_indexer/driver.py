@@ -142,24 +142,28 @@ def _get_viz_builders(
 
     yield from input_builders
 
+    if build.IndexType.SEGMENT_CNV_CENTRIC in index_types:
+        yield builders.SegmentCNVCentricIndexBuilder(
+            config.segment_cnv_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+        )
 
-def get_viz_index_builders(
-    config: viz.Viz,
+
+def get_obsolete_viz_index_builders(
     old_config: adapter.ObsoleteConfig,
-    spark_session: sql.SparkSession,
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
     es_rdd_util: es_utils.RDDUtil,
     case_field_selector: es_utils.CaseFieldSelector,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
-    mappings_loader: es_utils.MappingsLoader,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
     """
     Builds the index builders required for the viz export process.
 
     Args:
-        config: The configuration for the viz builder objects.
         old_config: The old god configuration object with all of the configuration
             values needed to run any and all builders.
         sql_context: The SQLContext for the current spark run.
@@ -170,7 +174,6 @@ def get_viz_index_builders(
             index or set of indices.
         consequence_builder: The builder service for loading consequence data.
         observation_builder: The builder service for loading observation data.
-        mappings_loader: The mapping loader service for loading ES mappings
 
     Returns:
         A mapping of the build.IndexType to the builder which will build and then load
@@ -195,12 +198,6 @@ def get_viz_index_builders(
             ),
             build.IndexType.GENE_CENTRIC: builders.GeneCentricBuilder(
                 old_config, sql_context, consequence_builder, observation_builder
-            ),
-            build.IndexType.SEGMENT_CNV_CENTRIC: builders.SegmentCNVCentricIndexBuilder(
-                config.segment_cnv_centric,
-                spark_session,
-                es_dataframe_util,
-                mappings_loader,
             ),
             build.IndexType.SSM_CENTRIC: builders.SSMCentricBuilder(
                 old_config, sql_context, consequence_builder, observation_builder
@@ -260,17 +257,14 @@ def get_viz_builders(
         consequence_builder,
         observation_builder,
     )
-    viz_index_builders = get_viz_index_builders(
-        config.builders.viz,
+    viz_index_builders = get_obsolete_viz_index_builders(
         config_adapter,
-        spark_session,
         sql_context,
         es_dataframe_util,
         es_rdd_util,
         case_field_selector,
         consequence_builder,
         observation_builder,
-        mappings_loader,
     )
 
     return gdc_mutation_export.Builders(tuple(viz_builders), viz_index_builders)
