@@ -127,12 +127,15 @@ def ascat_metadata_df(
     es_rdd_util = es_utils.RDDUtil(
         default_config.elasticsearch, spark_session.sparkContext
     )
-    return ascat_metadata.ASCATMetadataBuilder(
+    df = ascat_metadata.ASCATMetadataBuilder(
         default_config.builders.viz.ascat_metadata,
         spark_session,
         es_dataframe_util,
         es_rdd_util,
     ).build()
+
+    df.show()
+    return df
 
 
 @pytest.fixture(scope="module")
@@ -172,12 +175,15 @@ def case_df(
         es_utils.MappingsLoader(),
         es_utils.SchemaLoader(),
     )
-    return case.CaseBuilder(
+    df = case.CaseBuilder(
         default_config.builders.viz.case,
         spark_session,
         es_dataframe_util,
         es_utils.CaseFieldSelector(),
     ).build(maf_metadata_df=maf_metadata_df, ascat_metadata_df=ascat_metadata_df)
+
+    df.show()
+    return df
 
 
 @pytest.fixture(scope="function")
@@ -196,11 +202,14 @@ def segment_cnv_metadata_df(
         mappings_loader,
         es_utils.SchemaLoader(),
     )
-    return segment_cnv_metadata.SegmentCNVMetadataBuilder(
+    df = segment_cnv_metadata.SegmentCNVMetadataBuilder(
         default_config.builders.viz.segment_cnv_metadata,
         spark_session,
         es_dataframe_util,
     ).build(ascat_metadata_df=ascat_metadata_df)
+
+    df.show()
+    return df
 
 
 @pytest.fixture(scope="function")
@@ -210,11 +219,14 @@ def segment_cnv_df(
     indexd: client.IndexClient,
     segment_cnv_metadata_df: sql.DataFrame,
 ) -> sql.DataFrame:
-    return segment_cnv.SegmentCNVBuilder(
+    df = segment_cnv.SegmentCNVBuilder(
         default_config.builders.viz.segment_cnv,
         spark_session,
         indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
     ).build(segment_cnv_metadata_df=segment_cnv_metadata_df)
+
+    df.show()
+    return df
 
 
 @pytest.fixture(scope="function")
