@@ -112,6 +112,7 @@ class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
             doc_ids, schema=schemas.load_schema(SEGMENT_CNV_DOCUMENT_SCHEMA)
         )
         document_df = self._filter_by_chromosome(document_df)
+        document_df.show()
         document_df = document_df.select(
             F.col("did").alias("file_id"),
             "copy_number",
