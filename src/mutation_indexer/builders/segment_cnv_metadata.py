@@ -80,6 +80,7 @@ class SegmentCNVMetadataBuilder(
             source_filter=self._get_es_source_fields(),
             query=self._get_es_query(),
         )
+        segment_cnv_metadata_df.show()
         segment_cnv_metadata_df = segment_cnv_metadata_df.select(
             "file_id", F.col("analysis.analysis_id").alias("analysis_id")
         )
