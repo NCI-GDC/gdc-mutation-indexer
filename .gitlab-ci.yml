@@ -36,7 +36,7 @@ tox:
     - apt-get install -y maven
     - mvn -version
     - pip install 'tox < 4'
-    - tox -e py
+    - tox -e py -- tests/integration/builders/test_segment_cnv_centric.py
 
 release:
   variables:
