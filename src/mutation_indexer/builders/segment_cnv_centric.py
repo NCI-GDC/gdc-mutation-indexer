@@ -181,17 +181,3 @@ class IndexBuilder(
         )
 
         return segment_cnv_centric_df
-
-
-# TODO: add build() and load() function to this class
-# create protocol that defines build and load that can be used in driver
-# create adapter class that has build() and load()
-# build() will call _build_from_scratch() (need to overwrite _write method so it doesn't get written to es automatically)
-# load() will call _write() which will write to elasticsearch
-
-
-# the alternative:
-# just create another list of NEW STYLE index builders, and in driver, populate that list with this and put it as
-# another property in the exporter
-
-# then, just call build() on this list in the run() function
