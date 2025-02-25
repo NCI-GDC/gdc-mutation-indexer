@@ -83,7 +83,6 @@ def segment_file_docs(
     es_client: elasticsearch.Elasticsearch,
     setup_graph_indices: Any,
 ) -> Iterator[Set[str]]:
-    logger.info("Loading segment_cnv files to file index.")
     segment_file = input_dir / "segment_cnv" / "segment_cnv-files.ndjson"
 
     with test_setup.IndexManager(
@@ -104,7 +103,6 @@ def ascat_file_docs(
     es_client: elasticsearch.Elasticsearch,
     setup_graph_indices: Any,
 ) -> Iterator[Set[str]]:
-    logger.info("Loading ascat_metadata files to file index.")
     ascat_file = input_dir / "segment_cnv" / "ascat_metadata-files.ndjson"
 
     with test_setup.IndexManager(
@@ -153,7 +151,6 @@ def segment_case_docs(
     es_client: elasticsearch.Elasticsearch,
     setup_graph_indices: Any,
 ) -> Iterator[Set[str]]:
-    logger.info("Loading segment_cnv cases to case index.")
     segment_case = input_dir / "segment_cnv" / "segment_cnv-cases.ndjson"
 
     with test_setup.IndexManager(
