@@ -156,7 +156,6 @@ class TestSegmentCNVBuilder:
         result_row = more_itertools.one(segment_cnv_df.collect())
 
         assert result_row.src_file_id == "file-0"
-        assert result_row.copy_number == 6
         assert result_row.chromosome == "1"
         assert result_row.copy_number == 6
         assert result_row.length == 51
