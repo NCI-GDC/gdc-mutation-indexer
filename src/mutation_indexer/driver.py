@@ -132,6 +132,12 @@ def _get_viz_builders(
         builders.PrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
         ),
+        builders.SegmentCNVMetadataBuilder(
+            config.segment_cnv_metadata, spark_session, es_dataframe_util
+        ),
+        builders.SegmentCNVBuilder(
+            config.segment_cnv, spark_session, doc_dataframe_util
+        ),
     )
 
     yield from input_builders

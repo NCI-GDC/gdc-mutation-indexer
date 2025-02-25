@@ -74,7 +74,9 @@ class SegmentCNVMetadataBuilder(
         |---file_id
         |---workflow_type
         """
-        ascat_metadata_df = input_dfs["ascat_metadata_df"]
+        ascat_metadata_df = input_dfs["ascat_metadata_df"].select(
+            "aliquot_id", "analysis_id", "case_id", "workflow_type"
+        )
         segment_cnv_metadata_df = self._es_dataframe_util.read(
             build.IndexType.FILE,
             source_filter=self._get_es_source_fields(),
@@ -85,12 +87,9 @@ class SegmentCNVMetadataBuilder(
         )
         segment_cnv_metadata_df = ascat_metadata_df.join(
             segment_cnv_metadata_df, on="analysis_id", how="inner"
-        ).select(
-            ascat_metadata_df.aliquot_id,
-            segment_cnv_metadata_df.analysis_id,
-            ascat_metadata_df.case_id,
-            segment_cnv_metadata_df.file_id,
-            ascat_metadata_df.workflow_type,
+        )
+        segment_cnv_metadata_df = segment_cnv_metadata_df.select(
+            "aliquot_id", "analysis_id", "case_id", "file_id", "workflow_type"
         )
 
         return segment_cnv_metadata_df
