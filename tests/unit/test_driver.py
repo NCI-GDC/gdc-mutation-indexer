@@ -22,8 +22,6 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.MAF,
             build.DataFrame.MAF_METADATA,
             build.DataFrame.PRIMARY_ALIQUOT,
-            build.DataFrame.SEGMENT_CNV_METADATA,
-            build.DataFrame.SEGMENT_CNV,
         )
     )
     assert isinstance(generic_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
