@@ -163,7 +163,6 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(
             maf_df, primary_aliquot_df, "case_centric", "ssm"
         )
-        result_df.show()
         result_row = more_itertools.one(result_df.collect())
 
         assert not any(

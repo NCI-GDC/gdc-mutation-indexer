@@ -27,7 +27,7 @@ fields:
     metadata: {}
     name: length
     nullable: true
-    type: integer
+    type: long
   - <<: *long_field
     name: start_position
   - <<: *long_field

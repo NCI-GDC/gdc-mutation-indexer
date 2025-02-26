@@ -2,11 +2,9 @@
 fields:
   - &string_field
     metadata: {}
-    name: did
+    name: aliquot_id
     nullable: true
     type: string
-  - <<: *string_field
-    name: aliquot_id
   - <<: *string_field
     name: chromosome
   - &integer_field

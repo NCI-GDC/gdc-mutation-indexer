@@ -6,9 +6,9 @@ from mutation_indexer.constants import build
 
 
 def test__get_viz_builders__all_builders() -> None:
-    viz_builders = driver.get_viz_builders(
-        mock.MagicMock(), mock.MagicMock(), mock.MagicMock()
-    )
+    config = mock.MagicMock()
+    config.build.index_types = (build.IndexType.SEGMENT_CNV_CENTRIC,)
+    viz_builders = driver.get_viz_builders(config, mock.MagicMock(), mock.MagicMock())
     generic_builders = {b.output: b for b in viz_builders.builders}
 
     assert generic_builders.keys() == frozenset(
@@ -22,6 +22,9 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.MAF,
             build.DataFrame.MAF_METADATA,
             build.DataFrame.PRIMARY_ALIQUOT,
+            build.DataFrame.SEGMENT_CNV,
+            build.DataFrame.SEGMENT_CNV_METADATA,
+            build.DataFrame.SEGMENT_CNV_CENTRIC,
         )
     )
     assert isinstance(generic_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
@@ -43,6 +46,18 @@ def test__get_viz_builders__all_builders() -> None:
     assert isinstance(
         generic_builders[build.DataFrame.PRIMARY_ALIQUOT],
         builders.PrimaryAliquotBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.SEGMENT_CNV],
+        builders.SegmentCNVBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.SEGMENT_CNV_METADATA],
+        builders.SegmentCNVMetadataBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.SEGMENT_CNV_CENTRIC],
+        builders.SegmentCNVCentricBuilder,
     )
 
     assert viz_builders.index_builders.keys() == frozenset(
