@@ -88,8 +88,6 @@ class SegmentCNVCentricBuilder(
                         |____ observation [{}] (see _build_observation_df)
 
         """
-        assert "case_id" in segment_cnv_df.columns
-
         obs_df = self._build_observation_df(segment_cnv_df)
         occurrence_df = (
             case_df.join(obs_df, on=["case_id"], how="left")
