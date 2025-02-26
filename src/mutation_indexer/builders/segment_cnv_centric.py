@@ -10,13 +10,13 @@ from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
 
-class IndexBuilderInputs(TypedDict):
+class SegmentCNVCentricBuilderInputs(TypedDict):
     segment_cnv_df: sql.DataFrame
     case_df: sql.DataFrame
 
 
-class IndexBuilder(
-    bases.IndexBuilder[viz.SegmentCNVCentricBuilder, IndexBuilderInputs]
+class SegmentCNVCentricBuilder(
+    bases.IndexBuilder[viz.SegmentCNVCentricBuilder, SegmentCNVCentricBuilderInputs]
 ):
     INDEX_NAME = "segment_cnv_centric"
 
@@ -39,7 +39,7 @@ class IndexBuilder(
             spark_session,
             es_dataframe_util,
             mappings_loader,
-            input_type=IndexBuilderInputs,
+            input_type=SegmentCNVCentricBuilderInputs,
             output=build.DataFrame.SEGMENT_CNV_CENTRIC,
         )
 
@@ -140,7 +140,9 @@ class IndexBuilder(
 
         return segment_cnv_df
 
-    def _build_from_scratch(self, input_dfs: IndexBuilderInputs) -> sql.DataFrame:
+    def _build_from_scratch(
+        self, input_dfs: SegmentCNVCentricBuilderInputs
+    ) -> sql.DataFrame:
         """Builds segment_cnv_centric dataframe.
 
         STEPS:

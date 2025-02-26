@@ -146,7 +146,7 @@ class TestSegmentCNVCentricBuilder:
         es_dataframe_util = mock.MagicMock()
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((models.SegmentCNV(),), (models.Case(),))
-        builder = segment_cnv_centric.IndexBuilder(
+        builder = segment_cnv_centric.SegmentCNVCentricBuilder(
             config, spark_session, es_dataframe_util, mappings_loader
         )
         result_df = builder.build(**inputs)
@@ -170,7 +170,7 @@ class TestSegmentCNVCentricBuilder:
         es_dataframe_util = mock.MagicMock()
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((segment_cnv,), (case,))
-        builder = segment_cnv_centric.IndexBuilder(
+        builder = segment_cnv_centric.SegmentCNVCentricBuilder(
             config, spark_session, es_dataframe_util, mappings_loader
         )
         result_df = builder.build(**inputs)
@@ -215,7 +215,7 @@ class TestSegmentCNVCentricBuilder:
         es_dataframe_util = mock.MagicMock()
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs(segment_cnvs, cases)
-        builder = segment_cnv_centric.IndexBuilder(
+        builder = segment_cnv_centric.SegmentCNVCentricBuilder(
             config, spark_session, es_dataframe_util, mappings_loader
         )
         result_df = builder.build(**inputs)

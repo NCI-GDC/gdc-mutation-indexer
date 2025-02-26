@@ -143,7 +143,7 @@ def _get_viz_builders(
     yield from input_builders
 
     if build.IndexType.SEGMENT_CNV_CENTRIC in index_types:
-        yield builders.SegmentCNVCentricIndexBuilder(
+        yield builders.SegmentCNVCentricBuilder(
             config.segment_cnv_centric,
             spark_session,
             es_dataframe_util,

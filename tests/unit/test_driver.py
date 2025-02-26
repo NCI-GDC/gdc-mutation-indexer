@@ -57,7 +57,7 @@ def test__get_viz_builders__all_builders() -> None:
     )
     assert isinstance(
         generic_builders[build.DataFrame.SEGMENT_CNV_CENTRIC],
-        builders.SegmentCNVCentricIndexBuilder,
+        builders.SegmentCNVCentricBuilder,
     )
 
     assert viz_builders.index_builders.keys() == frozenset(

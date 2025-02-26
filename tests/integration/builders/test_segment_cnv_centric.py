@@ -237,7 +237,7 @@ def segment_cnv_centric_builder(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
-) -> Iterator[segment_cnv_centric.IndexBuilder]:
+) -> Iterator[segment_cnv_centric.SegmentCNVCentricBuilder]:
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
         segment_config.elasticsearch,
@@ -247,7 +247,7 @@ def segment_cnv_centric_builder(
         es_utils.SchemaLoader(),
     )
 
-    yield segment_cnv_centric.IndexBuilder(
+    yield segment_cnv_centric.SegmentCNVCentricBuilder(
         segment_config.builders.viz.segment_cnv_centric,
         spark_session,
         es_dataframe_util,
@@ -263,7 +263,7 @@ def segment_cnv_centric_builder(
 
 def test__segment_cnv_centric_builder(
     segment_config: configuration.Configuration,
-    segment_cnv_centric_builder: segment_cnv_centric.IndexBuilder,
+    segment_cnv_centric_builder: segment_cnv_centric.SegmentCNVCentricBuilder,
     es_client: elasticsearch.Elasticsearch,
     segment_cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
