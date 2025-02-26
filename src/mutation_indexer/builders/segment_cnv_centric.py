@@ -85,7 +85,7 @@ class SegmentCNVCentricBuilder(
         |____ occurrence{}
                 |____ occurrence_id
                 |____ case {}
-                        |____ observation []
+                        |____ observation [{}] (see _build_observation_df)
 
         """
         assert "case_id" in segment_cnv_df.columns
