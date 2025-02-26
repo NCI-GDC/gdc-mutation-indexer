@@ -49,17 +49,20 @@ class SegmentCNVCentricBuilder(
         observation[]
         |____ observation{}
                 |____ observation_id
+                |____ copy_number
+                |____ sample_ploidy_integer
+                |____ src_file_id
                 |____ variant_status
                 |____ variant_calling {}
                         |____ variant_caller
         """
         obs_cols = (
-            F.col("observation_id"),
-            F.col("copy_number"),
-            F.col("sample_ploidy_integer"),
-            F.col("src_file_id"),
+            "observation_id",
+            "copy_number",
+            "sample_ploidy_integer",
+            "src_file_id",
+            "variant_status",
             F.struct("variant_caller").alias("variant_calling"),
-            F.col("variant_status"),
         )
         obs_df = (
             segment_cnv_df.select(
