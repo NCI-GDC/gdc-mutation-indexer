@@ -25,6 +25,8 @@ tox:
   services:
     - name: docker.osdc.io/ncigdc/ci-elasticsearch-7:${BASE_CONTAINER_VERSION}
       alias: elasticsearch
+      variables:
+        ES_JAVA_OPTS: -Xms2g -Xmx2g
   variables:
     BOTO_CONFIG: /dev/null
     ES_NODES: http://elasticsearch:9200
