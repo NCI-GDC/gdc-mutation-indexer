@@ -5,7 +5,7 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import bases, utils
+from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
@@ -42,20 +42,6 @@ class SegmentCNVCentricBuilder(
             input_type=SegmentCNVCentricBuilderInputs,
             output=build.DataFrame.SEGMENT_CNV_CENTRIC,
         )
-
-    def _truncate_occurrence_outliers(
-        self, segment_cnv_centric_df: sql.DataFrame, threshold: int
-    ) -> sql.DataFrame:
-        """Filters dataframe rows based on percentile rank of occurrence array size.
-
-        Keeps rows that have occurrence array lengths that have a percentile ranking
-        under the configured threshold.
-        """
-        segment_cnv_centric_df = utils.filter_arrays_by_relative_size(
-            segment_cnv_centric_df, "occurrence", threshold
-        )
-
-        return segment_cnv_centric_df
 
     def _build_observation_df(self, segment_cnv_df: sql.DataFrame) -> sql.DataFrame:
         """Builds the observation dataframe from the segment_cnv dataframe.
@@ -177,9 +163,6 @@ class SegmentCNVCentricBuilder(
         segment_cnv_df = self._filter_segment_cnv_df(segment_cnv_df)
         segment_cnv_centric_df = segment_cnv_df.join(
             occurrence_df, on="segment_cnv_id", how="left"
-        )
-        segment_cnv_centric_df = self._truncate_occurrence_outliers(
-            segment_cnv_centric_df, self._config.occurrences_threshold
         )
 
         return segment_cnv_centric_df

@@ -102,8 +102,6 @@ class SegmentCNVCentricBuilder(IndexBuilder):
     Configuration values for running the segment cnv centric builder
     """
 
-    occurrences_threshold: int
-
 
 @dataclasses.dataclass(frozen=True)
 class SSMCentricBuilder(IndexBuilder):

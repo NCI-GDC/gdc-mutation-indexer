@@ -116,7 +116,6 @@ class TestSegmentCNVCentricBuilder:
             acl=(),
             partition_size=1,
             id_field="segment_cnv_id",
-            occurrences_threshold=100,
         )
 
         return config
