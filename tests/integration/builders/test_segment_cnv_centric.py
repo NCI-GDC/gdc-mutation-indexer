@@ -38,6 +38,7 @@ def segment_config() -> Iterator[configuration.Configuration]:
 
 @pytest.fixture(scope="function")
 def indexd(input_dir: pathlib.Path) -> client.IndexClient:
+    """Mocks IndexClient get() and bulk_request() methods."""
     path = input_dir / "segment_cnv" / "file_data"
     existing_files = frozenset(p.name for p in path.glob("**/*"))
 

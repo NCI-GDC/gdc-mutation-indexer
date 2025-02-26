@@ -160,8 +160,12 @@ def get_obsolete_viz_index_builders(
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
-    """
-    Builds the index builders required for the viz export process.
+    """Builds the index builders required for the viz export process.
+
+    NOTE: this function currently returns all the index builders that inherit from
+    the BaseBuilder class. The goal is to transition these index builders to follow
+    the Builder protocol, and then move the instantiation of these index builders
+    to the _get_viz_builders() function.
 
     Args:
         old_config: The old god configuration object with all of the configuration
