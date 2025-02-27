@@ -138,6 +138,7 @@ class Viz:
     gene_centric: IndexBuilder
     cnv_centric: CNVCentricBuilder
     cnv_occurrence_centric: IndexBuilder
+    segment_cnv: Builder
     segment_cnv_centric: SegmentCNVCentricBuilder
     segment_cnv_metadata: Builder
     segment_cnv_occurrence_centric: SegmentCNVOccurrenceCentricBuilder
