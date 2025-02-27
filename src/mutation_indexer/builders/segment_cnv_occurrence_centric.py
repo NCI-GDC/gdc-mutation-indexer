@@ -41,7 +41,7 @@ class SegmentCNVOccurrenceCentricBuilder(
             es_dataframe_util,
             mappings_loader,
             input_type=SegmentCNVOccurrenceCentricBuilderInputs,
-            output=build.DataFrame.SEGMENT_CNV_CENTRIC,
+            output=build.DataFrame.SEGMENT_CNV_OCCURRENCE_CENTRIC,
         )
 
     def _build_from_scratch(
