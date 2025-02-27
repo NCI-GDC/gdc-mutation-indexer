@@ -154,8 +154,6 @@ class SegmentCNVCentricBuilder(
             also reduce the number of joins and size of the final dataframe.
 
             3) Join the segment_cnv dataframe with the occurrence dataframe.
-
-            4) Truncate the outlier occurrences per row, if configured.
         """
         segment_cnv_df = input_dfs["segment_cnv_df"]
         case_df = input_dfs["case_df"]
