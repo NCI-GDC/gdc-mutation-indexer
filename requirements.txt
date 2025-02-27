@@ -42,7 +42,7 @@ frozenlist==1.5.0
     # via
     #   aiohttp
     #   aiosignal
-gdcmodels==5.8
+gdcmodels==5.9
     # via gdc-mutation-indexer (setup.py)
 idna==3.10
     # via
