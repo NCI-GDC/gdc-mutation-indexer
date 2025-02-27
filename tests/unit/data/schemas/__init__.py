@@ -85,6 +85,10 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
+        class SegmentCNVOccurrenceCentric:
+            FINAL: Schema
+
+        @_init_schemas
         class Case:
             FINAL: Schema
             RAW: Schema
