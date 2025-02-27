@@ -7,7 +7,7 @@ fields:
     type: string
   - metadata: {}
     name: segment_cnv
-    nullable: true
+    nullable: false
     type:
       fields:
         - <<: *string_field
@@ -30,7 +30,7 @@ fields:
       type: struct
   - metadata: {}
     name: case
-    nullable: true
+    nullable: false
     type:
       fields:
         - metadata: {}
