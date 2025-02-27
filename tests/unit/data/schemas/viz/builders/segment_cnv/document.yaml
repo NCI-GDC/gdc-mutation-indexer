@@ -9,15 +9,18 @@ fields:
     name: aliquot_id
   - <<: *string_field
     name: chromosome
-  - &integer_field
+  - &long_field
     metadata: {}
     name: start_position
     nullable: true
-    type: integer
-  - <<: *integer_field
+    type: long
+  - <<: *long_field
     name: end_position
-  - <<: *integer_field
+  - &integer_field
+    metadata: {}
     name: copy_number
+    nullable: true
+    type: integer
   - <<: *integer_field
     name: major_copy_number
   - <<: *integer_field

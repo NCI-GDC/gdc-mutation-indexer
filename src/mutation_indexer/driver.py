@@ -132,12 +132,26 @@ def _get_viz_builders(
         builders.PrimaryAliquotBuilder(
             config.primary_aliquot, spark_session, es_dataframe_util, es_rdd_util
         ),
+        builders.SegmentCNVBuilder(
+            config.segment_cnv, spark_session, doc_dataframe_util
+        ),
+        builders.SegmentCNVMetadataBuilder(
+            config.segment_cnv_metadata, spark_session, es_dataframe_util
+        ),
     )
 
     yield from input_builders
 
+    if build.IndexType.SEGMENT_CNV_CENTRIC in index_types:
+        yield builders.SegmentCNVCentricBuilder(
+            config.segment_cnv_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+        )
 
-def get_viz_index_builders(
+
+def get_obsolete_viz_index_builders(
     old_config: adapter.ObsoleteConfig,
     sql_context: sql.SQLContext,
     es_dataframe_util: es_utils.DataFrameUtil,
@@ -146,8 +160,12 @@ def get_viz_index_builders(
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
 ) -> Mapping[build.IndexType, base_builder.BaseBuilder]:
-    """
-    Builds the index builders required for the viz export process.
+    """Builds the index builders required for the viz export process.
+
+    NOTE: this function currently returns all the index builders that inherit from
+    the BaseBuilder class. The goal is to transition these index builders to follow
+    the Builder protocol, and then move the instantiation of these index builders
+    to the _get_viz_builders() function.
 
     Args:
         old_config: The old god configuration object with all of the configuration
@@ -243,7 +261,7 @@ def get_viz_builders(
         consequence_builder,
         observation_builder,
     )
-    viz_index_builders = get_viz_index_builders(
+    viz_index_builders = get_obsolete_viz_index_builders(
         config_adapter,
         sql_context,
         es_dataframe_util,

@@ -71,13 +71,17 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
-        class SegmentCNVMetadata:
-            FILE: Schema
+        class SegmentCNV:
+            DOCUMENT: Schema
             FINAL: Schema
 
         @_init_schemas
-        class SegmentCNV:
-            DOCUMENT: Schema
+        class SegmentCNVCentric:
+            FINAL: Schema
+
+        @_init_schemas
+        class SegmentCNVMetadata:
+            FILE: Schema
             FINAL: Schema
 
         @_init_schemas

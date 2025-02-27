@@ -93,6 +93,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
             build.IndexType.CASE,
             build.IndexType.CNV_CENTRIC,
             build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.SEGMENT_CNV_CENTRIC,
             build.IndexType.SSM_CENTRIC,
             build.IndexType.SSM_OCCURRENCE_CENTRIC,
         )
