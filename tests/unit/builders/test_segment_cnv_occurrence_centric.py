@@ -72,7 +72,7 @@ def assert_observation_grouped_transformed(
     observations = row.case.observation
     assert len(observations) == 2
 
-    sorted_observations = sorted(row.observation, key=lambda obs: obs.observation_id)
+    sorted_observations = sorted(observations, key=lambda obs: obs.observation_id)
 
     for observation, segment_cnv in zip(sorted_observations, segment_cnvs):
         assert_observation_transformed(observation, segment_cnv)
@@ -220,7 +220,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.segment_cnv_occurrence_id == segment_cnvs[0].occurrence_id
-        assert_segment_cnv_transformed(result_row, segment_cnvs[0])
+        assert_segment_cnv_transformed(result_row.segment_cnv, segment_cnvs[0])
         assert_observation_grouped_transformed(result_row, segment_cnvs, case)
 
     @pytest.mark.xfail(reason="not implemented yet")
@@ -245,7 +245,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
                 segment_cnv_id="segment_cnv-id-0",
                 occurrence_id="occ-0",
                 observation_id="obs-1",
-                case_id="case-0",
+                case_id="case-1",
                 aliquot_id="aliquot-1",
             ),
         )
@@ -269,5 +269,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         for row, segment_cnv, case in zip(sorted_results, segment_cnvs, cases):
             assert row.segment_cnv_occurrence_id == segment_cnv.occurrence_id
             assert_segment_cnv_transformed(row.segment_cnv, segment_cnv)
-            assert_observation_transformed(row.case.observation, segment_cnv)
+            assert_observation_transformed(
+                more_itertools.one(row.case.observation), segment_cnv
+            )
             assert_case_transformed(row.case, case)
