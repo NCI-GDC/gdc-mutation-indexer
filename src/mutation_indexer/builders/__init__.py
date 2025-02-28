@@ -22,6 +22,9 @@ from mutation_indexer.builders.primary_aliquot import PrimaryAliquotBuilder
 from mutation_indexer.builders.segment_cnv import SegmentCNVBuilder
 from mutation_indexer.builders.segment_cnv_centric import SegmentCNVCentricBuilder
 from mutation_indexer.builders.segment_cnv_metadata import SegmentCNVMetadataBuilder
+from mutation_indexer.builders.segment_cnv_occurrence_centric import (
+    SegmentCNVOccurrenceCentricBuilder,
+)
 from mutation_indexer.builders.ssm_centric import SSMCentricBuilder
 from mutation_indexer.builders.ssm_occurrence_centric import SSMOccurrenceCentricBuilder
 
@@ -46,6 +49,7 @@ __all__ = (
     "SegmentCNVMetadataBuilder",
     "SegmentCNVBuilder",
     "SegmentCNVCentricBuilder",
+    "SegmentCNVOccurrenceCentricBuilder",
     "SSMCentricBuilder",
     "SSMOccurrenceCentricBuilder",
 )
