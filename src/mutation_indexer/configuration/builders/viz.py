@@ -91,10 +91,17 @@ class CaseCentricBuilder(IndexBuilder):
 @dataclasses.dataclass(frozen=True)
 class CNVCentricBuilder(IndexBuilder):
     """
-    Configuration values for running the case builder
+    Configuration values for running the cnv centric builder
     """
 
     occurrences_threshold: int
+
+
+@dataclasses.dataclass(frozen=True)
+class SegmentCNVCentricBuilder(IndexBuilder):
+    """
+    Configuration values for running the segment cnv centric builder
+    """
 
 
 @dataclasses.dataclass(frozen=True)
@@ -126,6 +133,7 @@ class Viz:
     cnv_centric: CNVCentricBuilder
     cnv_occurrence_centric: IndexBuilder
     segment_cnv: Builder
+    segment_cnv_centric: SegmentCNVCentricBuilder
     segment_cnv_metadata: Builder
     ssm_centric: SSMCentricBuilder
     ssm_occurrence_centric: IndexBuilder

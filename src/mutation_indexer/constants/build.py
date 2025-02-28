@@ -16,8 +16,9 @@ class DataFrame(enum.IntEnum):
     MAF = enum.auto()
     MAF_METADATA = enum.auto()
     PRIMARY_ALIQUOT = enum.auto()
-    SEGMENT_CNV_METADATA = enum.auto()
     SEGMENT_CNV = enum.auto()
+    SEGMENT_CNV_CENTRIC = enum.auto()
+    SEGMENT_CNV_METADATA = enum.auto()
     UQFPKM = enum.auto()
 
     def to_param(self) -> str:
@@ -35,6 +36,7 @@ class IndexType(enum.IntEnum):
     CNV_CENTRIC = enum.auto()
     CNV_OCCURRENCE_CENTRIC = enum.auto()
     GENE_CENTRIC = enum.auto()
+    SEGMENT_CNV_CENTRIC = enum.auto()
     SSM_CENTRIC = enum.auto()
     SSM_OCCURRENCE_CENTRIC = enum.auto()
     GENE_EXPRESSION = enum.auto()

@@ -6,6 +6,7 @@ Backend for exporting mutation indices for visualization on the GDC
 
 ### Contents
 - [Architecture](#architecture)
+- [Style Guide](#style-guide)
 - [Pre-Commit](#setup-pre-commit-hook-to-check-for-secrets)
 - [Tests](tests/README.md)
   - [Running Tests](tests/README.md#running-tests)
@@ -22,6 +23,10 @@ Mutation indexer is an ETL platform leveraging Spark/Pyspark. It combines data f
 derived from the GDC graph (via the graph indices), static data (e.g. gene model), and
 data contained in analysis files (e.g. MAF and ASCAT files) in order to create
 structured data which can be used for visualization and further analysis.
+
+## Style Guide
+
+Mutation Indexer strives to follow the best practices set forth here: [pyspark-style-guide](https://github.com/palantir/pyspark-style-guide?tab=readme-ov-file#pyspark-style-guide)
 
 ## Pre-Commit
 We use [pre-commit](https://pre-commit.com/) to setup pre-commit hooks for this repo.

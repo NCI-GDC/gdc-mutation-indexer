@@ -198,6 +198,7 @@ class CaseFieldSelector:
             build.IndexType.CASE_CENTRIC: "",
             build.IndexType.CNV_CENTRIC: "occurrence.case",
             build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
+            build.IndexType.SEGMENT_CNV_CENTRIC: "occurrence.case",
             build.IndexType.SSM_CENTRIC: "occurrence.case",
             build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
         }
@@ -236,9 +237,9 @@ class CaseFieldSelector:
         Selects all common case fields found in the given indices.
 
         Args:
-            *index_types: any indecies which should be included when selecting the case
+            *index_types: any indicies which should be included when selecting the case
                 fields. Valid types: CASE_CENTRIC, CNV_CENTRIC, CNV_OCCURRENCE_CENTRIC,
-                SSM_CENTRIC, and SSM_OCCURRENCE_CENTRIC
+                SEGMENT_CNV_CENTRIC, SSM_CENTRIC, and SSM_OCCURRENCE_CENTRIC
             excluded_fields: any fields which should be excluded in the selection. If
                 a parent field is excluded then all of its children will be eg. if the
                 exclusion is samples, then samples.sample_id is automatically excluded.
