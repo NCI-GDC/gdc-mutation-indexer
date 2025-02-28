@@ -21,6 +21,7 @@ _VIZ_INDICES = frozenset(
         build.IndexType.CNV_OCCURRENCE_CENTRIC,
         build.IndexType.GENE_CENTRIC,
         build.IndexType.SEGMENT_CNV_CENTRIC,
+        build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,
         build.IndexType.SSM_CENTRIC,
         build.IndexType.SSM_OCCURRENCE_CENTRIC,
     )
