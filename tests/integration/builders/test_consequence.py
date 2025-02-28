@@ -219,7 +219,7 @@ class TestConsequenceBuilder:
                 # Make sure all transcripts have vep_impact and it is not None:
                 assert list(transcript["vep_impact"])[
                     0
-                ], "Transcript {} has no vep_impact".format(transcript_id)
+                ], f"Transcript {transcript_id} has no vep_impact"
 
                 for effect, values in transcript.items():
                     # Make sure that effects are same for particular ssm-transcript combination

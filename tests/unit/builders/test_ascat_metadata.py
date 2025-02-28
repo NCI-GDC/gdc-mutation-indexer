@@ -16,7 +16,7 @@ from tests.unit import utils
 from tests.unit.data import schemas
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = "AscatNGS"
     analysis_id: str = "analysis-0"
@@ -25,7 +25,7 @@ class Analysis:
 @dataclasses.dataclass(frozen=True)
 class Aliquot:
     aliquot_id: str = "a-0"
-    created_datetime: Optional[str] = datetime.datetime.min.isoformat(
+    created_datetime: str | None = datetime.datetime.min.isoformat(
         timespec="microseconds"
     )
 
@@ -49,7 +49,7 @@ class Analyte:
 
 @dataclasses.dataclass(frozen=True)
 class Portion:
-    analytes: Optional[tuple[Analyte, ...]] = (Analyte(),)
+    analytes: tuple[Analyte, ...] | None = (Analyte(),)
 
     def to_rdd_data(self) -> dict:
         analytes = (

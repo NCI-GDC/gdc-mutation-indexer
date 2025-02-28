@@ -1,5 +1,4 @@
 import enum
-from typing import Optional, Tuple
 
 
 class DataFrame(enum.IntEnum):
@@ -40,7 +39,7 @@ class IndexType(enum.IntEnum):
     SSM_OCCURRENCE_CENTRIC = enum.auto()
     GENE_EXPRESSION = enum.auto()
 
-    def get_mappings_details(self) -> Tuple[str, Optional[str]]:
+    def get_mappings_details(self) -> tuple[str, str | None]:
         if self in (IndexType.CASE, IndexType.FILE):
             return "gdc_from_graph", self.name.lower()
 

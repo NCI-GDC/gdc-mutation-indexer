@@ -1,7 +1,7 @@
 import decimal
 import uuid
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar, Optional, Protocol, Union
+from typing import Any, ClassVar, Protocol
 from unittest import mock
 
 from pyspark import sql
@@ -23,9 +23,7 @@ def generate_uuid5(*args: Any) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, "\t".join(str(arg) for arg in args)))
 
 
-def _get_decimal(
-    x: Optional[Union[float, decimal.Decimal]]
-) -> Optional[decimal.Decimal]:
+def _get_decimal(x: float | decimal.Decimal | None) -> decimal.Decimal | None:
     if x is None:
         return x
     elif isinstance(x, decimal.Decimal):
@@ -35,8 +33,8 @@ def _get_decimal(
 
 
 def assert_float_equal(
-    a: Optional[Union[float, decimal.Decimal]],
-    b: Optional[Union[float, decimal.Decimal]],
+    a: float | decimal.Decimal | None,
+    b: float | decimal.Decimal | None,
 ) -> None:
     a = _get_decimal(a)
     b = _get_decimal(b)
@@ -45,8 +43,8 @@ def assert_float_equal(
 
 
 def assert_float_not_equal(
-    a: Optional[Union[float, decimal.Decimal]],
-    b: Optional[Union[float, decimal.Decimal]],
+    a: float | decimal.Decimal | None,
+    b: float | decimal.Decimal | None,
 ) -> None:
     a = _get_decimal(a)
     b = _get_decimal(b)

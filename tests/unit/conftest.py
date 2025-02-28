@@ -13,7 +13,7 @@ from tests.unit import utils
 
 
 @pytest.fixture(scope="session")
-def spark_session() -> Generator[sql.SparkSession, None, None]:
+def spark_session() -> Generator[sql.SparkSession]:
     with sql.SparkSession.builder.master("local[*]").appName(
         "sqlContextFixture"
     ).config("spark.sql.shuffle.partitions", 1).config(

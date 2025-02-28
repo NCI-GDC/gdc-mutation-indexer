@@ -1,9 +1,9 @@
-from typing import AbstractSet, Generic, Mapping, Optional, Type, TypeVar
+from collections.abc import Mapping
+from typing import AbstractSet, Generic, TypedDict, TypeVar
 from unittest import mock
 
 import pytest
 from pyspark import sql
-from typing_extensions import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import common
@@ -48,7 +48,7 @@ class TestDataFrameInputManager:
         ids=("empty", "exact_match", "extra"),
     )
     def test__check__all_keys_are_contained(
-        self, input: dict, input_type: Type[TypedDict]
+        self, input: dict, input_type: type[TypedDict]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -77,7 +77,7 @@ class TestDataFrameInputManager:
         ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: Type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -88,11 +88,11 @@ class TestInputBuilder:
     class DummyBuilder(Generic[TInputs], bases.InputBuilder[common.Builder, TInputs]):
         def __init__(
             self,
-            input_type: Type[TInputs],
+            input_type: type[TInputs],
             output: build.DataFrame,
-            config: Optional[common.Builder],
-            spark_session: Optional[sql.SparkSession],
-            scratch_df: Optional[sql.DataFrame],
+            config: common.Builder | None,
+            spark_session: sql.SparkSession | None,
+            scratch_df: sql.DataFrame | None,
         ) -> None:
             super().__init__(
                 config
@@ -117,9 +117,9 @@ class TestInputBuilder:
     class Builder0(DummyBuilder[EmptyInputs]):
         def __init__(
             self,
-            config: Optional[common.Builder] = None,
-            spark_session: Optional[sql.SparkSession] = None,
-            scratch_df: Optional[sql.DataFrame] = None,
+            config: common.Builder | None = None,
+            spark_session: sql.SparkSession | None = None,
+            scratch_df: sql.DataFrame | None = None,
         ) -> None:
             super().__init__(
                 EmptyInputs,
@@ -133,9 +133,9 @@ class TestInputBuilder:
         def __init__(
             self,
             output: build.DataFrame = build.DataFrame.GENE_MODEL,
-            config: Optional[common.Builder] = None,
-            spark_session: Optional[sql.SparkSession] = None,
-            scratch_df: Optional[sql.DataFrame] = None,
+            config: common.Builder | None = None,
+            spark_session: sql.SparkSession | None = None,
+            scratch_df: sql.DataFrame | None = None,
         ) -> None:
             super().__init__(
                 DummyInputs,

@@ -2,7 +2,7 @@ import dataclasses
 import random
 import string
 import sys
-from typing import Dict, FrozenSet, Iterable, Optional, Tuple
+from collections.abc import Iterable
 from unittest import mock
 
 import more_itertools
@@ -226,14 +226,14 @@ class Exposure:
 
 @dataclasses.dataclass(frozen=True)
 class FamilyHistory:
-    family_history_id: Optional[str] = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
-    relationship_age_at_diagnosis: Optional[float] = None
-    relationship_gender: Optional[str] = None
-    relationship_primary_diagnosis: Optional[str] = "Rectal Cancer"
-    relationship_type: Optional[str] = None
-    relative_with_cancer_history: Optional[str] = "yes"
-    state: Optional[str] = None
-    submitter_id: Optional[str] = "HCM-BROD-0001-C18_family_history"
+    family_history_id: str | None = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
+    relationship_age_at_diagnosis: float | None = None
+    relationship_gender: str | None = None
+    relationship_primary_diagnosis: str | None = "Rectal Cancer"
+    relationship_type: str | None = None
+    relative_with_cancer_history: str | None = "yes"
+    state: str | None = None
+    submitter_id: str | None = "HCM-BROD-0001-C18_family_history"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -626,13 +626,13 @@ def assert_diagnoses_equal(result_diagnosis: sql.Row, diagnosis: Diagnosis) -> N
     assert result_diagnosis.tumor_grade == diagnosis.tumor_grade
     assert result_diagnosis.year_of_diagnosis == diagnosis.year_of_diagnosis
 
-    for result_pathology_detail, pathology_detail in more_itertools.zip_equal(
-        result_diagnosis.pathology_details, diagnosis.pathology_details
+    for result_pathology_detail, pathology_detail in zip(
+        result_diagnosis.pathology_details, diagnosis.pathology_details, strict=True
     ):
         assert_pathology_details_equal(result_pathology_detail, pathology_detail)
 
-    for result_treatment, treatment in more_itertools.zip_equal(
-        result_diagnosis.treatments, diagnosis.treatments
+    for result_treatment, treatment in zip(
+        result_diagnosis.treatments, diagnosis.treatments, strict=True
     ):
         assert_treatments_equal(result_treatment, treatment)
 
@@ -717,24 +717,22 @@ def assert_cases_equal(result_case: sql.Row, case: Case) -> None:
         result_case.tissue_source_site, case.tissue_source_site
     )
 
-    for result_diagnosis, diagnosis in more_itertools.zip_equal(
-        result_case.diagnoses, case.diagnoses
+    for result_diagnosis, diagnosis in zip(
+        result_case.diagnoses, case.diagnoses, strict=True
     ):
         assert_diagnoses_equal(result_diagnosis, diagnosis)
 
-    for result_exposure, exposure in more_itertools.zip_equal(
-        result_case.exposures, case.exposures
+    for result_exposure, exposure in zip(
+        result_case.exposures, case.exposures, strict=True
     ):
         assert_exposures_equal(result_exposure, exposure)
 
-    for result_family_history, family_history in more_itertools.zip_equal(
-        result_case.family_histories, case.family_histories
+    for result_family_history, family_history in zip(
+        result_case.family_histories, case.family_histories, strict=True
     ):
         assert_family_history_equal(result_family_history, family_history)
 
-    for result_sample, sample in more_itertools.zip_equal(
-        result_case.samples, case.samples
-    ):
+    for result_sample, sample in zip(result_case.samples, case.samples, strict=True):
         assert_sample_equal(result_sample, sample)
 
 
@@ -778,8 +776,8 @@ class TestCaseBuilder:
         self,
         maf_metadata_case_ids: Iterable[str] = (),
         ascat_metadata_case_ids: Iterable[str] = (),
-    ) -> Dict[str, sql.DataFrame]:
-        def to_rows(case_ids: Iterable[str]) -> Tuple[sql.Row, ...]:
+    ) -> dict[str, sql.DataFrame]:
+        def to_rows(case_ids: Iterable[str]) -> tuple[sql.Row, ...]:
             return tuple(sql.Row(case_id=case_id) for case_id in case_ids)
 
         maf_metadata_df = self.spark_session.createDataFrame(
@@ -845,7 +843,7 @@ class TestCaseBuilder:
         self,
         maf_metadata_cases: Iterable[str],
         ascat_metadata_cases: Iterable[str],
-        available_variation_data: FrozenSet[str],
+        available_variation_data: frozenset[str],
     ) -> None:
         config = self.arrange_config()
         case = Case(case_id="case-0")

@@ -1,7 +1,7 @@
 import io
 import types
 from collections.abc import Iterable, Iterator
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, TypedDict, Union
 
 import inflect
 import more_itertools
@@ -56,7 +56,7 @@ class Struct(TypedDict):
 
 
 class Array(TypedDict):
-    elementType: Union[str, Struct]
+    elementType: str | Struct
     containsNull: bool
     type: str
 
@@ -75,7 +75,7 @@ class ClassGenerator:
         self,
         defaults: dict[str, Any],
         include_asserts: bool,
-        inflection: Optional[inflect.engine] = None,
+        inflection: inflect.engine | None = None,
     ) -> None:
         self._defaults = defaults
         self._include_asserts = include_asserts
@@ -94,7 +94,7 @@ class ClassGenerator:
 
     def _get_array_field(
         self, name: str, spark_type: Array, indents: int
-    ) -> tuple[str, Optional[Iterator[str]]]:
+    ) -> tuple[str, Iterator[str] | None]:
         element_type = spark_type["elementType"]
         default = self._defaults.get(name)
         model = None

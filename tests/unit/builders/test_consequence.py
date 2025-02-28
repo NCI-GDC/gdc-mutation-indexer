@@ -1,7 +1,6 @@
 import dataclasses
 import decimal
 from collections.abc import Iterable
-from typing import Optional
 
 import more_itertools
 import pytest
@@ -16,17 +15,17 @@ from tests.unit.data.models import viz as models
 
 @dataclasses.dataclass(frozen=True)
 class AllEffects:
-    do_not_use: Optional[str] = "CSMD2"
-    consequence_type: Optional[str] = "missense_variant"
-    aa_change: Optional[str] = "p.A609S"
-    transcript_id: Optional[str] = "ENST00000373381"
-    ref_seq_accession: Optional[str] = "NM_001281956.2"
-    hgvsc: Optional[str] = "c.1825G>T"
-    vep_impact: Optional[str] = "MODERATE"
-    is_canonical: Optional[str] = "YES"
-    sift: Optional[str] = "tolerated(0.14)"
-    polyphen: Optional[str] = "benign(0.305)"
-    transcript_strand: Optional[str] = "-1"
+    do_not_use: str | None = "CSMD2"
+    consequence_type: str | None = "missense_variant"
+    aa_change: str | None = "p.A609S"
+    transcript_id: str | None = "ENST00000373381"
+    ref_seq_accession: str | None = "NM_001281956.2"
+    hgvsc: str | None = "c.1825G>T"
+    vep_impact: str | None = "MODERATE"
+    is_canonical: str | None = "YES"
+    sift: str | None = "tolerated(0.14)"
+    polyphen: str | None = "benign(0.305)"
+    transcript_strand: str | None = "-1"
 
     def __str__(self) -> str:
         return ",".join(
@@ -294,7 +293,7 @@ class TestConsequenceBuilder:
         ids=("valid_start", "valid_start_with_end", "no_valid_start"),
     )
     def test__build_for_ssm__aa_start(
-        self, aa_change: Optional[str], expected_start: Optional[int]
+        self, aa_change: str | None, expected_start: int | None
     ) -> None:
         all_effects = AllEffects(aa_change=aa_change)
         maf = models.MAF(all_effects=str(all_effects))
@@ -317,7 +316,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__aa_end(
-        self, aa_change: Optional[str], expected_end: Optional[int]
+        self, aa_change: str | None, expected_end: int | None
     ) -> None:
         """TODO: FOLLOW UP ON E1371Rfs*16 not 16?"""
         all_effects = AllEffects(aa_change=aa_change)
@@ -351,7 +350,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_polyphen_impact_value(
-        self, polyphen: Optional[str], expected_impact: str
+        self, polyphen: str | None, expected_impact: str
     ) -> None:
         all_effects = AllEffects(polyphen=polyphen)
         maf = models.MAF(all_effects=str(all_effects))
@@ -377,7 +376,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_polyphen_score_value(
-        self, polyphen: Optional[str], expected_score: Optional[decimal.Decimal]
+        self, polyphen: str | None, expected_score: decimal.Decimal | None
     ) -> None:
         all_effects = AllEffects(polyphen=polyphen)
         maf = models.MAF(all_effects=str(all_effects))
@@ -399,7 +398,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_sift_impact_value(
-        self, sift: Optional[str], expected_impact: str
+        self, sift: str | None, expected_impact: str
     ) -> None:
         all_effects = AllEffects(sift=sift)
         maf = models.MAF(all_effects=str(all_effects))
@@ -425,7 +424,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_sift_score_value(
-        self, sift: Optional[str], expected_score: Optional[decimal.Decimal]
+        self, sift: str | None, expected_score: decimal.Decimal | None
     ) -> None:
         all_effects = AllEffects(sift=sift)
         maf = models.MAF(all_effects=str(all_effects))
@@ -501,7 +500,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__gene_aa_change_all_effects(
-        self, aa_changes: Iterable[Optional[str]], expected_output: list[str]
+        self, aa_changes: Iterable[str | None], expected_output: list[str]
     ) -> None:
         all_effects = ";".join(
             str(AllEffects(do_not_use="gene", aa_change=c)) for c in aa_changes

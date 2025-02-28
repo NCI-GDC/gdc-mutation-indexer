@@ -16,7 +16,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.13",
     ],
     license="Apache",
     include_package_data=True,
@@ -24,16 +24,11 @@ setup(
         "boto3",
         "boto3-stubs[s3]",
         "elasticsearch[async]~=7.6",
-        "importlib-resources~=3.2",
         "marshmallow-dataclass~=8.5",
-        "marshmallow-enum~=1.5",
-        "more-itertools~=8.9",
+        "more-itertools~=10.0",
         "numpy",
-        "pyspark~=3.3.1",
-        "python-json-logger~=2.0",
-        # `setuptools` is required for references to `pkg_resources` in mutation
-        # indexer itself and in normalizer/gdc-models.
-        "setuptools",
+        "pyspark~=3.5.0",
+        "python-json-logger~=3.0",
         "toml~=0.10",
         "typing-extensions~=4.1",
         "indexclient",
@@ -53,4 +48,5 @@ setup(
     entry_points={
         "console_scripts": ("mutation-indexer = mutation_indexer.client:main [client]",)
     },
+    python_requires="~=3.13.0",
 )

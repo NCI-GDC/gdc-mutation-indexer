@@ -3,9 +3,9 @@ import logging
 import re
 import uuid
 from collections.abc import Container, Set
-from typing import Any, Optional
+from importlib import resources
+from typing import Any
 
-import pkg_resources
 import yaml
 from gdcmodels import esmodels, mapper
 from pyspark import sql
@@ -25,12 +25,8 @@ def get_default_excludes(index, mapping):
     if DEFAULT_EXCLUDE_FIELDS:
         return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
-    path = pkg_resources.resource_filename(
-        "mutation_indexer", "schemas/exclude.defaults.yaml"
-    )
-
-    with open(path) as f:
-        excludes = yaml.safe_load(f)
+    resource = resources.files("mutation_indexer") / "schemas/exclude.defaults.yaml"
+    excludes = yaml.safe_load(resource.read_bytes())
 
     for k, v in excludes.items():
         DEFAULT_EXCLUDE_FIELDS[k] = v
@@ -93,8 +89,8 @@ def extract_sift_polyphen(df):
     Extracts '{polyphen|sift}_{impact|score}' from 'polyphen' and 'sift' columns
     """
     for c in ["polyphen", "sift"]:
-        df = extract_impact(df, c, "{}_impact".format(c.lower()))
-        df = extract_score(df, c, "{}_score".format(c.lower()))
+        df = extract_impact(df, c, f"{c.lower()}_impact")
+        df = extract_score(df, c, f"{c.lower()}_score")
     df = df.drop("polyphen").drop("sift")
     return df
 
@@ -102,8 +98,8 @@ def extract_sift_polyphen(df):
 def select_mapping(
     index_name: str,
     mapping_name: str,
-    selector: Optional[mapper.Selector] = None,
-    exclude_fields: Optional[Container[str]] = None,
+    selector: mapper.Selector | None = None,
+    exclude_fields: Container[str] | None = None,
 ) -> esmodels.ESMapping:
     """
     Selects the sub-mapping from the index.
@@ -142,7 +138,7 @@ def struct_select(
     index_name: str,
     mapping_name: str,
     ignore: Container[str] = (),
-    selector: Optional[mapper.Selector] = None,
+    selector: mapper.Selector | None = None,
 ):
     """
     Takes the structure from a mapping and produces arguments for a select
@@ -307,7 +303,7 @@ def convert_empty_str_to_null_in_col(df, col_name):
 
 
 def get_column_name(column_name, dataset_key):
-    return "{}_{}".format(column_name, dataset_key)
+    return f"{column_name}_{dataset_key}"
 
 
 def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataFrame:

@@ -1,13 +1,12 @@
 import functools
 import logging
 from collections.abc import Collection, Iterable, Sequence
-from typing import Union
+from typing import Literal, TypedDict
 
 import elasticsearch
 import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal, TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
@@ -306,7 +305,7 @@ class MAFMetadataBuilder(
         self._file_filter_factory = file_filter_factory
 
     def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Collection[str], Literal[True]]
+        self, query: dict, include_fields: Collection[str] | Literal[True]
     ) -> sql.DataFrame:
         return (
             super()

@@ -4,11 +4,10 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-import pathlib
 import uuid
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-import marshmallow_enum
 from marshmallow import exceptions, fields, validate
 
 from mutation_indexer.configuration import marshmallow_extensions
@@ -54,7 +53,7 @@ class Build:
         metadata={
             "metadata": {
                 "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    marshmallow_enum.EnumField(build.IndexType)
+                    fields.Enum(build.IndexType)
                 ),
             },
             "validate": IndexTypesValidator(),

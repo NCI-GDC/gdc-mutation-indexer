@@ -8,11 +8,11 @@ import os
 import pathlib
 import tempfile
 from collections.abc import Iterable, Iterator, Mapping
+from importlib import resources
 from typing import Any, cast
 
 import elasticsearch
 import halo
-import importlib_resources as resources
 import more_itertools
 import toml
 
