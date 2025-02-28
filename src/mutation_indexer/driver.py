@@ -139,12 +139,19 @@ def _get_viz_builders(
             config.segment_cnv_metadata, spark_session, es_dataframe_util
         ),
     )
-
     yield from input_builders
 
     if build.IndexType.SEGMENT_CNV_CENTRIC in index_types:
         yield builders.SegmentCNVCentricBuilder(
             config.segment_cnv_centric,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+        )
+
+    if build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC in index_types:
+        yield builders.SegmentCNVOccurrenceCentricBuilder(
+            config.segment_cnv_occurrence_centric,
             spark_session,
             es_dataframe_util,
             mappings_loader,
