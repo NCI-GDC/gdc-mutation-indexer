@@ -116,6 +116,10 @@ class SegmentCNVOccurrenceCentricBuilder(
     def _build_segment_cnv_occurrence_centric(
         self, segment_cnv_column_df: sql.DataFrame, case_column_df: sql.DataFrame
     ) -> sql.DataFrame:
+        """Builds the segment_cnv_occurrence_centric dataframe.
+
+        This will rename occurrence_id as the segment_cnv_occurrence_id.
+        """
         segment_cnv_occurrence_centric_df = segment_cnv_column_df.join(
             case_column_df, on=["segment_cnv_id", "case_id"], how="inner"
         )
@@ -130,7 +134,18 @@ class SegmentCNVOccurrenceCentricBuilder(
     def _build_from_scratch(
         self, input_dfs: SegmentCNVOccurrenceCentricBuilderInputs
     ) -> sql.DataFrame:
-        """Builds segment_cnv_occurrence_centric dataframe."""
+        """Builds segment_cnv_occurrence_centric dataframe.
+
+        STEPS:
+            1) Build the dataframe that will populate the segment_cnv struct
+            column in the final dataframe. The duplicate rows (by segment_cnv_id and
+            case_id) will be dropped to avoid extraneous work during step 3.
+
+            2) Build the dataframe that will populate the case struct column in
+            the final dataframe.
+
+            3) Join the above two dataframes.
+        """
         segment_cnv_df = input_dfs["segment_cnv_df"]
         case_df = input_dfs["case_df"]
 
