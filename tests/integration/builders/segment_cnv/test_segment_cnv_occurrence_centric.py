@@ -8,7 +8,7 @@ from elasticsearch import helpers
 from pyspark import sql
 
 from mutation_indexer import configuration, es_utils
-from mutation_indexer.builders import segment_cnv_occurrence_centric
+from mutation_indexer.builders import segment_cnv_occurrence_centric as scoc
 from mutation_indexer.constants import build
 
 
@@ -17,7 +17,7 @@ def segment_cnv_occurrence_centric_builder(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
-) -> Iterator[segment_cnv_occurrence_centric.SegmentCNVOccurrenceCentricBuilder]:
+) -> Iterator[scoc.SegmentCNVOccurrenceCentricBuilder]:
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
         segment_config.elasticsearch,
@@ -27,7 +27,7 @@ def segment_cnv_occurrence_centric_builder(
         es_utils.SchemaLoader(),
     )
 
-    yield segment_cnv_occurrence_centric.SegmentCNVOccurrenceCentricBuilder(
+    yield scoc.SegmentCNVOccurrenceCentricBuilder(
         segment_config.builders.viz.segment_cnv_occurrence_centric,
         spark_session,
         es_dataframe_util,
@@ -45,7 +45,7 @@ def segment_cnv_occurrence_centric_builder(
 
 def test__segment_cnv_occurrence_centric_builder(
     segment_config: configuration.Configuration,
-    segment_cnv_occurrence_centric_builder: segment_cnv_occurrence_centric.SegmentCNVOccurrenceCentricBuilder,
+    segment_cnv_occurrence_centric_builder: scoc.SegmentCNVOccurrenceCentricBuilder,
     es_client: elasticsearch.Elasticsearch,
     segment_cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
