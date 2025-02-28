@@ -214,6 +214,15 @@ is_cached = false
 mode = "NEITHER"
 path = ""
 
+[builders.viz.segment_cnv_occurrence_centric]
+id_field = "segment_cnv_id"
+is_cached = true
+partition_size = 12
+
+[builders.viz.segment_cnv_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.ssm_centric]
 id_field = "ssm_id"
 is_cached = true
