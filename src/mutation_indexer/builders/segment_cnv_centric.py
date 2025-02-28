@@ -55,6 +55,9 @@ class SegmentCNVCentricBuilder(
                 |____ variant_status
                 |____ variant_calling {}
                         |____ variant_caller
+
+        TODO: DEV-3314 use build_observation_for_segment_cnv() to share observation building
+        logic with SegmentCNVOccurrenceCentricBuilder.
         """
         obs_cols = (
             "observation_id",

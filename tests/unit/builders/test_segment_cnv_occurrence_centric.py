@@ -117,7 +117,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
-    @pytest.mark.xfail(reason="not implemented yet")
     def test__build__single_row(self) -> None:
         """Tests building a single row.
 
@@ -143,7 +142,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
             result_df.schema, self._final_schema, ignore_order=True
         )
 
-    @pytest.mark.xfail(reason="not implemented yet")
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segment cnv centric dataframe.
 
@@ -176,7 +174,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
             more_itertools.one(result_row.case.observation), segment_cnv
         )
 
-    @pytest.mark.xfail(reason="not implemented yet")
     def test__build__observations_grouped(self) -> None:
         """Test correctness of grouping observations.
 
@@ -223,7 +220,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         assert_segment_cnv_transformed(result_row.segment_cnv, segment_cnvs[0])
         assert_observation_grouped_transformed(result_row, segment_cnvs, case)
 
-    @pytest.mark.xfail(reason="not implemented yet")
     def test__build__multiple_rows(self) -> None:
         """Test correctness of each row being unique on (segment_cnv_id, case_id).
 
