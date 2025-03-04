@@ -79,7 +79,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         )
 
     def _build_segment_cnv_subtree(
-        self, segment_cnv_df: sql.DataFrame, case_df: sql.DataFrame
+        self, segment_cnv_df: sql.DataFrame
     ) -> sql.DataFrame:
         """Aggregates all segment_cnvs for each case.
 
@@ -122,9 +122,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             "segment_cnv_id",
             "case_id",
         )
-        segment_cnv_subtree = segment_cnv_subtree.groupBy(
-            ["segment_cnv_id", "case_id"]
-        ).agg(F.collect_set("segment_cnv").alias("segment_cnv"))
+        segment_cnv_subtree = segment_cnv_subtree.groupBy(["case_id"]).agg(
+            F.collect_set("segment_cnv").alias("segment_cnv")
+        )
         segment_cnv_subtree = segment_cnv_subtree.select("case_id", "segment_cnv")
 
         return segment_cnv_subtree
@@ -164,7 +164,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         segment_cnv_subtree = self._build_segment_cnv_subtree(segment_cnv_df)
 
         self.log("Join Case with Segment CNV subtree [left, case_id]")
-        case_centric = case_centric.join(segment_cnv_subtree, on["case_id"], how="left")
+        case_centric = case_centric.join(
+            segment_cnv_subtree, on=["case_id"], how="left"
+        )
 
         self.log("Finalizing case_centric build")
         case_centric = self._final_transform(case_centric)

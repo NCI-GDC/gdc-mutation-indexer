@@ -161,6 +161,10 @@ class Viz:
             class SSM:
                 FINAL: Schema
 
+            @_init_schemas
+            class SegmentCNV:
+                FINAL: Schema
+
         @_init_schemas
         class PrimaryAliquot:
             FINAL: Schema
