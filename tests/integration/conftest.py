@@ -489,6 +489,41 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
+def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
+    """Builds a dataframe of segment_cnv for a few cases that exist in the test data."""
+    segment_cnvs = [
+        (
+            "1db41963-a520-47f0-828c-ed5c626507b1",
+            "709b96a9-c9f2-4026-a405-93268261014a",
+            "0f137dab-89d9-479d-84ba-9e3af6ea67b1",
+            "7d760c04-49d6-43cc-b87b-687741547aad",
+        ),
+        (
+            "0ff579a1-e295-408d-b194-febbca798e34",
+            "7f04804c-d8f2-4bf8-84fb-2ecfa8b0f731",
+            "2d12a148-f621-4e7e-8299-715dac43c751",
+            "643554e3-bdfa-4350-a41d-2789295257ed",
+        ),
+        (
+            "872092b3-d31e-44d7-bd03-e29f52f8ab5a",
+            "e6ee785c-3af0-4930-b1e6-c80900a348b9",
+            "8f0763ec-b3a3-4ab0-a8e4-6acd14eee43d",
+            "2a3abfa0-b450-474c-90d1-9de511ca3e68",
+        ),
+    ]
+    schema = types.StructType(
+        [
+            types.StructField("case_id", types.StringType()),
+            types.StructField("occurrence_id", types.StringType()),
+            types.StructField("observation_id", types.StringType()),
+            types.StructField("segment_cnv_id", types.StringType()),
+        ]
+    )
+
+    return sqlContext.createDataFrame(segment_cnvs, schema)
+
+
+@pytest.fixture(scope="session")
 def consequence_builder(
     default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
@@ -523,6 +558,7 @@ def case_centric_df(
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    segment_cnv_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     es_client: elasticsearch.Elasticsearch,
@@ -553,7 +589,12 @@ def case_centric_df(
     ascat_metadata_df = cnv_df.select("case_id")
 
     builder.build(
-        maf_metadata_df, maf_df, ascat_metadata_df, cnv_df, primary_aliquot_df
+        maf_metadata_df,
+        maf_df,
+        ascat_metadata_df,
+        cnv_df,
+        primary_aliquot_df,
+        segment_cnv_df,
     )
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")

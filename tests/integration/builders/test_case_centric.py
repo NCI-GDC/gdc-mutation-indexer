@@ -1,10 +1,12 @@
 from typing import AbstractSet
 
+import elasticsearch
 import pytest
 from pyspark import sql
 
-from mutation_indexer import builders
+from mutation_indexer import builders, configuration
 from mutation_indexer.configuration import adapter
+from mutation_indexer.constants import build
 from tests.integration.utils import join_utils
 
 
@@ -167,3 +169,22 @@ def test_available_variation_data(
             assert row.available_variation_data == ["ssm"]
         elif row.case_id in empty_cases:
             assert row.available_variation_data == []
+
+
+def test__case_centric__segment_cnv(
+    case_centric_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
+    default_config: configuration.Configuration,
+) -> None:
+    """Sanity check to ensure case_centric index builds segment_cnv data."""
+    case_centric_index = default_config.elasticsearch.write.indices[
+        build.IndexType.CASE_CENTRIC
+    ]
+    query = {
+        "nested": {
+            "path": "segment_cnv",
+            "query": {"exists": {"field": "segment_cnv.segment_cnv_id"}},
+        }
+    }
+    hits = es_client.search(index=case_centric_index, query=query)
+    assert len(hits) > 0
