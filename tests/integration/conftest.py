@@ -489,8 +489,9 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
-    """Builds a dataframe of segment_cnv for a few cases that exist in the test data."""
+def segment_cnv_df(spark_session: sql.SparkSession) -> sql.DataFrame:
+    """Builds a dataframe of segment_cnv for a case that exists in the test data."""
+    segment_cnv_schema = schemas.load_schema("data/input/segment_cnv/schema.yaml")
     segment_cnvs = [
         (
             "1db41963-a520-47f0-828c-ed5c626507b1",
@@ -498,73 +499,21 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             "0f137dab-89d9-479d-84ba-9e3af6ea67b1",
             "7d760c04-49d6-43cc-b87b-687741547aad",
             "93b827bd-73be-49f4-97e9-08fe86a6feba",
-            "Tumor Only",
-            "AscatNGS",
+            "93aa2c61-b72b-4475-becd-39a188d5e581",
             "chr1",
-            "Loss",
-            "Loss",
+            "AscatNGS",
+            "Tumor Only",
             51,
             25,
             75,
+            "Loss",
+            "Loss",
             3,
             5,
         ),
-        (
-            "0ff579a1-e295-408d-b194-febbca798e34",
-            "7f04804c-d8f2-4bf8-84fb-2ecfa8b0f731",
-            "2d12a148-f621-4e7e-8299-715dac43c751",
-            "643554e3-bdfa-4350-a41d-2789295257ed",
-            "a56aae2d-12ed-420b-9865-2b0d52a71f7a",
-            "Tumor Only",
-            "AscatNGS",
-            "chr1",
-            "Loss",
-            "Loss",
-            51,
-            25,
-            75,
-            2,
-            6,
-        ),
-        (
-            "872092b3-d31e-44d7-bd03-e29f52f8ab5a",
-            "e6ee785c-3af0-4930-b1e6-c80900a348b9",
-            "8f0763ec-b3a3-4ab0-a8e4-6acd14eee43d",
-            "2a3abfa0-b450-474c-90d1-9de511ca3e68",
-            "df426e3a-4f9b-442c-8ff9-014477c74629",
-            "Tumor Only",
-            "AscatNGS",
-            "chr1",
-            "Gain",
-            "Amplification",
-            51,
-            25,
-            75,
-            4,
-            2,
-        ),
     ]
-    schema = types.StructType(
-        [
-            types.StructField("case_id", types.StringType()),
-            types.StructField("occurrence_id", types.StringType()),
-            types.StructField("observation_id", types.StringType()),
-            types.StructField("segment_cnv_id", types.StringType()),
-            types.StructField("src_file_id", types.StringType()),
-            types.StructField("variant_status", types.StringType()),
-            types.StructField("variant_caller", types.StringType()),
-            types.StructField("chromosome", types.StringType()),
-            types.StructField("cnv_change", types.StringType()),
-            types.StructField("cnv_change_5_category", types.StringType()),
-            types.StructField("length", types.LongType()),
-            types.StructField("start_position", types.LongType()),
-            types.StructField("end_position", types.LongType()),
-            types.StructField("copy_number", types.IntegerType()),
-            types.StructField("sample_ploidy_integer", types.IntegerType()),
-        ]
-    )
 
-    return sqlContext.createDataFrame(segment_cnvs, schema)
+    return spark_session.createDataFrame(segment_cnvs, segment_cnv_schema)
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,45 @@
+---
+fields:
+  - &string_field
+    metadata: {}
+    name: segment_cnv_id
+    nullable: true
+    type: string
+  - <<: *string_field
+    name: occurrence_id
+  - <<: *string_field
+    name: observation_id
+  - <<: *string_field
+    name: case_id
+  - <<: *string_field
+    name: aliquot_id
+  - <<: *string_field
+    name: src_file_id
+  - <<: *string_field
+    name: chromosome
+  - <<: *string_field
+    name: variant_caller
+  - metadata: {}
+    name: variant_status
+    nullable: false
+    type: string
+  - &long_field
+    metadata: {}
+    name: length
+    nullable: true
+    type: long
+  - <<: *long_field
+    name: start_position
+  - <<: *long_field
+    name: end_position
+  - <<: *string_field
+    name: cnv_change
+  - <<: *string_field
+    name: cnv_change_5_category
+  - &integer_field
+    metadata: {}
+    name: sample_ploidy_integer
+    nullable: true
+    type: integer
+  - <<: *integer_field
+    name: copy_number
