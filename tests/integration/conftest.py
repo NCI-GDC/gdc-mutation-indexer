@@ -501,7 +501,7 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             "Tumor Only",
             3,
             5,
-            ("AscatNGS",),
+            "AscatNGS",
         ),
         (
             "0ff579a1-e295-408d-b194-febbca798e34",
@@ -512,7 +512,7 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             "Tumor Only",
             2,
             6,
-            ("AscatNGS",),
+            "AscatNGS",
         ),
         (
             "872092b3-d31e-44d7-bd03-e29f52f8ab5a",
@@ -523,7 +523,7 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             "Tumor Only",
             4,
             2,
-            ("AscatNGS",),
+            "AscatNGS",
         ),
     ]
     schema = types.StructType(
@@ -536,12 +536,7 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             types.StructField("variant_status", types.StringType()),
             types.StructField("copy_number", types.IntegerType()),
             types.StructField("sample_ploidy_integer", types.IntegerType()),
-            types.StructField(
-                "variant_calling",
-                types.StructType(
-                    [types.StructField("variant_caller", types.StringType())]
-                ),
-            ),
+            types.StructField("variant_caller", types.StringType()),
         ]
     )
 
