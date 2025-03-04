@@ -497,18 +497,33 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             "709b96a9-c9f2-4026-a405-93268261014a",
             "0f137dab-89d9-479d-84ba-9e3af6ea67b1",
             "7d760c04-49d6-43cc-b87b-687741547aad",
+            "93b827bd-73be-49f4-97e9-08fe86a6feba",
+            "Tumor Only",
+            3,
+            5,
+            "AscatNGS",
         ),
         (
             "0ff579a1-e295-408d-b194-febbca798e34",
             "7f04804c-d8f2-4bf8-84fb-2ecfa8b0f731",
             "2d12a148-f621-4e7e-8299-715dac43c751",
             "643554e3-bdfa-4350-a41d-2789295257ed",
+            "a56aae2d-12ed-420b-9865-2b0d52a71f7a",
+            "Tumor Only",
+            2,
+            6,
+            "AscatNGS",
         ),
         (
             "872092b3-d31e-44d7-bd03-e29f52f8ab5a",
             "e6ee785c-3af0-4930-b1e6-c80900a348b9",
             "8f0763ec-b3a3-4ab0-a8e4-6acd14eee43d",
             "2a3abfa0-b450-474c-90d1-9de511ca3e68",
+            "df426e3a-4f9b-442c-8ff9-014477c74629",
+            "Tumor Only",
+            4,
+            2,
+            "AscatNGS",
         ),
     ]
     schema = types.StructType(
@@ -517,6 +532,16 @@ def segment_cnv_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
             types.StructField("occurrence_id", types.StringType()),
             types.StructField("observation_id", types.StringType()),
             types.StructField("segment_cnv_id", types.StringType()),
+            types.StructField("src_file_id", types.StringType()),
+            types.StructField("variant_status", types.StringType()),
+            types.StructField("copy_number", types.IntegerType()),
+            types.StructField("sample_ploidy_integer", types.IntegerType()),
+            types.StructField(
+                "variant_calling",
+                types.StructType(
+                    [types.StructField("variant_caller", types.StringType())]
+                ),
+            ),
         ]
     )
 
