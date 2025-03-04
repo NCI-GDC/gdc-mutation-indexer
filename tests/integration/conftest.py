@@ -491,7 +491,10 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 @pytest.fixture(scope="session")
 def segment_cnv_df(spark_session: sql.SparkSession) -> sql.DataFrame:
     """Builds a dataframe of segment_cnv for a case that exists in the test data."""
-    segment_cnv_schema = schemas.load_schema("data/input/segment_cnv/schema.yaml")
+    segment_cnv_dir = data_dir.joinpath("input/segment_cnv")
+    with open(segment_cnv_dir.joinpath("schema.yaml")) as f:
+        schema = types.StructType.fromJson(yaml.safe_load(f))
+
     segment_cnvs = [
         (
             "1db41963-a520-47f0-828c-ed5c626507b1",
@@ -513,7 +516,7 @@ def segment_cnv_df(spark_session: sql.SparkSession) -> sql.DataFrame:
         ),
     ]
 
-    return spark_session.createDataFrame(segment_cnvs, segment_cnv_schema)
+    return spark_session.createDataFrame(segment_cnvs, schema)
 
 
 @pytest.fixture(scope="session")
