@@ -16,6 +16,7 @@ index_types = [
   "CNV_OCCURRENCE_CENTRIC",
   "GENE_CENTRIC",
   "SEGMENT_CNV_CENTRIC",
+  "SEGMENT_CNV_OCCURRENCE_CENTRIC",
   "SSM_CENTRIC",
   "SSM_OCCURRENCE_CENTRIC"
 ]
@@ -211,6 +212,15 @@ path = ""
 is_cached = false
 
 [builders.viz.segment_cnv_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.segment_cnv_occurrence_centric]
+id_field = "segment_cnv_occurrence_id"
+is_cached = true
+partition_size = 12
+
+[builders.viz.segment_cnv_occurrence_centric.backup]
 mode = "NEITHER"
 path = ""
 

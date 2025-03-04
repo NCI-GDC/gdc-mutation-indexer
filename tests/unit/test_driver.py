@@ -7,7 +7,10 @@ from mutation_indexer.constants import build
 
 def test__get_viz_builders__all_builders() -> None:
     config = mock.MagicMock()
-    config.build.index_types = (build.IndexType.SEGMENT_CNV_CENTRIC,)
+    config.build.index_types = (
+        build.IndexType.SEGMENT_CNV_CENTRIC,
+        build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,
+    )
     viz_builders = driver.get_viz_builders(config, mock.MagicMock(), mock.MagicMock())
     generic_builders = {b.output: b for b in viz_builders.builders}
 
@@ -25,6 +28,7 @@ def test__get_viz_builders__all_builders() -> None:
             build.DataFrame.SEGMENT_CNV,
             build.DataFrame.SEGMENT_CNV_METADATA,
             build.DataFrame.SEGMENT_CNV_CENTRIC,
+            build.DataFrame.SEGMENT_CNV_OCCURRENCE_CENTRIC,
         )
     )
     assert isinstance(generic_builders[build.DataFrame.ASCAT], builders.ASCATBuilder)
@@ -58,6 +62,10 @@ def test__get_viz_builders__all_builders() -> None:
     assert isinstance(
         generic_builders[build.DataFrame.SEGMENT_CNV_CENTRIC],
         builders.SegmentCNVCentricBuilder,
+    )
+    assert isinstance(
+        generic_builders[build.DataFrame.SEGMENT_CNV_OCCURRENCE_CENTRIC],
+        builders.SegmentCNVOccurrenceCentricBuilder,
     )
 
     assert viz_builders.index_builders.keys() == frozenset(

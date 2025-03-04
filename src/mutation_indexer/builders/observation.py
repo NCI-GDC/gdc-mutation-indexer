@@ -105,3 +105,38 @@ class ObservationBuilder:
         )
 
         return obs_df
+
+
+def build_observation_for_segment_cnv(segment_cnv_df: sql.DataFrame) -> sql.DataFrame:
+    """Builds the observation dataframe from the segment_cnv dataframe.
+
+    observation[]
+    |____ observation{}
+            |____ observation_id
+            |____ copy_number
+            |____ sample_ploidy_integer
+            |____ src_file_id
+            |____ variant_status
+            |____ variant_calling {}
+                    |____ variant_caller
+    """
+    obs_cols = (
+        "observation_id",
+        "copy_number",
+        "sample_ploidy_integer",
+        "src_file_id",
+        "variant_status",
+        F.struct("variant_caller").alias("variant_calling"),
+    )
+    obs_df = (
+        segment_cnv_df.select(
+            "segment_cnv_id",
+            "case_id",
+            "occurrence_id",
+            F.struct(*obs_cols).alias("observation"),
+        )
+        .groupby("segment_cnv_id", "case_id", "occurrence_id")
+        .agg(F.collect_set("observation").alias("observation"))
+    )
+
+    return obs_df

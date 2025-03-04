@@ -104,6 +104,13 @@ class SegmentCNVCentricBuilder(IndexBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
+class SegmentCNVOccurrenceCentricBuilder(IndexBuilder):
+    """
+    Configuration values for running the segment cnv occurrence centric builder
+    """
+
+
+@dataclasses.dataclass(frozen=True)
 class SSMCentricBuilder(IndexBuilder):
     """
     Configuration values for running the SSM centric builder
@@ -134,5 +141,6 @@ class Viz:
     segment_cnv: Builder
     segment_cnv_centric: SegmentCNVCentricBuilder
     segment_cnv_metadata: Builder
+    segment_cnv_occurrence_centric: SegmentCNVOccurrenceCentricBuilder
     ssm_centric: SSMCentricBuilder
     ssm_occurrence_centric: IndexBuilder
