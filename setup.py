@@ -37,7 +37,7 @@ setup(
         "toml~=0.10",
         "typing-extensions~=4.1",
         "indexclient",
-        "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/DEV-3185-fix-case-centric-segment-cnv",
+        "gdcmodels",
         "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
     ],
     extras_require={

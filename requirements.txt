@@ -42,7 +42,7 @@ frozenlist==1.5.0
     # via
     #   aiohttp
     #   aiosignal
-gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@feat/DEV-3185-fix-case-centric-segment-cnv
+gdcmodels==5.10
     # via gdc-mutation-indexer (setup.py)
 idna==3.10
     # via
