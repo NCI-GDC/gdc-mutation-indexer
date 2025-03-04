@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import contextlib
 import datetime
+import functools
 import itertools
 import logging
 import os
@@ -33,12 +34,12 @@ def get_argument_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-c", "--config", type=str, default=None)
+    parser.add_argument("config", type=pathlib.Path, nargs="*")
 
     return parser
 
 
-def merge_dict(a: dict, b: dict) -> None:
+def merge_dict(a: dict, b: dict) -> dict:
     """
     Merges the dictionary values from b into a. Any dictionary values in b will be
     recursively merged into the value for a.
@@ -47,16 +48,21 @@ def merge_dict(a: dict, b: dict) -> None:
         a: The target dictionary to be updated
         b: The dictionary containing the values to be merged into a
     """
-    for key, value in b.items():
-        if isinstance(value, dict):
-            merge_dict(a.setdefault(key, {}), value)
+    merged = {}
 
-        else:
-            a[key] = value
+    for key in a.keys() | b.keys():
+        value = b.get(key, a.get(key))
+
+        if isinstance(value, dict):
+            value = merge_dict(a.get(key, {}), b.get(key, {}))
+
+        merged[key] = value
+
+    return merged
 
 
 def load_config_data(
-    user_config_file: str, final_config_file: str
+    user_files: Iterable[pathlib.Path], final_config_file: str
 ) -> Mapping[str, Any]:
     """
     Loads the user provided configuration and updates it with any required default
@@ -70,15 +76,13 @@ def load_config_data(
     Returns:
         the final configuration data as a mapping.
     """
-    default_config = toml.loads(
+    default_data = toml.loads(
         resources.read_text(mutation_indexer, "configuration.toml")
     )
-    default_config["build"]["config_file"] = final_config_file
-    user_config = toml.load(user_config_file)
+    default_data["build"]["config_file"] = final_config_file
+    user_data = map(toml.load, user_files)
 
-    merge_dict(default_config, user_config)
-
-    return default_config
+    return functools.reduce(merge_dict, user_data, default_data)
 
 
 def write_manifest(config: configuration.Configuration) -> None:
@@ -103,7 +107,7 @@ def write_manifest(config: configuration.Configuration) -> None:
 
 @contextlib.contextmanager
 def get_config(
-    user_config_file: str,
+    user_files: Iterable[pathlib.Path],
 ) -> Iterator[configuration.Configuration]:
     """
     Loads the configuration data and persists the raw data into a temporary file which
@@ -123,7 +127,7 @@ def get_config(
     try:
         with tempfile.TemporaryDirectory() as temp_directory:
             config_file = pathlib.Path(temp_directory) / "configuration.toml"
-            config_data = load_config_data(user_config_file, config_file.as_posix())
+            config_data = load_config_data(user_files, config_file.as_posix())
             config = cast(
                 configuration.Configuration,
                 configuration.CONFIG_SCHEMA.load(config_data),
@@ -181,12 +185,21 @@ async def run_spark_command(config: configuration.Configuration) -> None:
             str(config.build.spark_submit),
             arguments,
             str(config.build.driver),
+            (
+                "--conf",
+                "spark.driver.env.PEX_EXTRA_SYS_PATH=/mnt/hadoop/bin:/mnt/hadoop/sbin",
+            ),
+            (
+                "--conf",
+                "spark.executor.env.PEX_EXTRA_SYS_PATH=/mnt/hadoop/bin:/mnt/hadoop/sbin",
+            ),
         )
     )
 
     with open(config.build.output_log, "wb+") as out_file, open(
         config.build.error_log, "wb+"
     ) as error_file:
+        out_file.write(f"RUNNING: {final_command}\n".encode())
         process = await asyncio.create_subprocess_shell(
             final_command, stdout=out_file, stderr=error_file
         )
