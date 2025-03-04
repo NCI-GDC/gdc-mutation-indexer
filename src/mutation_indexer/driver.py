@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import os
 import types
 from collections.abc import Container, Iterator, Mapping
 
@@ -368,6 +369,7 @@ def get_ge_builders(
 
 def main():
     mutation_indexer_logging.configure()
+    logger.info(f"INTERNAL ENV: {os.environ}")
 
     try:
         config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
