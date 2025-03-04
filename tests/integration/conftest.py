@@ -489,7 +489,9 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def segment_cnv_df(spark_session: sql.SparkSession) -> sql.DataFrame:
+def segment_cnv_df(
+    spark_session: sql.SparkSession, data_dir: pathlib.Path
+) -> sql.DataFrame:
     """Builds a dataframe of segment_cnv for a case that exists in the test data."""
     segment_cnv_dir = data_dir.joinpath("input/segment_cnv")
     with open(segment_cnv_dir.joinpath("schema.yaml")) as f:
