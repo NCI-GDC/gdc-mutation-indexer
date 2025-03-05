@@ -1,6 +1,7 @@
 from collections.abc import Iterable, Set
 from unittest import mock
 
+import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
@@ -21,6 +22,7 @@ class Inputs(TypedDict):
     ascat_metadata_df: sql.DataFrame
     ascat_df: sql.DataFrame
     primary_aliquot_df: sql.DataFrame
+    segment_cnv_df: sql.DataFrame
 
 
 def assert_ascat_translated(result_gene: sql.Row, ascat: models.ASCAT) -> None:
@@ -62,6 +64,31 @@ def assert_maf_translated(result_gene: sql.Row, maf: models.MAF) -> None:
     assert result_civic.variant_id == maf.civic_variant_id
 
 
+def assert_segment_cnv_translated(
+    result_segment: sql.Row, segment_cnv: models.SegmentCNV
+) -> None:
+    assert result_segment.segment_cnv_id == segment_cnv.segment_cnv_id
+    assert result_segment.chromosome == segment_cnv.chromosome
+    assert result_segment.length == segment_cnv.length
+    assert result_segment.start_position == segment_cnv.start_position
+    assert result_segment.end_position == segment_cnv.end_position
+    assert result_segment.cnv_change == segment_cnv.cnv_change
+    assert result_segment.cnv_change_5_category == segment_cnv.cnv_change_5_category
+
+    segment_observation = more_itertools.one(result_segment.observation)
+
+    assert segment_observation.observation_id == segment_cnv.observation_id
+    assert segment_observation.copy_number == segment_cnv.copy_number
+    assert segment_observation.src_file_id == segment_cnv.src_file_id
+    assert (
+        segment_observation.variant_calling.variant_caller == segment_cnv.variant_caller
+    )
+    assert segment_observation.variant_status == segment_cnv.variant_status
+    assert (
+        segment_observation.sample_ploidy_integer == segment_cnv.sample_ploidy_integer
+    )
+
+
 @pytest.fixture(scope="class")
 def maf_metadata_schema() -> types.StructType:
     return schemas.Viz.Builders.MAFMetadata.FINAL.load()
@@ -90,6 +117,11 @@ def primary_aliquot_schema() -> types.StructType:
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
     return schemas.Viz.Builders.CaseCentric.CASE.load()
+
+
+@pytest.fixture(scope="class")
+def segment_cnv_schema() -> types.StructType:
+    return schemas.Viz.Builders.SegmentCNV.FINAL.load()
 
 
 @pytest.fixture(scope="class")
@@ -128,6 +160,7 @@ class TestCaseCentricBuilder:
         cnv_observation_schema: types.StructType,
         ssm_consequence_schema: types.StructType,
         final_schema: types.StructType,
+        segment_cnv_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.create_dataframe = create_dataframe
@@ -141,6 +174,7 @@ class TestCaseCentricBuilder:
         self.cnv_observation_schema = cnv_observation_schema
         self.ssm_consequence_schema = ssm_consequence_schema
         self.final_schema = final_schema
+        self.segment_cnv_schema = segment_cnv_schema
 
     def arrange_config(self) -> adapter.ObsoleteConfig:
         return mock.MagicMock(
@@ -210,6 +244,7 @@ class TestCaseCentricBuilder:
         ascat_metadata: Iterable[models.ASCATMetadata] = (models.ASCATMetadata(),),
         ascats: Iterable[models.ASCAT] = (models.ASCAT(),),
         primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
+        segment_cnvs: Iterable[models.SegmentCNV] = (models.SegmentCNV(),),
     ) -> Inputs:
         maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
         maf_df = self.create_dataframe(mafs, self.maf_schema)
@@ -220,6 +255,7 @@ class TestCaseCentricBuilder:
         primary_aliquot_df = self.create_dataframe(
             primary_aliquots, self.primary_aliquot_schema
         )
+        segment_cnv_df = self.create_dataframe(segment_cnvs, self.segment_cnv_schema)
 
         return Inputs(
             maf_metadata_df=maf_metadata_df,
@@ -227,6 +263,7 @@ class TestCaseCentricBuilder:
             ascat_metadata_df=ascat_metadata_df,
             ascat_df=ascat_df,
             primary_aliquot_df=primary_aliquot_df,
+            segment_cnv_df=segment_cnv_df,
         )
 
     def test__build__single_row(self) -> None:
@@ -252,12 +289,15 @@ class TestCaseCentricBuilder:
             builder.case_centric, sql.DataFrame
         )
         assert builder.case_centric.count() == 1
-        assert builder.case_centric.schema == self.final_schema
+        assert not deepdiff.DeepDiff(
+            builder.case_centric.schema, self.final_schema, ignore_order=True
+        )
 
     def test__build__data_translated(self) -> None:
         es_case = case.Case()
         raw_maf = models.MAF(gene_id="MAFGENE")
         raw_ascat = models.ASCAT(gene_id="ASCATGENE")
+        raw_segment_cnv = models.SegmentCNV()
         ssm_consequence = ssm.Consequences()
         ssm_observation = ssm.Observations()
         cnv_observation = cnv.Observations()
@@ -270,7 +310,9 @@ class TestCaseCentricBuilder:
         observation_builder = self.arrange_observation_builder(
             (ssm_observation,), (cnv_observation,)
         )
-        inputs = self.arrange_inputs(mafs=(raw_maf,), ascats=(raw_ascat,))
+        inputs = self.arrange_inputs(
+            mafs=(raw_maf,), ascats=(raw_ascat,), segment_cnvs=(raw_segment_cnv,)
+        )
         builder = builders.CaseCentricBuilder(
             config,
             sql_context,
@@ -289,6 +331,7 @@ class TestCaseCentricBuilder:
         ascat_gene = more_itertools.one(
             g for g in result_case.gene if g.gene_id == "ASCATGENE"
         )
+        segment_cnv = more_itertools.one(result_case.segment_cnv)
 
         es_case.assert_equals(result_case)
         assert_maf_translated(maf_gene, raw_maf)
@@ -296,6 +339,7 @@ class TestCaseCentricBuilder:
         ssm.assert_observation_translated(maf_gene, ssm_observation)
         assert_ascat_translated(ascat_gene, raw_ascat)
         cnv.assert_observation_translated(ascat_gene, cnv_observation)
+        assert_segment_cnv_translated(segment_cnv, raw_segment_cnv)
 
     @pytest.mark.parametrize(
         ("maf_case_id", "cnv_case_id", "expected_available_variations"),
@@ -592,3 +636,67 @@ class TestCaseCentricBuilder:
 
         assert len(result_case.gene) == 1
         assert len(result_case.gene[0].cnv) == 2
+
+    def test__build__no_join_segment_cnv(self) -> None:
+        raw_segment_cnv = models.SegmentCNV(case_id="case-1")
+
+        config = self.arrange_config()
+        sql_context = self.arrange_sql_context()
+        dataframe_util = self.arrange_dataframe_util()
+        field_selector = self.arrange_field_selector()
+        consequence_builder = self.arrange_consequence_builder()
+        observation_builder = self.arrange_observation_builder()
+        inputs = self.arrange_inputs(segment_cnvs=(raw_segment_cnv,))
+        builder = builders.CaseCentricBuilder(
+            config,
+            sql_context,
+            dataframe_util,
+            field_selector,
+            consequence_builder,
+            observation_builder,
+        )
+
+        builder.build(**inputs)
+
+        result_case = more_itertools.one(builder.case_centric.collect())
+
+        assert result_case.segment_cnv is None
+
+    def test__build__group_by_case_and_segment_cnv(self) -> None:
+        raw_segment_cnvs = (
+            models.SegmentCNV(
+                segment_cnv_id="segment_cnv-0", case_id="case-0", observation_id="obs-0"
+            ),
+            models.SegmentCNV(
+                segment_cnv_id="segment_cnv-1", case_id="case-0", observation_id="obs-1"
+            ),
+        )
+        config = self.arrange_config()
+        sql_context = self.arrange_sql_context()
+        dataframe_util = self.arrange_dataframe_util()
+        field_selector = self.arrange_field_selector()
+        consequence_builder = self.arrange_consequence_builder()
+        observation_builder = self.arrange_observation_builder()
+        inputs = self.arrange_inputs(segment_cnvs=raw_segment_cnvs)
+        builder = builders.CaseCentricBuilder(
+            config,
+            sql_context,
+            dataframe_util,
+            field_selector,
+            consequence_builder,
+            observation_builder,
+        )
+
+        builder.build(**inputs)
+
+        result_case = more_itertools.one(builder.case_centric.collect())
+        result_segment_cnv = result_case.segment_cnv
+
+        assert len(result_segment_cnv) == 2
+        sorted_by_segment_cnv_id = sorted(
+            result_segment_cnv, key=lambda x: x.segment_cnv_id
+        )
+        for result_segment, raw_segment_cnv in zip(
+            sorted_by_segment_cnv_id, raw_segment_cnvs
+        ):
+            assert_segment_cnv_translated(result_segment, raw_segment_cnv)

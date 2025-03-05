@@ -489,6 +489,39 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
+def segment_cnv_df(
+    spark_session: sql.SparkSession, data_dir: pathlib.Path
+) -> sql.DataFrame:
+    """Builds a dataframe of segment_cnv for a case that exists in the test data."""
+    segment_cnv_dir = data_dir.joinpath("input/segment_cnv")
+    with open(segment_cnv_dir.joinpath("schema.yaml")) as f:
+        schema = types.StructType.fromJson(yaml.safe_load(f))
+
+    segment_cnvs = [
+        (
+            "1db41963-a520-47f0-828c-ed5c626507b1",
+            "709b96a9-c9f2-4026-a405-93268261014a",
+            "0f137dab-89d9-479d-84ba-9e3af6ea67b1",
+            "7d760c04-49d6-43cc-b87b-687741547aad",
+            "93b827bd-73be-49f4-97e9-08fe86a6feba",
+            "93aa2c61-b72b-4475-becd-39a188d5e581",
+            "chr1",
+            "AscatNGS",
+            "Tumor Only",
+            51,
+            25,
+            75,
+            "Loss",
+            "Loss",
+            3,
+            5,
+        ),
+    ]
+
+    return spark_session.createDataFrame(segment_cnvs, schema)
+
+
+@pytest.fixture(scope="session")
 def consequence_builder(
     default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
@@ -523,6 +556,7 @@ def case_centric_df(
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    segment_cnv_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     es_client: elasticsearch.Elasticsearch,
@@ -553,7 +587,12 @@ def case_centric_df(
     ascat_metadata_df = cnv_df.select("case_id")
 
     builder.build(
-        maf_metadata_df, maf_df, ascat_metadata_df, cnv_df, primary_aliquot_df
+        maf_metadata_df,
+        maf_df,
+        ascat_metadata_df,
+        cnv_df,
+        primary_aliquot_df,
+        segment_cnv_df,
     )
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
