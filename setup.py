@@ -18,7 +18,8 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9",
     ],
-    license="Apache",
+    license="Apache-2.0",
+    license_files=("LICENSE",),
     include_package_data=True,
     install_requires=[
         "boto3",
