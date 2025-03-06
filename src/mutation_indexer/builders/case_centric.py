@@ -137,6 +137,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         ascat_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
         segment_cnv_df: sql.DataFrame,
+        segment_cnv_metadata_df: sql.DataFrame,
         **kwargs: sql.DataFrame,
     ) -> Self:
         """
@@ -150,7 +151,10 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
                 return self
 
         case_df = self._load_cases(
-            maf_metadata_df, ascat_metadata_df, self.config.df_repartition
+            maf_metadata_df,
+            ascat_metadata_df,
+            segment_cnv_metadata_df,
+            self.config.df_repartition,
         )
 
         self.log("Building Gene subtree")
