@@ -1,27 +1,15 @@
 ---
 include:
   - project: nci-gdc/gitlab-templates
-    ref: 0.3.1
+    ref: master
     file:
-      - templates/global/full.yaml
-      - templates/python/full.yaml
-      - templates/common/python.yaml
-      - templates/deployments/salt-service.yaml
+      - templates/artifacts/python-service.yaml
 
 variables:
-  PRE_COMMIT_VERSION: 3.4.0
+  LANGUAGE_VERSION: python3.13
+  BASE_CONTAINER_VERSION: 3.1.0
 
-.services:
-  allow_failure: true
-  stage: deploy
-  when: manual
-  parallel:
-    matrix:
-      - DEPLOY_SERVICE_LIST: [mutation_indexer]
 tox:
-  parallel:
-    matrix:
-      - BUILD_PY_VERSION: [python3.9]
   services:
     - name: docker.osdc.io/ncigdc/ci-elasticsearch-7:${BASE_CONTAINER_VERSION}
       alias: elasticsearch
@@ -31,17 +19,23 @@ tox:
     BOTO_CONFIG: /dev/null
     ES_NODES: http://elasticsearch:9200
     ES_VERSION: 7.7.1
-    SPARK_VERSION: 2.4.5
   script:
-    - mkdir -p /usr/share/man/man1/    # https://github.com/geerlingguy/ansible-role-java/issues/64#issuecomment-597132394
-    - apt-get update
-    - apt-get install -y maven
+    - (apt-get update -y) || (dnf update -y)
+    - (apt-get install -y maven) || (dnf install -y maven)
+    - java -version
     - mvn -version
-    - pip install 'tox < 4'
-    - tox -e py
+    - pip install tox
+    - tox -e test
+    - tox -e coverage
 
-release:
-  variables:
-    RELEASE_PY_VERSION: python3.9
+.deploy-service-with-salt:
   before_script:
-    - git fetch --unshallow || true
+    - export DEPLOY_SERVICE_TAG=${CI_COMMIT_TAG:-$CI_COMMIT_SHA}
+
+.services:
+  allow_failure: true
+  stage: deploy
+  when: manual
+  parallel:
+    matrix:
+      - DEPLOY_SERVICE_LIST: [mutation_indexer]

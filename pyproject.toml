@@ -35,13 +35,7 @@ requires-python = "~=3.9"
 
 [project.optional-dependencies]
 client = ["halo", "pex", "wheel"]
-dev = [
-  "click~=8.1",
-  "coverage[toml]~=7.0",
-  "deepdiff~=6.0",
-  "pytest~=8.0",
-  "pytest-cov~=4.0"
-]
+dev = ["click~=8.1", "coverage[toml]~=7.0", "deepdiff~=6.0", "pytest~=8.0"]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
@@ -74,3 +68,75 @@ testpaths = ["tests/unit", "tests/integration"]
 [tool.setuptools_scm]
 local_scheme = "dirty-tag"
 version_file = "_version.py"
+
+[tool.tox]
+requires = ["tox>=4.21"]
+
+[tool.tox.env.coverage]
+commands = [["coverage", "html"], ["coverage", "xml"]]
+deps = ["-crequirements.txt", "coverage[toml]"]
+skip_install = true
+
+[tool.tox.env.publish]
+commands = [
+  [
+    "python",
+    "-m",
+    "setuptools_scm"
+  ],
+  [
+    "python",
+    "-m",
+    "build"
+  ],
+  [
+    "python",
+    "-m",
+    "twine",
+    "check",
+    "dist/*"
+  ],
+  [
+    "python",
+    "-m",
+    "twine",
+    "upload",
+    "dist/*"
+  ]
+]
+deps = ["setuptools_scm", "build", "twine"]
+pass_env = ["TWINE_*"]
+skip_install = true
+
+[tool.tox.env.test]
+allowlist_externals = ["bin/spark-install.sh"]
+commands = [
+  [
+    "coverage",
+    "run",
+    "-m",
+    "pytest",
+    "-vv",
+    {replace = "posargs", default = [
+      "-m",
+      "not do_not_collect",
+      "--junitxml=report.xml"
+    ], extend = true}
+  ],
+  [
+    "coverage",
+    "report"
+  ]
+]
+commands_pre = [["bin/spark-install.sh"]]
+deps = ["-crequirements.txt", ".[dev,client]"]
+pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
+
+[tool.tox.env.test.set_env]
+ES_VERSION = "{env:ES_VERSION:7.7.1}"
+NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
+PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
+no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
+
+[tool.tox.env_run_base]
+base_python = ["py39"]
