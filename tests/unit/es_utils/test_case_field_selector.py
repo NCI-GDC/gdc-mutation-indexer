@@ -12,7 +12,7 @@ class TestCaseFieldSelector:
     def arrange_mappings_loader(
         self,
         *mappings: dict,
-        indices: Iterable[build.IndexType] = (build.IndexType.CASE_CENTRIC,)
+        indices: Iterable[build.IndexType] = (build.IndexType.CASE_CENTRIC,),
     ) -> es_utils.MappingsLoader:
         index_mappings = {
             index: mock.MagicMock(mappings=mapping)

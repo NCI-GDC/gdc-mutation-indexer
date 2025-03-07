@@ -25,7 +25,7 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     new_schema = types.ArrayType(types.StructType(fields))  # type: ignore
     gene_df = gene_model_df.select(
         F.col("transcripts").cast(new_schema),
-        *gene_model_df.drop("transcripts").columns
+        *gene_model_df.drop("transcripts").columns,
     )
 
     return gene_df
