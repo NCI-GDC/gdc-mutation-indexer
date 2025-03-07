@@ -1,6 +1,5 @@
 import dataclasses
 from collections.abc import Iterable
-from typing import Optional
 from unittest import mock
 
 import more_itertools
@@ -32,23 +31,23 @@ class MAF:
     Tumor_Seq_Allele1: str = "C"
     Tumor_Seq_Allele2: str = "A"
     dbSNP_RS: str = "novel"
-    dbSNP_Val_Status: Optional[str] = None
-    Tumor_Sample_Barcode: Optional[str] = "MBCProject_3808_T1_WES_1"
+    dbSNP_Val_Status: str | None = None
+    Tumor_Sample_Barcode: str | None = "MBCProject_3808_T1_WES_1"
     Matched_Norm_Sample_Barcode: str = "MBCProject_3808_SALIVA_1"
-    Match_Norm_Seq_Allele1: Optional[str] = None
-    Match_Norm_Seq_Allele2: Optional[str] = None
-    Tumor_Validation_Allele1: Optional[str] = None
-    Tumor_Validation_Allele2: Optional[str] = None
-    Match_Norm_Validation_Allele1: Optional[str] = None
-    Match_Norm_Validation_Allele2: Optional[str] = None
-    Verification_Status: Optional[str] = None
-    Validation_Status: Optional[str] = None
+    Match_Norm_Seq_Allele1: str | None = None
+    Match_Norm_Seq_Allele2: str | None = None
+    Tumor_Validation_Allele1: str | None = None
+    Tumor_Validation_Allele2: str | None = None
+    Match_Norm_Validation_Allele1: str | None = None
+    Match_Norm_Validation_Allele2: str | None = None
+    Verification_Status: str | None = None
+    Validation_Status: str | None = None
     Mutation_Status: str = "Somatic"
-    Sequencing_Phase: Optional[str] = None
-    Sequence_Source: Optional[str] = None
-    Validation_Method: Optional[str] = None
-    Score: Optional[str] = None
-    BAM_File: Optional[str] = None
+    Sequencing_Phase: str | None = None
+    Sequence_Source: str | None = None
+    Validation_Method: str | None = None
+    Score: str | None = None
+    BAM_File: str | None = None
     Sequencer: str = "Illumina HiSeq 4000"
     Tumor_Sample_UUID: str = "c004a75a-448b-440c-bd8f-46cfc6d8dd2a"
     Matched_Norm_Sample_UUID: str = "0e4ad056-bfba-4ff3-a41f-d3655009f544"
@@ -61,8 +60,8 @@ class MAF:
     t_ref_count: str = "24"
     t_alt_count: str = "5"
     n_depth: str = "38"
-    n_ref_count: Optional[str] = None
-    n_alt_count: Optional[str] = None
+    n_ref_count: str | None = None
+    n_alt_count: str | None = None
     all_effects: str = "CSMD2,missense_variant,p.A609S,ENST00000373381,NM_001281956.2,c.1825G>T,MODERATE,YES,tolerated(0.14),benign(0.305),-1;CSMD2,missense_variant,p.A569S,ENST00000619121,,c.1705G>T,MODERATE,,tolerated(0.13),benign(0.02),-1;CSMD2,missense_variant,p.A569S,ENST00000373388,NM_052896.4,c.1705G>T,MODERATE,,tolerated(0.12),benign(0.305),-1;CSMD2,missense_variant,p.A217S,ENST00000338325,,c.649G>T,MODERATE,,tolerated(0.18),benign(0.264),-1;CSMD2,missense_variant,p.A569S,ENST00000241312,,c.1705G>T,MODERATE,,tolerated(0.12),benign(0.305),-1"
     Allele: str = "A"
     Gene: str = "ENSG00000238009"
@@ -75,97 +74,97 @@ class MAF:
     Protein_position: str = "569/3487"
     Amino_acids: str = "A/S"
     Codons: str = "Gct/Tct"
-    Existing_variation: Optional[str] = None
-    DISTANCE: Optional[str] = None
+    Existing_variation: str | None = None
+    DISTANCE: str | None = None
     TRANSCRIPT_STRAND: str = "-1"
     SYMBOL: str = "CSMD2"
     SYMBOL_SOURCE: str = "HGNC"
     HGNC_ID: str = "HGNC:19290"
     BIOTYPE: str = "nonsense_mediated_decay"
-    CANONICAL: Optional[str] = None
+    CANONICAL: str | None = None
     CCDS: str = "CCDS380.1"
     ENSP: str = "ENSP00000241312"
     SWISSPROT: str = "Q7Z408.146"
-    TREMBL: Optional[str] = None
+    TREMBL: str | None = None
     UNIPARC: str = "UPI00004561AB"
     UNIPROT_ISOFORM: str = "Q7Z408-1"
-    RefSeq: Optional[str] = None
-    MANE: Optional[str] = None
-    APPRIS: Optional[str] = None
-    FLAGS: Optional[str] = None
-    SIFT: Optional[str] = "tolerated(0.12)"
-    PolyPhen: Optional[str] = "benign(0.305)"
+    RefSeq: str | None = None
+    MANE: str | None = None
+    APPRIS: str | None = None
+    FLAGS: str | None = None
+    SIFT: str | None = "tolerated(0.12)"
+    PolyPhen: str | None = "benign(0.305)"
     EXON: str = "13/70"
-    INTRON: Optional[str] = None
-    DOMAINS: Optional[str] = None
-    ThousandG_AF: Optional[str] = None
-    ThousandG_AFR_AF: Optional[str] = None
-    ThousandG_AMR_AF: Optional[str] = None
-    ThousandG_EAS_AF: Optional[str] = None
-    ThousandG_EUR_AF: Optional[str] = None
-    ThousandG_SAS_AF: Optional[str] = None
-    ESP_AA_AF: Optional[str] = None
-    ESP_EA_AF: Optional[str] = None
-    gnomAD_AF: Optional[str] = None
-    gnomAD_AFR_AF: Optional[str] = None
-    gnomAD_AMR_AF: Optional[str] = None
-    gnomAD_ASJ_AF: Optional[str] = None
-    gnomAD_EAS_AF: Optional[str] = None
-    gnomAD_FIN_AF: Optional[str] = None
-    gnomAD_NFE_AF: Optional[str] = None
-    gnomAD_OTH_AF: Optional[str] = None
-    gnomAD_SAS_AF: Optional[str] = None
-    MAX_AF: Optional[str] = None
-    MAX_AF_POPS: Optional[str] = None
-    gnomAD_non_cancer_AF: Optional[str] = None
-    gnomAD_non_cancer_AFR_AF: Optional[str] = None
-    gnomAD_non_cancer_AMI_AF: Optional[str] = None
-    gnomAD_non_cancer_AMR_AF: Optional[str] = None
-    gnomAD_non_cancer_ASJ_AF: Optional[str] = None
-    gnomAD_non_cancer_EAS_AF: Optional[str] = None
-    gnomAD_non_cancer_FIN_AF: Optional[str] = None
-    gnomAD_non_cancer_MID_AF: Optional[str] = None
-    gnomAD_non_cancer_NFE_AF: Optional[str] = None
-    gnomAD_non_cancer_OTH_AF: Optional[str] = None
-    gnomAD_non_cancer_SAS_AF: Optional[str] = None
-    gnomAD_non_cancer_MAX_AF_adj: Optional[str] = None
-    gnomAD_non_cancer_MAX_AF_POPS_adj: Optional[str] = None
-    CLIN_SIG: Optional[str] = None
-    SOMATIC: Optional[str] = None
-    PUBMED: Optional[str] = None
-    TRANSCRIPTION_FACTORS: Optional[str] = None
-    MOTIF_NAME: Optional[str] = None
-    MOTIF_POS: Optional[str] = None
-    HIGH_INF_POS: Optional[str] = None
-    MOTIF_SCORE_CHANGE: Optional[str] = None
-    miRNA: Optional[str] = None
+    INTRON: str | None = None
+    DOMAINS: str | None = None
+    ThousandG_AF: str | None = None
+    ThousandG_AFR_AF: str | None = None
+    ThousandG_AMR_AF: str | None = None
+    ThousandG_EAS_AF: str | None = None
+    ThousandG_EUR_AF: str | None = None
+    ThousandG_SAS_AF: str | None = None
+    ESP_AA_AF: str | None = None
+    ESP_EA_AF: str | None = None
+    gnomAD_AF: str | None = None
+    gnomAD_AFR_AF: str | None = None
+    gnomAD_AMR_AF: str | None = None
+    gnomAD_ASJ_AF: str | None = None
+    gnomAD_EAS_AF: str | None = None
+    gnomAD_FIN_AF: str | None = None
+    gnomAD_NFE_AF: str | None = None
+    gnomAD_OTH_AF: str | None = None
+    gnomAD_SAS_AF: str | None = None
+    MAX_AF: str | None = None
+    MAX_AF_POPS: str | None = None
+    gnomAD_non_cancer_AF: str | None = None
+    gnomAD_non_cancer_AFR_AF: str | None = None
+    gnomAD_non_cancer_AMI_AF: str | None = None
+    gnomAD_non_cancer_AMR_AF: str | None = None
+    gnomAD_non_cancer_ASJ_AF: str | None = None
+    gnomAD_non_cancer_EAS_AF: str | None = None
+    gnomAD_non_cancer_FIN_AF: str | None = None
+    gnomAD_non_cancer_MID_AF: str | None = None
+    gnomAD_non_cancer_NFE_AF: str | None = None
+    gnomAD_non_cancer_OTH_AF: str | None = None
+    gnomAD_non_cancer_SAS_AF: str | None = None
+    gnomAD_non_cancer_MAX_AF_adj: str | None = None
+    gnomAD_non_cancer_MAX_AF_POPS_adj: str | None = None
+    CLIN_SIG: str | None = None
+    SOMATIC: str | None = None
+    PUBMED: str | None = None
+    TRANSCRIPTION_FACTORS: str | None = None
+    MOTIF_NAME: str | None = None
+    MOTIF_POS: str | None = None
+    HIGH_INF_POS: str | None = None
+    MOTIF_SCORE_CHANGE: str | None = None
+    miRNA: str | None = None
     IMPACT: str = "MODERATE"
-    PICK: Optional[str] = None
+    PICK: str | None = None
     VARIANT_CLASS: str = "SNV"
     TSL: str = "1"
-    HGVS_OFFSET: Optional[str] = None
-    PHENO: Optional[str] = None
-    GENE_PHENO: Optional[str] = None
+    HGVS_OFFSET: str | None = None
+    PHENO: str | None = None
+    GENE_PHENO: str | None = None
     CONTEXT: str = "CTTAGCCGACC"
     tumor_bam_uuid: str = "9fa1ff4d-230d-477b-91d6-e2dc3896b6c4"
     normal_bam_uuid: str = "604c11f1-ab8b-48a7-909e-982e873e02e5"
-    case_id: Optional[str] = "3680a87f-f493-42f0-abf7-741df6a7c9e7"
-    GDC_FILTER: Optional[str] = None
-    COSMIC: Optional[str] = None
+    case_id: str | None = "3680a87f-f493-42f0-abf7-741df6a7c9e7"
+    GDC_FILTER: str | None = None
+    COSMIC: str | None = None
     hotspot: str = "N"
     RNA_Support: str = "Unknown"
-    RNA_depth: Optional[str] = None
-    RNA_ref_count: Optional[str] = None
-    RNA_alt_count: Optional[str] = None
+    RNA_depth: str | None = None
+    RNA_ref_count: str | None = None
+    RNA_alt_count: str | None = None
     callers: str = "muse;varscan2"
     ALLELE_NUM: int = 0
     MINIMISED: str = ""
     src_vcf_id: str = "src-0"
-    Disease_type: Optional[str] = None
-    FMI_STATUS: Optional[str] = None
-    FMI_GENE: Optional[str] = None
-    FMI_TRANSCRIPT: Optional[str] = None
-    FMI_FUNCTIONAL_EFFECT: Optional[str] = None
+    Disease_type: str | None = None
+    FMI_STATUS: str | None = None
+    FMI_GENE: str | None = None
+    FMI_TRANSCRIPT: str | None = None
+    FMI_FUNCTIONAL_EFFECT: str | None = None
 
     def to_sql_row(self, fields: Iterable[types.StructField]) -> sql.Row:
         data = dataclasses.asdict(self)
@@ -483,7 +482,7 @@ class TestMAFBuilder:
         ids=("true", "false", "empty", "null"),
     )
     def test__build__cast_str_to_bool(
-        self, bool_value: Optional[str], expected_value: Optional[bool]
+        self, bool_value: str | None, expected_value: bool | None
     ) -> None:
         maf = MAF(CANONICAL=bool_value)
         inputs = self.arrange_inputs()
@@ -521,8 +520,8 @@ class TestMAFBuilder:
     )
     def test__build__available_variation_data_added(
         self,
-        tumor_sample_barcode: Optional[str],
-        case_id: Optional[str],
+        tumor_sample_barcode: str | None,
+        case_id: str | None,
         available_variation_data: list[str],
     ) -> None:
         inputs = self.arrange_inputs()
@@ -574,7 +573,7 @@ class TestMAFBuilder:
         (("Somatic", "Simple Somatic Mutation"), ("Normal", None)),
     )
     def test__build__mutation_type(
-        self, mutation_status: str, mutation_type: Optional[str]
+        self, mutation_status: str, mutation_type: str | None
     ) -> None:
         maf = MAF(Mutation_Status=mutation_status)
         inputs = self.arrange_inputs()
@@ -680,9 +679,9 @@ class TestMAFBuilder:
     )
     def test__build__polyphen_impact_and_score(
         self,
-        polyphen: Optional[str],
-        polyphen_impact: Optional[str],
-        polyphen_score: Optional[float],
+        polyphen: str | None,
+        polyphen_impact: str | None,
+        polyphen_score: float | None,
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(
@@ -707,9 +706,9 @@ class TestMAFBuilder:
     )
     def test__build__sift_impact_and_score(
         self,
-        sift: Optional[str],
-        sift_impact: Optional[str],
-        sift_score: Optional[float],
+        sift: str | None,
+        sift_impact: str | None,
+        sift_score: float | None,
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(masked_somatic_mutation_mafs=(MAF(SIFT=sift),))
@@ -819,7 +818,7 @@ class TestMAFBuilder:
         ids=("multiple", "single", "empty", "null"),
     )
     def test__build__cosmic_id(
-        self, cosmic: Optional[str], cosmic_id: Optional[list[str]]
+        self, cosmic: str | None, cosmic_id: list[str] | None
     ) -> None:
         inputs = self.arrange_inputs()
         builder = self.arrange_builder(

@@ -438,9 +438,12 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files), pytest.raises(
-            RuntimeError,
-            match=r"Invalid Data: No projects associated with any MAF files\.",
+        with (
+            self.load_files(files),
+            pytest.raises(
+                RuntimeError,
+                match=r"Invalid Data: No projects associated with any MAF files\.",
+            ),
         ):
             _ = builder.get_filters(
                 acl=("open",),

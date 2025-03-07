@@ -1,5 +1,6 @@
 import itertools
-from typing import Dict, Iterable, NamedTuple, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import NamedTuple, TypedDict
 from unittest import mock
 
 import pytest
@@ -7,7 +8,6 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils
 
@@ -24,7 +24,7 @@ def arrange_url_metadata(
 
 
 def arrange_document(
-    did="file-0", urls_metadata: Optional[Dict[str, UrlMetadata]] = None
+    did="file-0", urls_metadata: dict[str, UrlMetadata] | None = None
 ) -> client.Document:
     urls_metadata = (
         {"file://file-0.format": arrange_url_metadata()}
@@ -38,7 +38,7 @@ def arrange_document(
 
 class DocumentContent(NamedTuple):
     did: str = "file-0"
-    data: Tuple[str, ...] = ("a", "b")
+    data: tuple[str, ...] = ("a", "b")
 
 
 def stub_input_file_name() -> sql.Column:
@@ -55,7 +55,7 @@ class TestDataFrameUtil:
 
     def arrange_index_client(
         self,
-        documents: Iterable[Optional[Iterable[client.Document]]] = (
+        documents: Iterable[Iterable[client.Document] | None] = (
             (arrange_document(),),
         ),
     ) -> mock.MagicMock:
@@ -67,7 +67,7 @@ class TestDataFrameUtil:
 
     def arrange_data_rows(
         self, document_content: DocumentContent
-    ) -> Iterable[Tuple[str, ...]]:
+    ) -> Iterable[tuple[str, ...]]:
         for data in document_content.data:
             yield (f"{document_content.did}.{data}",)
 
@@ -76,7 +76,7 @@ class TestDataFrameUtil:
         document_contents: Iterable[Iterable[DocumentContent]] = (
             (DocumentContent(),),
         ),
-        schema: Optional[Union[Tuple[str, ...], types.StructType]] = ("doc_data",),
+        schema: tuple[str, ...] | types.StructType | None = ("doc_data",),
     ) -> mock.MagicMock:
         sql_context = mock.MagicMock()
         data = (

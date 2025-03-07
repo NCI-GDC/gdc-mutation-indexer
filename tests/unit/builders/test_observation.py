@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import more_itertools
 import pytest
 from pyspark import sql
@@ -72,7 +70,7 @@ class TestObservationBuilder:
         }
 
     def arrange_maf_df(
-        self, mafs: Tuple[models.MAF, ...] = (models.MAF(),)
+        self, mafs: tuple[models.MAF, ...] = (models.MAF(),)
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
             mafs,  # type: ignore
@@ -80,7 +78,7 @@ class TestObservationBuilder:
         )
 
     def arrange_ascat_df(
-        self, ascats: Tuple[models.ASCAT, ...] = (models.ASCAT(),)
+        self, ascats: tuple[models.ASCAT, ...] = (models.ASCAT(),)
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
             ascats,  # type: ignore
@@ -89,7 +87,7 @@ class TestObservationBuilder:
 
     def arrange_primary_aliquot_df(
         self,
-        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
+        primary_aliquots: tuple[models.PrimaryAliquot, ...] = (
             models.PrimaryAliquot(),
         ),
     ) -> sql.DataFrame:
@@ -113,7 +111,7 @@ class TestObservationBuilder:
         ),
     )
     def test__build_for_ssm__final_schema(
-        self, index_name: str, selector: Optional[str], final_schema: str
+        self, index_name: str, selector: str | None, final_schema: str
     ) -> None:
         maf_df = self.arrange_maf_df()
         primary_aliquot_df = self.arrange_primary_aliquot_df()
@@ -182,7 +180,7 @@ class TestObservationBuilder:
         ),
     )
     def test__build_for_cnv__final_schema(
-        self, index: str, selector: Optional[str], final_schema: str
+        self, index: str, selector: str | None, final_schema: str
     ) -> None:
         ascat_df = self.arrange_ascat_df()
         builder = self.arrange_builder()

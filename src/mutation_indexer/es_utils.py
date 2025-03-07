@@ -11,7 +11,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final, Optional, Tuple, Union
+from typing import DefaultDict, Deque, Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -20,7 +20,6 @@ from elasticsearch import helpers
 from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import types
-from typing_extensions import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -29,8 +28,8 @@ from mutation_indexer.constants import build
 def iterate_es_results(
     es_client: elasticsearch.Elasticsearch,
     index_name: str,
-    doc_type: Optional[str] = None,
-    query: Optional[dict] = None,
+    doc_type: str | None = None,
+    query: dict | None = None,
 ) -> Iterable:
     """
     Returns iterator over elasticsearch query results
@@ -81,7 +80,7 @@ class MappingsLoader:
 
 def _is_included_field(
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     field: str,
 ) -> bool:
     """
@@ -111,7 +110,7 @@ def _is_included_field(
 def _convert_properties(
     properties: Mapping[str, Mapping],
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     path: str = "",
 ) -> Iterator[str]:
     """
@@ -130,7 +129,7 @@ def _convert_properties(
     Yields:
         Individual fields from the given properties mapping.
     """
-    fields: Iterable[Tuple[str, Mapping]] = (
+    fields: Iterable[tuple[str, Mapping]] = (
         (f"{path}{prop}", details) for prop, details in properties.items()
     )
     is_included_field = functools.partial(
@@ -153,7 +152,7 @@ def _convert_properties(
 def _extract_fields(
     properties: Mapping[str, Mapping],
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     path_to_fields: Deque[str],
 ) -> Iterator[str]:
     """
@@ -205,14 +204,14 @@ class CaseFieldSelector:
         }
     )
 
-    def __init__(self, mappings_loader: Optional[MappingsLoader] = None) -> None:
+    def __init__(self, mappings_loader: MappingsLoader | None = None) -> None:
         self._mappings_loader = mappings_loader or MappingsLoader()
 
     def _select_fields(
         self,
         index_type: build.IndexType,
         excluded_fields: Container[str],
-        included_fields: Optional[Iterable[str]],
+        included_fields: Iterable[str] | None,
     ) -> Set[str]:
         if index_type not in self.CASE_PREFIXES:
             raise ValueError(f"Index: {index_type} is not supported.")
@@ -232,7 +231,7 @@ class CaseFieldSelector:
         self,
         *index_types: build.IndexType,
         excluded_fields: Container[str] = (),
-        included_fields: Optional[Iterable[str]] = None,
+        included_fields: Iterable[str] | None = None,
     ) -> Set[str]:
         """
         Selects all common case fields found in the given indices.
@@ -317,7 +316,7 @@ def _parse_tree(paths: Iterable[str]) -> Tree:
 
 def _walk_struct(
     struct: types.StructType, path: Sequence[str]
-) -> Optional[types.StructField]:
+) -> types.StructField | None:
     """Walks the provided path within the given SQL structure.
 
     Args:
@@ -331,7 +330,7 @@ def _walk_struct(
 
     def get_field(
         struct: types.StructType, field_name: str
-    ) -> Optional[types.StructField]:
+    ) -> types.StructField | None:
         """Gets the field with the given name if it exists.
 
         Args:
@@ -431,7 +430,7 @@ class SchemaLoader:
     def load(
         self,
         mappings: esmodels.ESMapping,
-        source_filter: Union[Literal[True], Iterable[str]],
+        source_filter: Literal[True] | Iterable[str],
         include_as_arrays: Iterable[str],
     ) -> types.StructType:
         """Loads the schema from the mappings.
@@ -538,9 +537,9 @@ class DataFrameUtil:
     def read(
         self,
         index_type: build.IndexType,
-        source_filter: Union[Literal[True], Collection[str]] = True,
+        source_filter: Literal[True] | Collection[str] = True,
         include_as_arrays: Iterable[str] = (),
-        query: Optional[dict] = None,
+        query: dict | None = None,
         read_metadata: bool = False,
     ) -> sql.DataFrame:
         """
@@ -698,11 +697,11 @@ class RDDUtil:
     def get_rdd(
         self,
         index_type: build.IndexType,
-        include_fields: Union[Iterable[str], bool] = True,
-        exclude_fields: Optional[Iterable[str]] = None,
+        include_fields: Iterable[str] | bool = True,
+        exclude_fields: Iterable[str] | None = None,
         include_as_arrays: Iterable[str] = (),
         exclude_as_arrays: Iterable[str] = (),
-        query: Optional[dict] = None,
+        query: dict | None = None,
         read_metadata: bool = False,
     ) -> pyspark.RDD:
         """

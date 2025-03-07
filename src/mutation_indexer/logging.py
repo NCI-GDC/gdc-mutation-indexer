@@ -2,7 +2,7 @@ import logging
 import platform
 import uuid
 from logging import handlers
-from typing import Any, Dict
+from typing import Any
 
 from pythonjsonlogger import jsonlogger
 
@@ -21,9 +21,9 @@ class DatadogLogFormatter(jsonlogger.JsonFormatter):
 
     def add_fields(
         self,
-        log_record: Dict[str, Any],
+        log_record: dict[str, Any],
         record: logging.LogRecord,
-        message_dict: Dict[str, Any],
+        message_dict: dict[str, Any],
     ) -> None:
         super().add_fields(log_record, record, message_dict)
 

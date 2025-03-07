@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Dict, Optional, Tuple
 
 __all__ = ("Domain", "Exon", "GeneModel", "Transcript")
 
@@ -36,44 +35,44 @@ class Transcript:
     cdna_coding_start: int = 0
     coding_region_end: int = 0
     coding_region_start: int = 0
-    domains: Tuple[Domain, ...] = (Domain(),)
-    end: Optional[int] = 14409
-    end_exon: Optional[int] = None
-    exons: Tuple[Exon, ...] = (Exon(),)
+    domains: tuple[Domain, ...] = (Domain(),)
+    end: int | None = 14409
+    end_exon: int | None = None
+    exons: tuple[Exon, ...] = (Exon(),)
     transcript_id: str = "ENST00000456328"
     is_canonical: bool = False
-    length: Optional[int] = 1657
-    length_amino_acid: Optional[int] = None
-    length_cds: Optional[int] = None
+    length: int | None = 1657
+    length_amino_acid: int | None = None
+    length_cds: int | None = None
     name: str = "DDX11L1-002"
     number_of_exons: int = 6
-    seq_exon_end: Optional[int] = None
-    seq_exon_start: Optional[int] = None
-    start: Optional[int] = 11869
-    start_exon: Optional[int] = None
-    translation_id: Optional[str] = None
+    seq_exon_end: int | None = None
+    seq_exon_start: int | None = None
+    start: int | None = 11869
+    start_exon: int | None = None
+    translation_id: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
 class GeneModel:
     _gene_id: str = "ENSG00000238009"
-    _id: Dict[str, str] = dataclasses.field(
+    _id: dict[str, str] = dataclasses.field(
         default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"},
     )
     biotype: str = "protein_coding"
     canonical_transcript_id: str = "ENST00000456328"
     chromosome: str = "1"
-    cytoband: Tuple[Optional[str], ...] = ("1p36.33",)
+    cytoband: tuple[str | None, ...] = ("1p36.33",)
     description: str = "DISCONTINUED: This record has been withdrawn by NCBI because the model on which it was based was not predicted in a later annotation."
-    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
+    entrez_gene: tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
     gene_end: int = 14409
     gene_start: int = 11869
     gene_strand: int = 1
-    hgnc: Tuple[str, ...] = ("HGNC:37102",)
+    hgnc: tuple[str, ...] = ("HGNC:37102",)
     is_cancer_gene_census: str = "true"
-    omim_gene: Tuple[str, ...] = ()
-    uniprotkb_swissprot: Tuple[str, ...] = ()
+    omim_gene: tuple[str, ...] = ()
+    uniprotkb_swissprot: tuple[str, ...] = ()
     name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
     symbol: str = "DDX11L1"
-    synonyms: Tuple[str, ...] = ()
-    transcripts: Tuple[Transcript, ...] = (Transcript(),)
+    synonyms: tuple[str, ...] = ()
+    transcripts: tuple[Transcript, ...] = (Transcript(),)

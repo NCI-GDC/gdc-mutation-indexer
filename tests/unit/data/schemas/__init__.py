@@ -23,9 +23,12 @@ class Schema:
         return types.StructType.fromJson(yaml.safe_load(data))
 
     def update(self, schema: types.StructType) -> None:
-        with resources.as_file(
-            resources.files(self._package).joinpath(self._resource)
-        ) as path, open(path, "w") as f:
+        with (
+            resources.as_file(
+                resources.files(self._package).joinpath(self._resource)
+            ) as path,
+            open(path, "w") as f,
+        ):
             yaml.dump(schema.jsonValue(), f)
 
         _minimize.minimize_files(self._package)

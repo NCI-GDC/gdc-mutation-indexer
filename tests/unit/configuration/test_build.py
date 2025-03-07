@@ -1,8 +1,7 @@
-import uuid
 from collections.abc import Iterable, Iterator
+from importlib import resources
 from typing import Any
 
-import importlib_resources as resources
 import pytest
 import toml
 from marshmallow import validate

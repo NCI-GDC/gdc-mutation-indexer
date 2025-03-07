@@ -1,4 +1,5 @@
 """Test SegmentCNVCentricBuilder dataframe creation."""
+
 import dataclasses
 from collections.abc import Iterable
 from unittest import mock

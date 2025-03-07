@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Optional, Tuple
 
 import more_itertools
 from pyspark import sql
@@ -9,50 +8,50 @@ from tests.unit import utils
 
 @dataclasses.dataclass(frozen=True)
 class InputBamFile:
-    normal_bam_uuid: Optional[str] = "604c11f1-ab8b-48a7-909e-982e873e02e5"
-    tumor_bam_uuid: Optional[str] = "9fa1ff4d-230d-477b-91d6-e2dc3896b6c4"
+    normal_bam_uuid: str | None = "604c11f1-ab8b-48a7-909e-982e873e02e5"
+    tumor_bam_uuid: str | None = "9fa1ff4d-230d-477b-91d6-e2dc3896b6c4"
 
 
 @dataclasses.dataclass(frozen=True)
 class NormalGenotype:
-    match_norm_seq_allele1: Optional[str] = None
-    match_norm_seq_allele2: Optional[str] = None
+    match_norm_seq_allele1: str | None = None
+    match_norm_seq_allele2: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
 class ReadDepth:
-    n_depth: Optional[int] = 38
-    t_alt_count: Optional[int] = 5
-    t_depth: Optional[int] = 29
-    t_ref_count: Optional[int] = 24
+    n_depth: int | None = 38
+    t_alt_count: int | None = 5
+    t_depth: int | None = 29
+    t_ref_count: int | None = 24
 
 
 @dataclasses.dataclass(frozen=True)
 class TumorGenotype:
-    tumor_seq_allele1: Optional[str] = "C"
-    tumor_seq_allele2: Optional[str] = "A"
+    tumor_seq_allele1: str | None = "C"
+    tumor_seq_allele2: str | None = "A"
 
 
 @dataclasses.dataclass(frozen=True)
 class Validation:
-    tumor_validation_allele1: Optional[str] = None
-    tumor_validation_allele2: Optional[str] = None
-    validation_method: Optional[str] = None
+    tumor_validation_allele1: str | None = None
+    tumor_validation_allele2: str | None = None
+    validation_method: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
 class VariantCalling:
-    variant_caller: Optional[str] = "muse"
-    variant_process: Optional[str] = "masked"
+    variant_caller: str | None = "muse"
+    variant_process: str | None = "masked"
 
 
 @dataclasses.dataclass(frozen=True)
 class Observation:
-    center: Optional[str] = "BI"
+    center: str | None = "BI"
     input_bam_file: InputBamFile = InputBamFile()
-    mutation_status: Optional[str] = "Somatic"
+    mutation_status: str | None = "Somatic"
     normal_genotype: NormalGenotype = NormalGenotype()
-    observation_id: Optional[str] = "f64f0e40-4620-5435-ad1e-38a63faf4e94"
+    observation_id: str | None = "f64f0e40-4620-5435-ad1e-38a63faf4e94"
     read_depth: ReadDepth = ReadDepth()
     tumor_genotype: TumorGenotype = TumorGenotype()
     validation: Validation = Validation()
@@ -61,63 +60,63 @@ class Observation:
 
 @dataclasses.dataclass(frozen=True)
 class Observations:
-    case_id: Optional[str] = "case-0"
-    observation: Tuple[Observation, ...] = (Observation(),)
-    occurrence_id: Optional[str] = "occ-0"
-    ssm_id: Optional[str] = "ssm-0"
+    case_id: str | None = "case-0"
+    observation: tuple[Observation, ...] = (Observation(),)
+    occurrence_id: str | None = "occ-0"
+    ssm_id: str | None = "ssm-0"
 
 
 @dataclasses.dataclass(frozen=True)
 class Annotation:
-    amino_acids: Optional[str] = None
-    ccds: Optional[str] = "CCDS380.1"
-    cdna_position: Optional[str] = None
-    cds_end: Optional[int] = None
-    cds_length: Optional[int] = None
-    cds_position: Optional[int] = None
-    cds_start: Optional[int] = None
-    clin_sig: Optional[str] = None
-    codons: Optional[str] = None
-    dbsnp_rs: Optional[str] = "novel"
-    dbsnp_val_status: Optional[str] = None
-    domains: Optional[str] = None
-    ensp: Optional[str] = None
-    existing_variation: Optional[str] = None
-    hgvsc: Optional[str] = "c.1705G>T"
-    hgvsp: Optional[str] = None
-    hgvsp_short: Optional[str] = None
-    polyphen_impact: Optional[str] = "benign"
-    polyphen_score: Optional[float] = 0.305
-    protein_position: Optional[str] = None
-    pubmed: Optional[str] = None
-    sift_impact: Optional[str] = "tolerated"
-    sift_score: Optional[float] = 0.12
-    swissprot: Optional[str] = None
-    transcript_id: Optional[str] = "ENST00000373388"
-    trembl: Optional[str] = None
-    uniparc: Optional[str] = None
-    vep_impact: Optional[str] = "MODERATE"
+    amino_acids: str | None = None
+    ccds: str | None = "CCDS380.1"
+    cdna_position: str | None = None
+    cds_end: int | None = None
+    cds_length: int | None = None
+    cds_position: int | None = None
+    cds_start: int | None = None
+    clin_sig: str | None = None
+    codons: str | None = None
+    dbsnp_rs: str | None = "novel"
+    dbsnp_val_status: str | None = None
+    domains: str | None = None
+    ensp: str | None = None
+    existing_variation: str | None = None
+    hgvsc: str | None = "c.1705G>T"
+    hgvsp: str | None = None
+    hgvsp_short: str | None = None
+    polyphen_impact: str | None = "benign"
+    polyphen_score: float | None = 0.305
+    protein_position: str | None = None
+    pubmed: str | None = None
+    sift_impact: str | None = "tolerated"
+    sift_score: float | None = 0.12
+    swissprot: str | None = None
+    transcript_id: str | None = "ENST00000373388"
+    trembl: str | None = None
+    uniparc: str | None = None
+    vep_impact: str | None = "MODERATE"
 
 
 @dataclasses.dataclass(frozen=True)
 class Transcript:
-    aa_change: Optional[str] = "A569S"
+    aa_change: str | None = "A569S"
     annotation: Annotation = Annotation()
-    consequence_type: Optional[str] = "missense_variant"
-    ref_seq_accession: Optional[str] = "NM_052896.4"
-    transcript_id: Optional[str] = "ENST00000373388"
+    consequence_type: str | None = "missense_variant"
+    ref_seq_accession: str | None = "NM_052896.4"
+    transcript_id: str | None = "ENST00000373388"
 
 
 @dataclasses.dataclass(frozen=True)
 class Consequence:
-    consequence_id: Optional[str] = "con-0"
+    consequence_id: str | None = "con-0"
     transcript: Transcript = Transcript()
 
 
 @dataclasses.dataclass(frozen=True)
 class Consequences:
-    consequence: Tuple[Consequence, ...] = (Consequence(),)
-    ssm_id: Optional[str] = "ssm-0"
+    consequence: tuple[Consequence, ...] = (Consequence(),)
+    ssm_id: str | None = "ssm-0"
 
 
 def assert_annotation_translated(

@@ -4,7 +4,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Mapping
+from collections.abc import Mapping
 
 from mutation_indexer.configuration import marshmallow_extensions
 from mutation_indexer.constants import build

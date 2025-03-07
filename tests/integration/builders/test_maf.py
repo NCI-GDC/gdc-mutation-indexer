@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from pyspark import sql
 from pyspark.sql import types

@@ -2,7 +2,7 @@ import dataclasses
 import random
 import string
 import sys
-from typing import Dict, FrozenSet, Iterable, Optional, Tuple
+from collections.abc import Iterable
 from unittest import mock
 
 import more_itertools
@@ -226,14 +226,14 @@ class Exposure:
 
 @dataclasses.dataclass(frozen=True)
 class FamilyHistory:
-    family_history_id: Optional[str] = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
-    relationship_age_at_diagnosis: Optional[float] = None
-    relationship_gender: Optional[str] = None
-    relationship_primary_diagnosis: Optional[str] = "Rectal Cancer"
-    relationship_type: Optional[str] = None
-    relative_with_cancer_history: Optional[str] = "yes"
-    state: Optional[str] = None
-    submitter_id: Optional[str] = "HCM-BROD-0001-C18_family_history"
+    family_history_id: str | None = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
+    relationship_age_at_diagnosis: float | None = None
+    relationship_gender: str | None = None
+    relationship_primary_diagnosis: str | None = "Rectal Cancer"
+    relationship_type: str | None = None
+    relative_with_cancer_history: str | None = "yes"
+    state: str | None = None
+    submitter_id: str | None = "HCM-BROD-0001-C18_family_history"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -778,8 +778,8 @@ class TestCaseBuilder:
         self,
         maf_metadata_case_ids: Iterable[str] = (),
         ascat_metadata_case_ids: Iterable[str] = (),
-    ) -> Dict[str, sql.DataFrame]:
-        def to_rows(case_ids: Iterable[str]) -> Tuple[sql.Row, ...]:
+    ) -> dict[str, sql.DataFrame]:
+        def to_rows(case_ids: Iterable[str]) -> tuple[sql.Row, ...]:
             return tuple(sql.Row(case_id=case_id) for case_id in case_ids)
 
         maf_metadata_df = self.spark_session.createDataFrame(
@@ -845,7 +845,7 @@ class TestCaseBuilder:
         self,
         maf_metadata_cases: Iterable[str],
         ascat_metadata_cases: Iterable[str],
-        available_variation_data: FrozenSet[str],
+        available_variation_data: frozenset[str],
     ) -> None:
         config = self.arrange_config()
         case = Case(case_id="case-0")

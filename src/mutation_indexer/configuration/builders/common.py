@@ -4,7 +4,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Sequence
+from collections.abc import Sequence
 
 from mutation_indexer.constants import build
 

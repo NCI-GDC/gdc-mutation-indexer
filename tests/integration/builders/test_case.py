@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import elasticsearch
 import pytest
@@ -46,7 +46,7 @@ class TestCaseBuilder:
     )
     def test_project_filter(
         self,
-        projects: List[str],
+        projects: list[str],
         expected_count: int,
         spark_session: sql.SparkSession,
         maf_metadata_df: sql.DataFrame,

@@ -1,10 +1,10 @@
 import logging
 from collections.abc import Iterable
+from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
