@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools >= 61", "wheel", "setuptools_scm[toml]", "versionista"]
+requires = ["setuptools", "setuptools_scm"]
 
 [project]
 authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
@@ -43,6 +43,14 @@ mutation-indexer = "mutation_indexer.client:main [client]"
 [project.urls]
 repository = "https://github.com/NCI-GDC/gdc-mutation-indexer"
 
+[tool.coverage.html]
+directory = "docs/htmlcov"
+title = "mutation-indexer coverage report"
+
+[tool.coverage.run]
+branch = true
+source = ["mutation_indexer"]
+
 [tool.isort]
 known_first_party = ["mutation_indexer"]
 multi_line_output = 3
@@ -66,11 +74,10 @@ minversion = "6.0"
 testpaths = ["tests/unit", "tests/integration"]
 
 [tool.setuptools_scm]
-local_scheme = "versionista-local-format"
-version_scheme = "versionista-format"
+local_scheme = "dirty-tag"
+version_file = "_version.py"
 
 [tool.tox]
-isolated_build = true
 requires = ["tox>=4.21"]
 
 [tool.tox.env.coverage]
@@ -134,10 +141,9 @@ deps = ["-crequirements.txt", ".[dev,client]"]
 pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
 
 [tool.tox.env.test.set_env]
-ES_VERSION = "{env:ES_VERSION:7.7.1}"
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
 [tool.tox.env_run_base]
-base_python = ["py39"]
+base_python = ["py313"]
