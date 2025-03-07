@@ -36,7 +36,7 @@ class ObservationBuilder:
             "occurrence_id",
             *utils.select_nested(
                 index_name, "observation", selector=selector, ignore=["observation_id"]
-            )
+            ),
         ).join(primary_aliquot_df, ["case_id"], how="left")
         flat_obs_df = (
             flat_obs_df.withColumn(
