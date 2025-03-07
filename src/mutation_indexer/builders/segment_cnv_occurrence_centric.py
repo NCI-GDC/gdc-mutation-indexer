@@ -1,4 +1,5 @@
 """Builds the segment_cnv_occurrence_centric dataframe."""
+
 from typing import TypedDict
 
 from pyspark import sql

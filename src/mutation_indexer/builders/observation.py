@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -20,7 +19,7 @@ class ObservationBuilder:
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
         index_name: str,
-        selector: Optional[str] = None,
+        selector: str | None = None,
     ) -> sql.DataFrame:
         """
         Builds an observation from a maf.
@@ -73,7 +72,7 @@ class ObservationBuilder:
         )
 
     def build_for_cnv(
-        self, ascat_df: sql.DataFrame, index: str, selector: Optional[str] = None
+        self, ascat_df: sql.DataFrame, index: str, selector: str | None = None
     ) -> sql.DataFrame:
         """
         observation[]

@@ -383,9 +383,10 @@ def main():
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        with get_es_client(
-            config.elasticsearch.connection
-        ) as es_client, initialize_spark() as spark_session:
+        with (
+            get_es_client(config.elasticsearch.connection) as es_client,
+            initialize_spark() as spark_session,
+        ):
             builders = (
                 get_viz_builders(config, spark_session, es_client)
                 if config.build.is_viz_build()

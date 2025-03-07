@@ -7,35 +7,35 @@ authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python"
 ]
 dependencies = [
-  "boto3",
+  "boto3~=1.37",
   "boto3-stubs[s3]",
-  "elasticsearch[async]~=7.6",
-  "importlib-resources~=3.2",
-  "marshmallow-dataclass~=8.5",
+  "elasticsearch[async]~=7.7",
+  "marshmallow-dataclass~=8.7",
   "marshmallow-enum~=1.5",
-  "more-itertools~=8.9",
-  "numpy",
-  "pyspark~=3.3.1",
-  "python-json-logger~=2.0",
+  "more-itertools~=10.6",
+  "numpy~=2.2",
+  "pyspark~=3.5.0",
+  "python-json-logger~=3.3",
+  "gdcmodels~=5.10",
+  "pyyaml>=6.0",
+  "indexclient~=2.6",
+  "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
   "toml~=0.10",
-  "typing-extensions~=4.1",
-  "indexclient",
-  "gdcmodels",
-  "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0"
+  "typing-extensions~=4.12"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
 license = {file = "LICENSE"}
 name = "gdc-mutation-indexer"
-requires-python = "~=3.9"
+requires-python = "~=3.13"
 
 [project.optional-dependencies]
 client = ["halo", "pex", "wheel"]
-dev = ["click~=8.1", "coverage[toml]~=7.0", "deepdiff~=6.0", "pytest~=8.0"]
+dev = ["click", "coverage[toml]", "deepdiff", "pytest"]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
@@ -146,4 +146,4 @@ PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
 [tool.tox.env_run_base]
-base_python = ["py39"]
+base_python = ["py313"]

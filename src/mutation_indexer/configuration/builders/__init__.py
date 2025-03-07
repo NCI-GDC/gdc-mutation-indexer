@@ -2,6 +2,7 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
 
 from mutation_indexer.configuration.builders import gene_expression, viz

@@ -6,7 +6,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 import itertools
 import types
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 import marshmallow
 import marshmallow_dataclass
@@ -29,8 +30,8 @@ _DEFAULT_ACL = ("open",)
 class DataReleaseAndBuildVersion:
     """Should be specified in configuration.toml."""
 
-    data_release: Optional[str]
-    build_version: Optional[str]
+    data_release: str | None
+    build_version: str | None
 
     def __bool__(self) -> bool:
         return self.build_version is not None and self.data_release is not None
@@ -42,7 +43,7 @@ def _get_data_release_and_build_version(build: dict) -> DataReleaseAndBuildVersi
     )
 
 
-def _get_index_template(build: dict) -> Optional[str]:
+def _get_index_template(build: dict) -> str | None:
     build_config: DataReleaseAndBuildVersion = _get_data_release_and_build_version(
         build
     )

@@ -1,13 +1,12 @@
 import logging
-from typing import cast
+from importlib import resources
+from typing import TypedDict, cast
 
-import importlib_resources as resources
 import more_itertools
 import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, pyspark_extensions, schemas
 from mutation_indexer.builders import bases, utils
@@ -223,7 +222,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
             if old_column in df_columns:
                 return F.col(old_column).alias(new_column)
             else:
-                raise KeyError("Required column {} missing from MAF".format(old_column))
+                raise KeyError(f"Required column {old_column} missing from MAF")
 
         # Iterate over the output schema rather than the input dataframe.
         # As long as we don't modify the schema after loading it, this should

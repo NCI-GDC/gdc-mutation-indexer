@@ -1,6 +1,6 @@
 import dataclasses
 import datetime
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 from unittest import mock
 
 import more_itertools
@@ -18,7 +18,7 @@ from tests.unit.data import schemas
 @dataclasses.dataclass(frozen=True)
 class ESAliquot:
     aliquot_id: str = "a-0"
-    created_datetime: Optional[str] = datetime.datetime.min.isoformat(
+    created_datetime: str | None = datetime.datetime.min.isoformat(
         timespec="microseconds"
     )
 
@@ -34,7 +34,7 @@ class ESAliquot:
 
 @dataclasses.dataclass(frozen=True)
 class ESAnalyte:
-    aliquots: Tuple[ESAliquot, ...] = (ESAliquot(),)
+    aliquots: tuple[ESAliquot, ...] = (ESAliquot(),)
 
     def to_rdd_data(self) -> dict:
         return {"aliquots": tuple(aliquot.to_rdd_data() for aliquot in self.aliquots)}
@@ -42,7 +42,7 @@ class ESAnalyte:
 
 @dataclasses.dataclass(frozen=True)
 class ESPortion:
-    analytes: Optional[Tuple[ESAnalyte, ...]] = (ESAnalyte(),)
+    analytes: tuple[ESAnalyte, ...] | None = (ESAnalyte(),)
 
     def to_rdd_data(self) -> dict:
         analytes = (
@@ -58,7 +58,7 @@ class ESPortion:
 class ESSample:
     sample_id: str = "s-0"
     sample_type: str = "Primay Tumor"
-    portions: Tuple[ESPortion, ...] = (ESPortion(),)
+    portions: tuple[ESPortion, ...] = (ESPortion(),)
 
     def to_rdd_data(self) -> dict:
         return {
@@ -70,7 +70,7 @@ class ESSample:
 @dataclasses.dataclass(frozen=True)
 class ESCase:
     case_id: str = "c-0"
-    samples: Tuple[ESSample, ...] = (ESSample(),)
+    samples: tuple[ESSample, ...] = (ESSample(),)
 
     def to_rdd_data(self) -> dict:
         return {
@@ -84,7 +84,7 @@ class ESFile:
     file_id: str = "f-0"
     created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
     experimental_strategy: str = "WXS"
-    cases: Tuple[ESCase, ...] = (ESCase(),)
+    cases: tuple[ESCase, ...] = (ESCase(),)
 
     def to_rdd_data(self) -> tuple:
         return (
@@ -152,8 +152,8 @@ class TestPrimaryAliquotBuilder:
 
     def _arrange_builder(
         self,
-        es_files: Tuple[ESFile, ...],
-        aliquot_data: Optional[Tuple[ESFile, ...]] = None,
+        es_files: tuple[ESFile, ...],
+        aliquot_data: tuple[ESFile, ...] | None = None,
     ) -> builders.PrimaryAliquotBuilder:
         aliquot_data = es_files if aliquot_data is None else aliquot_data
         config = self._arrange_config()
@@ -171,7 +171,7 @@ class TestPrimaryAliquotBuilder:
         ids=("aliquot_exists", "no_aliquots"),
     )
     def test__build__positive_joins(
-        self, files: Tuple[ESFile, ...], aliquot_data: Tuple[ESFile, ...]
+        self, files: tuple[ESFile, ...], aliquot_data: tuple[ESFile, ...]
     ) -> None:
         builder = self._arrange_builder(files, aliquot_data)
 

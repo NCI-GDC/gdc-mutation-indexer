@@ -2,8 +2,9 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
-from typing import Sequence
+from collections.abc import Sequence
 
 from marshmallow import fields
 

@@ -4,11 +4,11 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, Literal, Union, cast
+from importlib import resources
+from typing import Any, Literal, cast
 from unittest import mock
 
 import elasticsearch
-import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -75,7 +75,7 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
 
 @pytest.fixture(scope="session")
 def default_config(
-    configure_gene_model: Callable[[dict], dict]
+    configure_gene_model: Callable[[dict], dict],
 ) -> configuration.Configuration:
     return test_setup.load_configuration(configure_gene_model)
 
@@ -148,16 +148,16 @@ def files_with_linked_cases(
 
 
 @pytest.fixture(scope="session")
-def spark_session() -> Generator[sql.SparkSession, None, None]:
-    with sql.SparkSession.builder.master("local[*]").appName(
-        "sqlContextFixture"
-    ).config("spark.sql.shuffle.partitions", 1).config(
-        "spark.ui.showConsoleProgress", False
-    ).config(
-        "spark.ui.enabled", False
-    ).config(
-        "spark.driver.memory", "2g"
-    ).getOrCreate() as spark_session:
+def spark_session() -> Generator[sql.SparkSession]:
+    with (
+        sql.SparkSession.builder.master("local[*]")
+        .appName("sqlContextFixture")
+        .config("spark.sql.shuffle.partitions", 1)
+        .config("spark.ui.showConsoleProgress", False)
+        .config("spark.ui.enabled", False)
+        .config("spark.driver.memory", "2g")
+        .getOrCreate() as spark_session
+    ):
         spark_session.sparkContext.setLogLevel("FATAL")
         spark_session.sql("set spark.sql.caseSensitive=true")
 
@@ -871,8 +871,8 @@ def exploded_variant_caller_counts() -> Mapping[str, int]:
 @pytest.fixture(scope="function")
 def load_data_from_file(
     data_dir: pathlib.Path,
-) -> Callable[[Union[str, pathlib.Path]], Any]:
-    def load(filename: Union[str, pathlib.Path]):
+) -> Callable[[str | pathlib.Path], Any]:
+    def load(filename: str | pathlib.Path):
         with open(data_dir.joinpath(filename)) as f:
             return yaml.safe_load(f)
 

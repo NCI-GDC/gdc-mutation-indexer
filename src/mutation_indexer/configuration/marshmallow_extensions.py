@@ -31,8 +31,8 @@ class ArbitraryLengthTuple(fields.List):
     def _deserialize(
         self,
         value: typing.Any,
-        attr: typing.Optional[str],
-        data: typing.Optional[typing.Mapping[str, typing.Any]],
+        attr: str | None,
+        data: typing.Mapping[str, typing.Any] | None,
         **kwargs: typing.Any,
     ):
         if not utils.is_collection(value):
@@ -45,7 +45,7 @@ class ResolvedPathField(fields.Field):
     def _serialize(
         self,
         value: typing.Any,
-        attr: typing.Optional[str],
+        attr: str | None,
         obj: typing.Any,
         **kwargs: typing.Any,
     ):
@@ -54,8 +54,8 @@ class ResolvedPathField(fields.Field):
     def _deserialize(
         self,
         value: typing.Any,
-        attr: typing.Optional[str],
-        data: typing.Optional[typing.Mapping[str, typing.Any]],
+        attr: str | None,
+        data: typing.Mapping[str, typing.Any] | None,
         **kwargs: typing.Any,
     ):
         if not isinstance(value, str):
@@ -68,7 +68,7 @@ class ResolvedPathField(fields.Field):
 
 
 class SecretStringField(fields.String):
-    def _serialize(self, value, attr, obj, **kwargs) -> typing.Optional[str]:
+    def _serialize(self, value, attr, obj, **kwargs) -> str | None:
         assert self.root, "Invalid context."
 
         if self.root.context.get("is_obfuscated"):

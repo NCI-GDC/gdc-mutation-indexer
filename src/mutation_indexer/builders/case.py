@@ -1,9 +1,9 @@
 import abc
 import logging
+from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases

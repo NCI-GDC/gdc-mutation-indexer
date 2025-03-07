@@ -5,16 +5,14 @@ import functools
 import itertools
 import logging
 import operator
-from collections.abc import Collection, Iterable, Iterator, Mapping, Set
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence, Set
 from importlib import resources
 from typing import (
     Generic,
     Literal,
-    Optional,
     Protocol,
-    Sequence,
+    TypeGuard,
     TypeVar,
-    Union,
     get_type_hints,
     runtime_checkable,
 )
@@ -24,7 +22,6 @@ from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypeGuard
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration.builders import common
@@ -173,7 +170,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
         return self._spark_session.read.parquet(self._config.backup.path)
 
-    def _read(self) -> Optional[sql.DataFrame]:
+    def _read(self) -> sql.DataFrame | None:
         """
         Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
@@ -222,8 +219,8 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
 
 def _combine_weighted_entity_dfs(
-    weighted_file_df: Optional[sql.DataFrame],
-    weighted_case_df: Optional[sql.DataFrame],
+    weighted_file_df: sql.DataFrame | None,
+    weighted_case_df: sql.DataFrame | None,
 ) -> sql.DataFrame:
     if weighted_case_df and weighted_file_df:
         return weighted_case_df.union(weighted_file_df)
@@ -239,7 +236,7 @@ def _combine_weighted_entity_dfs(
 
 
 def _add_required_include_fields(
-    include_fields: Union[Iterable[str], Literal[True]]
+    include_fields: Iterable[str] | Literal[True],
 ) -> Collection[str]:
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
@@ -310,7 +307,7 @@ class PrimaryAliquotBuilder(
     def _get_initial_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Collection[str], Literal[True]],
+        include_fields: Collection[str] | Literal[True],
     ) -> sql.DataFrame:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
@@ -443,7 +440,7 @@ class PrimaryAliquotBuilder(
     def _get_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Collection[str], Literal[True]],
+        include_fields: Collection[str] | Literal[True],
     ) -> sql.DataFrame:
         return (
             self._get_initial_weighted_df(query, include_fields)
@@ -485,7 +482,7 @@ class PrimaryAliquotBuilder(
         self,
         filters: Iterable[dict],
         entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], Literal[True]] = True,
+        include_fields: Iterable[str] | Literal[True] = True,
     ) -> sql.DataFrame:
         """
         Args:
@@ -704,7 +701,7 @@ class InclusivePrimaryAliquotBuilder(
         self,
         filters: Iterable[dict],
         entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], Literal[True]] = True,
+        include_fields: Iterable[str] | Literal[True] = True,
     ) -> sql.DataFrame:
         """
         Loads the primary aliquot data from elasticsearch into a dataframe including the
@@ -732,7 +729,7 @@ class InclusivePrimaryAliquotBuilder(
             |---sample_id
             +---*additional_selections
         """
-        sample_include_fields: Union[Iterable[str], Literal[True]] = (
+        sample_include_fields: Iterable[str] | Literal[True] = (
             include_fields
             if include_fields is True
             else filter(

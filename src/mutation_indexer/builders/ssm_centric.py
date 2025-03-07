@@ -1,8 +1,8 @@
 import logging
+from typing import Self
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
 
 from mutation_indexer.builders import (
     base_builder,

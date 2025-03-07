@@ -1,6 +1,6 @@
 import io
 from collections.abc import Callable, Iterable
-from typing import IO, Optional
+from typing import IO
 from unittest import mock
 
 import mypy_boto3_s3 as s3
@@ -50,7 +50,7 @@ class TestUQFPKMBuilder:
         )
 
     def _arrange_s3_client(
-        self, validate_upload: Optional[Callable[..., None]] = None
+        self, validate_upload: Callable[..., None] | None = None
     ) -> mock.MagicMock:
         util = mock.MagicMock()
 

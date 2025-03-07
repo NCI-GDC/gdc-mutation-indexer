@@ -1,6 +1,7 @@
 import itertools
 import logging
-from typing import Iterable, Iterator, NamedTuple, Optional, Union
+from collections.abc import Iterable, Iterator
+from typing import NamedTuple
 
 import more_itertools
 from indexclient import client
@@ -32,7 +33,7 @@ def _is_main_url(metadata: dict):
     return metadata.get("type") == "cleversafe" and metadata.get("state") == "validated"
 
 
-def _get_and_format_url(doc: client.Document) -> Optional[str]:
+def _get_and_format_url(doc: client.Document) -> str | None:
     """Select main IndexD url if one exist and format it to something that Spark
     understands
 
@@ -75,19 +76,19 @@ class DataFrameUtil:
             url = _get_and_format_url(doc)
 
             if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
+                self._logger.warning(f"File is missing: '{doc.did}'")
 
             else:
                 yield DocumentUrl(doc.did, url)
 
     def _get_dataframe(
         self,
-        urls: Union[str, Iterable[str]],
-        schema: Optional[types.StructType],
+        urls: str | Iterable[str],
+        schema: types.StructType | None,
         include_file_name: bool,
         enforce_schema: bool,
         has_header: bool,
-        comment: Optional[str],
+        comment: str | None,
     ) -> sql.DataFrame:
         urls = list(more_itertools.always_iterable(urls))
 
@@ -109,13 +110,13 @@ class DataFrameUtil:
     def get_dataframe(
         self,
         doc_ids: Iterable[str],
-        schema: Optional[types.StructType] = None,
+        schema: types.StructType | None = None,
         csv_batch_size: int = 500,
         index_batch_size: int = 1000,
         include_document_ids: bool = True,
         enforce_schema: bool = True,
         has_header: bool = True,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> sql.DataFrame:
         doc_urls = tuple(self._get_doc_urls(doc_ids, index_batch_size))
         urls = (doc_url.url for doc_url in doc_urls)

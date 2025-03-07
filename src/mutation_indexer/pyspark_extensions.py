@@ -1,5 +1,6 @@
 import dataclasses
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -39,7 +40,7 @@ def default_columns(df: sql.DataFrame, defaults: Iterable[DefaultColumn]):
     return df
 
 
-def explode_nested_doc(col: Union[sql.Column, str]) -> sql.Column:
+def explode_nested_doc(col: sql.Column | str) -> sql.Column:
     """
     This explodes a list from Elasicsearch which may or may not have all documents w/ a
     singleton item. This is current causing and issue with the native explode

@@ -1,8 +1,9 @@
 """Fixtures shared between segment_cnv_centric and segment_cnv_occurrence_centric."""
+
 import logging
 import pathlib
 from collections.abc import Iterable, Iterator, Set
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 
 import elasticsearch
@@ -49,7 +50,7 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
             json={"urls": urls, "urls_metadata": urls_metadata},
         )
 
-    def mock_get(file_id: str) -> Optional[client.Document]:
+    def mock_get(file_id: str) -> client.Document | None:
         filename = file_id + ".txt"
         if filename not in existing_files:
             return None
