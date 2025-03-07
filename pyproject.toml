@@ -43,6 +43,14 @@ mutation-indexer = "mutation_indexer.client:main [client]"
 [project.urls]
 repository = "https://github.com/NCI-GDC/gdc-mutation-indexer"
 
+[tool.coverage.html]
+directory = "docs/htmlcov"
+title = "mutation-indexer coverage report"
+
+[tool.coverage.run]
+branch = true
+source = ["mutation_indexer"]
+
 [tool.isort]
 known_first_party = ["mutation_indexer"]
 multi_line_output = 3
