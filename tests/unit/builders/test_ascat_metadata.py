@@ -15,7 +15,7 @@ from tests.unit import utils
 from tests.unit.data import schemas
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = "AscatNGS"
     analysis_id: str = "analysis-0"

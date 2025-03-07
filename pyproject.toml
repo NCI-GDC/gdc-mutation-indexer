@@ -11,21 +11,21 @@ classifiers = [
   "Programming Language :: Python"
 ]
 dependencies = [
-  "boto3",
+  "boto3~=1.37",
   "boto3-stubs[s3]",
-  "elasticsearch[async]",
-  "marshmallow-dataclass",
-  "marshmallow-enum",
-  "more-itertools",
-  "numpy",
+  "elasticsearch[async]~=7.7",
+  "marshmallow-dataclass~=8.7",
+  "marshmallow-enum~=1.5",
+  "more-itertools~=10.6",
+  "numpy~=2.2",
   "pyspark~=3.5.0",
-  "python-json-logger",
-  "gdcmodels",
+  "python-json-logger~=3.3",
+  "gdcmodels~=5.10",
   "pyyaml>=6.0",
-  "indexclient",
+  "indexclient~=2.6",
   "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0",
-  "toml",
-  "typing-extensions"
+  "toml~=0.10",
+  "typing-extensions~=4.12"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
