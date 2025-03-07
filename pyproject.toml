@@ -69,6 +69,7 @@ local_scheme = "versionista-local-format"
 version_scheme = "versionista-format"
 
 [tool.tox]
+isolated_build = true
 requires = ["tox>=4.21"]
 
 [tool.tox.env.coverage]
