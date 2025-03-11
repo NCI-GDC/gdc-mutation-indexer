@@ -8,7 +8,6 @@ from unittest import mock
 import more_itertools
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
@@ -778,6 +777,7 @@ class TestCaseBuilder:
         self,
         maf_metadata_case_ids: Iterable[str] = (),
         ascat_metadata_case_ids: Iterable[str] = (),
+        segment_cnv_metadata_ids: Iterable[str] = (),
     ) -> Dict[str, sql.DataFrame]:
         def to_rows(case_ids: Iterable[str]) -> Tuple[sql.Row, ...]:
             return tuple(sql.Row(case_id=case_id) for case_id in case_ids)
@@ -787,11 +787,14 @@ class TestCaseBuilder:
         )
         ascat_metadata_df = self.spark_session.createDataFrame(
             to_rows(ascat_metadata_case_ids), schema=CASE_ID_SCHEMA
-        ).withColumn("available_variation_data", F.lit("cnv"))
-
+        )
+        segment_cnv_metadata_df = self.spark_session.createDataFrame(
+            to_rows(segment_cnv_metadata_ids), schema=CASE_ID_SCHEMA
+        )
         return {
             "maf_metadata_df": maf_metadata_df,
             "ascat_metadata_df": ascat_metadata_df,
+            "segment_cnv_metadata_df": segment_cnv_metadata_df,
         }
 
     def arrange_case_field_selector(self) -> es_utils.CaseFieldSelector:
@@ -832,19 +835,37 @@ class TestCaseBuilder:
         assert_cases_equal(result_row, case)
 
     @pytest.mark.parametrize(
-        ("maf_metadata_cases", "ascat_metadata_cases", "available_variation_data"),
         (
-            ((), (), frozenset(())),
-            (("case-0",), (), frozenset(("ssm",))),
-            ((), ("case-0",), frozenset(("cnv",))),
-            (("case-0",), ("case-0",), frozenset(("cnv", "ssm"))),
+            "maf_metadata_cases",
+            "ascat_metadata_cases",
+            "segment_cnv_metadata_cases",
+            "available_variation_data",
         ),
-        ids=("neither", "only-in-metadata", "only-in-ascat", "metadata-and-ascat"),
+        (
+            ((), (), (), frozenset(())),
+            (("case-0",), (), (), frozenset(("ssm",))),
+            ((), ("case-0",), (), frozenset(("cnv",))),
+            ((), (), ("case-0",), frozenset(("segment_cnv",))),
+            (
+                ("case-0",),
+                ("case-0",),
+                ("case-0",),
+                frozenset(("cnv", "ssm", "segment_cnv")),
+            ),
+        ),
+        ids=(
+            "neither",
+            "only-in-metadata",
+            "only-in-ascat",
+            "only-in-segment-cnv",
+            "metadata-and-ascat",
+        ),
     )
     def test__build__available_variation_data(
         self,
         maf_metadata_cases: Iterable[str],
         ascat_metadata_cases: Iterable[str],
+        segment_cnv_metadata_cases: Iterable[str],
         available_variation_data: FrozenSet[str],
     ) -> None:
         config = self.arrange_config()
@@ -852,7 +873,9 @@ class TestCaseBuilder:
         spark_session = mock.MagicMock()
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
-        inputs = self.arrange_input_dataframes(maf_metadata_cases, ascat_metadata_cases)
+        inputs = self.arrange_input_dataframes(
+            maf_metadata_cases, ascat_metadata_cases, segment_cnv_metadata_cases
+        )
         builder = builders.CaseBuilder(
             config, spark_session, es_dataframe_util, selector
         )

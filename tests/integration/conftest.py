@@ -75,7 +75,7 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
 
 @pytest.fixture(scope="session")
 def default_config(
-    configure_gene_model: Callable[[dict], dict]
+    configure_gene_model: Callable[[dict], dict],
 ) -> configuration.Configuration:
     return test_setup.load_configuration(configure_gene_model)
 
@@ -149,15 +149,15 @@ def files_with_linked_cases(
 
 @pytest.fixture(scope="session")
 def spark_session() -> Generator[sql.SparkSession, None, None]:
-    with sql.SparkSession.builder.master("local[*]").appName(
-        "sqlContextFixture"
-    ).config("spark.sql.shuffle.partitions", 1).config(
-        "spark.ui.showConsoleProgress", False
-    ).config(
-        "spark.ui.enabled", False
-    ).config(
-        "spark.driver.memory", "2g"
-    ).getOrCreate() as spark_session:
+    with (
+        sql.SparkSession.builder.master("local[*]")
+        .appName("sqlContextFixture")
+        .config("spark.sql.shuffle.partitions", 1)
+        .config("spark.ui.showConsoleProgress", False)
+        .config("spark.ui.enabled", False)
+        .config("spark.driver.memory", "2g")
+        .getOrCreate() as spark_session
+    ):
         spark_session.sparkContext.setLogLevel("FATAL")
         spark_session.sql("set spark.sql.caseSensitive=true")
 
@@ -406,8 +406,8 @@ def case_df(
     default_config: configuration.Configuration,
     spark_session: sql.SparkSession,
     maf_metadata_df: sql.DataFrame,
-    maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
+    segment_cnv_df: sql.DataFrame,
     es_client: elasticsearch.Elasticsearch,
     dataframe_writer: DataFrameWriter,
     setup_graph_indices: Any,
@@ -420,6 +420,7 @@ def case_df(
         es_utils.SchemaLoader(),
     )
     ascat_metadata_df = cnv_df.select("case_id")
+    segment_cnv_metadata_df = segment_cnv_df.select("case_id")
     df = builders.CaseBuilder(
         default_config.builders.viz.case,
         spark_session,
@@ -427,9 +428,8 @@ def case_df(
         es_utils.CaseFieldSelector(),
     ).build(
         maf_metadata_df=maf_metadata_df,
-        maf_df=maf_df,
         ascat_metadata_df=ascat_metadata_df,
-        ascat_df=cnv_df,
+        segment_cnv_metadata_df=segment_cnv_metadata_df,
     )
 
     return dataframe_writer(df)
@@ -585,6 +585,7 @@ def case_centric_df(
         observation_builder,
     )
     ascat_metadata_df = cnv_df.select("case_id")
+    segment_cnv_metadata_df = segment_cnv_df.select("case_id")
 
     builder.build(
         maf_metadata_df,
@@ -593,6 +594,7 @@ def case_centric_df(
         cnv_df,
         primary_aliquot_df,
         segment_cnv_df,
+        segment_cnv_metadata_df,
     )
 
     log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")

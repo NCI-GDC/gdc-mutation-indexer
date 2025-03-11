@@ -1,4 +1,5 @@
 """Fixtures shared between segment_cnv_centric and segment_cnv_occurrence_centric."""
+
 import logging
 import pathlib
 from collections.abc import Iterable, Iterator, Set
@@ -169,6 +170,7 @@ def case_df(
     es_client: elasticsearch.Elasticsearch,
     maf_metadata_df: sql.DataFrame,
     ascat_metadata_df: sql.DataFrame,
+    segment_cnv_metadata_df: sql.DataFrame,
     segment_case_docs: Set[str],
 ) -> sql.DataFrame:
     es_dataframe_util = es_utils.DataFrameUtil(
@@ -183,7 +185,11 @@ def case_df(
         spark_session,
         es_dataframe_util,
         es_utils.CaseFieldSelector(),
-    ).build(maf_metadata_df=maf_metadata_df, ascat_metadata_df=ascat_metadata_df)
+    ).build(
+        maf_metadata_df=maf_metadata_df,
+        ascat_metadata_df=ascat_metadata_df,
+        segment_cnv_metadata_df=segment_cnv_metadata_df,
+    )
 
     return df
 

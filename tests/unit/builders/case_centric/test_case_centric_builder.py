@@ -23,6 +23,7 @@ class Inputs(TypedDict):
     ascat_df: sql.DataFrame
     primary_aliquot_df: sql.DataFrame
     segment_cnv_df: sql.DataFrame
+    segment_cnv_metadata_df: sql.DataFrame
 
 
 def assert_ascat_translated(result_gene: sql.Row, ascat: models.ASCAT) -> None:
@@ -120,6 +121,11 @@ def case_schema() -> types.StructType:
 
 
 @pytest.fixture(scope="class")
+def segment_cnv_metadata_schema() -> types.StructType:
+    return schemas.Viz.Builders.SegmentCNVMetadata.FINAL.load()
+
+
+@pytest.fixture(scope="class")
 def segment_cnv_schema() -> types.StructType:
     return schemas.Viz.Builders.SegmentCNV.FINAL.load()
 
@@ -161,6 +167,7 @@ class TestCaseCentricBuilder:
         ssm_consequence_schema: types.StructType,
         final_schema: types.StructType,
         segment_cnv_schema: types.StructType,
+        segment_cnv_metadata_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
         self.create_dataframe = create_dataframe
@@ -175,6 +182,7 @@ class TestCaseCentricBuilder:
         self.ssm_consequence_schema = ssm_consequence_schema
         self.final_schema = final_schema
         self.segment_cnv_schema = segment_cnv_schema
+        self.segment_cnv_metadata_schema = segment_cnv_metadata_schema
 
     def arrange_config(self) -> adapter.ObsoleteConfig:
         return mock.MagicMock(
@@ -245,6 +253,9 @@ class TestCaseCentricBuilder:
         ascats: Iterable[models.ASCAT] = (models.ASCAT(),),
         primary_aliquots: Iterable[models.PrimaryAliquot] = (models.PrimaryAliquot(),),
         segment_cnvs: Iterable[models.SegmentCNV] = (models.SegmentCNV(),),
+        segment_cnv_metadata: Iterable[models.SegmentCNVMetadata] = (
+            models.SegmentCNVMetadata(),
+        ),
     ) -> Inputs:
         maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
         maf_df = self.create_dataframe(mafs, self.maf_schema)
@@ -256,6 +267,9 @@ class TestCaseCentricBuilder:
             primary_aliquots, self.primary_aliquot_schema
         )
         segment_cnv_df = self.create_dataframe(segment_cnvs, self.segment_cnv_schema)
+        segment_cnv_metadata_df = self.create_dataframe(
+            segment_cnv_metadata, self.segment_cnv_metadata_schema
+        )
 
         return Inputs(
             maf_metadata_df=maf_metadata_df,
@@ -264,6 +278,7 @@ class TestCaseCentricBuilder:
             ascat_df=ascat_df,
             primary_aliquot_df=primary_aliquot_df,
             segment_cnv_df=segment_cnv_df,
+            segment_cnv_metadata_df=segment_cnv_metadata_df,
         )
 
     def test__build__single_row(self) -> None:
@@ -342,23 +357,31 @@ class TestCaseCentricBuilder:
         assert_segment_cnv_translated(segment_cnv, raw_segment_cnv)
 
     @pytest.mark.parametrize(
-        ("maf_case_id", "cnv_case_id", "expected_available_variations"),
         (
-            ("case-1", "case-1", frozenset({})),
-            ("case-0", "case-4", frozenset({"ssm"})),
-            ("case-6", "case-0", frozenset({"cnv"})),
-            ("case-0", "case-0", frozenset({"ssm", "cnv"})),
+            "maf_case_id",
+            "cnv_case_id",
+            "cnv_segment_case_id",
+            "expected_available_variations",
         ),
-        ids=("no_data", "ssm_only", "cnv_only", "both"),
+        (
+            ("case-1", "case-1", "case-2", frozenset({})),
+            ("case-0", "case-4", "case-1", frozenset({"ssm"})),
+            ("case-6", "case-0", "case-2", frozenset({"cnv"})),
+            ("case-6", "case-5", "case-0", frozenset({"segment_cnv"})),
+            ("case-0", "case-0", "case-0", frozenset({"ssm", "cnv", "segment_cnv"})),
+        ),
+        ids=("no_data", "ssm_only", "cnv_only", "segment_cnv_only", "all"),
     )
     def test__build__available_variation_data(
         self,
         maf_case_id: str,
         cnv_case_id: str,
+        cnv_segment_case_id: str,
         expected_available_variations: Set[str],
     ) -> None:
         maf_metadata = models.MAFMetadata(case_id=maf_case_id)
         ascat_metadata = models.ASCATMetadata(case_id=cnv_case_id)
+        segment_cnv_metadata = models.SegmentCNVMetadata(case_id=cnv_segment_case_id)
 
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
@@ -367,7 +390,9 @@ class TestCaseCentricBuilder:
         consequence_builder = self.arrange_consequence_builder()
         observation_builder = self.arrange_observation_builder()
         inputs = self.arrange_inputs(
-            maf_metadata=(maf_metadata,), ascat_metadata=(ascat_metadata,)
+            maf_metadata=(maf_metadata,),
+            ascat_metadata=(ascat_metadata,),
+            segment_cnv_metadata=(segment_cnv_metadata,),
         )
         builder = builders.CaseCentricBuilder(
             config,
