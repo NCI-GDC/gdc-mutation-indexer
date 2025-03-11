@@ -13,15 +13,7 @@ from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 from tests.unit import utils
 from tests.unit.data import schemas
-
-
-@dataclasses.dataclass(frozen=True)
-class SegmentCNVMetadataInputData:
-    aliquot_id: str = "aliquot-0"
-    case_id: str = "case-0"
-    file_id: str = "file-0"
-    workflow_type: str = "AscatNGS"
-    analysis_id: str = "analysis-0"
+from tests.unit.data.models import viz as models
 
 
 @dataclasses.dataclass(frozen=True)
@@ -77,7 +69,7 @@ class TestSegmentCNVBuilder:
         return mock_dataframe_util
 
     def _arrange_input_dataframes(
-        self, segment_cnv_metadata: tuple[SegmentCNVMetadataInputData, ...]
+        self, segment_cnv_metadata: tuple[models.SegmentCNVMetadata, ...]
     ) -> Mapping[str, sql.DataFrame]:
         segment_cnv_metadata_df = self._create_dataframe(
             segment_cnv_metadata, self._segment_cnv_metadata_schema
@@ -115,8 +107,8 @@ class TestSegmentCNVBuilder:
         """
         inputs = self._arrange_input_dataframes(
             segment_cnv_metadata=(
-                SegmentCNVMetadataInputData(file_id="file-0"),
-                SegmentCNVMetadataInputData(file_id="file-1"),
+                models.SegmentCNVMetadata(file_id="file-0"),
+                models.SegmentCNVMetadata(file_id="file-1"),
             )
         )
         segment_cnv_data = tuple(
@@ -141,7 +133,7 @@ class TestSegmentCNVBuilder:
             and derived fields.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         segment_cnv_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number) for copy_number in (3, 3, 6)
@@ -174,7 +166,7 @@ class TestSegmentCNVBuilder:
         Then return a dataframe with the expected generated uuids.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         segment_cnv_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number) for copy_number in (3, 3, 6)
@@ -203,7 +195,7 @@ class TestSegmentCNVBuilder:
             implying the calculated length-weighted mode is correct.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         copy_numbers, starts, ends = (3, 6, 6, 6), (10, 10, 11, 12), (100, 15, 16, 17)
         segment_cnv_data = tuple(
@@ -230,7 +222,7 @@ class TestSegmentCNVBuilder:
         Then return a dataframe with two results and correct cnv_change data.
         """
         segment_cnv_metadata = tuple(
-            SegmentCNVMetadataInputData(file_id=f"file-{i}") for i in range(2)
+            models.SegmentCNVMetadata(file_id=f"file-{i}") for i in range(2)
         )
         inputs = self._arrange_input_dataframes(
             segment_cnv_metadata=segment_cnv_metadata
@@ -298,7 +290,7 @@ class TestSegmentCNVBuilder:
         Then the dataframe is returned with the correct cnv_change value.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
@@ -370,7 +362,7 @@ class TestSegmentCNVBuilder:
         Then the dataframe is returned with the correct cnv_change_5_category value.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
@@ -394,7 +386,7 @@ class TestSegmentCNVBuilder:
         """
         copy_numbers = (3, 3, 3)
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
@@ -414,7 +406,7 @@ class TestSegmentCNVBuilder:
         Then the dataframe is returned with zero rows.
         """
         inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=(SegmentCNVMetadataInputData(),)
+            segment_cnv_metadata=(models.SegmentCNVMetadata(),)
         )
         builder = self._arrange_builder(
             segment_cnv_data=(SegmentCNVDocumentData(chromosome="chr23"),)
