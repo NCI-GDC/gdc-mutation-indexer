@@ -1,9 +1,9 @@
 import logging
 from typing import cast
 
+import importlib_resources as resources
 import more_itertools
 import yaml
-from pkg_resources import resource_filename
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -234,9 +234,9 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
         """
         Load the intended MAF schema from the local YAML file
         """
-        path = resource_filename("mutation_indexer.schemas", "maf.yml")
-        with open(path) as f:
-            return yaml.safe_load(f)["maf_schema"]
+        resource = resources.files("mutation_indexer.schemas") / "maf.yml"
+
+        return yaml.safe_load(resource.read_bytes())["maf_schema"]
 
     def format_cosmic_id(self, df: sql.DataFrame) -> sql.DataFrame:
         """

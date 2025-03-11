@@ -31,9 +31,6 @@ setup(
         "numpy",
         "pyspark~=3.3.1",
         "python-json-logger~=2.0",
-        # `setuptools` is required for references to `pkg_resources` in mutation
-        # indexer itself and in normalizer/gdc-models.
-        "setuptools",
         "toml~=0.10",
         "typing-extensions~=4.1",
         "indexclient",
