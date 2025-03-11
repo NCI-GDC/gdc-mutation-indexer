@@ -3,13 +3,35 @@ For documentation concerning Mutation Indexer configuration please refer to the 
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
 
+from __future__ import annotations
+
+import contextlib
 import dataclasses
+import datetime
+import functools
 import itertools
+import tempfile
 import types
-from typing import Any, Iterable, Optional
+from collections.abc import Mapping, Sequence
+from importlib import resources
+from importlib.resources import abc
+from typing import (
+    IO,
+    Any,
+    ClassVar,
+    Generic,
+    Iterable,
+    Iterator,
+    Optional,
+    TypeVar,
+    cast,
+)
 
 import marshmallow
 import marshmallow_dataclass
+import toml
+from deepmerge import merger
+from typing_extensions import Self
 
 from mutation_indexer.configuration import (
     aws,
@@ -20,17 +42,70 @@ from mutation_indexer.configuration import (
     indexd,
     spark,
 )
+from mutation_indexer.constants import app
+
+T = TypeVar("T")
 
 _DEFAULT_DICT = {}
 _DEFAULT_ACL = ("open",)
+
+
+class _Schema(Generic[T]):
+    def __init__(self, cls: type) -> None:
+        """A wrapper around a marshmallow schema allowing type hinting & custom logic.
+
+        Args:
+            cls: The dataclass which will the schema will be based on.
+        """
+        schema_cls = marshmallow_dataclass.class_schema(cls)
+
+        self._schema = schema_cls(many=False, unknown=marshmallow.EXCLUDE)
+
+    def load(self, data: Mapping[str, Any]) -> T:
+        """Loads the data contained in the mapping into the object T.
+
+        Args:
+            data: The data which needs to be used to populate the object from which the
+                schema was created from.
+
+        """
+        return cast(T, self._schema.load(data))
+
+    def dump(self, obj: T, is_obfuscated: bool = True) -> Mapping[str, Any]:
+        """Dumps the data in the object into a mapping.
+
+        This method by default will obfuscate any data which is marked as being a secret
+        string.
+
+        NOTE: Currently we are manually switching on/off the is_obfuscated context. This
+        is more in line with the changes coming down the line from marshmallow. It also
+        allows us to maintain a single backing marshmallow schema instance. For more see
+        this link:
+        https://marshmallow.readthedocs.io/en/latest/upgrading.html#new-context-api
+
+        Args:
+            obj: The object to be serialized.
+            is_obfuscated: Indicates that the data marked as secret strings should be
+                obfuscated when its serialized. Default is true.
+
+        Returns:
+            A mapping object with the data converted to appropriate serialized values.
+        """
+        if is_obfuscated:
+            self._schema.context["is_obfuscated"] = True
+
+        try:
+            return cast(Mapping[str, Any], self._schema.dump(obj))
+        finally:
+            self._schema.context.pop("is_obfuscated", None)
 
 
 @dataclasses.dataclass(frozen=True)
 class DataReleaseAndBuildVersion:
     """Should be specified in configuration.toml."""
 
-    data_release: Optional[str]
-    build_version: Optional[str]
+    data_release: str | None
+    build_version: str | None
 
     def __bool__(self) -> bool:
         return self.build_version is not None and self.data_release is not None
@@ -42,7 +117,7 @@ def _get_data_release_and_build_version(build: dict) -> DataReleaseAndBuildVersi
     )
 
 
-def _get_index_template(build: dict) -> Optional[str]:
+def _get_index_template(build: dict) -> str | None:
     build_config: DataReleaseAndBuildVersion = _get_data_release_and_build_version(
         build
     )
@@ -67,10 +142,100 @@ def _get_builders_from_data(data: dict) -> Iterable[dict]:
     return builders
 
 
-@marshmallow_dataclass.dataclass(frozen=True)
-class Configuration:
-    aws: aws.AWS
+@dataclasses.dataclass(frozen=True)
+class _Configuration:
+    """A base configuration controlling the serialization of the data within."""
+
+    _schema: ClassVar[_Schema[Self]]
+    """The schema to be used to serialize/deserialize this object."""
+    _merger: ClassVar[merger.Merger] = merger.Merger(
+        type_strategies=((dict, ["merge"]), (list, ["override"]), (set, ["override"])),
+        fallback_strategies=["override"],
+        type_conflict_strategies=["override"],
+    )
+    """A merger for merging partial configurations together into a single value."""
+
     build: build.Build
+
+    def __init_subclass__(cls) -> types.NoneType:
+        """Insures that the schema is generated for any subclass."""
+        cls._schema = _Schema(cls)
+
+    @classmethod
+    def _default_configs(cls) -> Sequence[abc.Traversable]:
+        """Gets all configuration resources associated with the configuration.
+
+        Returns:
+            An ordered sequence of configuration files. Any values in the later files
+            take precedence over those in earlier files i.e. "last in wins."
+        """
+        return (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
+
+    @contextlib.contextmanager
+    @classmethod
+    def load(cls, configs: Iterable[abc.Traversable]) -> Iterator[Self]:
+        """Loads the config data from the files supplemented with any cls defaults.
+
+        NOTE: This method works in a "last in wins" model. Thus any value from a
+        earlier file in configs that appears in a later file will be overridden by the
+        later value. All default values associated with the class are loaded before any
+        user supplied value other than `build.config_file` which is controlled by this
+        method.
+
+        NOTE: As part of loading the data this method writes a manifest to a configured
+        directory. See `_write_manifest.
+
+        Args:
+            configs: A iterable of config files which should be used to load the
+                resulting configuration object.
+
+        Returns:
+            A context manager containing the final configuration object. This data has
+            been written to a temporary file at `build.config_file` which will be
+            cleaned up once the context manager is exited.
+        """
+
+        def load_toml(file: abc.Traversable) -> Mapping[str, Any]:
+            return toml.load(file.read_text())
+
+        unmerged_data = map(load_toml, itertools.chain(cls._default_configs(), configs))
+
+        with tempfile.NamedTemporaryFile("wt+") as f:
+            data = functools.reduce(
+                cls._merger.merge, unmerged_data, {"build": {"config_file": f.name}}
+            )
+            config = cls._schema.load(data)
+
+            config.dump(f, is_obfuscated=False)
+            config._write_manifest()
+
+            yield config
+
+    def dump(self, buffer: IO[str], is_obfuscated: bool = True) -> None:
+        """Dumps the data contained in this instance to the given buffer.
+
+        Args:
+            buffer: The text io buffer to which the data will be written.
+            is_obfuscated: True if any secret strings should be obfuscated during this
+                serialization process.
+        """
+        toml.dump(self._schema.dump(self, is_obfuscated), buffer)
+
+    def _write_manifest(self) -> None:
+        """Writes a manifest file to the configured directory: `build.manifest_dir`."""
+        build = self.build
+        toml_name = f"{datetime.datetime.now().isoformat()}-{build.build_id}.toml"
+        file_name = build.manifest_dir / toml_name
+
+        build.manifest_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(file_name, "w+") as f:
+            self.dump(f, is_obfuscated=True)
+
+
+@dataclasses.dataclass(frozen=True)
+class Configuration(_Configuration):
+    aws: aws.AWS
     builders: builders.Builders
     elasticsearch: elasticsearch.Elasticsearch
     environment: environment.Environment
@@ -132,9 +297,3 @@ class Configuration:
                     backup["path"] = path.format(**dataclasses.asdict(version))
 
         return data
-
-
-CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(unknown="exclude")
-OBFUSCATED_CONFIG_SCHEMA: marshmallow.Schema = Configuration.Schema(
-    context={"is_obfuscated": True}
-)
