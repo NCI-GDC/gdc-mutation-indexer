@@ -21,7 +21,7 @@ import marshmallow_dataclass
 import toml
 from deepmerge import merger
 from importlib_resources import abc
-from typing_extensions import Self
+from typing_extensions import Self, dataclass_transform
 
 from mutation_indexer.configuration import (
     aws,
@@ -46,6 +46,7 @@ class _Schema(Generic[T]):
         Args:
             cls: The dataclass which will the schema will be based on.
         """
+        cls = dataclasses.dataclass(frozen=True)(cls)
         schema_cls = marshmallow_dataclass.class_schema(cls)
 
         self._schema = schema_cls(many=False, unknown=marshmallow.EXCLUDE)
@@ -131,7 +132,7 @@ def _get_builders_from_data(data: dict) -> Iterable[dict]:
     return builders
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass_transform()
 class _Configuration:
     """A base configuration controlling the serialization of the data within."""
 
@@ -222,7 +223,6 @@ class _Configuration:
             self.dump(f, is_obfuscated=True)
 
 
-@dataclasses.dataclass(frozen=True)
 class Configuration(_Configuration):
     aws: aws.AWS
     builders: builders.Builders
