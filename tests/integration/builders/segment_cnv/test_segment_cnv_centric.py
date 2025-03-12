@@ -37,12 +37,6 @@ def segment_cnv_centric_builder(
         mappings_loader,
     )
 
-    # Delete the index
-    segment_cnv_centric_index = segment_config.elasticsearch.write.indices[
-        build.IndexType.SEGMENT_CNV_CENTRIC
-    ]
-    es_client.indices.delete(index=segment_cnv_centric_index, ignore_unavailable=True)
-
 
 def test__segment_cnv_centric_builder(
     segment_config: configuration.Configuration,
@@ -61,5 +55,11 @@ def test__segment_cnv_centric_builder(
     segment_cnv_centric_builder.build(segment_cnv_df=segment_cnv_df, case_df=case_df)
     es_client.indices.refresh()
     hits = tuple(helpers.scan(es_client, index=segment_cnv_centric_index))
+    distinct_file_ids = set()
+    for hit in hits:
+        for occ in hit["_source"]["occurrence"]:
+            for obs in occ["case"]["observation"]:
+                distinct_file_ids.add(obs["src_file_id"])
 
     assert len(hits) > 0
+    assert len(distinct_file_ids) == 2
