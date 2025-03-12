@@ -43,6 +43,7 @@ class SegmentCNVMetadataBuilder(
         self._es_dataframe_util = es_dataframe_util
 
     def _get_es_query(self) -> dict:
+        # TODO DEV-3360: remove deprecated query conditional logic
         query: ES_QUERY_TYPE = {
             "query": {
                 "bool": {
