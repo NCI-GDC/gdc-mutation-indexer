@@ -185,7 +185,7 @@ class _Configuration:
         """
 
         def load_toml(file: abc.Traversable) -> Mapping[str, Any]:
-            return toml.load(file.read_text())
+            return toml.loads(file.read_text() or "")
 
         unmerged_data = map(load_toml, itertools.chain(cls._default_configs(), configs))
 
