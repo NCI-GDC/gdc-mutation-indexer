@@ -300,11 +300,6 @@ max_source_filter_length = 400
 batch_size_bytes = "16mb"
 batch_size_entries = 1000
 
-[environment]
-java_home = "/usr/lib/jvm/java-8-openjdk-amd64"
-spark_home = "{{ pillar.spark.directory }}"
-yarn_conf_dir = "{{ pillar.spark.hadoop.conf_dir }}"
-
 [spark]
 master = "yarn"
 
