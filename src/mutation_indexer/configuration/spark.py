@@ -7,7 +7,10 @@ https://spark.apache.org/docs/2.4.5/configuration.html
 """
 
 import dataclasses
-from typing import Any, Iterable, Tuple
+import pathlib
+from typing import Annotated, Any, Iterable, Tuple
+
+from mutation_indexer.configuration import marshmallow_extensions
 
 
 def _to_camel_case(value: str) -> str:
@@ -87,7 +90,8 @@ class Submit(ConfigArgumentMixin):
 
 @dataclasses.dataclass(frozen=True)
 class Env(ConfigArgumentMixin):
-    tmpdir: str
+    tmpdir: Annotated[pathlib.Path, marshmallow_extensions.ResolvedPathField]
+    xdg_cache_home: Annotated[pathlib.Path, marshmallow_extensions.ResolvedPathField]
 
     def _format_field(self, field: str) -> str:
         return field.upper()

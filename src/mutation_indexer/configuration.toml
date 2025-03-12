@@ -338,6 +338,8 @@ deploy_mode = "cluster"
 
 [spark.yarn.app_master_env]
 tmpdir = "$TMPDIR"
+xdg_cache_home = "$SPARK_HOME/.cache"
 
 [spark.yarn.executor_env]
 tmpdir = "$TMPDIR"
+xdg_cache_home = "$SPARK_HOME/.cache"
