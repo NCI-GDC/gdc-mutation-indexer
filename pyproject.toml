@@ -85,6 +85,42 @@ commands = [["coverage", "html"], ["coverage", "xml"]]
 deps = ["-crequirements.txt", "coverage[toml]"]
 skip_install = true
 
+[tool.tox.env.pex]
+base_python = ["py313"]
+commands = [
+  [
+    "pex",
+    ".[client]",
+    "--python=python{env:SCIE_PYTHON_VERSION}",
+    "--entry-point=mutation_indexer.client",
+    "--constraints=requirements.txt",
+    "--output-file=mutation-indexer",
+    "--runtime-pex-root={env:RUNTIME_PEX_ROOT}",
+    "--scie=eager",
+    "--scie-platform={env:SCIE_PLATFORM}",
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+  ],
+  [
+    "pex",
+    ".",
+    "--python=python{env:SCIE_PYTHON_VERSION}",
+    "--constraints=requirements.txt",
+    "--output-file=driver-all",
+    "--runtime-pex-root={env:RUNTIME_PEX_ROOT}",
+    "--scie=eager",
+    "--scie-platform={env:SCIE_PLATFORM}",
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+  ]
+]
+deps = ["-crequirements.txt", "pex"]
+pass_env = ["SSH_AUTH_SOCK"]
+skip_install = true
+
+[tool.tox.env.pex.set_env]
+RUNTIME_PEX_ROOT = {replace = "env", name = "RUNTIME_PEX_ROOT", default = "/tmp"}
+SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
+SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.9"}
+
 [tool.tox.env.publish]
 commands = [
   [
