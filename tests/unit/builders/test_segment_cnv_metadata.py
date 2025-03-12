@@ -94,7 +94,7 @@ class File:
     created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
     experimental_strategy: str = "AscatNGS"
     cases: tuple[Case, ...] = (Case(),)
-    data_type: str = "Copy Number Segment"
+    data_type: str = "Allele-specific Copy Number Segment"
 
     def to_rdd_data(self) -> tuple:
         return (
@@ -146,13 +146,14 @@ class TestSegmentCNVMetadataBuilder:
         self._file_schema = file_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> viz.Builder:
+    def _arrange_config(self) -> viz.SegmentCNVMetadataBuilder:
         return mock.MagicMock(
             acl=("open",),
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
-            spec=viz.Builder,
+            use_deprecated_query=False,
+            spec=viz.SegmentCNVMetadataBuilder,
         )
 
     def _arrange_es_dataframe_util(

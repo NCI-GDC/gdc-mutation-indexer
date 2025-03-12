@@ -8,7 +8,9 @@ from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
-DATA_TYPE = "Copy Number Segment"
+DEPRECATED_DATA_TYPE = "Copy Number Segment"
+DATA_TYPE = "Allele-specific Copy Number Segment"
+ES_QUERY_TYPE = dict[str, dict[str, dict[str, list]]]
 
 
 class SegmentCNVMetadataInputs(TypedDict):
@@ -16,11 +18,11 @@ class SegmentCNVMetadataInputs(TypedDict):
 
 
 class SegmentCNVMetadataBuilder(
-    bases.InputBuilder[viz.Builder, SegmentCNVMetadataInputs]
+    bases.InputBuilder[viz.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs]
 ):
     def __init__(
         self,
-        config: viz.Builder,
+        config: viz.SegmentCNVMetadataBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:
@@ -41,25 +43,27 @@ class SegmentCNVMetadataBuilder(
         self._es_dataframe_util = es_dataframe_util
 
     def _get_es_query(self) -> dict:
-        # TODO: DEV-3243
-        # Change the following query to query for:
-        #   data_type == "Allele-specific Copy Number Segment"
-        # instead of the current data_type and workflow_type filters
-        return {
+        # TODO DEV-3360: remove deprecated query conditional logic
+        query: ES_QUERY_TYPE = {
             "query": {
                 "bool": {
                     "must": [
-                        {"term": {"data_type": DATA_TYPE}},
-                        {
-                            "term": {
-                                "analysis.workflow_type": build.WorkflowType.ASCAT_NGS
-                            }
-                        },
                         {"terms": {"acl": self._config.acl}},
                     ]
                 }
             }
         }
+        additional_filters = (
+            [
+                {"term": {"data_type": DEPRECATED_DATA_TYPE}},
+                {"term": {"analysis.workflow_type": build.WorkflowType.ASCAT_NGS}},
+            ]
+            if self._config.use_deprecated_query is True
+            else [{"term": {"data_type": DATA_TYPE}}]
+        )
+        query["query"]["bool"]["must"].extend(additional_filters)
+
+        return query
 
     def _get_es_source_fields(self) -> tuple[str, ...]:
         return ("file_id", "analysis.analysis_id")
