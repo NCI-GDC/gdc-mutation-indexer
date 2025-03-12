@@ -160,8 +160,8 @@ class _Configuration:
         """
         return (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
 
-    @contextlib.contextmanager
     @classmethod
+    @contextlib.contextmanager
     def load(cls, configs: Iterable[abc.Traversable]) -> Iterator[Self]:
         """Loads the config data from the files supplemented with any cls defaults.
 
