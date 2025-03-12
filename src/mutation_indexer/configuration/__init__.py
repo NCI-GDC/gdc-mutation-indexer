@@ -46,7 +46,6 @@ class _Schema(Generic[T]):
         Args:
             cls: The dataclass which will the schema will be based on.
         """
-        cls = dataclasses.dataclass(frozen=True)(cls)
         schema_cls = marshmallow_dataclass.class_schema(cls)
 
         self._schema = schema_cls(many=False, unknown=marshmallow.EXCLUDE)
@@ -149,6 +148,7 @@ class _Configuration:
 
     def __init_subclass__(cls) -> None:
         """Insures that the schema is generated for any subclass."""
+        cls = dataclasses.dataclass(frozen=True)(cls)
         cls._schema = _Schema(cls)
 
     @classmethod
