@@ -193,6 +193,7 @@ class _Configuration:
             data = functools.reduce(
                 cls._merger.merge, unmerged_data, {"build": {"config_file": f.name}}
             )
+            print(data)
             config = cls._schema.load(data)
 
             config.dump(f, is_obfuscated=False)
