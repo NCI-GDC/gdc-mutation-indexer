@@ -14,23 +14,13 @@ import tempfile
 import types
 from collections.abc import Mapping, Sequence
 from importlib import resources
-from importlib.resources import abc
-from typing import (
-    IO,
-    Any,
-    ClassVar,
-    Generic,
-    Iterable,
-    Iterator,
-    Optional,
-    TypeVar,
-    cast,
-)
+from typing import IO, Any, ClassVar, Generic, Iterable, Iterator, TypeVar, cast
 
 import marshmallow
 import marshmallow_dataclass
 import toml
 from deepmerge import merger
+from importlib_resources import abc
 from typing_extensions import Self
 
 from mutation_indexer.configuration import (
@@ -38,7 +28,6 @@ from mutation_indexer.configuration import (
     build,
     builders,
     elasticsearch,
-    environment,
     indexd,
     spark,
 )
@@ -157,7 +146,7 @@ class _Configuration:
 
     build: build.Build
 
-    def __init_subclass__(cls) -> types.NoneType:
+    def __init_subclass__(cls) -> None:
         """Insures that the schema is generated for any subclass."""
         cls._schema = _Schema(cls)
 
@@ -238,7 +227,6 @@ class Configuration(_Configuration):
     aws: aws.AWS
     builders: builders.Builders
     elasticsearch: elasticsearch.Elasticsearch
-    environment: environment.Environment
     indexd: indexd.IndexD
     spark: spark.Spark
 

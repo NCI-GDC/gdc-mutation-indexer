@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import itertools
 import logging
-import os
 import pathlib
 from collections.abc import Iterable, Sequence
 
@@ -11,7 +10,7 @@ import halo
 import more_itertools
 
 from mutation_indexer import configuration
-from mutation_indexer.configuration import build, environment
+from mutation_indexer.configuration import build
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -41,7 +40,7 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     files = ",".join(
         (
             f"{config.config_file}#configuration.toml",
-            f"{config.pex_file}#mutation-indexer.pex",
+            f"{config.pex_file}#python",
         )
     )
 
@@ -115,18 +114,6 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             logger.warning(f"Error occurred while merging: {ex}.")
 
 
-def set_environment_variables(env: environment.Environment) -> None:
-    """
-    Sets the environmental variables needed to run spark submit.
-
-    Args:
-        env: the configured values for the environmental variables.
-    """
-    os.environ["JAVA_HOME"] = env.java_home
-    os.environ["SPARK_HOME"] = env.spark_home
-    os.environ["YARN_CONF_DIR"] = env.yarn_conf_dir
-
-
 class Args(argparse.Namespace):
     configs: Sequence[pathlib.Path]
 
@@ -137,7 +124,6 @@ async def _main() -> None:
 
     with configuration.Configuration.load(args.configs) as config:
         print(f"RUNNING BUILD: {config.build.build_id}")
-        set_environment_variables(config.environment)
 
         with halo.Halo(spinner="pong") as spinner:
             try:
