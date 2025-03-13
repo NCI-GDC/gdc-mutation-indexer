@@ -225,6 +225,7 @@ class _Configuration:
 
 class Configuration(_Configuration):
     aws: aws.AWS
+    build: build.Build
     builders: builders.Builders
     elasticsearch: elasticsearch.Elasticsearch
     indexd: indexd.IndexD
