@@ -131,7 +131,7 @@ def _get_builders_from_data(data: dict) -> Iterable[dict]:
     return builders
 
 
-@dataclass_transform()
+@dataclass_transform(frozen_default=True)
 class _Configuration:
     """A base configuration controlling the serialization of the data within."""
 
@@ -162,8 +162,12 @@ class _Configuration:
         return (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
 
     @classmethod
+    def load(cls, config: abc.Traversable) -> Self:
+        return cls._schema.load(toml.loads(config.read_text() or ""))
+
+    @classmethod
     @contextlib.contextmanager
-    def load(cls, configs: Iterable[abc.Traversable]) -> Iterator[Self]:
+    def initialize(cls, configs: Iterable[abc.Traversable]) -> Iterator[Self]:
         """Loads the config data from the files supplemented with any cls defaults.
 
         NOTE: This method works in a "last in wins" model. Thus any value from a

@@ -122,7 +122,7 @@ async def _main() -> None:
     parser = get_argument_parser()
     args = parser.parse_args(namespace=Args())
 
-    with configuration.Configuration.load(args.configs) as config:
+    with configuration.Configuration.initialize(args.configs) as config:
         print(f"RUNNING BUILD: {config.build.build_id}")
 
         with halo.Halo(spinner="pong") as spinner:
