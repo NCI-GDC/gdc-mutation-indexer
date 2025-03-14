@@ -100,7 +100,8 @@ commands = [
     "--runtime-pex-root={env:RUNTIME_PEX_ROOT}",
     "--scie=eager",
     "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}",
+    "--wheel"
   ],
   [
     "pex",
@@ -111,7 +112,8 @@ commands = [
     "--runtime-pex-root={env:RUNTIME_PEX_ROOT}",
     "--scie=eager",
     "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}",
+    "--wheel"
   ]
 ]
 deps = ["-crequirements.txt", "pex"]
