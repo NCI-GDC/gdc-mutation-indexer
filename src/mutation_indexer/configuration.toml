@@ -43,13 +43,13 @@ partition_size = 12
 
 [builders.gene_expression.gene_expression.backup]
 mode = "NEITHER"
-partition_by = ""
+partition_by = "gene_id"
 path = ""
 
 [builders.gene_expression.gene_model]
-census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz"
-gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json"
+census_file = "s3a://$MUTATION_INDEXER_BUCKET/cancer_gene_census_set.gencode_v36.tsv.gz"
+citobands_file = "s3a://$MUTATION_INDEXER_BUCKET/gencode.v36.cytoband.par_removed.formated.tsv.gz"
+gene_model_file = "s3a://$MUTATION_INDEXER_BUCKET/genes.hg38.ensembl102.gencode36.json"
 is_cached = true
 
 [builders.gene_expression.gene_model.backup]
@@ -69,7 +69,7 @@ omit_cnv_data = false
 
 [builders.viz.ascat.backup]
 mode = "BOTH"
-path = "s3a://gdc-mutation-indexer/backups/ascat.parqet"
+path = "s3a://$MUTATION_INDEXER_BUCKET/backups/ascat.parqet"
 
 [builders.viz.ascat_metadata]
 is_cached = true
@@ -207,9 +207,9 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.gene_model]
-census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz"
-gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json"
+census_file = "s3a://$MUTATION_INDEXER_BUCKET/cancer_gene_census_set.gencode_v36.tsv.gz"
+citobands_file = "s3a://$MUTATION_INDEXER_BUCKET/gencode.v36.cytoband.par_removed.formated.tsv.gz"
+gene_model_file = "s3a://$MUTATION_INDEXER_BUCKET/genes.hg38.ensembl102.gencode36.json"
 is_cached = true
 
 [builders.viz.gene_model.backup]
@@ -222,7 +222,7 @@ repartition_size = 2048
 
 [builders.viz.maf.backup]
 mode = "BOTH"
-path = "s3a://gdc-mutation-indexer/backups/maf.parqet"
+path = "s3a://$MUTATION_INDEXER_BUCKET/backups/maf.parqet"
 
 [builders.viz.maf_metadata]
 is_cached = true

@@ -4,8 +4,9 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Sequence
+from typing import Annotated, Sequence
 
+from mutation_indexer.configuration import marshmallow_extensions
 from mutation_indexer.constants import build
 
 
@@ -16,7 +17,7 @@ class Backup:
     """
 
     mode: build.BackupMode
-    path: str
+    path: Annotated[str, marshmallow_extensions.ResolvedURI]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -54,6 +55,6 @@ class GeneModelBuilder(Builder):
     Configuration values for running the gene model builder.
     """
 
-    census_file: str
-    citobands_file: str
-    gene_model_file: str
+    census_file: Annotated[str, marshmallow_extensions.ResolvedURI]
+    citobands_file: Annotated[str, marshmallow_extensions.ResolvedURI]
+    gene_model_file: Annotated[str, marshmallow_extensions.ResolvedURI]

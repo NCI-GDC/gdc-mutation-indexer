@@ -85,3 +85,17 @@ ResolvedPath = marshmallow_dataclass.NewType(
 SecretString = marshmallow_dataclass.NewType(
     "SecretString", typ=str, field=SecretStringField
 )
+
+
+class ResolvedURI(fields.String):
+    def _deserialize(
+        self,
+        value: typing.Any,
+        attr: typing.Optional[str],
+        data: typing.Optional[typing.Mapping[str, typing.Any]],
+        **kwargs: typing.Any,
+    ) -> str:
+        uri = super()._deserialize(value, attr, data, **kwargs)
+        uri = path.expandvars(uri)
+
+        return uri
