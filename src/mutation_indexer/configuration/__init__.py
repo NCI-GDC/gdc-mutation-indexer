@@ -13,14 +13,13 @@ import itertools
 import tempfile
 import types
 from collections.abc import Mapping, Sequence
-from importlib import resources
+from importlib import abc, resources
 from typing import IO, Any, ClassVar, Generic, Iterable, Iterator, TypeVar, cast
 
 import marshmallow
 import marshmallow_dataclass
 import toml
 from deepmerge import merger
-from importlib_resources import abc
 from typing_extensions import Self, dataclass_transform
 
 from mutation_indexer.configuration import (
@@ -162,8 +161,22 @@ class _Configuration:
         return (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
 
     @classmethod
-    def load(cls, config: abc.Traversable) -> Self:
-        return cls._schema.load(toml.loads(config.read_text() or ""))
+    def load(
+        cls,
+        *config: abc.Traversable | Mapping[str, Any],
+        config_file: str | None = None,
+    ) -> Self:
+        def load_toml(data: abc.Traversable | Mapping[str, Any]) -> Mapping[str, Any]:
+            if isinstance(data, Mapping):
+                return data
+
+            return toml.loads(data.read_text())
+
+        init = {"build": {"config_file": config_file}} if config_file else {}
+        unmerged_data = map(load_toml, itertools.chain(cls._default_configs(), config))
+        data = functools.reduce(cls._merger.merge, unmerged_data, init)
+
+        return cls._schema.load(data)
 
     @classmethod
     @contextlib.contextmanager
@@ -188,17 +201,8 @@ class _Configuration:
             been written to a temporary file at `build.config_file` which will be
             cleaned up once the context manager is exited.
         """
-
-        def load_toml(file: abc.Traversable) -> Mapping[str, Any]:
-            return toml.loads(file.read_text() or "")
-
-        unmerged_data = map(load_toml, itertools.chain(cls._default_configs(), configs))
-
         with tempfile.NamedTemporaryFile("wt+") as f:
-            data = functools.reduce(
-                cls._merger.merge, unmerged_data, {"build": {"config_file": f.name}}
-            )
-            config = cls._schema.load(data)
+            config = cls.load(*configs, config_file=f.name)
 
             config.dump(f, is_obfuscated=False)
             config._write_manifest()

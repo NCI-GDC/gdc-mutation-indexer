@@ -59,11 +59,7 @@ class TestCaseBuilder:
         all cases are in one of the expected projects.
         """
 
-        def load_config(data: dict) -> dict:
-            data["build"]["projects"] = projects
-            return data
-
-        conf = test_setup.load_configuration(load_config)
+        conf = test_setup.load_configuration({"build": {"projects": projects}})
         es_dataframe_util = es_utils.DataFrameUtil(
             conf.elasticsearch,
             spark_session,

@@ -1,0 +1,40 @@
+[aws.s3]
+access_key = ""
+host = ""
+secret_key = ""
+
+[build]
+build_version = "v0"
+data_release = "test"
+
+[builders.gene_expression.gene_model]
+census_file = "file://$INPUT_DIR/cancer_gene_census_set.tsv.gz"
+citobands_file = "file://$INPUT_DIR/genes.cytobands.tsv.gz"
+gene_model_file = "file://$INPUT_DIR/genes.ndjson.gz"
+
+[builders.viz.ascat.backup]
+mode = "NEITHER"
+
+[builders.viz.gene_model]
+census_file = "file://$INPUT_DIR/cancer_gene_census_set.tsv.gz"
+citobands_file = "file://$INPUT_DIR/genes.cytobands.tsv.gz"
+gene_model_file = "file://$INPUT_DIR/genes.ndjson.gz"
+
+[builders.viz.maf.backup]
+mode = "NEITHER"
+
+[builders.viz.segment_cnv.backup]
+mode = "NEITHER"
+
+[elasticsearch.connection]
+nodes = "$ES_NODES"
+password = ""
+use_ssl = false
+user = ""
+verify_certs = false
+
+[indexd]
+host = "indexd.service.consul"
+password = ""
+port = 80
+user = ""

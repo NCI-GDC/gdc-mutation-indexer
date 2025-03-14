@@ -38,7 +38,7 @@ path = ""
 
 [builders.gene_expression.gene_expression]
 id_field = "gene_expression_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.gene_expression.gene_expression.backup]
@@ -57,14 +57,14 @@ mode = "NEITHER"
 path = ""
 
 [builders.gene_expression.primary_aliquot]
-is_cached = true
+is_cached = false
 
 [builders.gene_expression.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.ascat]
-is_cached = true
+is_cached = false
 omit_cnv_data = false
 
 [builders.viz.ascat.backup]
@@ -151,7 +151,7 @@ include_as_arrays = [
   "submitter_sample_ids",
   "submitter_slide_ids"
 ]
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.case_centric.backup]
@@ -180,7 +180,7 @@ path = ""
 
 [builders.viz.cnv_centric]
 id_field = "cnv_id"
-is_cached = true
+is_cached = false
 occurrences_threshold = 100
 partition_size = 12
 
@@ -190,7 +190,7 @@ path = ""
 
 [builders.viz.cnv_occurrence_centric]
 id_field = "cnv_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.cnv_occurrence_centric.backup]
@@ -199,7 +199,7 @@ path = ""
 
 [builders.viz.gene_centric]
 id_field = "gene_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.gene_centric.backup]
@@ -233,22 +233,22 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.primary_aliquot]
-is_cached = true
+is_cached = false
 
 [builders.viz.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.viz.segment_cnv]
-is_cached = true
+is_cached = false
 
 [builders.viz.segment_cnv.backup]
-mode = "NEITHER"
-path = ""
+mode = "BOTH"
+path = "s3a://$MUTATION_INDEXER_BUCKET/backups/segment_cnv.parqet"
 
 [builders.viz.segment_cnv_centric]
 id_field = "segment_cnv_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.segment_cnv_centric.backup]
@@ -256,7 +256,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.segment_cnv_metadata]
-is_cached = false
+is_cached = true
 use_deprecated_query = true
 
 [builders.viz.segment_cnv_metadata.backup]
@@ -265,7 +265,7 @@ path = ""
 
 [builders.viz.segment_cnv_occurrence_centric]
 id_field = "segment_cnv_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.segment_cnv_occurrence_centric.backup]
@@ -274,7 +274,7 @@ path = ""
 
 [builders.viz.ssm_centric]
 id_field = "ssm_id"
-is_cached = true
+is_cached = false
 occurrences_threshold = 100
 partition_size = 12
 
@@ -284,7 +284,7 @@ path = ""
 
 [builders.viz.ssm_occurrence_centric]
 id_field = "ssm_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.viz.ssm_occurrence_centric.backup]

@@ -4,7 +4,7 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, Literal, Union, cast
+from typing import Any, Union, cast
 from unittest import mock
 
 import elasticsearch
@@ -51,33 +51,8 @@ def maf_urls(input_dir: pathlib.Path) -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
-    citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
-    census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
-    gene_model_file = str(input_dir.joinpath("genes.ndjson.gz"))
-
-    def pre_load(
-        data: dict,
-        drivers: Iterable[Literal["viz", "gene_expression"]] = (
-            "viz",
-            "gene_expression",
-        ),
-    ) -> dict:
-        for driver in drivers:
-            data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
-            data["builders"][driver]["gene_model"]["census_file"] = census_file
-            data["builders"][driver]["gene_model"]["gene_model_file"] = gene_model_file
-
-        return data
-
-    return pre_load
-
-
-@pytest.fixture(scope="session")
-def default_config(
-    configure_gene_model: Callable[[dict], dict],
-) -> configuration.Configuration:
-    return test_setup.load_configuration(configure_gene_model)
+def default_config() -> configuration.Configuration:
+    return test_setup.load_configuration()
 
 
 @pytest.fixture(scope="session")

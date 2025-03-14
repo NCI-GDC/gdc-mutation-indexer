@@ -97,8 +97,8 @@ class TestSpark:
             sql=None,
             submit=None,
             yarn=spark.Yarn(
-                app_master_env=spark.Env(tmpdir="/tmp"),
-                executor_env=spark.Env(tmpdir="/mnt/tmp"),
+                app_master_env=spark.Env(tmpdir="/tmp", xdg_cache_home="/.cache"),
+                executor_env=spark.Env(tmpdir="/mnt/tmp", xdg_cache_home="/.cache"),
             ),
         )
 
@@ -110,7 +110,9 @@ class TestSpark:
             (
                 ("--conf", "spark.driver=None"),
                 ("--conf", "spark.yarn.executorEnv.TMPDIR=/mnt/tmp"),
+                ("--conf", "spark.yarn.executorEnv.XDG_CACHE_HOME=/.cache"),
                 ("--conf", "spark.yarn.appMasterEnv.TMPDIR=/tmp"),
+                ("--conf", "spark.yarn.appMasterEnv.XDG_CACHE_HOME=/.cache"),
                 ("--conf", "spark.submit=None"),
                 ("--conf", "spark.executor=None"),
                 ("--conf", "spark.sql=None"),

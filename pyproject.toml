@@ -179,6 +179,7 @@ deps = ["-crequirements.txt", ".[dev,client]"]
 pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
 
 [tool.tox.env.test.set_env]
+ES_NODES = {replace = "env", name = "ES_NODES", default = "http://localhost:9200"}
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"

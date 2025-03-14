@@ -2,6 +2,7 @@ import logging
 import pathlib
 import tempfile
 from collections.abc import Iterable, Iterator
+from os import path
 from typing import Any, Optional
 from unittest import mock
 
@@ -22,16 +23,24 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(scope="module")
 def ge_config() -> Iterator[configuration.Configuration]:
     with tempfile.TemporaryDirectory() as tmpdir:
-
-        def pre_load(data: dict) -> dict:
-            data["build"]["index_types"] = ["GENE_EXPRESSION"]
-
-            backup = data["builders"]["gene_expression"]["gene_expression"]["backup"]
-            backup["path"] = tmpdir + "/" + backup["path"]
-
-            return data
-
-        yield test_setup.load_configuration(pre_load)
+        yield test_setup.load_configuration(
+            {
+                "build": {"index_types": ["GENE_EXPRESSION"]},
+                "builders": {
+                    "gene_expression": {
+                        "gene_expression": {
+                            "backup": {
+                                "path": path.join(
+                                    tmpdir,
+                                    "data_release/{data_release}/{build_version}/gene_expression_{data_release}_{build_version}.parquet",
+                                ),
+                                "mode": "WRITE",
+                            }
+                        }
+                    }
+                },
+            }
+        )
 
 
 @pytest.fixture(scope="module")
@@ -196,7 +205,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == build.BackupMode.WRITE
     )
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "./data_release/test/v0/gene_expression_test_v0.parquet"
+        "/data_release/test/v0/gene_expression_test_v0.parquet"
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.partition_by

@@ -1,35 +1,49 @@
 import collections
-import functools
 import gzip
 import json
 import logging
 import os
 import pathlib
 import types
-from collections.abc import Callable, Container, Iterable, Iterator, Set
-from typing import ContextManager, Optional, Type, TypeVar, Union
+from collections.abc import Container, Iterable, Iterator, Mapping, Set
+from importlib import resources
+from typing import Any, ContextManager, Optional, Type, TypeVar, Union
+from unittest import mock
 
 import elasticsearch
-import importlib_resources as resources
-import toml
 from elasticsearch import helpers
 
 from mutation_indexer import configuration, es_utils
-from mutation_indexer.constants import build
+from mutation_indexer.constants import app, build
+from tests import integration
 
 T = TypeVar("T")
 
 
-def load_configuration(
-    *pre_load: Callable[[dict], dict]
-) -> configuration.Configuration:
-    data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
-    data = functools.reduce(lambda d, f: f(d), pre_load, data)
-    data["elasticsearch"]["connection"]["nodes"] = os.environ.get(
-        "ES_NODES", data["elasticsearch"]["connection"]["nodes"]
-    )
+def load_configuration(*overrides: Mapping[str, Any]) -> configuration.Configuration:
+    with (
+        resources.as_file(resources.files(integration) / "data/input") as input_dir,
+        mock.patch.dict(
+            os.environ,
+            INPUT_DIR=str(input_dir),
+            HOME="./",
+            SPARK_HOME="./",
+            TMPDIR="/tmp",
+            MUTATION_INDEXER="./",
+        ),
+    ):
+        files = (
+            resources.files("mutation_indexer") / app.CONFIGURATION_FILE,
+            resources.files(integration) / app.CONFIGURATION_FILE,
+        )
+        config_file = {"build": {"config_file": "dummy.toml"}}
+        es_connection = {
+            "elasticsearch": {"connection": {"nodes": os.environ["ES_NODES"]}}
+        }
 
-    return configuration.CONFIG_SCHEMA.load(data)  # type: ignore
+        return configuration.Configuration.load(
+            *files, config_file, es_connection, *overrides
+        )
 
 
 def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:
