@@ -20,8 +20,6 @@ projects = []
 spark_submit = "$SPARK_HOME/bin/spark-submit"
 study_label = ""
 
-[builders]
-
 [builders.gene_expression.case]
 is_cached = true
 
