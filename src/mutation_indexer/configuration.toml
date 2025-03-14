@@ -256,8 +256,8 @@ mode = "NEITHER"
 path = ""
 
 [builders.viz.segment_cnv_metadata]
-is_cached = true
-use_deprecated_query = false
+is_cached = false
+use_deprecated_query = true
 
 [builders.viz.segment_cnv_metadata.backup]
 mode = "NEITHER"

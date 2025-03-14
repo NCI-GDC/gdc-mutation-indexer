@@ -24,7 +24,7 @@ from tests.integration.utils import test_setup
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def segment_config() -> Iterator[configuration.Configuration]:
     def pre_load(data: dict) -> dict:
         data["build"]["acl"] = ["open"]
@@ -34,7 +34,49 @@ def segment_config() -> Iterator[configuration.Configuration]:
     yield test_setup.load_configuration(pre_load)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
+def setup_elasticsearch_indices(
+    es_client: elasticsearch.Elasticsearch, segment_config: configuration.Configuration
+) -> Iterator[Any]:
+    mappings_loader = es_utils.MappingsLoader()
+    file_index = segment_config.elasticsearch.read.file_index
+    case_index = segment_config.elasticsearch.read.case_index
+    file_index_exists = es_client.indices.exists(index=file_index)
+    case_index_exists = es_client.indices.exists(index=case_index)
+    if file_index_exists is False:
+        model_mapper = mappings_loader.load_mapper(build.IndexType.FILE)
+        es_client.indices.create(
+            index=file_index,
+            settings=model_mapper.settings,
+            mappings=model_mapper.mappings,
+        )
+    if case_index_exists is False:
+        model_mapper = mappings_loader.load_mapper(build.IndexType.CASE)
+        es_client.indices.create(
+            index=case_index,
+            settings=model_mapper.settings,
+            mappings=model_mapper.mappings,
+        )
+
+    segment_cnv_indices_manager = test_setup.IndexManager(
+        segment_config,
+        es_client,
+        logger,
+        (
+            build.IndexType.SEGMENT_CNV_CENTRIC,
+            build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,
+        ),
+        skip_creation=True,
+    )
+    with segment_cnv_indices_manager:
+        yield
+        if file_index_exists is False:
+            es_client.indices.delete(index=file_index, ignore_unavailable=True)
+        if case_index_exists is False:
+            es_client.indices.delete(index=case_index, ignore_unavailable=True)
+
+
+@pytest.fixture(scope="package")
 def indexd(input_dir: pathlib.Path) -> client.IndexClient:
     """Mocks IndexClient get() and bulk_request() methods."""
     path = input_dir / "segment_cnv" / "file_data"
@@ -75,12 +117,12 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
     return indexd
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def segment_file_docs(
     segment_config: configuration.Configuration,
     input_dir: pathlib.Path,
     es_client: elasticsearch.Elasticsearch,
-    setup_graph_indices: Any,
+    setup_elasticsearch_indices: Any,
 ) -> Iterator[Set[str]]:
     segment_file = input_dir / "segment_cnv" / "segment_cnv-files.ndjson"
 
@@ -95,27 +137,20 @@ def segment_file_docs(
             yield loader.load_docs(build.IndexType.FILE, segment_file)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def ascat_file_docs(
     segment_config: configuration.Configuration,
     input_dir: pathlib.Path,
     es_client: elasticsearch.Elasticsearch,
-    setup_graph_indices: Any,
+    setup_elasticsearch_indices: Any,
 ) -> Iterator[Set[str]]:
     ascat_file = input_dir / "segment_cnv" / "ascat_metadata-files.ndjson"
 
-    with test_setup.IndexManager(
-        segment_config,
-        es_client,
-        logger,
-        index_types=(build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,),
-        skip_creation=True,
-    ):
-        with test_setup.DocumentLoader(segment_config, es_client, logger) as loader:
-            yield loader.load_docs(build.IndexType.FILE, ascat_file)
+    with test_setup.DocumentLoader(segment_config, es_client, logger) as loader:
+        yield loader.load_docs(build.IndexType.FILE, ascat_file)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def ascat_metadata_df(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,
@@ -143,27 +178,20 @@ def ascat_metadata_df(
     return df
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def segment_case_docs(
     segment_config: configuration.Configuration,
     input_dir: pathlib.Path,
     es_client: elasticsearch.Elasticsearch,
-    setup_graph_indices: Any,
+    setup_elasticsearch_indices: Any,
 ) -> Iterator[Set[str]]:
     segment_case = input_dir / "segment_cnv" / "segment_cnv-cases.ndjson"
 
-    with test_setup.IndexManager(
-        segment_config,
-        es_client,
-        logger,
-        index_types=(build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,),
-        skip_creation=True,
-    ):
-        with test_setup.DocumentLoader(segment_config, es_client, logger) as loader:
-            yield loader.load_docs(build.IndexType.CASE, segment_case)
+    with test_setup.DocumentLoader(segment_config, es_client, logger) as loader:
+        yield loader.load_docs(build.IndexType.CASE, segment_case)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def case_df(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,
@@ -194,7 +222,7 @@ def case_df(
     return df
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def segment_cnv_metadata_df(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,
@@ -219,7 +247,7 @@ def segment_cnv_metadata_df(
     return df
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="package")
 def segment_cnv_df(
     segment_config: configuration.Configuration,
     spark_session: sql.SparkSession,

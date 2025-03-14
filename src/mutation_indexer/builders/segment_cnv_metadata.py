@@ -44,24 +44,54 @@ class SegmentCNVMetadataBuilder(
 
     def _get_es_query(self) -> dict:
         # TODO DEV-3360: remove deprecated query conditional logic
-        query: ES_QUERY_TYPE = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"terms": {"acl": self._config.acl}},
-                    ]
+        if self._config.use_deprecated_query is True:
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"terms": {"acl": self._config.acl}},
+                            {
+                                "bool": {
+                                    "should": [
+                                        {"terms": {"data_type": [DATA_TYPE]}},
+                                        {
+                                            "bool": {
+                                                "must": [
+                                                    {
+                                                        "terms": {
+                                                            "data_type": [
+                                                                DEPRECATED_DATA_TYPE
+                                                            ]
+                                                        }
+                                                    },
+                                                    {
+                                                        "terms": {
+                                                            "analysis.workflow_type": [
+                                                                build.WorkflowType.ASCAT_NGS
+                                                            ]
+                                                        }
+                                                    },
+                                                ]
+                                            }
+                                        },
+                                    ]
+                                }
+                            },
+                        ]
+                    }
+                },
+            }
+        else:
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"terms": {"acl": self._config.acl}},
+                            {"terms": {"data_type": [DATA_TYPE]}},
+                        ]
+                    }
                 }
             }
-        }
-        additional_filters = (
-            [
-                {"term": {"data_type": DEPRECATED_DATA_TYPE}},
-                {"term": {"analysis.workflow_type": build.WorkflowType.ASCAT_NGS}},
-            ]
-            if self._config.use_deprecated_query is True
-            else [{"term": {"data_type": DATA_TYPE}}]
-        )
-        query["query"]["bool"]["must"].extend(additional_filters)
 
         return query
 
