@@ -334,7 +334,7 @@ fields:
       containsNull: true
       elementType: string
       type: array
-  - <<: *string_field
+  - <<: *boolean_field
     name: is_cancer_gene_census
   - <<: *string_field
     name: empty

@@ -70,7 +70,7 @@ class GeneModel:
     gene_start: int = 11869
     gene_strand: int = 1
     hgnc: Tuple[str, ...] = ("HGNC:37102",)
-    is_cancer_gene_census: str = "true"
+    is_cancer_gene_census: bool = True
     omim_gene: Tuple[str, ...] = ()
     uniprotkb_swissprot: Tuple[str, ...] = ()
     name: str = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"

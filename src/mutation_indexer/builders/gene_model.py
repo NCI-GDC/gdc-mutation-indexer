@@ -7,6 +7,13 @@ from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
+CENSUS_SCHEMA = types.StructType(
+    [
+        types.StructField("cancer_gene_id", types.StringType()),
+        types.StructField("is_cancer_gene_census", types.BooleanType()),
+    ]
+)
+
 
 def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
     # Rename transcripts.id to transcripts.transcript_id
@@ -75,12 +82,6 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
         # Rename 'end' to 'gene_end'
         gene_df = gene_df.withColumnRenamed("end", "gene_end")
 
-        # Elasticsearch 6+ is strict about how booleans are represented.
-        # This column really needs to be lowercase.
-        gene_df = gene_df.withColumn(
-            "is_cancer_gene_census", F.lower(gene_df.is_cancer_gene_census)
-        )
-
         gene_df = _rename_columns(gene_df)
 
         return gene_df
@@ -104,7 +105,7 @@ class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]
         )
 
         census_df = self._spark_session.read.csv(
-            self._config.census_file, sep="\t", header=True
+            self._config.census_file, sep="\t", header=True, schema=CENSUS_SCHEMA
         )
 
         gene_model_df = self._spark_session.read.json(self._config.gene_model_file)

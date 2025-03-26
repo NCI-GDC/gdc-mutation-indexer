@@ -2593,7 +2593,8 @@ fields:
                     name: cnv_change_5_category
                   - <<: *long_field
                     name: end_position
-                  - metadata: {}
+                  - &boolean_field
+                    metadata: {}
                     name: gene_level_cn
                     nullable: false
                     type: boolean
@@ -2636,8 +2637,9 @@ fields:
             name: biotype
           - <<: *string_field
             name: gene_id
-          - <<: *string_field
+          - <<: *boolean_field
             name: is_cancer_gene_census
+            nullable: true
           - <<: *string_field
             name: symbol
         type: struct

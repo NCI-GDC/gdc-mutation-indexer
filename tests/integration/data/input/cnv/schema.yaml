@@ -270,7 +270,7 @@ fields:
   - metadata: {}
     name: is_cancer_gene_census
     nullable: true
-    type: string
+    type: boolean
   - metadata: {}
     name: gene_chromosome
     nullable: true
