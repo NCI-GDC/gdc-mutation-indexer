@@ -275,6 +275,7 @@ user = ""
 
 [spark]
 master = "local[*]"
+yarn = {}
 
 [spark.app]
 name = "gdc_mutation_indexer"
@@ -303,9 +304,3 @@ partitions = 200
 
 [spark.submit]
 deploy_mode = "cluster"
-
-[spark.yarn.app_master_env]
-tmpdir = "/mnt/tmp"
-
-[spark.yarn.executor_env]
-tmpdir = "/mnt/tmp"

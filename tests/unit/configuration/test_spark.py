@@ -97,9 +97,9 @@ class TestSpark:
             sql=None,
             submit=None,
             yarn=spark.Yarn(
-                app_master_env=spark.Env(tmpdir="/tmp"),
-                executor_env=spark.Env(tmpdir="/mnt/tmp"),
+                app_master_env={"TMPDIR": "/tmp"},
             ),
+            executor_env={"TMPDIR": "/mnt/tmp"},
         )
 
         args = frozenset(config.get_arguments())
@@ -109,7 +109,7 @@ class TestSpark:
         assert args == frozenset(
             (
                 ("--conf", "spark.driver=None"),
-                ("--conf", "spark.yarn.executorEnv.TMPDIR=/mnt/tmp"),
+                ("--conf", "spark.executorEnv.TMPDIR=/mnt/tmp"),
                 ("--conf", "spark.yarn.appMasterEnv.TMPDIR=/tmp"),
                 ("--conf", "spark.submit=None"),
                 ("--conf", "spark.executor=None"),

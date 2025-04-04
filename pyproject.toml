@@ -13,16 +13,16 @@ classifiers = [
 dependencies = [
   "boto3",
   "boto3-stubs[s3]",
-  "elasticsearch[async]~=7.6",
-  "importlib-resources~=3.2",
-  "marshmallow-dataclass~=8.5",
-  "marshmallow-enum~=1.5",
-  "more-itertools~=8.9",
+  "elasticsearch[async]",
+  "importlib-resources",
+  "marshmallow-dataclass",
+  "marshmallow-enum",
+  "more-itertools",
   "numpy",
-  "pyspark~=3.3.1",
-  "python-json-logger~=2.0",
-  "toml~=0.10",
-  "typing-extensions~=4.1",
+  "pyspark~=3.5.0",
+  "python-json-logger",
+  "toml",
+  "typing-extensions",
   "indexclient",
   "gdcmodels",
   "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0"
@@ -84,6 +84,41 @@ requires = ["tox>=4.21"]
 commands = [["coverage", "html"], ["coverage", "xml"]]
 deps = ["-crequirements.txt", "coverage[toml]"]
 skip_install = true
+
+[tool.tox.env.pex]
+base_python = ["py313"]
+commands = [
+  [
+    "pex",
+    ".[client]",
+    "--no-strip-pex-env",
+    "--python=python{env:SCIE_PYTHON_VERSION}",
+    "--entry-point=mutation_indexer.client",
+    "--constraints=requirements.txt",
+    "--output-file=mutation-indexer",
+    "--scie=eager",
+    "--scie-platform={env:SCIE_PLATFORM}",
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+  ],
+  [
+    "pex",
+    ".",
+    "--no-strip-pex-env",
+    "--python=python{env:SCIE_PYTHON_VERSION}",
+    "--constraints=requirements.txt",
+    "--output-file=driver-all",
+    "--scie=eager",
+    "--scie-platform={env:SCIE_PLATFORM}",
+    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
+  ]
+]
+deps = ["-crequirements.txt", "pex"]
+pass_env = ["PEX_ROOT", "SCIE_BASE", "SSH_AUTH_SOCK"]
+skip_install = true
+
+[tool.tox.env.pex.set_env]
+SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
+SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.9"}
 
 [tool.tox.env.publish]
 commands = [

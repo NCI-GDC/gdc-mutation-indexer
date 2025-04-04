@@ -7,6 +7,8 @@ https://spark.apache.org/docs/2.4.5/configuration.html
 """
 
 import dataclasses
+import types
+from collections.abc import Mapping
 from typing import Any, Iterable, Tuple
 
 
@@ -34,6 +36,12 @@ class ConfigArgumentMixin:
 
             if isinstance(value, ConfigArgumentMixin):
                 yield from value._get_arguments(f"{path}{field}.")
+
+            elif isinstance(value, Mapping):
+                subpath = f"{path}{field}."
+
+                for key, subvalue in value.items():
+                    yield self._get_field_argument(subpath, key, subvalue)
 
             else:
                 yield self._get_field_argument(path, field, value)
@@ -86,17 +94,8 @@ class Submit(ConfigArgumentMixin):
 
 
 @dataclasses.dataclass(frozen=True)
-class Env(ConfigArgumentMixin):
-    tmpdir: str
-
-    def _format_field(self, field: str) -> str:
-        return field.upper()
-
-
-@dataclasses.dataclass(frozen=True)
 class Yarn(ConfigArgumentMixin):
-    app_master_env: Env
-    executor_env: Env
+    app_master_env: Mapping[str, str] = types.MappingProxyType({})
 
 
 @dataclasses.dataclass(frozen=True)
@@ -113,6 +112,7 @@ class Spark(ConfigArgumentMixin):
     sql: SQL
     submit: Submit
     yarn: Yarn
+    executor_env: Mapping[str, str] = types.MappingProxyType({})
 
     def get_arguments(self) -> Iterable[Tuple[str, str]]:
         """
