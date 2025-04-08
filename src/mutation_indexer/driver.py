@@ -5,7 +5,6 @@ from collections.abc import Container, Iterator, Mapping
 
 import elasticsearch
 import toml
-from indexclient import client
 from pyspark import sql
 
 from mutation_indexer import (
@@ -19,7 +18,6 @@ from mutation_indexer import logging as mutation_indexer_logging
 from mutation_indexer.builders import base_builder, bases, civic, maf_metadata
 from mutation_indexer.configuration import adapter
 from mutation_indexer.configuration import elasticsearch as es_config
-from mutation_indexer.configuration import indexd
 from mutation_indexer.configuration.builders import gene_expression, viz
 from mutation_indexer.constants import build
 
@@ -38,22 +36,6 @@ def initialize_spark() -> Iterator[sql.SparkSession]:
         spark_session.sparkContext.setLogLevel("FATAL")
 
         yield spark_session
-
-
-def get_index_client(config: indexd.IndexD) -> client.IndexClient:
-    """
-    Builds the index client with the given configuration values.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An indexd client
-    """
-    return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}",
-        auth=(config.user, config.password),
-    )
 
 
 def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
@@ -249,7 +231,7 @@ def get_viz_builders(
         es_utils.SchemaLoader(),
     )
     es_rdd_util = es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext)
-    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, spark_session)
     case_field_selector = es_utils.CaseFieldSelector(mappings_loader)
     consequence_builder = builders.ConsequenceBuilder()
     observation_builder = builders.ObservationBuilder()
@@ -347,7 +329,6 @@ def get_ge_builders(
         The Builders object to used by the export process.
     """
     indexd = get_index_client(config.indexd)
-    sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
         config.elasticsearch,
@@ -356,7 +337,7 @@ def get_ge_builders(
         mappings_loader,
         es_utils.SchemaLoader(),
     )
-    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+    doc_dataframe_util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
     return gdc_mutation_export.Builders(
         tuple(
@@ -383,9 +364,10 @@ def main():
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        with get_es_client(
-            config.elasticsearch.connection
-        ) as es_client, initialize_spark() as spark_session:
+        with (
+            get_es_client(config.elasticsearch.connection) as es_client,
+            initialize_spark() as spark_session,
+        ):
             builders = (
                 get_viz_builders(config, spark_session, es_client)
                 if config.build.is_viz_build()
