@@ -2,12 +2,13 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
+
 import dataclasses
-from typing import Sequence
+from typing import Annotated, Sequence
 
 from marshmallow import fields
 
-from mutation_indexer.configuration import marshmallow_extensions
+from mutation_indexer.configuration import _extensions
 
 # these are directly imported to created a better interface when using the viz module
 from mutation_indexer.configuration.builders.common import (
@@ -33,15 +34,7 @@ class CaseBuilder(Builder):
     Configuration values for running the case builder
     """
 
-    include_as_arrays: Sequence[str] = dataclasses.field(
-        metadata={
-            "metadata": {
-                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    fields.String()
-                )
-            }
-        }
-    )
+    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)]
     repartition_size: int
 
 
@@ -60,13 +53,9 @@ class MAFMetadataBuilder(Builder):
     Configuration values for running the MAF metadata builder
     """
 
-    prioritized_experimental_strategies: Sequence[str] = dataclasses.field(
-        metadata={
-            "marshmallow_filed": marshmallow_extensions.ArbitraryLengthTuple(
-                fields.String()
-            )
-        }
-    )
+    prioritized_experimental_strategies: Annotated[
+        Sequence[str], _extensions.ArrayTuple(fields.String)
+    ]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -76,15 +65,7 @@ class CaseCentricBuilder(IndexBuilder):
     """
 
     genes_threshold: int
-    include_as_arrays: Sequence[str] = dataclasses.field(
-        metadata={
-            "metadata": {
-                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    fields.String()
-                )
-            }
-        }
-    )
+    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)]
 
 
 @dataclasses.dataclass(frozen=True)

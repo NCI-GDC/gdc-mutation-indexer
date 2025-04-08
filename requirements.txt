@@ -77,12 +77,8 @@ jmespath==1.0.1
 log-symbols==0.0.14
     # via halo
 marshmallow==3.26.1
-    # via
-    #   marshmallow-dataclass
-    #   marshmallow-enum
+    # via marshmallow-dataclass
 marshmallow-dataclass==8.7.1
-    # via gdc-mutation-indexer (pyproject.toml)
-marshmallow-enum==1.5.1
     # via gdc-mutation-indexer (pyproject.toml)
 mergedeep==1.3.4
     # via gdcmodels

@@ -4,9 +4,9 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Mapping
+from typing import Annotated, Mapping
 
-from mutation_indexer.configuration import marshmallow_extensions
+from mutation_indexer.configuration import _extensions
 from mutation_indexer.constants import build
 
 
@@ -18,7 +18,7 @@ class Connection:
 
     nodes: str
     user: str
-    password: marshmallow_extensions.SecretString
+    password: Annotated[str, _extensions.SecretString]
     use_ssl: bool
     verify_certs: bool
 

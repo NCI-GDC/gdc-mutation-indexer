@@ -2,9 +2,11 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
-import dataclasses
 
-from mutation_indexer.configuration import marshmallow_extensions
+import dataclasses
+from typing import Annotated
+
+from mutation_indexer.configuration import _extensions
 
 
 @dataclasses.dataclass(frozen=True)
@@ -15,7 +17,7 @@ class S3:
 
     host: str
     access_key: str
-    secret_key: marshmallow_extensions.SecretString
+    secret_key: Annotated[str, _extensions.SecretString]
 
 
 @dataclasses.dataclass(frozen=True)
