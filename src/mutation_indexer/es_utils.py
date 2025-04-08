@@ -1,6 +1,7 @@
 import collections
 import functools
 import json
+import logging
 from collections.abc import (
     Collection,
     Container,
@@ -11,7 +12,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final, Optional, Tuple, Union
+from typing import ContextManager, DefaultDict, Deque, Final, Optional, Tuple, Union
 
 import elasticsearch
 import gdcmodels
@@ -24,6 +25,28 @@ from typing_extensions import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
+
+logger = logging.getLogger(__name__)
+
+
+def initialize_client(
+    config: es_config.Connection,
+) -> ContextManager[elasticsearch.Elasticsearch]:
+    """Initialize an elasticsearch client based on the configuration.
+
+    Args:
+        config: The connection configuration for setting up the client.
+
+    Returns:
+        An elasticsearch client
+    """
+
+    return elasticsearch.Elasticsearch(
+        config.nodes.split(","),
+        use_ssl=config.use_ssl,
+        verify_certs=config.verify_certs,
+        http_auth=(config.user, config.password),
+    )
 
 
 def iterate_es_results(
@@ -673,6 +696,15 @@ class DataFrameUtil:
             .option("es.mapping.id", id_field)
             .save(index)
         )
+
+        try:
+            self._es_client.indices.forcemerge(
+                index=index, max_num_segments=1, request_timeout=20
+            )
+        except elasticsearch.ConnectionTimeout:
+            logger.info(
+                f"Merging of {index} timed out. Process will continue in elasticsearch."
+            )
 
 
 class RDDUtil:

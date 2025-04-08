@@ -10,7 +10,6 @@ import tempfile
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, cast
 
-import elasticsearch
 import halo
 import importlib_resources as resources
 import more_itertools
@@ -184,42 +183,15 @@ async def run_spark_command(config: configuration.Configuration) -> None:
         )
     )
 
-    with open(config.build.output_log, "wb+") as out_file, open(
-        config.build.error_log, "wb+"
-    ) as error_file:
+    with (
+        open(config.build.output_log, "wb+") as out_file,
+        open(config.build.error_log, "wb+") as error_file,
+    ):
         process = await asyncio.create_subprocess_shell(
             final_command, stdout=out_file, stderr=error_file
         )
 
         await process.wait()
-
-
-async def force_merge_indices(config: configuration.Configuration) -> None:
-    """
-    Performs a force merge on the indices that have been created.
-
-    Args:
-        config: The configuration with which the build was run.
-    """
-    async with elasticsearch.AsyncElasticsearch(
-        config.elasticsearch.connection.nodes.split(","),
-        use_ssl=config.elasticsearch.connection.use_ssl,
-        verify_certs=config.elasticsearch.connection.verify_certs,
-        http_auth=(
-            config.elasticsearch.connection.user,
-            config.elasticsearch.connection.password,
-        ),
-    ) as es_client:
-        indices = [
-            config.elasticsearch.write.indices[i] for i in config.build.index_types
-        ]
-
-        try:
-            await es_client.indices.forcemerge(
-                index=indices, max_num_segments=1, ignore_unavailable=True
-            )
-        except Exception as ex:
-            logger.warning(f"Error occurred while merging: {ex}.")
 
 
 def set_environment_variables(env: environment.Environment) -> None:
@@ -246,8 +218,6 @@ async def _main() -> None:
             try:
                 spinner.text = "Running spark-submit"
                 await run_spark_command(config)
-                spinner.text = "Merging indices"
-                await force_merge_indices(config)
             except:
                 spinner.fail("Process Failed")
                 raise

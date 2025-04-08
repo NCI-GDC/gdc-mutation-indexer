@@ -56,25 +56,6 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
     )
 
 
-def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
-    """
-    builds the elastic search client based on the configuration.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An elasticsearch client
-    """
-
-    return elasticsearch.Elasticsearch(
-        config.nodes.split(","),
-        use_ssl=config.use_ssl,
-        verify_certs=config.verify_certs,
-        http_auth=(config.user, config.password),
-    )
-
-
 def _get_viz_builders(
     config: viz.Viz,
     es_config: es_config.Elasticsearch,
@@ -383,9 +364,10 @@ def main():
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        with get_es_client(
-            config.elasticsearch.connection
-        ) as es_client, initialize_spark() as spark_session:
+        with (
+            es_utils.initialize_client(config.elasticsearch.connection) as es_client,
+            initialize_spark() as spark_session,
+        ):
             builders = (
                 get_viz_builders(config, spark_session, es_client)
                 if config.build.is_viz_build()
