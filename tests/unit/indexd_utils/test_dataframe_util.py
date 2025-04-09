@@ -71,25 +71,25 @@ class TestDataFrameUtil:
         for data in document_content.data:
             yield (f"{document_content.did}.{data}",)
 
-    def arrange_sql_context(
+    def arrange_spark_session(
         self,
         document_contents: Iterable[Iterable[DocumentContent]] = (
             (DocumentContent(),),
         ),
         schema: Optional[Union[Tuple[str, ...], types.StructType]] = ("doc_data",),
     ) -> mock.MagicMock:
-        sql_context = mock.MagicMock()
+        spark_session = mock.MagicMock()
         data = (
             itertools.chain.from_iterable(self.arrange_data_rows(d) for d in ds)
             for ds in document_contents
         )
 
-        sql_context.createDataFrame.side_effect = self.spark_session.createDataFrame
-        sql_context.read.csv.side_effect = (
+        spark_session.createDataFrame.side_effect = self.spark_session.createDataFrame
+        spark_session.read.csv.side_effect = (
             self.spark_session.createDataFrame(tuple(d), schema) for d in data
         )
 
-        return sql_context
+        return spark_session
 
     @mock.patch("pyspark.sql.functions.input_file_name")
     def test__get_dataframe__default_settings(
@@ -97,15 +97,14 @@ class TestDataFrameUtil:
     ) -> None:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
-        sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session()
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0",))
         result_rows = result_df.collect()
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
-        sql_context.read.csv.assert_called_once_with(
+        spark_session.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=None,
             sep="\t",
@@ -134,9 +133,8 @@ class TestDataFrameUtil:
 
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client((documents,))
-        sql_context = self.arrange_sql_context((document_data,))
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session((document_data,))
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0", "file-1"))
         result_rows = {
@@ -174,16 +172,15 @@ class TestDataFrameUtil:
 
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client(documents)
-        sql_context = self.arrange_sql_context(document_data)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session(document_data)
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         util.get_dataframe(("file-0", "file-1"), index_batch_size=1, csv_batch_size=1)
 
         indexd.bulk_request.assert_has_calls(
             (mock.call(["file-0"]), mock.call(["file-1"])), any_order=True
         )
-        sql_context.read.csv.assert_has_calls(
+        spark_session.read.csv.assert_has_calls(
             (
                 mock.call(
                     ["file://file-0.format"],
@@ -214,9 +211,8 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         schema = types.StructType([types.StructField("doc_data", types.StringType())])
         indexd = self.arrange_index_client(None)
-        sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session(((),), schema)
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0", "file-1"))
 
@@ -244,14 +240,13 @@ class TestDataFrameUtil:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client((documents,))
         schema = types.StructType([types.StructField("doc_data", types.StringType())])
-        sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session(((),), schema)
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0",), schema)
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
-        sql_context.read.csv.assert_called_once_with(
+        spark_session.read.csv.assert_called_once_with(
             [],
             schema=schema,
             sep="\t",
@@ -278,14 +273,13 @@ class TestDataFrameUtil:
 
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client((documents,))
-        sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session()
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
-        sql_context.read.csv.assert_called_once_with(
+        spark_session.read.csv.assert_called_once_with(
             ["s3a://file-0.format"],
             schema=None,
             sep="\t",
@@ -303,14 +297,13 @@ class TestDataFrameUtil:
     ) -> None:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
-        sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session()
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
-        sql_context.read.csv.assert_called_once_with(
+        spark_session.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=None,
             sep="\t",
@@ -329,9 +322,8 @@ class TestDataFrameUtil:
     ) -> None:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
-        sql_context = self.arrange_sql_context()
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
+        spark_session = self.arrange_spark_session()
+        util = indexd_utils.DataFrameUtil(indexd, spark_session)
 
         schema = mock.MagicMock()
         comment = mock.MagicMock()
@@ -347,7 +339,7 @@ class TestDataFrameUtil:
         )
 
         indexd.bulk_request.assert_called_once_with(["file-0"])
-        sql_context.read.csv.assert_called_once_with(
+        spark_session.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=schema,
             sep="\t",

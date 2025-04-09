@@ -257,7 +257,7 @@ def segment_cnv_df(
     df = segment_cnv.SegmentCNVBuilder(
         segment_config.builders.viz.segment_cnv,
         spark_session,
-        indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
+        indexd_utils.DataFrameUtil(indexd, spark_session),
     ).build(segment_cnv_metadata_df=segment_cnv_metadata_df)
 
     return df

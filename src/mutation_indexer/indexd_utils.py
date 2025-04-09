@@ -8,12 +8,31 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+from mutation_indexer.configuration import indexd
+
+logger = logging.getLogger(__name__)
+
 DOCUMENT_URL_SCHEMA = types.StructType(
     [
         types.StructField("did", types.StringType()),
         types.StructField("_input_file_name", types.StringType()),
     ]
 )
+
+
+def initialize_client(config: indexd.IndexD) -> client.IndexClient:
+    """Initializes an index client with the given configuration values.
+
+    Args:
+        config: The connection configuration for setting up the client.
+
+    Returns:
+        An index client
+    """
+    return client.IndexClient(
+        baseurl=f"{config.host}:{config.port}",
+        auth=(config.user, config.password),
+    )
 
 
 class DocumentUrl(NamedTuple):
@@ -53,15 +72,15 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
 
 
 class DataFrameUtil:
+    __slots__ = ("_indexd", "_spark_session")
+
     def __init__(
         self,
         indexd: client.IndexClient,
-        sql_context: sql.SQLContext,
-        logger: logging.Logger,
+        spark_session: sql.SparkSession,
     ):
         self._indexd = indexd
-        self._sql_context = sql_context
-        self._logger = logger
+        self._spark_session = spark_session
 
     def _get_doc_urls(
         self, doc_ids: Iterable[str], batch_size: int
@@ -75,7 +94,7 @@ class DataFrameUtil:
             url = _get_and_format_url(doc)
 
             if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
+                logger.warning("File is missing: '{}'".format(doc.did))
 
             else:
                 yield DocumentUrl(doc.did, url)
@@ -91,7 +110,7 @@ class DataFrameUtil:
     ) -> sql.DataFrame:
         urls = list(more_itertools.always_iterable(urls))
 
-        df = self._sql_context.read.csv(
+        df = self._spark_session.read.csv(
             urls,
             schema=schema,
             sep="\t",
@@ -138,7 +157,7 @@ class DataFrameUtil:
             document_df = document_df.union(batch_df)
 
         if include_document_ids:
-            url_df = self._sql_context.createDataFrame(
+            url_df = self._spark_session.createDataFrame(
                 doc_urls, schema=DOCUMENT_URL_SCHEMA
             )
 

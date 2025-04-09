@@ -108,7 +108,7 @@ def expression_value_df(
     return gene_expression.ExpressionValueBuilder(
         ge_config.builders.gene_expression.expression_value,
         spark_session,
-        indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
+        indexd_utils.DataFrameUtil(indexd, spark_session),
     ).build(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
 
 
