@@ -220,7 +220,7 @@ def get_viz_builders(
         The Builders object to used by the export process.
     """
     mappings_loader = es_utils.MappingsLoader()
-    indexd = get_index_client(config.indexd)
+    indexd = indexd_utils.initialize_client(config.indexd)
     config_adapter = adapter.ObsoleteConfig(config, es_client, indexd)
     sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
     es_dataframe_util = es_utils.DataFrameUtil(
@@ -328,7 +328,7 @@ def get_ge_builders(
     Returns:
         The Builders object to used by the export process.
     """
-    indexd = get_index_client(config.indexd)
+    indexd = indexd_utils.initialize_client(config.indexd)
     mappings_loader = es_utils.MappingsLoader()
     es_dataframe_util = es_utils.DataFrameUtil(
         config.elasticsearch,
