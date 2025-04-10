@@ -18,4 +18,4 @@ class IndexD:
     host: str
     port: int
     user: str
-    password: Annotated[str, _extensions.SecretString]
+    password: Annotated[str, _extensions.SecretStringField]

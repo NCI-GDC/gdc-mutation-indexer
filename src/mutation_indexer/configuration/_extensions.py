@@ -11,7 +11,7 @@ from typing import Any
 from marshmallow import exceptions, fields, schema, utils
 
 
-class ArrayTuple(fields.Field):
+class ArrayTupleField(fields.Field):
     __slots__ = ("_inner",)
 
     def __init__(
@@ -99,7 +99,7 @@ class ArrayTuple(fields.Field):
         return tuple(self._deserialize_values(value, **kwargs))
 
 
-class ResolvedPath(fields.Field):
+class ResolvedPathField(fields.Field):
     """A field for loading paths and resolving any environment vars within.
 
     NOTE: when serialized environment variables from the original string are not
@@ -134,7 +134,7 @@ class ResolvedPath(fields.Field):
         return pathlib.Path(path.expandvars(value)).expanduser()
 
 
-class SecretString(fields.String):
+class SecretStringField(fields.String):
     """A field for insuring sensitive strings are obfuscated when serializing."""
 
     def _serialize(self, value, attr, obj, **kwargs) -> str | None:

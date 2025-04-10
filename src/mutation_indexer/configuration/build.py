@@ -49,23 +49,25 @@ class Build:
     build_version: str
     config_file: str
     data_release: str
-    driver: Annotated[pathlib.Path, _extensions.ResolvedPath]
-    error_log: Annotated[pathlib.Path, _extensions.ResolvedPath]
+    driver: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    error_log: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     index_types: Annotated[
         Sequence[build.IndexType],
-        _extensions.ArrayTuple(
+        _extensions.ArrayTupleField(
             fields.Enum(build.IndexType), validate=IndexTypesValidator()
         ),
     ]
-    jar_dir: Annotated[pathlib.Path, _extensions.ResolvedPath]
-    manifest_dir: Annotated[pathlib.Path, _extensions.ResolvedPath]
-    output_log: Annotated[pathlib.Path, _extensions.ResolvedPath]
-    pex_file: Annotated[pathlib.Path, _extensions.ResolvedPath]
-    projects: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)]
-    spark_submit: Annotated[pathlib.Path, _extensions.ResolvedPath]
+    jar_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    manifest_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    output_log: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    pex_file: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    projects: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)]
+    spark_submit: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     study_label: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
-    acl: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)] = ("open",)
+    acl: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)] = (
+        "open",
+    )
 
     def is_viz_build(self) -> bool:
         return build.IndexType.GENE_EXPRESSION not in self.index_types

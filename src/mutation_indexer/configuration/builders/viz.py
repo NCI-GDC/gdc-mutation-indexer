@@ -34,7 +34,9 @@ class CaseBuilder(Builder):
     Configuration values for running the case builder
     """
 
-    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)]
+    include_as_arrays: Annotated[
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
+    ]
     repartition_size: int
 
 
@@ -54,7 +56,7 @@ class MAFMetadataBuilder(Builder):
     """
 
     prioritized_experimental_strategies: Annotated[
-        Sequence[str], _extensions.ArrayTuple(fields.String)
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
     ]
 
 
@@ -65,7 +67,9 @@ class CaseCentricBuilder(IndexBuilder):
     """
 
     genes_threshold: int
-    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTuple(fields.String)]
+    include_as_arrays: Annotated[
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
+    ]
 
 
 @dataclasses.dataclass(frozen=True)

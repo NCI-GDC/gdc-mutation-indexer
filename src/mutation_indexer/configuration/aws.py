@@ -17,7 +17,7 @@ class S3:
 
     host: str
     access_key: str
-    secret_key: Annotated[str, _extensions.SecretString]
+    secret_key: Annotated[str, _extensions.SecretStringField]
 
 
 @dataclasses.dataclass(frozen=True)

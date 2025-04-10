@@ -18,7 +18,7 @@ class Connection:
 
     nodes: str
     user: str
-    password: Annotated[str, _extensions.SecretString]
+    password: Annotated[str, _extensions.SecretStringField]
     use_ssl: bool
     verify_certs: bool
 
