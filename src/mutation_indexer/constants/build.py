@@ -1,6 +1,8 @@
 import enum
 from typing import Optional, Tuple
 
+from typing_extensions import deprecated
+
 
 class DataFrame(enum.IntEnum):
     ASCAT = enum.auto()
@@ -64,8 +66,10 @@ class BackupMode(enum.Enum):
         return self == BackupMode.READ or self == BackupMode.BOTH
 
 
+@deprecated("Please use `..datamodel.WorkflowType`")
 class WorkflowType:
     ABSOLUTE = "ABSOLUTE LiftOver"
     ASCAT3 = "ASCAT3"
     ASCAT2 = "ASCAT2"
     ASCAT_NGS = "AscatNGS"
+    GATK4_CNV = "GATK4 CNV"

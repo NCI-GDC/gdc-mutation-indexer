@@ -12,7 +12,7 @@ from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration.builders import viz
-from mutation_indexer.constants import build
+from mutation_indexer.constants import build, datamodel
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -192,7 +192,7 @@ class TestSegmentCNVMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS,
+                workflow_type=datamodel.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -236,7 +236,7 @@ class TestSegmentCNVMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS,
+                workflow_type=datamodel.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -269,7 +269,7 @@ class TestSegmentCNVMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-1"
-        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS
+        assert result_row.workflow_type == datamodel.WorkflowType.ASCAT_NGS
         assert result_row.analysis_id == "analysis-0"
 
     def test__build__failed_join(self) -> None:
@@ -283,7 +283,7 @@ class TestSegmentCNVMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS,
+                workflow_type=datamodel.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-9999",
             ),
             cases=(
@@ -329,7 +329,7 @@ class TestSegmentCNVMetadataBuilder:
         file = File(
             file_id="file-1",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ASCAT_NGS,
+                workflow_type=datamodel.WorkflowType.ASCAT_NGS,
                 analysis_id="analysis-0",
             ),
             cases=(
@@ -371,5 +371,5 @@ class TestSegmentCNVMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-1"
-        assert result_row.workflow_type == build.WorkflowType.ASCAT_NGS
+        assert result_row.workflow_type == datamodel.WorkflowType.ASCAT_NGS
         assert result_row.analysis_id == "analysis-0"
