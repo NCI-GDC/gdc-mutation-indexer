@@ -16,7 +16,6 @@ dependencies = [
   "elasticsearch[async]",
   "importlib-resources",
   "marshmallow-dataclass",
-  "marshmallow-enum",
   "more-itertools",
   "numpy",
   "pyspark~=3.5.0",
