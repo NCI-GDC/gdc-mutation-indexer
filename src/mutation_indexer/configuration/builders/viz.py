@@ -6,6 +6,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 from typing import Annotated, Sequence
 
+import marshmallow_dataclass
 from marshmallow import fields
 
 from mutation_indexer.configuration import _extensions
@@ -26,6 +27,23 @@ class ASCATBuilder(Builder):
     """
 
     omit_cnv_data: bool
+
+
+@dataclasses.dataclass(frozen=True)
+class ASCATMetadataBuilder(Builder):
+    """Configuration values for the ASCAT metadata builder."""
+
+    @dataclasses.dataclass(frozen=True)
+    class Priority:
+        experimental_strategy: str
+        workflow_type: str
+
+    priorities: Annotated[
+        Sequence[Priority],
+        _extensions.ArrayTupleField(
+            fields.Nested(marshmallow_dataclass.class_schema(Priority))
+        ),
+    ]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -120,7 +138,7 @@ class Viz:
     """
 
     ascat: ASCATBuilder
-    ascat_metadata: Builder
+    ascat_metadata: ASCATMetadataBuilder
     case: CaseBuilder
     civic_dna: ResourceBuilder
     civic_protein: ResourceBuilder

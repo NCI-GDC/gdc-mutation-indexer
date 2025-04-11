@@ -12,3 +12,8 @@ class WorkflowType:
     ASCAT2 = "ASCAT2"
     ASCAT_NGS = "AscatNGS"
     GATK4_CNV = "GATK4 CNV"
+
+
+class ExperimentalStrategy:
+    WGS = "WGS"
+    GENOTYPING_ARRAY = "Genotyping Array"
