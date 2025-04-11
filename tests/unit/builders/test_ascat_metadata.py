@@ -162,7 +162,7 @@ class TestASCATMetadataBuilder:
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
-            spec=viz.Builder,
+            spec=viz.ASCATMetadataBuilder,
             priorities=priorities,
         )
 
