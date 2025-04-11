@@ -6,11 +6,7 @@ from pyspark.sql import functions as F
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
-from mutation_indexer.constants import build
-
-DEPRECATED_DATA_TYPE = "Copy Number Segment"
-DATA_TYPE = "Allele-specific Copy Number Segment"
-ES_QUERY_TYPE = dict[str, dict[str, dict[str, list]]]
+from mutation_indexer.constants import build, datamodel
 
 
 class SegmentCNVMetadataInputs(TypedDict):
@@ -43,57 +39,52 @@ class SegmentCNVMetadataBuilder(
         self._es_dataframe_util = es_dataframe_util
 
     def _get_es_query(self) -> dict:
+        acl_clause = {"terms": {"acl": self._config.acl}}
+        allele_specific_cns_clause = {
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            "data_type": datamodel.DataType.ALLELE_SPECIFIC_COPY_NUMBER_SEGMENT
+                        }
+                    }
+                ],
+                "must_not": [
+                    {
+                        "term": {
+                            "analysis.workflow_type": datamodel.WorkflowType.GATK4_CNV
+                        }
+                    }
+                ],
+            }
+        }
+
         # TODO DEV-3360: remove deprecated query conditional logic
         if self._config.use_deprecated_query is True:
-            query = {
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"terms": {"acl": self._config.acl}},
-                            {
-                                "bool": {
-                                    "should": [
-                                        {"terms": {"data_type": [DATA_TYPE]}},
-                                        {
-                                            "bool": {
-                                                "must": [
-                                                    {
-                                                        "terms": {
-                                                            "data_type": [
-                                                                DEPRECATED_DATA_TYPE
-                                                            ]
-                                                        }
-                                                    },
-                                                    {
-                                                        "terms": {
-                                                            "analysis.workflow_type": [
-                                                                build.WorkflowType.ASCAT_NGS
-                                                            ]
-                                                        }
-                                                    },
-                                                ]
-                                            }
-                                        },
-                                    ]
-                                }
-                            },
-                        ]
-                    }
-                },
-            }
-        else:
-            query = {
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"terms": {"acl": self._config.acl}},
-                            {"terms": {"data_type": [DATA_TYPE]}},
-                        ]
-                    }
+            deprecated_clause = {
+                "bool": {
+                    "must": [
+                        {"term": {"data_type": datamodel.DataType.COPY_NUMBER_SEGMENT}},
+                        {
+                            "term": {
+                                "analysis.workflow_type": datamodel.WorkflowType.ASCAT_NGS
+                            }
+                        },
+                    ]
                 }
             }
 
-        return query
+            return {
+                "query": {
+                    "bool": {
+                        "must": [acl_clause],
+                        "should": [allele_specific_cns_clause, deprecated_clause],
+                        "minimum_should_match": 1,
+                    }
+                },
+            }
+
+        return {"query": {"bool": {"must": [acl_clause, allele_specific_cns_clause]}}}
 
     def _get_es_source_fields(self) -> tuple[str, ...]:
         return ("file_id", "analysis.analysis_id")
