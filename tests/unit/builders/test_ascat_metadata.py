@@ -11,14 +11,40 @@ from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration.builders import viz
-from mutation_indexer.constants import build
+from mutation_indexer.constants import build, datamodel
 from tests.unit import utils
 from tests.unit.data import schemas
+
+Priority = viz.ASCATMetadataBuilder.Priority
+
+DEFAULT_PRIORITIES = (
+    Priority(datamodel.ExperimentalStrategy.WGS, datamodel.WorkflowType.ASCAT_NGS),
+    Priority(
+        datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+        datamodel.WorkflowType.ASCAT3,
+    ),
+    Priority(
+        datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+        datamodel.WorkflowType.ASCAT2,
+    ),
+)
+OLD_PRIORITIES = (
+    Priority(datamodel.ExperimentalStrategy.WGS, datamodel.WorkflowType.ABSOLUTE),
+    Priority(
+        datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+        datamodel.WorkflowType.ASCAT3,
+    ),
+    Priority(datamodel.ExperimentalStrategy.WGS, datamodel.WorkflowType.ASCAT_NGS),
+    Priority(
+        datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+        datamodel.WorkflowType.ASCAT2,
+    ),
+)
 
 
 @dataclasses.dataclass
 class Analysis:
-    workflow_type: str = "AscatNGS"
+    workflow_type: str = datamodel.WorkflowType.ASCAT_NGS
     analysis_id: str = "analysis-0"
 
 
@@ -91,7 +117,7 @@ class File:
     file_id: str = "f-0"
     analysis: Analysis = Analysis()
     created_datetime: str = datetime.datetime.min.isoformat(timespec="microseconds")
-    experimental_strategy: str = "WXS"
+    experimental_strategy: str = datamodel.ExperimentalStrategy.WGS
     cases: tuple[Case, ...] = (Case(),)
 
     def to_rdd_data(self) -> tuple:
@@ -128,13 +154,16 @@ class TestASCATMetadataBuilder:
         self._file_schema = file_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> viz.Builder:
+    def _arrange_config(
+        self, priorities: tuple[Priority, ...] = DEFAULT_PRIORITIES
+    ) -> viz.ASCATMetadataBuilder:
         return mock.MagicMock(
             acl=("open",),
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
-            spec=viz.Builder,
+            spec=viz.ASCATMetadataBuilder,
+            priorities=priorities,
         )
 
     def _arrange_es_dataframe_util(
@@ -161,7 +190,7 @@ class TestASCATMetadataBuilder:
         file = File(
             file_id="file-0",
             analysis=Analysis(
-                workflow_type=build.WorkflowType.ABSOLUTE, analysis_id="analysis-0"
+                workflow_type=datamodel.WorkflowType.ASCAT_NGS, analysis_id="analysis-0"
             ),
             cases=(
                 Case(
@@ -199,7 +228,7 @@ class TestASCATMetadataBuilder:
         assert result_row.aliquot_id == "aliquot-0"
         assert result_row.case_id == "case-0"
         assert result_row.file_id == "file-0"
-        assert result_row.workflow_type == build.WorkflowType.ABSOLUTE
+        assert result_row.workflow_type == datamodel.WorkflowType.ASCAT_NGS
         assert result_row.analysis_id == "analysis-0"
 
     @pytest.mark.parametrize(
@@ -419,21 +448,69 @@ class TestASCATMetadataBuilder:
         assert all(row.aliquot_id == "a-0" for row in result_rows)
 
     @pytest.mark.parametrize(
-        ("unprioritized_workflow", "prioritized_workflow"),
+        ("unprioritized", "prioritized"),
         (
-            (build.WorkflowType.ASCAT2, build.WorkflowType.ASCAT_NGS),
-            (build.WorkflowType.ASCAT_NGS, build.WorkflowType.ASCAT3),
-            (build.WorkflowType.ASCAT3, build.WorkflowType.ABSOLUTE),
+            (
+                Priority(
+                    datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+                    datamodel.WorkflowType.ASCAT3,
+                ),
+                Priority(
+                    datamodel.ExperimentalStrategy.WGS,
+                    datamodel.WorkflowType.ABSOLUTE,
+                ),
+            ),
+            (
+                Priority(
+                    datamodel.ExperimentalStrategy.WGS,
+                    datamodel.WorkflowType.ASCAT_NGS,
+                ),
+                Priority(
+                    datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+                    datamodel.WorkflowType.ASCAT3,
+                ),
+            ),
+            (
+                Priority(
+                    datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+                    datamodel.WorkflowType.ASCAT2,
+                ),
+                Priority(
+                    datamodel.ExperimentalStrategy.WGS,
+                    datamodel.WorkflowType.ASCAT_NGS,
+                ),
+            ),
+            (
+                Priority(
+                    datamodel.ExperimentalStrategy.GENOTYPING_ARRAY,
+                    datamodel.WorkflowType.ASCAT3,
+                ),
+                Priority(
+                    datamodel.ExperimentalStrategy.WGS,
+                    datamodel.WorkflowType.ABSOLUTE,
+                ),
+            ),
         ),
     )
-    def test__build__workflow_type(
-        self, unprioritized_workflow: str, prioritized_workflow: str
+    def test__build__configuration_prioritization_evaluates(
+        self, unprioritized: Priority, prioritized: Priority
     ) -> None:
+        unprioritized_id = f"unprioritized={unprioritized.experimental_strategy}-{unprioritized.workflow_type}"
+        prioritized_id = f"prioritized={prioritized.experimental_strategy}-{prioritized.workflow_type}"
+
         files = (
-            File(analysis=Analysis(workflow_type=unprioritized_workflow)),
-            File(analysis=Analysis(workflow_type=prioritized_workflow)),
+            File(
+                file_id=unprioritized_id,
+                analysis=Analysis(workflow_type=unprioritized.workflow_type),
+                experimental_strategy=unprioritized.experimental_strategy,
+            ),
+            File(
+                file_id=prioritized_id,
+                analysis=Analysis(workflow_type=prioritized.workflow_type),
+                experimental_strategy=prioritized.experimental_strategy,
+            ),
         )
-        config = self._arrange_config()
+        config = self._arrange_config(priorities=OLD_PRIORITIES)
         df_util = self._arrange_es_dataframe_util(files=files)
         rdd_util = self._arrange_es_rdd_util(files=files)
         builder = builders.ASCATMetadataBuilder(
@@ -444,7 +521,7 @@ class TestASCATMetadataBuilder:
         result_rows = result_df.collect()
 
         assert len(result_rows) == 1
-        assert result_rows[0].workflow_type == prioritized_workflow
+        assert result_rows[0].file_id == prioritized_id
 
     def test__build__missing_analytes(self) -> None:
         aliquots = (Aliquot(aliquot_id="a-0"), Aliquot(aliquot_id="a-1"))
