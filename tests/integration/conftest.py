@@ -75,9 +75,32 @@ def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
 
 @pytest.fixture(scope="session")
 def default_config(
+    input_dir: pathlib.Path,
     configure_gene_model: Callable[[dict], dict],
 ) -> configuration.Configuration:
-    return test_setup.load_configuration(configure_gene_model)
+    cytobands_file = str(input_dir / "genes.cytobands.tsv.gz")
+    census_file = str(input_dir / "cancer_gene_census_set.tsv.gz")
+    gene_model_file = str(input_dir / "genes.ndjson.gz")
+    overrides = {
+        "builders": {
+            "gene_expression": {
+                "gene_model": {
+                    "citobands_file": cytobands_file,
+                    "census_file": census_file,
+                    "gene_model_file": gene_model_file,
+                }
+            },
+            "viz": {
+                "gene_model": {
+                    "citobands_file": cytobands_file,
+                    "census_file": census_file,
+                    "gene_model_file": gene_model_file,
+                }
+            },
+        }
+    }
+
+    return test_setup.load_configuration(overrides)
 
 
 @pytest.fixture(scope="session")

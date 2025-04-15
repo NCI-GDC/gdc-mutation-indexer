@@ -22,16 +22,20 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(scope="module")
 def ge_config() -> Iterator[configuration.Configuration]:
     with tempfile.TemporaryDirectory() as tmpdir:
+        backup_path = (
+            pathlib.Path(tmpdir)
+            / "{data_release}/{build_version}/gene_expression_{data_release}_{build_version}.parquet"
+        )
+        overrides = {
+            "build": {"index_types": ("GENE_EXPRESSION",)},
+            "builders": {
+                "gene_expression": {
+                    "gene_expression": {"backup": {"path": str(backup_path)}}
+                }
+            },
+        }
 
-        def pre_load(data: dict) -> dict:
-            data["build"]["index_types"] = ["GENE_EXPRESSION"]
-
-            backup = data["builders"]["gene_expression"]["gene_expression"]["backup"]
-            backup["path"] = tmpdir + "/" + backup["path"]
-
-            return data
-
-        yield test_setup.load_configuration(pre_load)
+        yield test_setup.load_configuration(overrides)
 
 
 @pytest.fixture(scope="module")
@@ -196,7 +200,7 @@ def test_gene_expression_builder_writes_backup_to_path(
         == build.BackupMode.WRITE
     )
     assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
-        "./data_release/test/v0/gene_expression_test_v0.parquet"
+        "test/v0/gene_expression_test_v0.parquet"
     )
     assert (
         ge_config.builders.gene_expression.gene_expression.backup.partition_by

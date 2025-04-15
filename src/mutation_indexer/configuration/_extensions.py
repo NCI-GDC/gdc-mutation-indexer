@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import pathlib
 from collections.abc import Callable, Iterable, Mapping
 from os import path
-from typing import Any
+from typing import Any, ClassVar, Final, Generic, TypeVar, cast
 
+import marshmallow
+import marshmallow_dataclass
+from deepmerge import merger
 from marshmallow import exceptions, fields, schema, utils
+from typing_extensions import Self, dataclass_transform
+
+T = TypeVar("T")
 
 
 class ArrayTupleField(fields.Field):
@@ -144,3 +151,63 @@ class SecretStringField(fields.String):
             value = "*" * len(value)
 
         return super()._serialize(value, attr, obj, **kwargs)
+
+
+class Schema(Generic[T]):
+    def __init__(self, cls: type[T]) -> None:
+        """A schema which handles the serialization/deserialization of T.
+
+        Args:
+            cls: The class which the schema will load/dump.
+        """
+        self._schema = marshmallow_dataclass.class_schema(cls)(
+            many=False, unknown=marshmallow.EXCLUDE
+        )
+
+    def load(self, data: Mapping[str, Any]) -> T:
+        """Loads the given data into an instance of T.
+
+        Args:
+            data: The data being loaded into the instance.
+
+        Returns:
+            A validated instance of T.
+        """
+        return cast(T, self._schema.load(data))
+
+    def dump(self, obj: T, is_obfuscated: bool) -> Mapping[str, Any]:
+        """Dumps the given instance into a mapping representation of the data.
+
+        Args:
+            obj: The object whose data should be translated into a mapping.
+            is_obfuscated: A flag indicating if secret strings should be obfuscated in
+                the translation process.
+
+        Returns:
+            A mapping of the data contained within the given instance.
+        """
+        self._schema.context["is_obfuscated"] = is_obfuscated
+        data = cast(Mapping[str, Any], self._schema.dump(obj))
+        _ = self._schema.context.pop("is_obfuscated")
+
+        return data
+
+
+@dataclass_transform(frozen_default=True)
+class SerializableDataclass:
+    """A class representing a dataclass which can be (de)serialized."""
+
+    _schema: ClassVar[Schema[Self]]
+    """The schema which should be used for serialization."""
+    _merger: Final[merger.Merger] = merger.Merger(
+        ((dict, ["merge"]), (list, ["override"]), (set, ["override"])),
+        fallback_strategies=["override"],
+        type_conflict_strategies=["override"],
+    )
+    """A dictionary merger which should be used to load multiple sources into one."""
+
+    def __init_subclass__(cls) -> None:
+        """Initializes subclasses ensuring that they are dataclasses & have a schema."""
+        dataclasses.dataclass(frozen=True)(cls)
+
+        cls._schema = Schema(cls)

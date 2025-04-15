@@ -1,10 +1,10 @@
 import contextlib
 import logging
+import pathlib
 import types
 from collections.abc import Container, Iterator, Mapping
 
 import elasticsearch
-import toml
 from indexclient import client
 from pyspark import sql
 
@@ -21,7 +21,7 @@ from mutation_indexer.configuration import adapter
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
 from mutation_indexer.configuration.builders import gene_expression, viz
-from mutation_indexer.constants import build
+from mutation_indexer.constants import app, build
 
 logger = logging.getLogger("mutation_indexer")
 
@@ -377,15 +377,16 @@ def main():
     mutation_indexer_logging.configure()
 
     try:
-        config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(  # type: ignore
-            toml.load("configuration.toml")
+        config: configuration.Configuration = configuration.Configuration.load(
+            pathlib.Path(app.CONFIGURATION_FILE)
         )
 
         mutation_indexer_logging.add_build_id(config.build.build_id)
 
-        with get_es_client(
-            config.elasticsearch.connection
-        ) as es_client, initialize_spark() as spark_session:
+        with (
+            get_es_client(config.elasticsearch.connection) as es_client,
+            initialize_spark() as spark_session,
+        ):
             builders = (
                 get_viz_builders(config, spark_session, es_client)
                 if config.build.is_viz_build()
