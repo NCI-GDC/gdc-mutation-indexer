@@ -18,9 +18,15 @@ logger.setLevel(logging.INFO)
 
 
 class Args(tap.Tap):
+    driver: app.Driver
     config: Sequence[pathlib.Path]
 
     def _configure(self) -> None:
+        self.add_argument(
+            "driver",
+            type=app.Driver,
+            help="Which driver should be ran by the client.",
+        )
         self.add_argument(
             "config",
             type=pathlib.Path,
@@ -53,7 +59,9 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     )
 
 
-async def run_spark_command(config: configuration.Configuration) -> None:
+async def run_spark_command(
+    config: configuration.Configuration, driver: app.Driver
+) -> None:
     """
     Runs the spark-submit command which will spwan the spark application. The spark
     application will build the desired indices.
@@ -71,6 +79,7 @@ async def run_spark_command(config: configuration.Configuration) -> None:
             str(config.build.spark_submit),
             arguments,
             str(config.build.driver),
+            driver.value,
         )
     )
 
@@ -120,7 +129,7 @@ async def _main(args: Args) -> None:
         with halo.Halo(spinner="pong") as spinner:
             try:
                 spinner.text = "Running spark-submit"
-                await run_spark_command(config)
+                await run_spark_command(config, args.driver)
                 spinner.text = "Merging indices"
                 await force_merge_indices(config)
             except:
