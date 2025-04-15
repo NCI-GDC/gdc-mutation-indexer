@@ -11,9 +11,10 @@ from elasticsearch import helpers
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils, indexd_utils
+from mutation_indexer import es_utils, indexd_utils
 from mutation_indexer.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)
@@ -28,14 +29,12 @@ def ge_config() -> Iterator[configuration.Configuration]:
         )
         overrides = {
             "build": {"index_types": ("GENE_EXPRESSION",)},
-            "builders": {
-                "gene_expression": {
-                    "gene_expression": {"backup": {"path": str(backup_path)}}
-                }
-            },
+            "builders": {"index": {"backup": {"path": str(backup_path)}}},
         }
 
-        yield test_setup.load_configuration(overrides)
+        yield test_setup.load_configuration(
+            overrides, configuration=configuration.Configuration
+        )
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +52,7 @@ def primary_aliquot_df(
         es_utils.SchemaLoader(),
     )
     primary_aliquot_builder = gene_expression.PrimaryAliquotBuilder(
-        default_config.builders.gene_expression.primary_aliquot,
+        default_config.builders.primary_aliquot,
         spark_session,
         es_dataframe_util,
     )
@@ -110,7 +109,7 @@ def expression_value_df(
     primary_aliquot_df: sql.DataFrame,
 ) -> sql.DataFrame:
     return gene_expression.ExpressionValueBuilder(
-        ge_config.builders.gene_expression.expression_value,
+        ge_config.builders.expression_value,
         spark_session,
         indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
     ).build(gene_model_df=gene_model_df, primary_aliquot_df=primary_aliquot_df)
@@ -132,7 +131,7 @@ def ge_builder(
     )
 
     yield gene_expression.IndexBuilder(
-        ge_config.builders.gene_expression.gene_expression,
+        ge_config.builders.index,
         spark_session,
         es_dataframe_util,
         mappings_loader,
@@ -195,23 +194,15 @@ def test_gene_expression_builder_writes_backup_to_path(
     # Assert default congfiguration (ideally, we should modify Configuration here but it's a frozen dataclass).
     assert ge_config.build.build_version == "v0"
     assert ge_config.build.data_release == "test"
-    assert (
-        ge_config.builders.gene_expression.gene_expression.backup.mode
-        == build.BackupMode.WRITE
-    )
-    assert ge_config.builders.gene_expression.gene_expression.backup.path.endswith(
+    assert ge_config.builders.index.backup.mode == build.BackupMode.WRITE
+    assert ge_config.builders.index.backup.path.endswith(
         "test/v0/gene_expression_test_v0.parquet"
     )
-    assert (
-        ge_config.builders.gene_expression.gene_expression.backup.partition_by
-        == "gene_id"
-    )
+    assert ge_config.builders.index.backup.partition_by == "gene_id"
 
     ge_builder.build(expression_value_df=expression_value_df)
 
-    parquet_dump = pathlib.Path(
-        ge_config.builders.gene_expression.gene_expression.backup.path
-    )
+    parquet_dump = pathlib.Path(ge_config.builders.index.backup.path)
     assert parquet_dump.exists()
     assert parquet_dump.is_dir()
 

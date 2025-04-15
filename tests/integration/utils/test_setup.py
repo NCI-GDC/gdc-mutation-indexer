@@ -6,19 +6,21 @@ import os
 import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
-from importlib import resources
 from typing import Any, ContextManager, Optional, Type, TypeVar, Union
 
 import elasticsearch
 from elasticsearch import helpers
 
-from mutation_indexer import configuration, es_utils
-from mutation_indexer.constants import app, build
+from mutation_indexer import configuration, es_utils, viz
+from mutation_indexer.constants import build
 
 T = TypeVar("T")
+TConfig = TypeVar("TConfig", bound=configuration.Configuration)
 
 
-def load_configuration(overrides: Mapping[str, Any]) -> configuration.Configuration:
+def load_configuration(
+    overrides: Mapping[str, Any], configuration: type[TConfig] = viz.Configuration
+) -> TConfig:
     """Loads the default configuration along with any supplied overrides.
 
     Args:
@@ -27,14 +29,24 @@ def load_configuration(overrides: Mapping[str, Any]) -> configuration.Configurat
     Returns:
         A configuration with the default values or the supplied overrides.
     """
-    default_configs = (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
+    default_configs = configuration._default_files()
+    build = {
+        "build": {"data_release": "test", "build_version": "v0", "config_file": ""}
+    }
     es_config = {
         "elasticsearch": {
-            "connection": {"nodes": os.environ.get("ES_NODES", "localhost")}
+            "connection": {
+                "nodes": os.environ.get("ES_NODES", "localhost"),
+                "user": "",
+                "password": "",
+                "use_ssl": False,
+                "verify_certs": False,
+            },
         }
     }
+    indexd = {"indexd": {"host": "localhost", "port": 80, "user": "", "password": ""}}
 
-    return configuration.Configuration.load(*default_configs, es_config, overrides)
+    return configuration.load(*default_configs, build, es_config, indexd, overrides)
 
 
 def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:

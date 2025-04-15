@@ -25,6 +25,18 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
+[[builders.ascat_metadata.priorities]]
+experimental_strategy = "WGS"
+workflow_type = "AscatNGS"
+
+[[builders.ascat_metadata.priorities]]
+experimental_strategy = "Genotyping Array"
+workflow_type = "ASCAT3"
+
+[[builders.ascat_metadata.priorities]]
+experimental_strategy = "Genotyping Array"
+workflow_type = "ASCAT2"
+
 [builders.case]
 include_as_arrays = [
   "aliquot_ids",
@@ -256,4 +268,3 @@ SEGMENT_CNV_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__se
 SEGMENT_CNV_OCCURRENCE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__segment_cnv_occurrence_centric"
 SSM_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__ssm_centric"
 SSM_OCCURRENCE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__ssm_occurrence_centric"
-GENE_EXPRESSION = "{build[data_release]}_viz_open_{build[build_version]}__gene_expression"

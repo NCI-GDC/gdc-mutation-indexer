@@ -1,9 +1,9 @@
 from collections.abc import Iterable
 
+import marshmallow
 import pytest
-from marshmallow import validate
 
-from mutation_indexer import configuration
+from mutation_indexer import configuration, gene_expression
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
@@ -55,7 +55,7 @@ class TestIndexTypesValidator:
     def test__call__both(self, indices: Iterable[build.IndexType]) -> None:
         validator = configuration.build.IndexTypesValidator()
 
-        with pytest.raises(validate.ValidationError):
+        with pytest.raises(marshmallow.ValidationError):
             validator(indices)
 
 
@@ -118,17 +118,12 @@ class TestLoadConfiguration:
     ) -> None:
         overrides = {
             "build": {"data_release": data_release, "build_version": build_version},
-            "builders": {
-                "gene_expression": {
-                    "gene_expression": {"backup": {"path": backup_path}}
-                }
-            },
+            "builders": {"index": {"backup": {"path": backup_path}}},
         }
-        config = test_setup.load_configuration(overrides)
+        config = test_setup.load_configuration(
+            overrides, configuration=gene_expression.Configuration
+        )
 
-        assert (
-            config.builders.gene_expression.gene_expression.backup.path
-            == backup_path.format(
-                data_release=data_release, build_version=build_version
-            )
+        assert config.builders.index.backup.path == backup_path.format(
+            data_release=data_release, build_version=build_version
         )

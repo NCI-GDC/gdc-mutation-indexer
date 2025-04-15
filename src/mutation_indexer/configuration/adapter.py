@@ -4,7 +4,7 @@ from collections.abc import Mapping, Sequence
 import elasticsearch
 from indexclient import client
 
-from mutation_indexer import configuration
+from mutation_indexer.viz import configuration
 
 
 class ObsoleteConfig:
@@ -30,9 +30,7 @@ class ObsoleteConfig:
 
     @property
     def maf_prioritized_experimental_strategies(self) -> Sequence[str]:
-        return (
-            self._config.builders.viz.maf_metadata.prioritized_experimental_strategies
-        )
+        return self._config.builders.maf_metadata.prioritized_experimental_strategies
 
     @property
     def maf_data_types(self) -> list[str]:  # type: ignore
@@ -60,19 +58,19 @@ class ObsoleteConfig:
 
     @property
     def gene_model_file(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.gene_model_file
+        return self._config.builders.gene_model.gene_model_file
 
     @property
     def citobands_file(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.citobands_file
+        return self._config.builders.gene_model.citobands_file
 
     @property
     def census_file(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.census_file
+        return self._config.builders.gene_model.census_file
 
     @property
     def maf_path(self) -> str:  # type: ignore
-        return self._config.builders.viz.maf.backup.path
+        return self._config.builders.maf.backup.path
 
     @property
     def gistic_path(self) -> str:  # type: ignore
@@ -83,54 +81,46 @@ class ObsoleteConfig:
         raise NotImplementedError()
 
     @property
-    def gene_expression_values_path(self) -> str:  # type: ignore
-        return self._config.builders.gene_expression.expression_value.backup.path
-
-    @property
-    def gene_expression_cases_path(self) -> str:  # type: ignore
-        return self._config.builders.gene_expression.case.backup.path
-
-    @property
     def primary_aliquot_path(self) -> str:  # type: ignore
-        return self._config.builders.viz.primary_aliquot.backup.path
+        return self._config.builders.primary_aliquot.backup.path
 
     @property
     def ascat_path(self) -> str:  # type: ignore
-        return self._config.builders.viz.ascat.backup.path
+        return self._config.builders.ascat.backup.path
 
     @property
     def gene_model_path(self) -> str:  # type: ignore
-        return self._config.builders.viz.gene_model.backup.path
+        return self._config.builders.gene_model.backup.path
 
     @property
     def percentile_threshold(self) -> dict[str, int]:  # type: ignore
         return {
-            "genes_per_case": self._config.builders.viz.case_centric.genes_threshold,
-            "occurrences_per_ssm": self._config.builders.viz.ssm_centric.occurrences_threshold,
+            "genes_per_case": self._config.builders.case_centric.genes_threshold,
+            "occurrences_per_ssm": self._config.builders.ssm_centric.occurrences_threshold,
             "consequences_per_ssm": 100,
             "observations_per_ssm": 100,
-            "occurrences_per_cnv": self._config.builders.viz.cnv_centric.occurrences_threshold,
+            "occurrences_per_cnv": self._config.builders.cnv_centric.occurrences_threshold,
         }
 
     @property
     def cache_dataframes(self) -> dict[str, bool]:  # type: ignore
         return {
-            "maf_metadata": self._config.builders.viz.maf_metadata.is_cached,
-            "maf": self._config.builders.viz.maf.is_cached,
-            "case": self._config.builders.viz.case.is_cached,
-            "case_centric": self._config.builders.viz.case_centric.is_cached,
-            "gene_centric": self._config.builders.viz.gene_centric.is_cached,
-            "ssm_centric": self._config.builders.viz.ssm_centric.is_cached,
-            "ssm_occurrence_centric": self._config.builders.viz.ssm_occurrence_centric.is_cached,
-            "cnv_centric": self._config.builders.viz.cnv_centric.is_cached,
-            "cnv_occurrence_centric": self._config.builders.viz.cnv_occurrence_centric.is_cached,
-            "primary_aliquot": self._config.builders.viz.primary_aliquot.is_cached,
-            "gene_model": self._config.builders.viz.gene_model.is_cached,
+            "maf_metadata": self._config.builders.maf_metadata.is_cached,
+            "maf": self._config.builders.maf.is_cached,
+            "case": self._config.builders.case.is_cached,
+            "case_centric": self._config.builders.case_centric.is_cached,
+            "gene_centric": self._config.builders.gene_centric.is_cached,
+            "ssm_centric": self._config.builders.ssm_centric.is_cached,
+            "ssm_occurrence_centric": self._config.builders.ssm_occurrence_centric.is_cached,
+            "cnv_centric": self._config.builders.cnv_centric.is_cached,
+            "cnv_occurrence_centric": self._config.builders.cnv_occurrence_centric.is_cached,
+            "primary_aliquot": self._config.builders.primary_aliquot.is_cached,
+            "gene_model": self._config.builders.gene_model.is_cached,
         }
 
     @property
     def case_include_as_arrays(self) -> Sequence[str]:
-        return self._config.builders.viz.case.include_as_arrays
+        return self._config.builders.case.include_as_arrays
 
     @property
     def samples_include_fields(self) -> Sequence[str]:  # type: ignore
@@ -146,51 +136,35 @@ class ObsoleteConfig:
 
     @property
     def maf_metadata_backup(self) -> str:
-        return self._config.builders.viz.maf_metadata.backup.mode.name.lower()
+        return self._config.builders.maf_metadata.backup.mode.name.lower()
 
     @property
     def maf_backup(self) -> str:
-        return self._config.builders.viz.maf.backup.mode.name.lower()
+        return self._config.builders.maf.backup.mode.name.lower()
 
     @property
     def gistic_backup(self) -> str:
         raise NotImplementedError()
 
     @property
-    def gene_expression_values_backup(self) -> str:
-        return (
-            self._config.builders.gene_expression.expression_value.backup.mode.name.lower()
-        )
-
-    @property
-    def gene_expression_cases_backup(self) -> str:
-        return self._config.builders.gene_expression.case.backup.mode.name.lower()
-
-    @property
-    def gene_expression_primary_aliquot_backup(self) -> str:
-        return (
-            self._config.builders.gene_expression.primary_aliquot.backup.mode.name.lower()
-        )
-
-    @property
     def primary_aliquot_backup(self) -> str:
-        return self._config.builders.viz.primary_aliquot.backup.mode.name.lower()
+        return self._config.builders.primary_aliquot.backup.mode.name.lower()
 
     @property
     def gene_model_backup(self) -> str:
-        return self._config.builders.viz.gene_model.backup.mode.name.lower()
+        return self._config.builders.gene_model.backup.mode.name.lower()
 
     @property
     def ascat_backup(self) -> str:
-        return self._config.builders.viz.ascat.backup.mode.name.lower()
+        return self._config.builders.ascat.backup.mode.name.lower()
 
     @property
     def case_backup(self) -> str:
-        return self._config.builders.viz.case.backup.mode.name.lower()
+        return self._config.builders.case.backup.mode.name.lower()
 
     @property
     def output_raw(self) -> str:
-        return self._config.builders.viz.case_centric.backup.mode.name.lower()
+        return self._config.builders.case_centric.backup.mode.name.lower()
 
     @property
     def debug(self) -> bool:
@@ -202,7 +176,7 @@ class ObsoleteConfig:
 
     @property
     def omit_cnv_data(self) -> bool:
-        return self._config.builders.viz.ascat.omit_cnv_data
+        return self._config.builders.ascat.omit_cnv_data
 
     @property
     def batch_size_entries(self) -> int:
@@ -269,12 +243,11 @@ class ObsoleteConfig:
 
     def get_raw_output_path(self, index_name: str) -> str:
         paths = {
-            "case_centric": self._config.builders.viz.case_centric.backup.path,
-            "cnv_centirc": self._config.builders.viz.cnv_centric.backup.path,
-            "cnv_occurence_centric": self._config.builders.viz.cnv_occurrence_centric.backup.path,
-            "ssm_centric": self._config.builders.viz.ssm_centric.backup.path,
-            "ssm_occurence_centric": self._config.builders.viz.ssm_occurrence_centric.backup.path,
-            "gene_expression": self._config.builders.gene_expression.gene_expression.backup.path,
+            "case_centric": self._config.builders.case_centric.backup.path,
+            "cnv_centric": self._config.builders.cnv_centric.backup.path,
+            "cnv_occurrence_centric": self._config.builders.cnv_occurrence_centric.backup.path,
+            "ssm_centric": self._config.builders.ssm_centric.backup.path,
+            "ssm_occurrence_centric": self._config.builders.ssm_occurrence_centric.backup.path,
         }
 
         return paths[index_name]
