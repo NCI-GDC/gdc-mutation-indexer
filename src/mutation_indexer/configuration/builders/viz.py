@@ -6,7 +6,6 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 from typing import Annotated, Sequence
 
-import marshmallow_dataclass
 from marshmallow import fields
 
 from mutation_indexer.configuration import _extensions
@@ -38,12 +37,7 @@ class ASCATMetadataBuilder(Builder):
         experimental_strategy: str
         workflow_type: str
 
-    priorities: Annotated[
-        Sequence[Priority],
-        _extensions.ArrayTupleField(
-            fields.Nested(marshmallow_dataclass.class_schema(Priority))
-        ),
-    ]
+    priorities: Sequence[Priority]
 
 
 @dataclasses.dataclass(frozen=True)
