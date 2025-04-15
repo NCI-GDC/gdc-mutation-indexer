@@ -1,0 +1,259 @@
+[build]
+index_types = [
+  "CASE_CENTRIC",
+  "CNV_CENTRIC",
+  "CNV_OCCURRENCE_CENTRIC",
+  "GENE_CENTRIC",
+  "SEGMENT_CNV_CENTRIC",
+  "SEGMENT_CNV_OCCURRENCE_CENTRIC",
+  "SSM_CENTRIC",
+  "SSM_OCCURRENCE_CENTRIC"
+]
+
+[builders.ascat]
+is_cached = true
+omit_cnv_data = false
+
+[builders.ascat.backup]
+mode = "BOTH"
+path = "s3a://gdc-mutation-indexer/backups/ascat.parqet"
+
+[builders.ascat_metadata]
+is_cached = true
+
+[builders.ascat_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case]
+include_as_arrays = [
+  "aliquot_ids",
+  "analyte_ids",
+  "diagnoses.pathology_details.tumor_level_prostate",
+  "diagnoses.sites_of_involvement",
+  "diagnoses.treatments.route_of_administration",
+  "diagnoses.treatments.treatment_anatomic_sites",
+  "diagnoses.weiss_assessment_findings",
+  "diagnosis_ids",
+  "exposures.chemical_exposure_type",
+  "exposures.occupation_type",
+  "files.acl",
+  "follow_ups.comorbidities",
+  "follow_ups.imaging_anatomic_site",
+  "follow_ups.other_clinical_attributes.comorbidities",
+  "follow_ups.other_clinical_attributes.risk_factors",
+  "follow_ups.other_clinical_attributes.viral_hepatitis_serology_tests",
+  "follow_ups.risk_factors",
+  "follow_ups.viral_hepatitis_serology_tests",
+  "portion_ids",
+  "project.disease_type",
+  "project.primary_site",
+  "sample_ids",
+  "slide_ids",
+  "submitter_aliquot_ids",
+  "submitter_analyte_ids",
+  "submitter_diagnosis_ids",
+  "submitter_portion_ids",
+  "submitter_sample_ids",
+  "submitter_slide_ids"
+]
+is_cached = true
+repartition_size = 2048
+
+[builders.case.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case_centric]
+genes_threshold = 100
+id_field = "case_id"
+include_as_arrays = [
+  "aliquot_ids",
+  "analyte_ids",
+  "diagnoses.pathology_details.tumor_level_prostate",
+  "diagnoses.sites_of_involvement",
+  "diagnoses.treatments.route_of_administration",
+  "diagnoses.treatments.treatment_anatomic_sites",
+  "diagnoses.weiss_assessment_findings",
+  "diagnosis_ids",
+  "exposures.chemical_exposure_type",
+  "exposures.occupation_type",
+  "files.acl",
+  "follow_ups.comorbidities",
+  "follow_ups.imaging_anatomic_site",
+  "follow_ups.other_clinical_attributes.comorbidities",
+  "follow_ups.other_clinical_attributes.risk_factors",
+  "follow_ups.other_clinical_attributes.viral_hepatitis_serology_tests",
+  "follow_ups.risk_factors",
+  "follow_ups.viral_hepatitis_serology_tests",
+  "portion_ids",
+  "project.disease_type",
+  "project.primary_site",
+  "sample_ids",
+  "slide_ids",
+  "submitter_aliquot_ids",
+  "submitter_analyte_ids",
+  "submitter_diagnosis_ids",
+  "submitter_portion_ids",
+  "submitter_sample_ids",
+  "submitter_slide_ids"
+]
+is_cached = true
+partition_size = 12
+
+[builders.case_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.civic_dna]
+is_cached = false
+package = "mutation_indexer_resource.annotation.civic"
+resource = "dna.tsv.gz"
+schema = "builders/civic/dna.yaml"
+
+[builders.civic_dna.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.civic_protein]
+is_cached = false
+package = "mutation_indexer_resource.annotation.civic"
+resource = "prot.tsv.gz"
+schema = "builders/civic/protein.yaml"
+
+[builders.civic_protein.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.cnv_centric]
+id_field = "cnv_id"
+is_cached = true
+occurrences_threshold = 100
+partition_size = 12
+
+[builders.cnv_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.cnv_occurrence_centric]
+id_field = "cnv_occurrence_id"
+is_cached = true
+partition_size = 12
+
+[builders.cnv_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_centric]
+id_field = "gene_id"
+is_cached = true
+partition_size = 12
+
+[builders.gene_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_model]
+census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz"
+citobands_file = "s3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz"
+gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json"
+is_cached = true
+
+[builders.gene_model.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.maf]
+is_cached = true
+repartition_size = 2048
+
+[builders.maf.backup]
+mode = "BOTH"
+path = "s3a://gdc-mutation-indexer/backups/maf.parqet"
+
+[builders.maf_metadata]
+is_cached = true
+prioritized_experimental_strategies = ["WXS", "Targeted Sequencing"]
+
+[builders.maf_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.primary_aliquot]
+is_cached = true
+
+[builders.primary_aliquot.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.segment_cnv]
+is_cached = true
+
+[builders.segment_cnv.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.segment_cnv_centric]
+id_field = "segment_cnv_id"
+is_cached = true
+partition_size = 12
+
+[builders.segment_cnv_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.segment_cnv_metadata]
+is_cached = true
+use_deprecated_query = true
+
+[builders.segment_cnv_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.segment_cnv_occurrence_centric]
+id_field = "segment_cnv_occurrence_id"
+is_cached = true
+partition_size = 12
+
+[builders.segment_cnv_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.ssm_centric]
+id_field = "ssm_id"
+is_cached = true
+occurrences_threshold = 100
+partition_size = 12
+
+[builders.ssm_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.ssm_occurrence_centric]
+id_field = "ssm_occurrence_id"
+is_cached = true
+partition_size = 12
+
+[builders.ssm_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[elasticsearch.read]
+case_index = "graph_case"
+file_index = "graph_file"
+max_source_filter_length = 400
+
+[elasticsearch.write]
+batch_size_bytes = "16mb"
+batch_size_entries = 1000
+
+[elasticsearch.write.indices]
+CASE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__case_centric"
+CNV_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__cnv_centric"
+CNV_OCCURRENCE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__cnv_occurrence_centric"
+GENE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__gene_centric"
+SEGMENT_CNV_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__segment_cnv_centric"
+SEGMENT_CNV_OCCURRENCE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__segment_cnv_occurrence_centric"
+SSM_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__ssm_centric"
+SSM_OCCURRENCE_CENTRIC = "{build[data_release]}_viz_open_{build[build_version]}__ssm_occurrence_centric"
+GENE_EXPRESSION = "{build[data_release]}_viz_open_{build[build_version]}__gene_expression"

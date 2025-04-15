@@ -10,11 +10,11 @@ from typing import NamedTuple
 import elasticsearch
 from pyspark import sql
 
-from mutation_indexer import builders, configuration, driver, es_utils, indexd_utils
+from mutation_indexer import builders, driver, es_utils, indexd_utils
 from mutation_indexer.builders import base_builder, bases, civic, maf_metadata
 from mutation_indexer.configuration import adapter
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class Adapter(bases.Builder):
@@ -112,7 +112,7 @@ class Driver(driver.Driver[configuration.Configuration]):
             )
 
     def _input_builders(
-        self, config: viz.Viz, dependencies: Dependencies
+        self, config: configuration.Builders, dependencies: Dependencies
     ) -> Iterable[bases.Builder]:
         """The input builders associated with the viz driver & used by other builders.
 
@@ -173,7 +173,7 @@ class Driver(driver.Driver[configuration.Configuration]):
 
     def _index_builders(
         self,
-        config: viz.Viz,
+        config: configuration.Builders,
         index_types: Container[build.IndexType],
         dependencies: Dependencies,
     ) -> Iterator[bases.Builder]:
@@ -273,9 +273,9 @@ class Driver(driver.Driver[configuration.Configuration]):
         self, config: configuration.Configuration, spark_session: sql.SparkSession
     ) -> Iterator[Iterable[bases.Builder]]:
         with self._initialize_dependencies(config, spark_session) as dependencies:
-            input_builders = self._input_builders(config.builders.viz, dependencies)
+            input_builders = self._input_builders(config.builders, dependencies)
             index_builders = self._index_builders(
-                config.builders.viz, config.build.index_types, dependencies
+                config.builders, config.build.index_types, dependencies
             )
 
             yield (*input_builders, *index_builders)

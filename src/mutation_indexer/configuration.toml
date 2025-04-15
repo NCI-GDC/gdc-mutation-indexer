@@ -1,305 +1,29 @@
-[aws.s3]
-access_key = ""
-host = ""
-secret_key = ""
-
 [build]
-acl = []
-build_version = "v0"
-config_file = ""
-data_release = "test"
-driver = ""
+acl = ["open"]
+driver = "$MUTATION_INDEXER/driver.py"
 error_log = "$HOME/mutation-indexer-error.log"
-index_types = [
-  "CASE_CENTRIC",
-  "CNV_CENTRIC",
-  "CNV_OCCURRENCE_CENTRIC",
-  "GENE_CENTRIC",
-  "SEGMENT_CNV_CENTRIC",
-  "SEGMENT_CNV_OCCURRENCE_CENTRIC",
-  "SSM_CENTRIC",
-  "SSM_OCCURRENCE_CENTRIC"
-]
-jar_dir = "artifacts/jars"
+jar_dir = "$MUTATION_INDEXER/jars"
 manifest_dir = "$HOME/manifests"
 output_log = "$HOME/mutation-indexer.log"
-pex_file = "./mutation-indexer.pex"
+pex_file = "$MUTATION_INDEXER/driver-all"
 projects = []
 spark_submit = "$SPARK_HOME/bin/spark-submit"
 study_label = ""
 
-[builders]
-
-[builders.gene_expression.case]
-is_cached = true
-
-[builders.gene_expression.case.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.gene_expression.expression_value]
-is_cached = true
-
-[builders.gene_expression.expression_value.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.gene_expression.gene_expression]
-id_field = "gene_expression_id"
-is_cached = true
-partition_size = 12
-
-[builders.gene_expression.gene_expression.backup]
-mode = "WRITE"
-partition_by = "gene_id"
-path = "./data_release/{data_release}/{build_version}/gene_expression_{data_release}_{build_version}.parquet"
-
-[builders.gene_expression.gene_model]
-census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
-gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
-is_cached = true
-
-[builders.gene_expression.gene_model.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.gene_expression.primary_aliquot]
-is_cached = true
-
-[builders.gene_expression.primary_aliquot.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.ascat]
-is_cached = true
-omit_cnv_data = true
-
-[builders.viz.ascat.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.ascat_metadata]
-is_cached = false
-
-[builders.viz.ascat_metadata.backup]
-mode = "NEITHER"
-path = ""
-
-[[builders.viz.ascat_metadata.priorities]]
-experimental_strategy = "WGS"
-workflow_type = "AscatNGS"
-
-[[builders.viz.ascat_metadata.priorities]]
-experimental_strategy = "Genotyping Array"
-workflow_type = "ASCAT3"
-
-[[builders.viz.ascat_metadata.priorities]]
-experimental_strategy = "Genotyping Array"
-workflow_type = "ASCAT2"
-
-[builders.viz.case]
-include_as_arrays = [
-  "*_ids",
-  "files.acl",
-  "project.disease_type",
-  "project.primary_site"
-]
-is_cached = true
-repartition_size = 2048
-
-[builders.viz.case.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.case_centric]
-genes_threshold = 100
-id_field = "case_id"
-include_as_arrays = ["project.disease_type", "project.primary_site"]
-is_cached = true
-partition_size = 12
-
-[builders.viz.case_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.civic_dna]
-is_cached = false
-package = "mutation_indexer_resource.annotation.civic"
-resource = "dna.tsv.gz"
-schema = "builders/civic/dna.yaml"
-
-[builders.viz.civic_dna.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.civic_protein]
-is_cached = false
-package = "mutation_indexer_resource.annotation.civic"
-resource = "prot.tsv.gz"
-schema = "builders/civic/protein.yaml"
-
-[builders.viz.civic_protein.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.cnv_centric]
-id_field = "cnv_id"
-is_cached = true
-occurrences_threshold = 100
-partition_size = 12
-
-[builders.viz.cnv_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.cnv_occurrence_centric]
-id_field = "cnv_occurrence_id"
-is_cached = true
-partition_size = 12
-
-[builders.viz.cnv_occurrence_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.gene_centric]
-id_field = "gene_id"
-is_cached = true
-partition_size = 12
-
-[builders.viz.gene_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.gene_model]
-census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.tsv.gz"
-citobands_file = "s3a://gdc-mutation-indexer/genes.cytobands.tsv.gz"
-gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.v2.json"
-is_cached = true
-
-[builders.viz.gene_model.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.maf]
-is_cached = true
-repartition_size = 2048
-
-[builders.viz.maf.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.maf_metadata]
-is_cached = true
-prioritized_experimental_strategies = ["Targeted Sequencing", "WXS"]
-
-[builders.viz.maf_metadata.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.primary_aliquot]
-is_cached = true
-
-[builders.viz.primary_aliquot.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.segment_cnv]
-is_cached = true
-
-[builders.viz.segment_cnv.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.segment_cnv_centric]
-id_field = "segment_cnv_id"
-is_cached = true
-partition_size = 12
-
-[builders.viz.segment_cnv_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.segment_cnv_metadata]
-is_cached = false
-use_deprecated_query = true
-
-[builders.viz.segment_cnv_metadata.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.segment_cnv_occurrence_centric]
-id_field = "segment_cnv_occurrence_id"
-is_cached = true
-partition_size = 12
-
-[builders.viz.segment_cnv_occurrence_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.ssm_centric]
-id_field = "ssm_id"
-is_cached = true
-occurrences_threshold = 100
-partition_size = 12
-
-[builders.viz.ssm_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[builders.viz.ssm_occurrence_centric]
-id_field = "ssm_occurrence_id"
-is_cached = true
-partition_size = 12
-
-[builders.viz.ssm_occurrence_centric.backup]
-mode = "NEITHER"
-path = ""
-
-[elasticsearch]
-
-[elasticsearch.connection]
-nodes = "http://localhost:9200"
-password = ""
-use_ssl = false
-user = ""
-verify_certs = false
-
-[elasticsearch.read]
-case_index = "graph_case"
-file_index = "graph_file"
-max_source_filter_length = 200
-
-[elasticsearch.write]
-batch_size_bytes = "16mb"
-batch_size_entries = 1000
-
-[environment]
-java_home = ""
-spark_home = ""
-yarn_conf_dir = ""
-
-[indexd]
-host = "indexd.service.consul"
-password = ""
-port = 80
-user = ""
-
 [spark]
-master = "local[*]"
-yarn = {}
+master = "yarn"
 
 [spark.app]
 name = "gdc_mutation_indexer"
 
 [spark.driver]
-max_result_size = "1g"
-memory = "12g"
+max_result_size = "0"
+memory = "32g"
 
 [spark.executor]
-cores = 8
-instances = 25
-memory = "40g"
+cores = 12
+instances = 24
+memory = "24g"
 
 [spark.pyspark]
 python = "./mutation-indexer.pex"
@@ -312,7 +36,7 @@ auto_broadcast_join_threshold = -1
 case_sensitive = true
 
 [spark.sql.shuffle]
-partitions = 200
+partitions = 1024
 
 [spark.submit]
 deploy_mode = "cluster"
