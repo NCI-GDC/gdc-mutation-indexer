@@ -13,6 +13,7 @@ classifiers = [
 dependencies = [
   "boto3",
   "boto3-stubs[s3]",
+  "deepmerge",
   "elasticsearch[async]",
   "importlib-resources",
   "marshmallow-dataclass",
@@ -20,7 +21,9 @@ dependencies = [
   "numpy",
   "pyspark~=3.5.0",
   "python-json-logger",
-  "toml",
+  "tomli",
+  "tomli-w",
+  "typed-argument-parser",
   "typing-extensions",
   "indexclient",
   "gdcmodels",

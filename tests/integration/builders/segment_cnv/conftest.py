@@ -25,13 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="package")
-def segment_config() -> Iterator[configuration.Configuration]:
-    def pre_load(data: dict) -> dict:
-        data["build"]["acl"] = ["open"]
-
-        return data
-
-    yield test_setup.load_configuration(pre_load)
+def segment_config() -> configuration.Configuration:
+    return test_setup.load_configuration({"build": {"acl": ["open"]}})
 
 
 @pytest.fixture(scope="package")

@@ -73,18 +73,19 @@ def test_data_frame_util_write(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
 ) -> None:
-    def load_config(data: dict) -> dict:
-        data["build"]["data_release"] = "test_data_frame_util_write"
-        data["build"]["index_types"] = ("CASE_CENTRIC",)
-
-        return data
-
     case_mapping_file = input_dir / "es_utils/test_data_frame_util_write.yaml"
 
     with open(case_mapping_file) as f:
         model_mapper = mock.MagicMock(**yaml.safe_load(f))
 
-    conf = test_setup.load_configuration(load_config)
+    conf = test_setup.load_configuration(
+        {
+            "build": {
+                "data_release": "test_data_frame_util_write",
+                "index_types": ("CASE_CENTRIC",),
+            }
+        }
+    )
     case_index = conf.elasticsearch.write.indices[build.IndexType.CASE_CENTRIC]
     mappings_loader = mock.MagicMock()
     mappings_loader.load_mapper.return_value = model_mapper
