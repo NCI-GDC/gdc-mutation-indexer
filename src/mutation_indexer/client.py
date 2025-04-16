@@ -13,7 +13,7 @@ from mutation_indexer import configuration
 from mutation_indexer.configuration import build
 from mutation_indexer.constants import app
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
