@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="package")
 def segment_config() -> configuration.Configuration:
-    return test_setup.load_configuration({"build": {"acl": ["open"]}})
+    return test_setup.load_viz_config({"build": {"acl": ["open"]}})
 
 
 @pytest.fixture(scope="package")

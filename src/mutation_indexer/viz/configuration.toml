@@ -11,7 +11,7 @@ index_types = [
 ]
 
 [builders.ascat]
-is_cached = true
+is_cached = false
 omit_cnv_data = false
 
 [builders.ascat.backup]
@@ -24,6 +24,14 @@ is_cached = true
 [builders.ascat_metadata.backup]
 mode = "NEITHER"
 path = ""
+
+[[builders.ascat_metadata.priorities]]
+experimental_strategy = "WGS"
+workflow_type = "ABSOLUTE GATK4 CNV Curated"
+
+[[builders.ascat_metadata.priorities]]
+experimental_strategy = "WGS"
+workflow_type = "ABSOLUTE GATK4 CNV Auto"
 
 [[builders.ascat_metadata.priorities]]
 experimental_strategy = "WGS"
@@ -110,7 +118,7 @@ include_as_arrays = [
   "submitter_sample_ids",
   "submitter_slide_ids"
 ]
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.case_centric.backup]
@@ -139,7 +147,7 @@ path = ""
 
 [builders.cnv_centric]
 id_field = "cnv_id"
-is_cached = true
+is_cached = false
 occurrences_threshold = 100
 partition_size = 12
 
@@ -149,7 +157,7 @@ path = ""
 
 [builders.cnv_occurrence_centric]
 id_field = "cnv_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.cnv_occurrence_centric.backup]
@@ -158,7 +166,7 @@ path = ""
 
 [builders.gene_centric]
 id_field = "gene_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.gene_centric.backup]
@@ -176,7 +184,7 @@ mode = "NEITHER"
 path = ""
 
 [builders.maf]
-is_cached = true
+is_cached = false
 repartition_size = 2048
 
 [builders.maf.backup]
@@ -192,22 +200,22 @@ mode = "NEITHER"
 path = ""
 
 [builders.primary_aliquot]
-is_cached = true
+is_cached = false
 
 [builders.primary_aliquot.backup]
 mode = "NEITHER"
 path = ""
 
 [builders.segment_cnv]
-is_cached = true
+is_cached = false
 
 [builders.segment_cnv.backup]
-mode = "NEITHER"
-path = ""
+mode = "BOTH"
+path = "s3a://gdc-mutation-indexer/backups/segment-cnv.parqet"
 
 [builders.segment_cnv_centric]
 id_field = "segment_cnv_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.segment_cnv_centric.backup]
@@ -224,7 +232,7 @@ path = ""
 
 [builders.segment_cnv_occurrence_centric]
 id_field = "segment_cnv_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.segment_cnv_occurrence_centric.backup]
@@ -233,7 +241,7 @@ path = ""
 
 [builders.ssm_centric]
 id_field = "ssm_id"
-is_cached = true
+is_cached = false
 occurrences_threshold = 100
 partition_size = 12
 
@@ -243,7 +251,7 @@ path = ""
 
 [builders.ssm_occurrence_centric]
 id_field = "ssm_occurrence_id"
-is_cached = true
+is_cached = false
 partition_size = 12
 
 [builders.ssm_occurrence_centric.backup]

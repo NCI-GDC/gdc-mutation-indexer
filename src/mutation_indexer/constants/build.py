@@ -27,7 +27,6 @@ class DataFrame(enum.IntEnum):
     SEGMENT_CNV_OCCURRENCE_CENTRIC = enum.auto()
     SSM_CENTRIC = enum.auto()
     SSM_OCCURRENCE_CENTRIC = enum.auto()
-    UQFPKM = enum.auto()
 
     def to_param(self) -> str:
         return f"{self.name}_df".lower()

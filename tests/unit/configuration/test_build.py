@@ -3,7 +3,7 @@ from collections.abc import Iterable
 import marshmallow
 import pytest
 
-from mutation_indexer import configuration, gene_expression
+from mutation_indexer import configuration
 from mutation_indexer.constants import build
 from tests.integration.utils import test_setup
 
@@ -120,9 +120,7 @@ class TestLoadConfiguration:
             "build": {"data_release": data_release, "build_version": build_version},
             "builders": {"index": {"backup": {"path": backup_path}}},
         }
-        config = test_setup.load_configuration(
-            overrides, configuration=gene_expression.Configuration
-        )
+        config = test_setup.load_ge_config(overrides)
 
         assert config.builders.index.backup.path == backup_path.format(
             data_release=data_release, build_version=build_version
