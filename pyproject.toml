@@ -24,7 +24,7 @@ dependencies = [
   "typing-extensions",
   "indexclient",
   "gdcmodels",
-  "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0"
+  "mutation-indexer-resource>=1.0.0"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
@@ -81,7 +81,7 @@ requires = ["tox>=4.21"]
 
 [tool.tox.env.coverage]
 commands = [["coverage", "html"], ["coverage", "xml"]]
-deps = ["-crequirements.txt", "coverage[toml]"]
+deps = ["-crequirements.txt", ".[dev]"]
 skip_install = true
 
 [tool.tox.env.pex]
@@ -111,7 +111,7 @@ commands = [
     "--scie-python-version={env:SCIE_PYTHON_VERSION}"
   ]
 ]
-deps = ["-crequirements.txt", "pex"]
+deps = ["-crequirements.txt"]
 pass_env = ["PEX_ROOT", "SCIE_BASE", "SSH_AUTH_SOCK"]
 skip_install = true
 
