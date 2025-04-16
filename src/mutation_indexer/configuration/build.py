@@ -70,4 +70,6 @@ class Build:
     )
 
     def is_viz_build(self) -> bool:
-        return build.IndexType.GENE_EXPRESSION not in self.index_types
+        return bool(
+            self.index_types and build.IndexType.GENE_EXPRESSION not in self.index_types
+        )
