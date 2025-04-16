@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 class Args(tap.Tap):
     config: Sequence[pathlib.Path]
 
-    def _configure(self) -> None:
+    def configure(self) -> None:
         self.add_argument(
             "config",
             type=pathlib.Path,
