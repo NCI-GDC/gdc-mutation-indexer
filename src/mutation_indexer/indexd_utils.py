@@ -44,8 +44,10 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
     """
     for url, meta in doc.urls_metadata.items():
         if _is_main_url(meta):
-            url = url.replace("s3://", "s3a://").replace(
-                "cleversafe.service.consul/", ""
+            url = (
+                url.replace("s3://", "s3a://")
+                .replace("cleversafe.service.consul/", "")
+                .replace(".gz", "")
             )
             return url
 
