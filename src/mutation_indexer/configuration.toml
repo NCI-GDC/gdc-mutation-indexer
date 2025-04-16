@@ -15,6 +15,8 @@ index_types = [
   "CNV_CENTRIC",
   "CNV_OCCURRENCE_CENTRIC",
   "GENE_CENTRIC",
+  "SEGMENT_CNV_CENTRIC",
+  "SEGMENT_CNV_OCCURRENCE_CENTRIC",
   "SSM_CENTRIC",
   "SSM_OCCURRENCE_CENTRIC"
 ]
@@ -83,6 +85,18 @@ is_cached = false
 [builders.viz.ascat_metadata.backup]
 mode = "NEITHER"
 path = ""
+
+[[builders.viz.ascat_metadata.priorities]]
+experimental_strategy = "WGS"
+workflow_type = "AscatNGS"
+
+[[builders.viz.ascat_metadata.priorities]]
+experimental_strategy = "Genotyping Array"
+workflow_type = "ASCAT3"
+
+[[builders.viz.ascat_metadata.priorities]]
+experimental_strategy = "Genotyping Array"
+workflow_type = "ASCAT2"
 
 [builders.viz.case]
 include_as_arrays = [
@@ -190,6 +204,39 @@ is_cached = true
 mode = "NEITHER"
 path = ""
 
+[builders.viz.segment_cnv]
+is_cached = true
+
+[builders.viz.segment_cnv.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.segment_cnv_centric]
+id_field = "segment_cnv_id"
+is_cached = true
+partition_size = 12
+
+[builders.viz.segment_cnv_centric.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.segment_cnv_metadata]
+is_cached = false
+use_deprecated_query = true
+
+[builders.viz.segment_cnv_metadata.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.viz.segment_cnv_occurrence_centric]
+id_field = "segment_cnv_occurrence_id"
+is_cached = true
+partition_size = 12
+
+[builders.viz.segment_cnv_occurrence_centric.backup]
+mode = "NEITHER"
+path = ""
+
 [builders.viz.ssm_centric]
 id_field = "ssm_id"
 is_cached = true
@@ -240,6 +287,7 @@ user = ""
 
 [spark]
 master = "local[*]"
+yarn = {}
 
 [spark.app]
 name = "gdc_mutation_indexer"
@@ -268,9 +316,3 @@ partitions = 200
 
 [spark.submit]
 deploy_mode = "cluster"
-
-[spark.yarn.app_master_env]
-tmpdir = "/mnt/tmp"
-
-[spark.yarn.executor_env]
-tmpdir = "/mnt/tmp"

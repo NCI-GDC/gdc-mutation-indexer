@@ -10,18 +10,13 @@ from mutation_indexer.builders import bases
 from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
 
-ABSOLUTE = "ABSOLUTE LiftOver"
-ASCAT3 = "ASCAT3"
-ASCAT2 = "ASCAT2"
-ASCAT_NGS = "AscatNGS"
-
 
 class ASCATMetadataInputs(TypedDict):
     pass
 
 
 class ASCATMetadataBuilder(
-    bases.InclusivePrimaryAliquotBuilder[viz.Builder, ASCATMetadataInputs]
+    bases.InclusivePrimaryAliquotBuilder[viz.ASCATMetadataBuilder, ASCATMetadataInputs]
 ):
     """
     A class for resolving the document IDs associated with the ASCAT documents in
@@ -30,7 +25,7 @@ class ASCATMetadataBuilder(
 
     def __init__(
         self,
-        config: viz.Builder,
+        config: viz.ASCATMetadataBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,
@@ -40,7 +35,11 @@ class ASCATMetadataBuilder(
             spark_session,
             es_dataframe_util,
             es_rdd_util,
-            additional_selections=("workflow_type", "analysis_id"),
+            additional_selections=(
+                "workflow_type",
+                "analysis_id",
+                "experimental_strategy",
+            ),
             input_type=ASCATMetadataInputs,
             output=build.DataFrame.ASCAT_METADATA,
         )
@@ -48,11 +47,12 @@ class ASCATMetadataBuilder(
     @override
     def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
         workflow_type = F.col("workflow_type")
-        file_weights = (
-            workflow_type == F.lit(ABSOLUTE),
-            workflow_type == F.lit(ASCAT3),
-            workflow_type == F.lit(ASCAT_NGS),
-            workflow_type == F.lit(ASCAT2),
+        experimental_strategy = F.col("experimental_strategy")
+
+        file_weights = tuple(
+            (workflow_type == F.lit(p.workflow_type))
+            & (experimental_strategy == F.lit(p.experimental_strategy))
+            for p in self._config.priorities
         )
 
         # apply file weights as a higher order weight to the defaults.
@@ -87,45 +87,18 @@ class ASCATMetadataBuilder(
                                 "must": [
                                     {
                                         "term": {
-                                            "experimental_strategy": "Genotyping Array"
+                                            "experimental_strategy": p.experimental_strategy
                                         }
                                     },
-                                    {"term": {"analysis.workflow_type": ABSOLUTE}},
-                                ]
-                            },
-                        },
-                        {
-                            "bool": {
-                                "must": [
                                     {
                                         "term": {
-                                            "experimental_strategy": "Genotyping Array"
+                                            "analysis.workflow_type": p.workflow_type
                                         }
                                     },
-                                    {"term": {"analysis.workflow_type": ASCAT3}},
                                 ]
                             },
-                        },
-                        {
-                            "bool": {
-                                "must": [
-                                    {"term": {"experimental_strategy": "WGS"}},
-                                    {"term": {"analysis.workflow_type": ASCAT_NGS}},
-                                ]
-                            },
-                        },
-                        {
-                            "bool": {
-                                "must": [
-                                    {
-                                        "term": {
-                                            "experimental_strategy": "Genotyping Array"
-                                        }
-                                    },
-                                    {"term": {"analysis.workflow_type": ASCAT2}},
-                                ]
-                            },
-                        },
+                        }
+                        for p in self._config.priorities
                     ],
                 }
             }
@@ -137,5 +110,9 @@ class ASCATMetadataBuilder(
         return self._get_primary_aliquot_df(
             filters,
             entities=frozenset(("case",)),
-            include_fields=("analysis.workflow_type", "analysis.analysis_id"),
+            include_fields=(
+                "analysis.workflow_type",
+                "analysis.analysis_id",
+                "experimental_strategy",
+            ),
         ).select("aliquot_id", "case_id", "file_id", "workflow_type", "analysis_id")

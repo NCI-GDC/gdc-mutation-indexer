@@ -2,9 +2,11 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
-import dataclasses
 
-from mutation_indexer.configuration import marshmallow_extensions
+import dataclasses
+from typing import Annotated
+
+from mutation_indexer.configuration import _extensions
 
 
 @dataclasses.dataclass(frozen=True)
@@ -16,4 +18,4 @@ class IndexD:
     host: str
     port: int
     user: str
-    password: marshmallow_extensions.SecretString
+    password: Annotated[str, _extensions.SecretStringField]

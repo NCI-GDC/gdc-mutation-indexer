@@ -5,7 +5,7 @@ import uuid
 from collections.abc import Container, Set
 from typing import Any, Optional
 
-import pkg_resources
+import importlib_resources as resources
 import yaml
 from gdcmodels import esmodels, mapper
 from pyspark import sql
@@ -25,12 +25,8 @@ def get_default_excludes(index, mapping):
     if DEFAULT_EXCLUDE_FIELDS:
         return set(DEFAULT_EXCLUDE_FIELDS.get(mapping, {}).get(index, []))
 
-    path = pkg_resources.resource_filename(
-        "mutation_indexer", "schemas/exclude.defaults.yaml"
-    )
-
-    with open(path) as f:
-        excludes = yaml.safe_load(f)
+    resource = resources.files("mutation_indexer.schemas") / "exclude.defaults.yaml"
+    excludes = yaml.safe_load(resource.read_bytes())
 
     for k, v in excludes.items():
         DEFAULT_EXCLUDE_FIELDS[k] = v

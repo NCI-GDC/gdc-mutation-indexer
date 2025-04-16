@@ -17,15 +17,20 @@ AVAILABLE_VARIATION_DATA = "available_variation_data"
 
 
 def _load_available_variation_data(
-    maf_metadata_df: sql.DataFrame, ascat_metadata_df: sql.DataFrame
+    maf_metadata_df: sql.DataFrame,
+    ascat_metadata_df: sql.DataFrame,
+    segment_cnv_metadata_df: sql.DataFrame,
 ) -> sql.DataFrame:
     ssm_data_df = maf_metadata_df.select(
         "case_id", F.lit("ssm").alias(AVAILABLE_VARIATION_DATA)
-    )
+    ).distinct()
     cnv_data_df = ascat_metadata_df.select(
         "case_id", F.lit("cnv").alias(AVAILABLE_VARIATION_DATA)
-    )
-    available_variation_df = ssm_data_df.union(cnv_data_df)
+    ).distinct()
+    segment_cnv_data_df = segment_cnv_metadata_df.select(
+        "case_id", F.lit("segment_cnv").alias(AVAILABLE_VARIATION_DATA)
+    ).distinct()
+    available_variation_df = ssm_data_df.union(cnv_data_df).union(segment_cnv_data_df)
 
     # Finally, group by case
     return available_variation_df.groupby("case_id").agg(
@@ -45,7 +50,8 @@ class CaseLoaderMixin(abc.ABC):
     def _load_cases(
         self,
         maf_metadata_df: sql.DataFrame,
-        ascat_df: sql.DataFrame,
+        ascat_metadata_df: sql.DataFrame,
+        segment_cnv_metadata_df: sql.DataFrame,
         repartition_size: int,
     ) -> sql.DataFrame:
         """
@@ -53,7 +59,7 @@ class CaseLoaderMixin(abc.ABC):
         """
         case_df = self._load_es_case_data()
         available_variation_df = _load_available_variation_data(
-            maf_metadata_df, ascat_df
+            maf_metadata_df, ascat_metadata_df, segment_cnv_metadata_df
         )
 
         case_df = case_df.join(available_variation_df, on=["case_id"], how="left")
@@ -64,6 +70,7 @@ class CaseLoaderMixin(abc.ABC):
 class CaseInputs(TypedDict):
     maf_metadata_df: sql.DataFrame
     ascat_metadata_df: sql.DataFrame
+    segment_cnv_metadata_df: sql.DataFrame
 
 
 class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMixin):
@@ -93,6 +100,7 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
             build.IndexType.CASE,
             build.IndexType.CNV_CENTRIC,
             build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.SEGMENT_CNV_CENTRIC,
             build.IndexType.SSM_CENTRIC,
             build.IndexType.SSM_OCCURRENCE_CENTRIC,
         )
@@ -112,5 +120,6 @@ class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMix
         return self._load_cases(
             input_dfs["maf_metadata_df"],
             input_dfs["ascat_metadata_df"],
+            input_dfs["segment_cnv_metadata_df"],
             self._config.repartition_size,
         )

@@ -2642,4 +2642,56 @@ fields:
             name: symbol
         type: struct
       type: array
+  - metadata: {}
+    name: segment_cnv
+    nullable: true
+    type:
+      containsNull: false
+      elementType:
+        fields:
+          - <<: *string_field
+            name: segment_cnv_id
+          - <<: *string_field
+            name: chromosome
+          - <<: *string_field
+            name: cnv_change
+          - <<: *string_field
+            name: cnv_change_5_category
+          - <<: *long_field
+            name: end_position
+          - <<: *long_field
+            name: start_position
+          - <<: *long_field
+            name: length
+          - metadata: {}
+            name: observation
+            nullable: false
+            type:
+              containsNull: false
+              elementType:
+                fields:
+                  - <<: *integer_field
+                    name: copy_number
+                  - <<: *string_field
+                    name: observation_id
+                  - <<: *integer_field
+                    name: sample_ploidy_integer
+                  - <<: *string_field
+                    name: src_file_id
+                  - metadata: {}
+                    name: variant_calling
+                    nullable: false
+                    type:
+                      fields:
+                        - <<: *string_field
+                          name: variant_caller
+                      type: struct
+                  - metadata: {}
+                    name: variant_status
+                    nullable: false
+                    type: string
+                type: struct
+              type: array
+        type: struct
+      type: array
 type: struct

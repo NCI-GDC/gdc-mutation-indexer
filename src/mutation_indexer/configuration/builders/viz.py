@@ -2,12 +2,14 @@
 For documentation concerning Mutation Indexer configuration please refer to the wiki
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
-import dataclasses
-from typing import Sequence
 
+import dataclasses
+from typing import Annotated, Sequence
+
+import marshmallow_dataclass
 from marshmallow import fields
 
-from mutation_indexer.configuration import marshmallow_extensions
+from mutation_indexer.configuration import _extensions
 
 # these are directly imported to created a better interface when using the viz module
 from mutation_indexer.configuration.builders.common import (
@@ -28,20 +30,31 @@ class ASCATBuilder(Builder):
 
 
 @dataclasses.dataclass(frozen=True)
+class ASCATMetadataBuilder(Builder):
+    """Configuration values for the ASCAT metadata builder."""
+
+    @dataclasses.dataclass(frozen=True)
+    class Priority:
+        experimental_strategy: str
+        workflow_type: str
+
+    priorities: Annotated[
+        Sequence[Priority],
+        _extensions.ArrayTupleField(
+            fields.Nested(marshmallow_dataclass.class_schema(Priority))
+        ),
+    ]
+
+
+@dataclasses.dataclass(frozen=True)
 class CaseBuilder(Builder):
     """
     Configuration values for running the case builder
     """
 
-    include_as_arrays: Sequence[str] = dataclasses.field(
-        metadata={
-            "metadata": {
-                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    fields.String()
-                )
-            }
-        }
-    )
+    include_as_arrays: Annotated[
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
+    ]
     repartition_size: int
 
 
@@ -60,13 +73,9 @@ class MAFMetadataBuilder(Builder):
     Configuration values for running the MAF metadata builder
     """
 
-    prioritized_experimental_strategies: Sequence[str] = dataclasses.field(
-        metadata={
-            "marshmallow_filed": marshmallow_extensions.ArbitraryLengthTuple(
-                fields.String()
-            )
-        }
-    )
+    prioritized_experimental_strategies: Annotated[
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
+    ]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -76,24 +85,41 @@ class CaseCentricBuilder(IndexBuilder):
     """
 
     genes_threshold: int
-    include_as_arrays: Sequence[str] = dataclasses.field(
-        metadata={
-            "metadata": {
-                "marshmallow_field": marshmallow_extensions.ArbitraryLengthTuple(
-                    fields.String()
-                )
-            }
-        }
-    )
+    include_as_arrays: Annotated[
+        Sequence[str], _extensions.ArrayTupleField(fields.String)
+    ]
 
 
 @dataclasses.dataclass(frozen=True)
 class CNVCentricBuilder(IndexBuilder):
     """
-    Configuration values for running the case builder
+    Configuration values for running the cnv centric builder
     """
 
     occurrences_threshold: int
+
+
+@dataclasses.dataclass(frozen=True)
+class SegmentCNVMetadataBuilder(Builder):
+    """
+    Configuration values for running the segment cnv metadata builder.
+    """
+
+    use_deprecated_query: bool
+
+
+@dataclasses.dataclass(frozen=True)
+class SegmentCNVCentricBuilder(IndexBuilder):
+    """
+    Configuration values for running the segment cnv centric builder
+    """
+
+
+@dataclasses.dataclass(frozen=True)
+class SegmentCNVOccurrenceCentricBuilder(IndexBuilder):
+    """
+    Configuration values for running the segment cnv occurrence centric builder
+    """
 
 
 @dataclasses.dataclass(frozen=True)
@@ -112,7 +138,7 @@ class Viz:
     """
 
     ascat: ASCATBuilder
-    ascat_metadata: Builder
+    ascat_metadata: ASCATMetadataBuilder
     case: CaseBuilder
     civic_dna: ResourceBuilder
     civic_protein: ResourceBuilder
@@ -124,5 +150,9 @@ class Viz:
     gene_centric: IndexBuilder
     cnv_centric: CNVCentricBuilder
     cnv_occurrence_centric: IndexBuilder
+    segment_cnv: Builder
+    segment_cnv_centric: SegmentCNVCentricBuilder
+    segment_cnv_metadata: SegmentCNVMetadataBuilder
+    segment_cnv_occurrence_centric: SegmentCNVOccurrenceCentricBuilder
     ssm_centric: SSMCentricBuilder
     ssm_occurrence_centric: IndexBuilder

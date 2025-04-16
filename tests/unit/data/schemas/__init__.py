@@ -71,6 +71,24 @@ class Viz:
             FINAL: Schema
 
         @_init_schemas
+        class SegmentCNV:
+            DOCUMENT: Schema
+            FINAL: Schema
+
+        @_init_schemas
+        class SegmentCNVCentric:
+            FINAL: Schema
+
+        @_init_schemas
+        class SegmentCNVMetadata:
+            FILE: Schema
+            FINAL: Schema
+
+        @_init_schemas
+        class SegmentCNVOccurrenceCentric:
+            FINAL: Schema
+
+        @_init_schemas
         class Case:
             FINAL: Schema
             RAW: Schema
@@ -141,6 +159,10 @@ class Viz:
 
             @_init_schemas
             class SSM:
+                FINAL: Schema
+
+            @_init_schemas
+            class SegmentCNV:
                 FINAL: Schema
 
         @_init_schemas

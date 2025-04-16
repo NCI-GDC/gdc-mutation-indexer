@@ -1,14 +1,11 @@
-import uuid
-from collections.abc import Iterable, Iterator
-from typing import Any
+from collections.abc import Iterable
 
-import importlib_resources as resources
 import pytest
-import toml
 from marshmallow import validate
 
 from mutation_indexer import configuration
 from mutation_indexer.constants import build
+from tests.integration.utils import test_setup
 
 
 class TestIndexTypesValidator:
@@ -102,11 +99,6 @@ class TestBuild:
         assert not ge_build.is_viz_build()
 
 
-@pytest.fixture
-def configuration_toml() -> Iterator[dict[str, Any]]:
-    yield toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
-
-
 class TestLoadConfiguration:
     @pytest.mark.parametrize("data_release", ("dr40", "dr1", ""))
     @pytest.mark.parametrize("build_version", ("v1", "v20", ""))
@@ -122,17 +114,17 @@ class TestLoadConfiguration:
         ),
     )
     def test_backup_path_honors_datarelease_and_buildversion(
-        self, configuration_toml, data_release, build_version, backup_path
+        self, data_release: str, build_version: str, backup_path: str
     ) -> None:
-        configuration_toml["build"]["data_release"] = data_release
-        configuration_toml["build"]["build_version"] = build_version
-        configuration_toml["builders"]["gene_expression"]["gene_expression"]["backup"][
-            "path"
-        ] = backup_path
-
-        config: configuration.Configuration = configuration.CONFIG_SCHEMA.load(
-            configuration_toml
-        )
+        overrides = {
+            "build": {"data_release": data_release, "build_version": build_version},
+            "builders": {
+                "gene_expression": {
+                    "gene_expression": {"backup": {"path": backup_path}}
+                }
+            },
+        }
+        config = test_setup.load_configuration(overrides)
 
         assert (
             config.builders.gene_expression.gene_expression.backup.path

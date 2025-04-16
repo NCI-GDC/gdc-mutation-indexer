@@ -17,21 +17,23 @@ from mutation_indexer.constants import build
 
 class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
     """
-    Builds case-centric dataframe given case and maf dataframes::
+    Builds case-centric dataframe given case, maf, and segment_cnv dataframes:
 
         case{}
-             |___ gene[]
-                     |___ ssm[]
-                     |     |___ consequence[]
-                     |     |             |_____ transcript{}
-                     |     |                          |_____ annotation{}
-                     |     |___ observation[]
-                     |
-                     |___ cnv[]
-                           |___ consequence[]
-                           |            |_____ gene{}
-                           |
-                           |___ observation[]
+            |___ gene[]
+            |        |___ ssm[]
+            |        |     |___ consequence[]
+            |        |     |             |_____ transcript{}
+            |        |     |                          |_____ annotation{}
+            |        |     |___ observation[]
+            |        |
+            |        |___ cnv[]
+            |              |___ consequence[]
+            |              |            |_____ gene{}
+            |              |
+            |              |___ observation[]
+            |___ segment_cnv[]
+                     |____ observation[]
     """
 
     index_name = "case_centric"
@@ -76,6 +78,57 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             query=query,
         )
 
+    def _build_segment_cnv_subtree(
+        self, segment_cnv_df: sql.DataFrame
+    ) -> sql.DataFrame:
+        """Aggregates all segment_cnvs for each case.
+
+        segment_cnv_subtree{}
+            |____ case_id
+            |____ segment_cnv []
+                    |____ observation[]
+
+        STEPS:
+            1) Select the pertinent segment_cnv columns.
+
+            2) Build the observation dataframe, which will collect all observations for
+            each segment_cnv_id and case_id combination.
+
+            3) Join the observation dataframe with a filtered segment_cnv_df. Before the
+            join, we want to drop duplicate rows based on segment_cnv_id to reduce
+            amount of work.
+
+            4) Aggregate all segment_cnvs from step 3 and create a list of segment_cnvs
+            associated with each case. The case_id is required to be able to join back to
+            the final case_centric dataframe.
+        """
+        segment_columns = (
+            "segment_cnv_id",
+            "chromosome",
+            "length",
+            "start_position",
+            "end_position",
+            "cnv_change",
+            "cnv_change_5_category",
+        )
+        obs_df = observation.build_observation_for_segment_cnv(segment_cnv_df).select(
+            "segment_cnv_id", "observation"
+        )
+        segment_cnv_df = segment_cnv_df.drop_duplicates(subset=["segment_cnv_id"])
+        segment_cnv_subtree = segment_cnv_df.join(
+            obs_df, on="segment_cnv_id", how="inner"
+        ).select(
+            F.struct(*segment_columns, "observation").alias("segment_cnv"),
+            "segment_cnv_id",
+            "case_id",
+        )
+        segment_cnv_subtree = segment_cnv_subtree.groupBy(["case_id"]).agg(
+            F.collect_set("segment_cnv").alias("segment_cnv")
+        )
+        segment_cnv_subtree = segment_cnv_subtree.select("case_id", "segment_cnv")
+
+        return segment_cnv_subtree
+
     def build(
         self,
         maf_metadata_df: sql.DataFrame,
@@ -83,6 +136,8 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         ascat_metadata_df: sql.DataFrame,
         ascat_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
+        segment_cnv_df: sql.DataFrame,
+        segment_cnv_metadata_df: sql.DataFrame,
         **kwargs: sql.DataFrame,
     ) -> Self:
         """
@@ -96,7 +151,10 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
                 return self
 
         case_df = self._load_cases(
-            maf_metadata_df, ascat_metadata_df, self.config.df_repartition
+            maf_metadata_df,
+            ascat_metadata_df,
+            segment_cnv_metadata_df,
+            self.config.df_repartition,
         )
 
         self.log("Building Gene subtree")
@@ -105,6 +163,14 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         self.log("Join Case with Gene subtree [left, case_id]")
         case_centric = case_df.join(gene_subtree, on=["case_id"], how="left")
         self.log_count(case_centric)
+
+        self.log("Building Segment CNV subtree")
+        segment_cnv_subtree = self._build_segment_cnv_subtree(segment_cnv_df)
+
+        self.log("Join Case with Segment CNV subtree [left, case_id]")
+        case_centric = case_centric.join(
+            segment_cnv_subtree, on=["case_id"], how="left"
+        )
 
         self.log("Finalizing case_centric build")
         case_centric = self._final_transform(case_centric)

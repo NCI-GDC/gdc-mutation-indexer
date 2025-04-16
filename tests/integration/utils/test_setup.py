@@ -1,35 +1,40 @@
 import collections
-import functools
 import gzip
 import json
 import logging
 import os
 import pathlib
 import types
-from collections.abc import Callable, Container, Iterable, Iterator, Set
-from typing import ContextManager, Optional, Type, TypeVar, Union
+from collections.abc import Container, Iterable, Iterator, Mapping, Set
+from importlib import resources
+from typing import Any, ContextManager, Optional, Type, TypeVar, Union
 
 import elasticsearch
-import importlib_resources as resources
-import toml
 from elasticsearch import helpers
 
 from mutation_indexer import configuration, es_utils
-from mutation_indexer.constants import build
+from mutation_indexer.constants import app, build
 
 T = TypeVar("T")
 
 
-def load_configuration(
-    *pre_load: Callable[[dict], dict]
-) -> configuration.Configuration:
-    data = toml.loads(resources.read_text("mutation_indexer", "configuration.toml"))
-    data = functools.reduce(lambda d, f: f(d), pre_load, data)
-    data["elasticsearch"]["connection"]["nodes"] = os.environ.get(
-        "ES_NODES", data["elasticsearch"]["connection"]["nodes"]
-    )
+def load_configuration(overrides: Mapping[str, Any]) -> configuration.Configuration:
+    """Loads the default configuration along with any supplied overrides.
 
-    return configuration.CONFIG_SCHEMA.load(data)  # type: ignore
+    Args:
+        overrides: Values which should replace any of the default configurations.
+
+    Returns:
+        A configuration with the default values or the supplied overrides.
+    """
+    default_configs = (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
+    es_config = {
+        "elasticsearch": {
+            "connection": {"nodes": os.environ.get("ES_NODES", "localhost")}
+        }
+    }
+
+    return configuration.Configuration.load(*default_configs, es_config, overrides)
 
 
 def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:

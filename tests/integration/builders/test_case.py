@@ -50,8 +50,8 @@ class TestCaseBuilder:
         expected_count: int,
         spark_session: sql.SparkSession,
         maf_metadata_df: sql.DataFrame,
-        maf_df: sql.DataFrame,
         cnv_df: sql.DataFrame,
+        segment_cnv_df: sql.DataFrame,
         es_client: elasticsearch.Elasticsearch,
     ) -> None:
         """Test filtering the projects included in the case DF.
@@ -63,7 +63,7 @@ class TestCaseBuilder:
             data["build"]["projects"] = projects
             return data
 
-        conf = test_setup.load_configuration(load_config)
+        conf = test_setup.load_configuration({"build": {"projects": projects}})
         es_dataframe_util = es_utils.DataFrameUtil(
             conf.elasticsearch,
             spark_session,
@@ -73,13 +73,13 @@ class TestCaseBuilder:
         )
         field_selector = es_utils.CaseFieldSelector()
         ascat_metadata_df = cnv_df.select("case_id")
+        segment_cnv_metadata_df = segment_cnv_df.select("case_id")
         df = builders.CaseBuilder(
             conf.builders.viz.case, spark_session, es_dataframe_util, field_selector
         ).build(
             maf_metadata_df=maf_metadata_df,
-            maf_df=maf_df,
             ascat_metadata_df=ascat_metadata_df,
-            ascat_df=cnv_df,
+            segment_cnv_metadata_df=segment_cnv_metadata_df,
         )
 
         assert df.count() == expected_count
