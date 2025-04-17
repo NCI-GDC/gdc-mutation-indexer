@@ -1,6 +1,7 @@
 """A module for enabling reading from and writing to SQLite databases."""
 
 import contextlib
+import logging
 import pathlib
 import sqlite3
 import tempfile
@@ -12,6 +13,8 @@ from pyspark import sql
 from typing_extensions import Self
 
 from mutation_indexer.configuration import databases
+
+logger = logging.getLogger(__name__)
 
 
 class SQLiteDatabase:
@@ -81,6 +84,9 @@ class SQLiteDatabase:
             create: The SQL statement to create the table in the database. If None,
                 the table must already exist in the database.
         """
+        complete = 0
+        total = df.count()
+
         with sqlite3.connect(self.dbfile) as connection:
             cursor = connection.cursor()
 
@@ -90,4 +96,9 @@ class SQLiteDatabase:
             for batch in more_itertools.ichunked(
                 df.toLocalIterator(), self._config.batch_size
             ):
-                cursor.executemany(insert, map(tuple, batch))
+                batch = tuple(map(tuple, batch))
+
+                cursor.executemany(insert, batch)
+
+                complete += len(batch)
+                logger.info(f"SQLite Wrote: {complete}/{total}")
