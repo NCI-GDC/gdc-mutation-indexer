@@ -32,6 +32,9 @@ class IndexTypesValidator(validate.Validator):
     def __call__(self, value: Any) -> Any:
         types = frozenset(value)
 
+        if not types:
+            return value
+
         if (types <= _GENE_EXPRESSION_INDICES) ^ (types <= _VIZ_INDICES):
             return value
 
