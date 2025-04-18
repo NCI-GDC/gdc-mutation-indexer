@@ -1,3 +1,7 @@
+"""These tests act as sanity checks that the driver loads the configured builders and
+calls them in a valid order.
+"""
+
 import contextlib
 import inspect
 from collections.abc import Iterator
@@ -13,6 +17,16 @@ from mutation_indexer.viz import driver
 def mock_builder(
     builder: type[bases.Builder], is_called: bool = True
 ) -> Iterator[mock.MagicMock]:
+    """Mocks the given builder and ensures that it is properly called or not.
+
+    Args:
+        builder: The builder type which needs to be mocked out.
+        is_called: A flag indicating that the builder.build method should be called
+            during the run of the test.
+
+    Returns:
+        A context manager wrapping the mocked state of the given builder class.
+    """
     params = inspect.signature(builder.build).parameters
     df_params = frozenset(p for p in params if p.endswith("_df"))
 
@@ -34,6 +48,16 @@ def mock_builder(
 def mock_base_builder(
     builder: type[base_builder.BaseBuilder], is_called: bool = True
 ) -> Iterator[tuple[mock.MagicMock, mock.MagicMock]]:
+    """Mocks the given builder and ensures that it is properly called or not.
+
+    Args:
+        builder: The base builder type which needs to be mocked out.
+        is_called: A flag indicating that the builder.build method should be called
+            during the run of the test.
+
+    Returns:
+        A context manager wrapping the mocked state of the given builder class.
+    """
     params = inspect.signature(builder.build).parameters
     df_params = frozenset(p for p in params if p.endswith("_df"))
 
@@ -95,6 +119,7 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock_builder(builders.SegmentCNVOccurrenceCentricBuilder))
         stack.enter_context(mock_base_builder(builders.SSMCentricBuilder))
         stack.enter_context(mock_base_builder(builders.SSMOccurrenceCentricBuilder))
+        # Mock out these factory functions used by the driver
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
@@ -139,6 +164,7 @@ def test__driver__runs_subset() -> None:
         stack.enter_context(
             mock_base_builder(builders.SSMOccurrenceCentricBuilder, is_called=False)
         )
+        # Mock out these factory functions used by the driver
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))

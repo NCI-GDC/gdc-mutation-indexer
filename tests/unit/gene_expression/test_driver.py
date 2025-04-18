@@ -1,3 +1,7 @@
+"""These tests act as sanity checks that the driver loads the configured builders and
+calls them in a valid order.
+"""
+
 import contextlib
 import inspect
 from collections.abc import Iterator

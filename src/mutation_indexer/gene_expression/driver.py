@@ -1,4 +1,4 @@
-"""This module is for implementing how the viz driver will be executed."""
+"""This module is for implementing how the gene_expression driver will be executed."""
 
 import contextlib
 import logging
@@ -69,7 +69,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         index_types: Container[build.IndexType],
         dependencies: Dependencies,
     ) -> Iterator[bases.Builder]:
-        """Gets all builders associated with the viz driver & used by other builders.
+        """Gets all builders associated with the GE driver & used by other builders.
 
         Args:
             config: The configuration for builders in this run of the driver.
