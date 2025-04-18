@@ -153,6 +153,38 @@ class SecretStringField(fields.String):
         return super()._serialize(value, attr, obj, **kwargs)
 
 
+class FormatMapRootField(fields.String):
+    """A field which applies `format_map(root_data)` to the deserialized value.
+
+    E.g.
+        "{build[data_release]}" -> "drXX"
+    """
+
+    def _serialize(
+        self,
+        value: str,
+        attr: str | None,
+        obj: Any,
+        **kwargs: Any,
+    ) -> str:
+        # Ensure that escaped values are returned to original markup.
+        return value.replace("{", "{{").replace("}", "}}")
+
+    def _deserialize(
+        self,
+        value: Any,
+        attr: str | None,
+        data: Mapping[str, Any] | None,
+        **kwargs: Any,
+    ) -> str:
+        assert self.root, "Field must have a root schema."
+
+        root_data = self.root.context.get("root_data", {})
+        template: str = super()._deserialize(value, attr, data, **kwargs)
+
+        return template.format_map(root_data)
+
+
 class Schema(Generic[T]):
     def __init__(self, cls: type[T]) -> None:
         """A schema which handles the serialization/deserialization of T.
@@ -173,7 +205,11 @@ class Schema(Generic[T]):
         Returns:
             A validated instance of T.
         """
-        return cast(T, self._schema.load(data))
+        self._schema.context["root_data"] = data
+        obj = cast(T, self._schema.load(data))
+        _ = self._schema.context.pop("root_data")
+
+        return obj
 
     def dump(self, obj: T, is_obfuscated: bool) -> Mapping[str, Any]:
         """Dumps the given instance into a mapping representation of the data.

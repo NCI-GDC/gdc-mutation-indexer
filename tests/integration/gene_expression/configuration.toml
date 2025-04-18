@@ -1,0 +1,52 @@
+[aws.s3]
+host = "localhost"
+access_key = ""
+secret_key = ""
+
+[builders.binary]
+is_cached = false
+
+[builders.binary.backup]
+mode = "NEITHER"
+
+[builders.case]
+is_cached = false
+
+[builders.case.backup]
+mode = "NEITHER"
+
+[builders.case_sql]
+is_cached = false
+
+[builders.case_sql.backup]
+mode = "NEITHER"
+
+[builders.expression_value]
+is_cached = false
+
+[builders.expression_value.backup]
+mode = "NEITHER"
+
+[builders.gene_model]
+is_cached = false
+
+[builders.gene_model.backup]
+mode = "NEITHER"
+
+[builders.gene_sql]
+is_cached = false
+
+[builders.gene_sql.backup]
+mode = "NEITHER"
+
+[builders.index]
+is_cached = false
+
+[builders.index.backup]
+mode = "NEITHER"
+
+[builders.primary_aliquot]
+is_cached = false
+
+[builders.primary_aliquot.backup]
+mode = "NEITHER"
