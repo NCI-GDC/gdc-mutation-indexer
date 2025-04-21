@@ -7,10 +7,14 @@ class DataFrame(enum.IntEnum):
     ASCAT_METADATA = enum.auto()
     BINARY = enum.auto()
     CASE = enum.auto()
+    CASE_CENTRIC = enum.auto()
     CASE_SQL = enum.auto()
     CIVIC_DNA = enum.auto()
     CIVIC_PROTEIN = enum.auto()
+    CNV_CENTRIC = enum.auto()
+    CNV_OCCURRENCE_CENTRIC = enum.auto()
     EXPRESSION_VALUE = enum.auto()
+    GENE_CENTRIC = enum.auto()
     GENE_EXPRESSION = enum.auto()
     GENE_MODEL = enum.auto()
     GENE_SQL = enum.auto()
@@ -21,6 +25,8 @@ class DataFrame(enum.IntEnum):
     SEGMENT_CNV_CENTRIC = enum.auto()
     SEGMENT_CNV_METADATA = enum.auto()
     SEGMENT_CNV_OCCURRENCE_CENTRIC = enum.auto()
+    SSM_CENTRIC = enum.auto()
+    SSM_OCCURRENCE_CENTRIC = enum.auto()
     UQFPKM = enum.auto()
 
     def to_param(self) -> str:
