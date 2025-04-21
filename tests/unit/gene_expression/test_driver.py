@@ -18,6 +18,16 @@ from mutation_indexer.gene_expression import driver
 def mock_builder(
     builder: type[bases.Builder], is_called: bool = True
 ) -> Iterator[mock.MagicMock]:
+    """Mocks the given builder and ensures that it is properly called or not.
+
+    Args:
+        builder: The builder type which needs to be mocked out.
+        is_called: A flag indicating that the builder.build method should be called
+            during the run of the test.
+
+    Returns:
+        A context manager wrapping the mocked state of the given builder class.
+    """
     params = inspect.signature(builder.build).parameters
     df_params = frozenset(p for p in params if p.endswith("_df"))
 
@@ -44,6 +54,7 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder))
+        # Mock out these factory functions used by the driver
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
@@ -60,6 +71,7 @@ def test__driver__runs_inputs() -> None:
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder, is_called=False))
+        # Mock out these factory functions used by the driver
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
