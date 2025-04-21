@@ -9,8 +9,9 @@ import halo
 import more_itertools
 import tap
 
-from mutation_indexer import configuration
+from mutation_indexer import configuration, gene_expression
 from mutation_indexer.configuration import build
+from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import app
 
 logger = logging.getLogger(__name__)
@@ -123,7 +124,14 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
 
 
 async def _main(args: Args) -> None:
-    with configuration.Configuration.client_context(args.config) as config:
+    if args.driver == app.Driver.GENE_EXPRESSION:
+        Configuration = gene_expression.Configuration
+    elif args.driver == app.Driver.VIZ:
+        Configuration = viz.Configuration
+    else:
+        raise ValueError(f"Unknown driver: {args.driver}")
+
+    with Configuration.client_context(args.config) as config:
         print(f"RUNNING BUILD: {config.build.build_id}")
 
         with halo.Halo(spinner="pong") as spinner:

@@ -8,12 +8,12 @@ from typing import NamedTuple
 
 from pyspark import sql
 
-from mutation_indexer import configuration, driver, es_utils, indexd_utils
+from mutation_indexer import driver, es_utils, indexd_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.builders import gene_expression as builders
 from mutation_indexer.builders import gene_model
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 
 
 class Dependencies(NamedTuple):
@@ -65,7 +65,7 @@ class Driver(driver.Driver[configuration.Configuration]):
 
     def _builders(
         self,
-        config: gene_expression.GeneExpression,
+        config: configuration.Builders,
         index_types: Container[build.IndexType],
         dependencies: Dependencies,
     ) -> Iterator[bases.Builder]:
@@ -92,7 +92,7 @@ class Driver(driver.Driver[configuration.Configuration]):
 
         if build.IndexType.GENE_EXPRESSION in index_types:
             yield builders.IndexBuilder(
-                config.gene_expression,
+                config.index,
                 dependencies.spark_session,
                 dependencies.es_dataframe_util,
                 dependencies.mappings_loader,
@@ -105,7 +105,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         with self._initialize_dependencies(config, spark_session) as dependencies:
             yield tuple(
                 self._builders(
-                    config.builders.gene_expression,
+                    config.builders,
                     config.build.index_types,
                     dependencies,
                 )

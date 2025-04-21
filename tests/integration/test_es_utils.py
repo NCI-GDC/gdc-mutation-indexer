@@ -78,7 +78,7 @@ def test_data_frame_util_write(
     with open(case_mapping_file) as f:
         model_mapper = mock.MagicMock(**yaml.safe_load(f))
 
-    conf = test_setup.load_configuration(
+    conf = test_setup.load_viz_config(
         {
             "build": {
                 "data_release": "test_data_frame_util_write",
