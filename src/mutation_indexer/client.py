@@ -22,7 +22,7 @@ class Args(tap.Tap):
     driver: app.Driver
     config: Sequence[pathlib.Path]
 
-    def _configure(self) -> None:
+    def configure(self) -> None:
         self.add_argument(
             "driver",
             type=app.Driver,

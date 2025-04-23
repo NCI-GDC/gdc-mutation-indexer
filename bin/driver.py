@@ -10,7 +10,7 @@ from mutation_indexer.constants import app
 class Args(tap.Tap):
     driver: app.Driver
 
-    def _configure(self) -> None:
+    def configure(self) -> None:
         self.add_argument("driver", type=app.Driver)
 
 
