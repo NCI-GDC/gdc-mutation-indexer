@@ -1,6 +1,7 @@
 """
 For documentation concerning Mutation Indexer configuration please refer to the wiki
-documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
+documentation @
+https://gdc-ctds.atlassian.net/wiki/spaces/GDC/pages/76316689/Mutation+Indexer+Procedure#Configuration
 """
 
 import dataclasses
