@@ -1,0 +1,40 @@
+[build]
+config_file = ""
+driver = "bin/driver.py"
+error_log = "mutation-indexer-error.log"
+jar_dir = "jars"
+build_version = "v0"
+data_release = "test"
+manifest_dir = "manifests"
+output_log = "mutation-indexer.log"
+pex_file = "driver-all"
+
+[elasticsearch.connection]
+nodes = "localhost"
+user = ""
+password = ""
+use_ssl = false
+verify_certs = false
+
+[indexd]
+host = "localhost"
+port = 80
+user = ""
+password = ""
+
+[spark]
+master = "local[*]"
+
+[spark.driver]
+memory = "2g"
+
+[spark.executor]
+cores = 1
+instances = 4
+memory = "512m"
+
+[spark.sql.shuffle]
+partitions = 1
+
+[spark.submit]
+deploy_mode = "client"

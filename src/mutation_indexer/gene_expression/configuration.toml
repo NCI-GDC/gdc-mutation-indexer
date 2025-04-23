@@ -1,0 +1,90 @@
+[build]
+index_types = ["GENE_EXPRESSION"]
+
+[builders.binary]
+bucket = "gene-expression-data"
+is_cached = false
+log2_uqfpkm_key = "{build[data_release]}/{build[build_version]}/bin_files/{{gene_id}}_log2_uqfpkms.bin"
+uqfpkm_key = "{build[data_release]}/{build[build_version]}/bin_files/{{gene_id}}_uqfpkms.bin"
+
+[builders.binary.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case]
+is_cached = true
+
+[builders.case.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.case.destination]
+bucket = "gene-expression-data"
+key = "{build[data_release]}/{build[build_version]}/bin_files/case_ids.bin"
+
+[builders.case_sql]
+is_cached = false
+
+[builders.case_sql.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.expression_value]
+is_cached = true
+
+[builders.expression_value.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_model]
+census_file = "s3a://gdc-mutation-indexer/cancer_gene_census_set.gencode_v36.tsv.gz"
+citobands_file = "s3a://gdc-mutation-indexer/gencode.v36.cytoband.par_removed.formated.tsv.gz"
+gene_model_file = "s3a://gdc-mutation-indexer/genes.hg38.ensembl102.gencode36.json"
+is_cached = true
+
+[builders.gene_model.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.gene_sql]
+is_cached = false
+
+[builders.gene_sql.backup]
+mode = "NEITHER"
+path = ""
+
+[builders.index]
+id_field = "gene_expression_id"
+is_cached = true
+partition_size = 12
+
+[builders.index.backup]
+mode = "NEITHER"
+partition_by = "gene_id"
+path = ""
+
+[builders.primary_aliquot]
+is_cached = true
+
+[builders.primary_aliquot.backup]
+mode = "NEITHER"
+path = ""
+
+[elasticsearch.read]
+case_index = "graph_case"
+file_index = "graph_file"
+max_source_filter_length = 400
+
+[elasticsearch.write]
+batch_size_bytes = "16mb"
+batch_size_entries = 1000
+
+[elasticsearch.write.indices]
+GENE_EXPRESSION = "{build[data_release]}_ge_open_{build[build_version]}__gene_expression"
+
+[sqlite_database]
+batch_size = 0
+
+[sqlite_database.destination]
+bucket = "gene-expression-data"
+key = "{build[data_release]}/{build[build_version]}/bin_files/geneexpression_db.sqlite3"
