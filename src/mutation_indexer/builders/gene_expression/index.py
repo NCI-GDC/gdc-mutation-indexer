@@ -4,24 +4,22 @@ from pyspark import sql
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 
 
 class IndexBuilderInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class IndexBuilder(
-    bases.IndexBuilder[gene_expression.GeneExpressionIndexBuilder, IndexBuilderInputs]
-):
+class IndexBuilder(bases.IndexBuilder[configuration.IndexBuilder, IndexBuilderInputs]):
     """
     A builder class for loading gene expression data.
     """
 
     def __init__(
         self,
-        config: gene_expression.GeneExpressionIndexBuilder,
+        config: configuration.IndexBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,

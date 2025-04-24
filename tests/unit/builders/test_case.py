@@ -11,8 +11,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
@@ -749,11 +749,11 @@ class TestCaseBuilder:
         self.case_schema = case_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> viz.CaseBuilder:
+    def arrange_config(self) -> configuration.CaseBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
-            spec=viz.CaseBuilder,
+            spec=configuration.CaseBuilder,
             projects=(),
             repartition_size=1,
             include_as_arrays=(),

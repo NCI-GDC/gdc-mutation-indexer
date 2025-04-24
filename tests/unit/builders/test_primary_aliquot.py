@@ -10,8 +10,8 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit.data import schemas
 
 
@@ -143,11 +143,14 @@ class TestPrimaryAliquotBuilder:
 
         return dataframe_util
 
-    def _arrange_config(self) -> viz.Builder:
+    def _arrange_config(self) -> configuration.PrimaryAliquotBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
-            spec=viz.Builder, is_cached=False, backup=backup, projects=()
+            spec=configuration.PrimaryAliquotBuilder,
+            is_cached=False,
+            backup=backup,
+            projects=(),
         )
 
     def _arrange_builder(

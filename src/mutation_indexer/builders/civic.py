@@ -4,17 +4,17 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class DNAInputs(TypedDict):
     pass
 
 
-class DNABuilder(bases.ResourceBuilder[viz.ResourceBuilder, DNAInputs]):
+class DNABuilder(bases.ResourceBuilder[configuration.CIVIC.DNABuilder, DNAInputs]):
     def __init__(
-        self, config: viz.ResourceBuilder, spark_session: sql.SparkSession
+        self, config: configuration.CIVIC.DNABuilder, spark_session: sql.SparkSession
     ) -> None:
         super().__init__(
             config,
@@ -40,9 +40,13 @@ class ProteinInputs(TypedDict):
     pass
 
 
-class ProteinBuilder(bases.ResourceBuilder[viz.ResourceBuilder, ProteinInputs]):
+class ProteinBuilder(
+    bases.ResourceBuilder[configuration.CIVIC.ProteinBuilder, ProteinInputs]
+):
     def __init__(
-        self, config: viz.ResourceBuilder, spark_session: sql.SparkSession
+        self,
+        config: configuration.CIVIC.ProteinBuilder,
+        spark_session: sql.SparkSession,
     ) -> None:
         super().__init__(
             config,

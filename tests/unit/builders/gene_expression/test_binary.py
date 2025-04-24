@@ -10,8 +10,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders.gene_expression import binary
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -39,9 +39,9 @@ class TestUQFPKMBuilder:
         self._expression_value_schema = expression_value_schema
         self._final_schema = uqfpkm_schema
 
-    def _arrange_config(self) -> gene_expression.BinaryBuilder:
+    def _arrange_config(self) -> configuration.BinaryBuilder:
         return mock.MagicMock(
-            spec=gene_expression.BinaryBuilder,
+            spec=configuration.BinaryBuilder,
             is_cached=False,
             bucket="bucket",
             log2_uqfpkm_key="log2_{gene_id}.bin",
@@ -71,7 +71,7 @@ class TestUQFPKMBuilder:
         }
 
     def _arrange_builder(
-        self, config: gene_expression.BinaryBuilder, s3_client: s3.Client
+        self, config: configuration.BinaryBuilder, s3_client: s3.Client
     ) -> binary.BinaryBuilder:
         return binary.BinaryBuilder(config, mock.MagicMock(), s3_client)
 

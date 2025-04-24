@@ -1,4 +1,5 @@
 """Test SegmentCNVCentricBuilder dataframe creation."""
+
 import dataclasses
 from collections.abc import Iterable
 from unittest import mock
@@ -10,8 +11,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders import segment_cnv_centric
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -107,9 +108,9 @@ class TestSegmentCNVCentricBuilder:
         self._case_schema = case_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> viz.SegmentCNVCentricBuilder:
+    def _arrange_config(self) -> configuration.SegmentCNVCentricBuilder:
         config = mock.MagicMock(
-            spec=viz.SegmentCNVCentricBuilder,
+            spec=configuration.SegmentCNVCentricBuilder,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),

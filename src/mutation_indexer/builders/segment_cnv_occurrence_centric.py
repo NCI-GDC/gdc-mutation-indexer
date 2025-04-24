@@ -1,4 +1,5 @@
 """Builds the segment_cnv_occurrence_centric dataframe."""
+
 from typing import TypedDict
 
 from pyspark import sql
@@ -7,8 +8,8 @@ from pyspark.sql import functions as F
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.builders import observation as observation_builder
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class SegmentCNVOccurrenceCentricBuilderInputs(TypedDict):
@@ -18,12 +19,13 @@ class SegmentCNVOccurrenceCentricBuilderInputs(TypedDict):
 
 class SegmentCNVOccurrenceCentricBuilder(
     bases.IndexBuilder[
-        viz.SegmentCNVOccurrenceCentricBuilder, SegmentCNVOccurrenceCentricBuilderInputs
+        configuration.SegmentCNVOccurrenceCentricBuilder,
+        SegmentCNVOccurrenceCentricBuilderInputs,
     ]
 ):
     def __init__(
         self,
-        config: viz.SegmentCNVOccurrenceCentricBuilder,
+        config: configuration.SegmentCNVOccurrenceCentricBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,

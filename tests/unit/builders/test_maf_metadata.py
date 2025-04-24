@@ -10,8 +10,8 @@ from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.builders import maf_metadata
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit.data import schemas
 
 
@@ -75,7 +75,7 @@ class TestMAFMetadataBuilder:
     ) -> builders.MAFMetadataBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         conf = mock.MagicMock(
-            spec=viz.MAFMetadataBuilder,
+            spec=configuration.MAFMetadataBuilder,
             backup=backup,
             is_cached=False,
             prioritized_experimental_strategies=(),

@@ -7,8 +7,8 @@ from pyspark.sql import types
 
 from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 UUIDS_STRUCT = schemas.load_schema("builders/segment_cnv/uuids.yaml")
 SEGMENT_CNV_DOCUMENT_SCHEMA = "builders/segment_cnv/segment_cnv_document.yaml"
@@ -48,10 +48,12 @@ class SegmentCNVInputs(TypedDict):
     segment_cnv_metadata_df: sql.DataFrame
 
 
-class SegmentCNVBuilder(bases.InputBuilder[viz.Builder, SegmentCNVInputs]):
+class SegmentCNVBuilder(
+    bases.InputBuilder[configuration.SegmentCNVBuilder, SegmentCNVInputs]
+):
     def __init__(
         self,
-        config: viz.Builder,
+        config: configuration.SegmentCNVBuilder,
         spark_session: sql.SparkSession,
         document_dataframe_util: indexd_utils.DataFrameUtil,
     ) -> None:

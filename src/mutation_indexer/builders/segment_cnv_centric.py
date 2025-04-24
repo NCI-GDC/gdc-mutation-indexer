@@ -1,4 +1,5 @@
 """Builds the segment_cnv_centric dataframe."""
+
 from typing import TypedDict
 
 from pyspark import sql
@@ -6,8 +7,8 @@ from pyspark.sql import functions as F
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class SegmentCNVCentricBuilderInputs(TypedDict):
@@ -16,13 +17,15 @@ class SegmentCNVCentricBuilderInputs(TypedDict):
 
 
 class SegmentCNVCentricBuilder(
-    bases.IndexBuilder[viz.SegmentCNVCentricBuilder, SegmentCNVCentricBuilderInputs]
+    bases.IndexBuilder[
+        configuration.SegmentCNVCentricBuilder, SegmentCNVCentricBuilderInputs
+    ]
 ):
     INDEX_NAME = "segment_cnv_centric"
 
     def __init__(
         self,
-        config: viz.SegmentCNVCentricBuilder,
+        config: configuration.SegmentCNVCentricBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         mappings_loader: es_utils.MappingsLoader,

@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders import civic
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -58,9 +58,9 @@ class TestDNABuilder:
 
         return spark_session
 
-    def arrange_config(self) -> viz.ResourceBuilder:
+    def arrange_config(self) -> configuration.CIVIC.DNABuilder:
         config = mock.MagicMock(
-            spec=viz.ResourceBuilder,
+            spec=configuration.CIVIC.DNABuilder,
             is_cached=False,
             package="",
             resource="",

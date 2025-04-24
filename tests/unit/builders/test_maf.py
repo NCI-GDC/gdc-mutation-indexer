@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -210,9 +210,9 @@ def final_maf_schema() -> types.StructType:
     return schemas.Viz.Builders.MAF.FINAL.load()
 
 
-def arrange_config() -> viz.MAFBuilder:
+def arrange_config() -> configuration.MAFBuilder:
     return mock.MagicMock(
-        spec=viz.MAFBuilder,
+        spec=configuration.MAFBuilder,
         is_cached=False,
         repartition_size=1,
         backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),

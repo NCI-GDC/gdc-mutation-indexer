@@ -10,12 +10,12 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build, datamodel
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 
-Priority = viz.ASCATMetadataBuilder.Priority
+Priority = configuration.ASCATMetadataBuilder.Priority
 
 DEFAULT_PRIORITIES = (
     Priority(datamodel.ExperimentalStrategy.WGS, datamodel.WorkflowType.ASCAT_NGS),
@@ -156,13 +156,13 @@ class TestASCATMetadataBuilder:
 
     def _arrange_config(
         self, priorities: tuple[Priority, ...] = DEFAULT_PRIORITIES
-    ) -> viz.ASCATMetadataBuilder:
+    ) -> configuration.ASCATMetadataBuilder:
         return mock.MagicMock(
             acl=("open",),
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
-            spec=viz.ASCATMetadataBuilder,
+            spec=configuration.ASCATMetadataBuilder,
             priorities=priorities,
         )
 

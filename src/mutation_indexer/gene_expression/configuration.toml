@@ -83,7 +83,7 @@ batch_size_entries = 1000
 GENE_EXPRESSION = "{build[data_release]}_ge_open_{build[build_version]}__gene_expression"
 
 [sqlite_database]
-batch_size = 0
+batch_size = 5000
 
 [sqlite_database.destination]
 bucket = "gene-expression-data"

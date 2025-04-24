@@ -50,7 +50,11 @@ def test__driver__runs_all() -> None:
         config = mock.MagicMock()
         config.build.index_types = (build.IndexType.GENE_EXPRESSION,)
 
+        stack.enter_context(mock_builder(builders.BinaryBuilder))
+        stack.enter_context(mock_builder(builders.CaseBuilder))
+        stack.enter_context(mock_builder(builders.CaseSQLBuilder))
         stack.enter_context(mock_builder(gene_model.GeneModelBuilder))
+        stack.enter_context(mock_builder(builders.GeneSQLBuilder))
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder))
@@ -58,6 +62,9 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
+        stack.enter_context(
+            mock.patch("mutation_indexer.gene_expression.driver._initialize_s3_client")
+        )
 
         driver.Driver().run(config)
 
@@ -67,7 +74,11 @@ def test__driver__runs_inputs() -> None:
         config = mock.MagicMock()
         config.build.index_types = ()
 
+        stack.enter_context(mock_builder(builders.BinaryBuilder))
+        stack.enter_context(mock_builder(builders.CaseBuilder))
+        stack.enter_context(mock_builder(builders.CaseSQLBuilder))
         stack.enter_context(mock_builder(gene_model.GeneModelBuilder))
+        stack.enter_context(mock_builder(builders.GeneSQLBuilder))
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder, is_called=False))
@@ -75,5 +86,8 @@ def test__driver__runs_inputs() -> None:
         stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
+        stack.enter_context(
+            mock.patch("mutation_indexer.gene_expression.driver._initialize_s3_client")
+        )
 
         driver.Driver().run(config)

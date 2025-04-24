@@ -4,7 +4,7 @@ from pyspark.sql import types
 from typing_extensions import TypedDict
 
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
+from mutation_indexer.configuration import builders
 from mutation_indexer.constants import build
 
 
@@ -35,12 +35,14 @@ class GeneModelInputs(TypedDict):
     pass
 
 
-class GeneModelBuilder(bases.InputBuilder[viz.GeneModelBuilder, GeneModelInputs]):
+class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelInputs]):
     """
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(self, config: viz.GeneModelBuilder, spark_session: sql.SparkSession):
+    def __init__(
+        self, config: builders.GeneModelBuilder, spark_session: sql.SparkSession
+    ):
         super().__init__(
             config,
             spark_session,

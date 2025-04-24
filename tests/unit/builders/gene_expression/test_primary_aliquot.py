@@ -7,8 +7,8 @@ from pyspark.sql import types
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders.gene_expression import primary_aliquot
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
 
@@ -35,11 +35,14 @@ class TestPrimaryAliquotBuilder:
         self.input_file_schema = input_file_schema
         self.final_schema = final_schema
 
-    def arrange_config(self) -> gene_expression.Builder:
+    def arrange_config(self) -> configuration.PrimaryAliquotBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
 
         return mock.MagicMock(
-            spec=gene_expression.Builder, projects=(), is_cached=False, backup=backup
+            spec=configuration.PrimaryAliquotBuilder,
+            projects=(),
+            is_cached=False,
+            backup=backup,
         )
 
     def arrange_es_dataframe_util(

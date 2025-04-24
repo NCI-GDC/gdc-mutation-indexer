@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -83,7 +83,7 @@ class TestSegmentCNVBuilder:
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
-            spec=viz.Builder,
+            spec=configuration.SegmentCNVMetadataBuilder,
         )
 
     def _arrange_builder(
