@@ -8,8 +8,8 @@ from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 UUIDS_STRUCT = schemas.load_schema("builders/ascat/uuids.yaml")
 
@@ -232,12 +232,12 @@ class ASCATInputs(TypedDict):
     gene_model_df: sql.DataFrame
 
 
-class ASCATBuilder(bases.InputBuilder[viz.ASCATBuilder, ASCATInputs]):
+class ASCATBuilder(bases.InputBuilder[configuration.ASCATBuilder, ASCATInputs]):
     __slots__ = ("_document_dataframe_util",)
 
     def __init__(
         self,
-        config: viz.ASCATBuilder,
+        config: configuration.ASCATBuilder,
         spark_session: sql.SparkSession,
         document_dataframe_util: indexd_utils.DataFrameUtil,
     ) -> None:

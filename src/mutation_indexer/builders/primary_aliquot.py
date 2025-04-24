@@ -3,8 +3,8 @@ from typing_extensions import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class PrimaryAliquotInputs(TypedDict):
@@ -12,7 +12,9 @@ class PrimaryAliquotInputs(TypedDict):
 
 
 class PrimaryAliquotBuilder(
-    bases.InclusivePrimaryAliquotBuilder[viz.Builder, PrimaryAliquotInputs]
+    bases.InclusivePrimaryAliquotBuilder[
+        configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs
+    ]
 ):
     __slots__ = ("_es_rdd_util",)
 
@@ -20,7 +22,7 @@ class PrimaryAliquotBuilder(
 
     def __init__(
         self,
-        config: viz.Builder,
+        config: configuration.PrimaryAliquotBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,

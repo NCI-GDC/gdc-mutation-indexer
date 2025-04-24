@@ -14,21 +14,21 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
+from mutation_indexer.gene_expression import configuration
 
 
 class CaseInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class CaseBuilder(bases.InputBuilder[gene_expression.CaseBuilder, CaseInputs]):
+class CaseBuilder(bases.InputBuilder[configuration.CaseBuilder, CaseInputs]):
     __slots__ = ("_s3_client",)
 
     def __init__(
         self,
-        config: gene_expression.CaseBuilder,
+        config: configuration.CaseBuilder,
         spark_session: sql.SparkSession,
         s3_client: s3.Client,
     ) -> None:
@@ -82,10 +82,10 @@ class CaseSQLInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class CaseSQLBuilder(bases.SQLiteBuilder[gene_expression.Builder, CaseSQLInputs]):
+class CaseSQLBuilder(bases.SQLiteBuilder[configuration.CaseSQLBuilder, CaseSQLInputs]):
     def __init__(
         self,
-        config: gene_expression.Builder,
+        config: configuration.CaseSQLBuilder,
         spark_session: sql.SparkSession,
         database: sqlite.SQLiteDatabase,
     ) -> None:

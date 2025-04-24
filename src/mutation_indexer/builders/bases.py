@@ -27,12 +27,12 @@ from pyspark.sql import types
 from typing_extensions import TypeGuard
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
-from mutation_indexer.configuration.builders import common
+from mutation_indexer.configuration import builders
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
 
-TConfig = TypeVar("TConfig", bound=common.Builder)
-TIndexConfig = TypeVar("TIndexConfig", bound=common.IndexBuilder)
+TConfig = TypeVar("TConfig", bound=builders.Builder)
+TIndexConfig = TypeVar("TIndexConfig", bound=builders.IndexBuilder)
 TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
@@ -239,7 +239,7 @@ def _combine_weighted_entity_dfs(
 
 
 def _add_required_include_fields(
-    include_fields: Union[Iterable[str], Literal[True]]
+    include_fields: Union[Iterable[str], Literal[True]],
 ) -> Collection[str]:
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
@@ -775,7 +775,7 @@ class InclusivePrimaryAliquotBuilder(
         )
 
 
-TResourceConfig = TypeVar("TResourceConfig", bound=common.ResourceBuilder)
+TResourceConfig = TypeVar("TResourceConfig", bound=builders.ResourceBuilder)
 
 
 class ResourceBuilder(

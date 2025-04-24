@@ -9,8 +9,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -102,7 +102,7 @@ class TestAscatBuilder:
     ) -> builders.ASCATBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         config = mock.MagicMock(
-            spec=viz.ASCATBuilder,
+            spec=configuration.ASCATBuilder,
             omit_cnv_data=False,
             is_cached=False,
             backup=backup,

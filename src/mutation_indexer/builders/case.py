@@ -7,8 +7,8 @@ from typing_extensions import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +73,14 @@ class CaseInputs(TypedDict):
     segment_cnv_metadata_df: sql.DataFrame
 
 
-class CaseBuilder(bases.InputBuilder[viz.CaseBuilder, CaseInputs], CaseLoaderMixin):
+class CaseBuilder(
+    bases.InputBuilder[configuration.CaseBuilder, CaseInputs], CaseLoaderMixin
+):
     __slots__ = ("_es_dataframe_util", "_field_selector")
 
     def __init__(
         self,
-        config: viz.CaseBuilder,
+        config: configuration.CaseBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         field_selector: es_utils.CaseFieldSelector,

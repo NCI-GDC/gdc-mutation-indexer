@@ -7,8 +7,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders.gene_expression import index
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -45,9 +45,9 @@ class TestGeneExpressionBuilder:
 
         return dict(expression_value_df=expression_value_df)
 
-    def _arrange_config(self) -> gene_expression.GeneExpressionIndexBuilder:
+    def _arrange_config(self) -> configuration.IndexBuilder:
         config = mock.MagicMock(
-            spec=gene_expression.GeneExpressionIndexBuilder,
+            spec=configuration.IndexBuilder,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),

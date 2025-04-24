@@ -7,8 +7,8 @@ from pyspark.sql import types
 
 from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 
 
 class ExpressionValueInputs(TypedDict):
@@ -17,13 +17,13 @@ class ExpressionValueInputs(TypedDict):
 
 
 class ExpressionValueBuilder(
-    bases.InputBuilder[gene_expression.Builder, ExpressionValueInputs]
+    bases.InputBuilder[configuration.ExpressionValueBuilder, ExpressionValueInputs]
 ):
     __slots__ = "_doc_dataframe_util"
 
     def __init__(
         self,
-        config: gene_expression.Builder,
+        config: configuration.ExpressionValueBuilder,
         spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
     ) -> None:

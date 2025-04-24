@@ -12,8 +12,8 @@ from typing_extensions import Literal, TypedDict
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import elasticsearch as es_config
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ class MAFMetadataInputs(TypedDict):
 
 
 class MAFMetadataBuilder(
-    bases.PrimaryAliquotBuilder[viz.MAFMetadataBuilder, MAFMetadataInputs]
+    bases.PrimaryAliquotBuilder[configuration.MAFMetadataBuilder, MAFMetadataInputs]
 ):
     """
     An input builder for collecting the metadata associated with the MAF
@@ -281,7 +281,7 @@ class MAFMetadataBuilder(
 
     def __init__(
         self,
-        config: viz.MAFMetadataBuilder,
+        config: configuration.MAFMetadataBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         file_filter_factory: MAFFileFilterFactory,

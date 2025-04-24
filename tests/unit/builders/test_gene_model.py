@@ -8,8 +8,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.unit.data import schemas
 
 
@@ -160,7 +160,7 @@ class TestGeneModelBuilder:
 
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         config = mock.MagicMock(
-            spec=viz.GeneModelBuilder,
+            spec=configuration.GeneModelBuilder,
             backup=backup,
             is_cached=False,
             citobands_file="cytobands",

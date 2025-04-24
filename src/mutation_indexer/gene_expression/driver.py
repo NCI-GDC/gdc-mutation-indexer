@@ -6,21 +6,37 @@ from collections.abc import Container, Iterable, Iterator
 from pathlib import Path
 from typing import NamedTuple
 
+import boto3
+import mypy_boto3_s3 as s3
 from pyspark import sql
 
 from mutation_indexer import driver, es_utils, indexd_utils
 from mutation_indexer.builders import bases
 from mutation_indexer.builders import gene_expression as builders
 from mutation_indexer.builders import gene_model
+from mutation_indexer.configuration import aws
 from mutation_indexer.constants import build
+from mutation_indexer.databases import sqlite
 from mutation_indexer.gene_expression import configuration
+
+
+def _initialize_s3_client(config: aws.S3) -> s3.Client:
+    return boto3.client(
+        "s3",
+        endpoint_url=config.host,
+        aws_access_key_id=config.access_key,
+        aws_secret_access_key=config.secret_key,
+        verify=False,
+    )
 
 
 class Dependencies(NamedTuple):
     doc_dataframe_util: indexd_utils.DataFrameUtil
     es_dataframe_util: es_utils.DataFrameUtil
     mappings_loader: es_utils.MappingsLoader
+    s3_client: s3.Client
     spark_session: sql.SparkSession
+    sqlite_db: sqlite.SQLiteDatabase
 
 
 class Driver(driver.Driver[configuration.Configuration]):
@@ -45,6 +61,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         with driver.get_es_client(config.elasticsearch.connection) as es_client:
             index_client = driver.get_index_client(config.indexd)
             mappings_loader = es_utils.MappingsLoader()
+            s3_client = _initialize_s3_client(config.aws.s3)
 
             yield Dependencies(
                 indexd_utils.DataFrameUtil(
@@ -60,7 +77,9 @@ class Driver(driver.Driver[configuration.Configuration]):
                     es_utils.SchemaLoader(),
                 ),
                 mappings_loader,
+                s3_client,
                 spark_session,
+                sqlite.SQLiteDatabase(config.sqlite_database, s3_client),
             )
 
     def _builders(
@@ -78,7 +97,19 @@ class Driver(driver.Driver[configuration.Configuration]):
         Return:
             An iterable of all gene expression builders.
         """
+        yield builders.BinaryBuilder(
+            config.binary, dependencies.spark_session, dependencies.s3_client
+        )
+        yield builders.CaseBuilder(
+            config.case, dependencies.spark_session, dependencies.s3_client
+        )
+        yield builders.CaseSQLBuilder(
+            config.case_sql, dependencies.spark_session, dependencies.sqlite_db
+        )
         yield gene_model.GeneModelBuilder(config.gene_model, dependencies.spark_session)
+        yield builders.GeneSQLBuilder(
+            config.gene_sql, dependencies.spark_session, dependencies.sqlite_db
+        )
         yield builders.PrimaryAliquotBuilder(
             config.primary_aliquot,
             dependencies.spark_session,

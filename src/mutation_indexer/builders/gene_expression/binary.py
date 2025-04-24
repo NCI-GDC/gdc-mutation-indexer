@@ -14,20 +14,20 @@ from pyspark import sql
 from pyspark.sql import functions as F
 
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
+from mutation_indexer.gene_expression import configuration
 
 
 class BinaryInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class BinaryBuilder(bases.InputBuilder[gene_expression.BinaryBuilder, BinaryInputs]):
+class BinaryBuilder(bases.InputBuilder[configuration.BinaryBuilder, BinaryInputs]):
     __slots__ = ("_s3_client",)
 
     def __init__(
         self,
-        config: gene_expression.BinaryBuilder,
+        config: configuration.BinaryBuilder,
         spark_session: sql.SparkSession,
         s3_client: s3.Client,
     ) -> None:

@@ -7,8 +7,8 @@ from typing_extensions import Literal, override
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 class ASCATMetadataInputs(TypedDict):
@@ -16,7 +16,9 @@ class ASCATMetadataInputs(TypedDict):
 
 
 class ASCATMetadataBuilder(
-    bases.InclusivePrimaryAliquotBuilder[viz.ASCATMetadataBuilder, ASCATMetadataInputs]
+    bases.InclusivePrimaryAliquotBuilder[
+        configuration.ASCATMetadataBuilder, ASCATMetadataInputs
+    ]
 ):
     """
     A class for resolving the document IDs associated with the ASCAT documents in
@@ -25,7 +27,7 @@ class ASCATMetadataBuilder(
 
     def __init__(
         self,
-        config: viz.ASCATMetadataBuilder,
+        config: configuration.ASCATMetadataBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
         es_rdd_util: es_utils.RDDUtil,

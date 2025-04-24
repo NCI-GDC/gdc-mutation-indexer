@@ -9,9 +9,8 @@ import halo
 import more_itertools
 import tap
 
-from mutation_indexer import configuration, gene_expression
+from mutation_indexer import configuration, gene_expression, viz
 from mutation_indexer.configuration import build
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import app
 
 logger = logging.getLogger(__name__)

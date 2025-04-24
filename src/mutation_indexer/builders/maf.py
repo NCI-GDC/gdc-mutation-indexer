@@ -11,8 +11,8 @@ from typing_extensions import TypedDict
 
 from mutation_indexer import indexd_utils, pyspark_extensions, schemas
 from mutation_indexer.builders import bases, utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class MAFInputs(TypedDict):
     civic_protein_df: sql.DataFrame
 
 
-class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
+class MAFBuilder(bases.InputBuilder[configuration.MAFBuilder, MAFInputs]):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features
@@ -87,7 +87,7 @@ class MAFBuilder(bases.InputBuilder[viz.MAFBuilder, MAFInputs]):
 
     def __init__(
         self,
-        config: viz.MAFBuilder,
+        config: configuration.MAFBuilder,
         spark_session: sql.SparkSession,
         doc_dataframe_util: indexd_utils.DataFrameUtil,
     ):

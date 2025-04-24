@@ -5,8 +5,8 @@ from pyspark.sql import functions as F
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build, datamodel
+from mutation_indexer.viz import configuration
 
 
 class SegmentCNVMetadataInputs(TypedDict):
@@ -14,11 +14,13 @@ class SegmentCNVMetadataInputs(TypedDict):
 
 
 class SegmentCNVMetadataBuilder(
-    bases.InputBuilder[viz.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs]
+    bases.InputBuilder[
+        configuration.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs
+    ]
 ):
     def __init__(
         self,
-        config: viz.SegmentCNVMetadataBuilder,
+        config: configuration.SegmentCNVMetadataBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
     ) -> None:

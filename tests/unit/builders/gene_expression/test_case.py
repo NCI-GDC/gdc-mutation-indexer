@@ -10,9 +10,9 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders.gene_expression import case
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
+from mutation_indexer.gene_expression import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -40,9 +40,9 @@ class TestCaseBuilder:
         self._value_schema = value_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> gene_expression.CaseBuilder:
+    def _arrange_config(self) -> configuration.CaseBuilder:
         return mock.MagicMock(
-            spec=gene_expression.CaseBuilder,
+            spec=configuration.CaseBuilder,
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             destination=mock.MagicMock(bucket="bucket-test-gdc", key="test/case.bin"),
@@ -63,7 +63,7 @@ class TestCaseBuilder:
         }
 
     def _arrange_builder(
-        self, config: gene_expression.CaseBuilder, s3_client: s3.Client
+        self, config: configuration.CaseBuilder, s3_client: s3.Client
     ) -> case.CaseBuilder:
         return case.CaseBuilder(config, mock.MagicMock(), s3_client)
 
@@ -129,7 +129,7 @@ class TestCaseSQLBuilder:
         self._value_schema = value_schema
         self._final_schema = sql_schema
 
-    def _arrange_config(self) -> gene_expression.Builder:
+    def _arrange_config(self) -> configuration.CaseSQLBuilder:
         return mock.MagicMock(
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),

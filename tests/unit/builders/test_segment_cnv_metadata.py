@@ -11,8 +11,8 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import builders, es_utils
-from mutation_indexer.configuration.builders import viz
 from mutation_indexer.constants import build, datamodel
+from mutation_indexer.viz import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 
@@ -146,14 +146,14 @@ class TestSegmentCNVMetadataBuilder:
         self._file_schema = file_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> viz.SegmentCNVMetadataBuilder:
+    def _arrange_config(self) -> configuration.SegmentCNVMetadataBuilder:
         return mock.MagicMock(
             acl=("open",),
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
             is_cached=False,
             projects=(),
             use_deprecated_query=False,
-            spec=viz.SegmentCNVMetadataBuilder,
+            spec=configuration.SegmentCNVMetadataBuilder,
         )
 
     def _arrange_es_dataframe_util(

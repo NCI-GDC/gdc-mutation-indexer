@@ -6,9 +6,9 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer.builders.gene_expression import gene
-from mutation_indexer.configuration.builders import gene_expression
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
+from mutation_indexer.gene_expression import configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
@@ -36,7 +36,7 @@ class TestGeneSQLBuilder:
         self._value_schema = value_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> gene_expression.Builder:
+    def _arrange_config(self) -> configuration.GeneSQLBuilder:
         return mock.MagicMock(
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),

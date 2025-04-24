@@ -6,7 +6,7 @@ from pyspark import sql
 from typing_extensions import TypedDict
 
 from mutation_indexer.builders import bases
-from mutation_indexer.configuration.builders import common
+from mutation_indexer.configuration import builders
 from mutation_indexer.constants import build
 
 TInputs = TypeVar("TInputs", bound=Mapping[str, object])
@@ -85,12 +85,12 @@ class TestDataFrameInputManager:
 
 
 class TestInputBuilder:
-    class DummyBuilder(Generic[TInputs], bases.InputBuilder[common.Builder, TInputs]):
+    class DummyBuilder(Generic[TInputs], bases.InputBuilder[builders.Builder, TInputs]):
         def __init__(
             self,
             input_type: Type[TInputs],
             output: build.DataFrame,
-            config: Optional[common.Builder],
+            config: Optional[builders.Builder],
             spark_session: Optional[sql.SparkSession],
             scratch_df: Optional[sql.DataFrame],
         ) -> None:
@@ -117,7 +117,7 @@ class TestInputBuilder:
     class Builder0(DummyBuilder[EmptyInputs]):
         def __init__(
             self,
-            config: Optional[common.Builder] = None,
+            config: Optional[builders.Builder] = None,
             spark_session: Optional[sql.SparkSession] = None,
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
@@ -133,7 +133,7 @@ class TestInputBuilder:
         def __init__(
             self,
             output: build.DataFrame = build.DataFrame.GENE_MODEL,
-            config: Optional[common.Builder] = None,
+            config: Optional[builders.Builder] = None,
             spark_session: Optional[sql.SparkSession] = None,
             scratch_df: Optional[sql.DataFrame] = None,
         ) -> None:
@@ -223,7 +223,7 @@ class TestInputBuilder:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
         spark_session.read.parquet = mock.MagicMock(side_effect=(read_df, df))
         config = mock.MagicMock(
-            spec=common.Builder,
+            spec=builders.Builder,
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.BOTH, path="test/path"),
         )
@@ -244,7 +244,7 @@ class TestInputBuilder:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
         spark_session.read.parquet = mock.MagicMock(side_effect=(read_df, df))
         config = mock.MagicMock(
-            spec=common.Builder,
+            spec=builders.Builder,
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.READ, path="test/path"),
         )
@@ -265,7 +265,7 @@ class TestInputBuilder:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
         spark_session.read.parquet = mock.MagicMock(side_effect=(read_df, df))
         config = mock.MagicMock(
-            spec=common.Builder,
+            spec=builders.Builder,
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.WRITE, path="test/path"),
         )
@@ -285,7 +285,7 @@ class TestInputBuilder:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
         spark_session.read.parquet = mock.MagicMock(side_effect=(read_df, df))
         config = mock.MagicMock(
-            spec=common.Builder,
+            spec=builders.Builder,
             is_cached=False,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path="test/path"),
         )
@@ -306,7 +306,7 @@ class TestInputBuilder:
         df.cache.return_value = cached_df
         expected_df = cached_df if is_cached else df
         config = mock.MagicMock(
-            spec=common.Builder,
+            spec=builders.Builder,
             is_cached=is_cached,
             backup=mock.MagicMock(mode=build.BackupMode.NEITHER),
         )
