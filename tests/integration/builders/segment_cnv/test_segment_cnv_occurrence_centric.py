@@ -7,9 +7,10 @@ import pytest
 from elasticsearch import helpers
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils
+from mutation_indexer import es_utils
 from mutation_indexer.builders import segment_cnv_occurrence_centric as scoc
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 
 @pytest.fixture(scope="function")
@@ -28,7 +29,7 @@ def segment_cnv_occurrence_centric_builder(
     )
 
     yield scoc.SegmentCNVOccurrenceCentricBuilder(
-        segment_config.builders.viz.segment_cnv_occurrence_centric,
+        segment_config.builders.segment_cnv_occurrence_centric,
         spark_session,
         es_dataframe_util,
         mappings_loader,

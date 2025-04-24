@@ -11,7 +11,7 @@ import pytest
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils, indexd_utils
+from mutation_indexer import es_utils, indexd_utils
 from mutation_indexer.builders import (
     ascat_metadata,
     case,
@@ -19,6 +19,7 @@ from mutation_indexer.builders import (
     segment_cnv_metadata,
 )
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="package")
 def segment_config() -> configuration.Configuration:
-    return test_setup.load_configuration({"build": {"acl": ["open"]}})
+    return test_setup.load_viz_config({"build": {"acl": ["open"]}})
 
 
 @pytest.fixture(scope="package")
@@ -164,7 +165,7 @@ def ascat_metadata_df(
         segment_config.elasticsearch, spark_session.sparkContext
     )
     df = ascat_metadata.ASCATMetadataBuilder(
-        segment_config.builders.viz.ascat_metadata,
+        segment_config.builders.ascat_metadata,
         spark_session,
         es_dataframe_util,
         es_rdd_util,
@@ -204,7 +205,7 @@ def case_df(
         es_utils.SchemaLoader(),
     )
     df = case.CaseBuilder(
-        segment_config.builders.viz.case,
+        segment_config.builders.case,
         spark_session,
         es_dataframe_util,
         es_utils.CaseFieldSelector(),
@@ -234,7 +235,7 @@ def segment_cnv_metadata_df(
         es_utils.SchemaLoader(),
     )
     df = segment_cnv_metadata.SegmentCNVMetadataBuilder(
-        segment_config.builders.viz.segment_cnv_metadata,
+        segment_config.builders.segment_cnv_metadata,
         spark_session,
         es_dataframe_util,
     ).build(ascat_metadata_df=ascat_metadata_df)
@@ -250,7 +251,7 @@ def segment_cnv_df(
     segment_cnv_metadata_df: sql.DataFrame,
 ) -> sql.DataFrame:
     df = segment_cnv.SegmentCNVBuilder(
-        segment_config.builders.viz.segment_cnv,
+        segment_config.builders.segment_cnv,
         spark_session,
         indexd_utils.DataFrameUtil(indexd, spark_session, mock.MagicMock()),
     ).build(segment_cnv_metadata_df=segment_cnv_metadata_df)

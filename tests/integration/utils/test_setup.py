@@ -6,19 +6,24 @@ import os
 import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
-from importlib import resources
+from importlib import abc, resources
 from typing import Any, ContextManager, Optional, Type, TypeVar, Union
 
 import elasticsearch
 from elasticsearch import helpers
 
-from mutation_indexer import configuration, es_utils
+from mutation_indexer import configuration, es_utils, gene_expression, viz
 from mutation_indexer.constants import app, build
 
 T = TypeVar("T")
+TConfig = TypeVar("TConfig", bound=configuration.Configuration)
 
 
-def load_configuration(overrides: Mapping[str, Any]) -> configuration.Configuration:
+def _load_config(
+    configuration: type[TConfig],
+    test_config: Iterable[abc.Traversable],
+    overrides: Iterable[Mapping[str, Any]],
+) -> TConfig:
     """Loads the default configuration along with any supplied overrides.
 
     Args:
@@ -27,14 +32,35 @@ def load_configuration(overrides: Mapping[str, Any]) -> configuration.Configurat
     Returns:
         A configuration with the default values or the supplied overrides.
     """
-    default_configs = (resources.files(app.ROOT_MODULE) / app.CONFIGURATION_FILE,)
     es_config = {
         "elasticsearch": {
-            "connection": {"nodes": os.environ.get("ES_NODES", "localhost")}
+            "connection": {
+                "nodes": os.environ.get("ES_NODES", "localhost"),
+            },
         }
     }
 
-    return configuration.Configuration.load(*default_configs, es_config, overrides)
+    return configuration.load(
+        *configuration._default_files(), *test_config, es_config, *overrides
+    )
+
+
+def load_viz_config(*overrides: Mapping[str, Any]) -> viz.Configuration:
+    test_configs = (
+        resources.files("tests.integration") / app.CONFIGURATION_FILE,
+        resources.files("tests.integration.viz") / app.CONFIGURATION_FILE,
+    )
+
+    return _load_config(viz.Configuration, test_configs, overrides)
+
+
+def load_ge_config(*overrides: Mapping[str, Any]) -> gene_expression.Configuration:
+    test_configs = (
+        resources.files("tests.integration") / app.CONFIGURATION_FILE,
+        resources.files("tests.integration.gene_expression") / app.CONFIGURATION_FILE,
+    )
+
+    return _load_config(gene_expression.Configuration, test_configs, overrides)
 
 
 def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:

@@ -4,7 +4,7 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, Literal, Union, cast
+from typing import Any, Union, cast
 from unittest import mock
 
 import elasticsearch
@@ -15,10 +15,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import builders, configuration, es_utils, indexd_utils, schemas
+from mutation_indexer import builders, es_utils, indexd_utils, schemas
 from mutation_indexer.builders import civic
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
@@ -51,56 +52,27 @@ def maf_urls(input_dir: pathlib.Path) -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def configure_gene_model(input_dir: pathlib.Path) -> Callable[[dict], dict]:
-    citobands_file = str(input_dir.joinpath("genes.cytobands.tsv.gz"))
-    census_file = str(input_dir.joinpath("cancer_gene_census_set.tsv.gz"))
-    gene_model_file = str(input_dir.joinpath("genes.ndjson.gz"))
+def gene_model_overrides(input_dir: pathlib.Path) -> Mapping[str, Any]:
+    cytobands_file = str(input_dir / "genes.cytobands.tsv.gz")
+    census_file = str(input_dir / "cancer_gene_census_set.tsv.gz")
+    gene_model_file = str(input_dir / "genes.ndjson.gz")
 
-    def pre_load(
-        data: dict,
-        drivers: Iterable[Literal["viz", "gene_expression"]] = (
-            "viz",
-            "gene_expression",
-        ),
-    ) -> dict:
-        for driver in drivers:
-            data["builders"][driver]["gene_model"]["citobands_file"] = citobands_file
-            data["builders"][driver]["gene_model"]["census_file"] = census_file
-            data["builders"][driver]["gene_model"]["gene_model_file"] = gene_model_file
-
-        return data
-
-    return pre_load
+    return {
+        "builders": {
+            "gene_model": {
+                "citobands_file": cytobands_file,
+                "census_file": census_file,
+                "gene_model_file": gene_model_file,
+            }
+        },
+    }
 
 
 @pytest.fixture(scope="session")
 def default_config(
-    input_dir: pathlib.Path,
-    configure_gene_model: Callable[[dict], dict],
+    gene_model_overrides: Mapping[str, Any],
 ) -> configuration.Configuration:
-    cytobands_file = str(input_dir / "genes.cytobands.tsv.gz")
-    census_file = str(input_dir / "cancer_gene_census_set.tsv.gz")
-    gene_model_file = str(input_dir / "genes.ndjson.gz")
-    overrides = {
-        "builders": {
-            "gene_expression": {
-                "gene_model": {
-                    "citobands_file": cytobands_file,
-                    "census_file": census_file,
-                    "gene_model_file": gene_model_file,
-                }
-            },
-            "viz": {
-                "gene_model": {
-                    "citobands_file": cytobands_file,
-                    "census_file": census_file,
-                    "gene_model_file": gene_model_file,
-                }
-            },
-        }
-    }
-
-    return test_setup.load_configuration(overrides)
+    return test_setup.load_viz_config(gene_model_overrides)
 
 
 @pytest.fixture(scope="session")
@@ -264,7 +236,7 @@ def gene_model_df(
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
     df = builders.GeneModelBuilder(
-        default_config.builders.viz.gene_model, spark_session
+        default_config.builders.gene_model, spark_session
     ).build()
 
     return dataframe_writer(df)
@@ -274,7 +246,7 @@ def gene_model_df(
 def civic_dna_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
-    builder = civic.DNABuilder(default_config.builders.viz.civic_dna, spark_session)
+    builder = civic.DNABuilder(default_config.builders.civic_dna, spark_session)
 
     return builder.build()
 
@@ -283,9 +255,7 @@ def civic_dna_df(
 def civic_protein_df(
     default_config: configuration.Configuration, spark_session: sql.SparkSession
 ) -> sql.DataFrame:
-    builder = civic.ProteinBuilder(
-        default_config.builders.viz.civic_protein, spark_session
-    )
+    builder = civic.ProteinBuilder(default_config.builders.civic_protein, spark_session)
 
     return builder.build()
 
@@ -389,7 +359,7 @@ def maf_df(
     doc_dataframe_util.get_dataframe.side_effect = (maf_df, fm_ad_maf_df)
 
     df = builders.MAFBuilder(
-        default_config.builders.viz.maf, spark_session, doc_dataframe_util
+        default_config.builders.maf, spark_session, doc_dataframe_util
     ).build(
         gene_model_df=gene_model_df,
         civic_dna_df=civic_dna_df,
@@ -445,7 +415,7 @@ def case_df(
     ascat_metadata_df = cnv_df.select("case_id")
     segment_cnv_metadata_df = segment_cnv_df.select("case_id")
     df = builders.CaseBuilder(
-        default_config.builders.viz.case,
+        default_config.builders.case,
         spark_session,
         es_dataframe_util,
         es_utils.CaseFieldSelector(),

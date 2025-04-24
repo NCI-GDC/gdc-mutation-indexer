@@ -8,9 +8,10 @@ import pytest
 from elasticsearch import helpers
 from pyspark import sql
 
-from mutation_indexer import configuration, es_utils
+from mutation_indexer import es_utils
 from mutation_indexer.builders import segment_cnv_centric
 from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def segment_cnv_centric_builder(
     )
 
     yield segment_cnv_centric.SegmentCNVCentricBuilder(
-        segment_config.builders.viz.segment_cnv_centric,
+        segment_config.builders.segment_cnv_centric,
         spark_session,
         es_dataframe_util,
         mappings_loader,

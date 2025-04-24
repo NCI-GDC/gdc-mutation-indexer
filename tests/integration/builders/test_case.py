@@ -63,7 +63,7 @@ class TestCaseBuilder:
             data["build"]["projects"] = projects
             return data
 
-        conf = test_setup.load_configuration({"build": {"projects": projects}})
+        conf = test_setup.load_viz_config({"build": {"projects": projects}})
         es_dataframe_util = es_utils.DataFrameUtil(
             conf.elasticsearch,
             spark_session,
@@ -75,7 +75,7 @@ class TestCaseBuilder:
         ascat_metadata_df = cnv_df.select("case_id")
         segment_cnv_metadata_df = segment_cnv_df.select("case_id")
         df = builders.CaseBuilder(
-            conf.builders.viz.case, spark_session, es_dataframe_util, field_selector
+            conf.builders.case, spark_session, es_dataframe_util, field_selector
         ).build(
             maf_metadata_df=maf_metadata_df,
             ascat_metadata_df=ascat_metadata_df,

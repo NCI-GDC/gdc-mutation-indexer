@@ -6,6 +6,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 from typing import Annotated, Mapping
 
+from marshmallow import fields
+
 from mutation_indexer.configuration import _extensions
 from mutation_indexer.constants import build
 
@@ -42,7 +44,12 @@ class Write:
 
     batch_size_bytes: str
     batch_size_entries: int
-    indices: Mapping[build.IndexType, str]
+    indices: Annotated[
+        Mapping[build.IndexType, str],
+        fields.Dict(
+            keys=fields.Enum(build.IndexType), values=_extensions.FormatMapRootField
+        ),
+    ]
 
 
 @dataclasses.dataclass(frozen=True)
