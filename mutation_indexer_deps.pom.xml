@@ -10,7 +10,7 @@
 
   <properties>
     <gdc.mutationIndexer.artifactDir>artifacts/jars</gdc.mutationIndexer.artifactDir>
-    <gdc.mutationIndexer.scalaVersion>2.11</gdc.mutationIndexer.scalaVersion>
+    <gdc.mutationIndexer.scalaVersion>2.12</gdc.mutationIndexer.scalaVersion>
   </properties>
 
   <build>
