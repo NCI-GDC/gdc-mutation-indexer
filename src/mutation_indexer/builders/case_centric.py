@@ -114,7 +114,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         obs_df = observation.build_observation_for_segment_cnv(segment_cnv_df).select(
             "segment_cnv_id", "observation"
         )
-        segment_cnv_df = segment_cnv_df.drop_duplicates(subset=["segment_cnv_id"])
+        segment_cnv_df = segment_cnv_df.select(*segment_columns).drop_duplicates(
+            subset=["segment_cnv_id"]
+        )
         segment_cnv_subtree = segment_cnv_df.join(
             obs_df, on="segment_cnv_id", how="inner"
         ).select(
