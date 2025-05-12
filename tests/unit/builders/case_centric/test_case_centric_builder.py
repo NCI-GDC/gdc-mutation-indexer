@@ -727,6 +727,10 @@ class TestCaseCentricBuilder:
             assert_segment_cnv_translated(result_segment, raw_segment_cnv)
 
     def test__build__segment_cnv_associated_with_correct_case(self) -> None:
+        """This test ensures that a segment cnv observation is associated with the case
+        of the same case_id as the observation record. This was broken and fixed with
+        DEV-3503.
+        """
         segment_cnvs = (
             models.SegmentCNV(
                 segment_cnv_id="segment_cnv-0", case_id="case-0", observation_id="obs-0"
