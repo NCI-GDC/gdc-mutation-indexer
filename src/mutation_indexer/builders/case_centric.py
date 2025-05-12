@@ -14,6 +14,16 @@ from mutation_indexer.builders import (
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
 
+SEGMENT_CNV_COLUMNS = (
+    "segment_cnv_id",
+    "chromosome",
+    "length",
+    "start_position",
+    "end_position",
+    "cnv_change",
+    "cnv_change_5_category",
+)
+
 
 class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
     """
@@ -102,32 +112,23 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             associated with each case. The case_id is required to be able to join back to
             the final case_centric dataframe.
         """
-        segment_columns = (
-            "segment_cnv_id",
-            "chromosome",
-            "length",
-            "start_position",
-            "end_position",
-            "cnv_change",
-            "cnv_change_5_category",
-        )
         obs_df = observation.build_observation_for_segment_cnv(segment_cnv_df).select(
-            "segment_cnv_id", "observation"
+            "segment_cnv_id", "case_id", "observation"
         )
-        segment_cnv_df = segment_cnv_df.drop_duplicates(subset=["segment_cnv_id"])
-        segment_cnv_subtree = segment_cnv_df.join(
+        segment_cnv_df = segment_cnv_df.select(*SEGMENT_CNV_COLUMNS).distinct()
+        subtree_df = segment_cnv_df.join(
             obs_df, on="segment_cnv_id", how="inner"
         ).select(
-            F.struct(*segment_columns, "observation").alias("segment_cnv"),
+            F.struct(*SEGMENT_CNV_COLUMNS, "observation").alias("segment_cnv"),
             "segment_cnv_id",
             "case_id",
         )
-        segment_cnv_subtree = segment_cnv_subtree.groupBy(["case_id"]).agg(
+        subtree_df = subtree_df.groupBy("case_id").agg(
             F.collect_set("segment_cnv").alias("segment_cnv")
         )
-        segment_cnv_subtree = segment_cnv_subtree.select("case_id", "segment_cnv")
+        subtree_df = subtree_df.select("case_id", "segment_cnv")
 
-        return segment_cnv_subtree
+        return subtree_df
 
     def build(
         self,
