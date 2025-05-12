@@ -725,3 +725,50 @@ class TestCaseCentricBuilder:
             sorted_by_segment_cnv_id, raw_segment_cnvs
         ):
             assert_segment_cnv_translated(result_segment, raw_segment_cnv)
+
+    def test__build__segment_cnv_associated_with_correct_case(self) -> None:
+        """This test ensures that a segment cnv observation is associated with the case
+        of the same case_id as the observation record. This was broken and fixed with
+        DEV-3503.
+        """
+        segment_cnvs = (
+            models.SegmentCNV(
+                segment_cnv_id="segment_cnv-0", case_id="case-0", observation_id="obs-0"
+            ),
+            models.SegmentCNV(
+                segment_cnv_id="segment_cnv-0", case_id="case-1", observation_id="obs-1"
+            ),
+        )
+        cases = (case.Case(case_id="case-0"), case.Case(case_id="case-1"))
+
+        config = self.arrange_config()
+        sql_context = self.arrange_sql_context()
+        dataframe_util = self.arrange_dataframe_util(cases=cases)
+        field_selector = self.arrange_field_selector()
+        consequence_builder = self.arrange_consequence_builder()
+        observation_builder = self.arrange_observation_builder()
+        inputs = self.arrange_inputs(segment_cnvs=segment_cnvs)
+        builder = builders.CaseCentricBuilder(
+            config,
+            sql_context,
+            dataframe_util,
+            field_selector,
+            consequence_builder,
+            observation_builder,
+        )
+
+        builder.build(**inputs)
+
+        result_cases = {r.case_id: r for r in builder.case_centric.collect()}
+
+        assert frozenset(("case-0", "case-1")) == result_cases.keys()
+        assert len(result_cases["case-0"].segment_cnv) == 1
+        assert (
+            result_cases["case-0"].segment_cnv[0].observation[0].observation_id
+            == "obs-0"
+        )
+        assert len(result_cases["case-1"].segment_cnv) == 1
+        assert (
+            result_cases["case-1"].segment_cnv[0].observation[0].observation_id
+            == "obs-1"
+        )
