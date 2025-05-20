@@ -59,15 +59,19 @@ class SQLiteDatabase:
         1) The database file is loaded to s3.
         2) The local copy of the database file is deleted.
         """
+        if self.dbfile.stat().st_size:
+            self._write_to_s3()
+
+        self._context.close()
+
+        self._dbfile = None
+
+    def _write_to_s3(self) -> None:
         self._s3_client.upload_file(
             str(self.dbfile.absolute()),
             Bucket=self._config.destination.bucket,
             Key=self._config.destination.key,
         )
-
-        self._context.close()
-
-        self._dbfile = None
 
     def write(
         self, df: sql.DataFrame, insert: str, create: Optional[str] = None

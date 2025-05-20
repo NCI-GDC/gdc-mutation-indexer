@@ -58,11 +58,14 @@ class Driver(driver.Driver[configuration.Configuration]):
             A context manager wrapping the dependencies. The context should be exited
             only after the dependent builders and done being used.
         """
-        with driver.get_es_client(config.elasticsearch.connection) as es_client:
-            index_client = driver.get_index_client(config.indexd)
-            mappings_loader = es_utils.MappingsLoader()
-            s3_client = _initialize_s3_client(config.aws.s3)
+        s3_client = _initialize_s3_client(config.aws.s3)
+        index_client = driver.get_index_client(config.indexd)
+        mappings_loader = es_utils.MappingsLoader()
 
+        with (
+            driver.get_es_client(config.elasticsearch.connection) as es_client,
+            sqlite.SQLiteDatabase(config.sqlite_database, s3_client) as db,
+        ):
             yield Dependencies(
                 indexd_utils.DataFrameUtil(
                     index_client,
@@ -79,7 +82,7 @@ class Driver(driver.Driver[configuration.Configuration]):
                 mappings_loader,
                 s3_client,
                 spark_session,
-                sqlite.SQLiteDatabase(config.sqlite_database, s3_client),
+                db,
             )
 
     def _builders(

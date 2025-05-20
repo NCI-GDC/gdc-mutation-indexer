@@ -10,7 +10,7 @@
 
   <properties>
     <gdc.mutationIndexer.artifactDir>artifacts/jars</gdc.mutationIndexer.artifactDir>
-    <gdc.mutationIndexer.scalaVersion>2.11</gdc.mutationIndexer.scalaVersion>
+    <gdc.mutationIndexer.scalaVersion>2.12</gdc.mutationIndexer.scalaVersion>
   </properties>
 
   <build>
@@ -18,14 +18,13 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.1.2</version>
+        <version>3.8.1</version>
         <executions>
           <execution>
             <id>download-dependencies</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
-
             <configuration>
               <outputDirectory>${gdc.mutationIndexer.artifactDir}</outputDirectory>
             </configuration>
@@ -41,7 +40,7 @@
       <artifactId>elasticsearch-spark-30_2.12</artifactId>
       <!-- This version should support 7.7.X.
         See: https://www.elastic.co/support/matrix#matrix_compatibility -->
-      <version>7.17.8</version>
+      <version>7.17.28</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -52,7 +51,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-aws</artifactId>
-      <version>3.3.4</version>
+      <version>3.4.1</version>
     </dependency>
   </dependencies>
 </project>
