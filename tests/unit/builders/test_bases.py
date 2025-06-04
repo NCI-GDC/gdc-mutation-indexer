@@ -48,7 +48,7 @@ class TestDataFrameInputManager:
         ids=("empty", "exact_match", "extra"),
     )
     def test__check__all_keys_are_contained(
-        self, input: dict, input_type: Type[TypedDict]
+        self, input: dict, input_type: Type[dict]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -77,7 +77,7 @@ class TestDataFrameInputManager:
         ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: Type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: Type[dict], expected_dfs: AbstractSet[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 

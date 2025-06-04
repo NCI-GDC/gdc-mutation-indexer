@@ -108,47 +108,38 @@ class BaseBuilder(abc.ABC):
         self.log(response)
 
         self.log("Repartitioning {}".format(self.index_name))
-        df = getattr(self, self.index_name).repartition(
+        df: sql.DataFrame = getattr(self, self.index_name).repartition(
             self.config.df_repartition, self.id_field
         )
 
         df = cast_booleans(df, mapper.mappings)
         self.log("Exporting {} index to {}".format(self.index_name, index))
-        df.coalesce(self.config.df_coalesce).write.format(
-            "org.elasticsearch.spark.sql"
-        ).option("es.nodes", self.config.es_nodes).option(
-            "es.net.http.auth.user", self.config.source_es_user
-        ).option(
-            "es.net.http.auth.pass", self.config.es_pass
-        ).option(
-            "es.net.ssl", self.config.es_use_ssl
-        ).option(
-            "es.net.ssl.cert.allow.self.signed", self.config.disable_es_verify_certs
-        ).option(
-            "es.nodes.wan.only", "true"
-        ).option(
-            "es.nodes.resolve.hostname", "false"
-        ).option(
-            "es.resource.write", index
-        ).option(
-            "es.http.timeout", "20m"
-        ).option(
-            "es.http.retries", "-1"
-        ).option(
-            "es.batch.write.retry.count", "-1"
-        ).option(
-            "es.batch.write.retry.wait", "10m"
-        ).option(
-            "es.batch.size.bytes", self.config.batch_size_bytes
-        ).option(
-            "es.batch.size.entries", self.config.batch_size_entries
-        ).option(
-            "es.batch.write.refresh", False
-        ).option(
-            "es.mapping.id", self.id_field
-        ).save(
-            index
+        writer = (
+            df.coalesce(self.config.df_coalesce)
+            .write.format("org.elasticsearch.spark.sql")
+            .option("es.nodes", self.config.es_nodes)
+            .option("es.net.http.auth.user", self.config.source_es_user)
+            .option("es.net.http.auth.pass", self.config.es_pass)
+            .option(
+                "es.net.ssl.cert.allow.self.signed", self.config.disable_es_verify_certs
+            )
+            .option("es.nodes.wan.only", "true")
+            .option("es.nodes.resolve.hostname", "false")
+            .option("es.resource.write", index)
+            .option("es.http.timeout", "20m")
+            .option("es.http.retries", "-1")
+            .option("es.batch.write.retry.count", "-1")
+            .option("es.batch.write.retry.wait", "10m")
+            .option("es.batch.size.bytes", self.config.batch_size_bytes)
+            .option("es.batch.size.entries", self.config.batch_size_entries)
+            .option("es.batch.write.refresh", False)
+            .option("es.mapping.id", self.id_field)
         )
+
+        if self.config.es_ca_certs:
+            writer.option("es.net.ssl.keystore.location", self.config.es_ca_certs)
+
+        writer.save(index)
         self.log("Finished exporting {} index to {}".format(self.index_name, index))
 
         df.unpersist()

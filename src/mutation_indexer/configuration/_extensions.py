@@ -7,15 +7,34 @@ import dataclasses
 import pathlib
 from collections.abc import Callable, Iterable, Mapping
 from os import path
-from typing import Any, ClassVar, Final, Generic, TypeVar, cast
+from typing import Any, ClassVar, Final, Generic, TypedDict, TypeVar, cast
 
 import marshmallow
 import marshmallow_dataclass
 from deepmerge import merger
-from marshmallow import exceptions, fields, schema, utils
+from marshmallow import constants, exceptions, fields, utils, validate
+from marshmallow.experimental import context
 from typing_extensions import Self, dataclass_transform
 
 T = TypeVar("T")
+
+
+def _resolve_field_instance(
+    cls_or_instance: fields.Field | type[fields.Field],
+) -> fields.Field:
+    """Return a Field instance from a Field class or instance.
+
+    COPIED: marshmallow.fields module.
+
+    :param cls_or_instance: Field class or instance.
+    """
+    if isinstance(cls_or_instance, type):
+        if not issubclass(cls_or_instance, fields.Field):
+            raise ValueError("Field must be a subclass of marshmallow.fields.Field.")
+        return cls_or_instance()
+    if not isinstance(cls_or_instance, fields.Field):
+        raise ValueError("Field must be an instance of marshmallow.fields.Field.")
+    return cls_or_instance
 
 
 class ArrayTupleField(fields.Field):
@@ -25,10 +44,8 @@ class ArrayTupleField(fields.Field):
         self,
         inner: fields.Field | type[fields.Field],
         *,
-        load_default: Any = utils.missing,
-        missing: Any = utils.missing,
-        dump_default: Any = utils.missing,
-        default: Any = utils.missing,
+        load_default: Any = constants.missing,
+        dump_default: Any = constants.missing,
         data_key: str | None = None,
         attribute: str | None = None,
         validate: Callable[[Any], Any] | Iterable[Callable[[Any], Any]] | None = None,
@@ -51,9 +68,7 @@ class ArrayTupleField(fields.Field):
         """
         super().__init__(
             load_default=load_default,
-            missing=missing,
             dump_default=dump_default,
-            default=default,
             data_key=data_key,
             attribute=attribute,
             validate=validate,
@@ -66,14 +81,14 @@ class ArrayTupleField(fields.Field):
             **additional_metadata,
         )
 
-        self._inner = utils.resolve_field_instance(inner)
+        self._inner = _resolve_field_instance(inner)
 
     def _bind_to_schema(
-        self, field_name: str, schema: schema.Schema | fields.Field
+        self, field_name: str, parent: marshmallow.Schema | fields.Field
     ) -> None:
         self._inner = copy.copy(self._inner)
 
-        super()._bind_to_schema(field_name, schema)
+        super()._bind_to_schema(field_name, parent)
         self._inner._bind_to_schema(field_name, self)
 
     def _serialize(self, value: Any, attr: str | None, obj: Any, **kwargs) -> Any:
@@ -106,6 +121,49 @@ class ArrayTupleField(fields.Field):
         return tuple(self._deserialize_values(value, **kwargs))
 
 
+class PathValidator(validate.Validator):
+    __slots__ = ("_is_optional", "_is_file", "_is_directory", "_exists")
+
+    def __init__(
+        self,
+        is_optional: bool = False,
+        is_file: bool | None = None,
+        is_directory: bool | None = None,
+        exists: bool | None = None,
+    ) -> None:
+        self._is_optional = is_optional
+        self._is_file = is_file
+        self._is_directory = is_directory
+        self._exists = exists
+
+    def __call__(self, value: Any) -> Any:
+        if value is None and self._is_optional:
+            return
+
+        elif not isinstance(value, str):
+            raise marshmallow.ValidationError("Path must be a string.")
+
+        path = pathlib.Path(value)
+
+        if path.exists():
+            if self._exists is False:
+                raise marshmallow.ValidationError(f"Path cannot already exist.")
+
+            if self._is_file is not None and path.is_file() != self._is_file:
+                verb = "must" if self._is_file else "cannot"
+
+                raise marshmallow.ValidationError(f"Path {verb} be a file.")
+
+            if self._is_directory is not None and path.is_dir() != self._is_directory:
+                verb = "must" if self._is_directory else "cannot"
+
+                raise marshmallow.ValidationError(f"Path {verb} be a directory.")
+
+        else:
+            if self._exists is True:
+                raise marshmallow.ValidationError(f"Path must already exist.")
+
+
 class ResolvedPathField(fields.Field):
     """A field for loading paths and resolving any environment vars within.
 
@@ -131,12 +189,9 @@ class ResolvedPathField(fields.Field):
         attr: str | None,
         data: Mapping[str, Any] | None,
         **kwargs: Any,
-    ) -> pathlib.Path:
-        if not isinstance(value, str):
-            exceptions.ValidationError(
-                f"Invalid value for path: {value}.",
-                field_name=attr or exceptions.SCHEMA,
-            )
+    ) -> pathlib.Path | None:
+        if value is None:
+            return None
 
         return pathlib.Path(path.expandvars(value)).expanduser()
 
@@ -147,7 +202,7 @@ class SecretStringField(fields.String):
     def _serialize(self, value, attr, obj, **kwargs) -> str | None:
         assert self.root, "Invalid context."
 
-        if self.root.context.get("is_obfuscated"):
+        if _SerializationContext.get()["is_obfuscated"]:
             value = "*" * len(value)
 
         return super()._serialize(value, attr, obj, **kwargs)
@@ -161,12 +216,11 @@ class FormatMapRootField(fields.String):
     """
 
     def _serialize(
-        self,
-        value: str,
-        attr: str | None,
-        obj: Any,
-        **kwargs: Any,
-    ) -> str:
+        self, value: str | None, attr: str | None, obj: Any, **kwargs: Any
+    ) -> str | None:
+        if not value:
+            return value
+
         # Ensure that escaped values are returned to original markup.
         return value.replace("{", "{{").replace("}", "}}")
 
@@ -179,10 +233,24 @@ class FormatMapRootField(fields.String):
     ) -> str:
         assert self.root, "Field must have a root schema."
 
-        root_data = self.root.context.get("root_data", {})
-        template: str = super()._deserialize(value, attr, data, **kwargs)
+        root_data = _DeserializationContext.get()["root_data"]
+        template = super()._deserialize(value, attr, data, **kwargs)
 
         return template.format_map(root_data)
+
+
+class _Serialization(TypedDict):
+    is_obfuscated: bool
+
+
+_SerializationContext = context.Context[_Serialization]
+
+
+class _Deserialization(TypedDict):
+    root_data: Mapping[str, Any]
+
+
+_DeserializationContext = context.Context[_Deserialization]
 
 
 class Schema(Generic[T]):
@@ -205,11 +273,8 @@ class Schema(Generic[T]):
         Returns:
             A validated instance of T.
         """
-        self._schema.context["root_data"] = data
-        obj = cast(T, self._schema.load(data))
-        _ = self._schema.context.pop("root_data")
-
-        return obj
+        with _DeserializationContext({"root_data": data}):
+            return cast(T, self._schema.load(data))
 
     def dump(self, obj: T, is_obfuscated: bool) -> Mapping[str, Any]:
         """Dumps the given instance into a mapping representation of the data.
@@ -222,11 +287,8 @@ class Schema(Generic[T]):
         Returns:
             A mapping of the data contained within the given instance.
         """
-        self._schema.context["is_obfuscated"] = is_obfuscated
-        data = cast(Mapping[str, Any], self._schema.dump(obj))
-        _ = self._schema.context.pop("is_obfuscated")
-
-        return data
+        with _SerializationContext({"is_obfuscated": is_obfuscated}):
+            return cast(Mapping[str, Any], self._schema.dump(obj))
 
 
 @dataclass_transform(frozen_default=True)

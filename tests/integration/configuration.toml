@@ -1,26 +1,25 @@
 [build]
+build_version = "v0"
 config_file = ""
+data_release = "test"
 driver = "bin/driver.py"
 error_log = "mutation-indexer-error.log"
 jar_dir = "jars"
-build_version = "v0"
-data_release = "test"
 manifest_dir = "manifests"
 output_log = "mutation-indexer.log"
 pex_file = "driver-all"
 
 [elasticsearch.connection]
-nodes = "localhost"
-user = ""
+nodes = "http://localhost"
 password = ""
-use_ssl = false
+user = ""
 verify_certs = false
 
 [indexd]
 host = "localhost"
+password = ""
 port = 80
 user = ""
-password = ""
 
 [spark]
 master = "local[*]"

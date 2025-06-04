@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from collections.abc import Mapping, Sequence
 
@@ -226,8 +228,11 @@ class ObsoleteConfig:
         return self._config.elasticsearch.connection.password
 
     @property
-    def es_use_ssl(self) -> bool:
-        return self._config.elasticsearch.connection.use_ssl
+    def es_ca_certs(self) -> str | None:
+        return (
+            self._config.elasticsearch.connection.ca_certs
+            and self._config.elasticsearch.connection.ca_certs.as_uri()
+        )
 
     @property
     def disable_es_verify_certs(self) -> bool:

@@ -86,8 +86,8 @@ def es_client(
 
     with elasticsearch.Elasticsearch(
         es_connection.nodes.split(","),
-        use_ssl=es_connection.use_ssl,
         verify_certs=es_connection.verify_certs,
+        ca_certs=(es_connection.ca_certs and es_connection.ca_certs.as_uri()),
         http_auth=(es_connection.user, es_connection.password),
     ) as es_client:
         yield es_client
@@ -151,6 +151,7 @@ def spark_session() -> Generator[sql.SparkSession, None, None]:
         .config("spark.ui.showConsoleProgress", False)
         .config("spark.ui.enabled", False)
         .config("spark.driver.memory", "2g")
+        .config("spark.python.worker.memory", "1g")
         .getOrCreate() as spark_session
     ):
         spark_session.sparkContext.setLogLevel("FATAL")

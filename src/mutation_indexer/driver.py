@@ -62,9 +62,9 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     """
 
     return elasticsearch.Elasticsearch(
-        config.nodes.split(","),
-        use_ssl=config.use_ssl,
+        hosts=config.nodes.split(","),
         verify_certs=config.verify_certs,
+        ca_certs=config.ca_certs and config.ca_certs.as_uri(),
         http_auth=(config.user, config.password),
     )
 

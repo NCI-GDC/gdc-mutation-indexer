@@ -26,7 +26,7 @@ def _initialize_s3_client(config: aws.S3) -> s3.Client:
         endpoint_url=config.host,
         aws_access_key_id=config.access_key,
         aws_secret_access_key=config.secret_key,
-        verify=False,
+        verify=str(config.ca_certs.resolve()) if config.ca_certs else config.validate,
     )
 
 

@@ -3,7 +3,10 @@ For documentation concerning Mutation Indexer configuration please refer to the 
 documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configuration
 """
 
+from __future__ import annotations
+
 import dataclasses
+import pathlib
 from typing import Annotated, Mapping
 
 from marshmallow import fields
@@ -21,8 +24,15 @@ class Connection:
     nodes: str
     user: str
     password: Annotated[str, _extensions.SecretStringField]
-    use_ssl: bool
     verify_certs: bool
+    ca_certs: Annotated[
+        pathlib.Path | None,
+        _extensions.ResolvedPathField(
+            validate=_extensions.PathValidator(
+                is_optional=True, is_file=True, exists=True
+            )
+        ),
+    ] = None
 
 
 @dataclasses.dataclass(frozen=True)

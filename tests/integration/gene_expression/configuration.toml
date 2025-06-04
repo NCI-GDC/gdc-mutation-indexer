@@ -1,7 +1,8 @@
 [aws.s3]
-host = "localhost"
 access_key = ""
+host = "localhost"
 secret_key = ""
+validate = false
 
 [builders.binary]
 is_cached = false

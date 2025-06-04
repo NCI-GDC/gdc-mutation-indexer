@@ -577,13 +577,15 @@ class DataFrameUtil:
             "es.nodes": self._config.connection.nodes,
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
-            "es.net.ssl": str(self._config.connection.use_ssl),
             "es.net.ssl.cert.allow.self.signed": str(
                 not self._config.connection.verify_certs
             ),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": _get_index(self._config, index_type),
         }
+
+        if ca_certs := self._config.connection.ca_certs:
+            config["es.net.ssl.keystore.location"] = ca_certs.as_uri()
 
         if query:
             config["es.query"] = json.dumps(query)
@@ -643,19 +645,18 @@ class DataFrameUtil:
         A utility for writing data from a data frame into elasticsearch.
 
         Args:
-            df: the data frame which will be writen to elasticsearch for indexing
+            df: the data frame which will be written to elasticsearch for indexing
             index_type: the index type i.e. ssm_centric_index which the data will be
                 written to
         """
         index = self._get_index(index_type)
 
         self._create_index(index, index_type)
-        (
+        writer = (
             df.write.format(self.ES_FORMAT)
             .option("es.nodes", self._config.connection.nodes)
             .option("es.net.http.auth.user", self._config.connection.user)
             .option("es.net.http.auth.pass", self._config.connection.password)
-            .option("es.net.ssl", self._config.connection.use_ssl)
             .option(
                 "es.net.ssl.cert.allow.self.signed",
                 not self._config.connection.verify_certs,
@@ -671,8 +672,12 @@ class DataFrameUtil:
             .option("es.batch.size.entries", self._config.write.batch_size_entries)
             .option("es.batch.write.refresh", True)
             .option("es.mapping.id", id_field)
-            .save(index)
         )
+
+        if ca_certs := self._config.connection.ca_certs:
+            writer.option("es.net.ssl.keystore.location", ca_certs.as_uri())
+
+        writer.save(index)
 
 
 class RDDUtil:
@@ -730,13 +735,15 @@ class RDDUtil:
             "es.nodes": self._config.connection.nodes,
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
-            "es.net.ssl": str(self._config.connection.use_ssl),
             "es.net.ssl.cert.allow.self.signed": str(
                 not self._config.connection.verify_certs
             ),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": self._get_index(index_type),
         }
+
+        if ca_certs := self._config.connection.ca_certs:
+            config["es.net.ssl.keystore.location"] = ca_certs.as_uri()
 
         if query:
             config["es.query"] = json.dumps(query)

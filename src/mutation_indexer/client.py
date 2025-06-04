@@ -5,9 +5,9 @@ import pathlib
 from collections.abc import Iterable, Sequence
 
 import elasticsearch
-import halo
 import more_itertools
 import tap
+import yaspin
 
 from mutation_indexer import configuration, gene_expression, viz
 from mutation_indexer.configuration import build
@@ -133,17 +133,17 @@ async def _main(args: Args) -> None:
     with Configuration.client_context(args.config) as config:
         print(f"RUNNING BUILD: {config.build.build_id}")
 
-        with halo.Halo(spinner="pong") as spinner:
+        with yaspin.yaspin(spinner="toggle10", text="Running...") as spinner:
             try:
-                spinner.text = "Running spark-submit"
+                spinner.write("> Running spark-submit")
                 await run_spark_command(config, args.driver)
-                spinner.text = "Merging indices"
+                spinner.write("> Merging indices")
                 await force_merge_indices(config)
             except:
-                spinner.fail("Process Failed")
+                spinner.fail("✘ Process Failed")
                 raise
             else:
-                spinner.succeed("Indices built")
+                spinner.ok("✔ Indices built")
 
 
 def main() -> None:

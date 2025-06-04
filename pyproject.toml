@@ -36,7 +36,7 @@ name = "gdc-mutation-indexer"
 requires-python = "~=3.9"
 
 [project.optional-dependencies]
-client = ["halo", "pex", "wheel"]
+client = ["yaspin", "pex", "wheel"]
 dev = ["click~=8.1", "coverage[toml]~=7.0", "deepdiff~=6.0", "pytest~=8.0"]
 
 [project.scripts]
