@@ -93,7 +93,7 @@ pyyaml==5.4.1
     #   -c requirements.txt
     #   aspy-yaml
     #   pre-commit
-requests==2.27.1
+requests==2.32.4
     # via
     #   -c requirements.txt
     #   sphinx
