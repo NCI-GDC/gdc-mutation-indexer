@@ -14,9 +14,7 @@ class SegmentCNVMetadataInputs(TypedDict):
 
 
 class SegmentCNVMetadataBuilder(
-    bases.InputBuilder[
-        configuration.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs
-    ]
+    bases.InputBuilder[configuration.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs]
 ):
     def __init__(
         self,
@@ -52,11 +50,7 @@ class SegmentCNVMetadataBuilder(
                     }
                 ],
                 "must_not": [
-                    {
-                        "term": {
-                            "analysis.workflow_type": datamodel.WorkflowType.GATK4_CNV
-                        }
-                    }
+                    {"term": {"analysis.workflow_type": datamodel.WorkflowType.GATK4_CNV}}
                 ],
             }
         }
@@ -67,11 +61,7 @@ class SegmentCNVMetadataBuilder(
                 "bool": {
                     "must": [
                         {"term": {"data_type": datamodel.DataType.COPY_NUMBER_SEGMENT}},
-                        {
-                            "term": {
-                                "analysis.workflow_type": datamodel.WorkflowType.ASCAT_NGS
-                            }
-                        },
+                        {"term": {"analysis.workflow_type": datamodel.WorkflowType.ASCAT_NGS}},
                     ]
                 }
             }

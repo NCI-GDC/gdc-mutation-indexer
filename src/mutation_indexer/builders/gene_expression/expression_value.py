@@ -36,9 +36,7 @@ class ExpressionValueBuilder(
 
         self._doc_dataframe_util = doc_dataframe_util
 
-    def _load_expression_values(
-        self, primary_aliquot_df: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _load_expression_values(self, primary_aliquot_df: sql.DataFrame) -> sql.DataFrame:
         """
         Load the gene expression data from the files referenced in the primary aliquot df
 

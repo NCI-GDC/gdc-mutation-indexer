@@ -39,9 +39,7 @@ class TestGeneExpressionBuilder:
     def _arrange_inputs(
         self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
     ) -> dict[str, sql.DataFrame]:
-        expression_value_df = self.create_dataframe(
-            values, self.expression_value_schema
-        )
+        expression_value_df = self.create_dataframe(values, self.expression_value_schema)
 
         return dict(expression_value_df=expression_value_df)
 
@@ -63,9 +61,7 @@ class TestGeneExpressionBuilder:
         es_dataframe_util = mock.MagicMock()
         mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs()
-        builder = index.IndexBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = index.IndexBuilder(config, spark_session, es_dataframe_util, mappings_loader)
 
         result_df = builder.build(**inputs)
 
@@ -79,9 +75,7 @@ class TestGeneExpressionBuilder:
         mappings_loader = utils.arrange_empty_mappings_loader()
         value = models.ExpressionValue()
         inputs = self._arrange_inputs((value,))
-        builder = index.IndexBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = index.IndexBuilder(config, spark_session, es_dataframe_util, mappings_loader)
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())

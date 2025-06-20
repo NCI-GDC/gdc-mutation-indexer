@@ -196,10 +196,7 @@ class ObsoleteConfig:
 
     @property
     def indices(self) -> Mapping[str, str]:
-        return {
-            k.name.lower(): v
-            for k, v in self._config.elasticsearch.write.indices.items()
-        }
+        return {k.name.lower(): v for k, v in self._config.elasticsearch.write.indices.items()}
 
     @property
     def es_nodes(self) -> str:

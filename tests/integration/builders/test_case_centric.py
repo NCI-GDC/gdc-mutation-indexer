@@ -28,9 +28,7 @@ def test_genes_per_case(
 
 def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> None:
     # SSMs per gene built:
-    df = join_utils.unpack_df_list(
-        case_centric_df, "case_id", "gene", ("gene_id", "ssm")
-    )
+    df = join_utils.unpack_df_list(case_centric_df, "case_id", "gene", ("gene_id", "ssm"))
     df = join_utils.unpack_df_list(df, ("case_id", "gene_id"), "ssm", "ssm_id")
     es_spg = join_utils.get_relationship_map(df, ("case_id", "gene_id", "ssm_id"))
 
@@ -68,12 +66,8 @@ def test_ssm_subtree(
         df, ("ssm_id", "consequence_id"), "observation", "observation_id"
     )
     data = tuple(df.toLocalIterator())
-    consequences_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id")
-    )
-    observations_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "observation_id")
-    )
+    consequences_stats = join_utils.get_relationship_map(data, ("ssm_id", "consequence_id"))
+    observations_stats = join_utils.get_relationship_map(data, ("ssm_id", "observation_id"))
 
     # ssm_subtree stats built:
     df = join_utils.unpack_df_list(
@@ -86,12 +80,8 @@ def test_ssm_subtree(
         df, ("ssm_id", "consequence_id"), "observation", "observation_id"
     )
     data = tuple(df.toLocalIterator())
-    es_consequences_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id")
-    )
-    es_observations_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "observation_id")
-    )
+    es_consequences_stats = join_utils.get_relationship_map(data, ("ssm_id", "consequence_id"))
+    es_observations_stats = join_utils.get_relationship_map(data, ("ssm_id", "observation_id"))
 
     assert consequences_stats == es_consequences_stats
     assert observations_stats == es_observations_stats
@@ -110,8 +100,7 @@ def test_case_centric_counts(
     This is necessary for the portal to visualize such cases.
     """
     cases_built = frozenset(
-        c.case_id
-        for c in case_centric_df.select("case_id").distinct().toLocalIterator()
+        c.case_id for c in case_centric_df.select("case_id").distinct().toLocalIterator()
     )
     all_cnv_cases = frozenset(
         r.case_id for r in cnv_df.select("case_id").distinct().toLocalIterator()
@@ -158,9 +147,7 @@ def test_available_variation_data(
     assert empty_cases, "there were no empty cases found in test data"
 
     # Check that 'available_variation_data' is populated correctly
-    for row in case_centric_df.select(
-        "case_id", "available_variation_data"
-    ).toLocalIterator():
+    for row in case_centric_df.select("case_id", "available_variation_data").toLocalIterator():
         if row.case_id in common_cases:
             assert row.available_variation_data == ["cnv", "ssm"]
         elif row.case_id in cnv_cases:

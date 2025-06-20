@@ -54,9 +54,7 @@ class TestExpressionValueBuilder:
     def _arrange_inputs(
         self,
         gene_models: tuple[models.GeneModel, ...] = (models.GeneModel(),),
-        primary_aliquots: tuple[models.PrimaryAliquot, ...] = (
-            models.PrimaryAliquot(),
-        ),
+        primary_aliquots: tuple[models.PrimaryAliquot, ...] = (models.PrimaryAliquot(),),
     ) -> dict[str, sql.DataFrame]:
         gene_model_df = self.create_dataframe(gene_models, self.gene_model_schema)
         primary_aliquot_df = self.create_dataframe(

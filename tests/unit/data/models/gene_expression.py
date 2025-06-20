@@ -1,7 +1,18 @@
 import dataclasses
 import datetime
 
-from tests.unit.data.models.builders import *
+from tests.unit.data.models.builders import Domain, Exon, GeneModel, Transcript
+
+__all__ = (
+    "Domain",
+    "ExpressionValue",
+    "Exon",
+    "File",
+    "GeneModel",
+    "PrimaryAliquot",
+    "STARCounts",
+    "Transcript",
+)
 
 
 @dataclasses.dataclass(frozen=True)

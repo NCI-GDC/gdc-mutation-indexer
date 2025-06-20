@@ -77,9 +77,9 @@ def mock_base_builder(
 
         if is_called:
             build_method.assert_called_once()
-            assert (
-                df_params <= build_method.mock_calls[0].kwargs.keys()
-            ), build_method.mock_calls
+            assert df_params <= build_method.mock_calls[0].kwargs.keys(), (
+                build_method.mock_calls
+            )
             load_method.assert_called_once_with()
         else:
             build_method.assert_not_called()
@@ -143,22 +143,16 @@ def test__driver__runs_subset() -> None:
         stack.enter_context(mock_base_builder(builders.CaseCentricBuilder))
         stack.enter_context(mock_builder(civic.DNABuilder))
         stack.enter_context(mock_builder(civic.ProteinBuilder))
-        stack.enter_context(
-            mock_base_builder(builders.CNVCentricBuilder, is_called=False)
-        )
+        stack.enter_context(mock_base_builder(builders.CNVCentricBuilder, is_called=False))
         stack.enter_context(mock_base_builder(builders.CNVOccurrenceCentricBuilder))
-        stack.enter_context(
-            mock_base_builder(builders.GeneCentricBuilder, is_called=False)
-        )
+        stack.enter_context(mock_base_builder(builders.GeneCentricBuilder, is_called=False))
         stack.enter_context(mock_builder(builders.GeneModelBuilder))
         stack.enter_context(mock_builder(builders.MAFBuilder))
         stack.enter_context(mock_builder(builders.MAFMetadataBuilder))
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.SegmentCNVBuilder))
         stack.enter_context(mock_builder(builders.SegmentCNVMetadataBuilder))
-        stack.enter_context(
-            mock_builder(builders.SegmentCNVCentricBuilder, is_called=False)
-        )
+        stack.enter_context(mock_builder(builders.SegmentCNVCentricBuilder, is_called=False))
         stack.enter_context(mock_builder(builders.SegmentCNVOccurrenceCentricBuilder))
         stack.enter_context(mock_base_builder(builders.SSMCentricBuilder))
         stack.enter_context(

@@ -40,9 +40,7 @@ NULL_NON_SELECTED_FIELDS = (
 
 def _extract_transactions(maf_df: sql.DataFrame) -> sql.DataFrame:
     all_effects = F.col("all_effects")
-    ssm_transaction_df = maf_df.withColumn(
-        "selected_transcript_id", F.col("transcript_id")
-    )
+    ssm_transaction_df = maf_df.withColumn("selected_transcript_id", F.col("transcript_id"))
     # Explode all_effects, to have each individual transcript data on a separate line
     # NOTE: after exploding, missing fields for secondary transcripts will be populated
     # with values from selected transcript (top level columns)
@@ -196,9 +194,7 @@ class ConsequenceBuilder:
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn(
             "consequence_id",
-            utils.uuid5_col(
-                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
-            ),
+            utils.uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
         )
         if add_gene_aa_change:
             tran_df = tran_df.withColumn(
@@ -229,9 +225,7 @@ class ConsequenceBuilder:
                 "ssm_id",
                 F.struct(
                     "consequence_id",
-                    F.struct(*tran_df.drop("ssm_id", "consequence_id")).alias(
-                        "transcript"
-                    ),
+                    F.struct(*tran_df.drop("ssm_id", "consequence_id")).alias("transcript"),
                 ).alias("consequence"),
             )
 
@@ -253,9 +247,7 @@ class ConsequenceBuilder:
         cons_df = (
             ascat_df.select(
                 "cnv_id",
-                F.struct(*utils.struct_select(index_name, "consequence")).alias(
-                    "consequence"
-                ),
+                F.struct(*utils.struct_select(index_name, "consequence")).alias("consequence"),
             )
             .groupby("cnv_id")
             .agg(F.collect_set("consequence").alias("consequence"))
@@ -301,9 +293,7 @@ class ConsequenceBuilder:
             )
 
         # Take out the transcripts from genes that this mutation is not in
-        ssm_transaction_df = ssm_transaction_df.where(
-            F.col("symbol") == F.col("do_not_use")
-        )
+        ssm_transaction_df = ssm_transaction_df.where(F.col("symbol") == F.col("do_not_use"))
 
         # get is_canonical
         ssm_transaction_df = ssm_transaction_df.withColumn(
@@ -321,15 +311,11 @@ class ConsequenceBuilder:
         ssm_transaction_df = utils.extract_sift_polyphen(ssm_transaction_df)
 
         # Drop used helper columns
-        ssm_transaction_df = ssm_transaction_df.drop(
-            "all_effects", "do_not_use", "symbol"
-        )
+        ssm_transaction_df = ssm_transaction_df.drop("all_effects", "do_not_use", "symbol")
 
         return ssm_transaction_df
 
-    def _build_gene_struct(
-        self, maf_df: sql.DataFrame, index_name: str
-    ) -> sql.DataFrame:
+    def _build_gene_struct(self, maf_df: sql.DataFrame, index_name: str) -> sql.DataFrame:
         # Build and join the gene if required
 
         to_drop = [

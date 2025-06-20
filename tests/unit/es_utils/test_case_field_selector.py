@@ -33,9 +33,7 @@ class TestCaseFieldSelector:
 
     def test__select_for__field_with_nested_struct(self):
         mapping = {
-            "properties": {
-                "parent0": {"properties": {"sub_field0": {"type": "boolean"}}}
-            }
+            "properties": {"parent0": {"properties": {"sub_field0": {"type": "boolean"}}}}
         }
 
         loader = self.arrange_mappings_loader(mapping)
@@ -51,34 +49,26 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(
-                build.IndexType.CASE_CENTRIC, excluded_fields=("field0",)
-            )
+            selector.select_for(build.IndexType.CASE_CENTRIC, excluded_fields=("field0",))
         )
 
         assert fields == frozenset({"case_id"})
 
     def test__select_for__exclude_parent_field_and_all_children(self):
         mapping = {
-            "properties": {
-                "parent0": {"properties": {"sub_field0": {"type": "boolean"}}}
-            }
+            "properties": {"parent0": {"properties": {"sub_field0": {"type": "boolean"}}}}
         }
         loader = self.arrange_mappings_loader(mapping)
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(
-                build.IndexType.CASE_CENTRIC, excluded_fields=("parent0",)
-            )
+            selector.select_for(build.IndexType.CASE_CENTRIC, excluded_fields=("parent0",))
         )
 
         assert fields == frozenset({"case_id"})
 
     def test__select_for__exclude_prefixed_field(self):
-        mapping = {
-            "properties": {"case": {"properties": {"field0": {"type": "keyword"}}}}
-        }
+        mapping = {"properties": {"case": {"properties": {"field0": {"type": "keyword"}}}}}
         loader = self.arrange_mappings_loader(
             mapping, indices=(build.IndexType.CNV_OCCURRENCE_CENTRIC,)
         )
@@ -100,9 +90,7 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(
-                build.IndexType.CASE_CENTRIC, included_fields=("field0",)
-            )
+            selector.select_for(build.IndexType.CASE_CENTRIC, included_fields=("field0",))
         )
 
         assert fields == frozenset({"case_id", "field0"})
@@ -122,14 +110,10 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(
-                build.IndexType.CASE_CENTRIC, included_fields=("parent0",)
-            )
+            selector.select_for(build.IndexType.CASE_CENTRIC, included_fields=("parent0",))
         )
 
-        assert fields == frozenset(
-            {"case_id", "parent0.sub_field0", "parent0.sub_field1"}
-        )
+        assert fields == frozenset({"case_id", "parent0.sub_field0", "parent0.sub_field1"})
 
     def test__select_for__include_prefixed_field(self):
         mapping = {
@@ -180,13 +164,9 @@ class TestCaseFieldSelector:
 
     def test__select_for__filter_non_case_prefixed_fields(self):
         mapping = {
-            "properties": {
-                "consequence": {"properties": {"field0": {"type": "keyword"}}}
-            }
+            "properties": {"consequence": {"properties": {"field0": {"type": "keyword"}}}}
         }
-        loader = self.arrange_mappings_loader(
-            mapping, indices=(build.IndexType.CNV_CENTRIC,)
-        )
+        loader = self.arrange_mappings_loader(mapping, indices=(build.IndexType.CNV_CENTRIC,))
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(selector.select_for(build.IndexType.CNV_CENTRIC))
@@ -205,9 +185,7 @@ class TestCaseFieldSelector:
         self, index: build.IndexType
     ) -> None:
         mapping = {
-            "properties": {
-                "consequence": {"properties": {"field0": {"type": "keyword"}}}
-            }
+            "properties": {"consequence": {"properties": {"field0": {"type": "keyword"}}}}
         }
         loader = self.arrange_mappings_loader(mapping, indices=(index,))
         selector = es_utils.CaseFieldSelector(loader)
@@ -246,9 +224,7 @@ class TestCaseFieldSelector:
         selector = es_utils.CaseFieldSelector(loader)
 
         fields = frozenset(
-            selector.select_for(
-                build.IndexType.CASE_CENTRIC, build.IndexType.CNV_CENTRIC
-            )
+            selector.select_for(build.IndexType.CASE_CENTRIC, build.IndexType.CNV_CENTRIC)
         )
 
         assert fields == frozenset({"case_id", "field0", "field1"})

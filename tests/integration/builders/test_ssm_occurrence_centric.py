@@ -36,27 +36,19 @@ def test_consequences_per_ssm_occurrence(
 ) -> None:
     # Consequences per SSM Occurrence built:
     df = ssm_occurrence_centric_df.select("ssm_occurrence_id", "ssm.ssm_id")
-    ssm_occ_to_ssm = join_utils.get_relationship_map(
-        df, ("ssm_occurrence_id", "ssm_id")
-    )
+    ssm_occ_to_ssm = join_utils.get_relationship_map(df, ("ssm_occurrence_id", "ssm_id"))
 
     # SSM to SSM Occurrence expected:
     df = (
         ssm_transcript_df.withColumn(
             "consequence_id",
-            utils.uuid5_col(
-                F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")
-            ),
+            utils.uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
         )
         .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
-        .select(
-            "ssm_occurrence_id", "ssm_id", "consequence_id", "transcript_id", "gene_id"
-        )
+        .select("ssm_occurrence_id", "ssm_id", "consequence_id", "transcript_id", "gene_id")
     )
 
-    true_ssm_occ_to_ssm = join_utils.get_relationship_map(
-        df, ("ssm_occurrence_id", "ssm_id")
-    )
+    true_ssm_occ_to_ssm = join_utils.get_relationship_map(df, ("ssm_occurrence_id", "ssm_id"))
 
     assert ssm_occ_to_ssm == true_ssm_occ_to_ssm
 
@@ -77,9 +69,7 @@ def test_observations_per_ssm_occurrence(
         "sample.tumor_sample_barcode",
     )
 
-    spo = join_utils.get_relationship_map(
-        df, ("ssm_occurrence_id", "tumor_sample_barcode")
-    )
+    spo = join_utils.get_relationship_map(df, ("ssm_occurrence_id", "tumor_sample_barcode"))
     cpo = join_utils.get_relationship_map(df, ("ssm_occurrence_id", "case_id"))
 
     # Observations and Cases per SSM Occurrence expected:
@@ -97,9 +87,7 @@ def test_observations_per_ssm_occurrence(
 
 
 @pytest.mark.ssm_occurrence_centric_ssm_subtree
-def test_ssm_subtree(
-    maf_df: sql.DataFrame, ssm_occurrence_ssm_subtree: sql.DataFrame
-) -> None:
+def test_ssm_subtree(maf_df: sql.DataFrame, ssm_occurrence_ssm_subtree: sql.DataFrame) -> None:
     fields_to_unpack = (
         "consequence_id",
         "transcript.transcript_id",
@@ -127,9 +115,7 @@ def test_ssm_subtree(
     transcript_stats = join_utils.get_relationship_map(
         data, ("ssm_id", "consequence_id", "transcript_id")
     )
-    gene_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id", "gene_id")
-    )
+    gene_stats = join_utils.get_relationship_map(data, ("ssm_id", "consequence_id", "gene_id"))
 
     assert transcript_stats == true_transcript_stats
     assert gene_stats == true_gene_stats

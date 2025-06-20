@@ -47,9 +47,7 @@ def create_model(
     """
     A tool for creating the models for objects that represent rows in the input schema.
     """
-    _create.create_model(
-        name, input_schema, default_values, output_file, include_asserts
-    )
+    _create.create_model(name, input_schema, default_values, output_file, include_asserts)
 
 
 if __name__ == "__main__":

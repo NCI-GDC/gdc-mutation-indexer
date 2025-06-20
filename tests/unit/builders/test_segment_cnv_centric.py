@@ -82,9 +82,7 @@ def assert_occurrence_grouped_transformed(
     cases: tuple[models.Case, ...],
 ) -> None:
     assert len(row.occurrence) == 2
-    sorted_occurrences_by_obs_id = sorted(
-        row.occurrence, key=lambda occ: occ.occurrence_id
-    )
+    sorted_occurrences_by_obs_id = sorted(row.occurrence, key=lambda occ: occ.occurrence_id)
 
     for i, (segment_cnv, case) in enumerate(zip(segment_cnvs, cases)):
         occurrence = sorted_occurrences_by_obs_id[i]
@@ -125,9 +123,7 @@ class TestSegmentCNVCentricBuilder:
         self, segment_cnvs: Iterable[models.SegmentCNV], cases: Iterable[models.Case]
     ) -> dict:
         return {
-            "segment_cnv_df": self._create_dataframe(
-                segment_cnvs, self._segment_cnv_schema
-            ),
+            "segment_cnv_df": self._create_dataframe(segment_cnvs, self._segment_cnv_schema),
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
@@ -152,9 +148,7 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
 
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segmetn cnv centric dataframe.
@@ -176,9 +170,7 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert_root_level_transformed(result_row, segment_cnv)
@@ -221,9 +213,7 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert_root_level_transformed(result_row, segment_cnvs[0])

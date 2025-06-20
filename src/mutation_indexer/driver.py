@@ -102,9 +102,7 @@ class Driver(Generic[TConfig], abc.ABC):
         """
         ...
 
-    def _sort_builders(
-        self, builders: Iterable[bases.Builder]
-    ) -> Iterable[bases.Builder]:
+    def _sort_builders(self, builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
         """Sorts the builders into a topological order based on their required inputs.
 
         Args:

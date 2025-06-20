@@ -77,11 +77,7 @@ class BinaryBuilder(bases.InputBuilder[configuration.BinaryBuilder, BinaryInputs
         return (
             input_dfs["expression_value_df"]
             .groupBy("gene_id")
-            .agg(
-                F.collect_list(F.struct("case_id", "uqfpkm", "log2_uqfpkm")).alias(
-                    "values"
-                )
-            )
+            .agg(F.collect_list(F.struct("case_id", "uqfpkm", "log2_uqfpkm")).alias("values"))
             .select(
                 "gene_id",
                 F.sort_array("values").alias("values"),

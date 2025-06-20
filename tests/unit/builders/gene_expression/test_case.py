@@ -58,9 +58,7 @@ class TestCaseBuilder:
     def _arrange_inputs(
         self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
     ) -> Mapping[str, sql.DataFrame]:
-        return {
-            "expression_value_df": self._create_dataframe(values, self._value_schema)
-        }
+        return {"expression_value_df": self._create_dataframe(values, self._value_schema)}
 
     def _arrange_builder(
         self, config: configuration.CaseBuilder, s3_client: s3.Client
@@ -141,9 +139,7 @@ class TestCaseSQLBuilder:
     def _arrange_inputs(
         self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
     ) -> Mapping[str, sql.DataFrame]:
-        return {
-            "expression_value_df": self._create_dataframe(values, self._value_schema)
-        }
+        return {"expression_value_df": self._create_dataframe(values, self._value_schema)}
 
     def test__build__single_row(
         self,
@@ -165,15 +161,9 @@ class TestCaseSQLBuilder:
         database = self._arrange_database()
 
         values = (
-            models.ExpressionValue(
-                case_id="case-0", submitter_id="sub-case-0", uqfpkm=34.5
-            ),
-            models.ExpressionValue(
-                case_id="case-0", submitter_id="sub-case-0", uqfpkm=4.8
-            ),
-            models.ExpressionValue(
-                case_id="case-1", submitter_id="sub-case-1", uqfpkm=0.4
-            ),
+            models.ExpressionValue(case_id="case-0", submitter_id="sub-case-0", uqfpkm=34.5),
+            models.ExpressionValue(case_id="case-0", submitter_id="sub-case-0", uqfpkm=4.8),
+            models.ExpressionValue(case_id="case-1", submitter_id="sub-case-1", uqfpkm=0.4),
         )
         inputs = self._arrange_inputs(values=values)
         builder = case.CaseSQLBuilder(config, mock.MagicMock(), database)
@@ -181,9 +171,7 @@ class TestCaseSQLBuilder:
         result_df = builder.build(**inputs)
         result_rows = frozenset(tuple(r) for r in result_df.collect())
 
-        assert result_rows == frozenset(
-            (("case-0", "sub-case-0"), ("case-1", "sub-case-1"))
-        )
+        assert result_rows == frozenset((("case-0", "sub-case-0"), ("case-1", "sub-case-1")))
 
     def test__build__data_written(
         self,

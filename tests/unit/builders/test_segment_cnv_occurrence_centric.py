@@ -112,9 +112,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         self, segment_cnvs: Iterable[models.SegmentCNV], cases: Iterable[models.Case]
     ) -> dict:
         return {
-            "segment_cnv_df": self._create_dataframe(
-                segment_cnvs, self._segment_cnv_schema
-            ),
+            "segment_cnv_df": self._create_dataframe(segment_cnvs, self._segment_cnv_schema),
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
@@ -139,9 +137,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
 
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segment cnv centric dataframe.
@@ -163,9 +159,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.segment_cnv_occurrence_id == segment_cnv.occurrence_id
@@ -212,9 +206,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.segment_cnv_occurrence_id == segment_cnvs[0].occurrence_id
@@ -259,9 +251,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
 
         assert result_df.count() == 2
         result_rows = result_df.collect()
-        sorted_results = sorted(
-            result_rows, key=lambda row: row.segment_cnv.segment_cnv_id
-        )
+        sorted_results = sorted(result_rows, key=lambda row: row.segment_cnv.segment_cnv_id)
 
         for row, segment_cnv, case in zip(sorted_results, segment_cnvs, cases):
             assert row.segment_cnv_occurrence_id == segment_cnv.occurrence_id

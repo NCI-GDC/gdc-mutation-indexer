@@ -17,9 +17,7 @@ class SegmentCNVCentricBuilderInputs(TypedDict):
 
 
 class SegmentCNVCentricBuilder(
-    bases.IndexBuilder[
-        configuration.SegmentCNVCentricBuilder, SegmentCNVCentricBuilderInputs
-    ]
+    bases.IndexBuilder[configuration.SegmentCNVCentricBuilder, SegmentCNVCentricBuilderInputs]
 ):
     INDEX_NAME = "segment_cnv_centric"
 
@@ -133,9 +131,7 @@ class SegmentCNVCentricBuilder(
 
         return segment_cnv_df
 
-    def _build_from_scratch(
-        self, input_dfs: SegmentCNVCentricBuilderInputs
-    ) -> sql.DataFrame:
+    def _build_from_scratch(self, input_dfs: SegmentCNVCentricBuilderInputs) -> sql.DataFrame:
         """Builds segment_cnv_centric dataframe.
 
         STEPS:
