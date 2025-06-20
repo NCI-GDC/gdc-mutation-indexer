@@ -40,9 +40,7 @@ class ProteinInputs(TypedDict):
     pass
 
 
-class ProteinBuilder(
-    bases.ResourceBuilder[configuration.CIVIC.ProteinBuilder, ProteinInputs]
-):
+class ProteinBuilder(bases.ResourceBuilder[configuration.CIVIC.ProteinBuilder, ProteinInputs]):
     def __init__(
         self,
         config: configuration.CIVIC.ProteinBuilder,

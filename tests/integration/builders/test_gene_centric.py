@@ -42,9 +42,7 @@ def test_cases_per_gene(
 
 def test_ssm_per_case(maf_df: sql.DataFrame, gene_centric_df: sql.DataFrame) -> None:
     # SSMs per case built:
-    df = join_utils.unpack_df_list(
-        gene_centric_df, "gene_id", "case", ("case_id", "ssm")
-    )
+    df = join_utils.unpack_df_list(gene_centric_df, "gene_id", "case", ("case_id", "ssm"))
     df = join_utils.unpack_df_list(df, ("gene_id", "case_id"), "ssm", "ssm_id")
 
     es_spc = join_utils.get_relationship_map(df, ("gene_id", "case_id", "ssm_id"))
@@ -98,12 +96,8 @@ def test_ssm_subtree(
         df, ("ssm_id", "consequence_id"), "observation", "observation_id"
     )
     data = df.collect()
-    consequence_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "consequence_id")
-    )
-    observation_stats = join_utils.get_relationship_map(
-        data, ("ssm_id", "observation_id")
-    )
+    consequence_stats = join_utils.get_relationship_map(data, ("ssm_id", "consequence_id"))
+    observation_stats = join_utils.get_relationship_map(data, ("ssm_id", "observation_id"))
 
     assert consequence_stats == true_consequence_stats
     assert observation_stats == true_observation_stats

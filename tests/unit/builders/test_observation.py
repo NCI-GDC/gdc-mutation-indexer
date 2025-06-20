@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 import more_itertools
 import pytest
 from pyspark import sql
@@ -71,16 +69,14 @@ class TestObservationBuilder:
             "other": cnv_other_observation_schema,
         }
 
-    def arrange_maf_df(
-        self, mafs: Tuple[models.MAF, ...] = (models.MAF(),)
-    ) -> sql.DataFrame:
+    def arrange_maf_df(self, mafs: tuple[models.MAF, ...] = (models.MAF(),)) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
             mafs,  # type: ignore
             schema=self.maf_schema,
         )
 
     def arrange_ascat_df(
-        self, ascats: Tuple[models.ASCAT, ...] = (models.ASCAT(),)
+        self, ascats: tuple[models.ASCAT, ...] = (models.ASCAT(),)
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
             ascats,  # type: ignore
@@ -89,9 +85,7 @@ class TestObservationBuilder:
 
     def arrange_primary_aliquot_df(
         self,
-        primary_aliquots: Tuple[models.PrimaryAliquot, ...] = (
-            models.PrimaryAliquot(),
-        ),
+        primary_aliquots: tuple[models.PrimaryAliquot, ...] = (models.PrimaryAliquot(),),
     ) -> sql.DataFrame:
         return self.spark_session.createDataFrame(
             primary_aliquots,  # type: ignore
@@ -107,21 +101,17 @@ class TestObservationBuilder:
             pytest.param("case_centric", "ssm", "other", id="case_centric"),
             pytest.param("gene_centric", "ssm", "other", id="gene_centric"),
             pytest.param("ssm_centric", None, "ssm", id="ssm_centric"),
-            pytest.param(
-                "ssm_occurrence_centric", None, "ssm", id="ssm_occurrence_centric"
-            ),
+            pytest.param("ssm_occurrence_centric", None, "ssm", id="ssm_occurrence_centric"),
         ),
     )
     def test__build_for_ssm__final_schema(
-        self, index_name: str, selector: Optional[str], final_schema: str
+        self, index_name: str, selector: str | None, final_schema: str
     ) -> None:
         maf_df = self.arrange_maf_df()
         primary_aliquot_df = self.arrange_primary_aliquot_df()
         builder = self.arrange_builder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, primary_aliquot_df, index_name, selector
-        )
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name, selector)
 
         assert result_df.count() == 1
         assert result_df.schema == self.ssm_schemas[final_schema]
@@ -131,9 +121,7 @@ class TestObservationBuilder:
         primary_aliquot_df = self.arrange_primary_aliquot_df()
         builder = self.arrange_builder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, primary_aliquot_df, "case_centric", "ssm"
-        )
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, "case_centric", "ssm")
         result_row = more_itertools.one(result_df.collect())
 
         assert len(result_row.observation) == 2
@@ -147,9 +135,7 @@ class TestObservationBuilder:
         primary_aliquot_df = self.arrange_primary_aliquot_df()
         builder = self.arrange_builder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, primary_aliquot_df, "case_centric", "ssm"
-        )
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, "case_centric", "ssm")
         result_row = more_itertools.one(result_df.collect())
         result_observation = more_itertools.one(result_row.observation)
 
@@ -160,9 +146,7 @@ class TestObservationBuilder:
         primary_aliquot_df = self.arrange_primary_aliquot_df()
         builder = self.arrange_builder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, primary_aliquot_df, "case_centric", "ssm"
-        )
+        result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, "case_centric", "ssm")
         result_row = more_itertools.one(result_df.collect())
 
         assert not any(
@@ -175,14 +159,12 @@ class TestObservationBuilder:
         (
             pytest.param("case_centric", "cnv", "other", id="case_centric"),
             pytest.param("cnv_centric", None, "cnv", id="cnv_centric"),
-            pytest.param(
-                "cnv_occurrence_centric", None, "cnv", id="cnv_occurrence_centric"
-            ),
+            pytest.param("cnv_occurrence_centric", None, "cnv", id="cnv_occurrence_centric"),
             pytest.param("gene_centric", "cnv", "other", id="gene_centric"),
         ),
     )
     def test__build_for_cnv__final_schema(
-        self, index: str, selector: Optional[str], final_schema: str
+        self, index: str, selector: str | None, final_schema: str
     ) -> None:
         ascat_df = self.arrange_ascat_df()
         builder = self.arrange_builder()
@@ -238,9 +220,7 @@ class TestObservationBuilder:
         builder = self.arrange_builder()
 
         result_df = builder.build_for_cnv(ascat_df, "cnv_centric")
-        result_rows = {
-            (r.cnv_id, r.case_id, r.occurrence_id): r for r in result_df.collect()
-        }
+        result_rows = {(r.cnv_id, r.case_id, r.occurrence_id): r for r in result_df.collect()}
 
         assert len(result_rows) == 4
         assert base_group in result_rows

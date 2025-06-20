@@ -71,7 +71,7 @@ TEST_INDEX = "test_maf_metadata_builder"
 PRIORITIZED_STRATEGIES = ("WXS", "Targeted Sequencing")
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = "Aliquot Ensemble Somatic Variant Merging and Masking"
 
@@ -438,9 +438,12 @@ class TestMAFFileFilterFactory:
         config = self.arrange_config()
         builder = maf_metadata.MAFFileFilterFactory(config, self.es_client)
 
-        with self.load_files(files), pytest.raises(
-            RuntimeError,
-            match=r"Invalid Data: No projects associated with any MAF files\.",
+        with (
+            self.load_files(files),
+            pytest.raises(
+                RuntimeError,
+                match=r"Invalid Data: No projects associated with any MAF files\.",
+            ),
         ):
             _ = builder.get_filters(
                 acl=("open",),

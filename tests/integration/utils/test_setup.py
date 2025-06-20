@@ -7,7 +7,7 @@ import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
 from importlib import abc, resources
-from typing import Any, ContextManager, Optional, Type, TypeVar, Union
+from typing import Any, ContextManager, TypeVar
 
 import elasticsearch
 from elasticsearch import helpers
@@ -76,7 +76,7 @@ def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:
         return tree
 
 
-def remove_keys_from_dict(tree: dict, remove_keys: Optional[Container[str]]) -> dict:
+def remove_keys_from_dict(tree: dict, remove_keys: Container[str] | None) -> dict:
     """
     Recursively remove keys from dictionary tree
     """
@@ -146,10 +146,10 @@ class IndexManager(ContextManager["IndexManager"]):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[types.TracebackType],
-    ) -> Optional[bool]:
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
         for index_type in self._index_types:
             self._es.indices.delete(index=self._graph_indices[index_type], ignore=[404])
 
@@ -180,10 +180,10 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[types.TracebackType],
-    ) -> Optional[bool]:
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
         for doc_type, ids in self._documents.items():
             if ids:
                 index_name = self._graph_indices[doc_type]
@@ -197,7 +197,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
 
         with open_fn(filename, "rt", encoding="utf-8") as f:
             if ".ndjson" in filename:
-                docs = tuple(json.loads(l.strip()) for l in f)
+                docs = tuple(json.loads(line.strip()) for line in f)
             else:
                 docs = json.load(f)
 
@@ -205,15 +205,13 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
 
     def _create_actions(
         self,
-        inputs: Union[str, pathlib.Path, Iterable[dict]],
+        inputs: str | pathlib.Path | Iterable[dict],
         index_name: str,
         index_type: build.IndexType,
     ) -> Iterator[dict]:
         doc_id = self._id_fields[index_type]
         docs = (
-            self._load_file(str(inputs))
-            if isinstance(inputs, (str, pathlib.Path))
-            else inputs
+            self._load_file(str(inputs)) if isinstance(inputs, (str, pathlib.Path)) else inputs
         )
 
         for doc in docs:
@@ -233,7 +231,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
     def load_docs(
         self,
         index_type: build.IndexType,
-        inputs: Union[str, pathlib.Path, Iterable[dict]],
+        inputs: str | pathlib.Path | Iterable[dict],
     ) -> Set[str]:
         """Load documents from gzipped test data into test index.
         Default to the file named in ``conf.doc_files`` for the given ``doc_type``.

@@ -1,9 +1,10 @@
 from collections.abc import Collection
-from typing import Sequence, TypedDict, Union
+from typing import TypedDict
+from collections.abc import Sequence
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal, override
+from typing import Literal, override
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
@@ -62,7 +63,7 @@ class ASCATMetadataBuilder(
 
     @override
     def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Collection[str], Literal[True]]
+        self, query: dict, include_fields: Collection[str] | Literal[True]
     ) -> sql.DataFrame:
         return (
             super()
@@ -92,11 +93,7 @@ class ASCATMetadataBuilder(
                                             "experimental_strategy": p.experimental_strategy
                                         }
                                     },
-                                    {
-                                        "term": {
-                                            "analysis.workflow_type": p.workflow_type
-                                        }
-                                    },
+                                    {"term": {"analysis.workflow_type": p.workflow_type}},
                                 ]
                             },
                         }

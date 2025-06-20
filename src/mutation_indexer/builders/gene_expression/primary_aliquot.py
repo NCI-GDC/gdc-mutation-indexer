@@ -34,9 +34,7 @@ class PrimaryAliquotInputs(TypedDict):
 
 
 class PrimaryAliquotBuilder(
-    bases.PrimaryAliquotBuilder[
-        configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs
-    ]
+    bases.PrimaryAliquotBuilder[configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs]
 ):
     def __init__(
         self,

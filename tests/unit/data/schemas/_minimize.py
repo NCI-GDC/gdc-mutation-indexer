@@ -52,9 +52,7 @@ def _get_file_paths(module_or_path: str) -> Iterator[Iterable[pathlib.Path]]:
     elif path.isdir(module_or_path):
         yield pathlib.Path(module_or_path).glob("**/*.yaml")
     else:
-        raise ArgumentError(
-            f"No valid module, file, or directory found at: {module_or_path}."
-        )
+        raise ArgumentError(f"No valid module, file, or directory found at: {module_or_path}.")
 
 
 def minimize_files(schemas: str) -> None:

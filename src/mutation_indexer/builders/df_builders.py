@@ -9,7 +9,6 @@ dependent builders. This avoids similar data being built multiple times.
 import itertools
 import logging
 from collections.abc import Container, Iterable, Iterator
-from typing import Optional
 
 import more_itertools
 from gdcmodels import mapper
@@ -25,7 +24,7 @@ def build_ssm_subtree(
     maf_df: sql.DataFrame,
     cons_df: sql.DataFrame,
     index_name: str,
-    obs_df: Optional[sql.DataFrame] = None,
+    obs_df: sql.DataFrame | None = None,
 ) -> sql.DataFrame:
     """
     ssm[]
@@ -45,8 +44,8 @@ def build_ssm_subtree(
 def build_cnv_subtree(
     ascat_df: sql.DataFrame,
     index_name: str,
-    cons_df: Optional[sql.DataFrame] = None,
-    obs_df: Optional[sql.DataFrame] = None,
+    cons_df: sql.DataFrame | None = None,
+    obs_df: sql.DataFrame | None = None,
     add_fields: Iterable[str] = ("gene_id", "case_id"),
 ) -> sql.DataFrame:
     """
@@ -78,7 +77,7 @@ def get_annotation_df(
     index_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore: Container[str] = (),
 ) -> sql.DataFrame:
     return get_single_df(
@@ -97,7 +96,7 @@ def get_gene_df(
     index_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore=frozenset(("transcripts",)),
 ):
     return get_single_df(
@@ -109,7 +108,7 @@ def _get_clinical_annotation_df(
     index_name: str,
     input_df: sql.DataFrame,
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
 ) -> sql.DataFrame:
     def restructure(doc: dict, parent_name: str = "") -> Iterator[sql.Column]:
         """
@@ -154,7 +153,7 @@ def get_ssm_df(
     index_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore: Container[str] = (),
 ) -> sql.DataFrame:
     clinical_anno_df = _get_clinical_annotation_df(index_name, maf_df)
@@ -170,7 +169,7 @@ def get_cnv_df(
     index_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore: Container[str] = (),
 ) -> sql.DataFrame:
     return get_single_df(
@@ -183,7 +182,7 @@ def get_transcript_df(
     index_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore: Container[str] = (),
 ) -> sql.DataFrame:
     return get_single_df(
@@ -204,9 +203,9 @@ def get_single_df(
     mapping_name: str,
     add_fields: Iterable[str] = (),
     drop_fields: Container[str] = (),
-    unique_fields: Optional[list[str]] = None,
+    unique_fields: list[str] | None = None,
     ignore: Container[str] = (),
-    selector: Optional[mapper.Selector] = None,
+    selector: mapper.Selector | None = None,
 ) -> sql.DataFrame:
     """Selects the required struct based on the mapping and the data in the data frame.
 

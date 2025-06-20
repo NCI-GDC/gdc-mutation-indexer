@@ -1,6 +1,5 @@
 import dataclasses
 import datetime
-from typing import Tuple
 from unittest import mock
 
 import more_itertools
@@ -24,7 +23,7 @@ class ESSample:
 @dataclasses.dataclass(frozen=True)
 class ESCase:
     case_id: str = "case-0"
-    samples: Tuple[ESSample, ...] = (ESSample(),)
+    samples: tuple[ESSample, ...] = (ESSample(),)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -35,7 +34,7 @@ class ESAnalysis:
 @dataclasses.dataclass(frozen=True)
 class ESFile:
     analysis: ESAnalysis = ESAnalysis()
-    cases: Tuple[ESCase, ...] = (ESCase(),)
+    cases: tuple[ESCase, ...] = (ESCase(),)
     created_datetime: datetime.datetime = datetime.datetime.min
     data_type: str = "Masked Somatic Mutation"
     file_id: str = "file-0"
@@ -71,7 +70,7 @@ class TestMAFMetadataBuilder:
         return filter_builder
 
     def arrange_builder(
-        self, files: Tuple[ESFile, ...] = (ESFile(),)
+        self, files: tuple[ESFile, ...] = (ESFile(),)
     ) -> builders.MAFMetadataBuilder:
         backup = mock.MagicMock(mode=build.BackupMode.NEITHER, path="")
         conf = mock.MagicMock(

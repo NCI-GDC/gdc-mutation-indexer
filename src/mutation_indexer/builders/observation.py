@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -20,7 +19,7 @@ class ObservationBuilder:
         maf_df: sql.DataFrame,
         primary_aliquot_df: sql.DataFrame,
         index_name: str,
-        selector: Optional[str] = None,
+        selector: str | None = None,
     ) -> sql.DataFrame:
         """
         Builds an observation from a maf.
@@ -39,12 +38,8 @@ class ObservationBuilder:
             ),
         ).join(primary_aliquot_df, ["case_id"], how="left")
         flat_obs_df = (
-            flat_obs_df.withColumn(
-                "variant_caller", F.explode(F.split("variant_caller", ";"))
-            )
-            .withColumn(
-                "variant_caller", F.regexp_replace("variant_caller", r"^\*+|\*+$", "")
-            )
+            flat_obs_df.withColumn("variant_caller", F.explode(F.split("variant_caller", ";")))
+            .withColumn("variant_caller", F.regexp_replace("variant_caller", r"^\*+|\*+$", ""))
             .where(F.col("variant_caller") != F.lit("somaticsniper"))
         )
         flat_obs_df = flat_obs_df.withColumn(
@@ -73,7 +68,7 @@ class ObservationBuilder:
         )
 
     def build_for_cnv(
-        self, ascat_df: sql.DataFrame, index: str, selector: Optional[str] = None
+        self, ascat_df: sql.DataFrame, index: str, selector: str | None = None
     ) -> sql.DataFrame:
         """
         observation[]
@@ -96,9 +91,9 @@ class ObservationBuilder:
                 "cnv_id",
                 "case_id",
                 "occurrence_id",
-                F.struct(
-                    *utils.struct_select(index, "observation", selector=selector)
-                ).alias("observation"),
+                F.struct(*utils.struct_select(index, "observation", selector=selector)).alias(
+                    "observation"
+                ),
             )
             .groupby("cnv_id", "case_id", "occurrence_id")
             .agg(F.collect_set("observation").alias("observation"))

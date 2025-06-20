@@ -1,13 +1,12 @@
 import functools
 import logging
 from collections.abc import Collection, Iterable, Sequence
-from typing import Union
 
 import elasticsearch
 import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Literal, TypedDict
+from typing import Literal, TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
@@ -43,9 +42,7 @@ class _ProjectBucket(TypedDict):
 
 
 class MAFFileFilterFactory:
-    def __init__(
-        self, config: es_config.Read, es_client: elasticsearch.Elasticsearch
-    ) -> None:
+    def __init__(self, config: es_config.Read, es_client: elasticsearch.Elasticsearch) -> None:
         self._config = config
         self._es_client = es_client
 
@@ -176,9 +173,7 @@ class MAFFileFilterFactory:
         _ = projects_by_strategy.pop(_UNPRIORITIZED_STRATEGY, None)
 
         if not projects_by_strategy:
-            raise RuntimeError(
-                "Invalid Data: No projects associated with any MAF files."
-            )
+            raise RuntimeError("Invalid Data: No projects associated with any MAF files.")
 
         return {
             "bool": {
@@ -191,9 +186,7 @@ class MAFFileFilterFactory:
                                     "nested": {
                                         "path": "cases",
                                         "query": {
-                                            "terms": {
-                                                "cases.project.project_id": projects
-                                            }
+                                            "terms": {"cases.project.project_id": projects}
                                         },
                                     }
                                 },
@@ -306,7 +299,7 @@ class MAFMetadataBuilder(
         self._file_filter_factory = file_filter_factory
 
     def _get_initial_weighted_df(
-        self, query: dict, include_fields: Union[Collection[str], Literal[True]]
+        self, query: dict, include_fields: Collection[str] | Literal[True]
     ) -> sql.DataFrame:
         return (
             super()

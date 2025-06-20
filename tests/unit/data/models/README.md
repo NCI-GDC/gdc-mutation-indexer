@@ -43,8 +43,8 @@ model.py (comments for clarification only):
 @dataclasses.dataclass(frozen=True)
 class ModelClsName:  # name from command line
     # properties from the schema.yaml struct
-    model_id: Optional[str] = "model-0"  # default value from defaults.yaml
-    prop: Optional[int] = None
+    model_id: str | None = "model-0"  # default value from defaults.yaml
+    prop: int | None = None
 
     # included because of --insert-asserts/-a flag
     def assert_equals(self, row: sql.Row) -> bool:

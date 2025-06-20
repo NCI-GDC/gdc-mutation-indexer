@@ -92,9 +92,7 @@ class TestSegmentCNVBuilder:
         config = self._arrange_config()
         mock_spark_session = mock.MagicMock()
         doc_dataframe_util = self._arrange_doc_dataframe_util(segment_cnv_data)
-        builder = builders.SegmentCNVBuilder(
-            config, mock_spark_session, doc_dataframe_util
-        )
+        builder = builders.SegmentCNVBuilder(config, mock_spark_session, doc_dataframe_util)
 
         return builder
 
@@ -179,9 +177,7 @@ class TestSegmentCNVBuilder:
 
         segment_cnv_id = utils.generate_uuid5("1", 50, 100, "Amplification")
         assert result_row.segment_cnv_id == segment_cnv_id
-        assert result_row.occurrence_id == utils.generate_uuid5(
-            segment_cnv_id, "case-0"
-        )
+        assert result_row.occurrence_id == utils.generate_uuid5(segment_cnv_id, "case-0")
         assert result_row.observation_id == utils.generate_uuid5(
             segment_cnv_id, "case-0", "aliquot-0"
         )
@@ -210,8 +206,7 @@ class TestSegmentCNVBuilder:
         assert segment_cnv_df.count() == 3
         result_rows = segment_cnv_df.collect()
         assert all(
-            result_row.cnv_change_5_category == "Amplification"
-            for result_row in result_rows
+            result_row.cnv_change_5_category == "Amplification" for result_row in result_rows
         )
 
     def test__build__multiple_files(self) -> None:
@@ -224,9 +219,7 @@ class TestSegmentCNVBuilder:
         segment_cnv_metadata = tuple(
             models.SegmentCNVMetadata(file_id=f"file-{i}") for i in range(2)
         )
-        inputs = self._arrange_input_dataframes(
-            segment_cnv_metadata=segment_cnv_metadata
-        )
+        inputs = self._arrange_input_dataframes(segment_cnv_metadata=segment_cnv_metadata)
         file0_data = tuple(
             SegmentCNVDocumentData(copy_number=copy_number, did="file-0")
             for copy_number in (5, 5, 10, 10, 20)
@@ -294,8 +287,7 @@ class TestSegmentCNVBuilder:
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
-                SegmentCNVDocumentData(copy_number=copy_number)
-                for copy_number in copy_numbers
+                SegmentCNVDocumentData(copy_number=copy_number) for copy_number in copy_numbers
             )
         )
         segment_cnv_df = builder.build(**inputs)
@@ -366,8 +358,7 @@ class TestSegmentCNVBuilder:
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
-                SegmentCNVDocumentData(copy_number=copy_number)
-                for copy_number in copy_numbers
+                SegmentCNVDocumentData(copy_number=copy_number) for copy_number in copy_numbers
             )
         )
         segment_cnv_df = builder.build(**inputs)
@@ -390,8 +381,7 @@ class TestSegmentCNVBuilder:
         )
         builder = self._arrange_builder(
             segment_cnv_data=tuple(
-                SegmentCNVDocumentData(copy_number=copy_number)
-                for copy_number in copy_numbers
+                SegmentCNVDocumentData(copy_number=copy_number) for copy_number in copy_numbers
             )
         )
         segment_cnv_df = builder.build(**inputs)

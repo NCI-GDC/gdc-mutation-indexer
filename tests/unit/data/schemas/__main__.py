@@ -40,9 +40,7 @@ def minimize(schemas: str) -> None:
     type=str,
     help="A comma separated list of properties in the root mapping to include.",
 )
-def translate_mapping(
-    mapping: io.TextIOBase, output: io.TextIOBase, include: str
-) -> None:
+def translate_mapping(mapping: io.TextIOBase, output: io.TextIOBase, include: str) -> None:
     """
     A tool for translating an elasticsearch mapping into a spark schema. WARNING: this
     process cannot recognize arrays of atomic values as ES mappings does not distinguish

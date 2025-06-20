@@ -136,13 +136,9 @@ def test_get_rdd_from_es(
         "cases.case_id",
     )
     query = {
-        "query": {
-            "nested": {"path": "cases", "query": {"exists": {"field": "cases.case_id"}}}
-        }
+        "query": {"nested": {"path": "cases", "query": {"exists": {"field": "cases.case_id"}}}}
     }
-    rdd_util = es_utils.RDDUtil(
-        default_config.elasticsearch, spark_session.sparkContext
-    )
+    rdd_util = es_utils.RDDUtil(default_config.elasticsearch, spark_session.sparkContext)
 
     # Act
     result = rdd_util.get_rdd(

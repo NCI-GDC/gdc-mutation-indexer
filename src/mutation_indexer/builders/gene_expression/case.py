@@ -125,8 +125,4 @@ class CaseSQLBuilder(bases.SQLiteBuilder[configuration.CaseSQLBuilder, CaseSQLIn
             |--- case_id
             +--- submitter_id
         """
-        return (
-            input_dfs["expression_value_df"]
-            .select("case_id", "submitter_id")
-            .distinct()
-        )
+        return input_dfs["expression_value_df"].select("case_id", "submitter_id").distinct()

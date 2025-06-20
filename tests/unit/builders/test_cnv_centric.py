@@ -205,12 +205,8 @@ class TestCNVCentricBuilder:
         )
 
         config = self._arrange_config()
-        consequence_builder = self._arrange_consequence_builder(
-            consequences=(consequence,)
-        )
-        observation_builder = self._arrange_observation_builder(
-            observations=(observation,)
-        )
+        consequence_builder = self._arrange_consequence_builder(consequences=(consequence,))
+        observation_builder = self._arrange_observation_builder(observations=(observation,))
         inputs = self._arrange_inputs(ascats=(ascat,), cases=(case,))
 
         builder = builders.CNVCentricBuilder(
@@ -235,9 +231,7 @@ class TestCNVCentricBuilder:
         )
         config = self._arrange_config()
         consequence_builder = self._arrange_consequence_builder()
-        observation_builder = self._arrange_observation_builder(
-            observations=observations
-        )
+        observation_builder = self._arrange_observation_builder(observations=observations)
         inputs = self._arrange_inputs()
 
         builder = builders.CNVCentricBuilder(

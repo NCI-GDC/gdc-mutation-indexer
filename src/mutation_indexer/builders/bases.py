@@ -10,21 +10,19 @@ from importlib import resources
 from typing import (
     Generic,
     Literal,
-    Optional,
     Protocol,
-    Sequence,
     TypeVar,
-    Union,
     get_type_hints,
     runtime_checkable,
 )
+from collections.abc import Sequence
 
 import more_itertools
 from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypeGuard
+from typing import TypeGuard
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration import builders
@@ -98,9 +96,9 @@ class InputDataFrameManger(Generic[TInputDFs]):
     def __init__(self, input_type: type[TInputDFs]) -> None:
         type_hints = get_type_hints(input_type)
 
-        assert all(
-            issubclass(t, sql.DataFrame) for t in type_hints.values()
-        ), "Input mapping type must contain only sql.DataFrames"
+        assert all(issubclass(t, sql.DataFrame) for t in type_hints.values()), (
+            "Input mapping type must contain only sql.DataFrames"
+        )
 
         self._required_params: Set[str] = type_hints.keys()
         self._required_dfs = tuple(
@@ -173,7 +171,7 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
         return self._spark_session.read.parquet(self._config.backup.path)
 
-    def _read(self) -> Optional[sql.DataFrame]:
+    def _read(self) -> sql.DataFrame | None:
         """
         Reads the data frame, if configured to READ, from the configure parquet file. If
         the builder is not configured to read then None is returned.
@@ -222,8 +220,8 @@ class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
 
 
 def _combine_weighted_entity_dfs(
-    weighted_file_df: Optional[sql.DataFrame],
-    weighted_case_df: Optional[sql.DataFrame],
+    weighted_file_df: sql.DataFrame | None,
+    weighted_case_df: sql.DataFrame | None,
 ) -> sql.DataFrame:
     if weighted_case_df and weighted_file_df:
         return weighted_case_df.union(weighted_file_df)
@@ -239,7 +237,7 @@ def _combine_weighted_entity_dfs(
 
 
 def _add_required_include_fields(
-    include_fields: Union[Iterable[str], Literal[True]],
+    include_fields: Iterable[str] | Literal[True],
 ) -> Collection[str]:
     if include_fields is not True:
         return BASE_PRIMARY_ALIQUOT_FIELDS.union(include_fields)
@@ -247,9 +245,7 @@ def _add_required_include_fields(
     return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
-class PrimaryAliquotBuilder(
-    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]
-):
+class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]):
     __slots__ = ("_es_dataframe_util", "_additional_selections")
 
     @dataclasses.dataclass(frozen=True)
@@ -310,7 +306,7 @@ class PrimaryAliquotBuilder(
     def _get_initial_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Collection[str], Literal[True]],
+        include_fields: Collection[str] | Literal[True],
     ) -> sql.DataFrame:
         """
         Gets the initial data from elasticsearch. This is the data meeting the
@@ -358,8 +354,7 @@ class PrimaryAliquotBuilder(
                 sample_type == F.lit("Additional Metastatic"),
                 sample_type == F.lit("Recurrent Tumor"),
                 sample_type == F.lit("Recurrent Blood Derived Cancer - Bone Marrow"),
-                sample_type
-                == F.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
+                sample_type == F.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
                 sample_type == F.lit("Additional - New Primary"),
                 F.lit(1) == F.lit(1),  # This is a default value.
             ),
@@ -414,9 +409,7 @@ class PrimaryAliquotBuilder(
 
             for order, dimension in enumerate(weight_matrix):
                 yield (
-                    PrimaryAliquotBuilder.Weight(
-                        condition, weight * (magnitude**order)
-                    )
+                    PrimaryAliquotBuilder.Weight(condition, weight * (magnitude**order))
                     for weight, condition in enumerate(dimension)
                 )
 
@@ -443,7 +436,7 @@ class PrimaryAliquotBuilder(
     def _get_weighted_df(
         self,
         query: dict,
-        include_fields: Union[Collection[str], Literal[True]],
+        include_fields: Collection[str] | Literal[True],
     ) -> sql.DataFrame:
         return (
             self._get_initial_weighted_df(query, include_fields)
@@ -485,7 +478,7 @@ class PrimaryAliquotBuilder(
         self,
         filters: Iterable[dict],
         entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], Literal[True]] = True,
+        include_fields: Iterable[str] | Literal[True] = True,
     ) -> sql.DataFrame:
         """
         Args:
@@ -513,18 +506,12 @@ class PrimaryAliquotBuilder(
         weighted_case_df = None
 
         if "file" in entities:
-            weighted_file_df = self._get_weighted_entity_df(
-                weighted_df, "file_id", "file"
-            )
+            weighted_file_df = self._get_weighted_entity_df(weighted_df, "file_id", "file")
 
         if "case" in entities:
-            weighted_case_df = self._get_weighted_entity_df(
-                weighted_df, "case_id", "case"
-            )
+            weighted_case_df = self._get_weighted_entity_df(weighted_df, "case_id", "case")
 
-        weighted_entity_df = _combine_weighted_entity_dfs(
-            weighted_file_df, weighted_case_df
-        )
+        weighted_entity_df = _combine_weighted_entity_dfs(weighted_file_df, weighted_case_df)
         entity_window = (
             sql.Window()
             .partitionBy("entity", "entity_id")
@@ -536,9 +523,7 @@ class PrimaryAliquotBuilder(
         )
 
         return (
-            weighted_entity_df.withColumn(
-                "row_number", F.row_number().over(entity_window)
-            )
+            weighted_entity_df.withColumn("row_number", F.row_number().over(entity_window))
             .where(F.col("row_number") == 1)
             .select(
                 "entity_id",
@@ -666,17 +651,13 @@ class InclusivePrimaryAliquotBuilder(
             "cases.samples.portions.analytes.aliquots.aliquot_id",
             "cases.samples.portions.analytes.aliquots.created_datetime",
         )
-        aliquot_data_schema = schemas.load_schema(
-            "builders/primary_aliquot/aliquot_data.json"
-        )
+        aliquot_data_schema = schemas.load_schema("builders/primary_aliquot/aliquot_data.json")
 
         if self._config.projects:
             project_clause = {
                 "nested": {
                     "path": "cases",
-                    "query": {
-                        "terms": {"cases.project.project_id": self._config.projects}
-                    },
+                    "query": {"terms": {"cases.project.project_id": self._config.projects}},
                 }
             }
 
@@ -704,7 +685,7 @@ class InclusivePrimaryAliquotBuilder(
         self,
         filters: Iterable[dict],
         entities: Set[Literal["case", "file"]] = frozenset(("case", "file")),
-        include_fields: Union[Iterable[str], Literal[True]] = True,
+        include_fields: Iterable[str] | Literal[True] = True,
     ) -> sql.DataFrame:
         """
         Loads the primary aliquot data from elasticsearch into a dataframe including the
@@ -732,7 +713,7 @@ class InclusivePrimaryAliquotBuilder(
             |---sample_id
             +---*additional_selections
         """
-        sample_include_fields: Union[Iterable[str], Literal[True]] = (
+        sample_include_fields: Iterable[str] | Literal[True] = (
             include_fields
             if include_fields is True
             else filter(
@@ -756,9 +737,7 @@ class InclusivePrimaryAliquotBuilder(
         )
 
         return (
-            primary_aliquot_df.withColumn(
-                "row_number", F.row_number().over(aliquot_window)
-            )
+            primary_aliquot_df.withColumn("row_number", F.row_number().over(aliquot_window))
             .where(F.col("row_number") == 1)
             .select(
                 "aliquot_created_datetime",
@@ -860,9 +839,7 @@ class IndexBuilder(
             field names separated by a '.'.
         """
 
-        def get_boolean_paths(
-            node: esmodels.Properties, path: str = ""
-        ) -> Iterator[str]:
+        def get_boolean_paths(node: esmodels.Properties, path: str = "") -> Iterator[str]:
             for key, value in node.items():
                 subpath = f"{path}{key}"
 
@@ -907,9 +884,7 @@ class IndexBuilder(
         return df
 
 
-class SQLiteBuilder(
-    Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC
-):
+class SQLiteBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC):
     __slots__ = ("_database",)
 
     def __init__(

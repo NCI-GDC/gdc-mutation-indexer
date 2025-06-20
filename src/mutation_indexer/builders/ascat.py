@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import indexd_utils, schemas
 from mutation_indexer.builders import bases, utils
@@ -94,9 +94,7 @@ def _add_uuids(ascat_df: sql.DataFrame) -> sql.DataFrame:
         "aliquot_id",
     )
 
-    ascat_df = ascat_df.withColumn(
-        "uuids", uuids
-    )  # This adds the uuids struct used below.
+    ascat_df = ascat_df.withColumn("uuids", uuids)  # This adds the uuids struct used below.
 
     return ascat_df.select("*", "uuids.*")
 
@@ -133,13 +131,9 @@ def _add_ploidy_values(document_df: sql.DataFrame) -> sql.DataFrame:
         A copy of the given document data frame with the upper_ploidy_number and
         lower_ploidy_number columns added.
     """
-    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
-        F.count("*").alias("count")
-    )
+    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(F.count("*").alias("count"))
     ploidy_window = sql.Window().partitionBy("file_id", "count")
-    mode_window = (
-        sql.Window().partitionBy("file_id").orderBy(F.col("count").desc_nulls_last())
-    )
+    mode_window = sql.Window().partitionBy("file_id").orderBy(F.col("count").desc_nulls_last())
     ploidy_df = (
         ploidy_df.select(
             "file_id",

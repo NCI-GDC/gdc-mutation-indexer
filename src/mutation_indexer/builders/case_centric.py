@@ -1,7 +1,7 @@
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import (
@@ -88,9 +88,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             query=query,
         )
 
-    def _build_segment_cnv_subtree(
-        self, segment_cnv_df: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_segment_cnv_subtree(self, segment_cnv_df: sql.DataFrame) -> sql.DataFrame:
         """Aggregates all segment_cnvs for each case.
 
         segment_cnv_subtree{}
@@ -116,9 +114,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             "segment_cnv_id", "case_id", "observation"
         )
         segment_cnv_df = segment_cnv_df.select(*SEGMENT_CNV_COLUMNS).distinct()
-        subtree_df = segment_cnv_df.join(
-            obs_df, on="segment_cnv_id", how="inner"
-        ).select(
+        subtree_df = segment_cnv_df.join(obs_df, on="segment_cnv_id", how="inner").select(
             F.struct(*SEGMENT_CNV_COLUMNS, "observation").alias("segment_cnv"),
             "segment_cnv_id",
             "case_id",
@@ -169,9 +165,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         segment_cnv_subtree = self._build_segment_cnv_subtree(segment_cnv_df)
 
         self.log("Join Case with Segment CNV subtree [left, case_id]")
-        case_centric = case_centric.join(
-            segment_cnv_subtree, on=["case_id"], how="left"
-        )
+        case_centric = case_centric.join(segment_cnv_subtree, on=["case_id"], how="left")
 
         self.log("Finalizing case_centric build")
         case_centric = self._final_transform(case_centric)
@@ -233,9 +227,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         self.log_count(cnv_df)
 
         self.log("Join SSM and CNV subtrees to Gene [left, gene_id, case_id]")
-        gene_ssm_cnv_df = gene_df.join(
-            ssm_df, on=["gene_id", "case_id"], how="left"
-        ).join(cnv_df, on=["gene_id", "case_id"], how="left")
+        gene_ssm_cnv_df = gene_df.join(ssm_df, on=["gene_id", "case_id"], how="left").join(
+            cnv_df, on=["gene_id", "case_id"], how="left"
+        )
         self.log_count(gene_ssm_cnv_df)
 
         self.log("Grouping SSM and CNV subtrees under Gene")
@@ -277,9 +271,7 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         obs_df = obs_df.drop("occurrence_id")
 
         # SSM
-        ssm_df = df_builders.build_ssm_subtree(
-            maf_df, cons_df, self.index_name, obs_df=obs_df
-        )
+        ssm_df = df_builders.build_ssm_subtree(maf_df, cons_df, self.index_name, obs_df=obs_df)
 
         # Aggregate SSM
         self.log("Aggregating ssm by case_id and gene_id")
@@ -336,9 +328,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         # Coerce any cases that didn't have variation data from None to []
         case_centric = case_centric.withColumn(
             "available_variation_data",
-            F.udf(
-                lambda x: [] if (x is None) else x, types.ArrayType(types.StringType())
-            )(F.col("available_variation_data")),
+            F.udf(lambda x: [] if (x is None) else x, types.ArrayType(types.StringType()))(
+                F.col("available_variation_data")
+            ),
         )
 
         # Truncate outliers

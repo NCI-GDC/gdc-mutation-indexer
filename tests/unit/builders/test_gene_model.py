@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Dict, Optional, Tuple
 from unittest import mock
 
 import more_itertools
@@ -16,7 +15,7 @@ from tests.unit.data import schemas
 @dataclasses.dataclass(frozen=True)
 class Cytoband:
     ens_gene_id: str = "ENSG00000223972"
-    cytoband: Optional[str] = "1p36.33"
+    cytoband: str | None = "1p36.33"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,36 +56,36 @@ class Transcript:
     cdna_coding_start: int = 0
     coding_region_end: int = 0
     coding_region_start: int = 0
-    domains: Tuple[Domain, ...] = (Domain(),)
+    domains: tuple[Domain, ...] = (Domain(),)
     end: int = 14409
-    end_exon: Optional[int] = None
-    exons: Tuple[Exon, ...] = (Exon(),)
+    end_exon: int | None = None
+    exons: tuple[Exon, ...] = (Exon(),)
     id: str = "ENST00000456328"
     is_canonical: bool = False
     length: int = 1657
-    length_amino_acid: Optional[int] = None
-    length_cds: Optional[int] = None
+    length_amino_acid: int | None = None
+    length_cds: int | None = None
     name: str = "DDX11L1-002"
     number_of_exons: int = 6
-    seq_exon_end: Optional[int] = None
-    seq_exon_start: Optional[int] = None
+    seq_exon_end: int | None = None
+    seq_exon_start: int | None = None
     start: int = 11869
-    start_exon: Optional[int] = None
-    translation_id: Optional[str] = None
+    start_exon: int | None = None
+    translation_id: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
 class ExternalIDs:
-    entrez_gene: Tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
-    hgnc: Tuple[str, ...] = ("HGNC:37102",)
-    omim_gene: Tuple[str, ...] = ()
-    uniprotkb_swissprot: Tuple[str, ...] = ()
+    entrez_gene: tuple[str, ...] = ("100287596", "100287102", "727856", "84771")
+    hgnc: tuple[str, ...] = ("HGNC:37102",)
+    omim_gene: tuple[str, ...] = ()
+    uniprotkb_swissprot: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
 class GeneModel:
     _gene_id: str = "ENSG00000223972"
-    _id: Dict[str, str] = dataclasses.field(
+    _id: dict[str, str] = dataclasses.field(
         default_factory=lambda: {"$oid": "589c87ca0ef75875ed614a40"}
     )
     biotype: str = "transcribed_unprocessed_pseudogene"
@@ -101,8 +100,8 @@ class GeneModel:
     start: int = 11869
     strand: int = 1
     symbol: str = "DDX11L1"
-    synonyms: Tuple[str, ...] = ()
-    transcripts: Tuple[Transcript, ...] = (Transcript(),)
+    synonyms: tuple[str, ...] = ()
+    transcripts: tuple[Transcript, ...] = (Transcript(),)
 
 
 @pytest.fixture(scope="class")
@@ -129,16 +128,17 @@ class TestGeneModelBuilder:
 
     def _arrange_builder(
         self,
-        cytobands: Tuple[Cytoband, ...],
-        census: Tuple[Census, ...],
-        gene_model: Tuple[GeneModel, ...],
+        cytobands: tuple[Cytoband, ...],
+        census: tuple[Census, ...],
+        gene_model: tuple[GeneModel, ...],
     ) -> builders.GeneModelBuilder:
         cytoband_df = self.spark_session.createDataFrame(
             cytobands,  # type: ignore
             "ens_gene_id: string, cytoband: string",
         )
         census_df = self.spark_session.createDataFrame(
-            census, ("cancer_gene_id", "is_cancer_gene_census")  # type: ignore
+            census,
+            ("cancer_gene_id", "is_cancer_gene_census"),  # type: ignore
         )
         gene_model_df = self.spark_session.createDataFrame(
             gene_model,  # type: ignore
@@ -237,24 +237,15 @@ class TestGeneModelBuilder:
             assert row_transcript.transcript_id == model_transcript.id
             assert row_transcript.biotype == model_transcript.biotype
             assert row_transcript.cdna_coding_end == model_transcript.cdna_coding_end
-            assert (
-                row_transcript.cdna_coding_start == model_transcript.cdna_coding_start
-            )
-            assert (
-                row_transcript.coding_region_end == model_transcript.coding_region_end
-            )
-            assert (
-                row_transcript.coding_region_start
-                == model_transcript.coding_region_start
-            )
+            assert row_transcript.cdna_coding_start == model_transcript.cdna_coding_start
+            assert row_transcript.coding_region_end == model_transcript.coding_region_end
+            assert row_transcript.coding_region_start == model_transcript.coding_region_start
             assert row_transcript.end == model_transcript.end
             assert row_transcript.end == model_transcript.end
             assert row_transcript.end_exon == model_transcript.end_exon
             assert row_transcript.is_canonical == model_transcript.is_canonical
             assert row_transcript.length == model_transcript.length
-            assert (
-                row_transcript.length_amino_acid == model_transcript.length_amino_acid
-            )
+            assert row_transcript.length_amino_acid == model_transcript.length_amino_acid
             assert row_transcript.length_cds == model_transcript.length_cds
             assert row_transcript.name == model_transcript.name
             assert row_transcript.number_of_exons == model_transcript.number_of_exons
@@ -301,7 +292,7 @@ class TestGeneModelBuilder:
         assert result_row.cytoband == cytobands.split(",")
 
     @pytest.mark.parametrize(("cytobands",), (("",), (None,)), ids=("Empty", "None"))
-    def test__build__cytobands_null_or_empty(self, cytobands: Optional[str]) -> None:
+    def test__build__cytobands_null_or_empty(self, cytobands: str | None) -> None:
         builder = self._arrange_builder(
             (Cytoband(cytoband=cytobands),), (Census(),), (GeneModel(),)
         )

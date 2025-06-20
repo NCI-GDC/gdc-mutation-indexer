@@ -51,9 +51,7 @@ class TestProteinBuilder:
         self, data: Iterable[CIVICDatum] = (CIVICDatum(),)
     ) -> sql.SparkSession:
         spark_session = mock.MagicMock(spec=sql.SparkSession)
-        spark_session.read.csv.return_value = self._create_dataframe(
-            data, self._input_schema
-        )
+        spark_session.read.csv.return_value = self._create_dataframe(data, self._input_schema)
 
         return spark_session
 

@@ -43,18 +43,15 @@ class CaseBuilder(builders.Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class CaseSQLBuilder(builders.Builder):
-    ...
+class CaseSQLBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)
-class ExpressionValueBuilder(builders.Builder):
-    ...
+class ExpressionValueBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)
-class GeneSQLBuilder(builders.Builder):
-    ...
+class GeneSQLBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -68,8 +65,7 @@ class IndexBuilder(builders.IndexBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
-class PrimaryAliquotBuilder(builders.Builder):
-    ...
+class PrimaryAliquotBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)

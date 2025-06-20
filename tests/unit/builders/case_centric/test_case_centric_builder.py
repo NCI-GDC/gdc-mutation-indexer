@@ -6,7 +6,7 @@ import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import adapter
@@ -81,13 +81,9 @@ def assert_segment_cnv_translated(
     assert segment_observation.observation_id == segment_cnv.observation_id
     assert segment_observation.copy_number == segment_cnv.copy_number
     assert segment_observation.src_file_id == segment_cnv.src_file_id
-    assert (
-        segment_observation.variant_calling.variant_caller == segment_cnv.variant_caller
-    )
+    assert segment_observation.variant_calling.variant_caller == segment_cnv.variant_caller
     assert segment_observation.variant_status == segment_cnv.variant_status
-    assert (
-        segment_observation.sample_ploidy_integer == segment_cnv.sample_ploidy_integer
-    )
+    assert segment_observation.sample_ploidy_integer == segment_cnv.sample_ploidy_integer
 
 
 @pytest.fixture(scope="class")
@@ -236,14 +232,10 @@ class TestCaseCentricBuilder:
     def arrange_consequence_builder(
         self, consequences: Iterable[ssm.Consequences] = (ssm.Consequences(),)
     ) -> builders.ConsequenceBuilder:
-        consequence_df = self.create_dataframe(
-            consequences, self.ssm_consequence_schema
-        )
+        consequence_df = self.create_dataframe(consequences, self.ssm_consequence_schema)
         build_for_ssm = mock.MagicMock(return_value=consequence_df)
 
-        return mock.MagicMock(
-            spec=builders.ConsequenceBuilder, build_for_ssm=build_for_ssm
-        )
+        return mock.MagicMock(spec=builders.ConsequenceBuilder, build_for_ssm=build_for_ssm)
 
     def arrange_inputs(
         self,
@@ -259,9 +251,7 @@ class TestCaseCentricBuilder:
     ) -> Inputs:
         maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
         maf_df = self.create_dataframe(mafs, self.maf_schema)
-        ascat_metadata_df = self.create_dataframe(
-            ascat_metadata, self.ascat_metadata_schema
-        )
+        ascat_metadata_df = self.create_dataframe(ascat_metadata, self.ascat_metadata_schema)
         ascat_df = self.create_dataframe(ascats, self.ascat_schema)
         primary_aliquot_df = self.create_dataframe(
             primary_aliquots, self.primary_aliquot_schema
@@ -340,9 +330,7 @@ class TestCaseCentricBuilder:
         builder.build(**inputs)
 
         result_case = more_itertools.one(builder.case_centric.collect())
-        maf_gene = more_itertools.one(
-            g for g in result_case.gene if g.gene_id == "MAFGENE"
-        )
+        maf_gene = more_itertools.one(g for g in result_case.gene if g.gene_id == "MAFGENE")
         ascat_gene = more_itertools.one(
             g for g in result_case.gene if g.gene_id == "ASCATGENE"
         )
@@ -718,12 +706,8 @@ class TestCaseCentricBuilder:
         result_segment_cnv = result_case.segment_cnv
 
         assert len(result_segment_cnv) == 2
-        sorted_by_segment_cnv_id = sorted(
-            result_segment_cnv, key=lambda x: x.segment_cnv_id
-        )
-        for result_segment, raw_segment_cnv in zip(
-            sorted_by_segment_cnv_id, raw_segment_cnvs
-        ):
+        sorted_by_segment_cnv_id = sorted(result_segment_cnv, key=lambda x: x.segment_cnv_id)
+        for result_segment, raw_segment_cnv in zip(sorted_by_segment_cnv_id, raw_segment_cnvs):
             assert_segment_cnv_translated(result_segment, raw_segment_cnv)
 
     def test__build__segment_cnv_associated_with_correct_case(self) -> None:
@@ -763,12 +747,6 @@ class TestCaseCentricBuilder:
 
         assert frozenset(("case-0", "case-1")) == result_cases.keys()
         assert len(result_cases["case-0"].segment_cnv) == 1
-        assert (
-            result_cases["case-0"].segment_cnv[0].observation[0].observation_id
-            == "obs-0"
-        )
+        assert result_cases["case-0"].segment_cnv[0].observation[0].observation_id == "obs-0"
         assert len(result_cases["case-1"].segment_cnv) == 1
-        assert (
-            result_cases["case-1"].segment_cnv[0].observation[0].observation_id
-            == "obs-1"
-        )
+        assert result_cases["case-1"].segment_cnv[0].observation[0].observation_id == "obs-1"

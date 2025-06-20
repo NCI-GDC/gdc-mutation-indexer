@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from pyspark import sql
 from pyspark.sql import types
@@ -28,8 +28,7 @@ class TestMAFBuilder:
         assert "genomic_dna_change" in maf_df.columns
 
         labels = {
-            row.genomic_dna_change
-            for row in maf_df.select("genomic_dna_change").collect()
+            row.genomic_dna_change for row in maf_df.select("genomic_dna_change").collect()
         }
 
         # Number of unique labels should be equal to the number of unique ssm

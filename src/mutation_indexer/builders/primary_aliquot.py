@@ -1,5 +1,5 @@
 from pyspark import sql
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases

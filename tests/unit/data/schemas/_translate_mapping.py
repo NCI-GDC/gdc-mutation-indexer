@@ -1,8 +1,8 @@
 import io
 from collections.abc import Iterable
-from typing import Optional, cast
 
 import yaml
+from gdcmodels import esmodels
 from pyspark.sql import types
 
 SPARK_TYPES = {
@@ -15,9 +15,9 @@ SPARK_TYPES = {
 }
 
 
-def _get_fields(properties: dict[str, dict]) -> Iterable[types.StructField]:
+def _get_fields(properties: esmodels.Properties) -> Iterable[types.StructField]:
     for prop, details in properties.items():
-        prop_type = cast(Optional[str], details.get("type"))
+        prop_type = details.get("type")
 
         if prop_type in SPARK_TYPES:
             yield types.StructField(prop, SPARK_TYPES[prop_type])
@@ -31,7 +31,9 @@ def _get_fields(properties: dict[str, dict]) -> Iterable[types.StructField]:
             )
 
 
-def _to_schema(mapping: dict) -> types.StructType:
+def _to_schema(mapping: esmodels.Property) -> types.StructType:
+    assert "properties" in mapping, "Must be a valid mapping with properties."
+
     return types.StructType(fields=list(_get_fields(mapping["properties"])))
 
 

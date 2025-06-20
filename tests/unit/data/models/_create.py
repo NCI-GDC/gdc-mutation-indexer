@@ -1,7 +1,7 @@
 import io
 import types
 from collections.abc import Iterable, Iterator
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, TypedDict, Union
 
 import inflect
 import more_itertools
@@ -23,13 +23,12 @@ PYTHON_TYPES = types.MappingProxyType(
 )
 TAB = "    "
 MODULE_HEADER = """import dataclasses
-from typing import Optional
 
 from pyspark import sql\n\n\n"""
 
 CLASS_TEMPLATE = "{indent}@dataclasses.dataclass(frozen=True)\n{indent}class {name}:\n"
-FIELD_TEMPLATE = "{indent}{name}: Optional[{type}] = {value}\n"
-ARRAY_FIELD_TEMPLATE = "{indent}{name}: Optional[tuple[{type}, ...]] = {value}\n"
+FIELD_TEMPLATE = "{indent}{name}: {type} | None = {value}\n"
+ARRAY_FIELD_TEMPLATE = "{indent}{name}: tuple[{type}, ...] | None = {value}\n"
 
 ASSERT_ROW_DEF = "\n{indent}def assert_equals(self, row: sql.Row) -> bool:\n"
 
@@ -56,7 +55,7 @@ class Struct(TypedDict):
 
 
 class Array(TypedDict):
-    elementType: Union[str, Struct]
+    elementType: str | Struct
     containsNull: bool
     type: str
 
@@ -75,7 +74,7 @@ class ClassGenerator:
         self,
         defaults: dict[str, Any],
         include_asserts: bool,
-        inflection: Optional[inflect.engine] = None,
+        inflection: inflect.engine | None = None,
     ) -> None:
         self._defaults = defaults
         self._include_asserts = include_asserts
@@ -88,13 +87,12 @@ class ClassGenerator:
         assert singular_noun is not True
 
         return "".join(
-            p.capitalize()
-            for p in more_itertools.value_chain(name_parts[:-1], singular_noun)
+            p.capitalize() for p in more_itertools.value_chain(name_parts[:-1], singular_noun)
         )
 
     def _get_array_field(
         self, name: str, spark_type: Array, indents: int
-    ) -> tuple[str, Optional[Iterator[str]]]:
+    ) -> tuple[str, Iterator[str] | None]:
         element_type = spark_type["elementType"]
         default = self._defaults.get(name)
         model = None

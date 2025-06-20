@@ -59,9 +59,7 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     )
 
 
-async def run_spark_command(
-    config: configuration.Configuration, driver: app.Driver
-) -> None:
+async def run_spark_command(config: configuration.Configuration, driver: app.Driver) -> None:
     """
     Runs the spark-submit command which will spwan the spark application. The spark
     application will build the desired indices.
@@ -71,9 +69,7 @@ async def run_spark_command(
     """
     config_arguments = config.spark.get_arguments()
     file_arguments = get_file_args(config.build)
-    arguments = more_itertools.flatten(
-        itertools.chain(config_arguments, file_arguments)
-    )
+    arguments = more_itertools.flatten(itertools.chain(config_arguments, file_arguments))
     final_command = " ".join(
         more_itertools.value_chain(
             str(config.build.spark_submit),
@@ -110,9 +106,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
             config.elasticsearch.connection.password,
         ),
     ) as es_client:
-        indices = [
-            config.elasticsearch.write.indices[i] for i in config.build.index_types
-        ]
+        indices = [config.elasticsearch.write.indices[i] for i in config.build.index_types]
 
         try:
             await es_client.indices.forcemerge(
@@ -151,7 +145,7 @@ def main() -> None:
         args = Args().parse_args()
 
         asyncio.run(_main(args))
-    except:
+    except:  # noqa: E722
         logger.critical("Application failed.", exc_info=True)
 
 

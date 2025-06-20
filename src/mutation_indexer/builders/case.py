@@ -3,7 +3,7 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
@@ -73,9 +73,7 @@ class CaseInputs(TypedDict):
     segment_cnv_metadata_df: sql.DataFrame
 
 
-class CaseBuilder(
-    bases.InputBuilder[configuration.CaseBuilder, CaseInputs], CaseLoaderMixin
-):
+class CaseBuilder(bases.InputBuilder[configuration.CaseBuilder, CaseInputs], CaseLoaderMixin):
     __slots__ = ("_es_dataframe_util", "_field_selector")
 
     def __init__(

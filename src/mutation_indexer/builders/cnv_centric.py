@@ -3,7 +3,7 @@ import logging
 from pyspark import sql
 from pyspark.sql import SQLContext
 from pyspark.sql.functions import collect_set, struct
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.builders import (
     base_builder,

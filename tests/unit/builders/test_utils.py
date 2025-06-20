@@ -1,5 +1,5 @@
 import random
-from typing import Any, Tuple
+from typing import Any
 
 import more_itertools
 import pytest
@@ -28,9 +28,7 @@ def test__filter_arrays_by_relative_size(
     random.shuffle(arrays)
     df = spark_session.createDataFrame(
         ((a,) for a in arrays),
-        types.StructType(
-            [types.StructField("array", types.ArrayType(types.IntegerType()))]
-        ),
+        types.StructType([types.StructField("array", types.ArrayType(types.IntegerType()))]),
     )
 
     result = utils.filter_arrays_by_relative_size(df, "array", percentile)
@@ -142,7 +140,7 @@ def test__extract_aas_position__aa_start_and_end(
     ),
 )
 def test__generate_uuid5__fixed_output_for(
-    inputs: Tuple[Any, ...], expected_uuid: str
+    inputs: tuple[Any, ...], expected_uuid: str
 ) -> None:
     """
     Test uuid5 generation

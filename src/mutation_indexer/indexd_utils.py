@@ -1,6 +1,7 @@
 import itertools
 import logging
-from typing import Iterable, Iterator, NamedTuple, Optional, Union
+from collections.abc import Iterable, Iterator
+from typing import NamedTuple
 
 import more_itertools
 from indexclient import client
@@ -32,7 +33,7 @@ def _is_main_url(metadata: dict):
     return metadata.get("type") == "cleversafe" and metadata.get("state") == "validated"
 
 
-def _get_and_format_url(doc: client.Document) -> Optional[str]:
+def _get_and_format_url(doc: client.Document) -> str | None:
     """Select main IndexD url if one exist and format it to something that Spark
     understands
 
@@ -44,9 +45,7 @@ def _get_and_format_url(doc: client.Document) -> Optional[str]:
     """
     for url, meta in doc.urls_metadata.items():
         if _is_main_url(meta):
-            url = url.replace("s3://", "s3a://").replace(
-                "cleversafe.service.consul/", ""
-            )
+            url = url.replace("s3://", "s3a://").replace("cleversafe.service.consul/", "")
             return url
 
     return None
@@ -56,16 +55,14 @@ class DataFrameUtil:
     def __init__(
         self,
         indexd: client.IndexClient,
-        sql_context: sql.SQLContext,
+        spark_session: sql.SQLContext | sql.SparkSession,
         logger: logging.Logger,
     ):
         self._indexd = indexd
-        self._sql_context = sql_context
+        self._spark_session = spark_session
         self._logger = logger
 
-    def _get_doc_urls(
-        self, doc_ids: Iterable[str], batch_size: int
-    ) -> Iterator[DocumentUrl]:
+    def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
             self._indexd.bulk_request(list(dids)) or () for dids in batches
@@ -75,23 +72,23 @@ class DataFrameUtil:
             url = _get_and_format_url(doc)
 
             if url is None:
-                self._logger.warning("File is missing: '{}'".format(doc.did))
+                self._logger.warning(f"File is missing: '{doc.did}'")
 
             else:
                 yield DocumentUrl(doc.did, url)
 
     def _get_dataframe(
         self,
-        urls: Union[str, Iterable[str]],
-        schema: Optional[types.StructType],
+        urls: str | Iterable[str],
+        schema: types.StructType | None,
         include_file_name: bool,
         enforce_schema: bool,
         has_header: bool,
-        comment: Optional[str],
+        comment: str | None,
     ) -> sql.DataFrame:
         urls = list(more_itertools.always_iterable(urls))
 
-        df = self._sql_context.read.csv(
+        df = self._spark_session.read.csv(
             urls,
             schema=schema,
             sep="\t",
@@ -109,13 +106,13 @@ class DataFrameUtil:
     def get_dataframe(
         self,
         doc_ids: Iterable[str],
-        schema: Optional[types.StructType] = None,
+        schema: types.StructType | None = None,
         csv_batch_size: int = 500,
         index_batch_size: int = 1000,
         include_document_ids: bool = True,
         enforce_schema: bool = True,
         has_header: bool = True,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> sql.DataFrame:
         doc_urls = tuple(self._get_doc_urls(doc_ids, index_batch_size))
         urls = (doc_url.url for doc_url in doc_urls)
@@ -138,9 +135,7 @@ class DataFrameUtil:
             document_df = document_df.union(batch_df)
 
         if include_document_ids:
-            url_df = self._sql_context.createDataFrame(
-                doc_urls, schema=DOCUMENT_URL_SCHEMA
-            )
+            url_df = self._spark_session.createDataFrame(doc_urls, schema=DOCUMENT_URL_SCHEMA)
 
             return document_df.join(url_df, on=["_input_file_name"], how="inner").drop(
                 "_input_file_name"

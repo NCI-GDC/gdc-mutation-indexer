@@ -43,22 +43,16 @@ class TestSQLiteDatabase:
         s3 = mock.MagicMock()
         db = sqlite.SQLiteDatabase(config, s3)
 
-        with pytest.raises(
-            RuntimeError, match=r"Cannot access DB outside of a context\."
-        ):
+        with pytest.raises(RuntimeError, match=r"Cannot access DB outside of a context\."):
             db.dbfile
 
         with db:
             assert db.dbfile.exists() and db.dbfile.is_file()
 
-        with pytest.raises(
-            RuntimeError, match=r"Cannot access DB outside of a context\."
-        ):
+        with pytest.raises(RuntimeError, match=r"Cannot access DB outside of a context\."):
             db.dbfile
 
-    def test__write__data_writes_to_table(
-        self, spark_session: sql.SparkSession
-    ) -> None:
+    def test__write__data_writes_to_table(self, spark_session: sql.SparkSession) -> None:
         config = self._arrange_config()
         df = spark_session.createDataFrame(
             (("case-0", "sub-case-0"),),
@@ -69,15 +63,11 @@ class TestSQLiteDatabase:
             db.write(df, INSERT, CREATE)
 
             with sqlite3.connect(db.dbfile) as connection:
-                cursor = connection.execute(
-                    "SELECT * FROM cases WHERE case_id = 'case-0'"
-                )
+                cursor = connection.execute("SELECT * FROM cases WHERE case_id = 'case-0'")
 
                 assert cursor.fetchone() == ("case-0", "sub-case-0")
 
-    def test__write__nonexistant_table_raises(
-        self, spark_session: sql.SparkSession
-    ) -> None:
+    def test__write__nonexistant_table_raises(self, spark_session: sql.SparkSession) -> None:
         config = self._arrange_config()
         df = spark_session.createDataFrame(
             (("gene-0", "symbol"),),

@@ -23,9 +23,7 @@ def is_sub(subset: dict, superset: Iterable[Any], mapping: dict) -> bool:
     return result
 
 
-def assert_from_df(
-    df: sql.DataFrame, row: sql.Row, join_by: str, mapping: dict
-) -> None:
+def assert_from_df(df: sql.DataFrame, row: sql.Row, join_by: str, mapping: dict) -> None:
     item = row.asDict(recursive=True)
     print(item.keys())
     filtered_dict = {}
@@ -67,9 +65,7 @@ def test__get_annotation_df__simple_df(maf_df: sql.DataFrame, index_type: str) -
     "index_type",
     ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
 )
-def test__get_annotation_df__drop_fields(
-    maf_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_annotation_df__drop_fields(maf_df: sql.DataFrame, index_type: str) -> None:
     fields_to_delete = ("ssm_id", "mutation_subtype")
 
     df = df_builders.get_annotation_df(maf_df, index_type, drop_fields=fields_to_delete)
@@ -81,14 +77,10 @@ def test__get_annotation_df__drop_fields(
     "index_type",
     ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
 )
-def test__get_annotation_df__unique_fields(
-    maf_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_annotation_df__unique_fields(maf_df: sql.DataFrame, index_type: str) -> None:
     unique_fields = ("vep_impact",)
     df = df_builders.get_annotation_df(maf_df, index_type, unique_fields=None)
-    df_unique = df_builders.get_annotation_df(
-        maf_df, index_type, unique_fields=unique_fields
-    )
+    df_unique = df_builders.get_annotation_df(maf_df, index_type, unique_fields=unique_fields)
 
     assert df_unique.count() == (df.select(*unique_fields).distinct().count())
 
@@ -172,9 +164,7 @@ def test__get_gene_df__cnv_drop_fields(cnv_df: sql.DataFrame, index_type: str) -
     "index_type",
     ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
 )
-def test__get_gene_df__ssm_unique_fields(
-    maf_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_gene_df__ssm_unique_fields(maf_df: sql.DataFrame, index_type: str) -> None:
     unique_fields = ("biotype",)
     df = df_builders.get_gene_df(maf_df, index_type, unique_fields=None)
     df_unique = df_builders.get_gene_df(maf_df, index_type, unique_fields=unique_fields)
@@ -186,9 +176,7 @@ def test__get_gene_df__ssm_unique_fields(
     "index_type",
     ("cnv_centric", "cnv_occurrence_centric"),
 )
-def test__get_gene_df__cnv_unique_fields(
-    cnv_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_gene_df__cnv_unique_fields(cnv_df: sql.DataFrame, index_type: str) -> None:
     unique_fields = ("biotype",)
     df = df_builders.get_gene_df(cnv_df, index_type, unique_fields=None)
     df_unique = df_builders.get_gene_df(cnv_df, index_type, unique_fields=unique_fields)
@@ -232,9 +220,7 @@ def test__get_transcript_df__simple_df(maf_df: sql.DataFrame, index_type: str) -
     "index_type",
     ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
 )
-def test__get_transcript_df__drop_fields(
-    maf_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_transcript_df__drop_fields(maf_df: sql.DataFrame, index_type: str) -> None:
     fields_to_delete = ("ssm_id", "mutation_subtype")
 
     df = df_builders.get_transcript_df(maf_df, index_type, drop_fields=fields_to_delete)
@@ -246,14 +232,10 @@ def test__get_transcript_df__drop_fields(
     "index_type",
     ("case_centric", "gene_centric", "ssm_centric", "ssm_occurrence_centric"),
 )
-def test__get_transcript_df__unique_fields(
-    maf_df: sql.DataFrame, index_type: str
-) -> None:
+def test__get_transcript_df__unique_fields(maf_df: sql.DataFrame, index_type: str) -> None:
     unique_fields = ("consequence_type",)
     df = df_builders.get_transcript_df(maf_df, index_type, unique_fields=None)
-    df_unique = df_builders.get_transcript_df(
-        maf_df, index_type, unique_fields=unique_fields
-    )
+    df_unique = df_builders.get_transcript_df(maf_df, index_type, unique_fields=unique_fields)
 
     assert df_unique.count() == (df.select(*unique_fields).distinct().count())
 

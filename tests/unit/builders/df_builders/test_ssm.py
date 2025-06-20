@@ -54,18 +54,14 @@ class TestGetSSMDataFrame:
         self.maf_schema = maf_schema
         self.final_ssm_schema = final_ssm_schema
 
-    def _arrange_maf_df(
-        self, mafs: Iterable[models.MAF] = (models.MAF(),)
-    ) -> sql.DataFrame:
+    def _arrange_maf_df(self, mafs: Iterable[models.MAF] = (models.MAF(),)) -> sql.DataFrame:
         return self.create_dataframe(mafs, self.maf_schema)
 
     def test__single_row(self) -> None:
         maf = models.MAF()
         maf_df = self._arrange_maf_df((maf,))
 
-        result_df = df_builders.get_ssm_df(
-            maf_df, "ssm_centric", unique_fields=["ssm_id"]
-        )
+        result_df = df_builders.get_ssm_df(maf_df, "ssm_centric", unique_fields=["ssm_id"])
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_ssm_schema
@@ -105,9 +101,7 @@ class TestBuildSSMSubtree:
         self.final_occurrence_schema = final_occurrence_schema
         self.final_other_schema = final_other_schema
 
-    def _arrange_maf_df(
-        self, mafs: Iterable[models.MAF] = (models.MAF(),)
-    ) -> sql.DataFrame:
+    def _arrange_maf_df(self, mafs: Iterable[models.MAF] = (models.MAF(),)) -> sql.DataFrame:
         return self.create_dataframe(mafs, self.maf_schema)
 
     def _arrange_consequence_df(
@@ -352,15 +346,9 @@ class TestBuildSSMSubtree:
         assert result_observation.observation_id == observation.observation_id
         assert result_observation.read_depth and observation.read_depth
         assert result_observation.read_depth.n_depth == observation.read_depth.n_depth
-        assert (
-            result_observation.read_depth.t_alt_count
-            == observation.read_depth.t_alt_count
-        )
+        assert result_observation.read_depth.t_alt_count == observation.read_depth.t_alt_count
         assert result_observation.read_depth.t_depth == observation.read_depth.t_depth
-        assert (
-            result_observation.read_depth.t_ref_count
-            == observation.read_depth.t_ref_count
-        )
+        assert result_observation.read_depth.t_ref_count == observation.read_depth.t_ref_count
         assert result_observation.sample and observation.sample
         assert (
             result_observation.sample.matched_norm_sample_barcode
@@ -375,8 +363,7 @@ class TestBuildSSMSubtree:
             == observation.sample.tumor_sample_barcode
         )
         assert (
-            result_observation.sample.tumor_sample_uuid
-            == observation.sample.tumor_sample_uuid
+            result_observation.sample.tumor_sample_uuid == observation.sample.tumor_sample_uuid
         )
         assert result_observation.tumor_genotype and observation.tumor_genotype
         assert (

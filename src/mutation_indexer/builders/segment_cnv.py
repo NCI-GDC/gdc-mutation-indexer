@@ -48,9 +48,7 @@ class SegmentCNVInputs(TypedDict):
     segment_cnv_metadata_df: sql.DataFrame
 
 
-class SegmentCNVBuilder(
-    bases.InputBuilder[configuration.SegmentCNVBuilder, SegmentCNVInputs]
-):
+class SegmentCNVBuilder(bases.InputBuilder[configuration.SegmentCNVBuilder, SegmentCNVInputs]):
     def __init__(
         self,
         config: configuration.SegmentCNVBuilder,
@@ -240,9 +238,7 @@ class SegmentCNVBuilder(
             "*",
             cnv_change,
             cnv_change_5_category,
-            F.ceil(mean_ploidy)
-            .cast(types.IntegerType())
-            .alias("sample_ploidy_integer"),
+            F.ceil(mean_ploidy).cast(types.IntegerType()).alias("sample_ploidy_integer"),
         ).na.drop(subset="cnv_change_5_category")
 
         return document_df
@@ -290,12 +286,9 @@ class SegmentCNVBuilder(
         """
         segment_cnv_metadata_df = input_dfs["segment_cnv_metadata_df"]
         document_df = self._build_document_df(
-            row.file_id
-            for row in segment_cnv_metadata_df.select("file_id").toLocalIterator()
+            row.file_id for row in segment_cnv_metadata_df.select("file_id").toLocalIterator()
         )
-        segment_cnv_df = document_df.join(
-            segment_cnv_metadata_df, on="file_id", how="inner"
-        )
+        segment_cnv_df = document_df.join(segment_cnv_metadata_df, on="file_id", how="inner")
         segment_cnv_df = self._add_segment_length(segment_cnv_df)
         segment_cnv_df = self._add_cnv_change_data(segment_cnv_df)
         segment_cnv_df = self._add_uuids(segment_cnv_df)

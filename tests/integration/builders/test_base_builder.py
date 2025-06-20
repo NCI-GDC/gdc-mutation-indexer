@@ -56,9 +56,9 @@ def test_sample_data_cast_boolean(
 
 
 def get_struct(data_type: types.DataType, field: str) -> types.StructType:
-    assert isinstance(
-        data_type, (types.StructType, types.ArrayType)
-    ), f"Parent field: {field} is of an unexpected type: {type(data_type)}"
+    assert isinstance(data_type, (types.StructType, types.ArrayType)), (
+        f"Parent field: {field} is of an unexpected type: {type(data_type)}"
+    )
 
     if isinstance(data_type, types.StructType):
         return data_type
@@ -67,9 +67,9 @@ def get_struct(data_type: types.DataType, field: str) -> types.StructType:
 
 
 def get_field(struct: types.StructType, field: str) -> types.StructType:
-    assert (
-        field in struct.fieldNames()
-    ), f"Cannot resolve {field} in the fields: {struct.fieldNames()}"
+    assert field in struct.fieldNames(), (
+        f"Cannot resolve {field} in the fields: {struct.fieldNames()}"
+    )
 
     return get_struct(struct[field].dataType, field)
 
@@ -121,9 +121,7 @@ def test__cast_booleans__cnv_occurrence_centric(
     )
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
-    result_df = base_builder.cast_booleans(
-        cnv_occurrence_centric_df, index_mapper.mappings
-    )
+    result_df = base_builder.cast_booleans(cnv_occurrence_centric_df, index_mapper.mappings)
     result_schema = result_df.schema
 
     assert_all_paths_are_booleans(result_schema, paths)
@@ -157,9 +155,7 @@ def test__cast_booleans__ssm_occurrence_centric(
     )
     paths = base_builder.get_all_boolean_paths(index_mapper.mappings)
 
-    result_df = base_builder.cast_booleans(
-        ssm_occurrence_centric_df, index_mapper.mappings
-    )
+    result_df = base_builder.cast_booleans(ssm_occurrence_centric_df, index_mapper.mappings)
     result_schema = result_df.schema
 
     assert_all_paths_are_booleans(result_schema, paths)

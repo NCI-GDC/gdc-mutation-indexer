@@ -11,7 +11,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final, Optional, Tuple, Union
+from typing import DefaultDict, Deque, Final
 
 import elasticsearch
 import gdcmodels
@@ -20,7 +20,7 @@ from elasticsearch import helpers
 from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import types
-from typing_extensions import Literal
+from typing import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -29,8 +29,8 @@ from mutation_indexer.constants import build
 def iterate_es_results(
     es_client: elasticsearch.Elasticsearch,
     index_name: str,
-    doc_type: Optional[str] = None,
-    query: Optional[dict] = None,
+    doc_type: str | None = None,
+    query: dict | None = None,
 ) -> Iterable:
     """
     Returns iterator over elasticsearch query results
@@ -81,7 +81,7 @@ class MappingsLoader:
 
 def _is_included_field(
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     field: str,
 ) -> bool:
     """
@@ -111,7 +111,7 @@ def _is_included_field(
 def _convert_properties(
     properties: Mapping[str, Mapping],
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     path: str = "",
 ) -> Iterator[str]:
     """
@@ -130,12 +130,10 @@ def _convert_properties(
     Yields:
         Individual fields from the given properties mapping.
     """
-    fields: Iterable[Tuple[str, Mapping]] = (
+    fields: Iterable[tuple[str, Mapping]] = (
         (f"{path}{prop}", details) for prop, details in properties.items()
     )
-    is_included_field = functools.partial(
-        _is_included_field, excluded_fields, included_fields
-    )
+    is_included_field = functools.partial(_is_included_field, excluded_fields, included_fields)
     fields = filter(lambda items: is_included_field(items[0]), fields)
 
     for field, details in fields:
@@ -153,7 +151,7 @@ def _convert_properties(
 def _extract_fields(
     properties: Mapping[str, Mapping],
     excluded_fields: Container[str],
-    included_fields: Optional[Iterable[str]],
+    included_fields: Iterable[str] | None,
     path_to_fields: Deque[str],
 ) -> Iterator[str]:
     """
@@ -205,14 +203,14 @@ class CaseFieldSelector:
         }
     )
 
-    def __init__(self, mappings_loader: Optional[MappingsLoader] = None) -> None:
+    def __init__(self, mappings_loader: MappingsLoader | None = None) -> None:
         self._mappings_loader = mappings_loader or MappingsLoader()
 
     def _select_fields(
         self,
         index_type: build.IndexType,
         excluded_fields: Container[str],
-        included_fields: Optional[Iterable[str]],
+        included_fields: Iterable[str] | None,
     ) -> Set[str]:
         if index_type not in self.CASE_PREFIXES:
             raise ValueError(f"Index: {index_type} is not supported.")
@@ -232,7 +230,7 @@ class CaseFieldSelector:
         self,
         *index_types: build.IndexType,
         excluded_fields: Container[str] = (),
-        included_fields: Optional[Iterable[str]] = None,
+        included_fields: Iterable[str] | None = None,
     ) -> Set[str]:
         """
         Selects all common case fields found in the given indices.
@@ -315,9 +313,7 @@ def _parse_tree(paths: Iterable[str]) -> Tree:
     return tree
 
 
-def _walk_struct(
-    struct: types.StructType, path: Sequence[str]
-) -> Optional[types.StructField]:
+def _walk_struct(struct: types.StructType, path: Sequence[str]) -> types.StructField | None:
     """Walks the provided path within the given SQL structure.
 
     Args:
@@ -329,9 +325,7 @@ def _walk_struct(
         `None`.
     """
 
-    def get_field(
-        struct: types.StructType, field_name: str
-    ) -> Optional[types.StructField]:
+    def get_field(struct: types.StructType, field_name: str) -> types.StructField | None:
         """Gets the field with the given name if it exists.
 
         Args:
@@ -431,7 +425,7 @@ class SchemaLoader:
     def load(
         self,
         mappings: esmodels.ESMapping,
-        source_filter: Union[Literal[True], Iterable[str]],
+        source_filter: Literal[True] | Iterable[str],
         include_as_arrays: Iterable[str],
     ) -> types.StructType:
         """Loads the schema from the mappings.
@@ -448,9 +442,7 @@ class SchemaLoader:
             The schema of the data that will be loaded from the given mapping with the
             given source_filter & include_as_arrays applied.
         """
-        included = (
-            DefaultTree() if source_filter is True else _parse_tree(source_filter)
-        )
+        included = DefaultTree() if source_filter is True else _parse_tree(source_filter)
         struct = types.StructType(
             list(self._convert_properties(mappings["properties"], included))
         )
@@ -538,9 +530,9 @@ class DataFrameUtil:
     def read(
         self,
         index_type: build.IndexType,
-        source_filter: Union[Literal[True], Collection[str]] = True,
+        source_filter: Literal[True] | Collection[str] = True,
         include_as_arrays: Iterable[str] = (),
-        query: Optional[dict] = None,
+        query: dict | None = None,
         read_metadata: bool = False,
     ) -> sql.DataFrame:
         """
@@ -560,12 +552,8 @@ class DataFrameUtil:
         """
         mappings = self._mappings_loader.load_mapper(index_type).mappings
         # We need to insure that all nested documents are included as arrays.
-        include_as_arrays = _get_nested_document_properties(mappings).union(
-            include_as_arrays
-        )
-        source_schema = self._schema_loader.load(
-            mappings, source_filter, include_as_arrays
-        )
+        include_as_arrays = _get_nested_document_properties(mappings).union(include_as_arrays)
+        source_schema = self._schema_loader.load(mappings, source_filter, include_as_arrays)
         schema = types.StructType(
             [
                 types.StructField("_id", types.StringType()),
@@ -578,9 +566,7 @@ class DataFrameUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.cert.allow.self.signed": str(
-                not self._config.connection.verify_certs
-            ),
+            "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": _get_index(self._config, index_type),
         }
@@ -626,9 +612,7 @@ class DataFrameUtil:
             index_type: the index type correlating to the mapping for the new index
         """
         if self._es_client.indices.exists(index=index):
-            raise Exception(
-                f"Index: {index} already exists. Cannot overwrite existing index."
-            )
+            raise Exception(f"Index: {index} already exists. Cannot overwrite existing index.")
 
         mappings = self._mappings_loader.load_mapper(index_type)
 
@@ -636,9 +620,7 @@ class DataFrameUtil:
             index=index, mappings=mappings.mappings, settings=mappings.settings
         )
 
-    def write(
-        self, df: sql.DataFrame, index_type: build.IndexType, id_field: str
-    ) -> None:
+    def write(self, df: sql.DataFrame, index_type: build.IndexType, id_field: str) -> None:
         """
         A utility for writing data from a data frame into elasticsearch.
 
@@ -698,11 +680,11 @@ class RDDUtil:
     def get_rdd(
         self,
         index_type: build.IndexType,
-        include_fields: Union[Iterable[str], bool] = True,
-        exclude_fields: Optional[Iterable[str]] = None,
+        include_fields: Iterable[str] | bool = True,
+        exclude_fields: Iterable[str] | None = None,
         include_as_arrays: Iterable[str] = (),
         exclude_as_arrays: Iterable[str] = (),
-        query: Optional[dict] = None,
+        query: dict | None = None,
         read_metadata: bool = False,
     ) -> pyspark.RDD:
         """
@@ -731,9 +713,7 @@ class RDDUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.cert.allow.self.signed": str(
-                not self._config.connection.verify_certs
-            ),
+            "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": self._get_index(index_type),
         }

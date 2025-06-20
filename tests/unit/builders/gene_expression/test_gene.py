@@ -48,9 +48,7 @@ class TestGeneSQLBuilder:
     def _arrange_inputs(
         self, values: Iterable[models.ExpressionValue] = (models.ExpressionValue(),)
     ) -> Mapping[str, sql.DataFrame]:
-        return {
-            "expression_value_df": self._create_dataframe(values, self._value_schema)
-        }
+        return {"expression_value_df": self._create_dataframe(values, self._value_schema)}
 
     def test__build__single_row(
         self,

@@ -1,7 +1,6 @@
 import dataclasses
 import decimal
 from collections.abc import Iterable
-from typing import Optional
 
 import more_itertools
 import pytest
@@ -16,17 +15,17 @@ from tests.unit.data.models import viz as models
 
 @dataclasses.dataclass(frozen=True)
 class AllEffects:
-    do_not_use: Optional[str] = "CSMD2"
-    consequence_type: Optional[str] = "missense_variant"
-    aa_change: Optional[str] = "p.A609S"
-    transcript_id: Optional[str] = "ENST00000373381"
-    ref_seq_accession: Optional[str] = "NM_001281956.2"
-    hgvsc: Optional[str] = "c.1825G>T"
-    vep_impact: Optional[str] = "MODERATE"
-    is_canonical: Optional[str] = "YES"
-    sift: Optional[str] = "tolerated(0.14)"
-    polyphen: Optional[str] = "benign(0.305)"
-    transcript_strand: Optional[str] = "-1"
+    do_not_use: str | None = "CSMD2"
+    consequence_type: str | None = "missense_variant"
+    aa_change: str | None = "p.A609S"
+    transcript_id: str | None = "ENST00000373381"
+    ref_seq_accession: str | None = "NM_001281956.2"
+    hgvsc: str | None = "c.1825G>T"
+    vep_impact: str | None = "MODERATE"
+    is_canonical: str | None = "YES"
+    sift: str | None = "tolerated(0.14)"
+    polyphen: str | None = "benign(0.305)"
+    transcript_strand: str | None = "-1"
 
     def __str__(self) -> str:
         return ",".join(
@@ -107,9 +106,7 @@ class TestConsequenceBuilder:
     ) -> sql.DataFrame:
         return self.create_dataframe(ascats, self.ascat_schema)
 
-    def arrange_maf_df(
-        self, mafs: Iterable[models.MAF] = (models.MAF(),)
-    ) -> sql.DataFrame:
+    def arrange_maf_df(self, mafs: Iterable[models.MAF] = (models.MAF(),)) -> sql.DataFrame:
         return self.create_dataframe(mafs, self.maf_schema)
 
     @pytest.mark.parametrize(
@@ -118,9 +115,7 @@ class TestConsequenceBuilder:
             pytest.param("case_centric", False, False, id="case_centric"),
             pytest.param("gene_centric", False, False, id="gene_centric"),
             pytest.param("ssm_centric", True, True, id="ssm_centric"),
-            pytest.param(
-                "ssm_occurrence_centric", True, False, id="ssm_occurrence_centric"
-            ),
+            pytest.param("ssm_occurrence_centric", True, False, id="ssm_occurrence_centric"),
         ),
     )
     def test__build_for_ssm__single_row(
@@ -129,9 +124,7 @@ class TestConsequenceBuilder:
         maf_df = self.arrange_maf_df()
         builder = builders.ConsequenceBuilder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, index_name, join_gene, add_gene_aa_change
-        )
+        result_df = builder.build_for_ssm(maf_df, index_name, join_gene, add_gene_aa_change)
 
         assert result_df.count() == 1
         assert result_df.schema == self.final_ssm_schemas[index_name]
@@ -190,9 +183,7 @@ class TestConsequenceBuilder:
         assert result_annotation.hgvsp == maf.hgvsp
         assert result_annotation.hgvsp_short == maf.hgvsp_short
         assert result_annotation.polyphen_impact != maf.polyphen_impact
-        utils.assert_float_not_equal(
-            result_annotation.polyphen_score, maf.polyphen_score
-        )
+        utils.assert_float_not_equal(result_annotation.polyphen_score, maf.polyphen_score)
         assert result_annotation.protein_position == maf.protein_position
         assert result_annotation.pubmed == maf.pubmed
         assert result_annotation.sift_impact != maf.sift_impact
@@ -210,8 +201,7 @@ class TestConsequenceBuilder:
         assert tuple(result_gene.external_db_ids.hgnc) == maf.hgnc
         assert tuple(result_gene.external_db_ids.omim_gene) == maf.omim_gene
         assert (
-            tuple(result_gene.external_db_ids.uniprotkb_swissprot)
-            == maf.uniprotkb_swissprot
+            tuple(result_gene.external_db_ids.uniprotkb_swissprot) == maf.uniprotkb_swissprot
         )
         assert result_gene.gene_chromosome == maf.gene_chromosome
         assert result_gene.gene_end == maf.gene_end
@@ -294,7 +284,7 @@ class TestConsequenceBuilder:
         ids=("valid_start", "valid_start_with_end", "no_valid_start"),
     )
     def test__build_for_ssm__aa_start(
-        self, aa_change: Optional[str], expected_start: Optional[int]
+        self, aa_change: str | None, expected_start: int | None
     ) -> None:
         all_effects = AllEffects(aa_change=aa_change)
         maf = models.MAF(all_effects=str(all_effects))
@@ -317,7 +307,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__aa_end(
-        self, aa_change: Optional[str], expected_end: Optional[int]
+        self, aa_change: str | None, expected_end: int | None
     ) -> None:
         """TODO: FOLLOW UP ON E1371Rfs*16 not 16?"""
         all_effects = AllEffects(aa_change=aa_change)
@@ -351,7 +341,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_polyphen_impact_value(
-        self, polyphen: Optional[str], expected_impact: str
+        self, polyphen: str | None, expected_impact: str
     ) -> None:
         all_effects = AllEffects(polyphen=polyphen)
         maf = models.MAF(all_effects=str(all_effects))
@@ -377,7 +367,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_polyphen_score_value(
-        self, polyphen: Optional[str], expected_score: Optional[decimal.Decimal]
+        self, polyphen: str | None, expected_score: decimal.Decimal | None
     ) -> None:
         all_effects = AllEffects(polyphen=polyphen)
         maf = models.MAF(all_effects=str(all_effects))
@@ -399,7 +389,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_sift_impact_value(
-        self, sift: Optional[str], expected_impact: str
+        self, sift: str | None, expected_impact: str
     ) -> None:
         all_effects = AllEffects(sift=sift)
         maf = models.MAF(all_effects=str(all_effects))
@@ -425,7 +415,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__extract_sift_score_value(
-        self, sift: Optional[str], expected_score: Optional[decimal.Decimal]
+        self, sift: str | None, expected_score: decimal.Decimal | None
     ) -> None:
         all_effects = AllEffects(sift=sift)
         maf = models.MAF(all_effects=str(all_effects))
@@ -481,9 +471,7 @@ class TestConsequenceBuilder:
         maf_df = self.arrange_maf_df((maf0, maf1, maf2))
         builder = builders.ConsequenceBuilder()
 
-        result_df = builder.build_for_ssm(
-            maf_df, index_name, join_gene, add_gene_aa_change
-        )
+        result_df = builder.build_for_ssm(maf_df, index_name, join_gene, add_gene_aa_change)
         result_consequences = {r.ssm_id: r for r in result_df.collect()}
 
         assert result_consequences.keys() == frozenset({maf0.ssm_id, maf1.ssm_id})
@@ -501,7 +489,7 @@ class TestConsequenceBuilder:
         ),
     )
     def test__build_for_ssm__gene_aa_change_all_effects(
-        self, aa_changes: Iterable[Optional[str]], expected_output: list[str]
+        self, aa_changes: Iterable[str | None], expected_output: list[str]
     ) -> None:
         all_effects = ";".join(
             str(AllEffects(do_not_use="gene", aa_change=c)) for c in aa_changes
@@ -534,7 +522,5 @@ class TestConsequenceBuilder:
         assert result_consequence.consequence_id == ascat.consequence_id
         assert result_consequence.gene.biotype == ascat.biotype
         assert result_consequence.gene.gene_id == ascat.gene_id
-        assert (
-            result_consequence.gene.is_cancer_gene_census == ascat.is_cancer_gene_census
-        )
+        assert result_consequence.gene.is_cancer_gene_census == ascat.is_cancer_gene_census
         assert result_consequence.gene.symbol == ascat.symbol

@@ -89,9 +89,7 @@ class TestAscatBuilder:
         self.input_gene_model_schema = input_gene_model_schema
         self.final_ascat_schema = final_ascat_schema
 
-    def _arrange_doc_dataframe_util(
-        self, cnv_data: tuple[CNVDatum, ...]
-    ) -> mock.MagicMock:
+    def _arrange_doc_dataframe_util(self, cnv_data: tuple[CNVDatum, ...]) -> mock.MagicMock:
         ascat_document_df = self.create_dataframe(cnv_data, self.input_ascat_schema)
 
         return _arrange_dataframe_util(ascat_document_df)
@@ -279,9 +277,7 @@ class TestAscatBuilder:
     @pytest.mark.parametrize(
         ("copy_numbers", "cnv_change_5_category"),
         (
-            pytest.param(
-                (200, 50, 50), "Amplification", id="amplification_single_mode"
-            ),
+            pytest.param((200, 50, 50), "Amplification", id="amplification_single_mode"),
             pytest.param(
                 (200, 50, 50, 30, 30), "Amplification", id="amplification_multiple_mode"
             ),
@@ -335,9 +331,7 @@ class TestAscatBuilder:
 
         inputs = self._arrange_input_dataframes(
             gene_model=(
-                models.GeneModel(
-                    _gene_id="non-protein_coding", biotype="non-protein-coding"
-                ),
+                models.GeneModel(_gene_id="non-protein_coding", biotype="non-protein-coding"),
                 models.GeneModel(_gene_id="X", chromosome="X"),
                 models.GeneModel(_gene_id="Y", chromosome="Y"),
                 *(
@@ -358,9 +352,7 @@ class TestAscatBuilder:
         "copy_numbers",
         ((30,), (31, 32, 33), (33, 20, 20, 40, 40)),
     )
-    def test__build__neutral_copy_numbers_filtered(
-        self, copy_numbers: Iterable[int]
-    ) -> None:
+    def test__build__neutral_copy_numbers_filtered(self, copy_numbers: Iterable[int]) -> None:
         ascat_documents = tuple(
             CNVDatum(copy_number=copy_number) for copy_number in copy_numbers
         )
@@ -404,12 +396,8 @@ class TestAscatBuilder:
         canonical_transcript = models.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = models.Transcript(
-            length=10, length_cds=3, end=122, start=100
-        )
-        gene_model = (
-            models.GeneModel(transcripts=(other_transcript, canonical_transcript)),
-        )
+        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        gene_model = (models.GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(gene_model=gene_model)
         builder = self._arrange_builder()
@@ -418,14 +406,8 @@ class TestAscatBuilder:
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.canonical_transcript_length == canonical_transcript.length
-        assert (
-            result_row.canonical_transcript_length_cds
-            == canonical_transcript.length_cds
-        )
-        assert (
-            canonical_transcript.end is not None
-            and canonical_transcript.start is not None
-        )
+        assert result_row.canonical_transcript_length_cds == canonical_transcript.length_cds
+        assert canonical_transcript.end is not None and canonical_transcript.start is not None
         assert (
             result_row.canonical_transcript_length_genomic
             == canonical_transcript.end - canonical_transcript.start + 1
@@ -435,12 +417,8 @@ class TestAscatBuilder:
         canonical_transcript = models.Transcript(
             length=None, length_cds=None, end=None, start=None, is_canonical=True
         )
-        other_transcript = models.Transcript(
-            length=10, length_cds=3, end=122, start=100
-        )
-        gene_model = (
-            models.GeneModel(transcripts=(other_transcript, canonical_transcript)),
-        )
+        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        gene_model = (models.GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(gene_model=gene_model)
         builder = self._arrange_builder()
@@ -448,9 +426,9 @@ class TestAscatBuilder:
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        assert result_row.canonical_transcript_length == None
-        assert result_row.canonical_transcript_length_cds == None
-        assert result_row.canonical_transcript_length_genomic == None
+        assert result_row.canonical_transcript_length is None
+        assert result_row.canonical_transcript_length_cds is None
+        assert result_row.canonical_transcript_length_genomic is None
 
     def test__build__canonical_transcript_lengths_no_canonical_transcript(
         self,
@@ -464,9 +442,9 @@ class TestAscatBuilder:
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        assert result_row.canonical_transcript_length == None
-        assert result_row.canonical_transcript_length_cds == None
-        assert result_row.canonical_transcript_length_genomic == None
+        assert result_row.canonical_transcript_length is None
+        assert result_row.canonical_transcript_length_cds is None
+        assert result_row.canonical_transcript_length_genomic is None
 
     @pytest.mark.parametrize(
         ("gene_model", "ascat_documents"),

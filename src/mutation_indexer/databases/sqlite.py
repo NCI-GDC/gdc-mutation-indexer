@@ -4,12 +4,12 @@ import contextlib
 import pathlib
 import sqlite3
 import tempfile
-from typing import Any, Optional
+from typing import Any
 
 import more_itertools
 import mypy_boto3_s3 as s3
 from pyspark import sql
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.configuration import databases
 
@@ -27,7 +27,7 @@ class SQLiteDatabase:
         self._config = config
         self._s3_client = s3_client
         self._context = contextlib.ExitStack()
-        self._dbfile: Optional[pathlib.Path] = None
+        self._dbfile: pathlib.Path | None = None
 
     @property
     def dbfile(self) -> pathlib.Path:
@@ -69,9 +69,7 @@ class SQLiteDatabase:
 
         self._dbfile = None
 
-    def write(
-        self, df: sql.DataFrame, insert: str, create: Optional[str] = None
-    ) -> None:
+    def write(self, df: sql.DataFrame, insert: str, create: str | None = None) -> None:
         """Writes the data in the data frame to the configured database.
 
         Args:

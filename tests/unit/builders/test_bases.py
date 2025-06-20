@@ -1,9 +1,10 @@
-from typing import AbstractSet, Generic, Mapping, Optional, Type, TypeVar
+from typing import AbstractSet, Generic, TypeVar
+from collections.abc import Mapping
 from unittest import mock
 
 import pytest
 from pyspark import sql
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import builders
@@ -48,7 +49,7 @@ class TestDataFrameInputManager:
         ids=("empty", "exact_match", "extra"),
     )
     def test__check__all_keys_are_contained(
-        self, input: dict, input_type: Type[TypedDict]
+        self, input: dict, input_type: type[TypedDict]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -77,7 +78,7 @@ class TestDataFrameInputManager:
         ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: Type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -88,11 +89,11 @@ class TestInputBuilder:
     class DummyBuilder(Generic[TInputs], bases.InputBuilder[builders.Builder, TInputs]):
         def __init__(
             self,
-            input_type: Type[TInputs],
+            input_type: type[TInputs],
             output: build.DataFrame,
-            config: Optional[builders.Builder],
-            spark_session: Optional[sql.SparkSession],
-            scratch_df: Optional[sql.DataFrame],
+            config: builders.Builder | None,
+            spark_session: sql.SparkSession | None,
+            scratch_df: sql.DataFrame | None,
         ) -> None:
             super().__init__(
                 config
@@ -106,9 +107,7 @@ class TestInputBuilder:
             )
 
             self._scratch_df = scratch_df or mock.MagicMock(
-                collect=mock.MagicMock(
-                    return_value=(sql.Row(id=self.__class__.__name__),)
-                )
+                collect=mock.MagicMock(return_value=(sql.Row(id=self.__class__.__name__),))
             )
 
         def _build_from_scratch(self, input_dfs: TInputs) -> sql.DataFrame:
@@ -117,9 +116,9 @@ class TestInputBuilder:
     class Builder0(DummyBuilder[EmptyInputs]):
         def __init__(
             self,
-            config: Optional[builders.Builder] = None,
-            spark_session: Optional[sql.SparkSession] = None,
-            scratch_df: Optional[sql.DataFrame] = None,
+            config: builders.Builder | None = None,
+            spark_session: sql.SparkSession | None = None,
+            scratch_df: sql.DataFrame | None = None,
         ) -> None:
             super().__init__(
                 EmptyInputs,
@@ -133,9 +132,9 @@ class TestInputBuilder:
         def __init__(
             self,
             output: build.DataFrame = build.DataFrame.GENE_MODEL,
-            config: Optional[builders.Builder] = None,
-            spark_session: Optional[sql.SparkSession] = None,
-            scratch_df: Optional[sql.DataFrame] = None,
+            config: builders.Builder | None = None,
+            spark_session: sql.SparkSession | None = None,
+            scratch_df: sql.DataFrame | None = None,
         ) -> None:
             super().__init__(
                 DummyInputs,
@@ -297,9 +296,7 @@ class TestInputBuilder:
         df.write.parquet.assert_not_called()
         spark_session.read.parquet.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "is_cached", (True, False), ids=("is_cached", "is_not_cached")
-    )
+    @pytest.mark.parametrize("is_cached", (True, False), ids=("is_cached", "is_not_cached"))
     def test__build__caching(self, is_cached: bool) -> None:
         cached_df = mock.MagicMock(spec=sql.DataFrame)
         df = mock.MagicMock(spec=sql.DataFrame)
@@ -319,9 +316,7 @@ class TestInputBuilder:
     def test__hash__hash_is_same_as_output(self) -> None:
         builder = TestInputBuilder.Builder0()
 
-        assert (
-            hash(builder) == hash(builder.output) == hash(build.DataFrame.MAF_METADATA)
-        )
+        assert hash(builder) == hash(builder.output) == hash(build.DataFrame.MAF_METADATA)
 
     def test__eq__compare_with_self_true(self) -> None:
         builder = TestInputBuilder.Builder0()

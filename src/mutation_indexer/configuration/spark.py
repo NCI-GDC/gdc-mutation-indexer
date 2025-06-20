@@ -9,7 +9,8 @@ https://spark.apache.org/docs/2.4.5/configuration.html
 import dataclasses
 import types
 from collections.abc import Mapping
-from typing import Any, Iterable, Tuple
+from typing import Any
+from collections.abc import Iterable
 
 
 def _to_camel_case(value: str) -> str:
@@ -23,13 +24,11 @@ class ConfigArgumentMixin:
     def _format_field(self, field: str) -> str:
         return _to_camel_case(field)
 
-    def _get_field_argument(self, path: str, field: str, value: Any) -> Tuple[str, str]:
+    def _get_field_argument(self, path: str, field: str, value: Any) -> tuple[str, str]:
         return ("--conf", f"{path}{field}={value}")
 
-    def _get_arguments(self, path: str = "") -> Iterable[Tuple[str, str]]:
-        fields = (
-            (field, getattr(self, field)) for field in self.__dataclass_fields__.keys()
-        )
+    def _get_arguments(self, path: str = "") -> Iterable[tuple[str, str]]:
+        fields = ((field, getattr(self, field)) for field in self.__dataclass_fields__.keys())
 
         for field, value in fields:
             field = self._format_field(field)
@@ -114,7 +113,7 @@ class Spark(ConfigArgumentMixin):
     yarn: Yarn
     executor_env: Mapping[str, str] = types.MappingProxyType({})
 
-    def get_arguments(self) -> Iterable[Tuple[str, str]]:
+    def get_arguments(self) -> Iterable[tuple[str, str]]:
         """
         Converts the values in this object to a series of cli arguments (name, value)
         which should be included with the `spark-submit` command.

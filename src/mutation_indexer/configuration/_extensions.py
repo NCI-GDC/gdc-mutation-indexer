@@ -13,7 +13,7 @@ import marshmallow
 import marshmallow_dataclass
 from deepmerge import merger
 from marshmallow import exceptions, fields, schema, utils
-from typing_extensions import Self, dataclass_transform
+from typing import Self, dataclass_transform
 
 T = TypeVar("T")
 
@@ -68,9 +68,7 @@ class ArrayTupleField(fields.Field):
 
         self._inner = utils.resolve_field_instance(inner)
 
-    def _bind_to_schema(
-        self, field_name: str, schema: schema.Schema | fields.Field
-    ) -> None:
+    def _bind_to_schema(self, field_name: str, schema: schema.Schema | fields.Field) -> None:
         self._inner = copy.copy(self._inner)
 
         super()._bind_to_schema(field_name, schema)
