@@ -41,7 +41,7 @@ OLD_PRIORITIES = (
 )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = datamodel.WorkflowType.ASCAT_NGS
     analysis_id: str = "analysis-0"

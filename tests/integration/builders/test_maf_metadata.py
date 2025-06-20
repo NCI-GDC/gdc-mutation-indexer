@@ -71,7 +71,7 @@ TEST_INDEX = "test_maf_metadata_builder"
 PRIORITIZED_STRATEGIES = ("WXS", "Targeted Sequencing")
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Analysis:
     workflow_type: str = "Aliquot Ensemble Somatic Variant Merging and Masking"
 
