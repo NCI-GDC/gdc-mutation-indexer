@@ -4,7 +4,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Annotated, Mapping
+from typing import Annotated
+from collections.abc import Mapping
 
 from marshmallow import fields
 
@@ -46,9 +47,7 @@ class Write:
     batch_size_entries: int
     indices: Annotated[
         Mapping[build.IndexType, str],
-        fields.Dict(
-            keys=fields.Enum(build.IndexType), values=_extensions.FormatMapRootField
-        ),
+        fields.Dict(keys=fields.Enum(build.IndexType), values=_extensions.FormatMapRootField),
     ]
 
 

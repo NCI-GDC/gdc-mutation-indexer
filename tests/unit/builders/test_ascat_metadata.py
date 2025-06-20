@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 from collections.abc import Iterable
-from typing import Optional
 from unittest import mock
 
 import more_itertools
@@ -51,9 +50,7 @@ class Analysis:
 @dataclasses.dataclass(frozen=True)
 class Aliquot:
     aliquot_id: str = "a-0"
-    created_datetime: Optional[str] = datetime.datetime.min.isoformat(
-        timespec="microseconds"
-    )
+    created_datetime: str | None = datetime.datetime.min.isoformat(timespec="microseconds")
 
     def to_rdd_data(self) -> dict:
         if self.created_datetime:
@@ -75,7 +72,7 @@ class Analyte:
 
 @dataclasses.dataclass(frozen=True)
 class Portion:
-    analytes: Optional[tuple[Analyte, ...]] = (Analyte(),)
+    analytes: tuple[Analyte, ...] | None = (Analyte(),)
 
     def to_rdd_data(self) -> dict:
         analytes = (
@@ -174,9 +171,7 @@ class TestASCATMetadataBuilder:
 
         return util
 
-    def _arrange_es_rdd_util(
-        self, files: Iterable[File] = (File(),)
-    ) -> es_utils.RDDUtil:
+    def _arrange_es_rdd_util(self, files: Iterable[File] = (File(),)) -> es_utils.RDDUtil:
         spark_context = self._spark_session.sparkContext
         util = mock.MagicMock(spec=es_utils.RDDUtil)
 
@@ -200,9 +195,7 @@ class TestASCATMetadataBuilder:
                             portions=(
                                 Portion(
                                     analytes=(
-                                        Analyte(
-                                            aliquots=(Aliquot(aliquot_id="aliquot-0"),)
-                                        ),
+                                        Analyte(aliquots=(Aliquot(aliquot_id="aliquot-0"),)),
                                     )
                                 ),
                             ),
@@ -214,9 +207,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=(file,))
         rdd_util = self._arrange_es_rdd_util(files=(file,))
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
 
@@ -257,9 +248,7 @@ class TestASCATMetadataBuilder:
     def test__build__sample_type_selection(
         self, primay_sample_type: str, other_sample_type: str
     ) -> None:
-        other_portions = (
-            Portion(analytes=(Analyte(aliquots=(Aliquot(aliquot_id="a-0"),)),)),
-        )
+        other_portions = (Portion(analytes=(Analyte(aliquots=(Aliquot(aliquot_id="a-0"),)),)),)
         primary_portions = (
             Portion(analytes=(Analyte(aliquots=(Aliquot(aliquot_id="a-1"),)),)),
         )
@@ -279,9 +268,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=(file,))
         rdd_util = self._arrange_es_rdd_util(files=(file,))
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
@@ -336,9 +323,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files)
         rdd_util = self._arrange_es_rdd_util(files)
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
@@ -350,9 +335,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files)
         rdd_util = self._arrange_es_rdd_util(files=())
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
@@ -363,9 +346,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util()
         rdd_util = self._arrange_es_rdd_util(files=())
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_rows = result_df.collect()
@@ -422,9 +403,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=(file,))
         rdd_util = self._arrange_es_rdd_util(files=(file,))
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_rows = result_df.collect()
@@ -438,9 +417,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=(file,))
         rdd_util = self._arrange_es_rdd_util(files=(file,))
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_rows = result_df.collect()
@@ -496,7 +473,9 @@ class TestASCATMetadataBuilder:
         self, unprioritized: Priority, prioritized: Priority
     ) -> None:
         unprioritized_id = f"unprioritized={unprioritized.experimental_strategy}-{unprioritized.workflow_type}"
-        prioritized_id = f"prioritized={prioritized.experimental_strategy}-{prioritized.workflow_type}"
+        prioritized_id = (
+            f"prioritized={prioritized.experimental_strategy}-{prioritized.workflow_type}"
+        )
 
         files = (
             File(
@@ -513,9 +492,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config(priorities=OLD_PRIORITIES)
         df_util = self._arrange_es_dataframe_util(files=files)
         rdd_util = self._arrange_es_rdd_util(files=files)
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
         result_rows = result_df.collect()
@@ -535,9 +512,7 @@ class TestASCATMetadataBuilder:
         config = self._arrange_config()
         df_util = self._arrange_es_dataframe_util(files=(file,))
         rdd_util = self._arrange_es_rdd_util(files=(file,))
-        builder = builders.ASCATMetadataBuilder(
-            config, mock.MagicMock(), df_util, rdd_util
-        )
+        builder = builders.ASCATMetadataBuilder(config, mock.MagicMock(), df_util, rdd_util)
 
         result_df = builder.build()
 

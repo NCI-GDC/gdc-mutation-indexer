@@ -7,7 +7,7 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import indexd_utils, pyspark_extensions, schemas
 from mutation_indexer.builders import bases, utils
@@ -52,9 +52,7 @@ def _ssm_label() -> sql.Column:
         )
         .when(
             variant_type == "DEL",
-            F.format_string(
-                "chr%s:g.%sdel%s", chromosome, start_position, reference_allele
-            ),
+            F.format_string("chr%s:g.%sdel%s", chromosome, start_position, reference_allele),
         )
         .when(
             variant_type == "INS",
@@ -223,7 +221,7 @@ class MAFBuilder(bases.InputBuilder[configuration.MAFBuilder, MAFInputs]):
             if old_column in df_columns:
                 return F.col(old_column).alias(new_column)
             else:
-                raise KeyError("Required column {} missing from MAF".format(old_column))
+                raise KeyError(f"Required column {old_column} missing from MAF")
 
         # Iterate over the output schema rather than the input dataframe.
         # As long as we don't modify the schema after loading it, this should
@@ -397,17 +395,13 @@ class MAFBuilder(bases.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         df = df.withColumn(
             "cds_start", F.udf(start, types.IntegerType())(F.col("cds_position"))
         )
-        df = df.withColumn(
-            "cds_end", F.udf(end, types.IntegerType())(F.col("cds_position"))
-        )
+        df = df.withColumn("cds_end", F.udf(end, types.IntegerType())(F.col("cds_position")))
         df = df.withColumn(
             "cds_length", F.udf(length, types.IntegerType())(F.col("cds_position"))
         )
         return df
 
-    def _build_document_dataframe(
-        self, maf_metadata_df: sql.DataFrame
-    ) -> sql.DataFrame:
+    def _build_document_dataframe(self, maf_metadata_df: sql.DataFrame) -> sql.DataFrame:
         """
         Builds a data frame from the data contained in the files whose ids are
         in the maf_metadata_df
@@ -436,9 +430,7 @@ class MAFBuilder(bases.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         aggregated_somatic_mutation_df = pyspark_extensions.default_columns(
             self._doc_dataframe_util.get_dataframe(
                 aggregated_somatic_mutation,
-                schema=schemas.load_schema(
-                    "builders/maf/aggregated_somatic_mutation.yaml"
-                ),
+                schema=schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml"),
                 comment="#",
             ),
             (

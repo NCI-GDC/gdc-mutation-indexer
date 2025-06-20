@@ -21,7 +21,7 @@ spark instance through which pyspark/spark functionality are run.
 Run the following command
 
 ```bash
-tox -e py39
+tox -e test
 ```
 
 ## Dockerized Elasticsearch and Indexd

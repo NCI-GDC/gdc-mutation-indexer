@@ -1,5 +1,6 @@
 import itertools
-from typing import Dict, Iterable, NamedTuple, Optional, Tuple, Union
+from typing import NamedTuple
+from collections.abc import Iterable
 from unittest import mock
 
 import pytest
@@ -7,7 +8,7 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer import indexd_utils
 
@@ -17,14 +18,12 @@ class UrlMetadata(TypedDict):
     state: str
 
 
-def arrange_url_metadata(
-    type: str = "cleversafe", state: str = "validated"
-) -> UrlMetadata:
+def arrange_url_metadata(type: str = "cleversafe", state: str = "validated") -> UrlMetadata:
     return UrlMetadata(type=type, state=state)
 
 
 def arrange_document(
-    did="file-0", urls_metadata: Optional[Dict[str, UrlMetadata]] = None
+    did="file-0", urls_metadata: dict[str, UrlMetadata] | None = None
 ) -> client.Document:
     urls_metadata = (
         {"file://file-0.format": arrange_url_metadata()}
@@ -38,7 +37,7 @@ def arrange_document(
 
 class DocumentContent(NamedTuple):
     did: str = "file-0"
-    data: Tuple[str, ...] = ("a", "b")
+    data: tuple[str, ...] = ("a", "b")
 
 
 def stub_input_file_name() -> sql.Column:
@@ -55,9 +54,7 @@ class TestDataFrameUtil:
 
     def arrange_index_client(
         self,
-        documents: Iterable[Optional[Iterable[client.Document]]] = (
-            (arrange_document(),),
-        ),
+        documents: Iterable[Iterable[client.Document] | None] = ((arrange_document(),),),
     ) -> mock.MagicMock:
         index_client = mock.MagicMock()
 
@@ -67,16 +64,14 @@ class TestDataFrameUtil:
 
     def arrange_data_rows(
         self, document_content: DocumentContent
-    ) -> Iterable[Tuple[str, ...]]:
+    ) -> Iterable[tuple[str, ...]]:
         for data in document_content.data:
             yield (f"{document_content.did}.{data}",)
 
     def arrange_sql_context(
         self,
-        document_contents: Iterable[Iterable[DocumentContent]] = (
-            (DocumentContent(),),
-        ),
-        schema: Optional[Union[Tuple[str, ...], types.StructType]] = ("doc_data",),
+        document_contents: Iterable[Iterable[DocumentContent]] = ((DocumentContent(),),),
+        schema: tuple[str, ...] | types.StructType | None = ("doc_data",),
     ) -> mock.MagicMock:
         sql_context = mock.MagicMock()
         data = (
@@ -92,9 +87,7 @@ class TestDataFrameUtil:
         return sql_context
 
     @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__default_settings(
-        self, input_file_name: mock.MagicMock
-    ) -> None:
+    def test__get_dataframe__default_settings(self, input_file_name: mock.MagicMock) -> None:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()
@@ -120,9 +113,7 @@ class TestDataFrameUtil:
         assert all(row.did == "file-0" for row in result_rows)
 
     @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__multiple_files(
-        self, input_file_name: mock.MagicMock
-    ) -> None:
+    def test__get_dataframe__multiple_files(self, input_file_name: mock.MagicMock) -> None:
         documents = (
             arrange_document(),
             arrange_document(
@@ -141,9 +132,7 @@ class TestDataFrameUtil:
         result_df = util.get_dataframe(("file-0", "file-1"))
         result_rows = {
             key: tuple(items)
-            for key, items in itertools.groupby(
-                result_df.collect(), lambda row: row.did
-            )
+            for key, items in itertools.groupby(result_df.collect(), lambda row: row.did)
         }
 
         indexd.bulk_request.assert_called_once_with(["file-0", "file-1"])
@@ -235,9 +224,7 @@ class TestDataFrameUtil:
     ) -> None:
         documents = (
             arrange_document(
-                urls_metadata={
-                    "file://file-0.format": arrange_url_metadata(type, state)
-                },
+                urls_metadata={"file://file-0.format": arrange_url_metadata(type, state)},
             ),
         )
 
@@ -264,9 +251,7 @@ class TestDataFrameUtil:
         assert result_df.count() == 0
 
     @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__url_formated(
-        self, input_file_name: mock.MagicMock
-    ) -> None:
+    def test__get_dataframe__url_formated(self, input_file_name: mock.MagicMock) -> None:
         documents = (
             arrange_document(
                 "file-0",
@@ -298,9 +283,7 @@ class TestDataFrameUtil:
         assert result_df.count() == 2
 
     @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__exclude_dids(
-        self, input_file_name: mock.MagicMock
-    ) -> None:
+    def test__get_dataframe__exclude_dids(self, input_file_name: mock.MagicMock) -> None:
         input_file_name.side_effect = stub_input_file_name
         indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()

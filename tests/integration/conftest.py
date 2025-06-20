@@ -4,7 +4,7 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, Union, cast
+from typing import Any, cast
 from unittest import mock
 
 import elasticsearch
@@ -143,7 +143,7 @@ def files_with_linked_cases(
 
 
 @pytest.fixture(scope="session")
-def spark_session() -> Generator[sql.SparkSession, None, None]:
+def spark_session() -> Generator[sql.SparkSession]:
     with (
         sql.SparkSession.builder.master("local[*]")
         .appName("sqlContextFixture")
@@ -235,9 +235,7 @@ def gene_model_df(
     spark_session: sql.SparkSession,
     dataframe_writer: DataFrameWriter,
 ) -> sql.DataFrame:
-    df = builders.GeneModelBuilder(
-        default_config.builders.gene_model, spark_session
-    ).build()
+    df = builders.GeneModelBuilder(default_config.builders.gene_model, spark_session).build()
 
     return dataframe_writer(df)
 
@@ -380,15 +378,11 @@ def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataF
     with open(cnv_dir.joinpath("schema.yaml")) as f:
         schema = types.StructType.fromJson(yaml.safe_load(f))
 
-    return spark_session.read.json(
-        str(cnv_dir.joinpath("data.ndjson.gz")), schema=schema
-    )
+    return spark_session.read.json(str(cnv_dir.joinpath("data.ndjson.gz")), schema=schema)
 
 
 @pytest.fixture(scope="session")
-def maf_metadata_df(
-    sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]
-) -> sql.DataFrame:
+def maf_metadata_df(sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]) -> sql.DataFrame:
     return sqlContext.createDataFrame(
         tuple((case_id,) for case_id in all_maf_cases), schema="case_id: string"
     ).cache()
@@ -439,9 +433,9 @@ def ssm_transcript_df(
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
     log.info("\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n")
-    return builders.ConsequenceBuilder(
-        default_old_config, sqlContext
-    ).build_all_effects_cols(maf_df)
+    return builders.ConsequenceBuilder(default_old_config, sqlContext).build_all_effects_cols(
+        maf_df
+    )
 
 
 @pytest.fixture(scope="session")
@@ -482,9 +476,7 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
 
 
 @pytest.fixture(scope="session")
-def segment_cnv_df(
-    spark_session: sql.SparkSession, data_dir: pathlib.Path
-) -> sql.DataFrame:
+def segment_cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataFrame:
     """Builds a dataframe of segment_cnv for a case that exists in the test data."""
     segment_cnv_dir = data_dir.joinpath("input/segment_cnv")
     with open(segment_cnv_dir.joinpath("schema.yaml")) as f:
@@ -678,9 +670,7 @@ def ssm_occurrence_centric_df(
     Builds ssm occurrence centric dataframe once. Loads to elasticsearch index
     Reused throughout test suite
     """
-    request.addfinalizer(
-        centric_index_finalizer(build.IndexType.SSM_OCCURRENCE_CENTRIC)
-    )
+    request.addfinalizer(centric_index_finalizer(build.IndexType.SSM_OCCURRENCE_CENTRIC))
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMOccurrenceCentricBuilder(
@@ -740,9 +730,7 @@ def cnv_occurrence_centric_df(
     """
     Builds cnv occurrence centric dataframe
     """
-    request.addfinalizer(
-        centric_index_finalizer(build.IndexType.CNV_OCCURRENCE_CENTRIC)
-    )
+    request.addfinalizer(centric_index_finalizer(build.IndexType.CNV_OCCURRENCE_CENTRIC))
     log.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVOccurrenceCentricBuilder(
@@ -866,8 +854,8 @@ def exploded_variant_caller_counts() -> Mapping[str, int]:
 @pytest.fixture(scope="function")
 def load_data_from_file(
     data_dir: pathlib.Path,
-) -> Callable[[Union[str, pathlib.Path]], Any]:
-    def load(filename: Union[str, pathlib.Path]):
+) -> Callable[[str | pathlib.Path], Any]:
+    def load(filename: str | pathlib.Path):
         with open(data_dir.joinpath(filename)) as f:
             return yaml.safe_load(f)
 

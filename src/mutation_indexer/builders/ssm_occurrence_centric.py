@@ -2,7 +2,7 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.builders import (
     base_builder,
@@ -100,9 +100,9 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
         ssm_cons = ssm_df.select(
             "ssm_id",
             "case_id",
-            F.struct(
-                "consequence", *ssm_df.drop("consequence").drop("case_id").columns
-            ).alias("ssm"),
+            F.struct("consequence", *ssm_df.drop("consequence").drop("case_id").columns).alias(
+                "ssm"
+            ),
         )
         self.log_count(ssm_cons)
 

@@ -1,7 +1,7 @@
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import builders
@@ -40,9 +40,7 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
     Constructs a Gene Model dataframe from ICGC's gene model json
     """
 
-    def __init__(
-        self, config: builders.GeneModelBuilder, spark_session: sql.SparkSession
-    ):
+    def __init__(self, config: builders.GeneModelBuilder, spark_session: sql.SparkSession):
         super().__init__(
             config,
             spark_session,
@@ -62,9 +60,7 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
         )
 
         # Join the result with cancer gene census data:
-        gene_df = gene_df.join(
-            census_df, gene_df._gene_id == census_df.cancer_gene_id, "left"
-        )
+        gene_df = gene_df.join(census_df, gene_df._gene_id == census_df.cancer_gene_id, "left")
 
         # Drop unnecessary columns
         gene_df = gene_df.drop("ens_gene_id")

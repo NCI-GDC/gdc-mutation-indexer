@@ -206,9 +206,7 @@ class TestConsequenceBuilder:
             effects_map.setdefault(row["ssm_id"], {})
             effects_map[row["ssm_id"]].setdefault(row["transcript_id"], {})
             for effect in effects:
-                effects_map[row["ssm_id"]][row["transcript_id"]].setdefault(
-                    effect, set()
-                )
+                effects_map[row["ssm_id"]][row["transcript_id"]].setdefault(effect, set())
                 effects_map[row["ssm_id"]][row["transcript_id"]][effect].add(
                     row.get(effect, None)
                 )
@@ -217,16 +215,16 @@ class TestConsequenceBuilder:
         for ssm_id, transcripts in effects_map.items():
             for transcript_id, transcript in transcripts.items():
                 # Make sure all transcripts have vep_impact and it is not None:
-                assert list(transcript["vep_impact"])[
-                    0
-                ], "Transcript {} has no vep_impact".format(transcript_id)
+                assert list(transcript["vep_impact"])[0], (
+                    f"Transcript {transcript_id} has no vep_impact"
+                )
 
                 for effect, values in transcript.items():
                     # Make sure that effects are same for particular ssm-transcript combination
-                    assert (
-                        len(values) == 1
-                    ), "{}/{}/{} unexpected effect values set of length {} != 1".format(
-                        ssm_id, transcript_id, effect, len(values)
+                    assert len(values) == 1, (
+                        "{}/{}/{} unexpected effect values set of length {} != 1".format(
+                            ssm_id, transcript_id, effect, len(values)
+                        )
                     )
 
         # Check that some fields are None for all non-selected transcripts:

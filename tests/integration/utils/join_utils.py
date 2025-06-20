@@ -2,14 +2,10 @@ import functools
 import itertools
 from typing import (
     AbstractSet,
-    Callable,
-    Iterable,
-    Iterator,
-    Mapping,
     NamedTuple,
-    Tuple,
     Union,
 )
+from collections.abc import Callable, Iterable, Iterator, Mapping
 
 import more_itertools
 from pyspark import sql
@@ -52,7 +48,7 @@ def _relationship_reduce(
     relationships: Iterator[Relationship],
 ) -> Callable[
     [Iterable[Iterable[sql.Row]]],
-    Union[AbstractSet[str], RelationshipMapping],
+    AbstractSet[str] | RelationshipMapping,
 ]:
     relationship = more_itertools.first(relationships)
 
@@ -78,9 +74,7 @@ def _get_relationship_map(
             reducefunc=_relationship_reduce(relationships),
         )
 
-    assert (
-        relationship.child_field
-    ), "Child field must be defined in the terminal relationship"
+    assert relationship.child_field, "Child field must be defined in the terminal relationship"
 
     return more_itertools.map_reduce(
         rows,
@@ -93,7 +87,7 @@ def _get_relationship_map(
 
 
 def _get_relationships(path: Iterable[str]) -> Iterator[Relationship]:
-    def _split_path(path: str) -> Tuple[str, str]:
+    def _split_path(path: str) -> tuple[str, str]:
         split = path.split(".")
 
         return ".".join(split[:-1]), split[-1]
@@ -108,7 +102,7 @@ def _get_relationships(path: Iterable[str]) -> Iterator[Relationship]:
 
 
 def get_relationship_map(
-    data: Union[sql.DataFrame, Iterable[sql.Row]], relationship_path: Iterable[str]
+    data: sql.DataFrame | Iterable[sql.Row], relationship_path: Iterable[str]
 ) -> RelationshipMapping:
     """
     Builds a mapping of a parent object's ID to all of its childrens IDs found in the
@@ -143,9 +137,9 @@ def get_relationship_map(
 
 def unpack_df_list(
     dataframe: sql.DataFrame,
-    parent_fields: Union[str, Iterable[str]],
+    parent_fields: str | Iterable[str],
     list_field: str,
-    packed_fields: Union[str, Iterable[str]],
+    packed_fields: str | Iterable[str],
 ) -> sql.DataFrame:
     """
     Explodes packed into a list fields in :dataframe

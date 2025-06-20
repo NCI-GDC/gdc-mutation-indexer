@@ -1,6 +1,6 @@
 import io
 from collections.abc import Callable, Iterable
-from typing import IO, Optional
+from typing import IO
 from unittest import mock
 
 import mypy_boto3_s3 as s3
@@ -50,7 +50,7 @@ class TestUQFPKMBuilder:
         )
 
     def _arrange_s3_client(
-        self, validate_upload: Optional[Callable[..., None]] = None
+        self, validate_upload: Callable[..., None] | None = None
     ) -> mock.MagicMock:
         util = mock.MagicMock()
 
@@ -113,9 +113,7 @@ class TestUQFPKMBuilder:
         builder = self._arrange_builder(config, s3_client)
 
         result_df = builder.build(**inputs)
-        result_data = {
-            r.gene_id: (r.log2_uqfpkm, r.uqfpkm) for r in result_df.collect()
-        }
+        result_data = {r.gene_id: (r.log2_uqfpkm, r.uqfpkm) for r in result_df.collect()}
 
         assert result_data == expected_values
 
@@ -148,8 +146,7 @@ class TestUQFPKMBuilder:
             assert Key in expected_values
             assert isinstance(data, io.BytesIO)
             assert (
-                data.read()
-                == numpy.array(expected_values[Key], dtype=numpy.float32).tobytes()
+                data.read() == numpy.array(expected_values[Key], dtype=numpy.float32).tobytes()
             )
 
         s3_client = self._arrange_s3_client(validate_upload)

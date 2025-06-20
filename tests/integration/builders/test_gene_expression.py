@@ -2,7 +2,7 @@ import logging
 import pathlib
 import tempfile
 from collections.abc import Iterable, Iterator
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 
 import elasticsearch
@@ -29,9 +29,7 @@ def ge_config() -> Iterator[configuration.Configuration]:
         )
         overrides = {
             "build": {"index_types": ("GENE_EXPRESSION",)},
-            "builders": {
-                "index": {"backup": {"mode": "WRITE", "path": str(backup_path)}}
-            },
+            "builders": {"index": {"backup": {"mode": "WRITE", "path": str(backup_path)}}},
         }
 
         yield test_setup.load_ge_config(overrides)
@@ -75,7 +73,7 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
             json={"urls": urls, "urls_metadata": urls_metadata},
         )
 
-    def mock_get(file_id: str) -> Optional[client.Document]:
+    def mock_get(file_id: str) -> client.Document | None:
         filename = file_id + ".txt"
         if filename not in existing_files:
             return None
@@ -195,9 +193,7 @@ def test_gene_expression_builder_writes_backup_to_path(
     assert ge_config.build.build_version == "v0"
     assert ge_config.build.data_release == "test"
     assert ge_config.builders.index.backup.mode == build.BackupMode.WRITE
-    assert ge_config.builders.index.backup.path.endswith(
-        "test/v0/gene_expression.parquet"
-    )
+    assert ge_config.builders.index.backup.path.endswith("test/v0/gene_expression.parquet")
     assert ge_config.builders.index.backup.partition_by == "gene_id"
 
     ge_builder.build(expression_value_df=expression_value_df)

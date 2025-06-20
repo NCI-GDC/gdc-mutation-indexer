@@ -13,16 +13,16 @@ from tests.unit import utils
 
 
 @pytest.fixture(scope="session")
-def spark_session() -> Generator[sql.SparkSession, None, None]:
-    with sql.SparkSession.builder.master("local[*]").appName(
-        "sqlContextFixture"
-    ).config("spark.sql.shuffle.partitions", 1).config(
-        "spark.ui.showConsoleProgress", False
-    ).config(
-        "spark.ui.enabled", False
-    ).config(
-        "spark.driver.memory", "2g"
-    ).getOrCreate() as spark_session:
+def spark_session() -> Generator[sql.SparkSession]:
+    with (
+        sql.SparkSession.builder.master("local[*]")
+        .appName("sqlContextFixture")
+        .config("spark.sql.shuffle.partitions", 1)
+        .config("spark.ui.showConsoleProgress", False)
+        .config("spark.ui.enabled", False)
+        .config("spark.driver.memory", "2g")
+        .getOrCreate() as spark_session
+    ):
         spark_session.sparkContext.setLogLevel("FATAL")
         spark_session.sql("set spark.sql.caseSensitive=true")
 

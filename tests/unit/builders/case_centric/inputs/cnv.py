@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Optional, Tuple
 
 import more_itertools
 from pyspark import sql
@@ -7,29 +6,27 @@ from pyspark import sql
 
 @dataclasses.dataclass(frozen=True)
 class VariantCalling:
-    variant_caller: Optional[str] = "ASCAT"
+    variant_caller: str | None = "ASCAT"
 
 
 @dataclasses.dataclass(frozen=True)
 class Observation:
-    copy_number: Optional[int] = 3
-    observation_id: Optional[str] = "obs-1"
-    sample_ploidy_integer: Optional[int] = 2
+    copy_number: int | None = 3
+    observation_id: str | None = "obs-1"
+    sample_ploidy_integer: int | None = 2
     variant_calling: VariantCalling = VariantCalling()
-    variant_status: Optional[str] = "Tumor Only"
+    variant_status: str | None = "Tumor Only"
 
 
 @dataclasses.dataclass(frozen=True)
 class Observations:
-    case_id: Optional[str] = "case-0"
-    cnv_id: Optional[str] = "cnv-0"
-    observation: Tuple[Observation, ...] = (Observation(),)
-    occurrence_id: Optional[str] = "occ-1"
+    case_id: str | None = "case-0"
+    cnv_id: str | None = "cnv-0"
+    observation: tuple[Observation, ...] = (Observation(),)
+    occurrence_id: str | None = "occ-1"
 
 
-def assert_observation_translated(
-    result_gene: sql.Row, observations: Observations
-) -> None:
+def assert_observation_translated(result_gene: sql.Row, observations: Observations) -> None:
     result_cnv = more_itertools.one(result_gene.cnv)
     result_observation = more_itertools.one(result_cnv.observation)
     observation = more_itertools.one(observations.observation)

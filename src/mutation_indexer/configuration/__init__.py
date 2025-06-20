@@ -12,12 +12,13 @@ import pathlib
 import tempfile
 from collections.abc import Iterator, Mapping
 from importlib import abc, resources
-from typing import Any, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 import marshmallow
 import tomli
 import tomli_w
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.configuration import _extensions, build, elasticsearch, spark
 from mutation_indexer.constants import app

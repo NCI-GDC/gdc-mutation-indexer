@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 from collections.abc import Iterable, Mapping
-from typing import Optional
 from unittest import mock
 
 import deepdiff
@@ -26,9 +25,7 @@ class Analysis:
 @dataclasses.dataclass(frozen=True)
 class Aliquot:
     aliquot_id: str = "aliquot-0"
-    created_datetime: Optional[str] = datetime.datetime.min.isoformat(
-        timespec="microseconds"
-    )
+    created_datetime: str | None = datetime.datetime.min.isoformat(timespec="microseconds")
 
     def to_rdd_data(self) -> dict:
         if self.created_datetime:
@@ -50,7 +47,7 @@ class Analyte:
 
 @dataclasses.dataclass(frozen=True)
 class Portion:
-    analytes: Optional[tuple[Analyte, ...]] = (Analyte(),)
+    analytes: tuple[Analyte, ...] | None = (Analyte(),)
 
     def to_rdd_data(self) -> dict:
         analytes = (
@@ -203,9 +200,7 @@ class TestSegmentCNVMetadataBuilder:
                             portions=(
                                 Portion(
                                     analytes=(
-                                        Analyte(
-                                            aliquots=(Aliquot(aliquot_id="aliquot-0"),)
-                                        ),
+                                        Analyte(aliquots=(Aliquot(aliquot_id="aliquot-0"),)),
                                     )
                                 ),
                             ),
@@ -214,17 +209,13 @@ class TestSegmentCNVMetadataBuilder:
                 ),
             ),
         )
-        inputs = self._arrange_input_dataframes(
-            test_ascat_metadata=(AscatMetadataTestData(),)
-        )
+        inputs = self._arrange_input_dataframes(test_ascat_metadata=(AscatMetadataTestData(),))
         builder = self._arrange_builder(segment_cnv_data=(file,))
 
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
 
     def test__build__input_data_transformed(self) -> None:
         """Test the correctness of the output segment cnv metadata dataframe.
@@ -247,9 +238,7 @@ class TestSegmentCNVMetadataBuilder:
                             portions=(
                                 Portion(
                                     analytes=(
-                                        Analyte(
-                                            aliquots=(Aliquot(aliquot_id="aliquot-0"),)
-                                        ),
+                                        Analyte(aliquots=(Aliquot(aliquot_id="aliquot-0"),)),
                                     )
                                 ),
                             ),
@@ -258,9 +247,7 @@ class TestSegmentCNVMetadataBuilder:
                 ),
             ),
         )
-        inputs = self._arrange_input_dataframes(
-            test_ascat_metadata=(AscatMetadataTestData(),)
-        )
+        inputs = self._arrange_input_dataframes(test_ascat_metadata=(AscatMetadataTestData(),))
         builder = self._arrange_builder(segment_cnv_data=(file,))
 
         result_df = builder.build(**inputs)
@@ -294,9 +281,7 @@ class TestSegmentCNVMetadataBuilder:
                             portions=(
                                 Portion(
                                     analytes=(
-                                        Analyte(
-                                            aliquots=(Aliquot(aliquot_id="aliquot-0"),)
-                                        ),
+                                        Analyte(aliquots=(Aliquot(aliquot_id="aliquot-0"),)),
                                     )
                                 ),
                             ),
@@ -305,17 +290,13 @@ class TestSegmentCNVMetadataBuilder:
                 ),
             ),
         )
-        inputs = self._arrange_input_dataframes(
-            test_ascat_metadata=(AscatMetadataTestData(),)
-        )
+        inputs = self._arrange_input_dataframes(test_ascat_metadata=(AscatMetadataTestData(),))
         builder = self._arrange_builder(segment_cnv_data=(file,))
 
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 0
-        assert not deepdiff.DeepDiff(
-            result_df.schema, self._final_schema, ignore_order=True
-        )
+        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
 
     def test__build__filter_non_matching_analysis_ids(self) -> None:
         """Test that non-matching files are filtered out.
@@ -340,9 +321,7 @@ class TestSegmentCNVMetadataBuilder:
                             portions=(
                                 Portion(
                                     analytes=(
-                                        Analyte(
-                                            aliquots=(Aliquot(aliquot_id="aliquot-0"),)
-                                        ),
+                                        Analyte(aliquots=(Aliquot(aliquot_id="aliquot-0"),)),
                                     )
                                 ),
                             ),

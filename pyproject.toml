@@ -7,7 +7,7 @@ authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python"
 ]
 dependencies = [
@@ -16,6 +16,7 @@ dependencies = [
   "deepmerge",
   "elasticsearch[async]",
   "importlib-resources",
+  "marshmallow~=3.0",
   "marshmallow-dataclass",
   "more-itertools",
   "numpy",
@@ -26,14 +27,14 @@ dependencies = [
   "typed-argument-parser",
   "typing-extensions",
   "indexclient",
-  "gdcmodels",
+  "gdcmodels>=5.10",
   "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
 license = {file = "LICENSE"}
 name = "gdc-mutation-indexer"
-requires-python = "~=3.9"
+requires-python = "~=3.13.0"
 
 [project.optional-dependencies]
 client = ["halo", "pex", "wheel"]
@@ -75,6 +76,11 @@ markers = [
 minversion = "6.0"
 testpaths = ["tests/unit", "tests/integration"]
 
+[tool.ruff]
+line-length = 95
+src = ["src", "tests"]
+target-version = "py313"
+
 [tool.setuptools_scm]
 local_scheme = "versionista-local-format"
 version_scheme = "versionista-format"
@@ -88,7 +94,6 @@ deps = ["-crequirements.txt", "coverage[toml]"]
 skip_install = true
 
 [tool.tox.env.pex]
-base_python = ["py313"]
 commands = [
   [
     "pex",
@@ -120,7 +125,7 @@ skip_install = true
 
 [tool.tox.env.pex.set_env]
 SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
-SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.9"}
+SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.13"}
 
 [tool.tox.env.publish]
 commands = [
@@ -183,4 +188,4 @@ PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
 [tool.tox.env_run_base]
-base_python = ["py39"]
+base_python = ["py313"]

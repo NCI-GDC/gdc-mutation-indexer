@@ -7,7 +7,8 @@ https://gdc-ctds.atlassian.net/wiki/spaces/GDC/pages/76316689/Mutation+Indexer+P
 import dataclasses
 from collections.abc import Iterable
 from importlib import abc, resources
-from typing import Annotated, Sequence
+from typing import Annotated
+from collections.abc import Sequence
 
 import marshmallow_dataclass
 from marshmallow import fields
@@ -52,20 +53,16 @@ class CaseBuilder(builders.Builder):
     Configuration values for running the case builder
     """
 
-    include_as_arrays: Annotated[
-        Sequence[str], _extensions.ArrayTupleField(fields.String)
-    ]
+    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)]
     repartition_size: int
 
 
 class CIVIC:
     @dataclasses.dataclass(frozen=True)
-    class DNABuilder(builders.ResourceBuilder):
-        ...
+    class DNABuilder(builders.ResourceBuilder): ...
 
     @dataclasses.dataclass(frozen=True)
-    class ProteinBuilder(builders.ResourceBuilder):
-        ...
+    class ProteinBuilder(builders.ResourceBuilder): ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -89,13 +86,11 @@ class MAFMetadataBuilder(builders.Builder):
 
 
 @dataclasses.dataclass(frozen=True)
-class PrimaryAliquotBuilder(builders.Builder):
-    ...
+class PrimaryAliquotBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)
-class SegmentCNVBuilder(builders.Builder):
-    ...
+class SegmentCNVBuilder(builders.Builder): ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -114,9 +109,7 @@ class CaseCentricBuilder(builders.IndexBuilder):
     """
 
     genes_threshold: int
-    include_as_arrays: Annotated[
-        Sequence[str], _extensions.ArrayTupleField(fields.String)
-    ]
+    include_as_arrays: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -129,13 +122,11 @@ class CNVCentricBuilder(builders.IndexBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
-class CNVOccurrenceCentricBuilder(builders.IndexBuilder):
-    ...
+class CNVOccurrenceCentricBuilder(builders.IndexBuilder): ...
 
 
 @dataclasses.dataclass(frozen=True)
-class GeneCentricBuilder(builders.IndexBuilder):
-    ...
+class GeneCentricBuilder(builders.IndexBuilder): ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -162,8 +153,7 @@ class SSMCentricBuilder(builders.IndexBuilder):
 
 
 @dataclasses.dataclass(frozen=True)
-class SSMOccurrenceCentricBuilder(builders.IndexBuilder):
-    ...
+class SSMOccurrenceCentricBuilder(builders.IndexBuilder): ...
 
 
 @dataclasses.dataclass(frozen=True)

@@ -5,7 +5,7 @@ from typing import ClassVar
 
 from pyspark import sql
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import utils
@@ -97,59 +97,41 @@ class BaseBuilder(abc.ABC):
         into a destination, usually Elasticsearch.
         """
         index = self.config.indices[self.index_name]
-        mapper = self.mappings_loader.load_mapper(
-            build.IndexType[self.index_name.upper()]
-        )
+        mapper = self.mappings_loader.load_mapper(build.IndexType[self.index_name.upper()])
 
-        self.log("Creating {} index".format(index))
+        self.log(f"Creating {index} index")
         response = self.config.es.indices.create(
             index=index, mappings=mapper.mappings, settings=mapper.settings
         )
         self.log(response)
 
-        self.log("Repartitioning {}".format(self.index_name))
+        self.log(f"Repartitioning {self.index_name}")
         df = getattr(self, self.index_name).repartition(
             self.config.df_repartition, self.id_field
         )
 
         df = cast_booleans(df, mapper.mappings)
-        self.log("Exporting {} index to {}".format(self.index_name, index))
+        self.log(f"Exporting {self.index_name} index to {index}")
         df.coalesce(self.config.df_coalesce).write.format(
             "org.elasticsearch.spark.sql"
         ).option("es.nodes", self.config.es_nodes).option(
             "es.net.http.auth.user", self.config.source_es_user
-        ).option(
-            "es.net.http.auth.pass", self.config.es_pass
-        ).option(
+        ).option("es.net.http.auth.pass", self.config.es_pass).option(
             "es.net.ssl", self.config.es_use_ssl
         ).option(
             "es.net.ssl.cert.allow.self.signed", self.config.disable_es_verify_certs
-        ).option(
-            "es.nodes.wan.only", "true"
-        ).option(
+        ).option("es.nodes.wan.only", "true").option(
             "es.nodes.resolve.hostname", "false"
-        ).option(
-            "es.resource.write", index
-        ).option(
-            "es.http.timeout", "20m"
-        ).option(
+        ).option("es.resource.write", index).option("es.http.timeout", "20m").option(
             "es.http.retries", "-1"
-        ).option(
-            "es.batch.write.retry.count", "-1"
-        ).option(
+        ).option("es.batch.write.retry.count", "-1").option(
             "es.batch.write.retry.wait", "10m"
-        ).option(
-            "es.batch.size.bytes", self.config.batch_size_bytes
-        ).option(
+        ).option("es.batch.size.bytes", self.config.batch_size_bytes).option(
             "es.batch.size.entries", self.config.batch_size_entries
-        ).option(
-            "es.batch.write.refresh", False
-        ).option(
-            "es.mapping.id", self.id_field
-        ).save(
+        ).option("es.batch.write.refresh", False).option("es.mapping.id", self.id_field).save(
             index
         )
-        self.log("Finished exporting {} index to {}".format(self.index_name, index))
+        self.log(f"Finished exporting {self.index_name} index to {index}")
 
         df.unpersist()
 
@@ -175,11 +157,11 @@ class BaseBuilder(abc.ABC):
         if path is None:
             path = self.config.get_raw_output_path(self.index_name)
         try:
-            self.logger.info("Using existing index from {}".format(path))
+            self.logger.info(f"Using existing index from {path}")
             df = self.sqlContext.read.load(path)
             return df
         except Exception:
-            self.logger.info("Couldn't find file at {}".format(path))
+            self.logger.info(f"Couldn't find file at {path}")
             return None
 
     def write(self, path=None):
@@ -203,7 +185,7 @@ class BaseBuilder(abc.ABC):
         else:
             df = df.repartition(self.config.df_repartition).write
             df = df.mode("overwrite")
-        self.logger.info("Saving {} to {}".format(self.index_name, path))
+        self.logger.info(f"Saving {self.index_name} to {path}")
         df.json(path)
 
     def log(self, string):
@@ -217,4 +199,4 @@ class BaseBuilder(abc.ABC):
         Logs dataframe count if in Debug mode
         """
         if self.debug:
-            self.log("Count: {}".format(dataframe.count()))
+            self.log(f"Count: {dataframe.count()}")

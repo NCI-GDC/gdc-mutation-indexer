@@ -3,7 +3,7 @@ import logging
 import re
 import uuid
 from collections.abc import Container, Set
-from typing import Any, Optional
+from typing import Any
 
 import importlib_resources as resources
 import yaml
@@ -50,7 +50,7 @@ def generate_uuid5(*values: Any) -> str:
     return str(
         uuid.uuid5(
             uuid.NAMESPACE_DNS,
-            "\t".join([v if type(v) == str else str(v) for v in values]),
+            "\t".join([v if type(v) is str else str(v) for v in values]),
         )
     )
 
@@ -89,8 +89,8 @@ def extract_sift_polyphen(df):
     Extracts '{polyphen|sift}_{impact|score}' from 'polyphen' and 'sift' columns
     """
     for c in ["polyphen", "sift"]:
-        df = extract_impact(df, c, "{}_impact".format(c.lower()))
-        df = extract_score(df, c, "{}_score".format(c.lower()))
+        df = extract_impact(df, c, f"{c.lower()}_impact")
+        df = extract_score(df, c, f"{c.lower()}_score")
     df = df.drop("polyphen").drop("sift")
     return df
 
@@ -98,8 +98,8 @@ def extract_sift_polyphen(df):
 def select_mapping(
     index_name: str,
     mapping_name: str,
-    selector: Optional[mapper.Selector] = None,
-    exclude_fields: Optional[Container[str]] = None,
+    selector: mapper.Selector | None = None,
+    exclude_fields: Container[str] | None = None,
 ) -> esmodels.ESMapping:
     """
     Selects the sub-mapping from the index.
@@ -120,9 +120,7 @@ def select_mapping(
     if exclude_fields is None:
         exclude_fields = get_default_excludes(index_name, mapping_name)
 
-    model_mapper = es_utils.MappingsLoader().load_mapper(
-        build.IndexType[index_name.upper()]
-    )
+    model_mapper = es_utils.MappingsLoader().load_mapper(build.IndexType[index_name.upper()])
     mapping = model_mapper.select_mapping(mapping_name, selector)
 
     assert "properties" in mapping
@@ -138,7 +136,7 @@ def struct_select(
     index_name: str,
     mapping_name: str,
     ignore: Container[str] = (),
-    selector: Optional[mapper.Selector] = None,
+    selector: mapper.Selector | None = None,
 ):
     """
     Takes the structure from a mapping and produces arguments for a select
@@ -222,9 +220,7 @@ def select_nested(index_name, mapping_name, ignore=(), selector=None):
                     cols.extend(flatten_nested(v))
         return cols
 
-    mapping = select_mapping(
-        index_name, mapping_name, selector=selector, exclude_fields=()
-    )
+    mapping = select_mapping(index_name, mapping_name, selector=selector, exclude_fields=())
 
     return flatten_nested(mapping["properties"])
 
@@ -246,9 +242,7 @@ def extract_aas_position(df):
             return int(aa_end)
         return "null"
 
-    df = df.withColumn(
-        "aa_start", F.udf(extract, types.IntegerType())(F.col("aa_change"))
-    )
+    df = df.withColumn("aa_start", F.udf(extract, types.IntegerType())(F.col("aa_change")))
     df = df.withColumn(
         "aa_end",
         F.udf(lambda aa_change: extract(aa_change, False), types.IntegerType())(
@@ -267,9 +261,7 @@ def sanitize_aa_change(df):
     def sanitize(aa_change):
         return aa_change.strip("p.")
 
-    df = df.withColumn(
-        "aa_change", F.udf(sanitize, types.StringType())(F.col("aa_change"))
-    )
+    df = df.withColumn("aa_change", F.udf(sanitize, types.StringType())(F.col("aa_change")))
 
     return df
 
@@ -303,7 +295,7 @@ def convert_empty_str_to_null_in_col(df, col_name):
 
 
 def get_column_name(column_name, dataset_key):
-    return "{}_{}".format(column_name, dataset_key)
+    return f"{column_name}_{dataset_key}"
 
 
 def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataFrame:
@@ -322,9 +314,7 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
     canonical_index = F.array_position("transcripts.is_canonical", True)
     transcripts_df = transcripts_df.withColumn(
         "canonical_transcript",
-        F.when(
-            canonical_index > 0, F.col("transcripts")[canonical_index - 1]
-        ).otherwise(None),
+        F.when(canonical_index > 0, F.col("transcripts")[canonical_index - 1]).otherwise(None),
     )
     transcripts_df = transcripts_df.withColumn(
         "canonical_transcript_length", F.col("canonical_transcript.length")
@@ -355,9 +345,7 @@ def is_between_chr1_and_chr22() -> sql.Column:
         A column which represents whether or not a gene in the gene model with a
         chromosome value between char1 and char22.
     """
-    return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(
-        1, 22
-    )
+    return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(1, 22)
 
 
 def filter_arrays_by_relative_size(

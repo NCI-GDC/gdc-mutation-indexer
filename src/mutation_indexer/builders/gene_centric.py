@@ -2,7 +2,7 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.builders import (
     base_builder,
@@ -69,9 +69,7 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
                 return self
 
         self.log("Building Gene from MAF and ASCAT")
-        gene_df = df_builders.get_gene_df(
-            maf_df, self.index_name, unique_fields=["gene_id"]
-        )
+        gene_df = df_builders.get_gene_df(maf_df, self.index_name, unique_fields=["gene_id"])
         ascat_gene_df = df_builders.get_gene_df(
             ascat_df, self.index_name, unique_fields=["gene_id"]
         )
@@ -79,9 +77,7 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
         self.log_count(gene_df)
 
         self.log("Building Case subtree")
-        case_subtree = self.build_case_subtree(
-            maf_df, ascat_df, case_df, primary_aliquot_df
-        )
+        case_subtree = self.build_case_subtree(maf_df, ascat_df, case_df, primary_aliquot_df)
 
         self.log('Joining Gene with Case subtree [inner, "gene_id"]')
         gene_centric = gene_df.join(
@@ -171,9 +167,7 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
         obs_df = obs_df.drop("occurrence_id")
 
         # SSM
-        ssm_df = df_builders.build_ssm_subtree(
-            maf_df, cons_df, self.index_name, obs_df=obs_df
-        )
+        ssm_df = df_builders.build_ssm_subtree(maf_df, cons_df, self.index_name, obs_df=obs_df)
 
         # Aggregating SSM
         self.log("Aggregating ssm by case_id and gene_id")

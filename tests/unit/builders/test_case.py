@@ -2,7 +2,7 @@ import dataclasses
 import random
 import string
 import sys
-from typing import Dict, FrozenSet, Iterable, Optional, Tuple
+from collections.abc import Iterable
 from unittest import mock
 
 import more_itertools
@@ -54,9 +54,7 @@ class PathologyDetail:
     anaplasia_present_type: str = dataclasses.field(default_factory=random_string)
     bone_marrow_malignant_cells: str = dataclasses.field(default_factory=random_string)
     breslow_thickness: float = dataclasses.field(default_factory=random_float)
-    circumferential_resection_margin: float = dataclasses.field(
-        default_factory=random_float
-    )
+    circumferential_resection_margin: float = dataclasses.field(default_factory=random_float)
     columnar_mucosa_present: str = dataclasses.field(default_factory=random_string)
     dysplasia_degree: str = dataclasses.field(default_factory=random_string)
     dysplasia_type: str = dataclasses.field(default_factory=random_string)
@@ -72,43 +70,29 @@ class PathologyDetail:
     lymphatic_invasion_present: str = dataclasses.field(default_factory=random_string)
     margin_status: str = dataclasses.field(default_factory=random_string)
     metaplasia_present: str = dataclasses.field(default_factory=random_string)
-    morphologic_architectural_pattern: str = dataclasses.field(
-        default_factory=random_string
-    )
+    morphologic_architectural_pattern: str = dataclasses.field(default_factory=random_string)
     non_nodal_regional_disease: str = dataclasses.field(default_factory=random_string)
     non_nodal_tumor_deposits: str = dataclasses.field(default_factory=random_string)
     number_proliferating_cells: int = dataclasses.field(default_factory=random_integer)
     pathology_detail_id: str = dataclasses.field(default_factory=random_string)
     percent_tumor_invasion: float = dataclasses.field(default_factory=random_float)
     perineural_invasion_present: str = dataclasses.field(default_factory=random_string)
-    peripancreatic_lymph_nodes_positive: str = dataclasses.field(
-        default_factory=random_string
-    )
-    peripancreatic_lymph_nodes_tested: int = dataclasses.field(
-        default_factory=random_integer
-    )
-    prostatic_chips_positive_count: float = dataclasses.field(
-        default_factory=random_float
-    )
+    peripancreatic_lymph_nodes_positive: str = dataclasses.field(default_factory=random_string)
+    peripancreatic_lymph_nodes_tested: int = dataclasses.field(default_factory=random_integer)
+    prostatic_chips_positive_count: float = dataclasses.field(default_factory=random_float)
     prostatic_chips_total_count: float = dataclasses.field(default_factory=random_float)
-    prostatic_involvement_percent: float = dataclasses.field(
-        default_factory=random_float
-    )
+    prostatic_involvement_percent: float = dataclasses.field(default_factory=random_float)
     state: str = dataclasses.field(default_factory=random_string)
     submitter_id: str = dataclasses.field(default_factory=random_string)
     transglottic_extension: str = dataclasses.field(default_factory=random_string)
-    tumor_largest_dimension_diameter: float = dataclasses.field(
-        default_factory=random_float
-    )
+    tumor_largest_dimension_diameter: float = dataclasses.field(default_factory=random_float)
     vascular_invasion_present: str = dataclasses.field(default_factory=random_string)
     vascular_invasion_type: str = dataclasses.field(default_factory=random_string)
 
 
 @dataclasses.dataclass(frozen=True)
 class Treatment:
-    chemo_concurrent_to_radiation: str = dataclasses.field(
-        default_factory=random_string
-    )
+    chemo_concurrent_to_radiation: str = dataclasses.field(default_factory=random_string)
     days_to_treatment_end: int = dataclasses.field(default_factory=random_integer)
     days_to_treatment_start: int = dataclasses.field(default_factory=random_integer)
     initial_disease_status: str = dataclasses.field(default_factory=random_string)
@@ -141,20 +125,14 @@ class Diagnosis:
     ajcc_staging_system_edition: str = dataclasses.field(default_factory=random_string)
     ann_arbor_b_symptoms: str = dataclasses.field(default_factory=random_string)
     ann_arbor_clinical_stage: str = dataclasses.field(default_factory=random_string)
-    ann_arbor_extranodal_involvement: str = dataclasses.field(
-        default_factory=random_string
-    )
+    ann_arbor_extranodal_involvement: str = dataclasses.field(default_factory=random_string)
     ann_arbor_pathologic_stage: str = dataclasses.field(default_factory=random_string)
-    burkitt_lymphoma_clinical_variant: str = dataclasses.field(
-        default_factory=random_string
-    )
+    burkitt_lymphoma_clinical_variant: str = dataclasses.field(default_factory=random_string)
     classification_of_tumor: str = dataclasses.field(default_factory=random_string)
     cog_renal_stage: str = dataclasses.field(default_factory=random_string)
     days_to_diagnosis: int = dataclasses.field(default_factory=random_integer)
     days_to_last_follow_up: float = dataclasses.field(default_factory=random_float)
-    days_to_last_known_disease_status: float = dataclasses.field(
-        default_factory=random_float
-    )
+    days_to_last_known_disease_status: float = dataclasses.field(default_factory=random_float)
     days_to_recurrence: float = dataclasses.field(default_factory=random_float)
     diagnosis_id: str = dataclasses.field(default_factory=random_string)
     esophageal_columnar_dysplasia_degree: str = dataclasses.field(
@@ -174,9 +152,7 @@ class Diagnosis:
     icd_10_code: str = dataclasses.field(default_factory=random_string)
     igcccg_stage: str = dataclasses.field(default_factory=random_string)
     inss_stage: str = dataclasses.field(default_factory=random_string)
-    international_prognostic_index: str = dataclasses.field(
-        default_factory=random_string
-    )
+    international_prognostic_index: str = dataclasses.field(default_factory=random_string)
     iss_stage: str = dataclasses.field(default_factory=random_string)
     last_known_disease_status: str = dataclasses.field(default_factory=random_string)
     laterality: str = dataclasses.field(default_factory=random_string)
@@ -225,14 +201,14 @@ class Exposure:
 
 @dataclasses.dataclass(frozen=True)
 class FamilyHistory:
-    family_history_id: Optional[str] = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
-    relationship_age_at_diagnosis: Optional[float] = None
-    relationship_gender: Optional[str] = None
-    relationship_primary_diagnosis: Optional[str] = "Rectal Cancer"
-    relationship_type: Optional[str] = None
-    relative_with_cancer_history: Optional[str] = "yes"
-    state: Optional[str] = None
-    submitter_id: Optional[str] = "HCM-BROD-0001-C18_family_history"
+    family_history_id: str | None = "6d2bf40e-b840-4cd9-9f64-0a3177020527"
+    relationship_age_at_diagnosis: float | None = None
+    relationship_gender: str | None = None
+    relationship_primary_diagnosis: str | None = "Rectal Cancer"
+    relationship_type: str | None = None
+    relative_with_cancer_history: str | None = "yes"
+    state: str | None = None
+    submitter_id: str | None = "HCM-BROD-0001-C18_family_history"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -316,9 +292,7 @@ def final_schema() -> types.StructType:
     return schemas.Viz.Builders.Case.FINAL.load()
 
 
-def assert_demographics_equal(
-    result_demographic: sql.Row, demographic: Demographic
-) -> None:
+def assert_demographics_equal(result_demographic: sql.Row, demographic: Demographic) -> None:
     assert result_demographic.age_at_index == demographic.age_at_index
     assert result_demographic.age_is_obfuscated == demographic.age_is_obfuscated
     assert result_demographic.cause_of_death == demographic.cause_of_death
@@ -343,9 +317,7 @@ def assert_family_history_equal(
         result_family_history.relationship_age_at_diagnosis
         == family_history.relationship_age_at_diagnosis
     )
-    assert (
-        result_family_history.relationship_gender == family_history.relationship_gender
-    )
+    assert result_family_history.relationship_gender == family_history.relationship_gender
     assert (
         result_family_history.relationship_primary_diagnosis
         == family_history.relationship_primary_diagnosis
@@ -362,9 +334,7 @@ def assert_family_history_equal(
 def assert_pathology_details_equal(
     result_pathology_detail: sql.Row, pathology_detail: PathologyDetail
 ) -> None:
-    assert (
-        result_pathology_detail.anaplasia_present == pathology_detail.anaplasia_present
-    )
+    assert result_pathology_detail.anaplasia_present == pathology_detail.anaplasia_present
     assert (
         result_pathology_detail.anaplasia_present_type
         == pathology_detail.anaplasia_present_type
@@ -373,9 +343,7 @@ def assert_pathology_details_equal(
         result_pathology_detail.bone_marrow_malignant_cells
         == pathology_detail.bone_marrow_malignant_cells
     )
-    assert (
-        result_pathology_detail.breslow_thickness == pathology_detail.breslow_thickness
-    )
+    assert result_pathology_detail.breslow_thickness == pathology_detail.breslow_thickness
     assert (
         result_pathology_detail.circumferential_resection_margin
         == pathology_detail.circumferential_resection_margin
@@ -390,10 +358,7 @@ def assert_pathology_details_equal(
         result_pathology_detail.greatest_tumor_dimension
         == pathology_detail.greatest_tumor_dimension
     )
-    assert (
-        result_pathology_detail.gross_tumor_weight
-        == pathology_detail.gross_tumor_weight
-    )
+    assert result_pathology_detail.gross_tumor_weight == pathology_detail.gross_tumor_weight
     assert (
         result_pathology_detail.largest_extrapelvic_peritoneal_focus
         == pathology_detail.largest_extrapelvic_peritoneal_focus
@@ -407,22 +372,15 @@ def assert_pathology_details_equal(
         == pathology_detail.lymph_node_involvement
     )
     assert (
-        result_pathology_detail.lymph_nodes_positive
-        == pathology_detail.lymph_nodes_positive
+        result_pathology_detail.lymph_nodes_positive == pathology_detail.lymph_nodes_positive
     )
-    assert (
-        result_pathology_detail.lymph_nodes_tested
-        == pathology_detail.lymph_nodes_tested
-    )
+    assert result_pathology_detail.lymph_nodes_tested == pathology_detail.lymph_nodes_tested
     assert (
         result_pathology_detail.lymphatic_invasion_present
         == pathology_detail.lymphatic_invasion_present
     )
     assert result_pathology_detail.margin_status == pathology_detail.margin_status
-    assert (
-        result_pathology_detail.metaplasia_present
-        == pathology_detail.metaplasia_present
-    )
+    assert result_pathology_detail.metaplasia_present == pathology_detail.metaplasia_present
     assert (
         result_pathology_detail.morphologic_architectural_pattern
         == pathology_detail.morphologic_architectural_pattern
@@ -439,10 +397,7 @@ def assert_pathology_details_equal(
         result_pathology_detail.number_proliferating_cells
         == pathology_detail.number_proliferating_cells
     )
-    assert (
-        result_pathology_detail.pathology_detail_id
-        == pathology_detail.pathology_detail_id
-    )
+    assert result_pathology_detail.pathology_detail_id == pathology_detail.pathology_detail_id
     assert (
         result_pathology_detail.percent_tumor_invasion
         == pathology_detail.percent_tumor_invasion
@@ -500,10 +455,7 @@ def assert_treatments_equal(result_treatment: sql.Row, treatment: Treatment) -> 
     assert result_treatment.days_to_treatment_start == treatment.days_to_treatment_start
     assert result_treatment.initial_disease_status == treatment.initial_disease_status
     assert result_treatment.number_of_cycles == treatment.number_of_cycles
-    assert (
-        result_treatment.regimen_or_line_of_therapy
-        == treatment.regimen_or_line_of_therapy
-    )
+    assert result_treatment.regimen_or_line_of_therapy == treatment.regimen_or_line_of_therapy
     assert result_treatment.state == treatment.state
     assert result_treatment.submitter_id == treatment.submitter_id
     assert result_treatment.therapeutic_agents == treatment.therapeutic_agents
@@ -528,21 +480,15 @@ def assert_diagnoses_equal(result_diagnosis: sql.Row, diagnosis: Diagnosis) -> N
     assert result_diagnosis.ajcc_pathologic_stage == diagnosis.ajcc_pathologic_stage
     assert result_diagnosis.ajcc_pathologic_t == diagnosis.ajcc_pathologic_t
     assert (
-        result_diagnosis.ajcc_staging_system_edition
-        == diagnosis.ajcc_staging_system_edition
+        result_diagnosis.ajcc_staging_system_edition == diagnosis.ajcc_staging_system_edition
     )
     assert result_diagnosis.ann_arbor_b_symptoms == diagnosis.ann_arbor_b_symptoms
-    assert (
-        result_diagnosis.ann_arbor_clinical_stage == diagnosis.ann_arbor_clinical_stage
-    )
+    assert result_diagnosis.ann_arbor_clinical_stage == diagnosis.ann_arbor_clinical_stage
     assert (
         result_diagnosis.ann_arbor_extranodal_involvement
         == diagnosis.ann_arbor_extranodal_involvement
     )
-    assert (
-        result_diagnosis.ann_arbor_pathologic_stage
-        == diagnosis.ann_arbor_pathologic_stage
-    )
+    assert result_diagnosis.ann_arbor_pathologic_stage == diagnosis.ann_arbor_pathologic_stage
     assert (
         result_diagnosis.burkitt_lymphoma_clinical_variant
         == diagnosis.burkitt_lymphoma_clinical_variant
@@ -566,10 +512,7 @@ def assert_diagnoses_equal(result_diagnosis: sql.Row, diagnosis: Diagnosis) -> N
         == diagnosis.esophageal_columnar_metaplasia_present
     )
     assert result_diagnosis.figo_stage == diagnosis.figo_stage
-    assert (
-        result_diagnosis.figo_staging_edition_year
-        == diagnosis.figo_staging_edition_year
-    )
+    assert result_diagnosis.figo_staging_edition_year == diagnosis.figo_staging_edition_year
     assert (
         result_diagnosis.gastric_esophageal_junction_involvement
         == diagnosis.gastric_esophageal_junction_involvement
@@ -586,16 +529,12 @@ def assert_diagnoses_equal(result_diagnosis: sql.Row, diagnosis: Diagnosis) -> N
         == diagnosis.international_prognostic_index
     )
     assert result_diagnosis.iss_stage == diagnosis.iss_stage
-    assert (
-        result_diagnosis.last_known_disease_status
-        == diagnosis.last_known_disease_status
-    )
+    assert result_diagnosis.last_known_disease_status == diagnosis.last_known_disease_status
     assert result_diagnosis.laterality == diagnosis.laterality
     assert result_diagnosis.masaoka_stage == diagnosis.masaoka_stage
     assert result_diagnosis.metastasis_at_diagnosis == diagnosis.metastasis_at_diagnosis
     assert (
-        result_diagnosis.metastasis_at_diagnosis_site
-        == diagnosis.metastasis_at_diagnosis_site
+        result_diagnosis.metastasis_at_diagnosis_site == diagnosis.metastasis_at_diagnosis_site
     )
     assert result_diagnosis.method_of_diagnosis == diagnosis.method_of_diagnosis
     assert result_diagnosis.micropapillary_features == diagnosis.micropapillary_features
@@ -605,23 +544,16 @@ def assert_diagnoses_equal(result_diagnosis: sql.Row, diagnosis: Diagnosis) -> N
     assert result_diagnosis.primary_gleason_grade == diagnosis.primary_gleason_grade
     assert result_diagnosis.prior_malignancy == diagnosis.prior_malignancy
     assert result_diagnosis.prior_treatment == diagnosis.prior_treatment
-    assert (
-        result_diagnosis.progression_or_recurrence
-        == diagnosis.progression_or_recurrence
-    )
+    assert result_diagnosis.progression_or_recurrence == diagnosis.progression_or_recurrence
     assert result_diagnosis.residual_disease == diagnosis.residual_disease
     assert result_diagnosis.secondary_gleason_grade == diagnosis.secondary_gleason_grade
     assert (
-        result_diagnosis.site_of_resection_or_biopsy
-        == diagnosis.site_of_resection_or_biopsy
+        result_diagnosis.site_of_resection_or_biopsy == diagnosis.site_of_resection_or_biopsy
     )
     assert result_diagnosis.state == diagnosis.state
     assert result_diagnosis.submitter_id == diagnosis.submitter_id
     assert result_diagnosis.synchronous_malignancy == diagnosis.synchronous_malignancy
-    assert (
-        result_diagnosis.tissue_or_organ_of_origin
-        == diagnosis.tissue_or_organ_of_origin
-    )
+    assert result_diagnosis.tissue_or_organ_of_origin == diagnosis.tissue_or_organ_of_origin
     assert result_diagnosis.tumor_grade == diagnosis.tumor_grade
     assert result_diagnosis.year_of_diagnosis == diagnosis.year_of_diagnosis
 
@@ -647,13 +579,8 @@ def assert_exposures_equal(result_exposure: sql.Row, exposure: Exposure) -> None
     assert result_exposure.radon_exposure == exposure.radon_exposure
     assert result_exposure.state == exposure.state
     assert result_exposure.submitter_id == exposure.submitter_id
-    assert (
-        result_exposure.tobacco_smoking_onset_year
-        == exposure.tobacco_smoking_onset_year
-    )
-    assert (
-        result_exposure.tobacco_smoking_quit_year == exposure.tobacco_smoking_quit_year
-    )
+    assert result_exposure.tobacco_smoking_onset_year == exposure.tobacco_smoking_onset_year
+    assert result_exposure.tobacco_smoking_quit_year == exposure.tobacco_smoking_quit_year
     assert result_exposure.tobacco_smoking_status == exposure.tobacco_smoking_status
     assert result_exposure.years_smoked == exposure.years_smoked
 
@@ -712,9 +639,7 @@ def assert_cases_equal(result_case: sql.Row, case: Case) -> None:
 
     assert_demographics_equal(result_case.demographic, case.demographic)
     assert_projects_equal(result_case.project, case.project)
-    assert_tissue_source_sites_equal(
-        result_case.tissue_source_site, case.tissue_source_site
-    )
+    assert_tissue_source_sites_equal(result_case.tissue_source_site, case.tissue_source_site)
 
     for result_diagnosis, diagnosis in more_itertools.zip_equal(
         result_case.diagnoses, case.diagnoses
@@ -731,9 +656,7 @@ def assert_cases_equal(result_case: sql.Row, case: Case) -> None:
     ):
         assert_family_history_equal(result_family_history, family_history)
 
-    for result_sample, sample in more_itertools.zip_equal(
-        result_case.samples, case.samples
-    ):
+    for result_sample, sample in more_itertools.zip_equal(result_case.samples, case.samples):
         assert_sample_equal(result_sample, sample)
 
 
@@ -778,8 +701,8 @@ class TestCaseBuilder:
         maf_metadata_case_ids: Iterable[str] = (),
         ascat_metadata_case_ids: Iterable[str] = (),
         segment_cnv_metadata_ids: Iterable[str] = (),
-    ) -> Dict[str, sql.DataFrame]:
-        def to_rows(case_ids: Iterable[str]) -> Tuple[sql.Row, ...]:
+    ) -> dict[str, sql.DataFrame]:
+        def to_rows(case_ids: Iterable[str]) -> tuple[sql.Row, ...]:
             return tuple(sql.Row(case_id=case_id) for case_id in case_ids)
 
         maf_metadata_df = self.spark_session.createDataFrame(
@@ -809,9 +732,7 @@ class TestCaseBuilder:
         es_dataframe_util = self.arrange_es_dataframe_util()
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(
-            config, spark_session, es_dataframe_util, selector
-        )
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
         result_df = builder.build(**inputs)
 
@@ -825,9 +746,7 @@ class TestCaseBuilder:
         es_dataframe_util = self.arrange_es_dataframe_util((case,))
         selector = self.arrange_case_field_selector()
         inputs = self.arrange_input_dataframes()
-        builder = builders.CaseBuilder(
-            config, spark_session, es_dataframe_util, selector
-        )
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
@@ -866,7 +785,7 @@ class TestCaseBuilder:
         maf_metadata_cases: Iterable[str],
         ascat_metadata_cases: Iterable[str],
         segment_cnv_metadata_cases: Iterable[str],
-        available_variation_data: FrozenSet[str],
+        available_variation_data: frozenset[str],
     ) -> None:
         config = self.arrange_config()
         case = Case(case_id="case-0")
@@ -876,14 +795,9 @@ class TestCaseBuilder:
         inputs = self.arrange_input_dataframes(
             maf_metadata_cases, ascat_metadata_cases, segment_cnv_metadata_cases
         )
-        builder = builders.CaseBuilder(
-            config, spark_session, es_dataframe_util, selector
-        )
+        builder = builders.CaseBuilder(config, spark_session, es_dataframe_util, selector)
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())
 
-        assert (
-            frozenset(result_row.available_variation_data or ())
-            == available_variation_data
-        )
+        assert frozenset(result_row.available_variation_data or ()) == available_variation_data

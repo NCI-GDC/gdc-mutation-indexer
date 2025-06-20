@@ -2,7 +2,7 @@ import logging
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing_extensions import Self
+from typing import Self
 
 from mutation_indexer.builders import (
     base_builder,
@@ -61,9 +61,7 @@ class SSMCentricBuilder(base_builder.BaseBuilder):
             if self.ssm_centric is not None:
                 return self
 
-        ssm_df = df_builders.get_ssm_df(
-            maf_df, self.index_name, unique_fields=["ssm_id"]
-        )
+        ssm_df = df_builders.get_ssm_df(maf_df, self.index_name, unique_fields=["ssm_id"])
 
         cons_df = self.build_consequence(maf_df)
 
@@ -74,9 +72,7 @@ class SSMCentricBuilder(base_builder.BaseBuilder):
 
         # Truncate outliers
         treshold = self.config.percentile_threshold["occurrences_per_ssm"]
-        self.ssm_centric = self.truncate_df_at_percentile(
-            ssm_centric, "occurrence", treshold
-        )
+        self.ssm_centric = self.truncate_df_at_percentile(ssm_centric, "occurrence", treshold)
         self.log_count(self.ssm_centric)
         self.log("Build finished")
 
