@@ -65,6 +65,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
         config.nodes.split(","),
         use_ssl=config.use_ssl,
         verify_certs=config.verify_certs,
+        ca_certs=config.certs.absolute().as_posix(),
         http_auth=(config.user, config.password),
     )
 

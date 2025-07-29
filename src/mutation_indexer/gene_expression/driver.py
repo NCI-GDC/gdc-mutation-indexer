@@ -2,8 +2,8 @@
 
 import contextlib
 import logging
+import pathlib
 from collections.abc import Container, Iterable, Iterator
-from pathlib import Path
 from typing import NamedTuple
 
 import boto3
@@ -21,12 +21,18 @@ from mutation_indexer.gene_expression import configuration
 
 
 def _initialize_s3_client(config: aws.S3) -> s3.Client:
+    verify = (
+        config.verify
+        if isinstance(config.verify, bool)
+        else config.verify.absolute().as_posix()
+    )
+
     return boto3.client(
         "s3",
         endpoint_url=config.host,
         aws_access_key_id=config.access_key,
         aws_secret_access_key=config.secret_key,
-        verify=False,
+        verify=verify,
     )
 
 
@@ -41,7 +47,7 @@ class Dependencies(NamedTuple):
 
 class Driver(driver.Driver[configuration.Configuration]):
     @classmethod
-    def load_config(cls, file: Path) -> configuration.Configuration:
+    def load_config(cls, file: pathlib.Path) -> configuration.Configuration:
         return configuration.Configuration.load(file)
 
     @contextlib.contextmanager

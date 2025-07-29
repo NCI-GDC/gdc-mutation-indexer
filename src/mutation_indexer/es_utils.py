@@ -11,7 +11,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final
+from typing import DefaultDict, Deque, Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -20,7 +20,6 @@ from elasticsearch import helpers
 from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import types
-from typing import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -566,6 +565,7 @@ class DataFrameUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
+            "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
             "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": _get_index(self._config, index_type),
@@ -638,6 +638,10 @@ class DataFrameUtil:
             .option("es.net.http.auth.user", self._config.connection.user)
             .option("es.net.http.auth.pass", self._config.connection.password)
             .option("es.net.ssl", self._config.connection.use_ssl)
+            .option(
+                "es.net.ssl.truststore.location",
+                self._config.connection.certs.as_uri(),
+            )
             .option(
                 "es.net.ssl.cert.allow.self.signed",
                 not self._config.connection.verify_certs,
@@ -713,6 +717,7 @@ class RDDUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
+            "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
             "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
             "es.resource": self._get_index(index_type),

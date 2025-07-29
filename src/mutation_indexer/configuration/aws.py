@@ -4,6 +4,7 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
+import pathlib
 from typing import Annotated
 
 from mutation_indexer.configuration import _extensions
@@ -18,6 +19,7 @@ class S3:
     host: str
     access_key: str
     secret_key: Annotated[str, _extensions.SecretStringField]
+    verify: bool | Annotated[pathlib.Path, _extensions.ResolvedPathField]
 
 
 @dataclasses.dataclass(frozen=True)

@@ -4,8 +4,9 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Annotated
+import pathlib
 from collections.abc import Mapping
+from typing import Annotated
 
 from marshmallow import fields
 
@@ -24,6 +25,7 @@ class Connection:
     password: Annotated[str, _extensions.SecretStringField]
     use_ssl: bool
     verify_certs: bool
+    certs: Annotated[pathlib.Path, _extensions.ResolvedPathField]
 
 
 @dataclasses.dataclass(frozen=True)
