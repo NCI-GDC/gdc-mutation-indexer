@@ -101,6 +101,7 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
         config.elasticsearch.connection.nodes.split(","),
         use_ssl=config.elasticsearch.connection.use_ssl,
         verify_certs=config.elasticsearch.connection.verify_certs,
+        ca_certs=config.elasticsearch.connection.certs.absolute().as_posix(),
         http_auth=(
             config.elasticsearch.connection.user,
             config.elasticsearch.connection.password,
