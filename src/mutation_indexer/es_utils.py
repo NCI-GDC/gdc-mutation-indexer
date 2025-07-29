@@ -564,10 +564,7 @@ class DataFrameUtil:
             "es.nodes": self._config.connection.nodes,
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
-            "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.keystore.type": "PEM",
-            "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
-            "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
+            "es.net.ssl": "true",
             "es.nodes.resolve.hostname": str(False),
             "es.resource": _get_index(self._config, index_type),
         }
@@ -638,16 +635,7 @@ class DataFrameUtil:
             .option("es.nodes", self._config.connection.nodes)
             .option("es.net.http.auth.user", self._config.connection.user)
             .option("es.net.http.auth.pass", self._config.connection.password)
-            .option("es.net.ssl", self._config.connection.use_ssl)
-            .option("es.net.ssl.keystore.type", "PEM")
-            .option(
-                "es.net.ssl.truststore.location",
-                self._config.connection.certs.as_uri(),
-            )
-            .option(
-                "es.net.ssl.cert.allow.self.signed",
-                not self._config.connection.verify_certs,
-            )
+            .option("es.net.ssl", True)
             .option("es.nodes.wan.only", "true")
             .option("es.nodes.resolve.hostname", "false")
             .option("es.resource.write", index)
@@ -718,10 +706,7 @@ class RDDUtil:
             "es.nodes": self._config.connection.nodes,
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
-            "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.keystore.type": "PEM",
-            "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
-            "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
+            "es.net.ssl": "true",
             "es.nodes.resolve.hostname": str(False),
             "es.resource": self._get_index(index_type),
         }
