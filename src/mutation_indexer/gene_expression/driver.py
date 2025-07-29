@@ -8,6 +8,7 @@ from typing import NamedTuple
 
 import boto3
 import mypy_boto3_s3 as s3
+from botocore import client
 from pyspark import sql
 
 from mutation_indexer import driver, es_utils, indexd_utils
@@ -33,6 +34,7 @@ def _initialize_s3_client(config: aws.S3) -> s3.Client:
         aws_access_key_id=config.access_key,
         aws_secret_access_key=config.secret_key,
         verify=verify,
+        config=client.Config(signature_version=config.signature_version),
     )
 
 

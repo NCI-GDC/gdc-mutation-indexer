@@ -20,6 +20,7 @@ class S3:
     access_key: str
     secret_key: Annotated[str, _extensions.SecretStringField]
     verify: bool | Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    signature_version: str
 
 
 @dataclasses.dataclass(frozen=True)
