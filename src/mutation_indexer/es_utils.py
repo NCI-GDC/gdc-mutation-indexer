@@ -565,7 +565,7 @@ class DataFrameUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.keystore.type": "pem",
+            "es.net.ssl.keystore.type": "PEM",
             "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
             "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
@@ -639,7 +639,7 @@ class DataFrameUtil:
             .option("es.net.http.auth.user", self._config.connection.user)
             .option("es.net.http.auth.pass", self._config.connection.password)
             .option("es.net.ssl", self._config.connection.use_ssl)
-            .option("es.net.ssl.keystore.type", "pem")
+            .option("es.net.ssl.keystore.type", "PEM")
             .option(
                 "es.net.ssl.truststore.location",
                 self._config.connection.certs.as_uri(),
@@ -719,7 +719,7 @@ class RDDUtil:
             "es.net.http.auth.user": self._config.connection.user,
             "es.net.http.auth.pass": self._config.connection.password,
             "es.net.ssl": str(self._config.connection.use_ssl),
-            "es.net.ssl.keystore.type": "pem",
+            "es.net.ssl.keystore.type": "PEM",
             "es.net.ssl.truststore.location": self._config.connection.certs.as_uri(),
             "es.net.ssl.cert.allow.self.signed": str(not self._config.connection.verify_certs),
             "es.nodes.resolve.hostname": str(False),
