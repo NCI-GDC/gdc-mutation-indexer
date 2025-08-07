@@ -69,6 +69,8 @@ fields:
                 - <<: *string_field
                   name: catalog_reference
                 - <<: *string_field
+                  name: composition
+                - <<: *string_field
                   name: created_datetime
                 - &double_field
                   metadata: {}
@@ -96,10 +98,14 @@ fields:
                   name: initial_weight
                 - <<: *double_field
                   name: intermediate_dimension
+                - <<: *string_field
+                  name: is_ffpe
                 - <<: *double_field
                   name: longest_dimension
                 - <<: *string_field
                   name: method_of_sample_procurement
+                - <<: *string_field
+                  name: oct_embedded
                 - <<: *long_field
                   name: passage_count
                 - <<: *string_field
@@ -137,6 +143,8 @@ fields:
                                           name: amount
                                         - <<: *string_field
                                           name: analyte_type
+                                        - <<: *string_field
+                                          name: analyte_type_id
                                         - metadata: {}
                                           name: annotations
                                           nullable: true
@@ -236,6 +244,8 @@ fields:
                                   name: analyte_quantity
                                 - <<: *string_field
                                   name: analyte_type
+                                - <<: *string_field
+                                  name: analyte_type_id
                                 - <<: *double_field
                                   name: analyte_volume
                                 - metadata: {}
@@ -502,6 +512,8 @@ fields:
                   name: sample_ordinal
                 - <<: *string_field
                   name: sample_type
+                - <<: *string_field
+                  name: sample_type_id
                 - <<: *double_field
                   name: shortest_dimension
                 - <<: *string_field
@@ -518,6 +530,8 @@ fields:
                   name: tissue_collection_type
                 - <<: *string_field
                   name: tissue_type
+                - <<: *string_field
+                  name: tumor_code
                 - <<: *string_field
                   name: tumor_code_id
                 - <<: *string_field

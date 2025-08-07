@@ -113,3 +113,6 @@ These are tools for generating various input models for the test data.
 
 ### [Schema Tools](unit/data/schemas/README.md)
 These are tools for managing the schemas used to load test data.
+
+### [Sync Tools](integration/data/sync/README.md)
+These tools are for syncing the integration test data with gdc-models.
