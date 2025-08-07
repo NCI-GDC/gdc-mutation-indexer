@@ -1,5 +1,6 @@
 import io
 from collections.abc import Iterable
+from typing import Any
 
 import yaml
 from gdcmodels import esmodels
@@ -37,10 +38,17 @@ def _to_schema(mapping: esmodels.Property) -> types.StructType:
     return types.StructType(fields=list(_get_fields(mapping["properties"])))
 
 
+class All:
+    def __contains__(self, _: Any) -> bool:
+        return True
+
+
 def translate(
     mapping_file: io.TextIOBase, output_file: io.TextIOBase, included_properties: str
 ) -> None:
-    properties_set = frozenset(included_properties.split(","))
+    properties_set = (
+        frozenset(included_properties.split(",")) if included_properties else All()
+    )
     mapping = yaml.safe_load(mapping_file)
     mapping["properties"] = {
         p: d for p, d in mapping.get("properties", {}).items() if p in properties_set

@@ -69,7 +69,7 @@ Command:
 python -m tests.unit.data.schemas translate-mapping \
     -m ./mapping.yaml \
     -o ./output.yaml \
-    -i ignored  # a comma separated list of props to ignore.
+    -i included  # a comma separated list of props to include (default all.)
 ```
 
 #### Outputs

@@ -28,7 +28,7 @@ dependencies = [
   "typing-extensions",
   "indexclient",
   "gdcmodels>=5.10",
-  "mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0"
+  "mutation-indexer-resource"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
@@ -38,7 +38,7 @@ requires-python = "~=3.13.0"
 
 [project.optional-dependencies]
 client = ["halo", "pex", "wheel"]
-dev = ["click~=8.1", "coverage[toml]~=7.0", "deepdiff~=6.0", "pytest~=8.0"]
+dev = ["click", "coverage[toml]", "deepdiff", "inflect", "pytest"]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
