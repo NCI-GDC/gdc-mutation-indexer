@@ -110,7 +110,7 @@ packaging==25.0
     #   marshmallow
     #   pytest
     #   typed-argument-parser
-pex==2.50.1
+pex==2.40.2
     # via gdc-mutation-indexer (pyproject.toml)
 pluggy==1.6.0
     # via pytest
