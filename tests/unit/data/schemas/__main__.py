@@ -2,7 +2,7 @@ import io
 
 import click
 
-from tests.unit.data.schemas import _minimize, _translate_mapping
+from tests.unit.data.schemas import _case, _minimize, _translate_mapping
 
 
 @click.group
@@ -47,6 +47,11 @@ def translate_mapping(mapping: io.TextIOBase, output: io.TextIOBase, include: st
     these from regular atomic values.
     """
     _translate_mapping.translate(mapping, output, include)
+
+
+@cli.command
+def update_case_mappings() -> None:
+    _case.sync_mappings()
 
 
 if __name__ == "__main__":

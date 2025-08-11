@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Set
+from typing import TypedDict
 from unittest import mock
 
 import deepdiff
@@ -6,7 +7,6 @@ import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from typing import TypedDict
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import adapter

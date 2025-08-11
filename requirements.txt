@@ -14,11 +14,11 @@ aiosignal==1.4.0
     # via aiohttp
 attrs==25.3.0
     # via aiohttp
-boto3==1.40.3
+boto3==1.40.6
     # via gdc-mutation-indexer (pyproject.toml)
-boto3-stubs==1.40.3
+boto3-stubs==1.40.6
     # via gdc-mutation-indexer (pyproject.toml)
-botocore==1.40.3
+botocore==1.40.6
     # via
     #   boto3
     #   s3transfer
@@ -26,7 +26,6 @@ botocore-stubs==1.38.46
     # via boto3-stubs
 certifi==2025.8.3
     # via
-    #   elastic-transport
     #   elasticsearch
     #   requests
 charset-normalizer==3.4.2
@@ -39,7 +38,7 @@ colorama==0.4.6
     #   log-symbols
 coverage==7.10.2
     # via gdc-mutation-indexer (pyproject.toml)
-deepdiff==8.5.0
+deepdiff==8.6.0
     # via
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
@@ -55,7 +54,7 @@ frozenlist==1.7.0
     # via
     #   aiohttp
     #   aiosignal
-gdcmodels==5.11
+gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@ex/sync-viz-indices-with-case
     # via gdc-mutation-indexer (pyproject.toml)
 halo==0.0.31
     # via gdc-mutation-indexer (pyproject.toml)
@@ -68,6 +67,8 @@ importlib-resources==6.5.2
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
 indexclient==2.7
+    # via gdc-mutation-indexer (pyproject.toml)
+inflect==7.5.0
     # via gdc-mutation-indexer (pyproject.toml)
 iniconfig==2.1.0
     # via pytest
@@ -89,6 +90,7 @@ more-itertools==10.7.0
     # via
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
+    #   inflect
 multidict==6.6.3
     # via
     #   aiohttp
@@ -108,7 +110,7 @@ packaging==25.0
     #   marshmallow
     #   pytest
     #   typed-argument-parser
-pex==2.40.2
+pex==2.50.1
     # via gdc-mutation-indexer (pyproject.toml)
 pluggy==1.6.0
     # via pytest
@@ -149,7 +151,9 @@ tomli-w==1.2.0
 typed-argument-parser==1.10.1
     # via gdc-mutation-indexer (pyproject.toml)
 typeguard==4.4.4
-    # via marshmallow-dataclass
+    # via
+    #   inflect
+    #   marshmallow-dataclass
 types-awscrt==0.27.5
     # via botocore-stubs
 types-s3transfer==0.13.0

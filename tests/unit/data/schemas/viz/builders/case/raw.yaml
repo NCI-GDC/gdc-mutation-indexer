@@ -12,6 +12,8 @@ fields:
     name: days_to_consent
     nullable: true
     type: long
+  - <<: *long_field
+    name: days_to_lost_to_followup
   - metadata: {}
     name: demographic
     nullable: true
@@ -23,6 +25,12 @@ fields:
           name: age_is_obfuscated
         - <<: *string_field
           name: cause_of_death
+        - <<: *string_field
+          name: cause_of_death_source
+        - <<: *string_field
+          name: country_of_birth
+        - <<: *string_field
+          name: country_of_residence_at_enrollment
         - <<: *long_field
           name: days_to_birth
         - <<: *long_field
@@ -30,11 +38,21 @@ fields:
         - <<: *string_field
           name: demographic_id
         - <<: *string_field
+          name: education_level
+        - <<: *string_field
           name: ethnicity
         - <<: *string_field
           name: gender
         - <<: *string_field
+          name: marital_status
+        - <<: *long_field
+          name: occupation_duration_years
+        - <<: *string_field
+          name: population_group
+        - <<: *string_field
           name: race
+        - <<: *string_field
+          name: sex_at_birth
         - <<: *string_field
           name: state
         - <<: *string_field
@@ -53,6 +71,8 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - <<: *string_field
+            name: adrenal_hormone
           - <<: *long_field
             name: age_at_diagnosis
           - <<: *string_field
@@ -72,9 +92,13 @@ fields:
           - <<: *string_field
             name: ajcc_pathologic_t
           - <<: *string_field
+            name: ajcc_serum_tumor_markers
+          - <<: *string_field
             name: ajcc_staging_system_edition
           - <<: *string_field
             name: ann_arbor_b_symptoms
+          - <<: *string_field
+            name: ann_arbor_b_symptoms_described
           - <<: *string_field
             name: ann_arbor_clinical_stage
           - <<: *string_field
@@ -82,11 +106,31 @@ fields:
           - <<: *string_field
             name: ann_arbor_pathologic_stage
           - <<: *string_field
+            name: best_overall_response
+          - <<: *string_field
             name: burkitt_lymphoma_clinical_variant
+          - <<: *string_field
+            name: calgb_risk_group
+          - <<: *string_field
+            name: cancer_detection_method
+          - <<: *string_field
+            name: child_pugh_classification
+          - <<: *string_field
+            name: clark_level
           - <<: *string_field
             name: classification_of_tumor
           - <<: *string_field
+            name: cog_liver_stage
+          - <<: *string_field
+            name: cog_neuroblastoma_risk_group
+          - <<: *string_field
             name: cog_renal_stage
+          - <<: *string_field
+            name: cog_rhabdomyosarcoma_risk_group
+          - <<: *string_field
+            name: contiguous_organ_invaded
+          - <<: *long_field
+            name: days_to_best_overall_response
           - <<: *long_field
             name: days_to_diagnosis
           - &double_field
@@ -101,15 +145,53 @@ fields:
           - <<: *string_field
             name: diagnosis_id
           - <<: *string_field
+            name: diagnosis_is_primary_disease
+          - <<: *string_field
+            name: double_expressor_lymphoma
+          - <<: *string_field
+            name: double_hit_lymphoma
+          - <<: *string_field
+            name: eln_risk_classification
+          - <<: *string_field
+            name: enneking_msts_grade
+          - <<: *string_field
+            name: enneking_msts_metastasis
+          - <<: *string_field
+            name: enneking_msts_stage
+          - <<: *string_field
+            name: enneking_msts_tumor_site
+          - <<: *string_field
+            name: ensat_clinical_m
+          - <<: *string_field
+            name: ensat_pathologic_n
+          - <<: *string_field
+            name: ensat_pathologic_stage
+          - <<: *string_field
+            name: ensat_pathologic_t
+          - <<: *string_field
             name: esophageal_columnar_dysplasia_degree
           - <<: *string_field
             name: esophageal_columnar_metaplasia_present
+          - <<: *string_field
+            name: fab_morphology_code
           - <<: *string_field
             name: figo_stage
           - <<: *string_field
             name: figo_staging_edition_year
           - <<: *string_field
+            name: first_symptom_longest_duration
+          - <<: *string_field
+            name: first_symptom_prior_to_diagnosis
+          - <<: *string_field
             name: gastric_esophageal_junction_involvement
+          - <<: *string_field
+            name: gleason_grade_group
+          - <<: *string_field
+            name: gleason_grade_tertiary
+          - <<: *long_field
+            name: gleason_patterns_percent
+          - <<: *long_field
+            name: gleason_score
           - <<: *string_field
             name: goblet_cells_columnar_mucosa_present
           - <<: *string_field
@@ -117,27 +199,51 @@ fields:
           - <<: *string_field
             name: igcccg_stage
           - <<: *string_field
+            name: inpc_grade
+          - <<: *string_field
+            name: inpc_histologic_group
+          - <<: *string_field
+            name: inrg_stage
+          - <<: *string_field
             name: inss_stage
           - <<: *string_field
             name: international_prognostic_index
+          - <<: *string_field
+            name: irs_group
+          - <<: *string_field
+            name: irs_stage
+          - <<: *string_field
+            name: ishak_fibrosis_score
           - <<: *string_field
             name: iss_stage
           - <<: *string_field
             name: last_known_disease_status
           - <<: *string_field
             name: laterality
+          - <<: *double_field
+            name: margin_distance
+          - <<: *string_field
+            name: margins_involved_site
           - <<: *string_field
             name: masaoka_stage
           - <<: *string_field
-            name: metastasis_at_diagnosis
+            name: max_tumor_bulk_site
           - <<: *string_field
-            name: metastasis_at_diagnosis_site
+            name: medulloblastoma_molecular_classification
+          - <<: *string_field
+            name: melanoma_known_primary
+          - <<: *string_field
+            name: metastasis_at_diagnosis
           - <<: *string_field
             name: method_of_diagnosis
           - <<: *string_field
-            name: micropapillary_features
+            name: mitosis_karyorrhexis_index
           - <<: *string_field
             name: morphology
+          - <<: *string_field
+            name: ovarian_specimen_status
+          - <<: *string_field
+            name: ovarian_surface_involvement
           - metadata: {}
             name: pathology_details
             nullable: true
@@ -146,6 +252,8 @@ fields:
               elementType:
                 fields:
                   - <<: *string_field
+                    name: additional_pathology_findings
+                  - <<: *string_field
                     name: anaplasia_present
                   - <<: *string_field
                     name: anaplasia_present_type
@@ -153,26 +261,62 @@ fields:
                     name: bone_marrow_malignant_cells
                   - <<: *double_field
                     name: breslow_thickness
+                  - <<: *string_field
+                    name: breslow_thickness_category
                   - <<: *double_field
                     name: circumferential_resection_margin
                   - <<: *string_field
                     name: columnar_mucosa_present
                   - <<: *string_field
+                    name: consistent_pathology_review
+                  - <<: *string_field
+                    name: created_datetime
+                  - <<: *long_field
+                    name: days_to_pathology_detail
+                  - <<: *string_field
                     name: dysplasia_degree
                   - <<: *string_field
                     name: dysplasia_type
+                  - <<: *double_field
+                    name: epithelioid_cell_percent
+                  - <<: *string_field
+                    name: epithelioid_cell_percent_range
+                  - <<: *string_field
+                    name: extracapsular_extension
+                  - <<: *string_field
+                    name: extracapsular_extension_present
+                  - <<: *string_field
+                    name: extranodal_extension
+                  - <<: *string_field
+                    name: extraocular_nodule_size
+                  - <<: *string_field
+                    name: extrascleral_extension
+                  - <<: *string_field
+                    name: extrascleral_extension_present
+                  - <<: *string_field
+                    name: extrathyroid_extension
                   - <<: *double_field
                     name: greatest_tumor_dimension
                   - <<: *double_field
                     name: gross_tumor_weight
                   - <<: *string_field
+                    name: histologic_progression_type
+                  - <<: *string_field
+                    name: intratubular_germ_cell_neoplasia_present
+                  - <<: *string_field
                     name: largest_extrapelvic_peritoneal_focus
+                  - <<: *string_field
+                    name: lymph_node_dissection_method
+                  - <<: *string_field
+                    name: lymph_node_dissection_site
                   - <<: *string_field
                     name: lymph_node_involved_site
                   - <<: *string_field
                     name: lymph_node_involvement
                   - <<: *long_field
                     name: lymph_nodes_positive
+                  - <<: *string_field
+                    name: lymph_nodes_removed
                   - <<: *long_field
                     name: lymph_nodes_tested
                   - <<: *string_field
@@ -180,9 +324,19 @@ fields:
                   - <<: *string_field
                     name: margin_status
                   - <<: *string_field
+                    name: measurement_type
+                  - <<: *string_field
+                    name: measurement_unit
+                  - <<: *string_field
                     name: metaplasia_present
                   - <<: *string_field
+                    name: micrometastasis_present
+                  - <<: *string_field
                     name: morphologic_architectural_pattern
+                  - <<: *double_field
+                    name: necrosis_percent
+                  - <<: *string_field
+                    name: necrosis_present
                   - <<: *string_field
                     name: non_nodal_regional_disease
                   - <<: *string_field
@@ -193,12 +347,16 @@ fields:
                     name: pathology_detail_id
                   - <<: *double_field
                     name: percent_tumor_invasion
+                  - <<: *double_field
+                    name: percent_tumor_nuclei
                   - <<: *string_field
                     name: perineural_invasion_present
                   - <<: *string_field
                     name: peripancreatic_lymph_nodes_positive
                   - <<: *long_field
                     name: peripancreatic_lymph_nodes_tested
+                  - <<: *string_field
+                    name: prcc_type
                   - <<: *double_field
                     name: prostatic_chips_positive_count
                   - <<: *double_field
@@ -206,21 +364,74 @@ fields:
                   - <<: *double_field
                     name: prostatic_involvement_percent
                   - <<: *string_field
+                    name: residual_tumor
+                  - <<: *string_field
+                    name: residual_tumor_measurement
+                  - <<: *double_field
+                    name: rhabdoid_percent
+                  - <<: *string_field
+                    name: rhabdoid_present
+                  - <<: *double_field
+                    name: sarcomatoid_percent
+                  - <<: *string_field
+                    name: sarcomatoid_present
+                  - <<: *double_field
+                    name: size_extraocular_nodule
+                  - <<: *double_field
+                    name: spindle_cell_percent
+                  - <<: *string_field
+                    name: spindle_cell_percent_range
+                  - <<: *string_field
                     name: state
                   - <<: *string_field
                     name: submitter_id
                   - <<: *string_field
+                    name: timepoint_category
+                  - <<: *string_field
                     name: transglottic_extension
                   - <<: *double_field
+                    name: tumor_basal_diameter
+                  - <<: *double_field
+                    name: tumor_burden
+                  - <<: *string_field
+                    name: tumor_depth_descriptor
+                  - <<: *double_field
+                    name: tumor_depth_measurement
+                  - <<: *string_field
+                    name: tumor_infiltrating_lymphocytes
+                  - <<: *string_field
+                    name: tumor_infiltrating_macrophages
+                  - <<: *double_field
                     name: tumor_largest_dimension_diameter
+                  - <<: *double_field
+                    name: tumor_length_measurement
+                  - metadata: {}
+                    name: tumor_level_prostate
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                  - <<: *string_field
+                    name: tumor_shape
+                  - <<: *double_field
+                    name: tumor_thickness
+                  - <<: *double_field
+                    name: tumor_width_measurement
+                  - <<: *string_field
+                    name: updated_datetime
                   - <<: *string_field
                     name: vascular_invasion_present
                   - <<: *string_field
                     name: vascular_invasion_type
+                  - <<: *string_field
+                    name: zone_of_origin_prostate
                 type: struct
               type: array
           - <<: *string_field
-            name: pregnant_at_diagnosis
+            name: pediatric_kidney_staging
+          - <<: *string_field
+            name: peritoneal_fluid_cytological_status
           - <<: *string_field
             name: primary_diagnosis
           - <<: *string_field
@@ -234,13 +445,26 @@ fields:
           - <<: *string_field
             name: residual_disease
           - <<: *string_field
+            name: satellite_nodule_present
+          - <<: *string_field
             name: secondary_gleason_grade
           - <<: *string_field
             name: site_of_resection_or_biopsy
+          - metadata: {}
+            name: sites_of_involvement
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
+          - <<: *long_field
+            name: sites_of_involvement_count
           - <<: *string_field
             name: state
           - <<: *string_field
             name: submitter_id
+          - <<: *string_field
+            name: supratentorial_localization
           - <<: *string_field
             name: synchronous_malignancy
           - <<: *string_field
@@ -254,16 +478,59 @@ fields:
                 fields:
                   - <<: *string_field
                     name: chemo_concurrent_to_radiation
+                  - <<: *string_field
+                    name: clinical_trial_indicator
+                  - <<: *double_field
+                    name: course_number
+                  - <<: *string_field
+                    name: created_datetime
                   - <<: *long_field
                     name: days_to_treatment_end
                   - <<: *long_field
                     name: days_to_treatment_start
                   - <<: *string_field
+                    name: drug_category
+                  - <<: *string_field
+                    name: embolic_agent
+                  - <<: *string_field
                     name: initial_disease_status
+                  - <<: *double_field
+                    name: lesions_treated_number
+                  - <<: *double_field
+                    name: margin_distance
+                  - <<: *string_field
+                    name: margin_status
+                  - <<: *string_field
+                    name: margins_involved_site
                   - <<: *long_field
                     name: number_of_cycles
+                  - <<: *double_field
+                    name: number_of_fractions
+                  - <<: *double_field
+                    name: prescribed_dose
+                  - <<: *string_field
+                    name: prescribed_dose_units
+                  - <<: *string_field
+                    name: pretreatment
+                  - <<: *string_field
+                    name: protocol_identifier
+                  - <<: *string_field
+                    name: radiosensitizing_agent
+                  - <<: *string_field
+                    name: reason_treatment_ended
+                  - <<: *string_field
+                    name: reason_treatment_not_given
                   - <<: *string_field
                     name: regimen_or_line_of_therapy
+                  - <<: *string_field
+                    name: residual_disease
+                  - metadata: {}
+                    name: route_of_administration
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *string_field
                     name: state
                   - <<: *string_field
@@ -271,9 +538,32 @@ fields:
                   - <<: *string_field
                     name: therapeutic_agents
                   - <<: *string_field
-                    name: treatment_anatomic_site
+                    name: therapeutic_level_achieved
+                  - <<: *string_field
+                    name: therapeutic_levels_achieved
+                  - <<: *string_field
+                    name: therapeutic_target_level
+                  - <<: *string_field
+                    name: timepoint_category
+                  - metadata: {}
+                    name: treatment_anatomic_sites
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *long_field
                     name: treatment_dose
+                  - <<: *double_field
+                    name: treatment_dose_max
+                  - <<: *string_field
+                    name: treatment_dose_units
+                  - <<: *long_field
+                    name: treatment_duration
+                  - <<: *string_field
+                    name: treatment_effect
+                  - <<: *string_field
+                    name: treatment_effect_indicator
                   - <<: *string_field
                     name: treatment_frequency
                   - <<: *string_field
@@ -284,12 +574,65 @@ fields:
                     name: treatment_or_therapy
                   - <<: *string_field
                     name: treatment_outcome
+                  - <<: *long_field
+                    name: treatment_outcome_duration
                   - <<: *string_field
                     name: treatment_type
+                  - <<: *string_field
+                    name: updated_datetime
                 type: struct
               type: array
+          - <<: *double_field
+            name: tumor_burden
+          - <<: *string_field
+            name: tumor_confined_to_organ_of_origin
+          - <<: *double_field
+            name: tumor_depth
+          - <<: *string_field
+            name: tumor_focality
           - <<: *string_field
             name: tumor_grade
+          - <<: *string_field
+            name: tumor_grade_category
+          - <<: *string_field
+            name: tumor_of_origin
+          - <<: *string_field
+            name: tumor_regression_grade
+          - <<: *string_field
+            name: uicc_clinical_m
+          - <<: *string_field
+            name: uicc_clinical_n
+          - <<: *string_field
+            name: uicc_clinical_stage
+          - <<: *string_field
+            name: uicc_clinical_t
+          - <<: *string_field
+            name: uicc_pathologic_m
+          - <<: *string_field
+            name: uicc_pathologic_n
+          - <<: *string_field
+            name: uicc_pathologic_stage
+          - <<: *string_field
+            name: uicc_pathologic_t
+          - <<: *string_field
+            name: uicc_staging_system_edition
+          - <<: *string_field
+            name: ulceration_indicator
+          - metadata: {}
+            name: weiss_assessment_findings
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
+          - <<: *string_field
+            name: weiss_assessment_score
+          - <<: *string_field
+            name: who_cns_grade
+          - <<: *string_field
+            name: who_nte_grade
+          - <<: *string_field
+            name: wilms_tumor_histologic_subtype
           - <<: *long_field
             name: year_of_diagnosis
         type: struct
@@ -303,34 +646,82 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - <<: *long_field
+            name: age_at_last_exposure
+          - <<: *long_field
+            name: age_at_onset
           - <<: *double_field
             name: alcohol_days_per_week
+          - <<: *double_field
+            name: alcohol_drinks_per_day
+          - <<: *string_field
+            name: alcohol_frequency
           - <<: *string_field
             name: alcohol_history
           - <<: *string_field
             name: alcohol_intensity
           - <<: *string_field
-            name: asbestos_exposure
+            name: alcohol_type
+          - <<: *string_field
+            name: asbestos_exposure_type
+          - metadata: {}
+            name: chemical_exposure_type
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *double_field
             name: cigarettes_per_day
           - <<: *string_field
+            name: environmental_tobacco_smoke_exposure
+          - <<: *string_field
+            name: exposure_duration
+          - <<: *double_field
+            name: exposure_duration_hrs_per_day
+          - <<: *long_field
+            name: exposure_duration_years
+          - <<: *string_field
             name: exposure_id
+          - <<: *string_field
+            name: exposure_source
+          - <<: *string_field
+            name: exposure_type
+          - <<: *long_field
+            name: occupation_duration_years
+          - metadata: {}
+            name: occupation_type
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *double_field
             name: pack_years_smoked
           - <<: *string_field
-            name: radon_exposure
+            name: parent_with_radiation_exposure
+          - <<: *string_field
+            name: secondhand_smoke_as_child
+          - <<: *string_field
+            name: smoking_frequency
           - <<: *string_field
             name: state
           - <<: *string_field
             name: submitter_id
+          - <<: *string_field
+            name: time_between_waking_and_first_smoke
           - <<: *long_field
             name: tobacco_smoking_onset_year
           - <<: *long_field
             name: tobacco_smoking_quit_year
           - <<: *string_field
             name: tobacco_smoking_status
+          - <<: *string_field
+            name: type_of_smoke_exposure
+          - <<: *string_field
+            name: type_of_tobacco_used
           - <<: *double_field
-            name: years_smoked
+            name: use_per_day
         type: struct
       type: array
   - metadata: {}
@@ -349,13 +740,372 @@ fields:
           - <<: *string_field
             name: relationship_primary_diagnosis
           - <<: *string_field
+            name: relationship_sex_at_birth
+          - <<: *string_field
             name: relationship_type
           - <<: *string_field
+            name: relative_deceased
+          - <<: *string_field
+            name: relative_smoker
+          - <<: *string_field
             name: relative_with_cancer_history
+          - <<: *long_field
+            name: relatives_with_cancer_history_count
           - <<: *string_field
             name: state
           - <<: *string_field
             name: submitter_id
+        type: struct
+      type: array
+  - metadata: {}
+    name: follow_ups
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *string_field
+            name: adverse_event
+          - <<: *string_field
+            name: adverse_event_grade
+          - <<: *string_field
+            name: barretts_esophagus_goblet_cells_present
+          - <<: *string_field
+            name: cause_of_response
+          - <<: *long_field
+            name: days_to_adverse_event
+          - <<: *long_field
+            name: days_to_first_event
+          - <<: *long_field
+            name: days_to_follow_up
+          - <<: *long_field
+            name: days_to_imaging
+          - <<: *long_field
+            name: days_to_progression
+          - <<: *long_field
+            name: days_to_progression_free
+          - <<: *long_field
+            name: days_to_recurrence
+          - <<: *long_field
+            name: discontiguous_lesion_count
+          - <<: *string_field
+            name: disease_response
+          - <<: *string_field
+            name: ecog_performance_status
+          - <<: *string_field
+            name: evidence_of_progression_type
+          - <<: *string_field
+            name: evidence_of_recurrence_type
+          - <<: *string_field
+            name: first_event
+          - <<: *string_field
+            name: follow_up_id
+          - <<: *string_field
+            name: histologic_progression
+          - <<: *string_field
+            name: history_of_tumor
+          - <<: *string_field
+            name: history_of_tumor_type
+          - <<: *string_field
+            name: hormone_replacement_therapy_type
+          - metadata: {}
+            name: imaging_anatomic_site
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
+          - <<: *string_field
+            name: imaging_findings
+          - <<: *string_field
+            name: imaging_result
+          - <<: *double_field
+            name: imaging_suv
+          - <<: *double_field
+            name: imaging_suv_max
+          - <<: *string_field
+            name: imaging_type
+          - <<: *string_field
+            name: karnofsky_performance_status
+          - metadata: {}
+            name: molecular_tests
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: aa_change
+                  - <<: *string_field
+                    name: aneuploidy
+                  - <<: *string_field
+                    name: antigen
+                  - <<: *string_field
+                    name: biospecimen_type
+                  - <<: *double_field
+                    name: biospecimen_volume
+                  - <<: *double_field
+                    name: blood_test_normal_range_lower
+                  - <<: *double_field
+                    name: blood_test_normal_range_upper
+                  - <<: *long_field
+                    name: cell_count
+                  - <<: *string_field
+                    name: chromosomal_translocation
+                  - <<: *string_field
+                    name: chromosome
+                  - <<: *string_field
+                    name: chromosome_arm
+                  - <<: *string_field
+                    name: clonality
+                  - <<: *double_field
+                    name: copy_number
+                  - <<: *string_field
+                    name: cytoband
+                  - <<: *long_field
+                    name: days_to_test
+                  - <<: *string_field
+                    name: exon
+                  - <<: *string_field
+                    name: gene_symbol
+                  - <<: *string_field
+                    name: histone_family
+                  - <<: *string_field
+                    name: histone_variant
+                  - <<: *string_field
+                    name: hpv_strain
+                  - <<: *string_field
+                    name: intron
+                  - <<: *string_field
+                    name: laboratory_test
+                  - <<: *long_field
+                    name: loci_abnormal_count
+                  - <<: *long_field
+                    name: loci_count
+                  - <<: *string_field
+                    name: locus
+                  - <<: *string_field
+                    name: mismatch_repair_mutation
+                  - <<: *double_field
+                    name: mitotic_count
+                  - <<: *double_field
+                    name: mitotic_total_area
+                  - <<: *string_field
+                    name: molecular_analysis_method
+                  - <<: *string_field
+                    name: molecular_consequence
+                  - <<: *string_field
+                    name: molecular_test_id
+                  - <<: *string_field
+                    name: mutation_codon
+                  - <<: *string_field
+                    name: pathogenicity
+                  - <<: *string_field
+                    name: ploidy
+                  - <<: *string_field
+                    name: second_exon
+                  - <<: *string_field
+                    name: second_gene_symbol
+                  - <<: *string_field
+                    name: specialized_molecular_test
+                  - <<: *string_field
+                    name: staining_intensity_scale
+                  - <<: *string_field
+                    name: staining_intensity_value
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: test_analyte_type
+                  - <<: *string_field
+                    name: test_result
+                  - <<: *string_field
+                    name: test_units
+                  - <<: *double_field
+                    name: test_value
+                  - <<: *string_field
+                    name: test_value_range
+                  - <<: *string_field
+                    name: timepoint_category
+                  - <<: *string_field
+                    name: transcript
+                  - <<: *string_field
+                    name: variant_origin
+                  - <<: *string_field
+                    name: variant_type
+                  - <<: *string_field
+                    name: zygosity
+                type: struct
+              type: array
+          - metadata: {}
+            name: other_clinical_attributes
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: aids_risk_factors
+                  - <<: *double_field
+                    name: bmi
+                  - <<: *double_field
+                    name: body_surface_area
+                  - <<: *double_field
+                    name: cd4_count
+                  - <<: *string_field
+                    name: cdc_hiv_risk_factors
+                  - metadata: {}
+                    name: comorbidities
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                  - <<: *string_field
+                    name: comorbidity_method_of_diagnosis
+                  - <<: *long_field
+                    name: days_to_comorbidity
+                  - <<: *long_field
+                    name: days_to_risk_factor
+                  - <<: *string_field
+                    name: diabetes_treatment_type
+                  - <<: *double_field
+                    name: dlco_ref_predictive_percent
+                  - <<: *string_field
+                    name: exercise_frequency_weekly
+                  - <<: *string_field
+                    name: eye_color
+                  - <<: *string_field
+                    name: fertility_history
+                  - <<: *double_field
+                    name: fev1_fvc_post_bronch_percent
+                  - <<: *double_field
+                    name: fev1_fvc_pre_bronch_percent
+                  - <<: *double_field
+                    name: fev1_ref_post_bronch_percent
+                  - <<: *double_field
+                    name: fev1_ref_pre_bronch_percent
+                  - <<: *string_field
+                    name: haart_treatment_indicator
+                  - <<: *double_field
+                    name: height
+                  - <<: *string_field
+                    name: hepatitis_sustained_virological_response
+                  - <<: *double_field
+                    name: hiv_viral_load
+                  - <<: *string_field
+                    name: hormonal_contraceptive_type
+                  - <<: *string_field
+                    name: hormonal_contraceptive_use
+                  - <<: *string_field
+                    name: hormonal_replacement_therapy_status
+                  - <<: *string_field
+                    name: hormone_replacement_therapy_type
+                  - <<: *string_field
+                    name: hysterectomy_margins_involved
+                  - <<: *string_field
+                    name: hysterectomy_type
+                  - <<: *string_field
+                    name: immunosuppressive_treatment_type
+                  - <<: *string_field
+                    name: menopause_status
+                  - <<: *string_field
+                    name: myasthenia_gravis_classification
+                  - <<: *double_field
+                    name: nadir_cd4_count
+                  - <<: *string_field
+                    name: nononcologic_therapeutic_agents
+                  - <<: *string_field
+                    name: number_of_pregnancies
+                  - <<: *string_field
+                    name: other_clinical_attribute_id
+                  - <<: *string_field
+                    name: oxygen_use_indicator
+                  - <<: *string_field
+                    name: oxygen_use_type
+                  - <<: *long_field
+                    name: pancreatitis_onset_year
+                  - <<: *string_field
+                    name: pregnancy_outcome
+                  - <<: *string_field
+                    name: pregnant_at_diagnosis
+                  - <<: *string_field
+                    name: premature_at_birth
+                  - <<: *string_field
+                    name: reflux_treatment_type
+                  - <<: *string_field
+                    name: risk_factor_method_of_diagnosis
+                  - <<: *string_field
+                    name: risk_factor_treatment
+                  - metadata: {}
+                    name: risk_factors
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                  - <<: *string_field
+                    name: state
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: timepoint_category
+                  - <<: *string_field
+                    name: treatment_frequency
+                  - <<: *string_field
+                    name: undescended_testis_corrected
+                  - <<: *long_field
+                    name: undescended_testis_corrected_age
+                  - <<: *string_field
+                    name: undescended_testis_corrected_age_range
+                  - <<: *string_field
+                    name: undescended_testis_corrected_laterality
+                  - <<: *string_field
+                    name: undescended_testis_corrected_method
+                  - <<: *string_field
+                    name: undescended_testis_history
+                  - <<: *string_field
+                    name: undescended_testis_history_laterality
+                  - metadata: {}
+                    name: viral_hepatitis_serology_tests
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
+                  - <<: *double_field
+                    name: weeks_gestation_at_birth
+                  - <<: *double_field
+                    name: weight
+                type: struct
+              type: array
+          - <<: *string_field
+            name: peritoneal_washing_results
+          - <<: *string_field
+            name: procedures_performed
+          - <<: *string_field
+            name: progression_or_recurrence
+          - <<: *string_field
+            name: progression_or_recurrence_anatomic_site
+          - <<: *string_field
+            name: progression_or_recurrence_type
+          - <<: *long_field
+            name: recist_targeted_regions_number
+          - <<: *double_field
+            name: recist_targeted_regions_sum
+          - <<: *string_field
+            name: scan_tracer_used
+          - <<: *string_field
+            name: state
+          - <<: *string_field
+            name: submitter_id
+          - <<: *string_field
+            name: timepoint_category
+          - <<: *string_field
+            name: treatment_emergent_adverse_event
+          - <<: *long_field
+            name: year_of_follow_up
         type: struct
       type: array
   - <<: *string_field
@@ -403,6 +1153,12 @@ fields:
             type: struct
         - <<: *string_field
           name: project_id
+        - <<: *string_field
+          name: releasable
+        - <<: *string_field
+          name: released
+        - <<: *string_field
+          name: state
       type: struct
   - metadata: {}
     name: samples
@@ -412,13 +1168,65 @@ fields:
       elementType:
         fields:
           - <<: *string_field
+            name: biospecimen_anatomic_site
+          - <<: *string_field
+            name: biospecimen_laterality
+          - <<: *string_field
+            name: catalog_reference
+          - <<: *double_field
+            name: current_weight
+          - <<: *long_field
+            name: days_to_collection
+          - <<: *long_field
+            name: days_to_sample_procurement
+          - <<: *string_field
+            name: diagnosis_pathologically_confirmed
+          - <<: *string_field
+            name: distance_normal_to_tumor
+          - <<: *string_field
+            name: distributor_reference
+          - <<: *string_field
+            name: freezing_method
+          - <<: *long_field
+            name: growth_rate
+          - <<: *double_field
+            name: initial_weight
+          - <<: *double_field
+            name: intermediate_dimension
+          - <<: *double_field
+            name: longest_dimension
+          - <<: *string_field
+            name: method_of_sample_procurement
+          - <<: *long_field
+            name: passage_count
+          - <<: *string_field
+            name: pathology_report_uuid
+          - <<: *string_field
             name: preservation_method
           - <<: *string_field
+            name: sample_id
+          - <<: *long_field
+            name: sample_ordinal
+          - <<: *string_field
             name: sample_type
+          - <<: *double_field
+            name: shortest_dimension
           - <<: *string_field
             name: specimen_type
           - <<: *string_field
+            name: state
+          - <<: *string_field
+            name: submitter_id
+          - <<: *double_field
+            name: time_between_clamping_and_freezing
+          - <<: *double_field
+            name: time_between_excision_and_freezing
+          - <<: *string_field
+            name: tissue_collection_type
+          - <<: *string_field
             name: tissue_type
+          - <<: *string_field
+            name: tumor_code_id
           - <<: *string_field
             name: tumor_descriptor
         type: struct

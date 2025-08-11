@@ -27,7 +27,7 @@ dependencies = [
   "typed-argument-parser",
   "typing-extensions",
   "indexclient",
-  "gdcmodels>=5.10",
+  "gdcmodels @ git+ssh://git@github.com/NCI-GDC/gdc-models.git@ex/sync-viz-indices-with-case",
   "mutation-indexer-resource"
 ]
 description = "ETL for mutation elasticsearch indices"
@@ -158,16 +158,17 @@ deps = ["setuptools_scm", "build", "twine"]
 pass_env = ["TWINE_*"]
 skip_install = true
 
-[tool.tox.env.test]
+[tool.tox.env_run_base]
 allowlist_externals = ["bin/spark-install.sh"]
+base_python = ["py313"]
 commands = [
   [
     "coverage",
     "run",
     "-m",
     "pytest",
-    "-vv",
     {replace = "posargs", default = [
+      "-vv",
       "-m",
       "not do_not_collect",
       "--junitxml=report.xml"
@@ -182,10 +183,7 @@ commands_pre = [["bin/spark-install.sh"]]
 deps = ["-crequirements.txt", ".[dev,client]"]
 pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
 
-[tool.tox.env.test.set_env]
+[tool.tox.env_run_base.set_env]
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
-
-[tool.tox.env_run_base]
-base_python = ["py313"]

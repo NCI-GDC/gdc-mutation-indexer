@@ -61,6 +61,8 @@ fields:
         type: struct
       type: array
   - <<: *string_field
+    name: case_autocomplete
+  - <<: *string_field
     name: case_id
   - <<: *string_field
     name: consent_type
@@ -513,8 +515,13 @@ fields:
                     name: tumor_largest_dimension_diameter
                   - <<: *double_field
                     name: tumor_length_measurement
-                  - <<: *string_field
+                  - metadata: {}
                     name: tumor_level_prostate
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *string_field
                     name: tumor_shape
                   - <<: *double_field
@@ -553,8 +560,13 @@ fields:
             name: secondary_gleason_grade
           - <<: *string_field
             name: site_of_resection_or_biopsy
-          - <<: *string_field
+          - metadata: {}
             name: sites_of_involvement
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *long_field
             name: sites_of_involvement_count
           - <<: *string_field
@@ -622,8 +634,13 @@ fields:
                     name: regimen_or_line_of_therapy
                   - <<: *string_field
                     name: residual_disease
-                  - <<: *string_field
+                  - metadata: {}
                     name: route_of_administration
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *string_field
                     name: state
                   - <<: *string_field
@@ -638,8 +655,13 @@ fields:
                     name: therapeutic_target_level
                   - <<: *string_field
                     name: timepoint_category
-                  - <<: *string_field
+                  - metadata: {}
                     name: treatment_anatomic_sites
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *long_field
                     name: treatment_dose
                   - <<: *double_field
@@ -708,8 +730,13 @@ fields:
             name: ulceration_indicator
           - <<: *string_field
             name: updated_datetime
-          - <<: *string_field
+          - metadata: {}
             name: weiss_assessment_findings
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *string_field
             name: weiss_assessment_score
           - <<: *string_field
@@ -756,8 +783,13 @@ fields:
             name: alcohol_type
           - <<: *string_field
             name: asbestos_exposure_type
-          - <<: *string_field
+          - metadata: {}
             name: chemical_exposure_type
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *double_field
             name: cigarettes_per_day
           - <<: *string_field
@@ -778,8 +810,13 @@ fields:
             name: exposure_type
           - <<: *long_field
             name: occupation_duration_years
-          - <<: *string_field
+          - metadata: {}
             name: occupation_type
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *double_field
             name: pack_years_smoked
           - <<: *string_field
@@ -1697,8 +1734,13 @@ fields:
             name: history_of_tumor_type
           - <<: *string_field
             name: hormone_replacement_therapy_type
-          - <<: *string_field
+          - metadata: {}
             name: imaging_anatomic_site
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *string_field
             name: imaging_findings
           - <<: *string_field
@@ -1843,8 +1885,13 @@ fields:
                     name: cd4_count
                   - <<: *string_field
                     name: cdc_hiv_risk_factors
-                  - <<: *string_field
+                  - metadata: {}
                     name: comorbidities
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *string_field
                     name: comorbidity_method_of_diagnosis
                   - <<: *string_field
@@ -1923,8 +1970,13 @@ fields:
                     name: risk_factor_method_of_diagnosis
                   - <<: *string_field
                     name: risk_factor_treatment
-                  - <<: *string_field
+                  - metadata: {}
                     name: risk_factors
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *string_field
                     name: state
                   - <<: *string_field
@@ -1949,8 +2001,13 @@ fields:
                     name: undescended_testis_history_laterality
                   - <<: *string_field
                     name: updated_datetime
-                  - <<: *string_field
+                  - metadata: {}
                     name: viral_hepatitis_serology_tests
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType: string
+                      type: array
                   - <<: *double_field
                     name: weeks_gestation_at_birth
                   - <<: *double_field
@@ -2018,8 +2075,13 @@ fields:
           name: intended_release_date
         - <<: *string_field
           name: name
-        - <<: *string_field
+        - metadata: {}
           name: primary_site
+          nullable: true
+          type:
+            containsNull: true
+            elementType: string
+            type: array
         - metadata: {}
           name: program
           nullable: true

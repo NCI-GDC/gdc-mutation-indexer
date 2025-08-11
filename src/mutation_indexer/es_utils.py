@@ -11,7 +11,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final
+from typing import DefaultDict, Deque, Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -20,7 +20,6 @@ from elasticsearch import helpers
 from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import types
-from typing import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -446,6 +445,7 @@ class SchemaLoader:
         struct = types.StructType(
             list(self._convert_properties(mappings["properties"], included))
         )
+        include_as_arrays = _get_nested_document_properties(mappings).union(include_as_arrays)
 
         self._convert_to_arrays(struct, include_as_arrays)
 
