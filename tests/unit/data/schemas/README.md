@@ -48,7 +48,7 @@ type: struct
 ```
 
 ## Sync Case Schemas
-In order to ensure that the various case input schemas reflect the current mappings, this script load the mappings in gdc-models and updates the test schemas with the incoming changes.
+In order to ensure that the various case input schemas reflect the current mappings, this script loads the mappings in gdc-models and updates the test schemas with the incoming changes.
 
 Command:
 ```bash
