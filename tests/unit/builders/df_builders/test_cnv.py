@@ -103,12 +103,12 @@ class TestBuildCNVSubtree:
         return self.create_dataframe(ascats, self.ascat_schema)
 
     def arrange_consequence_df(
-        self, consequences: Iterable[models.CNVConsequence] = (models.CNVConsequence(),)
+        self, consequences: Iterable[models.consequence.CNV] = (models.consequence.CNV(),)
     ) -> sql.DataFrame:
         return self.create_dataframe(consequences, self.consequence_schema)
 
     def arrange_observation_df(
-        self, observations: Iterable[models.CNVObservation] = (models.CNVObservation(),)
+        self, observations: Iterable[models.observation.CNV] = (models.observation.CNV(),)
     ) -> sql.DataFrame:
         return self.create_dataframe(observations, self.observation_schema)
 
@@ -116,7 +116,7 @@ class TestBuildCNVSubtree:
     def test__with_observations(self, index_name: str) -> None:
         ascat = models.ASCAT()
         ascat_df = self.arrange_ascat_df((ascat,))
-        observation_wrapper = models.CNVObservation()
+        observation_wrapper = models.observation.CNV()
         observation_df = self.arrange_observation_df((observation_wrapper,))
 
         result_df = df_builders.build_cnv_subtree(
@@ -156,7 +156,7 @@ class TestBuildCNVSubtree:
     def test__with_consequences(self) -> None:
         ascat = models.ASCAT()
         ascat_df = self.arrange_ascat_df((ascat,))
-        consequence_wrapper = models.CNVConsequence()
+        consequence_wrapper = models.consequence.CNV()
         consequence_df = self.arrange_consequence_df((consequence_wrapper,))
 
         result_df = df_builders.build_cnv_subtree(
