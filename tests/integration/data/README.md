@@ -1,5 +1,5 @@
 # Integration Test Data
-As we update the dictionary and its downstream gdc-models, it is important that we keep the in the test up to date with the structures in the mappings contained in gdc-models. Hence, this CLI exposes functions for ensuing this.
+As we update the dictionary and its downstream gdc-models, it is important that we keep the tests up to date with the structures in the mappings contained in gdc-models. Hence, this CLI exposes functions for ensuring this.
 
 ### Contents
 - [Remove Vestigial Data](#remove-vestigial-data)
