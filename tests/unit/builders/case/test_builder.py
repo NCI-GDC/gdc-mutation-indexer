@@ -5,13 +5,13 @@ import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from tests.unit import utils
-from tests.unit.builders.case.inputs import raw
-from tests.unit.data import schemas
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
+from tests.unit import utils
+from tests.unit.builders.case.inputs import raw
+from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
 
