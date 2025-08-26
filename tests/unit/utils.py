@@ -4,12 +4,42 @@ from collections.abc import Callable, Iterable
 from typing import Any, ClassVar, Protocol
 from unittest import mock
 
+from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
+from tests.unit.data import schemas
 
 DECIMAL_CONTEXT = decimal.Context(prec=6)  # 32 bit float has 6 to 7 significant digits.
+
+
+class AssertSchemasEqual:
+    """An assert which checks that the two schemas are the same.
+
+    NOTE: When the test-run is configured to do so via the `--update-schemas` flag, this
+    assert updates the final schema to reflect the actual output of the builder.
+    """
+
+    __slots__ = ("_are_schemas_updated",)
+
+    def __init__(self, are_schemas_updated: bool) -> None:
+        self._are_schemas_updated = are_schemas_updated
+
+    def __call__(
+        self,
+        actual_schema: types.StructType,
+        expected_schema: types.StructType,
+        expected_source: schemas.Schema,
+    ) -> None:
+        difference = diff.DeepDiff(actual_schema, expected_schema)
+
+        if self._are_schemas_updated:
+            expected_source.update(actual_schema)
+
+            return
+
+        assert not difference
 
 
 class DataClass(Protocol):

@@ -2,9 +2,9 @@ import dataclasses
 from collections.abc import Iterable
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
+from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
@@ -78,7 +78,7 @@ def assert_case_transformed(occurrence: sql.Row, case: models.Case) -> None:
     final_case = utils.convert_lists(final_case)
     expected_case = dataclasses.asdict(case)
 
-    assert not deepdiff.DeepDiff(final_case, expected_case)
+    assert not diff.DeepDiff(final_case, expected_case)
 
 
 def assert_occurrence_transformed(
@@ -97,6 +97,7 @@ class TestCNVCentricBuilder:
     def init_fixtures(
         self,
         create_dataframe: utils.CreateDataFrame,
+        assert_schemas_equal: utils.AssertSchemasEqual,
         ascat_schema: types.StructType,
         case_schema: types.StructType,
         consequence_schema: types.StructType,
@@ -104,6 +105,7 @@ class TestCNVCentricBuilder:
         final_schema: types.StructType,
     ) -> None:
         self._create_dataframe = create_dataframe
+        self._assert_schemas_equal = assert_schemas_equal
         self._ascat_schema = ascat_schema
         self._case_schema = case_schema
         self._consequence_schema = consequence_schema
@@ -149,6 +151,7 @@ class TestCNVCentricBuilder:
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
+    @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         """Tests a singular row.
 
@@ -168,7 +171,10 @@ class TestCNVCentricBuilder:
 
         assert result_df and isinstance(result_df, sql.DataFrame)
         assert result_df.count() == 1
-        assert result_df.schema == self._final_schema
+
+        self._assert_schemas_equal(
+            result_df.schema, self._final_schema, schemas.Viz.Builders.CNVCentric.FINAL
+        )
 
     def test__build__data_transformed(self) -> None:
         """Tests that data from sources are transformed to the output."""

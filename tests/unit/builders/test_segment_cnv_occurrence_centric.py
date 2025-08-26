@@ -4,9 +4,9 @@ import dataclasses
 from collections.abc import Iterable
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
+from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
@@ -62,7 +62,7 @@ def assert_case_transformed(case_data: sql.Row, case: models.Case) -> None:
     final_case = utils.convert_lists(final_case)
     expected_case = dataclasses.asdict(case)
 
-    assert not deepdiff.DeepDiff(final_case, expected_case)
+    assert not diff.DeepDiff(final_case, expected_case)
 
 
 def assert_observation_grouped_transformed(
@@ -86,11 +86,13 @@ class TestSegmentCNVOccurrenceCentricBuilder:
     def initialize_fixtures(
         self,
         create_dataframe: utils.CreateDataFrame,
+        assert_schemas_equal: utils.AssertSchemasEqual,
         segment_cnv_schema: types.StructType,
         case_schema: types.StructType,
         final_schema: types.StructType,
     ) -> None:
         self._create_dataframe = create_dataframe
+        self._assert_schemas_equal = assert_schemas_equal
         self._segment_cnv_schema = segment_cnv_schema
         self._case_schema = case_schema
         self._final_schema = final_schema
@@ -137,8 +139,14 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
 
+        self._assert_schemas_equal(
+            result_df.schema,
+            self._final_schema,
+            schemas.Viz.Builders.SegmentCNVOccurrenceCentric.FINAL,
+        )
+
+    @pytest.mark.case_schema_dependent
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segment cnv centric dataframe.
 
@@ -159,7 +167,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.segment_cnv_occurrence_id == segment_cnv.occurrence_id
@@ -206,7 +213,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert result_row.segment_cnv_occurrence_id == segment_cnvs[0].occurrence_id

@@ -5,18 +5,20 @@ import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from tests.unit.builders.case.inputs import raw
-from tests.unit.data import schemas
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
+from tests.unit import utils
+from tests.unit.builders.case.inputs import raw
+from tests.unit.data import schemas
 
 CASE_ID_SCHEMA = "case_id: string"
 
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
+    # Hello
     return schemas.Viz.Builders.Case.RAW.load()
 
 
@@ -30,10 +32,12 @@ class TestCaseBuilder:
     def initialize_fixtures(
         self,
         spark_session: sql.SparkSession,
+        assert_schemas_equal: utils.AssertSchemasEqual,
         case_schema: types.StructType,
         final_schema: types.StructType,
     ) -> None:
         self.spark_session = spark_session
+        self.assert_schemas_equal = assert_schemas_equal
         self.case_schema = case_schema
         self.final_schema = final_schema
 
@@ -91,6 +95,7 @@ class TestCaseBuilder:
 
         return selector
 
+    @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         config = self.arrange_config()
         spark_session = mock.MagicMock()
@@ -102,7 +107,10 @@ class TestCaseBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert result_df.schema == self.final_schema
+
+        self.assert_schemas_equal(
+            result_df.schema, self.final_schema, schemas.Viz.Builders.Case.FINAL
+        )
 
     def test__build__data_translated(self) -> None:
         config = self.arrange_config()

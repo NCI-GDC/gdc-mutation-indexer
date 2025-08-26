@@ -14,6 +14,7 @@ spark instance through which pyspark/spark functionality are run.
 - [Elasticsearch](#elasticsearch)
 - [Java](#java)
 - [Tools](#tools)
+  - [Integration Data](integration/data/README.md)
   - [Models](unit/data/models/README.md)
   - [Schemas](unit/data/schemas/README.md)
 
