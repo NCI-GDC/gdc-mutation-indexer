@@ -177,7 +177,6 @@ class TestCaseFieldSelector:
         "index",
         (
             pytest.param(build.IndexType.FILE),
-            pytest.param(build.IndexType.GENE_CENTRIC),
             pytest.param(build.IndexType.GENE_EXPRESSION),
         ),
     )

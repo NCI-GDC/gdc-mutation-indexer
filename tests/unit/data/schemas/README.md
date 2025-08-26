@@ -5,6 +5,7 @@ these will be found in the main export/schemas directory.
 
 ### Contents
 - [Minimize](#minimize)
+- [Sync w/ Case](#sync-case-schemas)
 - [Translate Mapping](#translate-mapping)
 
 ## Minimize
@@ -44,6 +45,14 @@ fields:
 - <<: *string_field
   name: prop
 type: struct
+```
+
+## Sync Case Schemas
+In order to ensure that the various case input schemas reflect the current mappings, this script loads the mappings in gdc-models and updates the test schemas with the incoming changes.
+
+Command:
+```bash
+python -m tests.unit.data.schemas sync-case
 ```
 
 ## Translate Mapping
