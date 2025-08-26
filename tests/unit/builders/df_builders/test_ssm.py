@@ -106,7 +106,7 @@ class TestBuildSSMSubtree:
 
     def _arrange_consequence_df(
         self,
-        consequences: Iterable[models.SSMConsequence] = (models.SSMConsequence(),),
+        consequences: Iterable[models.consequence.SSM] = (models.consequence.SSM(),),
         drop_aa_change: bool = False,
         drop_genes: bool = False,
     ) -> sql.DataFrame:
@@ -125,7 +125,7 @@ class TestBuildSSMSubtree:
 
     def _arrange_observation_df(
         self,
-        observations: Iterable[models.SSMObservation] = (models.SSMObservation(),),
+        observations: Iterable[models.observation.SSM] = (models.observation.SSM(),),
     ) -> sql.DataFrame:
         df = self.create_dataframe(observations, self.observation_schema)
 
@@ -134,7 +134,7 @@ class TestBuildSSMSubtree:
     def test__occurrence(self) -> None:
         maf = models.MAF()
         maf_df = self._arrange_maf_df((maf,))
-        consequence_wrapper = models.SSMConsequence()
+        consequence_wrapper = models.consequence.SSM()
         consequence_df = self._arrange_consequence_df((consequence_wrapper,))
 
         result_df = df_builders.build_ssm_subtree(
@@ -242,11 +242,11 @@ class TestBuildSSMSubtree:
     def test__other(self, index_name: str) -> None:
         maf = models.MAF()
         maf_df = self._arrange_maf_df((maf,))
-        consequence_wrapper = models.SSMConsequence()
+        consequence_wrapper = models.consequence.SSM()
         consequence_df = self._arrange_consequence_df(
             (consequence_wrapper,), drop_aa_change=True, drop_genes=True
         )
-        observation_wrapper = models.SSMObservation()
+        observation_wrapper = models.observation.SSM()
         observation_df = self._arrange_observation_df((observation_wrapper,))
 
         result_df = df_builders.build_ssm_subtree(

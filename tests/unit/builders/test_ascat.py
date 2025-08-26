@@ -393,10 +393,12 @@ class TestAscatBuilder:
         )
 
     def test__build__canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = models.Transcript(
+        canonical_transcript = models.GeneModel.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.GeneModel.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         gene_model = (models.GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(gene_model=gene_model)
@@ -414,10 +416,12 @@ class TestAscatBuilder:
         )
 
     def test__build__null_canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = models.Transcript(
+        canonical_transcript = models.GeneModel.Transcript(
             length=None, length_cds=None, end=None, start=None, is_canonical=True
         )
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.GeneModel.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         gene_model = (models.GeneModel(transcripts=(other_transcript, canonical_transcript)),)
 
         inputs = self._arrange_input_dataframes(gene_model=gene_model)
@@ -433,7 +437,7 @@ class TestAscatBuilder:
     def test__build__canonical_transcript_lengths_no_canonical_transcript(
         self,
     ) -> None:
-        transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        transcript = models.GeneModel.Transcript(length=10, length_cds=3, end=122, start=100)
         gene_model = (models.GeneModel(transcripts=(transcript,)),)
 
         inputs = self._arrange_input_dataframes(gene_model=gene_model)

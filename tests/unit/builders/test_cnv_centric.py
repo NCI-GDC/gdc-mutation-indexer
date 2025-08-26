@@ -120,7 +120,7 @@ class TestCNVCentricBuilder:
         )
 
     def _arrange_consequence_builder(
-        self, consequences: Iterable[models.CNVConsequence] = (models.CNVConsequence(),)
+        self, consequences: Iterable[models.consequence.CNV] = (models.consequence.CNV(),)
     ) -> builders.ConsequenceBuilder:
         builder = mock.MagicMock(spec=builders.ConsequenceBuilder)
 
@@ -131,7 +131,7 @@ class TestCNVCentricBuilder:
         return builder
 
     def _arrange_observation_builder(
-        self, observations: Iterable[models.CNVObservation] = (models.CNVObservation(),)
+        self, observations: Iterable[models.observation.CNV] = (models.observation.CNV(),)
     ) -> builders.ObservationBuilder:
         builder = mock.MagicMock(spec=builders.ObservationBuilder)
 
@@ -180,12 +180,12 @@ class TestCNVCentricBuilder:
         """Tests that data from sources are transformed to the output."""
         ascat = models.ASCAT()
         case = models.Case()
-        consequence = models.CNVConsequence(
+        consequence = models.consequence.CNV(
             cnv_id=ascat.cnv_id,
             consequence=(
-                models.CNVConsequence.Consequence(
+                models.consequence.CNV.Consequence(
                     consequence_id=ascat.consequence_id,
-                    gene=models.CNVConsequence.Consequence.Gene(
+                    gene=models.consequence.CNV.Consequence.Gene(
                         biotype=ascat.biotype,
                         gene_id=ascat.gene_id,
                         is_cancer_gene_census=ascat.is_cancer_gene_census,
@@ -194,15 +194,15 @@ class TestCNVCentricBuilder:
                 ),
             ),
         )
-        observation = models.CNVObservation(
+        observation = models.observation.CNV(
             cnv_id=ascat.cnv_id,
             case_id=ascat.case_id,
             occurrence_id=ascat.occurrence_id,
             observation=(
-                models.CNVObservation.Observation(
+                models.observation.CNV.Observation(
                     observation_id=ascat.observation_id,
                     src_file_id=ascat.src_file_id,
-                    variant_calling=models.CNVObservation.Observation.VariantCalling(
+                    variant_calling=models.observation.CNV.Observation.VariantCalling(
                         variant_caller=ascat.variant_caller
                     ),
                     variant_status=ascat.variant_status,
@@ -232,8 +232,8 @@ class TestCNVCentricBuilder:
     def test__build__occurrences_grouped(self) -> None:
         ascat = models.ASCAT()
         observations = (
-            models.CNVObservation(cnv_id=ascat.cnv_id, occurrence_id="occ-0"),
-            models.CNVObservation(cnv_id=ascat.cnv_id, occurrence_id="occ-1"),
+            models.observation.CNV(cnv_id=ascat.cnv_id, occurrence_id="occ-0"),
+            models.observation.CNV(cnv_id=ascat.cnv_id, occurrence_id="occ-1"),
         )
         config = self._arrange_config()
         consequence_builder = self._arrange_consequence_builder()
