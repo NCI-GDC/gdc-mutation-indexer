@@ -1,0 +1,18 @@
+# A Dummy configuration for loading default configuration values.
+
+[build]
+build_version = "v0"
+data_release = "test"
+
+[elasticsearch.connection]
+nodes = "localhost"
+password = ""
+use_ssl = false
+user = ""
+verify_certs = false
+
+[indexd]
+host = "localhost"
+password = ""
+port = 80
+user = ""
