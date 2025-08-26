@@ -218,7 +218,9 @@ def arrange_config() -> configuration.MAFBuilder:
     )
 
 
-def assert_domains_equal(result_domain: sql.Row, domain: models.Domain) -> None:
+def assert_domains_equal(
+    result_domain: sql.Row, domain: models.GeneModel.Transcript.Domain
+) -> None:
     assert result_domain.description == domain.description
     assert result_domain.end == domain.end
     assert result_domain.gff_source == domain.gff_source
@@ -227,7 +229,7 @@ def assert_domains_equal(result_domain: sql.Row, domain: models.Domain) -> None:
     assert result_domain.start == domain.start
 
 
-def assert_exons_equal(result_exon: sql.Row, exon: models.Exon) -> None:
+def assert_exons_equal(result_exon: sql.Row, exon: models.GeneModel.Transcript.Exon) -> None:
     assert result_exon.cdna_coding_end == exon.cdna_coding_end
     assert result_exon.cdna_coding_start == exon.cdna_coding_start
     assert result_exon.cdna_end == exon.cdna_end
@@ -242,7 +244,7 @@ def assert_exons_equal(result_exon: sql.Row, exon: models.Exon) -> None:
 
 
 def assert_transcripts_equal(
-    result_transcript: sql.Row, transcript: models.Transcript
+    result_transcript: sql.Row, transcript: models.GeneModel.Transcript
 ) -> None:
     assert result_transcript.biotype == transcript.biotype
     assert result_transcript.cdna_coding_end == transcript.cdna_coding_end
@@ -403,8 +405,8 @@ class TestMAFBuilder:
     def arrange_inputs(
         self,
         gene_model: Iterable[models.GeneModel] = (models.GeneModel(),),
-        dna_annotations: Iterable[models.CIVIC.DNA] = (),
-        protein_annotations: Iterable[models.CIVIC.Protein] = (),
+        dna_annotations: Iterable[models.civic.DNA] = (),
+        protein_annotations: Iterable[models.civic.Protein] = (),
     ) -> dict[str, sql.DataFrame]:
         gene_model_df = self.create_dataframe(gene_model, self.gene_model_schema)
         dna_df = self.create_dataframe(dna_annotations, self.civic_dna_schema)
@@ -712,10 +714,12 @@ class TestMAFBuilder:
         assert result_row.sift_score == sift_score
 
     def test__build__canonical_transcript_lengths_added(self) -> None:
-        canonical_transcript = models.Transcript(
+        canonical_transcript = models.GeneModel.Transcript(
             length=100, length_cds=30, end=1222, start=1000, is_canonical=True
         )
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.GeneModel.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         gene_model = (models.GeneModel(transcripts=(canonical_transcript, other_transcript)),)
 
         inputs = self.arrange_inputs(gene_model=gene_model)
@@ -732,7 +736,9 @@ class TestMAFBuilder:
         )
 
     def test__build__canonical_transcript_lengths_no_canonical_transcipt(self) -> None:
-        other_transcript = models.Transcript(length=10, length_cds=3, end=122, start=100)
+        other_transcript = models.GeneModel.Transcript(
+            length=10, length_cds=3, end=122, start=100
+        )
         gene_model = (models.GeneModel(transcripts=(other_transcript,)),)
 
         inputs = self.arrange_inputs(gene_model=gene_model)
@@ -816,8 +822,8 @@ class TestMAFBuilder:
         assert result_row.civic_variant_id is None
 
     def test__build__dna_selected_over_protein(self) -> None:
-        dna = models.CIVIC.DNA()
-        protein = models.CIVIC.Protein()
+        dna = models.civic.DNA()
+        protein = models.civic.Protein()
         inputs = self.arrange_inputs(dna_annotations=(dna,), protein_annotations=(protein,))
         builder = self.arrange_builder()
 
@@ -828,7 +834,7 @@ class TestMAFBuilder:
         assert result_row.civic_variant_id == dna.civic_variant_id
 
     def test__build__protein_selected_if_dna_not_found(self) -> None:
-        protein = models.CIVIC.Protein()
+        protein = models.civic.Protein()
         inputs = self.arrange_inputs(dna_annotations=(), protein_annotations=(protein,))
         builder = self.arrange_builder()
 
