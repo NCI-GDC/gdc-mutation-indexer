@@ -1,12 +1,11 @@
 from collections.abc import Iterable, Set
+from typing import TypedDict
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from typing import TypedDict
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import adapter
@@ -152,6 +151,7 @@ class TestCaseCentricBuilder:
         self,
         spark_session: sql.SparkSession,
         create_dataframe: utils.CreateDataFrame,
+        assert_schemas_equal: utils.AssertSchemasEqual,
         maf_metadata_schema: types.StructType,
         maf_schema: types.StructType,
         ascat_metadata_schema: types.StructType,
@@ -167,6 +167,7 @@ class TestCaseCentricBuilder:
     ) -> None:
         self.spark_session = spark_session
         self.create_dataframe = create_dataframe
+        self.assert_schemas_equal = assert_schemas_equal
         self.maf_metadata_schema = maf_metadata_schema
         self.maf_schema = maf_schema
         self.ascat_metadata_schema = ascat_metadata_schema
@@ -271,6 +272,7 @@ class TestCaseCentricBuilder:
             segment_cnv_metadata_df=segment_cnv_metadata_df,
         )
 
+    @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         config = self.arrange_config()
         sql_context = self.arrange_sql_context()
@@ -294,8 +296,11 @@ class TestCaseCentricBuilder:
             builder.case_centric, sql.DataFrame
         )
         assert builder.case_centric.count() == 1
-        assert not deepdiff.DeepDiff(
-            builder.case_centric.schema, self.final_schema, ignore_order=True
+
+        self.assert_schemas_equal(
+            builder.case_centric.schema,
+            self.final_schema,
+            schemas.Viz.Builders.CaseCentric.FINAL,
         )
 
     def test__build__data_translated(self) -> None:

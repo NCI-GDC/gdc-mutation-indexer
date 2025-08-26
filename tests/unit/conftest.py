@@ -12,6 +12,11 @@ from pyspark.sql import types
 from tests.unit import utils
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """This adds an option so we can run the tests & update any final schemas."""
+    parser.addoption("--update-schemas", action="store_true")
+
+
 @pytest.fixture(scope="session")
 def spark_session() -> Generator[sql.SparkSession]:
     with (
@@ -63,3 +68,17 @@ def fake_hits_and_expectations(data_dir):
         )
 
     return load_hits_from_file
+
+
+@pytest.fixture
+def assert_schemas_equal(request: pytest.FixtureRequest) -> utils.AssertSchemasEqual:
+    """Use this fixture when checking the final output schema of a build.
+
+    NOTE: This fixture ensures when we run the tests with the `--update-schemas` flag that the
+    final schemas of each builder are updated with their actual outputs. This is important
+    when one or more of a builder's inputs change which happens for various reasons as the
+    codebase changes.
+    """
+    are_schemas_updated = request.config.getoption("--update-schemas")
+
+    return utils.AssertSchemasEqual(are_schemas_updated)

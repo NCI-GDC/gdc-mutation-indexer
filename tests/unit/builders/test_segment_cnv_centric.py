@@ -4,9 +4,9 @@ import dataclasses
 from collections.abc import Iterable
 from unittest import mock
 
-import deepdiff
 import more_itertools
 import pytest
+from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
@@ -62,7 +62,7 @@ def assert_case_transformed(occurrence: sql.Row, case: models.Case) -> None:
     final_case = utils.convert_lists(final_case)
     expected_case = dataclasses.asdict(case)
 
-    assert not deepdiff.DeepDiff(final_case, expected_case)
+    assert not diff.DeepDiff(final_case, expected_case)
 
 
 def assert_occurrence_transformed(
@@ -97,11 +97,13 @@ class TestSegmentCNVCentricBuilder:
     def initialize_fixtures(
         self,
         create_dataframe: utils.CreateDataFrame,
+        assert_schemas_equal: utils.AssertSchemasEqual,
         segment_cnv_schema: types.StructType,
         case_schema: types.StructType,
         final_schema: types.StructType,
     ) -> None:
         self._create_dataframe = create_dataframe
+        self._assert_schemas_equal = assert_schemas_equal
         self._segment_cnv_schema = segment_cnv_schema
         self._case_schema = case_schema
         self._final_schema = final_schema
@@ -127,6 +129,7 @@ class TestSegmentCNVCentricBuilder:
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
+    @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         """Tests building a single row.
 
@@ -148,7 +151,10 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
+
+        self._assert_schemas_equal(
+            result_df.schema, self._final_schema, schemas.Viz.Builders.SegmentCNVCentric.FINAL
+        )
 
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segmetn cnv centric dataframe.
@@ -170,7 +176,6 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert_root_level_transformed(result_row, segment_cnv)
@@ -213,7 +218,6 @@ class TestSegmentCNVCentricBuilder:
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
-        assert not deepdiff.DeepDiff(result_df.schema, self._final_schema, ignore_order=True)
         result_row = more_itertools.one(result_df.collect())
 
         assert_root_level_transformed(result_row, segment_cnvs[0])
