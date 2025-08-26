@@ -2653,16 +2653,16 @@ fields:
             name: segment_cnv_id
           - <<: *string_field
             name: chromosome
+          - <<: *long_field
+            name: length
+          - <<: *long_field
+            name: start_position
+          - <<: *long_field
+            name: end_position
           - <<: *string_field
             name: cnv_change
           - <<: *string_field
             name: cnv_change_5_category
-          - <<: *long_field
-            name: end_position
-          - <<: *long_field
-            name: start_position
-          - <<: *long_field
-            name: length
           - metadata: {}
             name: observation
             nullable: false
@@ -2670,14 +2670,18 @@ fields:
               containsNull: false
               elementType:
                 fields:
-                  - <<: *integer_field
-                    name: copy_number
                   - <<: *string_field
                     name: observation_id
+                  - <<: *integer_field
+                    name: copy_number
                   - <<: *integer_field
                     name: sample_ploidy_integer
                   - <<: *string_field
                     name: src_file_id
+                  - metadata: {}
+                    name: variant_status
+                    nullable: false
+                    type: string
                   - metadata: {}
                     name: variant_calling
                     nullable: false
@@ -2686,10 +2690,6 @@ fields:
                         - <<: *string_field
                           name: variant_caller
                       type: struct
-                  - metadata: {}
-                    name: variant_status
-                    nullable: false
-                    type: string
                 type: struct
               type: array
         type: struct
