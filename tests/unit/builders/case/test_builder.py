@@ -18,6 +18,7 @@ CASE_ID_SCHEMA = "case_id: string"
 
 @pytest.fixture(scope="class")
 def case_schema() -> types.StructType:
+    # Hello
     return schemas.Viz.Builders.Case.RAW.load()
 
 
