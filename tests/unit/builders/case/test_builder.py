@@ -1,6 +1,3 @@
-import random
-import string
-import sys
 from collections.abc import Iterable
 from unittest import mock
 
@@ -16,18 +13,6 @@ from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
 
 CASE_ID_SCHEMA = "case_id: string"
-
-
-def random_string() -> str:
-    return "".join(random.choice(string.ascii_letters) for i in range(10))
-
-
-def random_integer() -> int:
-    return random.randint(0, sys.maxsize)
-
-
-def random_float() -> float:
-    return random.random() + random.randint(0, 100_000_000_000)
 
 
 @pytest.fixture(scope="class")
