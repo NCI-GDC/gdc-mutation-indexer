@@ -1,5 +1,6 @@
 import collections
 import functools
+import itertools
 import json
 from collections.abc import (
     Collection,
@@ -11,7 +12,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final
+from typing import DefaultDict, Deque, Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -20,7 +21,6 @@ from elasticsearch import helpers
 from gdcmodels import esmodels, mapper
 from pyspark import sql
 from pyspark.sql import types
-from typing import Literal
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
@@ -197,7 +197,9 @@ class CaseFieldSelector:
             build.IndexType.CASE_CENTRIC: "",
             build.IndexType.CNV_CENTRIC: "occurrence.case",
             build.IndexType.CNV_OCCURRENCE_CENTRIC: "case",
+            build.IndexType.GENE_CENTRIC: "case",
             build.IndexType.SEGMENT_CNV_CENTRIC: "occurrence.case",
+            build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC: "case",
             build.IndexType.SSM_CENTRIC: "occurrence.case",
             build.IndexType.SSM_OCCURRENCE_CENTRIC: "case",
         }
@@ -213,7 +215,7 @@ class CaseFieldSelector:
         included_fields: Iterable[str] | None,
     ) -> Set[str]:
         if index_type not in self.CASE_PREFIXES:
-            raise ValueError(f"Index: {index_type} is not supported.")
+            raise ValueError(f"Index: {index_type.name} is not supported.")
 
         prefix = self.CASE_PREFIXES[index_type]
         path_to_fields = (
@@ -445,6 +447,10 @@ class SchemaLoader:
         included = DefaultTree() if source_filter is True else _parse_tree(source_filter)
         struct = types.StructType(
             list(self._convert_properties(mappings["properties"], included))
+        )
+        # Always ensure that nested fields are included as arrays.
+        include_as_arrays = frozenset(
+            itertools.chain(include_as_arrays, _get_nested_document_properties(mappings))
         )
 
         self._convert_to_arrays(struct, include_as_arrays)

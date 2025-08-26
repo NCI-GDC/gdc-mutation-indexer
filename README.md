@@ -13,8 +13,9 @@ Backend for exporting mutation indices for visualization on the GDC
   - [Elasticsearch](tests/README.md#elasticsearch)
   - [Java](tests/README.md#java)
   - [Tools](tests/README.md#tools)
-    - [Models](tests/unit/data/models/README.md)
-    - [Schemas](tests/unit/data/schemas/README.md)
+    - [Integration Test Data](tests/integration/data/README.md)
+    - [Unit Test Models](tests/unit/data/models/README.md)
+    - [Unit Test Schemas](tests/unit/data/schemas/README.md)
 
 ## Architecture
 ![Indexer Architecture](https://user-images.githubusercontent.com/68259544/201140691-64d64079-ef62-4ee9-ac0f-5b16388dd8cd.png)

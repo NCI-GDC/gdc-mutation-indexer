@@ -2,7 +2,7 @@ import io
 
 import click
 
-from tests.unit.data.schemas import _minimize, _translate_mapping
+from tests.unit.data.schemas import _minimize, _sync, _translate_mapping
 
 
 @click.group
@@ -21,6 +21,12 @@ def cli() -> None:
 def minimize(schemas: str) -> None:
     """A tool for minimizing yaml files using anchors to reduce the amount of repeated data."""
     _minimize.minimize_files(schemas)
+
+
+@cli.command("sync-case")
+def sync_case() -> None:
+    """Syncs input schemas based on the graph case index w/ the GDC mapping for the index."""
+    _sync.sync_case()
 
 
 @cli.command()

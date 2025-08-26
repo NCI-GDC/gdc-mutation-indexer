@@ -1,9 +1,9 @@
 import abc
 import logging
+from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing import TypedDict
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import bases
@@ -100,7 +100,9 @@ class CaseBuilder(bases.InputBuilder[configuration.CaseBuilder, CaseInputs], Cas
             build.IndexType.CASE,
             build.IndexType.CNV_CENTRIC,
             build.IndexType.CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.GENE_CENTRIC,
             build.IndexType.SEGMENT_CNV_CENTRIC,
+            build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,
             build.IndexType.SSM_CENTRIC,
             build.IndexType.SSM_OCCURRENCE_CENTRIC,
         )
