@@ -26,7 +26,6 @@ botocore-stubs==1.38.30
     # via boto3-stubs
 certifi==2025.6.15
     # via
-    #   elastic-transport
     #   elasticsearch
     #   requests
 charset-normalizer==3.4.2
@@ -55,7 +54,7 @@ frozenlist==1.7.0
     # via
     #   aiohttp
     #   aiosignal
-gdcmodels==5.10
+gdcmodels==5.11.1
     # via gdc-mutation-indexer (pyproject.toml)
 halo==0.0.31
     # via gdc-mutation-indexer (pyproject.toml)
@@ -64,8 +63,12 @@ idna==3.10
     #   requests
     #   yarl
 importlib-resources==6.5.2
-    # via gdc-mutation-indexer (pyproject.toml)
+    # via
+    #   gdc-mutation-indexer (pyproject.toml)
+    #   gdcmodels
 indexclient==2.7
+    # via gdc-mutation-indexer (pyproject.toml)
+inflect==7.5.0
     # via gdc-mutation-indexer (pyproject.toml)
 iniconfig==2.1.0
     # via pytest
@@ -87,11 +90,12 @@ more-itertools==10.7.0
     # via
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
+    #   inflect
 multidict==6.5.0
     # via
     #   aiohttp
     #   yarl
-mutation-indexer-resource @ git+ssh://git@github.com/NCI-GDC/mutation-indexer-resource.git@1.0.0
+mutation-indexer-resource==1.0.0
     # via gdc-mutation-indexer (pyproject.toml)
 mypy-boto3-s3==1.38.39
     # via boto3-stubs
@@ -147,7 +151,9 @@ tomli-w==1.2.0
 typed-argument-parser==1.10.1
     # via gdc-mutation-indexer (pyproject.toml)
 typeguard==4.4.4
-    # via marshmallow-dataclass
+    # via
+    #   inflect
+    #   marshmallow-dataclass
 types-awscrt==0.27.2
     # via botocore-stubs
 types-s3transfer==0.13.0

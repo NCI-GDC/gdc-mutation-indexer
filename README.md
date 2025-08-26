@@ -8,6 +8,7 @@ Backend for exporting mutation indices for visualization on the GDC
 - [Architecture](#architecture)
 - [Style Guide](#style-guide)
 - [Pre-Commit](#setup-pre-commit-hook-to-check-for-secrets)
+- [Updating Models](#update-gdc-models)
 - [Tests](tests/README.md)
   - [Running Tests](tests/README.md#running-tests)
   - [Elasticsearch](tests/README.md#elasticsearch)
@@ -48,4 +49,13 @@ git add .secrets.baseline
 
 ```
 detect-secrets audit .secrets.baseline
+```
+
+## Update GDC Models
+After the dictionary is updated, any changes to the case structures in the various indices should be reflected in a new version of the gdc-models package. In order to ensure that Mutation Indexer is building these new mappings, we need to update it with the latest version. We also need to ensure that our test data continues to reflect the expected inputs from the graph/case index and that derived components of the viz mappings are built accordingly. To do this, we have several scripts within the Mutation Indexer test suite which ease this process and an orchestration script which should generally handle most updates. This said, its is encouraged for users to explore these test scripts and their individual functionality as they can be helpful in other stages of development in Mutation Indexer; please see [tools](tests/README.md#tools). Below is the command for running the orchestration script for general updates to the models.
+
+Command:
+```bash
+# Make sure you have sourced your venv!
+bin/update_models.sh
 ```

@@ -45,9 +45,9 @@ class Case:
     class Diagnosis:
         @dataclasses.dataclass(frozen=True)
         class PathologyDetail:
-            anaplasia_present: str | None = "No"
+            anaplasia_present: str | None = None
             anaplasia_present_type: str | None = "Unknown"
-            bone_marrow_malignant_cells: str | None = "No"
+            bone_marrow_malignant_cells: str | None = None
             breslow_thickness: float | None = 3.0
             circumferential_resection_margin: float | None = 6.0
             columnar_mucosa_present: str | None = None
@@ -60,16 +60,16 @@ class Case:
             lymph_node_involvement: str | None = "Positive"
             lymph_nodes_positive: int | None = 1
             lymph_nodes_tested: int | None = 7
-            lymphatic_invasion_present: str | None = "Yes"
+            lymphatic_invasion_present: str | None = "True"
             margin_status: str | None = "Uninvolved"
             metaplasia_present: str | None = None
             morphologic_architectural_pattern: str | None = "Cohesive"
             non_nodal_regional_disease: str | None = None
-            non_nodal_tumor_deposits: str | None = "Yes"
+            non_nodal_tumor_deposits: str | None = "True"
             number_proliferating_cells: int | None = None
             pathology_detail_id: str | None = "pathology-detail-0"
             percent_tumor_invasion: float | None = 8.3
-            perineural_invasion_present: str | None = "No"
+            perineural_invasion_present: str | None = None
             peripancreatic_lymph_nodes_positive: str | None = "1-3"
             peripancreatic_lymph_nodes_tested: int | None = 77
             prostatic_chips_positive_count: float | None = None
@@ -79,7 +79,7 @@ class Case:
             submitter_id: str | None = "TEST-UNIT-submitter-0"
             transglottic_extension: str | None = "Present"
             tumor_largest_dimension_diameter: float | None = 3.0
-            vascular_invasion_present: str | None = "Yes"
+            vascular_invasion_present: str | None = "True"
             vascular_invasion_type: str | None = "No Vascular Invasion"
 
             def assert_equals(self, row: sql.Row) -> bool:
@@ -145,7 +145,7 @@ class Case:
 
         @dataclasses.dataclass(frozen=True)
         class Treatment:
-            chemo_concurrent_to_radiation: str | None = "Yes"
+            chemo_concurrent_to_radiation: str | None = "True"
             days_to_treatment_end: int | None = 1189
             days_to_treatment_start: int | None = 1140
             initial_disease_status: str | None = "Recurrent Disease"
@@ -154,12 +154,11 @@ class Case:
             state: str | None = "released"
             submitter_id: str | None = "TEST-UNIT-submitter-0"
             therapeutic_agents: str | None = "Gemcitabine Hydrochloride"
-            treatment_anatomic_site: str | None = None
             treatment_dose: int | None = 6952
             treatment_frequency: str | None = "Once Weekly"
             treatment_id: str | None = "treatment-0"
             treatment_intent_type: str | None = "Adjuvant"
-            treatment_or_therapy: str | None = "no"
+            treatment_or_therapy: str | None = None
             treatment_outcome: str | None = "Not Reported"
             treatment_type: str | None = "Radiation Therapy, NOS"
 
@@ -174,7 +173,6 @@ class Case:
                 assert row.state == self.state
                 assert row.submitter_id == self.submitter_id
                 assert row.therapeutic_agents == self.therapeutic_agents
-                assert row.treatment_anatomic_site == self.treatment_anatomic_site
                 assert row.treatment_dose == self.treatment_dose
                 assert row.treatment_frequency == self.treatment_frequency
                 assert row.treatment_id == self.treatment_id
@@ -195,9 +193,9 @@ class Case:
         ajcc_pathologic_stage: str | None = "Stage IB"
         ajcc_pathologic_t: str | None = "T1c"
         ajcc_staging_system_edition: str | None = "7th"
-        ann_arbor_b_symptoms: str | None = "Yes"
+        ann_arbor_b_symptoms: str | None = "True"
         ann_arbor_clinical_stage: str | None = "Stage III"
-        ann_arbor_extranodal_involvement: str | None = "No"
+        ann_arbor_extranodal_involvement: str | None = None
         ann_arbor_pathologic_stage: str | None = "Stage III"
         burkitt_lymphoma_clinical_variant: str | None = "Endemic"
         classification_of_tumor: str | None = "primary"
@@ -208,11 +206,11 @@ class Case:
         days_to_recurrence: float | None = 505.0
         diagnosis_id: str | None = "diagnosis-0"
         esophageal_columnar_dysplasia_degree: str | None = "High Grade Dysplasia"
-        esophageal_columnar_metaplasia_present: str | None = "Yes"
+        esophageal_columnar_metaplasia_present: str | None = "True"
         figo_stage: str | None = "Stage IIIC"
         figo_staging_edition_year: str | None = "2009"
-        gastric_esophageal_junction_involvement: str | None = "Yes"
-        goblet_cells_columnar_mucosa_present: str | None = "Yes"
+        gastric_esophageal_junction_involvement: str | None = "True"
+        goblet_cells_columnar_mucosa_present: str | None = "True"
         icd_10_code: str | None = "C56.9"
         igcccg_stage: str | None = "Good Prognosis"
         inss_stage: str | None = "Stage 4"
@@ -222,17 +220,14 @@ class Case:
         laterality: str | None = "Left"
         masaoka_stage: str | None = "Stage IIb"
         metastasis_at_diagnosis: str | None = "No Metastasis"
-        metastasis_at_diagnosis_site: str | None = None
         method_of_diagnosis: str | None = "Surgical Resection"
-        micropapillary_features: str | None = None
         morphology: str | None = "8441/3"
         pathology_details: tuple[PathologyDetail, ...] | None = (PathologyDetail(),)
-        pregnant_at_diagnosis: str | None = "No"
         primary_diagnosis: str | None = "Serous cystadenocarcinoma, NOS"
         primary_gleason_grade: str | None = "Pattern 3"
         prior_malignancy: str | None = "not reported"
-        prior_treatment: str | None = "No"
-        progression_or_recurrence: str | None = "Yes"
+        prior_treatment: str | None = None
+        progression_or_recurrence: str | None = "True"
         residual_disease: str | None = "R0"
         secondary_gleason_grade: str | None = "Pattern 4"
         site_of_resection_or_biopsy: str | None = "Ovary"
@@ -301,11 +296,8 @@ class Case:
             assert row.laterality == self.laterality
             assert row.masaoka_stage == self.masaoka_stage
             assert row.metastasis_at_diagnosis == self.metastasis_at_diagnosis
-            assert row.metastasis_at_diagnosis_site == self.metastasis_at_diagnosis_site
             assert row.method_of_diagnosis == self.method_of_diagnosis
-            assert row.micropapillary_features == self.micropapillary_features
             assert row.morphology == self.morphology
-            assert row.pregnant_at_diagnosis == self.pregnant_at_diagnosis
             assert row.primary_diagnosis == self.primary_diagnosis
             assert row.primary_gleason_grade == self.primary_gleason_grade
             assert row.prior_malignancy == self.prior_malignancy
@@ -333,36 +325,30 @@ class Case:
     @dataclasses.dataclass(frozen=True)
     class Exposure:
         alcohol_days_per_week: float | None = 7.0
-        alcohol_history: str | None = "Yes"
+        alcohol_history: str | None = "True"
         alcohol_intensity: str | None = "Drinker"
-        asbestos_exposure: str | None = None
         cigarettes_per_day: float | None = 20.0
         exposure_id: str | None = "exposure-0"
         pack_years_smoked: float | None = 83.0
-        radon_exposure: str | None = None
         state: str | None = "released"
         submitter_id: str | None = "TEST-UNIT-submitter-0"
         tobacco_smoking_onset_year: int | None = 1946
         tobacco_smoking_quit_year: int | None = 1981
         tobacco_smoking_status: str | None = "Current Smoker"
-        years_smoked: float | None = None
 
         def assert_equals(self, row: sql.Row) -> bool:
             assert row
             assert row.alcohol_days_per_week == self.alcohol_days_per_week
             assert row.alcohol_history == self.alcohol_history
             assert row.alcohol_intensity == self.alcohol_intensity
-            assert row.asbestos_exposure == self.asbestos_exposure
             assert row.cigarettes_per_day == self.cigarettes_per_day
             assert row.exposure_id == self.exposure_id
             assert row.pack_years_smoked == self.pack_years_smoked
-            assert row.radon_exposure == self.radon_exposure
             assert row.state == self.state
             assert row.submitter_id == self.submitter_id
             assert row.tobacco_smoking_onset_year == self.tobacco_smoking_onset_year
             assert row.tobacco_smoking_quit_year == self.tobacco_smoking_quit_year
             assert row.tobacco_smoking_status == self.tobacco_smoking_status
-            assert row.years_smoked == self.years_smoked
 
             return True
 
@@ -373,7 +359,7 @@ class Case:
         relationship_gender: str | None = "female"
         relationship_primary_diagnosis: str | None = "Lung Cancer"
         relationship_type: str | None = "Sibling"
-        relative_with_cancer_history: str | None = "no"
+        relative_with_cancer_history: str | None = None
         state: str | None = "released"
         submitter_id: str | None = "TEST-UNIT-submitter-0"
 
@@ -473,7 +459,7 @@ class Case:
     exposures: tuple[Exposure, ...] | None = (Exposure(),)
     family_histories: tuple[FamilyHistory, ...] | None = (FamilyHistory(),)
     index_date: str | None = "Diagnosis"
-    lost_to_followup: str | None = "No"
+    lost_to_followup: str | None = None
     primary_site: str | None = "Ovary"
     project: Project | None = Project()
     samples: tuple[Sample, ...] | None = (Sample(),)

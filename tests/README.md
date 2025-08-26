@@ -109,6 +109,9 @@ There are several tools included in the test suite in order to make several manu
 steps for generating data for the tests easier and faster. Please see the specific
 tools for more details.
 
+### [Integration Tools](integration/data/README.md)
+These are tools for keeping the input data in various integration data in sync with the latest data.
+
 ### [Model Tools](unit/data/models/README.md)
 These are tools for generating various input models for the test data.
 
