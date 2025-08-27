@@ -1,10 +1,9 @@
-from typing import AbstractSet, Generic, TypeVar
 from collections.abc import Mapping
+from typing import AbstractSet, Generic, TypedDict, TypeVar
 from unittest import mock
 
 import pytest
 from pyspark import sql
-from typing import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import builders

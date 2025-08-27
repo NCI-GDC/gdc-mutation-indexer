@@ -115,8 +115,8 @@ def setup_graph_indices(
     input_dir: pathlib.Path,
 ) -> Iterator[Any]:
     """Create graph indices with required docs."""
-    manager = test_setup.IndexManager(default_config, es_client, log)
-    loader = test_setup.DocumentLoader(default_config, es_client, log)
+    manager = test_setup.IndexManager(default_config, es_client)
+    loader = test_setup.DocumentLoader(default_config, es_client)
     data = {
         build.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
         build.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
@@ -138,7 +138,7 @@ def files_with_linked_cases(
 ) -> Iterator[Any]:
     input_path = input_dir.joinpath("files_with_linked_cases.ndjson")
 
-    with test_setup.DocumentLoader(default_config, es_client, log) as loader:
+    with test_setup.DocumentLoader(default_config, es_client) as loader:
         yield loader.load_docs(build.IndexType.FILE, input_path)
 
 

@@ -7,16 +7,13 @@ import inspect
 from collections.abc import Iterator
 from unittest import mock
 
-from mutation_indexer.builders import bases
-from mutation_indexer.builders import gene_expression as builders
-from mutation_indexer.builders import gene_model
 from mutation_indexer.constants import build
-from mutation_indexer.gene_expression import driver
+from mutation_indexer.gene_expression import builders, driver
 
 
 @contextlib.contextmanager
 def mock_builder(
-    builder: type[bases.Builder], is_called: bool = True
+    builder: type[builders.Builder], is_called: bool = True
 ) -> Iterator[mock.MagicMock]:
     """Mocks the given builder and ensures that it is properly called or not.
 
@@ -53,7 +50,7 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock_builder(builders.BinaryBuilder))
         stack.enter_context(mock_builder(builders.CaseBuilder))
         stack.enter_context(mock_builder(builders.CaseSQLBuilder))
-        stack.enter_context(mock_builder(gene_model.GeneModelBuilder))
+        stack.enter_context(mock_builder(builders.GeneModelBuilder))
         stack.enter_context(mock_builder(builders.GeneSQLBuilder))
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
@@ -77,7 +74,7 @@ def test__driver__runs_inputs() -> None:
         stack.enter_context(mock_builder(builders.BinaryBuilder))
         stack.enter_context(mock_builder(builders.CaseBuilder))
         stack.enter_context(mock_builder(builders.CaseSQLBuilder))
-        stack.enter_context(mock_builder(gene_model.GeneModelBuilder))
+        stack.enter_context(mock_builder(builders.GeneModelBuilder))
         stack.enter_context(mock_builder(builders.GeneSQLBuilder))
         stack.enter_context(mock_builder(builders.PrimaryAliquotBuilder))
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))

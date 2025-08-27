@@ -18,6 +18,8 @@ from mutation_indexer.constants import app, build
 T = TypeVar("T")
 TConfig = TypeVar("TConfig", bound=configuration.Configuration)
 
+logger = logging.getLogger(__name__)
+
 
 def _load_config(
     configuration: type[TConfig],
@@ -87,20 +89,12 @@ def remove_keys_from_dict(tree: dict, remove_keys: Container[str] | None) -> dic
 
 
 class IndexManager(ContextManager["IndexManager"]):
-    __slots__ = (
-        "_es",
-        "_logger",
-        "_graph_indices",
-        "_index_types",
-        "_skip_creation",
-        "_mappings_loader",
-    )
+    __slots__ = ("_es", "_graph_indices", "_index_types", "_skip_creation", "_mappings_loader")
 
     def __init__(
         self,
         config: configuration.Configuration,
         es: elasticsearch.Elasticsearch,
-        logger: logging.Logger,
         index_types: Iterable[build.IndexType] = (
             build.IndexType.FILE,
             build.IndexType.CASE,
@@ -108,7 +102,6 @@ class IndexManager(ContextManager["IndexManager"]):
         skip_creation: bool = False,
     ) -> None:
         self._es = es
-        self._logger = logger
         self._graph_indices = {
             build.IndexType.FILE: config.elasticsearch.read.file_index,
             build.IndexType.CASE: config.elasticsearch.read.case_index,
@@ -123,11 +116,11 @@ class IndexManager(ContextManager["IndexManager"]):
         model_mapper = self._mappings_loader.load_mapper(index_type)
 
         if self._es.indices.exists(index=index_name):
-            self._logger.info(f"Deleting existing index: {index_name}")
+            logger.info(f"Deleting existing index: {index_name}")
             self._es.indices.delete(index=index_name)
             self._es.indices.refresh()
 
-        self._logger.info(f"Creating index: {index_name}")
+        logger.info(f"Creating index: {index_name}")
         self._es.indices.create(
             index=index_name,
             settings=model_mapper.settings,
@@ -157,16 +150,14 @@ class IndexManager(ContextManager["IndexManager"]):
 
 
 class DocumentLoader(ContextManager["DocumentLoader"]):
-    __slots__ = ("_es", "_logger", "_graph_indices", "_id_fields", "_documents")
+    __slots__ = ("_es", "_graph_indices", "_id_fields", "_documents")
 
     def __init__(
         self,
         config: configuration.Configuration,
         es: elasticsearch.Elasticsearch,
-        logger: logging.Logger,
     ) -> None:
         self._es = es
-        self._logger = logger
         self._graph_indices = {
             build.IndexType.FILE: config.elasticsearch.read.file_index,
             build.IndexType.CASE: config.elasticsearch.read.case_index,
@@ -187,7 +178,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         for doc_type, ids in self._documents.items():
             if ids:
                 index_name = self._graph_indices[doc_type]
-                body = {"query": {"terms": {"file_id": list(ids)}}}
+                body = {"query": {"ids": {"values": tuple(ids)}}}
                 self._es.delete_by_query(index=index_name, body=body, refresh=True)
 
         return None
@@ -241,7 +232,7 @@ class DocumentLoader(ContextManager["DocumentLoader"]):
         index_name = self._graph_indices[index_type]
         actions = tuple(self._create_actions(inputs, index_name, index_type))
 
-        self._logger.info(f"Bulk loading {index_type} docs to the ES...")
+        logger.info(f"Bulk loading {index_type} docs to the ES...")
         helpers.bulk(self._es, actions, ignore=409)
 
         self._es.indices.refresh(index=index_name)

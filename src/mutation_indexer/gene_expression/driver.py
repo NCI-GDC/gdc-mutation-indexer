@@ -11,13 +11,10 @@ import mypy_boto3_s3 as s3
 from pyspark import sql
 
 from mutation_indexer import driver, es_utils, indexd_utils
-from mutation_indexer.builders import bases
-from mutation_indexer.builders import gene_expression as builders
-from mutation_indexer.builders import gene_model
 from mutation_indexer.configuration import aws
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
-from mutation_indexer.gene_expression import configuration
+from mutation_indexer.gene_expression import builders, configuration
 
 
 def _initialize_s3_client(config: aws.S3) -> s3.Client:
@@ -87,7 +84,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         config: configuration.Builders,
         index_types: Container[build.IndexType],
         dependencies: Dependencies,
-    ) -> Iterator[bases.Builder]:
+    ) -> Iterator[builders.Builder]:
         """Gets all builders associated with the GE driver & used by other builders.
 
         Args:
@@ -106,7 +103,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         yield builders.CaseSQLBuilder(
             config.case_sql, dependencies.spark_session, dependencies.sqlite_db
         )
-        yield gene_model.GeneModelBuilder(config.gene_model, dependencies.spark_session)
+        yield builders.GeneModelBuilder(config.gene_model, dependencies.spark_session)
         yield builders.GeneSQLBuilder(
             config.gene_sql, dependencies.spark_session, dependencies.sqlite_db
         )
@@ -132,7 +129,7 @@ class Driver(driver.Driver[configuration.Configuration]):
     @contextlib.contextmanager
     def _initialize_builders(
         self, config: configuration.Configuration, spark_session: sql.SparkSession
-    ) -> Iterator[Iterable[bases.Builder]]:
+    ) -> Iterator[Iterable[builders.Builder]]:
         with self._initialize_dependencies(config, spark_session) as dependencies:
             yield tuple(
                 self._builders(
