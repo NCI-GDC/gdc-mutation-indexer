@@ -118,6 +118,7 @@ class TestSegmentCNVOccurrenceCentricBuilder:
             "case_df": self._create_dataframe(cases, self._case_schema),
         }
 
+    @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         """Tests building a single row.
 
@@ -146,7 +147,6 @@ class TestSegmentCNVOccurrenceCentricBuilder:
             schemas.Viz.Builders.SegmentCNVOccurrenceCentric.FINAL,
         )
 
-    @pytest.mark.case_schema_dependent
     def test__build__data_transformed(self) -> None:
         """Test the correctness of the output segment cnv centric dataframe.
 

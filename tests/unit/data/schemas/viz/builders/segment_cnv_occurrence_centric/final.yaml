@@ -190,11 +190,7 @@ fields:
                 - <<: *string_field
                   name: metastasis_at_diagnosis
                 - <<: *string_field
-                  name: metastasis_at_diagnosis_site
-                - <<: *string_field
                   name: method_of_diagnosis
-                - <<: *string_field
-                  name: micropapillary_features
                 - <<: *string_field
                   name: morphology
                 - metadata: {}
@@ -279,8 +275,6 @@ fields:
                       type: struct
                     type: array
                 - <<: *string_field
-                  name: pregnant_at_diagnosis
-                - <<: *string_field
                   name: primary_diagnosis
                 - <<: *string_field
                   name: primary_gleason_grade
@@ -329,8 +323,6 @@ fields:
                           name: submitter_id
                         - <<: *string_field
                           name: therapeutic_agents
-                        - <<: *string_field
-                          name: treatment_anatomic_site
                         - <<: *long_field
                           name: treatment_dose
                         - <<: *string_field
@@ -368,16 +360,12 @@ fields:
                   name: alcohol_history
                 - <<: *string_field
                   name: alcohol_intensity
-                - <<: *string_field
-                  name: asbestos_exposure
                 - <<: *double_field
                   name: cigarettes_per_day
                 - <<: *string_field
                   name: exposure_id
                 - <<: *double_field
                   name: pack_years_smoked
-                - <<: *string_field
-                  name: radon_exposure
                 - <<: *string_field
                   name: state
                 - <<: *string_field
@@ -388,8 +376,6 @@ fields:
                   name: tobacco_smoking_quit_year
                 - <<: *string_field
                   name: tobacco_smoking_status
-                - <<: *double_field
-                  name: years_smoked
               type: struct
             type: array
         - metadata: {}

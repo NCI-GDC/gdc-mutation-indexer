@@ -1,0 +1,617 @@
+---
+a260_a280_ratio: 1.9
+aa_change: L858R
+access: controlled
+acl:
+  - phs000178
+adapter_content: PASS
+adapter_name: Ad2.22+Ad1.15
+adapter_sequence: GCCAAT
+additional_pathology_findings: Extravascular Matrix Loops
+adverse_event: Platelet Count Decreased
+adverse_event_grade: Grade 3
+age_at_diagnosis: 31232
+age_at_index: 85
+age_at_last_exposure: 32
+age_at_onset: 17
+age_is_obfuscated: true
+aids_risk_factors: Candidiasis
+ajcc_clinical_m: MX
+ajcc_clinical_n: N0
+ajcc_clinical_stage: Stage IV
+ajcc_clinical_t: T1
+ajcc_pathologic_m: MX
+ajcc_pathologic_n: N0
+ajcc_pathologic_stage: Stage IB
+ajcc_pathologic_t: T1c
+ajcc_serum_tumor_markers: S2
+ajcc_staging_system_edition: 7th
+alcohol_days_per_week: 7
+alcohol_drinks_per_day: 5
+alcohol_history: Yes
+alcohol_intensity: Drinker
+alcohol_type: Liquor
+aliquot_id: aliquot-0
+aliquot_ids:
+  - aliquot-0
+aliquot_quantity: 30.0
+aliquot_volume: 60.0
+amount: 65
+analysis_id: analysis-0
+analyte_id: analyte-0
+analyte_ids:
+  - analyte-0
+analyte_type: Repli-G (Qiagen) DNA
+analyte_volume: 20.0
+anaplasia_present: No
+anaplasia_present_type: Unknown
+aneuploidy: Monosomy
+ann_arbor_b_symptoms: Yes
+ann_arbor_clinical_stage: Stage III
+ann_arbor_extranodal_involvement: No
+ann_arbor_pathologic_stage: Stage III
+annotation_id: annotation-0
+antigen: HLA-DR
+archive_id: archive-0
+asbestos_exposure_type: Crocidolite
+average_base_quality: 36
+average_insert_size: 327
+average_read_length: 29
+barretts_esophagus_goblet_cells_present: Unknown
+base_caller_name: bcl2fastq2
+base_caller_version: v2.20.0.422
+basic_statistics: PASS
+bcr_id: IGC
+best_overall_response: CR-Complete Response
+biospecimen_anatomic_site: Bone
+biospecimen_laterality: Unknown
+biospecimen_type: Serum
+blood_test_normal_range_lower: 0.5
+blood_test_normal_range_upper: 1.5
+bmi: 31
+body_surface_area: 81.7363192
+bone_marrow_malignant_cells: No
+breslow_thickness: 3
+burkitt_lymphoma_clinical_variant: Endemic
+calgb_risk_group: Intermediate/Normal
+cancer_detection_method: Screening
+case_id: case-0
+case_submitter_id: TEST-UNIT-case-0
+category: Item is noncanonical
+cause_of_death: Cancer Related
+cause_of_death_source: Medical Record
+cd4_count: 621.0
+cdc_hiv_risk_factors: Heterosexual Contact
+cell_count: 113
+center_id: center-0
+center_type: GSC
+channel: Green
+chemical_exposure_type:
+  - Chemical Exposure, NOS
+chemo_concurrent_to_radiation: Yes
+child_pugh_classification: B
+chip_id: chip-0
+chip_position: R08C01
+chipseq_antibody: Unknown
+chipseq_target: Unknown
+chromosomal_translocation: t(6;11)(q27;q23)
+chromosome: chr17
+chromosome_arm: q
+cigarettes_per_day: 20
+circumferential_resection_margin: 6
+clark_level: IV
+classification: Notification
+classification_of_tumor: primary
+clinical_trial_indicator: No
+clonality: Clonal
+code: '10'
+cog_neuroblastoma_risk_group: High Risk
+cog_renal_stage: Stage I
+cog_rhabdomyosarcoma_risk_group: High Risk
+comorbidities:
+  - Myasthenia Gravis
+comorbidity_method_of_diagnosis: Radiology
+concentration: 0.5
+consent_type: Informed Consent
+consistent_pathology_review: Not Reported
+contamination: 0.008897097478955094
+contamination_error: 0.00048251285734173503
+copy_number: 3.3
+country_of_birth: United Kingdom
+country_of_residence_at_enrollment: United States
+course_number: 1
+created_datetime: '2022-02-03T19:01:23.631381-06:00'
+creation_datetime: 1259539200
+current_weight: 0.386
+cytoband: 1p36
+data_category: Simple Nucleotide Variation
+data_format: TBI
+data_type: Somatic Mutation Index
+days_to_best_overall_response: 850
+days_to_birth: -31232
+days_to_collection: 807
+days_to_comorbidity: -198
+days_to_consent: 15
+days_to_death: 1324
+days_to_diagnosis: 505
+days_to_first_event: 383
+days_to_follow_up: 84
+days_to_imaging: 30
+days_to_last_follow_up: 84.0
+days_to_last_known_disease_status: 510.0
+days_to_lost_to_followup: 600
+days_to_progression: 153
+days_to_progression_free: 4717
+days_to_recurrence: 505
+days_to_risk_factor: -198
+days_to_sample_procurement: -18
+days_to_test: -6
+days_to_treatment_end: 1189
+days_to_treatment_start: 1140
+dbgap_accession_number: phs000178
+demographic_id: demographic-0
+diabetes_treatment_type: Injected Insulin
+diagnosis_id: diagnosis-0
+diagnosis_ids:
+  - diagnosis-0
+diagnosis_is_primary_disease: true
+diagnosis_pathologically_confirmed: Yes
+discontiguous_lesion_count: 3
+disease_response: WT-With Tumor
+disease_type: Cystic, Mucinous and Serous Neoplasms
+dlco_ref_predictive_percent: 43
+double_expressor_lymphoma: No
+double_hit_lymphoma: No
+drug_category: Platinum
+ecog_performance_status: '0'
+eln_risk_classification: Adverse
+encoding: Sanger / Illumina 1.9
+enneking_msts_grade: High Grade (G2)
+enneking_msts_metastasis: No Metastasis (M0)
+enneking_msts_tumor_site: Extracompartmental (T2)
+ensat_clinical_m: M1
+ensat_pathologic_n: N1
+ensat_pathologic_stage: Stage IV
+ensat_pathologic_t: T2
+entity_id: entity-0
+entity_submitter_id: TEST-UNIT-entity-0
+entity_type: portion
+epithelioid_cell_percent_range: '>90%'
+error_type: file_size
+esophageal_columnar_dysplasia_degree: High Grade Dysplasia
+esophageal_columnar_metaplasia_present: Yes
+ethnicity: not hispanic or latino
+evidence_of_progression_type: Biopsy with Histologic Confirmation
+evidence_of_recurrence_type: Convincing Image Source
+exon: '17'
+experiment_name: 240620_UNC41-A00434_0777_AHJ332DSXC_AGAGGCTC-ACTGAGAC_S232_L003
+experimental_protocol_type: Repli-G
+experimental_strategy: WXS
+exposure_duration_years: 23
+exposure_id: exposure-0
+exposure_source: Occupational
+exposure_type: Tobacco
+extracapsular_extension: Extensive
+extracapsular_extension_present: Yes
+extranodal_extension: Gross Extension
+extraocular_nodule_size: <=5mm
+extrascleral_extension_present: No
+extrathyroid_extension: None
+eye_color: Unknown
+fab_morphology_code: M1
+family_history_id: family-history-0
+fastq_name: 126378_s.fq
+fev1_fvc_post_bronch_percent: 71
+fev1_fvc_pre_bronch_percent: 36
+fev1_ref_post_bronch_percent: 71
+fev1_ref_pre_bronch_percent: 31
+figo_stage: Stage IIIC
+figo_staging_edition_year: '2009'
+file_count: 1
+file_id: file-0
+file_name: TEST-UNIT.important_file.vcf.gz.tbi
+file_size: 5777
+first_event: Relapse
+first_symptom_longest_duration: '>=181 Days'
+first_symptom_prior_to_diagnosis: Sensory Changes
+flow_cell_barcode: AHJ332DSXC
+follow_up_id: follow-up-0
+fragment_maximum_length: 247531395
+fragment_mean_length: 325.86892
+fragment_minimum_length: 2
+fragment_standard_deviation_length: 106.90892
+freezing_method: None
+gastric_esophageal_junction_involvement: Yes
+gender: female
+gene_symbol: KRAS
+gleason_grade_tertiary: Pattern 5
+gleason_score: 7
+goblet_cells_columnar_mucosa_present: Yes
+greatest_tumor_dimension: 3
+gross_tumor_weight: 300
+haart_treatment_indicator: No
+height: 148
+hepatitis_sustained_virological_response: No
+histologic_progression: No
+histone_family: H3
+history_of_tumor: No
+history_of_tumor_type: Phenochromocytoma or Paraganglioma
+hiv_viral_load: 46414.0
+hormonal_contraceptive_type: Unknown
+hormonal_contraceptive_use: Never Used
+hormonal_replacement_therapy_status: Yes
+hormone_replacement_therapy_type: Progesterone and Estrogen
+hpv_strain: HPV70
+hysterectomy_margins_involved: None
+hysterectomy_type: Radical Hysterectomy
+icd_10_code: C56.9
+igcccg_stage: Good Prognosis
+imaging_anatomic_site:
+  - Pleura
+imaging_findings: No Evidence of Extraprostatic Extension
+imaging_result: Negative
+imaging_suv: 18.5
+imaging_suv_max: 6
+imaging_type: CT Scan
+immunosuppressive_treatment_type: Methotrexate
+includes_spike_ins: true
+index_date: Diagnosis
+initial_disease_status: Recurrent Disease
+initial_weight: 130.0
+inpc_grade: Undifferentiated or Poorly Differentiated
+inpc_histologic_group: Unfavorable
+inrg_stage: M
+inss_stage: Stage 4
+instrument_model: Illumina HiSeq 4000
+intermediate_dimension: 0.7
+international_prognostic_index: High Risk
+intratubular_germ_cell_neoplasia_present: Yes
+irs_group: Group IV
+is_ffpe: true
+is_paired_end: true
+ishak_fibrosis_score: 1,2 - Portal Fibrosis
+iss_stage: I
+karnofsky_performance_status: '100'
+kmer_content: FAIL
+laboratory_test: Alpha Fetoprotein
+lane_number: 1
+largest_extrapelvic_peritoneal_focus: Macroscopic (greater than 2cm)
+last_known_disease_status: Distant met recurrence/progression
+laterality: Left
+legacy_created_datetime: 'null'
+library_name: 00C0029551
+library_preparation_kit_catalog_number: KK8505
+library_preparation_kit_name: NEXTFLEX Small RNA Sequencing Kit V4
+library_preparation_kit_vendor: Illumina
+library_preparation_kit_version: v1.1
+library_selection: rRNA Depletion
+library_strand: First_Stranded
+library_strategy: miRNA-Seq
+loci_abnormal_count: 5
+loci_count: 5
+longest_dimension: 0.8
+lost_to_followup: No
+lymph_node_dissection_method: Functional (Limited) Neck Dissection
+lymph_node_dissection_site: Retroperitoneal
+lymph_node_involved_site: Pelvis, NOS
+lymph_node_involvement: Positive
+lymph_nodes_positive: 1
+lymph_nodes_removed: No
+lymph_nodes_tested: 7
+lymphatic_invasion_present: Yes
+magnification: 20
+margin_distance: 4
+margin_status: Uninvolved
+margins_involved_site: Unknown
+masaoka_stage: Stage IIb
+max_tumor_bulk_site: Cervical lymph nodes
+md5sum: ffffffffffffffffffffffffffffffff
+mean_coverage: 91.211552
+measurement_type: Pathologic
+measurement_unit: Centimeters
+medulloblastoma_molecular_classification: Not Determined
+melanoma_known_primary: Yes
+menopause_status: Postmenopausal
+metastasis_at_diagnosis: No Metastasis
+method_of_diagnosis: Surgical Resection
+method_of_sample_procurement: Needle Biopsy
+mismatch_repair_mutation: Yes
+mitosis_karyorrhexis_index: Intermediate
+mitotic_count: 32
+molecular_analysis_method: Not Reported
+molecular_consequence: Exon Variant
+molecular_test_id: molecular-test-0
+morphologic_architectural_pattern: Cohesive
+morphology: 8441/3
+msi_score: 0.0290948275862
+msi_status: MSS
+multiplex_barcode: AGAGGCTC+ACTGAGAC
+mutation_codon: '12'
+myasthenia_gravis_classification: Class V
+nadir_cd4_count: 225.0
+name: Baylor College of Medicine
+namespace: hgsc.bcm.edu
+necrosis_percent: 10
+necrosis_present: Yes
+no_matched_normal_targeted_sequencing: true
+no_matched_normal_wgs: true
+no_matched_normal_wxs: true
+non_nodal_tumor_deposits: Yes
+normal_tumor_genotype_snp_match: Yes
+notes: CPTAC Proteomics OV PNNL
+number_expect_cells: 9000
+number_of_cycles: 3
+number_of_fractions: 25
+number_of_pregnancies: '3'
+occupation_duration_years: 23
+occupation_type:
+  - Armed Forces Occupations, Other Ranks
+other_clinical_attribute_id: other-clinical-attribute-0
+ovarian_specimen_status: Ovarian Capsule Intact
+ovarian_surface_involvement: Present
+overrepresented_sequences: PASS
+pack_years_smoked: 83
+pairs_on_diff_chr: 16496391
+pancreatitis_onset_year: 2018
+parent_with_radiation_exposure: Yes
+passage_count: 7
+pathogenicity: Pathogenic
+pathology_detail_id: pathology-detail-0
+pathology_report_uuid: 00000000-0000-0000-0000-000000000000
+pediatric_kidney_staging: Nephrectomy specimen with tumor confined to the kidney; no distant metastasis
+per_base_n_content: PASS
+per_base_sequence_content: WARN
+per_base_sequence_quality: FAIL
+per_sequence_gc_content: PASS
+per_sequence_quality_score: PASS
+per_tile_sequence_quality: PASS
+percent_gc_content: 49
+percent_lymphocyte_infiltration: 40.0
+percent_monocyte_infiltration: 20.0
+percent_necrosis: 5.0
+percent_neutrophil_infiltration: 20.0
+percent_normal_cells: 3.0
+percent_stromal_cells: 10.0
+percent_tumor_cells: 85.0
+percent_tumor_invasion: 8.3
+percent_tumor_nuclei: 95.0
+perineural_invasion_present: No
+peripancreatic_lymph_nodes_positive: 1-3
+peripancreatic_lymph_nodes_tested: 77
+peritoneal_fluid_cytological_status: Unknown
+peritoneal_washing_results: Positive
+plate_name: EPIC_250ng_042722_01
+plate_well: H07
+platform: Illumina
+ploidy: Hyperdiploid
+population_group: Ashkenazi Jew
+portion_id: portion-0
+portion_ids:
+  - portion-0
+portion_number: '01'
+prcc_type: Unknown
+pregnancy_outcome: Full Term Birth, NOS
+pregnant_at_diagnosis: No
+prescribed_dose: 75
+prescribed_dose_units: mg/m2
+preservation_method: Unknown
+pretreatment: Thyroxine Withdrawal
+primary_diagnosis: Serous cystadenocarcinoma, NOS
+primary_gleason_grade: Pattern 3
+primary_site: Ovary
+prior_malignancy: not reported
+prior_treatment: No
+procedures_performed: Colonoscopy
+program_id: program-0
+progression_or_recurrence: Yes
+progression_or_recurrence_anatomic_site: Not Reported
+progression_or_recurrence_type: Unknown
+project: Ovarian serous cystadenocarcinoma
+project_id: TEST-UNIT
+proportion_base_mismatch: 0.004865963
+proportion_coverage_10x: 0.96331
+proportion_coverage_30x: 0.956296
+proportion_reads_duplicated: 0.03719862840124014
+proportion_reads_mapped: 0.9922124119944219
+proportion_targets_no_coverage: 0.114887
+protocol_identifier: NWTS-5
+race: white
+radiosensitizing_agent: No
+read_group_id: read-group-0
+read_group_name: 240620_UNC41-A00434_0777_AHJ332DSXC_AGAGGCTC-ACTGAGAC_S232_L003
+read_group_qc_id: read-group-qc-0
+read_length: 50
+reason_treatment_ended: Course of Therapy Completed
+reason_treatment_not_given: Not Reported
+reflux_treatment_type: Medically Treated
+regimen_or_line_of_therapy: TIP
+relationship_gender: female
+relationship_primary_diagnosis: Lung Cancer
+relationship_sex_at_birth: female
+relationship_type: Sibling
+relative_with_cancer_history: no
+relatives_with_cancer_history_count: 1
+releasable: true
+released: true
+residual_disease: R0
+residual_tumor_measurement: 1-10 mm
+revision: 57
+rhabdoid_present: No
+ribosomal_rna_28s_16s_ratio: 1.3
+risk_factor_method_of_diagnosis: Both Clinical and Biochemical Assessments
+risk_factor_treatment: Yes
+risk_factors:
+  - Undescended Testis
+rna_integrity_number: 8.6
+route_of_administration:
+  - Intravenous
+sample_id: sample-0
+sample_ids:
+  - sample-0
+sample_ordinal: 1
+sample_type: Blood Derived Normal
+sarcomatoid_percent: 90
+sarcomatoid_present: No
+satellite_nodule_present: Absent
+second_exon: '20'
+second_gene_symbol: Not Reported
+secondary_gleason_grade: Pattern 4
+secondhand_smoke_as_child: Yes
+section_location: Not Reported
+selected_normal_targeted_sequencing: true
+selected_normal_wgs: true
+selected_normal_wxs: true
+sequence_duplication_levels: PASS
+sequence_length_distribution: PASS
+sequencing_center: unc.edu
+sequencing_date: '20240620'
+sex_at_birth: female
+short_name: BCM
+shortest_dimension: 0.6
+single_cell_library: Chromium 3' Gene Expression v3 Library
+site_of_resection_or_biopsy: Ovary
+sites_of_involvement:
+  - Central Lung
+size_selection_range: '168'
+slide_id: slide-0
+slide_ids:
+  - slide-0
+source_center: '22'
+specialized_molecular_test: Signal ratio
+specimen_type: Peripheral Blood NOS
+spectrophotometer_method: UV Spec
+spike_ins_concentration: '2'
+spike_ins_fasta: https://www.ncbi.nlm.nih.gov/
+spindle_cell_percent_range: '>90%'
+staining_intensity_scale: 4 Point Scale
+staining_intensity_value: 2+
+state: released
+status: Approved
+submitter_aliquot_ids:
+  - TEST-UNIT-aliquot-0
+submitter_analyte_ids:
+  - TEST-UNIT-analyte-0
+submitter_diagnosis_ids:
+  - TEST-UNIT-diagnosis-0
+submitter_id: TEST-UNIT-submitter-0
+submitter_portion_ids:
+  - TEST-UNIT-portion-0
+submitter_sample_ids:
+  - TEST-UNIT-sample-0
+submitter_slide_ids:
+  - TEST-UNIT-slide-0
+supratentorial_localization: Cerebral Cortex
+synchronous_malignancy: Not Reported
+target_capture_kit: Not Applicable
+target_capture_kit_catalog_number: Obsolete
+target_capture_kit_name: NimbleGen Sequence Capture 2.1M Human Exome Array
+target_capture_kit_target_region: Deleware
+target_capture_kit_vendor: Nimblegen
+target_capture_kit_version: Not Applicable
+test_result: Negative
+test_units: nmol/L
+test_value: 4
+test_value_range: 30-39%
+therapeutic_agents: Gemcitabine Hydrochloride
+therapeutic_levels_achieved: Unknown
+therapeutic_target_level: '>14 mg/L'
+time_between_clamping_and_freezing: 16.0
+time_between_excision_and_freezing: 20.0
+timepoint_category: Last Contact
+tissue_collection_type: Retrospective
+tissue_microarray_coordinates: A1,D3,E4
+tissue_or_organ_of_origin: Ovary
+tissue_source_site_id: tissue-source-site-0
+tissue_type: Normal
+to_trim_adapter_sequence: true
+tobacco_smoking_onset_year: 1946
+tobacco_smoking_quit_year: 1981
+tobacco_smoking_status: Current Smoker
+total_reads: 28301189
+total_sequences: 69805122
+transglottic_extension: Present
+treatment_anatomic_sites:
+  - Not Reported
+treatment_dose: 6952
+treatment_dose_max: 1
+treatment_dose_units: mg
+treatment_duration: 3
+treatment_frequency: Once Weekly
+treatment_id: treatment-0
+treatment_intent_type: Adjuvant
+treatment_or_therapy: no
+treatment_outcome: Not Reported
+treatment_outcome_duration: 366
+treatment_type: Radiation Therapy, NOS
+tumor_basal_diameter: 12
+tumor_burden: 1.5
+tumor_code_id: '50'
+tumor_confined_to_organ_of_origin: Unknown
+tumor_depth: 26
+tumor_depth_descriptor: Deep
+tumor_depth_measurement: 6
+tumor_descriptor: Not Applicable
+tumor_focality: Unifocal
+tumor_grade: G3
+tumor_grade_category: Three Tier
+tumor_infiltrating_lymphocytes: Unknown
+tumor_infiltrating_macrophages: Unknown
+tumor_largest_dimension_diameter: 3
+tumor_length_measurement: 1.3
+tumor_level_prostate:
+  - Apex
+  - Middle
+  - Base
+tumor_of_origin: TEST-UNIT-diagnosis
+tumor_ploidy: 1.75198424956185
+tumor_purity: 0.90969765412374
+tumor_regression_grade: '1'
+tumor_shape: Dome
+tumor_width_measurement: 1.2
+type: annotated_somatic_mutation
+type_of_smoke_exposure: Smoke exposure, NOS
+type_of_tobacco_used: Smokeless Tobacco
+uicc_clinical_stage: Stage IIA
+uicc_pathologic_m: M0
+uicc_pathologic_n: N0
+uicc_pathologic_stage: Stage IIA
+uicc_pathologic_t: T3
+uicc_staging_system_edition: 7th
+ulceration_indicator: Not Reported
+undescended_testis_corrected: Yes
+undescended_testis_corrected_age_range: 2-11 months
+undescended_testis_corrected_laterality: Right
+undescended_testis_corrected_method: Orchiopexy
+undescended_testis_history: Yes
+undescended_testis_history_laterality: Right
+updated_datetime: '2022-02-07T21:22:16.306502-06:00'
+use_per_day: 2
+variant_origin: Germline
+variant_type: Mutation, NOS
+vascular_invasion_present: Yes
+vascular_invasion_type: No Vascular Invasion
+viral_hepatitis_serology_tests:
+  - Hepatitis C Antibody
+vital_status: Alive
+weight: 105.0
+weiss_assessment_findings:
+  - Atypical Mitotic Figures
+  - Cytoplasm presence <= to 25%
+  - Diffuse Architecture
+  - Mitotic Rate > 5/50 HPF
+  - Necrosis
+  - Nuclear Grade III or IV
+  - Sinusoid Invasion
+  - Venous Invasion
+weiss_assessment_score: '8'
+wgs_coverage: Not Applicable
+who_cns_grade: Grade IV
+wilms_tumor_histologic_subtype: Favorable
+workflow_link: https://github.com/NCI-GDC/workflows/magic
+workflow_type: Pindel Annotation
+workflow_version: wfv0
+year_of_birth: 1948
+year_of_death: 2016
+year_of_diagnosis: 2009
+year_of_follow_up: 2013
+zone_of_origin_prostate: Unknown zone
