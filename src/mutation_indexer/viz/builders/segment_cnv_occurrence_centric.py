@@ -5,11 +5,10 @@ from typing import TypedDict
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
-from mutation_indexer.builders import observation as observation_builder
+from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
+from mutation_indexer.viz.builders import observation
 
 
 class SegmentCNVOccurrenceCentricBuilderInputs(TypedDict):
@@ -18,7 +17,7 @@ class SegmentCNVOccurrenceCentricBuilderInputs(TypedDict):
 
 
 class SegmentCNVOccurrenceCentricBuilder(
-    bases.IndexBuilder[
+    builders.IndexBuilder[
         configuration.SegmentCNVOccurrenceCentricBuilder,
         SegmentCNVOccurrenceCentricBuilderInputs,
     ]
@@ -105,7 +104,7 @@ class SegmentCNVOccurrenceCentricBuilder(
         joining with the segment_cnv_column_df (see _build_segment_cnv_column),
         and the occurrence_id will become the eventual segment_cnv_occurrence_id.
         """
-        obs_df = observation_builder.build_observation_for_segment_cnv(segment_cnv_df)
+        obs_df = observation.build_observation_for_segment_cnv(segment_cnv_df)
         case_column_df = case_df.join(obs_df, on="case_id", how="left").select(
             "segment_cnv_id",
             "case_id",

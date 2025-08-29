@@ -1,18 +1,19 @@
+from typing import Self
+
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import Self
 
 from mutation_indexer import es_utils
-from mutation_indexer.builders import (
+from mutation_indexer.configuration import adapter
+from mutation_indexer.constants import build
+from mutation_indexer.viz.builders import (
     base_builder,
     case,
     consequence,
     df_builders,
     observation,
 )
-from mutation_indexer.configuration import adapter
-from mutation_indexer.constants import build
 
 SEGMENT_CNV_COLUMNS = (
     "segment_cnv_id",

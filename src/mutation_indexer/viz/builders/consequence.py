@@ -3,7 +3,8 @@ from typing import Any
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer.builders import df_builders, utils
+from mutation_indexer.builders import utils
+from mutation_indexer.viz.builders import df_builders
 
 ALL_EFFECTS_KEYS = (
     "do_not_use",

@@ -5,8 +5,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import indexd_utils, schemas
-from mutation_indexer.builders import bases, utils
+from mutation_indexer import builders, indexd_utils, schemas
+from mutation_indexer.builders import utils
 from mutation_indexer.constants import build
 from mutation_indexer.gene_expression import configuration
 
@@ -17,7 +17,7 @@ class ExpressionValueInputs(TypedDict):
 
 
 class ExpressionValueBuilder(
-    bases.InputBuilder[configuration.ExpressionValueBuilder, ExpressionValueInputs]
+    builders.InputBuilder[configuration.ExpressionValueBuilder, ExpressionValueInputs]
 ):
     __slots__ = "_doc_dataframe_util"
 

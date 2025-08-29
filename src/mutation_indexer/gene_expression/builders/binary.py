@@ -13,7 +13,7 @@ import numpy
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer.builders import bases
+from mutation_indexer import builders
 from mutation_indexer.constants import build
 from mutation_indexer.gene_expression import configuration
 
@@ -22,7 +22,7 @@ class BinaryInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class BinaryBuilder(bases.InputBuilder[configuration.BinaryBuilder, BinaryInputs]):
+class BinaryBuilder(builders.InputBuilder[configuration.BinaryBuilder, BinaryInputs]):
     __slots__ = ("_s3_client",)
 
     def __init__(

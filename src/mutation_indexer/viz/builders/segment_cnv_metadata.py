@@ -3,8 +3,7 @@ from typing import TypedDict
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
+from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build, datamodel
 from mutation_indexer.viz import configuration
 
@@ -14,7 +13,7 @@ class SegmentCNVMetadataInputs(TypedDict):
 
 
 class SegmentCNVMetadataBuilder(
-    bases.InputBuilder[configuration.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs]
+    builders.InputBuilder[configuration.SegmentCNVMetadataBuilder, SegmentCNVMetadataInputs]
 ):
     def __init__(
         self,

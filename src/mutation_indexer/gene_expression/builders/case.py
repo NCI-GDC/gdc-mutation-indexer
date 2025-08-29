@@ -13,7 +13,7 @@ import mypy_boto3_s3 as s3
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer.builders import bases
+from mutation_indexer import builders
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
 from mutation_indexer.gene_expression import configuration
@@ -23,7 +23,7 @@ class CaseInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class CaseBuilder(bases.InputBuilder[configuration.CaseBuilder, CaseInputs]):
+class CaseBuilder(builders.InputBuilder[configuration.CaseBuilder, CaseInputs]):
     __slots__ = ("_s3_client",)
 
     def __init__(
@@ -82,7 +82,7 @@ class CaseSQLInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class CaseSQLBuilder(bases.SQLiteBuilder[configuration.CaseSQLBuilder, CaseSQLInputs]):
+class CaseSQLBuilder(builders.SQLiteBuilder[configuration.CaseSQLBuilder, CaseSQLInputs]):
     def __init__(
         self,
         config: configuration.CaseSQLBuilder,

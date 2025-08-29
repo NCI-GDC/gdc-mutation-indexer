@@ -1,7 +1,8 @@
+from typing import TypedDict
+
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import TypedDict
 
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import builders

@@ -5,8 +5,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import indexd_utils, schemas
-from mutation_indexer.builders import bases, utils
+from mutation_indexer import builders, indexd_utils, schemas
+from mutation_indexer.builders import utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
 
@@ -48,7 +48,9 @@ class SegmentCNVInputs(TypedDict):
     segment_cnv_metadata_df: sql.DataFrame
 
 
-class SegmentCNVBuilder(bases.InputBuilder[configuration.SegmentCNVBuilder, SegmentCNVInputs]):
+class SegmentCNVBuilder(
+    builders.InputBuilder[configuration.SegmentCNVBuilder, SegmentCNVInputs]
+):
     def __init__(
         self,
         config: configuration.SegmentCNVBuilder,
