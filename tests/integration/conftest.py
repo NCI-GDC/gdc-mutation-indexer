@@ -15,11 +15,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import builders, es_utils, indexd_utils, schemas
-from mutation_indexer.builders import civic
+from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
-from mutation_indexer.viz import configuration
+from mutation_indexer.viz import builders, configuration
+from mutation_indexer.viz.builders import civic
 from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
