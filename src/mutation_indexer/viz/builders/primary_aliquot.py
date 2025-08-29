@@ -1,8 +1,8 @@
-from pyspark import sql
 from typing import TypedDict
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
+from pyspark import sql
+
+from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
 
@@ -12,7 +12,7 @@ class PrimaryAliquotInputs(TypedDict):
 
 
 class PrimaryAliquotBuilder(
-    bases.InclusivePrimaryAliquotBuilder[
+    builders.InclusivePrimaryAliquotBuilder[
         configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs
     ]
 ):

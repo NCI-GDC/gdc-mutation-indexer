@@ -1,15 +1,14 @@
 import functools
 import logging
 from collections.abc import Collection, Iterable, Sequence
+from typing import Literal, TypedDict
 
 import elasticsearch
 import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing import Literal, TypedDict
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
+from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
@@ -263,7 +262,7 @@ class MAFMetadataInputs(TypedDict):
 
 
 class MAFMetadataBuilder(
-    bases.PrimaryAliquotBuilder[configuration.MAFMetadataBuilder, MAFMetadataInputs]
+    builders.PrimaryAliquotBuilder[configuration.MAFMetadataBuilder, MAFMetadataInputs]
 ):
     """
     An input builder for collecting the metadata associated with the MAF

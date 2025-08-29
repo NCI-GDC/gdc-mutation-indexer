@@ -1,13 +1,10 @@
-from collections.abc import Collection
-from typing import TypedDict
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
+from typing import Literal, TypedDict, override
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing import Literal, override
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
+from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
 
@@ -17,7 +14,7 @@ class ASCATMetadataInputs(TypedDict):
 
 
 class ASCATMetadataBuilder(
-    bases.InclusivePrimaryAliquotBuilder[
+    builders.InclusivePrimaryAliquotBuilder[
         configuration.ASCATMetadataBuilder, ASCATMetadataInputs
     ]
 ):

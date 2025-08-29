@@ -4,7 +4,7 @@ from typing import TypedDict
 
 from pyspark import sql
 
-from mutation_indexer.builders import bases
+from mutation_indexer import builders
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
 from mutation_indexer.gene_expression import configuration
@@ -14,7 +14,7 @@ class GeneSQLInputs(TypedDict):
     expression_value_df: sql.DataFrame
 
 
-class GeneSQLBuilder(bases.SQLiteBuilder[configuration.GeneSQLBuilder, GeneSQLInputs]):
+class GeneSQLBuilder(builders.SQLiteBuilder[configuration.GeneSQLBuilder, GeneSQLInputs]):
     def __init__(
         self,
         config: configuration.GeneSQLBuilder,

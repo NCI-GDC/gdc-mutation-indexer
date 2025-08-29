@@ -1,19 +1,15 @@
-import logging
+from typing import Self
 
 from pyspark import sql
 from pyspark.sql import functions as F
-from typing import Self
 
-from mutation_indexer.builders import (
+from mutation_indexer.configuration import adapter
+from mutation_indexer.viz.builders import (
     base_builder,
     consequence,
     df_builders,
     observation,
 )
-from mutation_indexer.configuration import adapter
-from mutation_indexer.constants import app
-
-logging.basicConfig(format=app.LOG_FORMAT)
 
 
 class SSMCentricBuilder(base_builder.BaseBuilder):

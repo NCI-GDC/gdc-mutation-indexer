@@ -10,9 +10,8 @@ import elasticsearch
 from indexclient import client
 from pyspark import sql
 
-from mutation_indexer import configuration
+from mutation_indexer import builders, configuration
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.builders import bases
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
 from mutation_indexer.constants import app
@@ -91,7 +90,7 @@ class Driver(Generic[TConfig], abc.ABC):
     @abc.abstractmethod
     def _initialize_builders(
         self, config: TConfig, spark_session: sql.SparkSession
-    ) -> ContextManager[Iterable[bases.Builder]]:
+    ) -> ContextManager[Iterable[builders.Builder]]:
         """Initialize all builders required for this run of the driver.
 
         NOTE: This is wrapped in a context manager in order to allow drivers to clean up
@@ -102,7 +101,9 @@ class Driver(Generic[TConfig], abc.ABC):
         """
         ...
 
-    def _sort_builders(self, builders: Iterable[bases.Builder]) -> Iterable[bases.Builder]:
+    def _sort_builders(
+        self, builders: Iterable[builders.Builder]
+    ) -> Iterable[builders.Builder]:
         """Sorts the builders into a topological order based on their required inputs.
 
         Args:

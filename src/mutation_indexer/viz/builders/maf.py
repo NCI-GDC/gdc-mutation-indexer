@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import TypedDict, cast
 
 import importlib_resources as resources
 import more_itertools
@@ -7,10 +7,9 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import TypedDict
 
-from mutation_indexer import indexd_utils, pyspark_extensions, schemas
-from mutation_indexer.builders import bases, utils
+from mutation_indexer import builders, indexd_utils, pyspark_extensions, schemas
+from mutation_indexer.builders import utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import configuration
 
@@ -75,7 +74,7 @@ class MAFInputs(TypedDict):
     civic_protein_df: sql.DataFrame
 
 
-class MAFBuilder(bases.InputBuilder[configuration.MAFBuilder, MAFInputs]):
+class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
     """
     Class responsible for assembling maf files into a single dataframe with
     uniform features

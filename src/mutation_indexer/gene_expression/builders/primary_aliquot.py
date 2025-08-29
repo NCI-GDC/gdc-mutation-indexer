@@ -3,8 +3,7 @@ from typing import TypedDict
 
 from pyspark import sql
 
-from mutation_indexer import es_utils
-from mutation_indexer.builders import bases
+from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.gene_expression import configuration
 
@@ -34,7 +33,7 @@ class PrimaryAliquotInputs(TypedDict):
 
 
 class PrimaryAliquotBuilder(
-    bases.PrimaryAliquotBuilder[configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs]
+    builders.PrimaryAliquotBuilder[configuration.PrimaryAliquotBuilder, PrimaryAliquotInputs]
 ):
     def __init__(
         self,

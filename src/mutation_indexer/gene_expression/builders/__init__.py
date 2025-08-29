@@ -1,15 +1,14 @@
-from mutation_indexer.builders.bases import Builder
-from mutation_indexer.builders.gene_expression.binary import BinaryBuilder
-from mutation_indexer.builders.gene_expression.case import CaseBuilder, CaseSQLBuilder
-from mutation_indexer.builders.gene_expression.expression_value import (
+from mutation_indexer.builders import Builder, GeneModelBuilder
+from mutation_indexer.gene_expression.builders.binary import BinaryBuilder
+from mutation_indexer.gene_expression.builders.case import CaseBuilder, CaseSQLBuilder
+from mutation_indexer.gene_expression.builders.expression_value import (
     ExpressionValueBuilder,
 )
-from mutation_indexer.builders.gene_expression.gene import GeneSQLBuilder
-from mutation_indexer.builders.gene_expression.index import IndexBuilder
-from mutation_indexer.builders.gene_expression.primary_aliquot import (
+from mutation_indexer.gene_expression.builders.gene import GeneSQLBuilder
+from mutation_indexer.gene_expression.builders.index import IndexBuilder
+from mutation_indexer.gene_expression.builders.primary_aliquot import (
     PrimaryAliquotBuilder,
 )
-from mutation_indexer.builders.gene_model import GeneModelBuilder
 
 __all__ = (
     "BinaryBuilder",
