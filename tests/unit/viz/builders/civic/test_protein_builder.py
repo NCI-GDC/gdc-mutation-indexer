@@ -1,0 +1,101 @@
+import contextlib
+import dataclasses
+from collections.abc import Iterable, Iterator
+from unittest import mock
+
+import more_itertools
+import pytest
+from pyspark import sql
+from pyspark.sql import types
+
+from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
+from mutation_indexer.viz.builders import civic
+from tests.unit import utils
+from tests.unit.data import schemas
+
+
+@dataclasses.dataclass(frozen=True)
+class CIVICDatum:
+    civic_var_id: int = 87
+    civic_gene_id: int = 35
+    hugo_symbol: str = "NPM1"
+    gene: str = "ENSG00000181163.12"
+    hgvsp: str = "p.W288Cfs*"
+    source: str = "Protein"
+
+
+@pytest.fixture(scope="class")
+def input_schema() -> types.StructType:
+    return schemas.Viz.Builders.CIVIC.Protein.INPUT.load()
+
+
+@pytest.fixture(scope="class")
+def final_schema() -> types.StructType:
+    return schemas.Viz.Builders.CIVIC.Protein.FINAL.load()
+
+
+class TestProteinBuilder:
+    @pytest.fixture(autouse=True)
+    def load_fixtures(
+        self,
+        create_dataframe: utils.CreateDataFrame,
+        input_schema: types.StructType,
+        final_schema: types.StructType,
+    ) -> None:
+        self._create_dataframe = create_dataframe
+        self._input_schema = input_schema
+        self._final_schema = final_schema
+
+    def arrange_spark_session(
+        self, data: Iterable[CIVICDatum] = (CIVICDatum(),)
+    ) -> sql.SparkSession:
+        spark_session = mock.MagicMock(spec=sql.SparkSession)
+        spark_session.read.csv.return_value = self._create_dataframe(data, self._input_schema)
+
+        return spark_session
+
+    def arrange_config(self) -> configuration.CIVIC.ProteinBuilder:
+        config = mock.MagicMock(
+            spec=configuration.CIVIC.ProteinBuilder,
+            is_cached=False,
+            package="",
+            resource="",
+            schema="",
+            backup=mock.MagicMock(path="", mode=build.BackupMode.NEITHER),
+        )
+
+        return config
+
+    @contextlib.contextmanager
+    def arrange_schemas(self) -> Iterator[None]:
+        with mock.patch(
+            "mutation_indexer.schemas.load_schema", return_value=self._input_schema
+        ):
+            yield None
+
+    @contextlib.contextmanager
+    def arrange_resources(self) -> Iterator[None]:
+        with mock.patch.multiple(
+            "importlib.resources", files=mock.DEFAULT, as_file=mock.DEFAULT
+        ):
+            yield None
+
+    def test__build__data_translated(self) -> None:
+        datum = CIVICDatum()
+        config = self.arrange_config()
+        spark_session = self.arrange_spark_session((datum,))
+        builder = civic.ProteinBuilder(config, spark_session)
+
+        with self.arrange_resources(), self.arrange_schemas():
+            result_df = builder.build()
+
+        assert result_df.count() == 1
+        assert result_df.schema == self._final_schema
+
+        result_row = more_itertools.one(result_df.collect())
+
+        assert result_row.civic_gene_id == str(datum.civic_gene_id)
+        assert result_row.civic_variant_id == str(datum.civic_var_id)
+        assert result_row.hgvsp_short == datum.hgvsp
+        assert result_row.name == datum.hugo_symbol

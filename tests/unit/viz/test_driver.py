@@ -7,15 +7,14 @@ import inspect
 from collections.abc import Iterator
 from unittest import mock
 
-from mutation_indexer import builders
-from mutation_indexer.builders import base_builder, bases, civic
 from mutation_indexer.constants import build
-from mutation_indexer.viz import driver
+from mutation_indexer.viz import builders, driver
+from mutation_indexer.viz.builders import civic
 
 
 @contextlib.contextmanager
 def mock_builder(
-    builder: type[bases.Builder], is_called: bool = True
+    builder: type[builders.Builder], is_called: bool = True
 ) -> Iterator[mock.MagicMock]:
     """Mocks the given builder and ensures that it is properly called or not.
 
@@ -46,7 +45,7 @@ def mock_builder(
 
 @contextlib.contextmanager
 def mock_base_builder(
-    builder: type[base_builder.BaseBuilder], is_called: bool = True
+    builder: type[builders.BaseBuilder], is_called: bool = True
 ) -> Iterator[tuple[mock.MagicMock, mock.MagicMock]]:
     """Mocks the given builder and ensures that it is properly called or not.
 

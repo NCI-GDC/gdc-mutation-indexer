@@ -15,11 +15,11 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-from mutation_indexer import builders, es_utils, indexd_utils, schemas
-from mutation_indexer.builders import civic
+from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
-from mutation_indexer.viz import configuration
+from mutation_indexer.viz import builders, configuration
+from mutation_indexer.viz.builders import civic
 from tests.integration.utils import test_setup
 
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
@@ -115,8 +115,8 @@ def setup_graph_indices(
     input_dir: pathlib.Path,
 ) -> Iterator[Any]:
     """Create graph indices with required docs."""
-    manager = test_setup.IndexManager(default_config, es_client, log)
-    loader = test_setup.DocumentLoader(default_config, es_client, log)
+    manager = test_setup.IndexManager(default_config, es_client)
+    loader = test_setup.DocumentLoader(default_config, es_client)
     data = {
         build.IndexType.CASE: input_dir.joinpath("cases.ndjson.gz"),
         build.IndexType.FILE: input_dir.joinpath("files.ndjson.gz"),
@@ -138,7 +138,7 @@ def files_with_linked_cases(
 ) -> Iterator[Any]:
     input_path = input_dir.joinpath("files_with_linked_cases.ndjson")
 
-    with test_setup.DocumentLoader(default_config, es_client, log) as loader:
+    with test_setup.DocumentLoader(default_config, es_client) as loader:
         yield loader.load_docs(build.IndexType.FILE, input_path)
 
 

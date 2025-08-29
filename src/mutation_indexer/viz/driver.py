@@ -10,17 +10,17 @@ from typing import NamedTuple
 import elasticsearch
 from pyspark import sql
 
-from mutation_indexer import builders, driver, es_utils, indexd_utils
-from mutation_indexer.builders import base_builder, bases, civic, maf_metadata
+from mutation_indexer import driver, es_utils, indexd_utils
 from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
-from mutation_indexer.viz import configuration
+from mutation_indexer.viz import builders, configuration
+from mutation_indexer.viz.builders import civic, maf_metadata
 
 
-class Adapter(bases.Builder):
+class Adapter(builders.Builder):
     __slots__ = ("_builder",)
 
-    def __init__(self, builder: base_builder.BaseBuilder) -> None:
+    def __init__(self, builder: builders.BaseBuilder) -> None:
         """An adapter for a BaseBuilder which makes it compatible with bases.Builder.
 
         Args:
@@ -113,7 +113,7 @@ class Driver(driver.Driver[configuration.Configuration]):
 
     def _input_builders(
         self, config: configuration.Builders, dependencies: Dependencies
-    ) -> Iterable[bases.Builder]:
+    ) -> Iterable[builders.Builder]:
         """The input builders associated with the viz driver & used by other builders.
 
         Args:
@@ -176,7 +176,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         config: configuration.Builders,
         index_types: Container[build.IndexType],
         dependencies: Dependencies,
-    ) -> Iterator[bases.Builder]:
+    ) -> Iterator[builders.Builder]:
         """Initializes all required index builders.
 
         NOTE: All obsolete index builders (aka BaseBuilders) are wrapped in an Adapter
@@ -271,7 +271,7 @@ class Driver(driver.Driver[configuration.Configuration]):
     @contextlib.contextmanager
     def _initialize_builders(
         self, config: configuration.Configuration, spark_session: sql.SparkSession
-    ) -> Iterator[Iterable[bases.Builder]]:
+    ) -> Iterator[Iterable[builders.Builder]]:
         with self._initialize_dependencies(config, spark_session) as dependencies:
             input_builders = self._input_builders(config.builders, dependencies)
             index_builders = self._index_builders(

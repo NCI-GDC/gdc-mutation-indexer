@@ -110,7 +110,6 @@ def test_data_frame_util_write(
     with test_setup.IndexManager(
         conf,
         es_client,
-        logger,
         index_types=(build.IndexType.CASE_CENTRIC,),
         skip_creation=True,
     ):
