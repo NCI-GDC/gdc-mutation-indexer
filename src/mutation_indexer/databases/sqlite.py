@@ -1,17 +1,19 @@
 """A module for enabling reading from and writing to SQLite databases."""
 
 import contextlib
+import logging
 import pathlib
 import sqlite3
 import tempfile
-from typing import Any
+from typing import Any, Self
 
 import more_itertools
 import mypy_boto3_s3 as s3
 from pyspark import sql
-from typing import Self
 
 from mutation_indexer.configuration import databases
+
+logger = logging.getLogger(__name__)
 
 
 class SQLiteDatabase:
@@ -59,11 +61,14 @@ class SQLiteDatabase:
         1) The database file is loaded to s3.
         2) The local copy of the database file is deleted.
         """
+        destination = self._config.destination
+
         self._s3_client.upload_file(
             str(self.dbfile.absolute()),
-            Bucket=self._config.destination.bucket,
-            Key=self._config.destination.key,
+            Bucket=destination.bucket,
+            Key=destination.key,
         )
+        logger.info(f"Uploaded SQLite DB to: s3://{destination.bucket}/{destination.key}")
 
         self._context.close()
 
