@@ -5,13 +5,13 @@ ARG PYTHON_VERSION=python3.13
 
 FROM ${REGISTRY}/ncigdc/${PYTHON_VERSION}-builder:${BASE_VERSION} AS build
 ARG SERVICE_NAME
-ARG PIP_INDEX_URL=https://nexus.osdc.io/repository/pypi-gdc-releases/simple
+ARG UV_INDEX
 ARG PYTHON_VERSION
 
 # avoids use of detached head while computing versions in gitlab
 ARG GIT_BRANCH_NAME
 ENV CI_COMMIT_REF_NAME=$GIT_BRANCH_NAME \
-    PIP_INDEX_URL=$PIP_INDEX_URL
+    UV_INDEX=$UV_INDEX
 
 WORKDIR /${SERVICE_NAME}
 COPY . .
@@ -19,7 +19,7 @@ COPY . .
 # confirm the version number is expected and does not include +dirty
 # this is due to the COPY . . that might be missing some file entries
 # due to .dockerignore.
-RUN uv tool install --index ${PIP_INDEX_URL} --with versionista setuptools-scm
+RUN uv tool install --with versionista setuptools-scm
 RUN uv run setuptools-scm
 
 RUN dnf install -y maven

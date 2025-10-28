@@ -5,7 +5,7 @@ export DOCKER_BUILDKIT=1
 PARAM=${1:-DO_NOT_PUSH};
 
 SERVICE_NAME="mutation_indexer"
-PIP_INDEX_URL=https://nexus.osdc.io/repository/pypi-gdc-releases/simple
+UV_INDEX=https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 IMAGE_NAME="${CONTAINER_REGISTRY:=dev-containers.osdc.io}/ncigdc/${SERVICE_NAME}"
 
 # setup active branch name, default to using git if build is happening on local
@@ -22,7 +22,7 @@ BUILD_COMMAND=(build \
   --build-arg SERVICE_NAME="${SERVICE_NAME}" \
   --build-arg COMMIT="${COMMIT}" \
   --build-arg BUILD_DATE="$(date -Iseconds)" \
-  --build-arg PIP_INDEX_URL="${PIP_INDEX_URL}" \
+  --build-arg UV_INDEX="${UV_INDEX}" \
   --add-host nexus.osdc.io:$(dig +short nexus.osdc.io) \
   -t "$IMAGE_NAME:$GIT_BRANCH" \
   -t "$IMAGE_NAME:$COMMIT" \
