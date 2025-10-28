@@ -6,6 +6,8 @@ ARG PYTHON_VERSION=python3.13
 ARG REGISTRY=docker.osdc.io
 ARG UV_INDEX=https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
 FROM ${REGISTRY}/ncigdc/${PYTHON_VERSION}-builder:${BASE_VERSION} AS build
 ARG SERVICE_NAME
 ARG UV_INDEX
@@ -52,6 +54,7 @@ RUN useradd \
     spark;
 
 # Pick up the installed artifacts from the previous build stage.
+COPY --from=uv /uv /uvx /bin/
 COPY --chown=spark:spark --from=build /spark /spark
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
