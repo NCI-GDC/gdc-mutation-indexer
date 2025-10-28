@@ -29,7 +29,6 @@ tox:
   script:
     - uvx --with tox-uv tox r
 
-
 .deploy-service-with-salt:
   before_script:
     - export DEPLOY_SERVICE_TAG=${CI_COMMIT_TAG:-$CI_COMMIT_SHA}

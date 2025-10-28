@@ -24,7 +24,7 @@ COPY . .
 RUN uvx --with versionista setuptools-scm
 
 RUN dnf install -y maven
-RUN mvn process-sources --file mutation_indexer_deps.pom.xml --settings maven-settings.xml
+RUN mvn process-sources --settings maven-settings.xml --file pom.xml
 
 RUN uv run --script bin/build.py --output /spark
 RUN uv pip install --target /spark/.venv '.[client]'
@@ -53,6 +53,7 @@ RUN useradd \
 
 # Pick up the installed artifacts from the previous build stage.
 COPY --chown=spark:spark --from=build /spark /spark
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 USER spark:spark
 WORKDIR /spark
