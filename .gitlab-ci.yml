@@ -25,9 +25,9 @@ tox:
     - java -version
     - mvn -version
     - curl -LsSf https://astral.sh/uv/install.sh | sh
-    - uv tool install --with tox-uv tox
+    - python -m tox tox-uv
   script:
-    - uv run tox r
+    - tox r
 
 
 .deploy-service-with-salt:
