@@ -9,6 +9,7 @@ variables:
   BASE_CONTAINER_VERSION: 3.5.0
   LANGUAGE_VERSION: python3.13
   SERVICE_NAME: mutation_indexer
+  UV_INDEX: https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 
 tox:
   services:
@@ -25,9 +26,9 @@ tox:
     - java -version
     - mvn -version
     - curl -LsSf https://astral.sh/uv/install.sh | sh
-    - python -m pip install tox tox-uv
+    - uv tool install --with tox-uv tox
   script:
-    - tox r
+    - uv run tox r
 
 
 .deploy-service-with-salt:
