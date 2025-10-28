@@ -3,6 +3,9 @@
 # dependencies = [
 #     "typed-argument-parser",
 # ]
+#
+# [[tool.uv.index]]
+# url = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 # ///
 
 import dataclasses

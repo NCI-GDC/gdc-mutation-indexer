@@ -19,7 +19,7 @@ COPY . .
 # confirm the version number is expected and does not include +dirty
 # this is due to the COPY . . that might be missing some file entries
 # due to .dockerignore.
-RUN uv tool install --with versionista setuptools-scm
+RUN uv tool install --index ${PIP_INDEX_URL} --with versionista setuptools-scm
 RUN uv run setuptools-scm
 
 RUN dnf install -y maven
