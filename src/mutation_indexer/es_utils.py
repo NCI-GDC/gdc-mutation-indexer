@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import functools
 import itertools
 import json
@@ -12,7 +13,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final, Literal
+from typing import Any, DefaultDict, Deque, Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -608,7 +609,8 @@ class DataFrameUtil:
             .select("_source.*")
         )
 
-    def _create_index(self, index: str, index_type: build.IndexType) -> None:
+    @contextlib.contextmanager
+    def _create_index(self, index: str, index_type: build.IndexType) -> Iterator[Any]:
         """
         Creates the index based on the mapping associated with the given index
         type.
@@ -621,9 +623,18 @@ class DataFrameUtil:
             raise Exception(f"Index: {index} already exists. Cannot overwrite existing index.")
 
         mappings = self._mappings_loader.load_mapper(index_type)
+        original_refresh_interval = mappings.settings.get("refresh_interval", "1m")
+        settings = dict(mappings.settings)
+        settings["refresh_interval"] = "45m"
 
-        self._es_client.indices.create(
-            index=index, mappings=mappings.mappings, settings=mappings.settings
+        yield self._es_client.indices.create(
+            index=index, mappings=mappings.mappings, settings=settings
+        )
+
+        self._es_client.indices.put_settings(
+            body={"refresh_interval": original_refresh_interval},
+            index=index,
+            preserve_existing=True,
         )
 
     def write(self, df: sql.DataFrame, index_type: build.IndexType, id_field: str) -> None:
@@ -637,30 +648,30 @@ class DataFrameUtil:
         """
         index = self._get_index(index_type)
 
-        self._create_index(index, index_type)
-        (
-            df.write.format(self.ES_FORMAT)
-            .option("es.nodes", self._config.connection.nodes)
-            .option("es.net.http.auth.user", self._config.connection.user)
-            .option("es.net.http.auth.pass", self._config.connection.password)
-            .option("es.net.ssl", self._config.connection.use_ssl)
-            .option(
-                "es.net.ssl.cert.allow.self.signed",
-                not self._config.connection.verify_certs,
+        with self._create_index(index, index_type):
+            (
+                df.write.format(self.ES_FORMAT)
+                .option("es.nodes", self._config.connection.nodes)
+                .option("es.net.http.auth.user", self._config.connection.user)
+                .option("es.net.http.auth.pass", self._config.connection.password)
+                .option("es.net.ssl", self._config.connection.use_ssl)
+                .option(
+                    "es.net.ssl.cert.allow.self.signed",
+                    not self._config.connection.verify_certs,
+                )
+                .option("es.nodes.wan.only", "true")
+                .option("es.nodes.resolve.hostname", "false")
+                .option("es.resource.write", index)
+                .option("es.http.timeout", "20m")
+                .option("es.http.retries", "-1")
+                .option("es.batch.write.retry.count", "-1")
+                .option("es.batch.write.retry.wait", "10m")
+                .option("es.batch.size.bytes", self._config.write.batch_size_bytes)
+                .option("es.batch.size.entries", self._config.write.batch_size_entries)
+                .option("es.batch.write.refresh", True)
+                .option("es.mapping.id", id_field)
+                .save(index)
             )
-            .option("es.nodes.wan.only", "true")
-            .option("es.nodes.resolve.hostname", "false")
-            .option("es.resource.write", index)
-            .option("es.http.timeout", "20m")
-            .option("es.http.retries", "-1")
-            .option("es.batch.write.retry.count", "-1")
-            .option("es.batch.write.retry.wait", "10m")
-            .option("es.batch.size.bytes", self._config.write.batch_size_bytes)
-            .option("es.batch.size.entries", self._config.write.batch_size_entries)
-            .option("es.batch.write.refresh", True)
-            .option("es.mapping.id", id_field)
-            .save(index)
-        )
 
 
 class RDDUtil:

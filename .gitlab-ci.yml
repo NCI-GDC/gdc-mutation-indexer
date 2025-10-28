@@ -3,11 +3,12 @@ include:
   - project: nci-gdc/gitlab-templates
     ref: master
     file:
-      - templates/artifacts/python-service.yaml
+      - templates/artifacts/python-docker-service.yaml
 
 variables:
+  BASE_CONTAINER_VERSION: 3.5.0
   LANGUAGE_VERSION: python3.13
-  BASE_CONTAINER_VERSION: 3.1.0
+  SERVICE_NAME: mutation_indexer
 
 tox:
   services:
@@ -18,14 +19,12 @@ tox:
   variables:
     BOTO_CONFIG: /dev/null
     ES_NODES: http://elasticsearch:9200
-  script:
+  before_script:
     - (apt-get update -y) || (dnf update -y)
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
     - mvn -version
-    - pip install tox
-    - tox -e test
-    - tox -e coverage
+
 
 .deploy-service-with-salt:
   before_script:

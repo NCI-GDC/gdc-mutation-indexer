@@ -2,10 +2,10 @@ from collections.abc import Iterable
 
 import marshmallow
 import pytest
+from tests.integration.utils import test_setup
 
 from mutation_indexer import configuration
 from mutation_indexer.constants import build
-from tests.integration.utils import test_setup
 
 
 class TestIndexTypesValidator:
@@ -57,46 +57,6 @@ class TestIndexTypesValidator:
 
         with pytest.raises(marshmallow.ValidationError):
             validator(indices)
-
-
-class TestBuild:
-    def test__is_viz_build__true_if_no_gene_expression(self) -> None:
-        viz_build = configuration.build.Build(
-            build_version="",
-            config_file="",
-            data_release="",
-            driver="",
-            error_log="",
-            index_types=(build.IndexType.GENE_CENTRIC,),
-            jar_dir="",
-            manifest_dir="",
-            output_log="",
-            spark_submit="",
-            study_label="",
-            pex_file="",
-            projects=(),
-        )
-
-        assert viz_build.is_viz_build()
-
-    def test__is_viz_build__false_if_gene_expression(self) -> None:
-        ge_build = configuration.build.Build(
-            build_version="",
-            config_file="",
-            data_release="",
-            driver="",
-            error_log="",
-            index_types=(build.IndexType.GENE_EXPRESSION,),
-            jar_dir="",
-            manifest_dir="",
-            output_log="",
-            spark_submit="",
-            study_label="",
-            pex_file="",
-            projects=(),
-        )
-
-        assert not ge_build.is_viz_build()
 
 
 class TestLoadConfiguration:

@@ -1,4 +1,5 @@
 [build]
+driver = "/spark/driver-viz.pyz"
 index_types = [
   "CASE_CENTRIC",
   "CNV_CENTRIC",

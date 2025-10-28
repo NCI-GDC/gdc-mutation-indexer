@@ -6,8 +6,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 import pathlib
 import uuid
-from typing import Annotated, Any
 from collections.abc import Sequence
+from typing import Annotated, Any
 
 from marshmallow import exceptions, fields, validate
 
@@ -61,12 +61,8 @@ class Build:
     jar_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     manifest_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     output_log: Annotated[pathlib.Path, _extensions.ResolvedPathField]
-    pex_file: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     projects: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)]
     spark_submit: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     study_label: str
     build_id: uuid.UUID = dataclasses.field(default_factory=uuid.uuid4)
     acl: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)] = ("open",)
-
-    def is_viz_build(self) -> bool:
-        return build.IndexType.GENE_EXPRESSION not in self.index_types

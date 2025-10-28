@@ -10,15 +10,13 @@ import datetime
 import functools
 import pathlib
 import tempfile
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from importlib import abc, resources
-from typing import Any
-from collections.abc import Iterable
+from typing import Any, Self
 
 import marshmallow
 import tomli
 import tomli_w
-from typing import Self
 
 from mutation_indexer.configuration import _extensions, build, elasticsearch, spark
 from mutation_indexer.constants import app
@@ -124,9 +122,6 @@ class Configuration(_extensions.SerializableDataclass):
         * It merges all of the data in the user files. In the case of duplicate data
           points in any two files, the data point from the file which appears last in
           order will appear in the final data.
-        * It ensures that both `spark.pyspark.python` & `spark.pyspark.driver.python`
-          are configured to point the the alias in `app.PEX_FILE` which should be used
-          when uploading `build.pex_file` in the spark submit command.
         * It writes the final representation of the configuration to a temporary file
           with will be found at the path in `build.config_file`. This file should be
           uploaded with spark submit for the driver to load.
@@ -144,15 +139,7 @@ class Configuration(_extensions.SerializableDataclass):
             config_file = pathlib.Path(tmpdir, app.CONFIGURATION_FILE)
             # These values must be controlled by the client for spark submit to be able
             # to upload and run the driver.
-            required_data = {
-                "build": {"config_file": str(config_file)},
-                "spark": {
-                    "pyspark": {
-                        "python": f"./{app.PEX_FILE}",
-                        "driver": {"python": f"./{app.PEX_FILE}"},
-                    }
-                },
-            }
+            required_data = {"build": {"config_file": str(config_file)}}
             config = cls.load(*cls._default_files(), *user_files, required_data)
 
             config._write_manifest()

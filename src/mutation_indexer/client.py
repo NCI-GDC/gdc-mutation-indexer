@@ -42,12 +42,7 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     Yields:
         a tuple of argument flag and value.
     """
-    files = ",".join(
-        (
-            f"{config.config_file}#{app.CONFIGURATION_FILE}",
-            f"{config.pex_file}#{app.PEX_FILE}",
-        )
-    )
+    files = ",".join((f"{config.config_file}#{app.CONFIGURATION_FILE}",))
 
     yield (
         "--conf",
@@ -59,7 +54,7 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     )
 
 
-async def run_spark_command(config: configuration.Configuration, driver: app.Driver) -> None:
+async def run_spark_command(config: configuration.Configuration) -> None:
     """
     Runs the spark-submit command which will spwan the spark application. The spark
     application will build the desired indices.
@@ -72,10 +67,7 @@ async def run_spark_command(config: configuration.Configuration, driver: app.Dri
     arguments = more_itertools.flatten(itertools.chain(config_arguments, file_arguments))
     final_command = " ".join(
         more_itertools.value_chain(
-            str(config.build.spark_submit),
-            arguments,
-            str(config.build.driver),
-            driver.value,
+            str(config.build.spark_submit), arguments, str(config.build.driver)
         )
     )
 
@@ -130,7 +122,7 @@ async def _main(args: Args) -> None:
         with halo.Halo(spinner="pong") as spinner:
             try:
                 spinner.text = "Running spark-submit"
-                await run_spark_command(config, args.driver)
+                await run_spark_command(config)
                 spinner.text = "Merging indices"
                 await force_merge_indices(config)
             except:
