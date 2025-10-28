@@ -24,6 +24,10 @@ tox:
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
     - mvn -version
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - python -m pip install tox tox-uv
+  script:
+    - tox r
 
 
 .deploy-service-with-salt:
