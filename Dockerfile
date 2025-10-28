@@ -19,7 +19,8 @@ COPY . .
 # confirm the version number is expected and does not include +dirty
 # this is due to the COPY . . that might be missing some file entries
 # due to .dockerignore.
-RUN uv run -m setuptools_scm
+RUN uv tool install --with versionista setuptools-scm
+RUN uv run setuptools-scm
 
 RUN dnf install -y maven
 RUN mvn process-sources \
