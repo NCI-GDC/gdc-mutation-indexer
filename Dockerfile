@@ -4,10 +4,10 @@ ARG UV_INDEX
 ARG BASE_VERSION=4.0.0
 ARG PYTHON_VERSION=python3.13
 ARG REGISTRY=docker.osdc.io
+ARG UV_INDEX=https://nexus.osdc.io/repository/pypi-gdc-releases/simple
 
 FROM ${REGISTRY}/ncigdc/${PYTHON_VERSION}-builder:${BASE_VERSION} AS build
 ARG SERVICE_NAME
-ARG PYTHON_VERSION
 ARG UV_INDEX
 
 # avoids use of detached head while computing versions in gitlab
@@ -24,10 +24,7 @@ COPY . .
 RUN uvx --with versionista setuptools-scm
 
 RUN dnf install -y maven
-RUN mvn process-sources \
-    --file mutation_indexer_deps.pom.xml \
-    -Dgdc.mutationIndexer.artifactDir=/spark/jars \
-    -Dgdc.mutationIndexer.scalaVersion=2.12;
+RUN mvn process-sources --file mutation_indexer_deps.pom.xml --settings maven-settings.xml
 
 RUN uv run --script bin/build.py --output /spark
 RUN uv pip install --target /spark/.venv '.[client]'
