@@ -6,14 +6,10 @@ import pathlib
 from collections.abc import Iterable, Iterator
 from typing import ContextManager, Generic, TypeVar
 
-import elasticsearch
-from indexclient import client
 from pyspark import sql
 
 from mutation_indexer import builders, configuration
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.configuration import elasticsearch as es_config
-from mutation_indexer.configuration import indexd
 from mutation_indexer.constants import app
 
 logger = logging.getLogger("mutation_indexer")
@@ -31,41 +27,6 @@ def _initialize_spark() -> Iterator[sql.SparkSession]:
         spark_session.sparkContext.setLogLevel("FATAL")
 
         yield spark_session
-
-
-def get_index_client(config: indexd.IndexD) -> client.IndexClient:
-    """
-    Builds the index client with the given configuration values.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An indexd client
-    """
-    return client.IndexClient(
-        baseurl=f"{config.host}:{config.port}",
-        auth=(config.user, config.password),
-    )
-
-
-def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
-    """
-    builds the elastic search client based on the configuration.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An elasticsearch client
-    """
-
-    return elasticsearch.Elasticsearch(
-        config.nodes.split(","),
-        use_ssl=config.use_ssl,
-        verify_certs=config.verify_certs,
-        http_auth=(config.user, config.password),
-    )
 
 
 TConfig = TypeVar("TConfig", bound=configuration.Configuration)

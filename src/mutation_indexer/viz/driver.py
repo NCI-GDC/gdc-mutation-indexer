@@ -81,8 +81,8 @@ class Driver(driver.Driver[configuration.Configuration]):
             A context manager wrapping the dependencies. The context should be exited
             only after the dependent builders and done being used.
         """
-        with driver.get_es_client(config.elasticsearch.connection) as es_client:
-            index_client = driver.get_index_client(config.indexd)
+        with es_utils.initialize_client(config.elasticsearch) as es_client:
+            index_client = indexd_utils.initialize_client(config.indexd)
             mappings_loader = es_utils.MappingsLoader()
             sql_context = sql.SQLContext(spark_session.sparkContext, spark_session)
 

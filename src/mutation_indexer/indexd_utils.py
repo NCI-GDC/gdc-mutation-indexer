@@ -9,12 +9,30 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+from mutation_indexer.configuration import indexd
+
 DOCUMENT_URL_SCHEMA = types.StructType(
     [
         types.StructField("did", types.StringType()),
         types.StructField("_input_file_name", types.StringType()),
     ]
 )
+
+
+def initialize_client(config: indexd.IndexD) -> client.IndexClient:
+    """
+    Builds the index client with the given configuration values.
+
+    Args:
+        config: The connection configuration for setting up the client.
+
+    Returns:
+        An indexd client
+    """
+    return client.IndexClient(
+        baseurl=f"{config.host}:{config.port}",  # type: ignore
+        auth=(config.user, config.password),  # type: ignore
+    )  # type: ignore
 
 
 class DocumentUrl(NamedTuple):

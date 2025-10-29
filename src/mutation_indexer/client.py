@@ -4,7 +4,6 @@ import logging
 import pathlib
 from collections.abc import Iterable, Sequence
 
-import elasticsearch
 import halo
 import more_itertools
 import tap
@@ -82,32 +81,6 @@ async def run_spark_command(config: configuration.Configuration) -> None:
         await process.wait()
 
 
-async def force_merge_indices(config: configuration.Configuration) -> None:
-    """
-    Performs a force merge on the indices that have been created.
-
-    Args:
-        config: The configuration with which the build was run.
-    """
-    async with elasticsearch.AsyncElasticsearch(
-        config.elasticsearch.connection.nodes.split(","),
-        use_ssl=config.elasticsearch.connection.use_ssl,
-        verify_certs=config.elasticsearch.connection.verify_certs,
-        http_auth=(
-            config.elasticsearch.connection.user,
-            config.elasticsearch.connection.password,
-        ),
-    ) as es_client:
-        indices = [config.elasticsearch.write.indices[i] for i in config.build.index_types]
-
-        try:
-            await es_client.indices.forcemerge(
-                index=indices, max_num_segments=1, ignore_unavailable=True
-            )
-        except Exception as ex:
-            logger.warning(f"Error occurred while merging: {ex}.")
-
-
 async def _main(args: Args) -> None:
     if args.driver == app.Driver.GENE_EXPRESSION:
         Configuration = gene_expression.Configuration
@@ -123,8 +96,6 @@ async def _main(args: Args) -> None:
             try:
                 spinner.text = "Running spark-submit"
                 await run_spark_command(config)
-                spinner.text = "Merging indices"
-                await force_merge_indices(config)
             except:
                 spinner.fail("Process Failed")
                 raise

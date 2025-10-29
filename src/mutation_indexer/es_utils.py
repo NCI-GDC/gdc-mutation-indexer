@@ -3,6 +3,7 @@ import contextlib
 import functools
 import itertools
 import json
+import logging
 from collections.abc import (
     Collection,
     Container,
@@ -25,6 +26,42 @@ from pyspark.sql import types
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
+
+logger = logging.getLogger(__name__)
+
+
+def _force_merge_indices(
+    indices: tuple[str, ...], es_client: elasticsearch.Elasticsearch
+) -> None:
+    """
+    Performs a force merge on the indices that have been created.
+
+    Args:
+        config: The configuration with which the build was run.
+    """
+
+    try:
+        es_client.indices.forcemerge(
+            index=indices, max_num_segments=1, ignore_unavailable=True
+        )
+    except Exception as ex:
+        logger.warning(f"Error occurred while merging: {ex}.")
+
+
+@contextlib.contextmanager
+def initialize_client(config: es_config.Elasticsearch):
+    connection = config.connection
+
+    with elasticsearch.Elasticsearch(
+        connection.nodes.split(","),
+        use_ssl=connection.use_ssl,
+        verify_certs=connection.verify_certs,
+        http_auth=(connection.user, connection.password),
+    ) as es_client:
+        try:
+            yield es_client
+        finally:
+            _force_merge_indices(tuple(config.write.indices.values()), es_client)
 
 
 def iterate_es_results(
