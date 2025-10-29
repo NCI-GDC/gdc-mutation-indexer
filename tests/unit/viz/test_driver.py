@@ -119,8 +119,8 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock_base_builder(builders.SSMCentricBuilder))
         stack.enter_context(mock_base_builder(builders.SSMOccurrenceCentricBuilder))
         # Mock out these factory functions used by the driver
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
+        stack.enter_context(mock.patch("mutation_indexer.es_utils.initialize_client"))
+        stack.enter_context(mock.patch("mutation_indexer.indexd_utils.initialize_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
 
         driver.Driver().run(config)
@@ -158,8 +158,8 @@ def test__driver__runs_subset() -> None:
             mock_base_builder(builders.SSMOccurrenceCentricBuilder, is_called=False)
         )
         # Mock out these factory functions used by the driver
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
+        stack.enter_context(mock.patch("mutation_indexer.es_utils.initialize_client"))
+        stack.enter_context(mock.patch("mutation_indexer.indexd_utils.initialize_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
 
         driver.Driver().run(config)

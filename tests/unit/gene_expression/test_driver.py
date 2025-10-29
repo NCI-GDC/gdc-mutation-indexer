@@ -56,8 +56,8 @@ def test__driver__runs_all() -> None:
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder))
         # Mock out these factory functions used by the driver
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
+        stack.enter_context(mock.patch("mutation_indexer.es_utils.initialize_client"))
+        stack.enter_context(mock.patch("mutation_indexer.indexd_utils.initialize_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
         stack.enter_context(
             mock.patch("mutation_indexer.gene_expression.driver._initialize_s3_client")
@@ -80,8 +80,8 @@ def test__driver__runs_inputs() -> None:
         stack.enter_context(mock_builder(builders.ExpressionValueBuilder))
         stack.enter_context(mock_builder(builders.IndexBuilder, is_called=False))
         # Mock out these factory functions used by the driver
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_es_client"))
-        stack.enter_context(mock.patch("mutation_indexer.driver.get_index_client"))
+        stack.enter_context(mock.patch("mutation_indexer.es_utils.initialize_client"))
+        stack.enter_context(mock.patch("mutation_indexer.indexd_utils.initialize_client"))
         stack.enter_context(mock.patch("mutation_indexer.driver._initialize_spark"))
         stack.enter_context(
             mock.patch("mutation_indexer.gene_expression.driver._initialize_s3_client")
