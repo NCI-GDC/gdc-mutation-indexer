@@ -53,6 +53,7 @@ RUN useradd \
 
 # Pick up the installed artifacts from the previous build stage.
 COPY --chown=spark:spark --from=build /spark /spark
+ENV PYTHONPATH=/spark/.venv
 
 USER spark:spark
 WORKDIR /spark
