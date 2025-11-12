@@ -21,7 +21,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def spark_session() -> Generator[sql.SparkSession]:
     with (
         sql.SparkSession.builder.master("local[*]")
-        .appName("sqlContextFixture")
+        .appName("unit-testing")
         .config("spark.sql.shuffle.partitions", 1)
         .config("spark.ui.showConsoleProgress", False)
         .config("spark.ui.enabled", False)

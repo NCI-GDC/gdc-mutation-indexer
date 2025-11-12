@@ -1,7 +1,9 @@
 import collections
+import contextlib
 import functools
 import itertools
 import json
+import logging
 from collections.abc import (
     Collection,
     Container,
@@ -24,6 +26,60 @@ from pyspark.sql import types
 
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.constants import build
+
+logger = logging.getLogger(__name__)
+
+
+def _refresh(client: elasticsearch.Elasticsearch, indices: Iterable[str]) -> None:
+    indices = list(indices)
+
+    try:
+        client.indices.refresh(index=indices, allow_no_indices=True)
+    except Exception as ex:
+        logger.warning(f"Error occurred while refreshing: {indices}", exc_info=ex)
+
+
+def _forcemerge(client: elasticsearch.Elasticsearch, indices: Iterable[str]) -> None:
+    """
+    Performs a force merge on the indices that have been created.
+
+    Args:
+        config: The configuration with which the build was run.
+    """
+    indices = tuple(indices)
+
+    try:
+        client.indices.forcemerge(index=indices, max_num_segments=1, ignore_unavailable=True)
+    except Exception as ex:
+        logger.warning(f"Error occurred while merging: {indices}.", exc_info=ex)
+
+
+@contextlib.contextmanager
+def initialize_client(
+    config: es_config.Elasticsearch,
+) -> Iterator[elasticsearch.Elasticsearch]:
+    """
+    builds the elastic search client based on the configuration.
+
+    Args:
+        config: The connection configuration for setting up the client.
+
+    Returns:
+        An elasticsearch client
+    """
+    connection = config.connection
+
+    with elasticsearch.Elasticsearch(
+        connection.nodes.split(","),
+        use_ssl=connection.use_ssl,
+        verify_certs=connection.verify_certs,
+        http_auth=(connection.user, connection.password),
+    ) as client:
+        try:
+            yield client
+        finally:
+            _refresh(client, config.write.indices.values())
+            _forcemerge(client, config.write.indices.values())
 
 
 def iterate_es_results(
@@ -608,7 +664,10 @@ class DataFrameUtil:
             .select("_source.*")
         )
 
-    def _create_index(self, index: str, index_type: build.IndexType) -> None:
+    @contextlib.contextmanager
+    def _create_index(
+        self, index: str, index_type: build.IndexType, id_field: str
+    ) -> Iterator:
         """
         Creates the index based on the mapping associated with the given index
         type.
@@ -621,10 +680,29 @@ class DataFrameUtil:
             raise Exception(f"Index: {index} already exists. Cannot overwrite existing index.")
 
         mappings = self._mappings_loader.load_mapper(index_type)
+        settings = dict(mappings.settings)
+        settings["index.sort.field"] = id_field
+        settings["index.sort.order"] = "asc"
 
         self._es_client.indices.create(
             index=index, mappings=mappings.mappings, settings=mappings.settings
         )
+
+        try:
+            self._es_client.indices.put_settings(
+                index=index, body={"index.refresh_interval": "-1"}
+            )
+            yield
+        finally:
+            self._es_client.indices.put_settings(
+                index=index,
+                body={
+                    "index.refresh_interval": mappings.settings.get("index", {}).get(
+                        "refresh_interval", "1m"
+                    )
+                },
+            )
+            self._es_client.indices.refresh(index=index)
 
     def write(self, df: sql.DataFrame, index_type: build.IndexType, id_field: str) -> None:
         """
@@ -637,30 +715,30 @@ class DataFrameUtil:
         """
         index = self._get_index(index_type)
 
-        self._create_index(index, index_type)
-        (
-            df.write.format(self.ES_FORMAT)
-            .option("es.nodes", self._config.connection.nodes)
-            .option("es.net.http.auth.user", self._config.connection.user)
-            .option("es.net.http.auth.pass", self._config.connection.password)
-            .option("es.net.ssl", self._config.connection.use_ssl)
-            .option(
-                "es.net.ssl.cert.allow.self.signed",
-                not self._config.connection.verify_certs,
+        with self._create_index(index, index_type, id_field):
+            (
+                df.write.format(self.ES_FORMAT)
+                .option("es.nodes", self._config.connection.nodes)
+                .option("es.net.http.auth.user", self._config.connection.user)
+                .option("es.net.http.auth.pass", self._config.connection.password)
+                .option("es.net.ssl", self._config.connection.use_ssl)
+                .option(
+                    "es.net.ssl.cert.allow.self.signed",
+                    not self._config.connection.verify_certs,
+                )
+                .option("es.nodes.wan.only", "true")
+                .option("es.nodes.resolve.hostname", "false")
+                .option("es.resource.write", index)
+                .option("es.http.timeout", "20m")
+                .option("es.http.retries", "-1")
+                .option("es.batch.write.retry.count", "-1")
+                .option("es.batch.write.retry.wait", "10m")
+                .option("es.batch.size.bytes", self._config.write.batch_size_bytes)
+                .option("es.batch.size.entries", self._config.write.batch_size_entries)
+                .option("es.batch.write.refresh", False)
+                .option("es.mapping.id", id_field)
+                .save(index)
             )
-            .option("es.nodes.wan.only", "true")
-            .option("es.nodes.resolve.hostname", "false")
-            .option("es.resource.write", index)
-            .option("es.http.timeout", "20m")
-            .option("es.http.retries", "-1")
-            .option("es.batch.write.retry.count", "-1")
-            .option("es.batch.write.retry.wait", "10m")
-            .option("es.batch.size.bytes", self._config.write.batch_size_bytes)
-            .option("es.batch.size.entries", self._config.write.batch_size_entries)
-            .option("es.batch.write.refresh", True)
-            .option("es.mapping.id", id_field)
-            .save(index)
-        )
 
 
 class RDDUtil:

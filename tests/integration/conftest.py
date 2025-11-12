@@ -4,7 +4,7 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
-from typing import Any, cast
+from typing import Any
 from unittest import mock
 
 import elasticsearch
@@ -16,7 +16,6 @@ from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import es_utils, indexd_utils, schemas
-from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
 from mutation_indexer.viz import builders, configuration
 from mutation_indexer.viz.builders import civic
@@ -25,8 +24,8 @@ from tests.integration.utils import test_setup
 CentricIndexFinalizer = Callable[[build.IndexType], Callable[[], None]]
 DataFrameWriter = Callable[[sql.DataFrame], sql.DataFrame]
 
-log = logging.getLogger("tests.integration")
-log.setLevel(logging.INFO)
+logger = logging.getLogger("tests.integration")
+logger.setLevel(logging.INFO)
 
 
 @pytest.fixture(scope="session")
@@ -102,13 +101,6 @@ def source_es_client(
 
 
 @pytest.fixture(scope="session")
-def default_old_config(
-    default_config: configuration.Configuration, es_client: elasticsearch.Elasticsearch
-) -> adapter.ObsoleteConfig:
-    return adapter.ObsoleteConfig(default_config, es_client, mock.MagicMock())
-
-
-@pytest.fixture(scope="session")
 def setup_graph_indices(
     default_config: configuration.Configuration,
     es_client: elasticsearch.Elasticsearch,
@@ -146,7 +138,7 @@ def files_with_linked_cases(
 def spark_session() -> Generator[sql.SparkSession]:
     with (
         sql.SparkSession.builder.master("local[*]")
-        .appName("sqlContextFixture")
+        .appName("int-testing")
         .config("spark.sql.shuffle.partitions", 1)
         .config("spark.ui.showConsoleProgress", False)
         .config("spark.ui.enabled", False)
@@ -157,15 +149,6 @@ def spark_session() -> Generator[sql.SparkSession]:
         spark_session.sql("set spark.sql.caseSensitive=true")
 
         yield spark_session
-
-
-@pytest.fixture(scope="session")
-def sqlContext(
-    spark_session: sql.SparkSession,
-    es_client: elasticsearch.Elasticsearch,
-    source_es_client: elasticsearch.Elasticsearch,
-) -> sql.SQLContext:
-    return sql.SQLContext(spark_session.sparkContext)
 
 
 @pytest.fixture(scope="session")
@@ -261,7 +244,6 @@ def civic_protein_df(
 @pytest.fixture(scope="session")
 def maf_df(
     default_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
     spark_session: sql.SparkSession,
     maf_urls: list[str],
     gene_model_df: sql.DataFrame,
@@ -272,9 +254,9 @@ def maf_df(
     """
     Builds combined maf dataframe once. Reused throughout test suite
     """
-    log.info("\n\n\tBUILDING MAF_DF\n\n")
+    logger.info("\n\n\tBUILDING MAF_DF\n\n")
     maf_df = (
-        sqlContext.read.csv(maf_urls, sep="\t", header=True, comment="#")
+        spark_session.read.csv(maf_urls, sep="\t", header=True, comment="#")
         .drop(
             "AFR_MAF",
             "ALLELE_NUM",
@@ -350,7 +332,7 @@ def maf_df(
             ),
         )
     )
-    fm_ad_maf_df = sqlContext.createDataFrame(
+    fm_ad_maf_df = spark_session.createDataFrame(
         (), schema=schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
     )
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
@@ -382,8 +364,10 @@ def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataF
 
 
 @pytest.fixture(scope="session")
-def maf_metadata_df(sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]) -> sql.DataFrame:
-    return sqlContext.createDataFrame(
+def maf_metadata_df(
+    spark_session: sql.SparkSession, all_maf_cases: Iterable[str]
+) -> sql.DataFrame:
+    return spark_session.createDataFrame(
         tuple((case_id,) for case_id in all_maf_cases), schema="case_id: string"
     ).cache()
 
@@ -423,23 +407,17 @@ def case_df(
 
 
 @pytest.fixture(scope="session")
-def ssm_transcript_df(
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
-    maf_df: sql.DataFrame,
-) -> sql.DataFrame:
+def ssm_transcript_df(maf_df: sql.DataFrame) -> sql.DataFrame:
     """
     Builds ssm-transcript dataframe once. Reused throughout test suite
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
-    log.info("\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n")
-    return builders.ConsequenceBuilder(default_old_config, sqlContext).build_all_effects_cols(
-        maf_df
-    )
+    logger.info("\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n")
+    return builders.ConsequenceBuilder().build_all_effects_cols(maf_df)
 
 
 @pytest.fixture(scope="session")
-def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
+def primary_aliquot_df(spark_session: sql.SparkSession) -> sql.DataFrame:
     """
     Builds a dataframe of primary aliquot selections for each of the cases in
     the test data.
@@ -472,7 +450,7 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
         ]
     )
 
-    return sqlContext.createDataFrame(primary_aliquots, schema)
+    return spark_session.createDataFrame(primary_aliquots, schema)
 
 
 @pytest.fixture(scope="session")
@@ -507,10 +485,8 @@ def segment_cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> s
 
 
 @pytest.fixture(scope="session")
-def consequence_builder(
-    default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
-) -> builders.ConsequenceBuilder:
-    return builders.ConsequenceBuilder(default_old_config, sqlContext)
+def consequence_builder() -> builders.ConsequenceBuilder:
+    return builders.ConsequenceBuilder()
 
 
 @pytest.fixture(scope="session")
@@ -534,9 +510,7 @@ def centric_index_finalizer(
 def case_centric_df(
     request: pytest.FixtureRequest,
     default_config: configuration.Configuration,
-    default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
-    sqlContext: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -554,10 +528,10 @@ def case_centric_df(
     Reused throughout test suite
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.CASE_CENTRIC))
-    log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
+    logger.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
     builder = builders.CaseCentricBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.case_centric,
+        spark_session,
         es_utils.DataFrameUtil(
             default_config.elasticsearch,
             spark_session,
@@ -565,6 +539,7 @@ def case_centric_df(
             es_utils.MappingsLoader(),
             es_utils.SchemaLoader(),
         ),
+        es_utils.MappingsLoader(),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,
@@ -572,31 +547,30 @@ def case_centric_df(
     ascat_metadata_df = cnv_df.select("case_id")
     segment_cnv_metadata_df = segment_cnv_df.select("case_id")
 
-    builder.build(
-        maf_metadata_df,
-        maf_df,
-        ascat_metadata_df,
-        cnv_df,
-        primary_aliquot_df,
-        segment_cnv_df,
-        segment_cnv_metadata_df,
+    logger.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
+    return dataframe_writer(
+        builder.build(
+            maf_metadata_df=maf_metadata_df,
+            maf_df=maf_df,
+            ascat_metadata_df=ascat_metadata_df,
+            ascat_df=cnv_df,
+            primary_aliquot_df=primary_aliquot_df,
+            segment_cnv_df=segment_cnv_df,
+            segment_cnv_metadata_df=segment_cnv_metadata_df,
+        )
     )
-
-    log.info("\n\n\tLOADING CASE_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.case_centric))
 
 
 @pytest.fixture(scope="session")
 def gene_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     centric_index_finalizer: CentricIndexFinalizer,
@@ -607,28 +581,43 @@ def gene_centric_df(
     Reused throughout test suite
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.GENE_CENTRIC))
-    log.info("\n\n\tBUILDING GENE_CENTRIC_DF\n\n")
+    logger.info("\n\n\tBUILDING GENE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.GeneCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.gene_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(maf_df, cnv_df, sub_case_df, primary_aliquot_df)
-
-    log.info("\n\n\tLOADING GENE_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.gene_centric))
+    logger.info("\n\n\tLOADING GENE_CENTRIC_DF\n\n")
+    return dataframe_writer(
+        builder.build(
+            maf_df=maf_df,
+            ascat_df=cnv_df,
+            case_df=sub_case_df,
+            primary_aliquot_df=primary_aliquot_df,
+        )
+    )
 
 
 @pytest.fixture(scope="session")
 def ssm_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     centric_index_finalizer: CentricIndexFinalizer,
@@ -639,28 +628,40 @@ def ssm_centric_df(
     Reused throughout test suite
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.SSM_CENTRIC))
-    log.info("\n\n\tBUILDING SSM_CENTRIC_DF\n\n")
+    logger.info("\n\n\tBUILDING SSM_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.ssm_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(maf_df, sub_case_df, primary_aliquot_df)
-
-    log.info("\n\n\tLOADING SSM_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.ssm_centric))
+    logger.info("\n\n\tLOADING SSM_CENTRIC_DF\n\n")
+    return dataframe_writer(
+        builder.build(
+            maf_df=maf_df, case_df=sub_case_df, primary_aliquot_df=primary_aliquot_df
+        )
+    )
 
 
 @pytest.fixture(scope="session")
 def ssm_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     centric_index_finalizer: CentricIndexFinalizer,
@@ -671,27 +672,39 @@ def ssm_occurrence_centric_df(
     Reused throughout test suite
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.SSM_OCCURRENCE_CENTRIC))
-    log.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
+    logger.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.ssm_occurrence_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(maf_df, sub_case_df, primary_aliquot_df)
-
-    log.info("\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.ssm_occurrence_centric))
+    logger.info("\n\n\tLOADING SSM_OCCURRENCE_CENTRIC_DF\n\n")
+    return dataframe_writer(
+        builder.build(
+            maf_df=maf_df, case_df=sub_case_df, primary_aliquot_df=primary_aliquot_df
+        )
+    )
 
 
 @pytest.fixture(scope="session")
 def cnv_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     centric_index_finalizer: CentricIndexFinalizer,
@@ -701,27 +714,35 @@ def cnv_centric_df(
     Builds cnv centric dataframe
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.CNV_CENTRIC))
-    log.info("\n\n\tBUILDING CNV_CENTRIC DF\n\n")
+    logger.info("\n\n\tBUILDING CNV_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.cnv_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(cnv_df, sub_case_df)
-
-    log.info("\n\n\tLOADING CNV_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.cnv_centric))
+    logger.info("\n\n\tLOADING CNV_CENTRIC_DF\n\n")
+    return dataframe_writer(builder.build(ascat_df=cnv_df, case_df=sub_case_df))
 
 
 @pytest.fixture(scope="session")
 def cnv_occurrence_centric_df(
     request: pytest.FixtureRequest,
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
     centric_index_finalizer: CentricIndexFinalizer,
@@ -731,26 +752,31 @@ def cnv_occurrence_centric_df(
     Builds cnv occurrence centric dataframe
     """
     request.addfinalizer(centric_index_finalizer(build.IndexType.CNV_OCCURRENCE_CENTRIC))
-    log.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
+    logger.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.cnv_occurrence_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    builder.build(cnv_df, sub_case_df)
-
-    log.info("\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n")
-    builder.load()
-
-    return dataframe_writer(cast(sql.DataFrame, builder.cnv_occurrence_centric))
+    logger.info("\n\n\tLOADING CNV_OCCURRENCE_CENTRIC_DF\n\n")
+    return dataframe_writer(builder.build(ascat_df=cnv_df, case_df=sub_case_df))
 
 
 @pytest.fixture(scope="session")
 def case_ssm_subtree(
     default_config: configuration.Configuration,
-    default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
-    sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     es_client: elasticsearch.Elasticsearch,
@@ -760,10 +786,10 @@ def case_ssm_subtree(
     """
     Builds case centric ssm subtree dataframe
     """
-    log.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
+    logger.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
     builder = builders.CaseCentricBuilder(
-        default_old_config,
-        sqlContext,
+        default_config.builders.case_centric,
+        spark_session,
         es_utils.DataFrameUtil(
             default_config.elasticsearch,
             spark_session,
@@ -771,51 +797,76 @@ def case_ssm_subtree(
             es_utils.MappingsLoader(),
             es_utils.SchemaLoader(),
         ),
+        es_utils.MappingsLoader(),
         es_utils.CaseFieldSelector(),
         consequence_builder,
         observation_builder,
     )
 
-    return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
+    return builder._build_ssm_subtree(maf_df, primary_aliquot_df)
 
 
 @pytest.fixture(scope="session")
 def gene_ssm_subtree(
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
 ) -> sql.DataFrame:
     """
     Builds gene centric ssm subtree dataframe
     """
-    log.info("\n\n\tBUILDING GENE_SSM_SUBTREE\n\n")
+    logger.info("\n\n\tBUILDING GENE_SSM_SUBTREE\n\n")
     builder = builders.GeneCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.gene_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
+    return builder._build_ssm_subtree(maf_df, primary_aliquot_df)
 
 
 @pytest.fixture(scope="session")
 def ssm_occurrence_ssm_subtree(
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    default_config: configuration.Configuration,
+    spark_session: sql.SparkSession,
     maf_df: sql.DataFrame,
+    es_client: elasticsearch.Elasticsearch,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
 ):
     """
     Builds ssm occurrence centric ssm subtree dataframe
     """
-    log.info("\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n")
+    logger.info("\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n")
     builder = builders.SSMOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_config.builders.ssm_occurrence_centric,
+        spark_session,
+        es_utils.DataFrameUtil(
+            default_config.elasticsearch,
+            spark_session,
+            es_client,
+            es_utils.MappingsLoader(),
+            es_utils.SchemaLoader(),
+        ),
+        es_utils.MappingsLoader(),
+        consequence_builder,
+        observation_builder,
     )
 
-    return builder.build_ssm_subtree(maf_df)
+    return builder._build_ssm_subtree(maf_df)
 
 
 @pytest.fixture(scope="module")

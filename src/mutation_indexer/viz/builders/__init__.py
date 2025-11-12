@@ -1,7 +1,6 @@
 from mutation_indexer.builders import Builder, GeneModelBuilder
 from mutation_indexer.viz.builders.ascat import ASCATBuilder
 from mutation_indexer.viz.builders.ascat_metadata import ASCATMetadataBuilder
-from mutation_indexer.viz.builders.base_builder import BaseBuilder
 from mutation_indexer.viz.builders.case import CaseBuilder
 from mutation_indexer.viz.builders.case_centric import CaseCentricBuilder
 from mutation_indexer.viz.builders.cnv_centric import CNVCentricBuilder
@@ -24,7 +23,6 @@ from mutation_indexer.viz.builders.ssm_occurrence_centric import SSMOccurrenceCe
 __all__ = (
     "ASCATBuilder",
     "ASCATMetadataBuilder",
-    "BaseBuilder",
     "Builder",
     "CaseBuilder",
     "CaseCentricBuilder",

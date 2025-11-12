@@ -8,8 +8,8 @@ from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer.configuration import adapter
-from mutation_indexer.viz import builders
+from mutation_indexer.constants import build
+from mutation_indexer.viz import builders, configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
@@ -112,11 +112,16 @@ class TestCNVCentricBuilder:
         self._observation_schema = observation_schema
         self._final_schema = final_schema
 
-    def _arrange_config(self) -> adapter.ObsoleteConfig:
+    def _arrange_config(self) -> configuration.CNVCentricBuilder:
         return mock.MagicMock(
-            spec=adapter.ObsoleteConfig,
-            percentile_threshold={"occurrences_per_cnv": 100},
-            output_raw="",
+            spec=configuration.CNVCentricBuilder,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+            is_cached=False,
+            projects=(),
+            acl=(),
+            partition_size=1,
+            id_field="cnv_id",
+            occurrences_threshold=100,
         )
 
     def _arrange_consequence_builder(
@@ -164,14 +169,17 @@ class TestCNVCentricBuilder:
         inputs = self._arrange_inputs()
 
         builder = builders.CNVCentricBuilder(
-            config, mock.MagicMock(), consequence_builder, observation_builder
+            config,
+            mock.MagicMock(),
+            mock.MagicMock(),
+            utils.arrange_empty_mappings_loader(),
+            consequence_builder,
+            observation_builder,
         )
 
-        result_df = builder.build(**inputs).cnv_centric
+        result_df = builder.build(**inputs)
 
-        assert result_df and isinstance(result_df, sql.DataFrame)
         assert result_df.count() == 1
-
         self._assert_schemas_equal(
             result_df.schema, self._final_schema, schemas.Viz.Builders.CNVCentric.FINAL
         )
@@ -216,12 +224,15 @@ class TestCNVCentricBuilder:
         inputs = self._arrange_inputs(ascats=(ascat,), cases=(case,))
 
         builder = builders.CNVCentricBuilder(
-            config, mock.MagicMock(), consequence_builder, observation_builder
+            config,
+            mock.MagicMock(),
+            mock.MagicMock(),
+            utils.arrange_empty_mappings_loader(),
+            consequence_builder,
+            observation_builder,
         )
 
-        result_df = builder.build(**inputs).cnv_centric
-
-        assert result_df and isinstance(result_df, sql.DataFrame)
+        result_df = builder.build(**inputs)
 
         result_row = more_itertools.one(result_df.collect())
 
@@ -241,12 +252,15 @@ class TestCNVCentricBuilder:
         inputs = self._arrange_inputs()
 
         builder = builders.CNVCentricBuilder(
-            config, mock.MagicMock(), consequence_builder, observation_builder
+            config,
+            mock.MagicMock(),
+            mock.MagicMock(),
+            utils.arrange_empty_mappings_loader(),
+            consequence_builder,
+            observation_builder,
         )
 
-        result_df = builder.build(**inputs).cnv_centric
-
-        assert result_df and isinstance(result_df, sql.DataFrame)
+        result_df = builder.build(**inputs)
 
         result_row = more_itertools.one(result_df.collect())
 

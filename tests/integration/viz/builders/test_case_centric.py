@@ -4,7 +4,6 @@ import elasticsearch
 import pytest
 from pyspark import sql
 
-from mutation_indexer.configuration import adapter
 from mutation_indexer.constants import build
 from mutation_indexer.viz import builders, configuration
 from tests.integration.utils import join_utils
@@ -42,14 +41,12 @@ def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> 
 @pytest.mark.case_centric_ssm_subtree
 @pytest.mark.usefixtures("case_centric_df")
 def test_ssm_subtree(
-    default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     case_ssm_subtree: sql.DataFrame,
 ) -> None:
     observation_builder = builders.ObservationBuilder()
-    consequence_builder = builders.ConsequenceBuilder(default_old_config, sqlContext)
+    consequence_builder = builders.ConsequenceBuilder()
 
     # ssm_subtree stats expected:
     cons_df = consequence_builder.build_for_ssm(maf_df, "case_centric")

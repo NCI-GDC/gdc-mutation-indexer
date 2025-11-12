@@ -1,18 +1,22 @@
-from typing import Self
+from typing import TypedDict
 
 from pyspark import sql
 from pyspark.sql import functions as F
 
-from mutation_indexer.configuration import adapter
-from mutation_indexer.viz.builders import (
-    base_builder,
-    consequence,
-    df_builders,
-    observation,
-)
+from mutation_indexer import builders, es_utils
+from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
+from mutation_indexer.viz.builders import consequence, df_builders, observation
 
 
-class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
+class Inputs(TypedDict):
+    ascat_df: sql.DataFrame
+    case_df: sql.DataFrame
+
+
+class CNVOccurrenceCentricBuilder(
+    builders.IndexBuilder[configuration.CNVOccurrenceCentricBuilder, Inputs]
+):
     """
     Builds cnv-occurrence-centric dataframe given
     case, gene, and maf dataframes:
@@ -27,61 +31,43 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
                             |_____ gene{}
     """
 
-    index_name = "cnv_occurrence_centric"
-    id_field = "cnv_occurrence_id"
-
     def __init__(
         self,
-        config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        config: configuration.CNVOccurrenceCentricBuilder,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        mappings_loader: es_utils.MappingsLoader,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
-    ):
-        super().__init__(config, sqlContext)
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            input_type=Inputs,
+            output=build.DataFrame.CNV_OCCURRENCE_CENTRIC,
+        )
 
-        self.consequence_builder = consequence_builder
-        self.observation_builder = observation_builder
+        self._consequence_builder = consequence_builder
+        self._observation_builder = observation_builder
 
-    def build(
-        self, ascat_df: sql.DataFrame, case_df: sql.DataFrame, **kwargs: sql.DataFrame
-    ) -> Self:
+    def _build_from_scratch(self, input_dfs: Inputs) -> sql.DataFrame:
         """
         Builds CNV Occurrence Centric index
         """
-        # Check if we should load a pre-built dataframe
-        if self.config.output_raw == "read":
-            self.cnv_occurrence_centric = self.load_raw()
-            if self.cnv_occurrence_centric is not None:
-                return self
+        ascat_df = input_dfs["ascat_df"]
+        cnv_df = self._build_cnv_subtree(ascat_df)
+        case_df = self._build_case_subtree(ascat_df, input_dfs["case_df"])
 
-        self.log_count(ascat_df)
-
-        # CNV subtree
-        cnv_df = self.build_cnv_subtree(ascat_df)
-
-        # Case subtree
-        case_subtree = self.build_case_subtree(ascat_df, case_df)
-
-        self.log("Joining cnv with case")
-
-        cnv_occurrence_centric = (
-            cnv_df.join(case_subtree, on=["case_id", "cnv_id"], how="inner")
+        return (
+            cnv_df.join(case_df, on=["case_id", "cnv_id"], how="inner")
             .withColumnRenamed("occurrence_id", "cnv_occurrence_id")
             .drop("case_id")
             .drop("cnv_id")
         )
 
-        self.log_count(cnv_occurrence_centric)
-
-        self.cnv_occurrence_centric = cnv_occurrence_centric
-        self.log("Build finished")
-
-        # Save the resulting dataframe to s3
-        self.write()
-
-        return self
-
-    def build_cnv_subtree(self, ascat_df):
+    def _build_cnv_subtree(self, ascat_df):
         """
         cnv{}
             |____ consequence[]
@@ -89,10 +75,10 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
         """
 
         # Consequence
-        cons_df = self.consequence_builder.build_for_cnv(ascat_df, self.index_name)
+        cons_df = self._consequence_builder.build_for_cnv(ascat_df, self._index_name)
 
         cnv_df = df_builders.build_cnv_subtree(
-            ascat_df, self.index_name, cons_df=cons_df, add_fields=["case_id"]
+            ascat_df, self._index_name, cons_df=cons_df, add_fields=["case_id"]
         )
 
         cnv_subtree = cnv_df.select(
@@ -105,22 +91,16 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
 
         return cnv_subtree
 
-    def build_case_subtree(self, ascat_df, case_df):
+    def _build_case_subtree(self, ascat_df, case_df):
         """
         case{}
             |____ observation[]
         """
-        self.log("Building case subtree")
+        obs_df = self._observation_builder.build_for_cnv(ascat_df, self._index_name)
 
-        # Observation
-        obs_df = self.observation_builder.build_for_cnv(ascat_df, self.index_name)
-
-        self.log("Join observation with case")
-        case_obs_df = case_df.join(obs_df, on="case_id", how="left").select(
+        return case_df.join(obs_df, on="case_id", how="left").select(
             "case_id",
             "occurrence_id",
             "cnv_id",
             F.struct("observation", *case_df.columns).alias("case"),
         )
-        self.log_count(case_obs_df)
-        return case_obs_df

@@ -77,7 +77,10 @@ def segment_file_docs(
     with test_setup.IndexManager(
         segment_config,
         es_client,
-        index_types=(build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,),
+        index_types=(
+            build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC,
+            build.IndexType.SEGMENT_CNV_CENTRIC,
+        ),
         skip_creation=True,
     ):
         with test_setup.DocumentLoader(segment_config, es_client) as loader:

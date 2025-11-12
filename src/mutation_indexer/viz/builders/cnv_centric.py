@@ -1,19 +1,21 @@
-from typing import Self
+from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import SQLContext
-from pyspark.sql.functions import collect_set, struct
+from pyspark.sql import functions as F
 
-from mutation_indexer.configuration import adapter
-from mutation_indexer.viz.builders import (
-    base_builder,
-    consequence,
-    df_builders,
-    observation,
-)
+from mutation_indexer import builders, es_utils
+from mutation_indexer.builders import utils
+from mutation_indexer.constants import build
+from mutation_indexer.viz import configuration
+from mutation_indexer.viz.builders import consequence, df_builders, observation
 
 
-class CNVCentricBuilder(base_builder.BaseBuilder):
+class Inputs(TypedDict):
+    ascat_df: sql.DataFrame
+    case_df: sql.DataFrame
+
+
+class CNVCentricBuilder(builders.IndexBuilder[configuration.CNVCentricBuilder, Inputs]):
     """
     CNV: Copy Number Variation
     Builds cnv-centric dataframe given case, gene, and maf dataframes:
@@ -27,67 +29,49 @@ class CNVCentricBuilder(base_builder.BaseBuilder):
 
     """
 
-    index_name = "cnv_centric"
-    id_field = "cnv_id"
-
     def __init__(
         self,
-        config: adapter.ObsoleteConfig,
-        sqlContext: SQLContext,
+        config: configuration.CNVCentricBuilder,
+        spark_session: sql.SparkSession,
+        es_dataframe_util: es_utils.DataFrameUtil,
+        mappings_loader: es_utils.MappingsLoader,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
-    ):
-        super().__init__(config, sqlContext)
+    ) -> None:
+        super().__init__(
+            config,
+            spark_session,
+            es_dataframe_util,
+            mappings_loader,
+            input_type=Inputs,
+            output=build.DataFrame.CNV_CENTRIC,
+        )
 
-        self.consequence_builder = consequence_builder
-        self.observation_builder = observation_builder
+        self._consequence_builder = consequence_builder
+        self._observation_builder = observation_builder
 
-    def build(
-        self, ascat_df: sql.DataFrame, case_df: sql.DataFrame, **kwargs: sql.DataFrame
-    ) -> Self:
+    def _build_from_scratch(self, input_dfs: Inputs) -> sql.DataFrame:
         """
         Builds CNV Centric index
         """
-        # Check if we should load a pre-built dataframe
-        if self.config.output_raw == "load":
-            self.cnv_centric = self.load_raw()
-            if self.cnv_centric is not None:
-                return self
-
-        self.log("Select CNV data from ASCAT")
-        cnv_df = df_builders.get_cnv_df(ascat_df, self.index_name)
-
-        self.log("Build Consequence")
-        cons_df = self.consequence_builder.build_for_cnv(
+        ascat_df = input_dfs["ascat_df"]
+        cnv_df = df_builders.get_cnv_df(ascat_df, self._index_name)
+        cons_df = self._consequence_builder.build_for_cnv(
             ascat_df,
-            self.index_name,
+            self._index_name,
         )
-
-        self.log("Build Occurrence")
-        occurrence_df = self.build_occurrence_df(ascat_df, case_df)
-
-        self.log("Final join CNV + Consequence + Occurrence")
+        occurrence_df = self._build_occurrence_df(ascat_df, input_dfs["case_df"])
         cnv_cons_df = cnv_df.join(cons_df, on="cnv_id", how="left")
         cnv_centric_df = cnv_cons_df.join(occurrence_df, on="cnv_id", how="left")
 
         # truncate outliers
-        threshold = self.config.percentile_threshold["occurrences_per_cnv"]
-        cnv_centric_df = self.truncate_df_at_percentile(
-            cnv_centric_df, "occurrence", threshold
+        cnv_centric_df = utils.filter_arrays_by_relative_size(
+            cnv_centric_df, "occurrence", self._config.occurrences_threshold
         )
 
-        # save final df as property
-        self.cnv_centric = cnv_centric_df
+        return cnv_centric_df
 
-        self.log_count(self.cnv_centric)
-        self.log("Build finished")
-
-        # Save the resulting dataframe to s3
-        self.write()
-
-        return self
-
-    def build_occurrence_df(self, ascat_df, case_df):
+    def _build_occurrence_df(self, ascat_df, case_df):
         """
         Assumes you've already added 'case_id'
 
@@ -98,28 +82,22 @@ class CNVCentricBuilder(base_builder.BaseBuilder):
                         |____ observation []
 
         """
-        assert "case_id" in ascat_df.columns
-
         # 1. Observation
-        self.logger.info("Aggregating Observation from ASCAT")
-        obs_df = self.observation_builder.build_for_cnv(
+        obs_df = self._observation_builder.build_for_cnv(
             ascat_df,
-            self.index_name,
+            self._index_name,
         )
 
         # 2. Join Case to Observation and create structs
-        self.logger.info("Joining Cases with Observation, [right, case_id]")
-        occurrence_df = (
+        return (
             case_df.join(obs_df, on=["case_id"], how="left")
             .select(
                 "cnv_id",
-                struct(
+                F.struct(
                     "occurrence_id",
-                    struct("observation", *case_df.columns).alias("case"),
+                    F.struct("observation", *case_df.columns).alias("case"),
                 ).alias("occurrence"),
             )
             .groupby("cnv_id")
-            .agg(collect_set("occurrence").alias("occurrence"))
+            .agg(F.collect_set("occurrence").alias("occurrence"))
         )
-
-        return occurrence_df

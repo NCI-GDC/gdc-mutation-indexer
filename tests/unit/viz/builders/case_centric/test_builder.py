@@ -1,5 +1,4 @@
 from collections.abc import Iterable, Set
-from typing import TypedDict
 from unittest import mock
 
 import more_itertools
@@ -8,22 +7,12 @@ from pyspark import sql
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
-from mutation_indexer.configuration import adapter
-from mutation_indexer.viz import builders
+from mutation_indexer.constants import build
+from mutation_indexer.viz import builders, configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import viz as models
 from tests.unit.viz.builders.case_centric.inputs import case, cnv, ssm
-
-
-class Inputs(TypedDict):
-    maf_metadata_df: sql.DataFrame
-    maf_df: sql.DataFrame
-    ascat_metadata_df: sql.DataFrame
-    ascat_df: sql.DataFrame
-    primary_aliquot_df: sql.DataFrame
-    segment_cnv_df: sql.DataFrame
-    segment_cnv_metadata_df: sql.DataFrame
 
 
 def assert_ascat_translated(result_gene: sql.Row, ascat: models.ASCAT) -> None:
@@ -182,20 +171,18 @@ class TestCaseCentricBuilder:
         self.segment_cnv_schema = segment_cnv_schema
         self.segment_cnv_metadata_schema = segment_cnv_metadata_schema
 
-    def arrange_config(self) -> adapter.ObsoleteConfig:
+    def arrange_config(self) -> configuration.CaseCentricBuilder:
         return mock.MagicMock(
-            spec=adapter.ObsoleteConfig,
-            debug=False,
+            spec=configuration.CaseCentricBuilder,
+            backup=mock.MagicMock(mode=build.BackupMode.NEITHER, path=""),
+            is_cached=False,
             projects=(),
-            output_raw="neither",
-            df_repartition=1,
-            percentile_threshold={"genes_per_case": 100},
+            acl=(),
+            partition_size=1,
+            id_field="case_id",
+            genes_threshold=100,
+            include_as_arrays=(),
         )
-
-    def arrange_sql_context(self) -> sql.SQLContext:
-        sql_context = mock.MagicMock(spec=sql.SQLContext)
-
-        return sql_context
 
     def arrange_dataframe_util(
         self, cases: Iterable[case.Case] = (case.Case(),)
@@ -250,7 +237,7 @@ class TestCaseCentricBuilder:
         segment_cnv_metadata: Iterable[models.SegmentCNVMetadata] = (
             models.SegmentCNVMetadata(),
         ),
-    ) -> Inputs:
+    ) -> dict[str, sql.DataFrame]:
         maf_metadata_df = self.create_dataframe(maf_metadata, self.maf_metadata_schema)
         maf_df = self.create_dataframe(mafs, self.maf_schema)
         ascat_metadata_df = self.create_dataframe(ascat_metadata, self.ascat_metadata_schema)
@@ -263,7 +250,7 @@ class TestCaseCentricBuilder:
             segment_cnv_metadata, self.segment_cnv_metadata_schema
         )
 
-        return Inputs(
+        return dict(
             maf_metadata_df=maf_metadata_df,
             maf_df=maf_df,
             ascat_metadata_df=ascat_metadata_df,
@@ -276,7 +263,6 @@ class TestCaseCentricBuilder:
     @pytest.mark.case_schema_dependent
     def test__build__single_row(self) -> None:
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -284,24 +270,20 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs()
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        assert hasattr(builder, "case_centric") and isinstance(
-            builder.case_centric, sql.DataFrame
-        )
-        assert builder.case_centric.count() == 1
+        assert df.count() == 1
 
         self.assert_schemas_equal(
-            builder.case_centric.schema,
-            self.final_schema,
-            schemas.Viz.Builders.CaseCentric.FINAL,
+            df.schema, self.final_schema, schemas.Viz.Builders.CaseCentric.FINAL
         )
 
     def test__build__data_translated(self) -> None:
@@ -314,7 +296,6 @@ class TestCaseCentricBuilder:
         cnv_observation = cnv.Observations()
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util((es_case,))
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder((ssm_consequence,))
@@ -326,16 +307,17 @@ class TestCaseCentricBuilder:
         )
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
         maf_gene = more_itertools.one(g for g in result_case.gene if g.gene_id == "MAFGENE")
         ascat_gene = more_itertools.one(
             g for g in result_case.gene if g.gene_id == "ASCATGENE"
@@ -378,7 +360,6 @@ class TestCaseCentricBuilder:
         segment_cnv_metadata = models.SegmentCNVMetadata(case_id=cnv_segment_case_id)
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -390,16 +371,17 @@ class TestCaseCentricBuilder:
         )
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
         result_available_variations = frozenset(result_case.available_variation_data)
 
         assert result_available_variations == expected_available_variations
@@ -443,7 +425,6 @@ class TestCaseCentricBuilder:
         )
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -451,16 +432,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(raw_maf,), ascats=(raw_ascat,))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == expected_count
 
@@ -469,7 +451,6 @@ class TestCaseCentricBuilder:
         raw_ascat = models.ASCAT(case_id="case-1")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -477,16 +458,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(raw_maf,), ascats=(raw_ascat,))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert result_case.gene is None
 
@@ -495,7 +477,6 @@ class TestCaseCentricBuilder:
         ssm_observation = ssm.Observations(case_id="case-0")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -505,16 +486,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(raw_maf,), ascats=())
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == 1
         assert len(result_case.gene[0].ssm) == 1
@@ -525,7 +507,6 @@ class TestCaseCentricBuilder:
         cnv_observation = cnv.Observations(case_id="case-0")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -535,16 +516,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(), ascats=(raw_ascat,))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == 1
         assert result_case.gene[0].ssm is None
@@ -569,7 +551,6 @@ class TestCaseCentricBuilder:
         cnv_observation = cnv.Observations(case_id="case-0")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -579,16 +560,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(raw_maf,), ascats=(raw_ascat,))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == 1
         assert len(result_case.gene[0].ssm) == 1
@@ -601,7 +583,6 @@ class TestCaseCentricBuilder:
         ssm_observation1 = ssm.Observations(case_id="case-0", ssm_id="ssm-1")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -611,16 +592,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(raw_maf0, raw_maf1), ascats=())
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == 1
         assert len(result_case.gene[0].ssm) == 2
@@ -632,7 +614,6 @@ class TestCaseCentricBuilder:
         cnv_observation1 = cnv.Observations(cnv_id="cnv-1")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -642,16 +623,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(mafs=(), ascats=(raw_ascat0, raw_ascat1))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert len(result_case.gene) == 1
         assert len(result_case.gene[0].cnv) == 2
@@ -660,7 +642,6 @@ class TestCaseCentricBuilder:
         raw_segment_cnv = models.SegmentCNV(case_id="case-1")
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -668,16 +649,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(segment_cnvs=(raw_segment_cnv,))
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
 
         assert result_case.segment_cnv is None
 
@@ -691,7 +673,6 @@ class TestCaseCentricBuilder:
             ),
         )
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util()
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -699,16 +680,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(segment_cnvs=raw_segment_cnvs)
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_case = more_itertools.one(builder.case_centric.collect())
+        result_case = more_itertools.one(df.collect())
         result_segment_cnv = result_case.segment_cnv
 
         assert len(result_segment_cnv) == 2
@@ -726,13 +708,12 @@ class TestCaseCentricBuilder:
                 segment_cnv_id="segment_cnv-0", case_id="case-0", observation_id="obs-0"
             ),
             models.SegmentCNV(
-                segment_cnv_id="segment_cnv-0", case_id="case-1", observation_id="obs-1"
+                segment_cnv_id="segment_cnv-1", case_id="case-1", observation_id="obs-1"
             ),
         )
         cases = (case.Case(case_id="case-0"), case.Case(case_id="case-1"))
 
         config = self.arrange_config()
-        sql_context = self.arrange_sql_context()
         dataframe_util = self.arrange_dataframe_util(cases=cases)
         field_selector = self.arrange_field_selector()
         consequence_builder = self.arrange_consequence_builder()
@@ -740,16 +721,17 @@ class TestCaseCentricBuilder:
         inputs = self.arrange_inputs(segment_cnvs=segment_cnvs)
         builder = builders.CaseCentricBuilder(
             config,
-            sql_context,
+            mock.MagicMock(),
             dataframe_util,
+            utils.arrange_empty_mappings_loader(),
             field_selector,
             consequence_builder,
             observation_builder,
         )
 
-        builder.build(**inputs)
+        df = builder.build(**inputs)
 
-        result_cases = {r.case_id: r for r in builder.case_centric.collect()}
+        result_cases = {r.case_id: r for r in df.collect()}
 
         assert frozenset(("case-0", "case-1")) == result_cases.keys()
         assert len(result_cases["case-0"].segment_cnv) == 1

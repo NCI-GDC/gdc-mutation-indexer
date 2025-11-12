@@ -6,13 +6,11 @@ import pathlib
 from collections.abc import Iterable, Iterator
 from typing import ContextManager, Generic, TypeVar
 
-import elasticsearch
 from indexclient import client
 from pyspark import sql
 
 from mutation_indexer import builders, configuration
 from mutation_indexer import logging as mutation_indexer_logging
-from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
 from mutation_indexer.constants import app
 
@@ -46,25 +44,6 @@ def get_index_client(config: indexd.IndexD) -> client.IndexClient:
     return client.IndexClient(
         baseurl=f"{config.host}:{config.port}",
         auth=(config.user, config.password),
-    )
-
-
-def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
-    """
-    builds the elastic search client based on the configuration.
-
-    Args:
-        config: The connection configuration for setting up the client.
-
-    Returns:
-        An elasticsearch client
-    """
-
-    return elasticsearch.Elasticsearch(
-        config.nodes.split(","),
-        use_ssl=config.use_ssl,
-        verify_certs=config.verify_certs,
-        http_auth=(config.user, config.password),
     )
 
 

@@ -5,24 +5,23 @@ import functools
 import itertools
 import logging
 import operator
-from collections.abc import Collection, Iterable, Iterator, Mapping, Set
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence, Set
 from importlib import resources
 from typing import (
     Generic,
     Literal,
     Protocol,
+    TypeGuard,
     TypeVar,
     get_type_hints,
     runtime_checkable,
 )
-from collections.abc import Sequence
 
 import more_itertools
 from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import TypeGuard
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration import builders
@@ -272,7 +271,7 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
         """
         Args:
             config: The configuration for the given builder.
-            sqlContext: The sql session object for the current pyspark run.
+            spark_session: The sql session object for the current pyspark run.
             es_dataframe_util: The util for creating dataframes from data in
                 elasticsearch.
             output: The DataFrame which is the resulting output of this builder.

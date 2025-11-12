@@ -120,6 +120,7 @@ include_as_arrays = [
 ]
 is_cached = false
 partition_size = 12
+projects = []
 
 [builders.case_centric.backup]
 mode = "NEITHER"

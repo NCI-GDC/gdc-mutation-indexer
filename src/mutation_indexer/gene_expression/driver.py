@@ -58,7 +58,7 @@ class Driver(driver.Driver[configuration.Configuration]):
         s3_client = _initialize_s3_client(config.aws.s3)
 
         with (
-            driver.get_es_client(config.elasticsearch.connection) as es_client,
+            es_utils.initialize_client(config.elasticsearch) as es_client,
             sqlite.SQLiteDatabase(config.sqlite_database, s3_client) as sqlite_db,
         ):
             index_client = driver.get_index_client(config.indexd)
@@ -67,7 +67,7 @@ class Driver(driver.Driver[configuration.Configuration]):
             yield Dependencies(
                 indexd_utils.DataFrameUtil(
                     index_client,
-                    sql.SQLContext(spark_session.sparkContext, spark_session),
+                    spark_session,
                     logging.getLogger(indexd_utils.__name__),
                 ),
                 es_utils.DataFrameUtil(
