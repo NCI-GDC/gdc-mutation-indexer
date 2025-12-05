@@ -681,8 +681,6 @@ class DataFrameUtil:
 
         mappings = self._mappings_loader.load_mapper(index_type)
         settings = dict(mappings.settings)
-        settings["index.sort.field"] = id_field
-        settings["index.sort.order"] = "asc"
 
         self._es_client.indices.create(
             index=index, mappings=mappings.mappings, settings=settings
