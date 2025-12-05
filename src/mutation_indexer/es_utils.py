@@ -690,16 +690,25 @@ class DataFrameUtil:
 
         try:
             self._es_client.indices.put_settings(
-                index=index, body={"index.refresh_interval": "-1"}
+                index=index,
+                body={
+                    "index": {
+                        "refresh_interval": "-1",
+                        "translog": {"sync_interval": "1h", "flush_threshold_size": "100 GB"},
+                    }
+                },
             )
             yield
         finally:
             self._es_client.indices.put_settings(
                 index=index,
                 body={
-                    "index.refresh_interval": mappings.settings.get("index", {}).get(
-                        "refresh_interval", "1m"
-                    )
+                    "index": {
+                        "refresh_interval": mappings.settings.get("index", {}).get(
+                            "refresh_interval"
+                        ),
+                        "translog": {"sync_interval": None, "flush_threshold_size": None},
+                    }
                 },
             )
             self._es_client.indices.refresh(index=index)
