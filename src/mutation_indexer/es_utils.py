@@ -685,7 +685,7 @@ class DataFrameUtil:
         settings["index.sort.order"] = "asc"
 
         self._es_client.indices.create(
-            index=index, mappings=mappings.mappings, settings=mappings.settings
+            index=index, mappings=mappings.mappings, settings=settings
         )
 
         try:
