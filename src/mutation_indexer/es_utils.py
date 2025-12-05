@@ -694,7 +694,11 @@ class DataFrameUtil:
                 body={
                     "index": {
                         "refresh_interval": "-1",
-                        "translog": {"sync_interval": "1h", "flush_threshold_size": "100 GB"},
+                        "translog": {
+                            "sync_interval": "1h",
+                            "flush_threshold_size": "500 GB",
+                            "durability": "async",
+                        },
                     }
                 },
             )
@@ -707,7 +711,11 @@ class DataFrameUtil:
                         "refresh_interval": mappings.settings.get("index", {}).get(
                             "refresh_interval"
                         ),
-                        "translog": {"sync_interval": None, "flush_threshold_size": None},
+                        "translog": {
+                            "sync_interval": None,
+                            "flush_threshold_size": None,
+                            "durability": None,
+                        },
                     }
                 },
             )
