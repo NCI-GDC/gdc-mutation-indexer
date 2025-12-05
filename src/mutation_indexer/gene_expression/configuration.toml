@@ -76,8 +76,8 @@ file_index = "graph_file"
 max_source_filter_length = 400
 
 [elasticsearch.write]
-batch_size_bytes = "16mb"
-batch_size_entries = 1000
+batch_size_bytes = "250mb"
+batch_size_entries = 0
 
 [elasticsearch.write.indices]
 GENE_EXPRESSION = "{build[data_release]}_ge_open_{build[build_version]}__gene_expression"

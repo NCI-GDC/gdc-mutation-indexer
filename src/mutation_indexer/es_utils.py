@@ -717,7 +717,6 @@ class DataFrameUtil:
                     }
                 },
             )
-            self._es_client.indices.refresh(index=index)
 
     def write(self, df: sql.DataFrame, index_type: build.IndexType, id_field: str) -> None:
         """
