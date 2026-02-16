@@ -6,7 +6,7 @@ from unittest import mock
 import more_itertools
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
@@ -228,10 +228,14 @@ class TestPrimaryAliquotBuilder:
 
         result_df = builder.build()
         result_case_row = more_itertools.one(
-            result_df.where(F.col("entity") == F.lit("case")).collect()
+            result_df.where(
+                pyspark_functions.col("entity") == pyspark_functions.lit("case")
+            ).collect()
         )
         result_file_row = more_itertools.one(
-            result_df.where(F.col("entity") == F.lit("file")).collect()
+            result_df.where(
+                pyspark_functions.col("entity") == pyspark_functions.lit("file")
+            ).collect()
         )
 
         assert result_case_row.aliquot_id == "a-1"
@@ -286,7 +290,9 @@ class TestPrimaryAliquotBuilder:
 
         result_df = builder.build()
         result_row = more_itertools.one(
-            result_df.where(F.col("entity") == F.lit("case")).collect()
+            result_df.where(
+                pyspark_functions.col("entity") == pyspark_functions.lit("case")
+            ).collect()
         )
 
         assert result_row.file_id == "f-1"
@@ -297,7 +303,9 @@ class TestPrimaryAliquotBuilder:
 
         result_df = builder.build()
         result_row = more_itertools.one(
-            result_df.where(F.col("entity") == F.lit("case")).collect()
+            result_df.where(
+                pyspark_functions.col("entity") == pyspark_functions.lit("case")
+            ).collect()
         )
 
         assert result_row.file_id == "f-0"

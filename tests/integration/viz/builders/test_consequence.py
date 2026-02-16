@@ -2,7 +2,7 @@ import json
 
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer.viz import builders
 
@@ -57,7 +57,7 @@ class TestConsequenceBuilder:
         cons_df = builder.build_for_ssm(maf_df, index_name)
 
         # Explode consequences
-        tran_df = cons_df.select(F.explode("consequence").alias("c")).select(
+        tran_df = cons_df.select(pyspark_functions.explode("consequence").alias("c")).select(
             "c.consequence_id",
             "c.transcript.transcript_id",
             "c.transcript.annotation",
@@ -120,7 +120,7 @@ class TestConsequenceBuilder:
     ) -> None:
         cons_df = builder.build_for_ssm(maf_df, index_name)
         transcripts = cons_df.select(
-            F.explode("consequence.transcript").alias("transcript")
+            pyspark_functions.explode("consequence.transcript").alias("transcript")
         ).select("transcript.*")
 
         # Check that gene not in transctipts
@@ -135,11 +135,13 @@ class TestConsequenceBuilder:
     ) -> None:
         cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True)
         transcripts = cons_df.select(
-            F.explode("consequence.transcript").alias("transcript")
+            pyspark_functions.explode("consequence.transcript").alias("transcript")
         ).select("transcript.*")
 
         assert "symbol" in (
-            cons_df.select(F.explode("consequence.transcript.gene").alias("gene"))
+            cons_df.select(
+                pyspark_functions.explode("consequence.transcript.gene").alias("gene")
+            )
             .select("gene.*")
             .columns
         )
@@ -215,7 +217,7 @@ class TestConsequenceBuilder:
         for ssm_id, transcripts in effects_map.items():
             for transcript_id, transcript in transcripts.items():
                 # Make sure all transcripts have vep_impact and it is not None:
-                assert list(transcript["vep_impact"])[0], (
+                assert next(iter(transcript["vep_impact"])), (
                     f"Transcript {transcript_id} has no vep_impact"
                 )
 

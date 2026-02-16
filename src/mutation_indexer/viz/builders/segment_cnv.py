@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import builders, indexd_utils, schemas
@@ -15,7 +15,7 @@ SEGMENT_CNV_DOCUMENT_SCHEMA = "builders/segment_cnv/segment_cnv_document.yaml"
 CHROMOSOME_REGEX_PATTERN = r"chr(\d+)"
 
 
-@F.udf(returnType=UUIDS_STRUCT)
+@pyspark_functions.udf(returnType=UUIDS_STRUCT)
 def _generate_uuids(
     chromosome: str,
     start_position: int,
@@ -94,14 +94,14 @@ class SegmentCNVBuilder(
         document_df = (
             document_df.withColumn(
                 chromosome_integer_field,
-                F.regexp_extract(chromosome_field, CHROMOSOME_REGEX_PATTERN, 1).cast(
-                    types.IntegerType()
-                ),
+                pyspark_functions.regexp_extract(
+                    chromosome_field, CHROMOSOME_REGEX_PATTERN, 1
+                ).cast(types.IntegerType()),
             )
-            .filter(F.col(chromosome_integer_field).between(1, 22))
+            .filter(pyspark_functions.col(chromosome_integer_field).between(1, 22))
             .withColumn(
                 chromosome_field,
-                F.col(chromosome_integer_field).cast(types.StringType()),
+                pyspark_functions.col(chromosome_integer_field).cast(types.StringType()),
             )
             .drop(chromosome_integer_field)
         )
@@ -115,7 +115,7 @@ class SegmentCNVBuilder(
         )
         document_df = self._filter_by_chromosome(document_df)
         document_df = document_df.select(
-            F.col("did").alias("file_id"),
+            pyspark_functions.col("did").alias("file_id"),
             "copy_number",
             "chromosome",
             "start_position",
@@ -155,25 +155,29 @@ class SegmentCNVBuilder(
             Thus the data frame is left with only the true modal values for each file.
         """
         ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
-            F.sum("length").alias("total_weight")
+            pyspark_functions.sum("length").alias("total_weight")
         )
         ploidy_window = sql.Window().partitionBy("file_id", "total_weight")
         mode_window = (
             sql.Window()
             .partitionBy("file_id")
-            .orderBy(F.col("total_weight").desc_nulls_last())
+            .orderBy(pyspark_functions.col("total_weight").desc_nulls_last())
         )
         ploidy_df = (
             ploidy_df.select(
                 "file_id",
-                F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
-                F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
-                F.row_number().over(mode_window).alias("row_number"),
+                pyspark_functions.min("copy_number")
+                .over(ploidy_window)
+                .alias("lower_ploidy_number"),
+                pyspark_functions.max("copy_number")
+                .over(ploidy_window)
+                .alias("upper_ploidy_number"),
+                pyspark_functions.row_number().over(mode_window).alias("row_number"),
             )
             .where(
-                (F.col("row_number") == 1)
-                & (F.col("lower_ploidy_number") != 0)
-                & (F.col("upper_ploidy_number") != 0)
+                (pyspark_functions.col("row_number") == 1)
+                & (pyspark_functions.col("lower_ploidy_number") != 0)
+                & (pyspark_functions.col("upper_ploidy_number") != 0)
             )
             .select("file_id", "upper_ploidy_number", "lower_ploidy_number")
         )
@@ -219,28 +223,52 @@ class SegmentCNVBuilder(
         """
         document_df = self._add_ploidy_values(document_df)
         cnv_change = (
-            F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-            .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+            pyspark_functions.when(
+                pyspark_functions.col("copy_number")
+                > pyspark_functions.col("upper_ploidy_number"),
+                "Gain",
+            )
+            .when(
+                pyspark_functions.col("copy_number")
+                < pyspark_functions.col("lower_ploidy_number"),
+                "Loss",
+            )
             .otherwise(None)
             .alias("cnv_change")
         )
         cnv_change_5_category = (
-            F.when(F.col("copy_number") == 0, "Homozygous Deletion")
+            pyspark_functions.when(
+                pyspark_functions.col("copy_number") == 0, "Homozygous Deletion"
+            )
             .when(
-                F.col("copy_number") >= F.col("upper_ploidy_number") * 2,
+                pyspark_functions.col("copy_number")
+                >= pyspark_functions.col("upper_ploidy_number") * 2,
                 "Amplification",
             )
-            .when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-            .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+            .when(
+                pyspark_functions.col("copy_number")
+                > pyspark_functions.col("upper_ploidy_number"),
+                "Gain",
+            )
+            .when(
+                pyspark_functions.col("copy_number")
+                < pyspark_functions.col("lower_ploidy_number"),
+                "Loss",
+            )
             .otherwise(None)
             .alias("cnv_change_5_category")
         )
-        mean_ploidy = (F.col("upper_ploidy_number") + F.col("lower_ploidy_number")) / 2
+        mean_ploidy = (
+            pyspark_functions.col("upper_ploidy_number")
+            + pyspark_functions.col("lower_ploidy_number")
+        ) / 2
         document_df = document_df.select(
             "*",
             cnv_change,
             cnv_change_5_category,
-            F.ceil(mean_ploidy).cast(types.IntegerType()).alias("sample_ploidy_integer"),
+            pyspark_functions.ceil(mean_ploidy)
+            .cast(types.IntegerType())
+            .alias("sample_ploidy_integer"),
         ).na.drop(subset="cnv_change_5_category")
 
         return document_df
@@ -266,7 +294,10 @@ class SegmentCNVBuilder(
         The segment length will be end_position - start_position + 1.
         """
         document_df = document_df.withColumn(
-            "length", F.col("end_position") - F.col("start_position") + 1
+            "length",
+            pyspark_functions.col("end_position")
+            - pyspark_functions.col("start_position")
+            + 1,
         )
 
         return document_df
@@ -298,7 +329,7 @@ class SegmentCNVBuilder(
             "segment_cnv_id",
             "case_id",
             "aliquot_id",
-            F.col("file_id").alias("src_file_id"),
+            pyspark_functions.col("file_id").alias("src_file_id"),
             "occurrence_id",
             "observation_id",
             "copy_number",
@@ -309,8 +340,8 @@ class SegmentCNVBuilder(
             "cnv_change",
             "cnv_change_5_category",
             "sample_ploidy_integer",
-            F.col("workflow_type").alias("variant_caller"),
-            F.lit("Tumor Only").alias("variant_status"),
+            pyspark_functions.col("workflow_type").alias("variant_caller"),
+            pyspark_functions.lit("Tumor Only").alias("variant_status"),
         )
 
         return segment_cnv_df

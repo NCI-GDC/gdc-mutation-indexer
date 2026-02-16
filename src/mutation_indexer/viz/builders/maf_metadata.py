@@ -6,7 +6,7 @@ from typing import Literal, TypedDict
 import elasticsearch
 import more_itertools
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.configuration import elasticsearch as es_config
@@ -303,7 +303,9 @@ class MAFMetadataBuilder(
         return (
             super()
             ._get_initial_weighted_df(query, include_fields)
-            .select("*", F.col("analysis.workflow_type").alias("workflow_type"))
+            .select(
+                "*", pyspark_functions.col("analysis.workflow_type").alias("workflow_type")
+            )
         )
 
     def _build_from_scratch(self, input_dfs: MAFMetadataInputs) -> sql.DataFrame:

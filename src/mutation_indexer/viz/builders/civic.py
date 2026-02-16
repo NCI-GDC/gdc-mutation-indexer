@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer import builders
 from mutation_indexer.constants import build
@@ -29,10 +29,10 @@ class DNABuilder(builders.ResourceBuilder[configuration.CIVIC.DNABuilder, DNAInp
         return df.select(
             "chromosome",
             "civic_gene_id",
-            F.col("civic_var_id").alias("civic_variant_id"),
+            pyspark_functions.col("civic_var_id").alias("civic_variant_id"),
             "reference_allele",
             "start_position",
-            F.col("alternative_allele").alias("tumor_allele"),
+            pyspark_functions.col("alternative_allele").alias("tumor_allele"),
         )
 
 
@@ -60,7 +60,7 @@ class ProteinBuilder(
 
         return df.select(
             "civic_gene_id",
-            F.col("civic_var_id").alias("civic_variant_id"),
-            F.col("hgvsp").alias("hgvsp_short"),
-            F.col("hugo_symbol").alias("name"),
+            pyspark_functions.col("civic_var_id").alias("civic_variant_id"),
+            pyspark_functions.col("hgvsp").alias("hgvsp_short"),
+            pyspark_functions.col("hugo_symbol").alias("name"),
         )

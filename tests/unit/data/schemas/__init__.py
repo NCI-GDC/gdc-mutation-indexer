@@ -42,7 +42,7 @@ def _get_schema(cls: type, schema: str) -> Schema:
     return Schema(package, resource)
 
 
-def _init_schemas(cls: type[T]) -> type[T]:
+def _init_schemas[T](cls: type[T]) -> type[T]:
     annotations = getattr(cls, "__annotations__", {})
     schemas = {s: _get_schema(cls, s) for s, t in annotations.items() if t is Schema}
 

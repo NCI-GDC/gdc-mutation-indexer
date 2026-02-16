@@ -1,15 +1,12 @@
 import functools
 import itertools
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from typing import (
-    AbstractSet,
-    NamedTuple,
-    Union,
-)
+from collections.abc import Set as AbstractSet
+from typing import NamedTuple, Union
 
 import more_itertools
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 RelationshipMapping = Mapping[str, Union[AbstractSet[str], "RelationshipMapping"]]
 
@@ -179,6 +176,6 @@ def unpack_df_list(
     all_fields = itertools.chain(aliases, child_fields)
 
     return dataframe.select(
-        F.explode(list_field).alias(exploded_alias),
-        *(F.col(f).alias(a) for f, a in zip(parent_fields, aliases)),
+        pyspark_functions.explode(list_field).alias(exploded_alias),
+        *(pyspark_functions.col(f).alias(a) for f, a in zip(parent_fields, aliases)),
     ).select(*all_fields)

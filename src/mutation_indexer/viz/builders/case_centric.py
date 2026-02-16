@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
@@ -53,13 +53,13 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        sql_context: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         field_selector: es_utils.CaseFieldSelector,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, sql_context)
 
         self._es_dataframe_util = es_dataframe_util
         self._field_selector = field_selector
@@ -116,12 +116,12 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         )
         segment_cnv_df = segment_cnv_df.select(*SEGMENT_CNV_COLUMNS).distinct()
         subtree_df = segment_cnv_df.join(obs_df, on="segment_cnv_id", how="inner").select(
-            F.struct(*SEGMENT_CNV_COLUMNS, "observation").alias("segment_cnv"),
+            pyspark_functions.struct(*SEGMENT_CNV_COLUMNS, "observation").alias("segment_cnv"),
             "segment_cnv_id",
             "case_id",
         )
         subtree_df = subtree_df.groupBy("case_id").agg(
-            F.collect_set("segment_cnv").alias("segment_cnv")
+            pyspark_functions.collect_set("segment_cnv").alias("segment_cnv")
         )
         subtree_df = subtree_df.select("case_id", "segment_cnv")
 
@@ -236,13 +236,15 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         self.log("Grouping SSM and CNV subtrees under Gene")
         gene_ssm_cnv_df = gene_ssm_cnv_df.select(
             "case_id",
-            F.struct("ssm", "cnv", *gene_df.drop("case_id").columns).alias("gene"),
+            pyspark_functions.struct("ssm", "cnv", *gene_df.drop("case_id").columns).alias(
+                "gene"
+            ),
         )
         self.log_count(gene_df)
 
         self.log('Grouping by case_id and aggregating to list under "gene"')
         gene_ssm_cnv_df = gene_ssm_cnv_df.groupBy(gene_ssm_cnv_df.case_id).agg(
-            F.collect_list("gene").alias("gene")
+            pyspark_functions.collect_list("gene").alias("gene")
         )
         return gene_ssm_cnv_df
 
@@ -280,10 +282,12 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             ssm_df.select(
                 "gene_id",
                 "case_id",
-                F.struct(*ssm_df.drop("gene_id").drop("case_id").columns).alias("ssm"),
+                pyspark_functions.struct(
+                    *ssm_df.drop("gene_id").drop("case_id").columns
+                ).alias("ssm"),
             )
             .groupBy(["gene_id", "case_id"])
-            .agg(F.collect_list("ssm").alias("ssm"))
+            .agg(pyspark_functions.collect_list("ssm").alias("ssm"))
         )
 
         return ssm_df
@@ -311,10 +315,12 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
             cnv_df.select(
                 "gene_id",
                 "case_id",
-                F.struct(*cnv_df.drop("gene_id").drop("case_id").columns).alias("cnv"),
+                pyspark_functions.struct(
+                    *cnv_df.drop("gene_id").drop("case_id").columns
+                ).alias("cnv"),
             )
             .groupBy(["gene_id", "case_id"])
-            .agg(F.collect_list("cnv").alias("cnv"))
+            .agg(pyspark_functions.collect_list("cnv").alias("cnv"))
         )
 
         return cnv_df
@@ -329,9 +335,9 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
         # Coerce any cases that didn't have variation data from None to []
         case_centric = case_centric.withColumn(
             "available_variation_data",
-            F.udf(lambda x: [] if (x is None) else x, types.ArrayType(types.StringType()))(
-                F.col("available_variation_data")
-            ),
+            pyspark_functions.udf(
+                lambda x: [] if (x is None) else x, types.ArrayType(types.StringType())
+            )(pyspark_functions.col("available_variation_data")),
         )
 
         # Truncate outliers

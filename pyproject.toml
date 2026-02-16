@@ -86,7 +86,8 @@ select = [
   "W" # pydocstyle warnings
 ]
 ignore = [
-  "E501"
+  "E501",
+  "N815"
 ]
 
 [tool.ruff.lint.isort]

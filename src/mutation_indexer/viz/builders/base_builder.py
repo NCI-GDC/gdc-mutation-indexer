@@ -30,9 +30,9 @@ def get_all_boolean_paths(mapping):
 
         for key, value in node["properties"].items():
             if value.get("type") == "boolean":
-                res.append(path + [key])
+                res.append([*path, key])
             elif "properties" in value:
-                helper(value, path + [key])
+                helper(value, [*path, key])
 
     helper(mapping)
     return res
@@ -75,10 +75,10 @@ class BaseBuilder(abc.ABC):
     index_name: ClassVar[str]
     id_field: ClassVar[str]
 
-    def __init__(self, config, sqlContext):
+    def __init__(self, config, sql_context):
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlContext = sqlContext
+        self.sql_context = sql_context
         self.debug = config.debug
         self.mappings_loader = es_utils.MappingsLoader()
 
@@ -157,7 +157,7 @@ class BaseBuilder(abc.ABC):
             path = self.config.get_raw_output_path(self.index_name)
         try:
             self.logger.info(f"Using existing index from {path}")
-            df = self.sqlContext.read.load(path)
+            df = self.sql_context.read.load(path)
             return df
         except Exception:
             self.logger.info(f"Couldn't find file at {path}")

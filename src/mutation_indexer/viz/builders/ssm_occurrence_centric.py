@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer.configuration import adapter
 from mutation_indexer.viz.builders import (
@@ -32,11 +32,11 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        sql_context: sql.SQLContext,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, sql_context)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
@@ -64,7 +64,7 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
         self.log("Joining ssm with case")
         ssm_occurrence_centric = (
             ssm_cons.join(case_obs_df, on=["case_id", "ssm_id"], how="inner")
-            .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
+            .withColumn("ssm_occurrence_id", pyspark_functions.col("occurrence_id"))
             .drop("case_id")
             .drop("ssm_id")
             .drop("occurrence_id")
@@ -96,9 +96,9 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
         ssm_cons = ssm_df.select(
             "ssm_id",
             "case_id",
-            F.struct("consequence", *ssm_df.drop("consequence").drop("case_id").columns).alias(
-                "ssm"
-            ),
+            pyspark_functions.struct(
+                "consequence", *ssm_df.drop("consequence").drop("case_id").columns
+            ).alias("ssm"),
         )
         self.log_count(ssm_cons)
 
@@ -123,7 +123,7 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
             "case_id",
             "ssm_id",
             "occurrence_id",
-            F.struct("observation", *case_df.columns).alias("case"),
+            pyspark_functions.struct("observation", *case_df.columns).alias("case"),
         )
         self.log_count(case_obs_df)
 

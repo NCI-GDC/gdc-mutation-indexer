@@ -4,7 +4,8 @@ import graphlib
 import logging
 import pathlib
 from collections.abc import Iterable, Iterator
-from typing import ContextManager, Generic, TypeVar
+from contextlib import AbstractContextManager
+from typing import TypeVar
 
 import elasticsearch
 from indexclient import client
@@ -71,7 +72,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
 TConfig = TypeVar("TConfig", bound=configuration.Configuration)
 
 
-class Driver(Generic[TConfig], abc.ABC):
+class Driver[TConfig](abc.ABC):
     """A class representing a driver which ultimately builds data using builders."""
 
     @classmethod
@@ -90,7 +91,7 @@ class Driver(Generic[TConfig], abc.ABC):
     @abc.abstractmethod
     def _initialize_builders(
         self, config: TConfig, spark_session: sql.SparkSession
-    ) -> ContextManager[Iterable[builders.Builder]]:
+    ) -> AbstractContextManager[Iterable[builders.Builder]]:
         """Initialize all builders required for this run of the driver.
 
         NOTE: This is wrapped in a context manager in order to allow drivers to clean up
@@ -138,7 +139,7 @@ class Driver(Generic[TConfig], abc.ABC):
                 inputs[builder.output.to_param()] = builder.build(**inputs)
 
 
-def main(driver: Driver[TConfig]) -> None:
+def main[TConfig](driver: Driver[TConfig]) -> None:
     """A main function for executing a driver run."""
     mutation_indexer_logging.configure()
 

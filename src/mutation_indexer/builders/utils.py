@@ -9,7 +9,7 @@ import importlib_resources as resources
 import yaml
 from gdcmodels import esmodels, mapper
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
@@ -56,7 +56,7 @@ def generate_uuid5(*values: Any) -> str:
 
 
 def uuid5_col(*values):
-    return F.udf(generate_uuid5, types.StringType())(*values)
+    return pyspark_functions.udf(generate_uuid5, types.StringType())(*values)
 
 
 def extract_impact(df, column, res_colname):
@@ -67,7 +67,9 @@ def extract_impact(df, column, res_colname):
     impact = 'possibly_damaging'
     """
 
-    return df.withColumn(res_colname, F.regexp_extract(column, r"(.*)\(.*\)$", 1))
+    return df.withColumn(
+        res_colname, pyspark_functions.regexp_extract(column, r"(.*)\(.*\)$", 1)
+    )
 
 
 def extract_score(df, column, res_colname):
@@ -80,7 +82,9 @@ def extract_score(df, column, res_colname):
 
     return df.withColumn(
         res_colname,
-        F.regexp_extract(column, r"(\w)\((\d*.?(\d?)*)\)$", 2).cast(types.DoubleType()),
+        pyspark_functions.regexp_extract(column, r"(\w)\((\d*.?(\d?)*)\)$", 2).cast(
+            types.DoubleType()
+        ),
     )
 
 
@@ -175,12 +179,14 @@ def struct_select(
                 name = k
                 if "default" in v:
                     name = v["default"]
-                cols.append(F.col(name).alias(k))
+                cols.append(pyspark_functions.col(name).alias(k))
             else:
                 if k not in ignore and "properties" in v:
-                    cols.append(F.struct(restructure(v["properties"])).alias(k))
+                    cols.append(
+                        pyspark_functions.struct(restructure(v["properties"])).alias(k)
+                    )
                 elif k not in ignore:
-                    cols.append(F.struct(restructure(v)).alias(k))
+                    cols.append(pyspark_functions.struct(restructure(v)).alias(k))
                 else:
                     cols.append(k)
         return cols
@@ -212,7 +218,7 @@ def select_nested(index_name, mapping_name, ignore=(), selector=None):
                 name = k
                 if "default" in v:
                     name = v["default"]
-                cols.append(F.col(name).alias(k))
+                cols.append(pyspark_functions.col(name).alias(k))
             else:
                 if "properties" in v:
                     cols.extend(flatten_nested(v["properties"]))
@@ -242,12 +248,17 @@ def extract_aas_position(df):
             return int(aa_end)
         return "null"
 
-    df = df.withColumn("aa_start", F.udf(extract, types.IntegerType())(F.col("aa_change")))
+    df = df.withColumn(
+        "aa_start",
+        pyspark_functions.udf(extract, types.IntegerType())(
+            pyspark_functions.col("aa_change")
+        ),
+    )
     df = df.withColumn(
         "aa_end",
-        F.udf(lambda aa_change: extract(aa_change, False), types.IntegerType())(
-            F.col("aa_change")
-        ),
+        pyspark_functions.udf(
+            lambda aa_change: extract(aa_change, False), types.IntegerType()
+        )(pyspark_functions.col("aa_change")),
     )
 
     return df
@@ -261,7 +272,12 @@ def sanitize_aa_change(df):
     def sanitize(aa_change):
         return aa_change.strip("p.")
 
-    df = df.withColumn("aa_change", F.udf(sanitize, types.StringType())(F.col("aa_change")))
+    df = df.withColumn(
+        "aa_change",
+        pyspark_functions.udf(sanitize, types.StringType())(
+            pyspark_functions.col("aa_change")
+        ),
+    )
 
     return df
 
@@ -278,7 +294,9 @@ def sanitize_gene_aa_change(df):
 
     df = df.withColumn(
         "gene_aa_change",
-        F.udf(sanitize, types.ArrayType(types.StringType()))(F.col("gene_aa_change")),
+        pyspark_functions.udf(sanitize, types.ArrayType(types.StringType()))(
+            pyspark_functions.col("gene_aa_change")
+        ),
     )
 
     return df
@@ -290,7 +308,10 @@ def convert_empty_str_to_null_in_col(df, col_name):
     """
 
     return df.withColumn(
-        col_name, F.when(F.col(col_name) != "", F.col(col_name)).otherwise(None)
+        col_name,
+        pyspark_functions.when(
+            pyspark_functions.col(col_name) != "", pyspark_functions.col(col_name)
+        ).otherwise(None),
     )
 
 
@@ -311,20 +332,25 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
         A dataframe with the added columns: canonical_transcript_length,
         canonical_transcript_length_cds, and canonical_transcript_length_genomic
     """
-    canonical_index = F.array_position("transcripts.is_canonical", True)
+    canonical_index = pyspark_functions.array_position("transcripts.is_canonical", True)
     transcripts_df = transcripts_df.withColumn(
         "canonical_transcript",
-        F.when(canonical_index > 0, F.col("transcripts")[canonical_index - 1]).otherwise(None),
+        pyspark_functions.when(
+            canonical_index > 0, pyspark_functions.col("transcripts")[canonical_index - 1]
+        ).otherwise(None),
     )
     transcripts_df = transcripts_df.withColumn(
-        "canonical_transcript_length", F.col("canonical_transcript.length")
+        "canonical_transcript_length", pyspark_functions.col("canonical_transcript.length")
     )
     transcripts_df = transcripts_df.withColumn(
-        "canonical_transcript_length_cds", F.col("canonical_transcript.length_cds")
+        "canonical_transcript_length_cds",
+        pyspark_functions.col("canonical_transcript.length_cds"),
     )
     transcripts_df = transcripts_df.withColumn(
         "canonical_transcript_length_genomic",
-        F.col("canonical_transcript.end") - F.col("canonical_transcript.start") + 1,
+        pyspark_functions.col("canonical_transcript.end")
+        - pyspark_functions.col("canonical_transcript.start")
+        + 1,
     )
 
     return transcripts_df.drop("canonical_transcript")
@@ -336,7 +362,7 @@ def is_protein_coding() -> sql.Column:
         A column which represents whether or not a gene in the gene model is a protein
         coding gene based on the biotype.
     """
-    return F.col("biotype") == F.lit("protein_coding")
+    return pyspark_functions.col("biotype") == pyspark_functions.lit("protein_coding")
 
 
 def is_between_chr1_and_chr22() -> sql.Column:
@@ -345,7 +371,10 @@ def is_between_chr1_and_chr22() -> sql.Column:
         A column which represents whether or not a gene in the gene model with a
         chromosome value between char1 and char22.
     """
-    return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(1, 22)
+    return pyspark_functions.coalesce(
+        pyspark_functions.col("chromosome").cast(types.IntegerType()),
+        pyspark_functions.lit(-1),
+    ).between(1, 22)
 
 
 def filter_arrays_by_relative_size(
@@ -375,9 +404,11 @@ def filter_arrays_by_relative_size(
     # Standardizes the given percentile to an equivalent decimal value, e.g. 99 -> 0.99
     percentile_decimal = size_percentile / decimal.Decimal("100")
     percentile_window = sql.Window.orderBy("_size")
-    df = df.select("*", F.size(array_field).alias("_size")).select(
-        "*", F.percent_rank().over(percentile_window).alias("_percentile")
+    df = df.select("*", pyspark_functions.size(array_field).alias("_size")).select(
+        "*", pyspark_functions.percent_rank().over(percentile_window).alias("_percentile")
     )
-    df = df.where(F.col("_percentile") <= F.lit(percentile_decimal))
+    df = df.where(
+        pyspark_functions.col("_percentile") <= pyspark_functions.lit(percentile_decimal)
+    )
 
     return df.drop("_size", "_percentile")

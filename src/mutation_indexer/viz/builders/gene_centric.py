@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer.configuration import adapter
 from mutation_indexer.viz.builders import (
@@ -37,11 +37,11 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        sql_context: sql.SQLContext,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, sql_context)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder
@@ -123,14 +123,16 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
             .join(cnv_df, on=["gene_id", "case_id"], how="left")
             .select(
                 "gene_id",
-                F.struct("ssm", "cnv", *case_df.drop("gene_id").columns).alias("case"),
+                pyspark_functions.struct("ssm", "cnv", *case_df.drop("gene_id").columns).alias(
+                    "case"
+                ),
             )
         )
         self.log_count(case_subtree)
 
         self.log('Grouping by case_id and aggregating to list under "gene"')
         case_subtree = case_subtree.groupBy(case_subtree.gene_id.alias("gene_id")).agg(
-            F.collect_list("case").alias("case")
+            pyspark_functions.collect_list("case").alias("case")
         )
         return case_subtree
 
@@ -171,10 +173,12 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
             ssm_df.select(
                 "gene_id",
                 "case_id",
-                F.struct(*ssm_df.drop("gene_id").drop("case_id").columns).alias("ssm"),
+                pyspark_functions.struct(
+                    *ssm_df.drop("gene_id").drop("case_id").columns
+                ).alias("ssm"),
             )
             .groupBy(["gene_id", "case_id"])
-            .agg(F.collect_list("ssm").alias("ssm"))
+            .agg(pyspark_functions.collect_list("ssm").alias("ssm"))
         )
         return ssm_df
 
@@ -201,10 +205,12 @@ class GeneCentricBuilder(base_builder.BaseBuilder):
             cnv_df.select(
                 "gene_id",
                 "case_id",
-                F.struct(*cnv_df.drop("gene_id").drop("case_id").columns).alias("cnv"),
+                pyspark_functions.struct(
+                    *cnv_df.drop("gene_id").drop("case_id").columns
+                ).alias("cnv"),
             )
             .groupBy(["gene_id", "case_id"])
-            .agg(F.collect_list("cnv").alias("cnv"))
+            .agg(pyspark_functions.collect_list("cnv").alias("cnv"))
         )
 
         return cnv_df

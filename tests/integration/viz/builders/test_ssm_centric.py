@@ -1,5 +1,5 @@
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer.builders import utils
 from tests.integration.utils import join_utils
@@ -16,7 +16,11 @@ def test_consequences_per_ssm(
     # Consequence ~ UUID[ssm_id, transcript_id]
     df = ssm_transcript_df.withColumn(
         "consequence_id",
-        utils.uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
+        utils.uuid5_col(
+            pyspark_functions.lit("ssm_consequence"),
+            pyspark_functions.col("ssm_id"),
+            pyspark_functions.col("transcript_id"),
+        ),
     )
 
     true_cps = join_utils.get_relationship_map(df, ("ssm_id", "consequence_id"))

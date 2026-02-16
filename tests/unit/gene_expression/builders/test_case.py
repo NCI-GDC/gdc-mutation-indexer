@@ -95,9 +95,9 @@ class TestCaseBuilder:
             models.ExpressionValue(case_id="case-1"),
         )
 
-        def validate_upload(data: IO[bytes], Bucket: str, Key: str) -> None:
-            assert Bucket == config.destination.bucket
-            assert Key == config.destination.key
+        def validate_upload(data: IO[bytes], bucket: str, key: str) -> None:
+            assert bucket == config.destination.bucket
+            assert key == config.destination.key
             assert marshal.load(data) == ["case-1", "case-2"]
 
         s3_client = self._arrange_s3_client(validate_upload)

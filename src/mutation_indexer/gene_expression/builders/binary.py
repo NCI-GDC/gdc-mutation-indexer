@@ -11,7 +11,7 @@ from typing import TypedDict
 import mypy_boto3_s3 as s3
 import numpy
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer import builders
 from mutation_indexer.constants import build
@@ -77,10 +77,14 @@ class BinaryBuilder(builders.InputBuilder[configuration.BinaryBuilder, BinaryInp
         return (
             input_dfs["expression_value_df"]
             .groupBy("gene_id")
-            .agg(F.collect_list(F.struct("case_id", "uqfpkm", "log2_uqfpkm")).alias("values"))
+            .agg(
+                pyspark_functions.collect_list(
+                    pyspark_functions.struct("case_id", "uqfpkm", "log2_uqfpkm")
+                ).alias("values")
+            )
             .select(
                 "gene_id",
-                F.sort_array("values").alias("values"),
+                pyspark_functions.sort_array("values").alias("values"),
             )
             .select("gene_id", "values.log2_uqfpkm", "values.uqfpkm")
         )

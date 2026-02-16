@@ -8,7 +8,6 @@ import operator
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence, Set
 from importlib import resources
 from typing import (
-    Generic,
     Literal,
     Protocol,
     TypeGuard,
@@ -20,7 +19,7 @@ from typing import (
 import more_itertools
 from gdcmodels import esmodels
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
@@ -89,7 +88,7 @@ class Builder(Protocol):
         pass
 
 
-class InputDataFrameManger(Generic[TInputDFs]):
+class InputDataFrameManger[TInputDFs]:
     __slots__ = ("_required_dfs", "_required_params")
 
     def __init__(self, input_type: type[TInputDFs]) -> None:
@@ -122,7 +121,7 @@ class InputDataFrameManger(Generic[TInputDFs]):
         return self._required_params <= inputs.keys()
 
 
-class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
+class InputBuilder[TConfig, TInputDFs](Builder, abc.ABC):
     __slots__ = ("_config", "_input_manager", "_output", "_spark_session")
 
     def __init__(
@@ -244,7 +243,7 @@ def _add_required_include_fields(
     return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
-class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]):
+class PrimaryAliquotBuilder[TConfig, TInputDFs](InputBuilder[TConfig, TInputDFs]):
     __slots__ = ("_additional_selections", "_es_dataframe_util")
 
     @dataclasses.dataclass(frozen=True)
@@ -271,7 +270,7 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
         """
         Args:
             config: The configuration for the given builder.
-            sqlContext: The sql session object for the current pyspark run.
+            sql_context: The sql session object for the current pyspark run.
             es_dataframe_util: The util for creating dataframes from data in
                 elasticsearch.
             output: The DataFrame which is the resulting output of this builder.
@@ -291,8 +290,8 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
         entity: str,
     ) -> sql.DataFrame:
         return weighted_df.select(
-            F.col(entity_id).alias("entity_id"),
-            F.lit(entity).alias("entity"),
+            pyspark_functions.col(entity_id).alias("entity_id"),
+            pyspark_functions.lit(entity).alias("entity"),
             "file_id",
             "created_datetime",
             "case_id",
@@ -340,22 +339,27 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
 
         NOTE: see _convert_weight_matrix method for more details.
         NOTE: This needs to be calculated at runtime AFTER the spark session has been
-            initiated otherwise F.col/F.lit will fail to be instantiated.
+            initiated otherwise pyspark_functions.col/pyspark_functions.lit will fail to be instantiated.
         """
-        sample_type = F.col("sample_type")
+        sample_type = pyspark_functions.col("sample_type")
 
         return (
             (
-                sample_type == F.lit("Primary Tumor"),  # <-- highest priority
-                sample_type == F.lit("Primary Blood Derived Cancer - Bone Marrow"),
-                sample_type == F.lit("Primary Blood Derived Cancer - Peripheral Blood"),
-                sample_type == F.lit("Metastatic"),
-                sample_type == F.lit("Additional Metastatic"),
-                sample_type == F.lit("Recurrent Tumor"),
-                sample_type == F.lit("Recurrent Blood Derived Cancer - Bone Marrow"),
-                sample_type == F.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
-                sample_type == F.lit("Additional - New Primary"),
-                F.lit(1) == F.lit(1),  # This is a default value.
+                sample_type == pyspark_functions.lit("Primary Tumor"),  # <-- highest priority
+                sample_type
+                == pyspark_functions.lit("Primary Blood Derived Cancer - Bone Marrow"),
+                sample_type
+                == pyspark_functions.lit("Primary Blood Derived Cancer - Peripheral Blood"),
+                sample_type == pyspark_functions.lit("Metastatic"),
+                sample_type == pyspark_functions.lit("Additional Metastatic"),
+                sample_type == pyspark_functions.lit("Recurrent Tumor"),
+                sample_type
+                == pyspark_functions.lit("Recurrent Blood Derived Cancer - Bone Marrow"),
+                sample_type
+                == pyspark_functions.lit("Recurrent Blood Derived Cancer - Peripheral Blood"),
+                sample_type == pyspark_functions.lit("Additional - New Primary"),
+                pyspark_functions.lit(1)
+                == pyspark_functions.lit(1),  # This is a default value.
             ),
         )
 
@@ -424,7 +428,9 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
         Returns:
             The `_weight` column.
         """
-        when_clause = F.when(F.lit(1) != F.lit(1), 0)  # dummy when clause
+        when_clause = pyspark_functions.when(
+            pyspark_functions.lit(1) != pyspark_functions.lit(1), 0
+        )  # dummy when clause
 
         return functools.reduce(
             lambda c, w: c.when(w.condition, w.value),
@@ -441,16 +447,16 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
             self._get_initial_weighted_df(query, include_fields)
             .select(
                 "file_id",
-                F.col("created_datetime").cast("timestamp"),
+                pyspark_functions.col("created_datetime").cast("timestamp"),
                 pyspark_extensions.explode_nested_doc("cases").alias("case"),
                 *self._additional_selections,
             )
             .select(
                 "file_id",
                 "created_datetime",
-                F.col("case.case_id").alias("case_id"),
+                pyspark_functions.col("case.case_id").alias("case_id"),
                 "case",
-                F.explode("case.samples").alias("sample"),
+                pyspark_functions.explode("case.samples").alias("sample"),
                 *self._additional_selections,
             )
             .select(
@@ -515,15 +521,17 @@ class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, T
             sql.Window()
             .partitionBy("entity", "entity_id")
             .orderBy(
-                F.col("_weight"),
-                F.col("created_datetime"),
-                F.col("file_id"),
+                pyspark_functions.col("_weight"),
+                pyspark_functions.col("created_datetime"),
+                pyspark_functions.col("file_id"),
             )
         )
 
         return (
-            weighted_entity_df.withColumn("row_number", F.row_number().over(entity_window))
-            .where(F.col("row_number") == 1)
+            weighted_entity_df.withColumn(
+                "row_number", pyspark_functions.row_number().over(entity_window)
+            )
+            .where(pyspark_functions.col("row_number") == 1)
             .select(
                 "entity_id",
                 "entity",
@@ -549,35 +557,35 @@ def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
         A dataframe fo the aliquot data.
     """
     return (
-        aliquot_df.select("file_id", F.explode_outer("cases").alias("case"))
+        aliquot_df.select("file_id", pyspark_functions.explode_outer("cases").alias("case"))
         .select(
             "file_id",
-            F.col("case.case_id").alias("case_id"),
-            F.explode_outer("case.samples").alias("sample"),
+            pyspark_functions.col("case.case_id").alias("case_id"),
+            pyspark_functions.explode_outer("case.samples").alias("sample"),
         )
         .select(
             "file_id",
             "case_id",
-            F.col("sample.sample_id").alias("sample_id"),
-            F.explode_outer("sample.portions").alias("portion"),
-        )
-        .select(
-            "file_id",
-            "case_id",
-            "sample_id",
-            F.explode_outer("portion.analytes").alias("analyte"),
+            pyspark_functions.col("sample.sample_id").alias("sample_id"),
+            pyspark_functions.explode_outer("sample.portions").alias("portion"),
         )
         .select(
             "file_id",
             "case_id",
             "sample_id",
-            F.explode_outer("analyte.aliquots").alias("aliquot"),
+            pyspark_functions.explode_outer("portion.analytes").alias("analyte"),
+        )
+        .select(
+            "file_id",
+            "case_id",
+            "sample_id",
+            pyspark_functions.explode_outer("analyte.aliquots").alias("aliquot"),
         )
     )
 
 
-class InclusivePrimaryAliquotBuilder(
-    Generic[TConfig, TInputDFs], PrimaryAliquotBuilder[TConfig, TInputDFs]
+class InclusivePrimaryAliquotBuilder[TConfig, TInputDFs](
+    PrimaryAliquotBuilder[TConfig, TInputDFs]
 ):
     """
     This builder creates a primary aliquot dataframe which INCLUDES the aliquot data
@@ -673,7 +681,7 @@ class InclusivePrimaryAliquotBuilder(
             "case_id",
             "sample_id",
             "aliquot.aliquot_id",
-            F.col("aliquot.created_datetime")
+            pyspark_functions.col("aliquot.created_datetime")
             .cast("timestamp")
             .alias("aliquot_created_datetime"),
         )
@@ -736,8 +744,10 @@ class InclusivePrimaryAliquotBuilder(
         )
 
         return (
-            primary_aliquot_df.withColumn("row_number", F.row_number().over(aliquot_window))
-            .where(F.col("row_number") == 1)
+            primary_aliquot_df.withColumn(
+                "row_number", pyspark_functions.row_number().over(aliquot_window)
+            )
+            .where(pyspark_functions.col("row_number") == 1)
             .select(
                 "aliquot_created_datetime",
                 "aliquot_id",
@@ -756,9 +766,7 @@ class InclusivePrimaryAliquotBuilder(
 TResourceConfig = TypeVar("TResourceConfig", bound=builders.ResourceBuilder)
 
 
-class ResourceBuilder(
-    Generic[TResourceConfig, TInputDFs], InputBuilder[TResourceConfig, TInputDFs]
-):
+class ResourceBuilder[TResourceConfig, TInputDFs](InputBuilder[TResourceConfig, TInputDFs]):
     def _schema(self) -> types.StructType:
         return schemas.load_schema(self._config.schema)
 
@@ -806,9 +814,7 @@ def _walk_schema(field: types.StructField, child_name: str) -> types.StructField
         )
 
 
-class IndexBuilder(
-    Generic[TIndexConfig, TInputDFs], InputBuilder[TIndexConfig, TInputDFs], abc.ABC
-):
+class IndexBuilder[TIndexConfig, TInputDFs](InputBuilder[TIndexConfig, TInputDFs], abc.ABC):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
 
     __slots__ = ("_es_dataframe_util", "_index_name", "_index_type", "_mappings_loader")
@@ -870,7 +876,9 @@ class IndexBuilder(
             field = functools.reduce(_walk_schema, path, schema[fieldname])
             field.dataType = types.BooleanType()
 
-        return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
+        return df.select(
+            *(pyspark_functions.col(f.name).cast(f.dataType) for f in schema.fields)
+        )
 
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
         df = self._cast_booleans(df)
@@ -883,7 +891,7 @@ class IndexBuilder(
         return df
 
 
-class SQLiteBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs], abc.ABC):
+class SQLiteBuilder[TConfig, TInputDFs](InputBuilder[TConfig, TInputDFs], abc.ABC):
     __slots__ = ("_database",)
 
     def __init__(

@@ -12,7 +12,7 @@ import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils, indexd_utils, schemas
@@ -160,7 +160,7 @@ def spark_session() -> Generator[sql.SparkSession]:
 
 
 @pytest.fixture(scope="session")
-def sqlContext(
+def sql_context(
     spark_session: sql.SparkSession,
     es_client: elasticsearch.Elasticsearch,
     source_es_client: elasticsearch.Elasticsearch,
@@ -261,7 +261,7 @@ def civic_protein_df(
 @pytest.fixture(scope="session")
 def maf_df(
     default_config: configuration.Configuration,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     spark_session: sql.SparkSession,
     maf_urls: list[str],
     gene_model_df: sql.DataFrame,
@@ -274,7 +274,7 @@ def maf_df(
     """
     log.info("\n\n\tBUILDING MAF_DF\n\n")
     maf_df = (
-        sqlContext.read.csv(maf_urls, sep="\t", header=True, comment="#")
+        sql_context.read.csv(maf_urls, sep="\t", header=True, comment="#")
         .drop(
             "AFR_MAF",
             "ALLELE_NUM",
@@ -302,7 +302,7 @@ def maf_df(
         .select(
             "*",
             *(
-                F.lit(None).cast(types.StringType()).alias(name)
+                pyspark_functions.lit(None).cast(types.StringType()).alias(name)
                 for name in (
                     "1000G_AF",
                     "1000G_AFR_AF",
@@ -350,7 +350,7 @@ def maf_df(
             ),
         )
     )
-    fm_ad_maf_df = sqlContext.createDataFrame(
+    fm_ad_maf_df = sql_context.createDataFrame(
         (), schema=schemas.load_schema("builders/maf/aggregated_somatic_mutation.yaml")
     )
     doc_dataframe_util = mock.MagicMock(spec=indexd_utils.DataFrameUtil)
@@ -382,8 +382,10 @@ def cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> sql.DataF
 
 
 @pytest.fixture(scope="session")
-def maf_metadata_df(sqlContext: sql.SQLContext, all_maf_cases: Iterable[str]) -> sql.DataFrame:
-    return sqlContext.createDataFrame(
+def maf_metadata_df(
+    sql_context: sql.SQLContext, all_maf_cases: Iterable[str]
+) -> sql.DataFrame:
+    return sql_context.createDataFrame(
         tuple((case_id,) for case_id in all_maf_cases), schema="case_id: string"
     ).cache()
 
@@ -425,7 +427,7 @@ def case_df(
 @pytest.fixture(scope="session")
 def ssm_transcript_df(
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
 ) -> sql.DataFrame:
     """
@@ -433,13 +435,13 @@ def ssm_transcript_df(
     This is a maf_df with flattend and filtered according to all_effects.do_not_use transcripts
     """
     log.info("\n\n\tBUILDING SSM_TRANSCRIPT_DF\n\n")
-    return builders.ConsequenceBuilder(default_old_config, sqlContext).build_all_effects_cols(
+    return builders.ConsequenceBuilder(default_old_config, sql_context).build_all_effects_cols(
         maf_df
     )
 
 
 @pytest.fixture(scope="session")
-def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
+def primary_aliquot_df(sql_context: sql.SQLContext) -> sql.DataFrame:
     """
     Builds a dataframe of primary aliquot selections for each of the cases in
     the test data.
@@ -472,7 +474,7 @@ def primary_aliquot_df(sqlContext: sql.SQLContext) -> sql.DataFrame:
         ]
     )
 
-    return sqlContext.createDataFrame(primary_aliquots, schema)
+    return sql_context.createDataFrame(primary_aliquots, schema)
 
 
 @pytest.fixture(scope="session")
@@ -508,9 +510,9 @@ def segment_cnv_df(spark_session: sql.SparkSession, data_dir: pathlib.Path) -> s
 
 @pytest.fixture(scope="session")
 def consequence_builder(
-    default_old_config: adapter.ObsoleteConfig, sqlContext: sql.SQLContext
+    default_old_config: adapter.ObsoleteConfig, sql_context: sql.SQLContext
 ) -> builders.ConsequenceBuilder:
-    return builders.ConsequenceBuilder(default_old_config, sqlContext)
+    return builders.ConsequenceBuilder(default_old_config, sql_context)
 
 
 @pytest.fixture(scope="session")
@@ -536,7 +538,7 @@ def case_centric_df(
     default_config: configuration.Configuration,
     default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_metadata_df: sql.DataFrame,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
@@ -557,7 +559,7 @@ def case_centric_df(
     log.info("\n\n\tBUILDING CASE_CENTRIC_DF\n\n")
     builder = builders.CaseCentricBuilder(
         default_old_config,
-        sqlContext,
+        sql_context,
         es_utils.DataFrameUtil(
             default_config.elasticsearch,
             spark_session,
@@ -592,7 +594,7 @@ def case_centric_df(
 def gene_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
@@ -610,7 +612,7 @@ def gene_centric_df(
     log.info("\n\n\tBUILDING GENE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.GeneCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     builder.build(maf_df, cnv_df, sub_case_df, primary_aliquot_df)
@@ -625,7 +627,7 @@ def gene_centric_df(
 def ssm_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
@@ -642,7 +644,7 @@ def ssm_centric_df(
     log.info("\n\n\tBUILDING SSM_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     builder.build(maf_df, sub_case_df, primary_aliquot_df)
@@ -657,7 +659,7 @@ def ssm_centric_df(
 def ssm_occurrence_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     case_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
@@ -674,7 +676,7 @@ def ssm_occurrence_centric_df(
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_CENTRIC_DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.SSMOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     builder.build(maf_df, sub_case_df, primary_aliquot_df)
@@ -689,7 +691,7 @@ def ssm_occurrence_centric_df(
 def cnv_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
@@ -704,7 +706,7 @@ def cnv_centric_df(
     log.info("\n\n\tBUILDING CNV_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     builder.build(cnv_df, sub_case_df)
@@ -719,7 +721,7 @@ def cnv_centric_df(
 def cnv_occurrence_centric_df(
     request: pytest.FixtureRequest,
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     cnv_df: sql.DataFrame,
     case_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
@@ -734,7 +736,7 @@ def cnv_occurrence_centric_df(
     log.info("\n\n\tBUILDING CNV_OCCURRENCE_CENTRIC DF\n\n")
     sub_case_df = case_df.drop("summary")
     builder = builders.CNVOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     builder.build(cnv_df, sub_case_df)
@@ -750,7 +752,7 @@ def case_ssm_subtree(
     default_config: configuration.Configuration,
     default_old_config: adapter.ObsoleteConfig,
     spark_session: sql.SparkSession,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     es_client: elasticsearch.Elasticsearch,
@@ -763,7 +765,7 @@ def case_ssm_subtree(
     log.info("\n\n\tBUILDING CASE_SSM_SUBTREE\n\n")
     builder = builders.CaseCentricBuilder(
         default_old_config,
-        sqlContext,
+        sql_context,
         es_utils.DataFrameUtil(
             default_config.elasticsearch,
             spark_session,
@@ -782,7 +784,7 @@ def case_ssm_subtree(
 @pytest.fixture(scope="session")
 def gene_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
@@ -793,7 +795,7 @@ def gene_ssm_subtree(
     """
     log.info("\n\n\tBUILDING GENE_SSM_SUBTREE\n\n")
     builder = builders.GeneCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     return builder.build_ssm_subtree(maf_df, primary_aliquot_df)
@@ -802,7 +804,7 @@ def gene_ssm_subtree(
 @pytest.fixture(scope="session")
 def ssm_occurrence_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     consequence_builder: builders.ConsequenceBuilder,
     observation_builder: builders.ObservationBuilder,
@@ -812,7 +814,7 @@ def ssm_occurrence_ssm_subtree(
     """
     log.info("\n\n\tBUILDING SSM_OCCURRENCE_SSM_SUBTREE\n\n")
     builder = builders.SSMOccurrenceCentricBuilder(
-        default_old_config, sqlContext, consequence_builder, observation_builder
+        default_old_config, sql_context, consequence_builder, observation_builder
     )
 
     return builder.build_ssm_subtree(maf_df)

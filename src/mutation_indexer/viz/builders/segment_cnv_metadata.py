@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build, datamodel
@@ -99,7 +99,7 @@ class SegmentCNVMetadataBuilder(
             query=self._get_es_query(),
         )
         segment_cnv_metadata_df = segment_cnv_metadata_df.select(
-            "file_id", F.col("analysis.analysis_id").alias("analysis_id")
+            "file_id", pyspark_functions.col("analysis.analysis_id").alias("analysis_id")
         )
         segment_cnv_metadata_df = ascat_metadata_df.join(
             segment_cnv_metadata_df, on="analysis_id", how="inner"

@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import AbstractSet, Generic, TypedDict, TypeVar
+from collections.abc import Set as AbstractSet
+from typing import Generic, TypedDict, TypeVar
 from unittest import mock
 
 import pytest

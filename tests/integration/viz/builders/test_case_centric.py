@@ -1,4 +1,4 @@
-from typing import AbstractSet
+from collections.abc import Set as AbstractSet
 
 import elasticsearch
 import pytest
@@ -43,13 +43,13 @@ def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> 
 @pytest.mark.usefixtures("case_centric_df")
 def test_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     case_ssm_subtree: sql.DataFrame,
 ) -> None:
     observation_builder = builders.ObservationBuilder()
-    consequence_builder = builders.ConsequenceBuilder(default_old_config, sqlContext)
+    consequence_builder = builders.ConsequenceBuilder(default_old_config, sql_context)
 
     # ssm_subtree stats expected:
     cons_df = consequence_builder.build_for_ssm(maf_df, "case_centric")

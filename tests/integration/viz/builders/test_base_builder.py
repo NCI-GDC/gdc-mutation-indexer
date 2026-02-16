@@ -5,7 +5,7 @@ from collections.abc import Iterable, Sequence
 import deepdiff
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as F
+from pyspark.sql import functions as pyspark_functions
 from pyspark.sql import types
 
 from mutation_indexer import es_utils
@@ -34,17 +34,17 @@ def test_sample_data_cast_boolean(
     mapping_data: dict, spark_session: sql.SparkSession, input_dir: pathlib.Path
 ) -> None:
     df = spark_session.read.parquet(str(input_dir.joinpath("sample.parquet")))
-    gene_df = df.select(F.explode("gene")).select("col.*")
+    gene_df = df.select(pyspark_functions.explode("gene")).select("col.*")
     gene_dtypes = dict(gene_df.dtypes)
 
-    cnv_df = gene_df.select(F.explode("cnv")).select("col.*")
+    cnv_df = gene_df.select(pyspark_functions.explode("cnv")).select("col.*")
     cnv_dtypes = dict(cnv_df.dtypes)
 
     new_df = base_builder.cast_booleans(df, mapping_data)
-    new_gene_df = new_df.select(F.explode("gene")).select("col.*")
+    new_gene_df = new_df.select(pyspark_functions.explode("gene")).select("col.*")
     new_gene_dtypes = dict(new_gene_df.dtypes)
 
-    new_cnv_df = new_gene_df.select(F.explode("cnv")).select("col.*")
+    new_cnv_df = new_gene_df.select(pyspark_functions.explode("cnv")).select("col.*")
     new_cnv_dtypes = dict(new_cnv_df.dtypes)
 
     assert gene_dtypes["is_cancer_gene_census"] == "string"
