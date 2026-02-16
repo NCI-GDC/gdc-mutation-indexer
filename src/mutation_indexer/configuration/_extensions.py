@@ -182,7 +182,7 @@ class FormatMapRootField(fields.String):
         return template.format_map(root_data)
 
 
-class Schema([T]):
+class Schema(list[T]):
     def __init__(self, cls: type[T]) -> None:
         """A schema which handles the serialization/deserialization of T.
 
