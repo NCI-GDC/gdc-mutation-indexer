@@ -140,12 +140,13 @@ class TestUQFPKMBuilder:
             config.uqfpkm_key.format(gene_id="gene-1"): (1.0, 4.0),
         }
 
-        def validate_upload(data: IO[bytes], bucket: str, key: str) -> None:
-            assert bucket == config.bucket
-            assert key in expected_values
+        def validate_upload(data: IO[bytes], **kwargs) -> None:
+            assert kwargs["Bucket"] == config.bucket
+            assert kwargs["Key"] in expected_values
             assert isinstance(data, io.BytesIO)
             assert (
-                data.read() == numpy.array(expected_values[key], dtype=numpy.float32).tobytes()
+                data.read()
+                == numpy.array(expected_values[kwargs["Key"]], dtype=numpy.float32).tobytes()
             )
 
         s3_client = self._arrange_s3_client(validate_upload)
