@@ -11,15 +11,15 @@ from tests.unit.data.models.viz.segment_cnv_metadata import SegmentCNVMetadata
 
 __all__ = (
     "ASCAT",
+    "MAF",
     "ASCATMetadata",
     "Case",
-    "civic",
-    "consequence",
     "GeneModel",
-    "MAF",
     "MAFMetadata",
-    "observation",
     "PrimaryAliquot",
     "SegmentCNV",
     "SegmentCNVMetadata",
+    "civic",
+    "consequence",
+    "observation",
 )

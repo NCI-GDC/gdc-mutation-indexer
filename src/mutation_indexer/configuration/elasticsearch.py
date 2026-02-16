@@ -4,8 +4,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 """
 
 import dataclasses
-from typing import Annotated
 from collections.abc import Mapping
+from typing import Annotated
 
 from marshmallow import fields
 

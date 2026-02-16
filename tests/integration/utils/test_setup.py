@@ -89,7 +89,7 @@ def remove_keys_from_dict(tree: dict, remove_keys: Container[str] | None) -> dic
 
 
 class IndexManager(ContextManager["IndexManager"]):
-    __slots__ = ("_es", "_graph_indices", "_index_types", "_skip_creation", "_mappings_loader")
+    __slots__ = ("_es", "_graph_indices", "_index_types", "_mappings_loader", "_skip_creation")
 
     def __init__(
         self,
@@ -150,7 +150,7 @@ class IndexManager(ContextManager["IndexManager"]):
 
 
 class DocumentLoader(ContextManager["DocumentLoader"]):
-    __slots__ = ("_es", "_graph_indices", "_id_fields", "_documents")
+    __slots__ = ("_documents", "_es", "_graph_indices", "_id_fields")
 
     def __init__(
         self,

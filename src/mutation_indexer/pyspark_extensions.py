@@ -1,6 +1,6 @@
 import dataclasses
-from typing import Any
 from collections.abc import Iterable
+from typing import Any
 
 from pyspark import sql
 from pyspark.sql import functions as F

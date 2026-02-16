@@ -6,11 +6,11 @@ import elasticsearch
 import pytest
 from elasticsearch import helpers
 from pyspark import sql
-from tests.integration.utils import test_setup
 
 from mutation_indexer import es_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import builders, configuration
+from tests.integration.utils import test_setup
 
 
 @pytest.fixture(scope="function")

@@ -10,15 +10,13 @@ import datetime
 import functools
 import pathlib
 import tempfile
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from importlib import abc, resources
-from typing import Any
-from collections.abc import Iterable
+from typing import Any, Self
 
 import marshmallow
 import tomli
 import tomli_w
-from typing import Self
 
 from mutation_indexer.configuration import _extensions, build, elasticsearch, spark
 from mutation_indexer.constants import app

@@ -12,7 +12,7 @@ from collections.abc import (
     Set,
 )
 from types import MappingProxyType
-from typing import DefaultDict, Deque, Final, Literal
+from typing import Final, Literal
 
 import elasticsearch
 import gdcmodels
@@ -152,7 +152,7 @@ def _extract_fields(
     properties: Mapping[str, Mapping],
     excluded_fields: Container[str],
     included_fields: Iterable[str] | None,
-    path_to_fields: Deque[str],
+    path_to_fields: collections.deque[str],
 ) -> Iterator[str]:
     """
     Extracts all fields which fall under the provided path and fall within the given
@@ -274,7 +274,7 @@ SQL_TYPES: Mapping[str, types.DataType] = MappingProxyType(
 Tree = dict[str, "Tree"]
 
 
-class DefaultTree(DefaultDict[str, Tree]):
+class DefaultTree(collections.defaultdict[str, Tree]):
     """A tree structure for which all paths are valid."""
 
     def __init__(self) -> None:
@@ -509,10 +509,10 @@ def _get_nested_document_properties(mappings: esmodels.ESMapping) -> frozenset[s
 class DataFrameUtil:
     __slots__ = (
         "_config",
-        "_spark_session",
         "_es_client",
         "_mappings_loader",
         "_schema_loader",
+        "_spark_session",
     )
     ES_FORMAT = "org.elasticsearch.spark.sql"
 

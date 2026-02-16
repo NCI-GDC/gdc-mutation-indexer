@@ -222,9 +222,7 @@ class TestConsequenceBuilder:
                 for effect, values in transcript.items():
                     # Make sure that effects are same for particular ssm-transcript combination
                     assert len(values) == 1, (
-                        "{}/{}/{} unexpected effect values set of length {} != 1".format(
-                            ssm_id, transcript_id, effect, len(values)
-                        )
+                        f"{ssm_id}/{transcript_id}/{effect} unexpected effect values set of length {len(values)} != 1"
                     )
 
         # Check that some fields are None for all non-selected transcripts:

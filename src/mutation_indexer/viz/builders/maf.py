@@ -80,7 +80,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
     uniform features
     """
 
-    __slots__ = ("schema", "annotation_builders", "_doc_dataframe_util")
+    __slots__ = ("_doc_dataframe_util", "annotation_builders", "schema")
 
     def __init__(
         self,

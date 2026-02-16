@@ -1,11 +1,11 @@
 import functools
 import itertools
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from typing import (
     AbstractSet,
     NamedTuple,
     Union,
 )
-from collections.abc import Callable, Iterable, Iterator, Mapping
 
 import more_itertools
 from pyspark import sql

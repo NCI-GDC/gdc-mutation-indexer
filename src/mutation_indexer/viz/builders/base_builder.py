@@ -1,11 +1,10 @@
 import abc
 import copy
 import logging
-from typing import ClassVar
+from typing import ClassVar, Self
 
 from pyspark import sql
 from pyspark.sql.types import ArrayType, BooleanType, MapType, StructType
-from typing import Self
 
 from mutation_indexer import es_utils
 from mutation_indexer.builders import utils

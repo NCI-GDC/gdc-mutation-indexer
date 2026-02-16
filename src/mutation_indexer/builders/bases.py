@@ -5,24 +5,23 @@ import functools
 import itertools
 import logging
 import operator
-from collections.abc import Collection, Iterable, Iterator, Mapping, Set
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence, Set
 from importlib import resources
 from typing import (
     Generic,
     Literal,
     Protocol,
+    TypeGuard,
     TypeVar,
     get_type_hints,
     runtime_checkable,
 )
-from collections.abc import Sequence
 
 import more_itertools
 from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import TypeGuard
 
 from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration import builders
@@ -124,7 +123,7 @@ class InputDataFrameManger(Generic[TInputDFs]):
 
 
 class InputBuilder(Builder, Generic[TConfig, TInputDFs], abc.ABC):
-    __slots__ = ("_config", "_spark_session", "_input_manager", "_output")
+    __slots__ = ("_config", "_input_manager", "_output", "_spark_session")
 
     def __init__(
         self,
@@ -246,7 +245,7 @@ def _add_required_include_fields(
 
 
 class PrimaryAliquotBuilder(Generic[TConfig, TInputDFs], InputBuilder[TConfig, TInputDFs]):
-    __slots__ = ("_es_dataframe_util", "_additional_selections")
+    __slots__ = ("_additional_selections", "_es_dataframe_util")
 
     @dataclasses.dataclass(frozen=True)
     class Weight:
@@ -812,7 +811,7 @@ class IndexBuilder(
 ):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
 
-    __slots__ = ("_es_dataframe_util", "_mappings_loader", "_index_type", "_index_name")
+    __slots__ = ("_es_dataframe_util", "_index_name", "_index_type", "_mappings_loader")
 
     def __init__(
         self,

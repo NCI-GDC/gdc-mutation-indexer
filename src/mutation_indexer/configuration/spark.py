@@ -8,9 +8,8 @@ https://spark.apache.org/docs/2.4.5/configuration.html
 
 import dataclasses
 import types
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
-from collections.abc import Iterable
 
 
 def _to_camel_case(value: str) -> str:

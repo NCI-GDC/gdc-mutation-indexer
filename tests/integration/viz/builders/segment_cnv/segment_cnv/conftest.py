@@ -10,11 +10,11 @@ import elasticsearch
 import pytest
 from indexclient import client
 from pyspark import sql
-from tests.integration.utils import test_setup
 
 from mutation_indexer import es_utils, indexd_utils
 from mutation_indexer.constants import build
 from mutation_indexer.viz import builders, configuration
+from tests.integration.utils import test_setup
 
 logger = logging.getLogger(__name__)
 
