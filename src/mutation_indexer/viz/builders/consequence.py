@@ -1,7 +1,7 @@
 from typing import Any
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 from mutation_indexer.viz.builders import df_builders
@@ -40,21 +40,19 @@ NULL_NON_SELECTED_FIELDS = (
 
 
 def _extract_transactions(maf_df: sql.DataFrame) -> sql.DataFrame:
-    all_effects = pyspark_functions.col("all_effects")
-    ssm_transaction_df = maf_df.withColumn(
-        "selected_transcript_id", pyspark_functions.col("transcript_id")
-    )
+    all_effects = F.col("all_effects")
+    ssm_transaction_df = maf_df.withColumn("selected_transcript_id", F.col("transcript_id"))
     # Explode all_effects, to have each individual transcript data on a separate line
     # NOTE: after exploding, missing fields for secondary transcripts will be populated
     # with values from selected transcript (top level columns)
     ssm_transaction_df = ssm_transaction_df.withColumn(
-        "all_effects", pyspark_functions.explode(pyspark_functions.split(all_effects, ";"))
+        "all_effects", F.explode(F.split(all_effects, ";"))
     )
     ssm_transaction_df = ssm_transaction_df.withColumn(
         "all_effects",
-        pyspark_functions.when(
-            all_effects.contains(","), pyspark_functions.split(all_effects, ",")
-        ).otherwise(pyspark_functions.split(all_effects, ":")),
+        F.when(all_effects.contains(","), F.split(all_effects, ",")).otherwise(
+            F.split(all_effects, ":")
+        ),
     )
 
     return ssm_transaction_df.withColumns(
@@ -170,7 +168,7 @@ class ConsequenceBuilder:
         ann_df = ann_df.select(
             "ssm_id",
             "transcript_id",
-            pyspark_functions.struct(ann_df.drop("ssm_id").columns).alias("annotation"),
+            F.struct(ann_df.drop("ssm_id").columns).alias("annotation"),
         )
         # => {gene_id, ssm_id, transcrpt_id,
         # is_canonical,
@@ -198,27 +196,24 @@ class ConsequenceBuilder:
         tran_df = tran_with_ann.withColumn(
             "consequence_id",
             utils.uuid5_col(
-                pyspark_functions.lit("ssm_consequence"),
-                pyspark_functions.col("ssm_id"),
-                pyspark_functions.col("transcript_id"),
+                F.lit("ssm_consequence"),
+                F.col("ssm_id"),
+                F.col("transcript_id"),
             ),
         )
         if add_gene_aa_change:
             tran_df = tran_df.withColumn(
                 "gene_aa_change",
-                pyspark_functions.when(
-                    pyspark_functions.col("gene.symbol").isNull()
-                    | pyspark_functions.col("aa_change").isNull(),
+                F.when(
+                    F.col("gene.symbol").isNull() | F.col("aa_change").isNull(),
                     None,
-                ).otherwise(
-                    pyspark_functions.concat_ws(" ", tran_df.gene.symbol, tran_df.aa_change)
-                ),
+                ).otherwise(F.concat_ws(" ", tran_df.gene.symbol, tran_df.aa_change)),
             )
             tran_df = tran_df.select(
                 "ssm_id",
-                pyspark_functions.struct(
+                F.struct(
                     "consequence_id",
-                    pyspark_functions.struct(
+                    F.struct(
                         *tran_df.drop("ssm_id", "consequence_id", "gene_aa_change")
                     ).alias("transcript"),
                 ).alias("consequence"),
@@ -226,24 +221,22 @@ class ConsequenceBuilder:
             )
 
             df = tran_df.groupby("ssm_id").agg(
-                pyspark_functions.collect_list("consequence").alias("consequence"),
-                pyspark_functions.collect_list("gene_aa_change").alias("gene_aa_change"),
+                F.collect_list("consequence").alias("consequence"),
+                F.collect_list("gene_aa_change").alias("gene_aa_change"),
             )
             df = utils.sanitize_gene_aa_change(df)
 
         else:
             tran_df = tran_df.select(
                 "ssm_id",
-                pyspark_functions.struct(
+                F.struct(
                     "consequence_id",
-                    pyspark_functions.struct(*tran_df.drop("ssm_id", "consequence_id")).alias(
-                        "transcript"
-                    ),
+                    F.struct(*tran_df.drop("ssm_id", "consequence_id")).alias("transcript"),
                 ).alias("consequence"),
             )
 
             df = tran_df.groupby("ssm_id").agg(
-                pyspark_functions.collect_list("consequence").alias("consequence")
+                F.collect_list("consequence").alias("consequence")
             )
 
         return df
@@ -260,12 +253,10 @@ class ConsequenceBuilder:
         cons_df = (
             ascat_df.select(
                 "cnv_id",
-                pyspark_functions.struct(
-                    *utils.struct_select(index_name, "consequence")
-                ).alias("consequence"),
+                F.struct(*utils.struct_select(index_name, "consequence")).alias("consequence"),
             )
             .groupby("cnv_id")
-            .agg(pyspark_functions.collect_set("consequence").alias("consequence"))
+            .agg(F.collect_set("consequence").alias("consequence"))
         )
 
         return cons_df
@@ -301,23 +292,19 @@ class ConsequenceBuilder:
         for field in NULL_NON_SELECTED_FIELDS:
             ssm_transaction_df = ssm_transaction_df.withColumn(
                 field,
-                pyspark_functions.when(
-                    pyspark_functions.col("transcript_id")
-                    == pyspark_functions.col("selected_transcript_id"),
-                    pyspark_functions.col(field),
+                F.when(
+                    F.col("transcript_id") == F.col("selected_transcript_id"),
+                    F.col(field),
                 ).otherwise(None),
             )
 
         # Take out the transcripts from genes that this mutation is not in
-        ssm_transaction_df = ssm_transaction_df.where(
-            pyspark_functions.col("symbol") == pyspark_functions.col("do_not_use")
-        )
+        ssm_transaction_df = ssm_transaction_df.where(F.col("symbol") == F.col("do_not_use"))
 
         # get is_canonical
         ssm_transaction_df = ssm_transaction_df.withColumn(
             "is_canonical",
-            pyspark_functions.col("canonical_transcript_id")
-            == pyspark_functions.col("transcript_id"),
+            F.col("canonical_transcript_id") == F.col("transcript_id"),
         )
 
         ssm_transaction_df = utils.sanitize_aa_change(ssm_transaction_df)
@@ -348,5 +335,5 @@ class ConsequenceBuilder:
         ]
 
         gene_df = df_builders.get_gene_df(maf_df, index_name, drop_fields=to_drop)
-        gene_struct_df = gene_df.select("gene_id", pyspark_functions.struct("*").alias("gene"))
+        gene_struct_df = gene_df.select("gene_id", F.struct("*").alias("gene"))
         return gene_struct_df

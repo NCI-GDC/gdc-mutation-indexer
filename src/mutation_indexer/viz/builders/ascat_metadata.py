@@ -2,7 +2,7 @@ from collections.abc import Collection, Sequence
 from typing import Literal, TypedDict, override
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
@@ -46,12 +46,12 @@ class ASCATMetadataBuilder(
 
     @override
     def _weight_matrix(self) -> Sequence[Sequence[sql.Column]]:
-        workflow_type = pyspark_functions.col("workflow_type")
-        experimental_strategy = pyspark_functions.col("experimental_strategy")
+        workflow_type = F.col("workflow_type")
+        experimental_strategy = F.col("experimental_strategy")
 
         file_weights = tuple(
-            (workflow_type == pyspark_functions.lit(p.workflow_type))
-            & (experimental_strategy == pyspark_functions.lit(p.experimental_strategy))
+            (workflow_type == F.lit(p.workflow_type))
+            & (experimental_strategy == F.lit(p.experimental_strategy))
             for p in self._config.priorities
         )
 
@@ -67,8 +67,8 @@ class ASCATMetadataBuilder(
             ._get_initial_weighted_df(query, include_fields)
             .select(
                 "*",
-                pyspark_functions.col("analysis.workflow_type").alias("workflow_type"),
-                pyspark_functions.col("analysis.analysis_id").alias("analysis_id"),
+                F.col("analysis.workflow_type").alias("workflow_type"),
+                F.col("analysis.analysis_id").alias("analysis_id"),
             )
         )
 

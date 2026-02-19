@@ -3,7 +3,7 @@
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
@@ -82,7 +82,7 @@ class SegmentCNVOccurrenceCentricBuilder(
         segment_column_df = segment_cnv_df.select(
             "segment_cnv_id",
             "case_id",
-            pyspark_functions.struct(*segment_columns).alias("segment_cnv"),
+            F.struct(*segment_columns).alias("segment_cnv"),
         )
         segment_column_df = segment_column_df.drop_duplicates(
             subset=["segment_cnv_id", "case_id"]
@@ -109,7 +109,7 @@ class SegmentCNVOccurrenceCentricBuilder(
             "segment_cnv_id",
             "case_id",
             "occurrence_id",
-            pyspark_functions.struct("observation", *case_df.columns).alias("case"),
+            F.struct("observation", *case_df.columns).alias("case"),
         )
 
         return case_column_df
@@ -125,7 +125,7 @@ class SegmentCNVOccurrenceCentricBuilder(
             case_column_df, on=["segment_cnv_id", "case_id"], how="inner"
         )
         segment_cnv_occurrence_centric_df = segment_cnv_occurrence_centric_df.select(
-            pyspark_functions.col("occurrence_id").alias("segment_cnv_occurrence_id"),
+            F.col("occurrence_id").alias("segment_cnv_occurrence_id"),
             "segment_cnv",
             "case",
         )

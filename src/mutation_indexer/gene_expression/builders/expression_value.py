@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, indexd_utils, schemas
@@ -61,15 +61,13 @@ class ExpressionValueBuilder(
         schema = schemas.load_schema("builders/gene_expression/star_counts.json")
         gene_expression_df = self._doc_dataframe_util.get_dataframe(
             file_ids, schema=schema, comment="#", has_header=True
-        ).where(pyspark_functions.col("gene_type") == pyspark_functions.lit("protein_coding"))
+        ).where(F.col("gene_type") == F.lit("protein_coding"))
 
         return gene_expression_df.select(
-            pyspark_functions.col("did").alias("file_id"),
-            pyspark_functions.element_at(pyspark_functions.split("gene_id", "\\."), 1).alias(
-                "gene_id"
-            ),
-            pyspark_functions.col("gene_name").alias("symbol"),
-            pyspark_functions.col("fpkm_uq_unstranded").alias("uqfpkm"),
+            F.col("did").alias("file_id"),
+            F.element_at(F.split("gene_id", "\\."), 1).alias("gene_id"),
+            F.col("gene_name").alias("symbol"),
+            F.col("fpkm_uq_unstranded").alias("uqfpkm"),
         )
 
     def _build_from_scratch(self, input_dfs: ExpressionValueInputs) -> sql.DataFrame:
@@ -101,7 +99,7 @@ class ExpressionValueBuilder(
         gene_model_df = (
             gene_model_df.where(utils.is_protein_coding())
             .where(utils.is_between_chr1_and_chr22())
-            .select(pyspark_functions.col("_gene_id").alias("gene_id"))
+            .select(F.col("_gene_id").alias("gene_id"))
         )
 
         values_df = self._load_expression_values(primary_aliquot_df)
@@ -113,9 +111,7 @@ class ExpressionValueBuilder(
         ).select(
             "*",
             utils.uuid5_col("case_id", "gene_id").alias("gene_expression_id"),
-            pyspark_functions.log2(pyspark_functions.col("uqfpkm") + 1)
-            .cast(types.FloatType())
-            .alias("log2_uqfpkm"),
+            F.log2(F.col("uqfpkm") + 1).cast(types.FloatType()).alias("log2_uqfpkm"),
         )
 
         # Keep only the columns we need,

@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.configuration import adapter
 from mutation_indexer.viz.builders import (
@@ -103,13 +103,13 @@ class SSMCentricBuilder(base_builder.BaseBuilder):
             case_df.join(obs_df, on=["case_id"], how="right")
             .select(
                 "ssm_id",
-                pyspark_functions.struct(
+                F.struct(
                     "occurrence_id",
-                    pyspark_functions.struct("observation", *case_df.columns).alias("case"),
+                    F.struct("observation", *case_df.columns).alias("case"),
                 ).alias("occurrence"),
             )
             .groupby("ssm_id")
-            .agg(pyspark_functions.collect_list("occurrence").alias("occurrence"))
+            .agg(F.collect_list("occurrence").alias("occurrence"))
         )
         self.log_count(occurrence_df)
 

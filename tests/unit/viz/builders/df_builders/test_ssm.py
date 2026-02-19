@@ -3,7 +3,7 @@ from collections.abc import Iterable
 import more_itertools
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer.viz.builders import df_builders
@@ -115,9 +115,7 @@ class TestBuildSSMSubtree:
         if drop_genes:
             df = df.withColumn(
                 "consequence",
-                pyspark_functions.transform(
-                    "consequence", lambda c: c.dropFields("transcript.gene")
-                ),
+                F.transform("consequence", lambda c: c.dropFields("transcript.gene")),
             )
 
         if drop_aa_change:

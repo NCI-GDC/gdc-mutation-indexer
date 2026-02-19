@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, indexd_utils, schemas
@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 def _strip_gene_id() -> sql.Column:
-    gene_id = pyspark_functions.col("gene_id")
+    gene_id = F.col("gene_id")
 
-    return pyspark_functions.element_at(pyspark_functions.split(gene_id, r"\."), 1)
+    return F.element_at(F.split(gene_id, r"\."), 1)
 
 
-@pyspark_functions.udf(returnType=UUIDS_STRUCT)
+@F.udf(returnType=UUIDS_STRUCT)
 def _generate_uuids(
     chromosome: str,
     start_position: int,
@@ -131,30 +131,20 @@ def _add_ploidy_values(document_df: sql.DataFrame) -> sql.DataFrame:
         A copy of the given document data frame with the upper_ploidy_number and
         lower_ploidy_number columns added.
     """
-    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(
-        pyspark_functions.count("*").alias("count")
-    )
+    ploidy_df = document_df.groupBy("file_id", "copy_number").agg(F.count("*").alias("count"))
     ploidy_window = sql.Window().partitionBy("file_id", "count")
-    mode_window = (
-        sql.Window()
-        .partitionBy("file_id")
-        .orderBy(pyspark_functions.col("count").desc_nulls_last())
-    )
+    mode_window = sql.Window().partitionBy("file_id").orderBy(F.col("count").desc_nulls_last())
     ploidy_df = (
         ploidy_df.select(
             "file_id",
-            pyspark_functions.min("copy_number")
-            .over(ploidy_window)
-            .alias("lower_ploidy_number"),
-            pyspark_functions.max("copy_number")
-            .over(ploidy_window)
-            .alias("upper_ploidy_number"),
-            pyspark_functions.row_number().over(mode_window).alias("row_number"),
+            F.min("copy_number").over(ploidy_window).alias("lower_ploidy_number"),
+            F.max("copy_number").over(ploidy_window).alias("upper_ploidy_number"),
+            F.row_number().over(mode_window).alias("row_number"),
         )
         .where(
-            (pyspark_functions.col("row_number") == 1)
-            & (pyspark_functions.col("lower_ploidy_number") != 0)
-            & (pyspark_functions.col("upper_ploidy_number") != 0)
+            (F.col("row_number") == 1)
+            & (F.col("lower_ploidy_number") != 0)
+            & (F.col("upper_ploidy_number") != 0)
         )
         .select("file_id", "upper_ploidy_number", "lower_ploidy_number")
     )
@@ -208,51 +198,41 @@ def _add_cnv_change_data(document_df: sql.DataFrame) -> sql.DataFrame:
     """
     document_df = _add_ploidy_values(document_df)
     cnv_change = (
-        pyspark_functions.when(
-            pyspark_functions.col("copy_number")
-            > pyspark_functions.col("upper_ploidy_number"),
+        F.when(
+            F.col("copy_number") > F.col("upper_ploidy_number"),
             "Gain",
         )
         .when(
-            pyspark_functions.col("copy_number")
-            < pyspark_functions.col("lower_ploidy_number"),
+            F.col("copy_number") < F.col("lower_ploidy_number"),
             "Loss",
         )
         .otherwise(None)
         .alias("cnv_change")
     )
     cnv_change_5_category = (
-        pyspark_functions.when(
-            pyspark_functions.col("copy_number") == 0, "Homozygous Deletion"
-        )
+        F.when(F.col("copy_number") == 0, "Homozygous Deletion")
         .when(
-            pyspark_functions.col("copy_number")
-            >= pyspark_functions.col("upper_ploidy_number") * 2,
+            F.col("copy_number") >= F.col("upper_ploidy_number") * 2,
             "Amplification",
         )
         .when(
-            pyspark_functions.col("copy_number")
-            > pyspark_functions.col("upper_ploidy_number"),
+            F.col("copy_number") > F.col("upper_ploidy_number"),
             "Gain",
         )
         .when(
-            pyspark_functions.col("copy_number")
-            < pyspark_functions.col("lower_ploidy_number"),
+            F.col("copy_number") < F.col("lower_ploidy_number"),
             "Loss",
         )
         .otherwise(None)
         .alias("cnv_change_5_category")
     )
-    mean_ploidy = (
-        pyspark_functions.col("upper_ploidy_number")
-        + pyspark_functions.col("lower_ploidy_number")
-    ) / 2
+    mean_ploidy = (F.col("upper_ploidy_number") + F.col("lower_ploidy_number")) / 2
 
     return document_df.select(
         "*",
         cnv_change,
         cnv_change_5_category,
-        pyspark_functions.ceil(mean_ploidy).cast("integer").alias("sample_ploidy_integer"),
+        F.ceil(mean_ploidy).cast("integer").alias("sample_ploidy_integer"),
     ).na.drop(subset="cnv_change_5_category")
 
 
@@ -284,17 +264,15 @@ class ASCATBuilder(builders.InputBuilder[configuration.ASCATBuilder, ASCATInputs
         document_df = (
             document_df.withColumn(
                 "chromosome",
-                pyspark_functions.coalesce(
-                    pyspark_functions.regexp_replace("chromosome", "chr", "").cast(
-                        types.IntegerType()
-                    ),
-                    pyspark_functions.lit(-1),
+                F.coalesce(
+                    F.regexp_replace("chromosome", "chr", "").cast(types.IntegerType()),
+                    F.lit(-1),
                 ),
             )
-            .where(pyspark_functions.col("chromosome").between(1, 22))
+            .where(F.col("chromosome").between(1, 22))
             .select(
                 "copy_number",
-                pyspark_functions.col("did").alias("file_id"),
+                F.col("did").alias("file_id"),
                 _strip_gene_id().alias("gene_id"),
             )
         )
@@ -352,16 +330,16 @@ class ASCATBuilder(builders.InputBuilder[configuration.ASCATBuilder, ASCATInputs
 
         gene_model_df = (
             gene_model_df.select(
-                pyspark_functions.col("_gene_id").alias("gene_id"),
+                F.col("_gene_id").alias("gene_id"),
                 "_id",
                 "biotype",
                 "canonical_transcript_id",
                 "chromosome",
                 "cytoband",
                 "description",
-                pyspark_functions.col("gene_end").alias("end_position"),
+                F.col("gene_end").alias("end_position"),
                 "entrez_gene",
-                pyspark_functions.col("chromosome").alias("gene_chromosome"),
+                F.col("chromosome").alias("gene_chromosome"),
                 "gene_end",
                 "gene_start",
                 "gene_strand",
@@ -369,7 +347,7 @@ class ASCATBuilder(builders.InputBuilder[configuration.ASCATBuilder, ASCATInputs
                 "is_cancer_gene_census",
                 "name",
                 "omim_gene",
-                pyspark_functions.col("gene_start").alias("start_position"),
+                F.col("gene_start").alias("start_position"),
                 "synonyms",
                 "symbol",
                 "transcripts",
@@ -411,25 +389,25 @@ class ASCATBuilder(builders.InputBuilder[configuration.ASCATBuilder, ASCATInputs
             "gene_chromosome",
             "gene_end",
             "gene_id",
-            pyspark_functions.lit(True).alias("gene_level_cn"),
+            F.lit(True).alias("gene_level_cn"),
             "gene_start",
             "gene_strand",
             "hgnc",
             "is_cancer_gene_census",
             "name",
-            pyspark_functions.lit("GRCh38").alias("ncbi_build"),
+            F.lit("GRCh38").alias("ncbi_build"),
             "observation_id",
             "occurrence_id",
             "omim_gene",
             "sample_ploidy_integer",
-            pyspark_functions.col("file_id").alias("src_file_id"),
+            F.col("file_id").alias("src_file_id"),
             "start_position",
             "symbol",
             "synonyms",
             "transcripts",
             "uniprotkb_swissprot",
-            pyspark_functions.col("workflow_type").alias("variant_caller"),
-            pyspark_functions.lit("Tumor Only").alias("variant_status"),
+            F.col("workflow_type").alias("variant_caller"),
+            F.lit("Tumor Only").alias("variant_status"),
         )
 
 

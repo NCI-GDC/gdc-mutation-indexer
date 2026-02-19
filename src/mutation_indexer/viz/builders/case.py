@@ -3,7 +3,7 @@ import logging
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
@@ -21,19 +21,19 @@ def _load_available_variation_data(
     segment_cnv_metadata_df: sql.DataFrame,
 ) -> sql.DataFrame:
     ssm_data_df = maf_metadata_df.select(
-        "case_id", pyspark_functions.lit("ssm").alias(AVAILABLE_VARIATION_DATA)
+        "case_id", F.lit("ssm").alias(AVAILABLE_VARIATION_DATA)
     ).distinct()
     cnv_data_df = ascat_metadata_df.select(
-        "case_id", pyspark_functions.lit("cnv").alias(AVAILABLE_VARIATION_DATA)
+        "case_id", F.lit("cnv").alias(AVAILABLE_VARIATION_DATA)
     ).distinct()
     segment_cnv_data_df = segment_cnv_metadata_df.select(
-        "case_id", pyspark_functions.lit("segment_cnv").alias(AVAILABLE_VARIATION_DATA)
+        "case_id", F.lit("segment_cnv").alias(AVAILABLE_VARIATION_DATA)
     ).distinct()
     available_variation_df = ssm_data_df.union(cnv_data_df).union(segment_cnv_data_df)
 
     # Finally, group by case
     return available_variation_df.groupby("case_id").agg(
-        pyspark_functions.collect_set(AVAILABLE_VARIATION_DATA).alias(AVAILABLE_VARIATION_DATA)
+        F.collect_set(AVAILABLE_VARIATION_DATA).alias(AVAILABLE_VARIATION_DATA)
     )
 
 

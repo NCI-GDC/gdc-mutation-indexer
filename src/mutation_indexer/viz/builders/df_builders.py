@@ -13,7 +13,7 @@ from collections.abc import Container, Iterable, Iterator
 import more_itertools
 from gdcmodels import mapper
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 
@@ -130,13 +130,13 @@ def _get_clinical_annotation_df(
         """
         for k, v in doc.items():
             if "properties" in v:
-                yield pyspark_functions.struct(*restructure(v["properties"], k)).alias(k)
+                yield F.struct(*restructure(v["properties"], k)).alias(k)
             elif "type" in v:
                 name = v.get("default", f"{parent_name}_{k}")
 
-                yield pyspark_functions.col(name).alias(k)
+                yield F.col(name).alias(k)
             else:
-                yield pyspark_functions.struct(*restructure(v, k)).alias(k)
+                yield F.struct(*restructure(v, k)).alias(k)
 
     name = "clinical_annotations"
     mapping = utils.select_mapping(index_name, name)

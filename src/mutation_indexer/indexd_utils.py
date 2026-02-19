@@ -6,7 +6,7 @@ from typing import NamedTuple
 import more_itertools
 from indexclient import client
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 DOCUMENT_URL_SCHEMA = types.StructType(
@@ -99,7 +99,7 @@ class DataFrameUtil:
         )
 
         if include_file_name:
-            df = df.withColumn("_input_file_name", pyspark_functions.input_file_name())
+            df = df.withColumn("_input_file_name", F.input_file_name())
 
         return df
 

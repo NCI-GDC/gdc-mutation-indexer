@@ -2,7 +2,7 @@ import json
 
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.viz import builders
 
@@ -57,7 +57,7 @@ class TestConsequenceBuilder:
         cons_df = builder.build_for_ssm(maf_df, index_name)
 
         # Explode consequences
-        tran_df = cons_df.select(pyspark_functions.explode("consequence").alias("c")).select(
+        tran_df = cons_df.select(F.explode("consequence").alias("c")).select(
             "c.consequence_id",
             "c.transcript.transcript_id",
             "c.transcript.annotation",
@@ -120,7 +120,7 @@ class TestConsequenceBuilder:
     ) -> None:
         cons_df = builder.build_for_ssm(maf_df, index_name)
         transcripts = cons_df.select(
-            pyspark_functions.explode("consequence.transcript").alias("transcript")
+            F.explode("consequence.transcript").alias("transcript")
         ).select("transcript.*")
 
         # Check that gene not in transctipts
@@ -135,13 +135,11 @@ class TestConsequenceBuilder:
     ) -> None:
         cons_df = builder.build_for_ssm(maf_df, index_name, join_gene=True)
         transcripts = cons_df.select(
-            pyspark_functions.explode("consequence.transcript").alias("transcript")
+            F.explode("consequence.transcript").alias("transcript")
         ).select("transcript.*")
 
         assert "symbol" in (
-            cons_df.select(
-                pyspark_functions.explode("consequence.transcript.gene").alias("gene")
-            )
+            cons_df.select(F.explode("consequence.transcript.gene").alias("gene"))
             .select("gene.*")
             .columns
         )

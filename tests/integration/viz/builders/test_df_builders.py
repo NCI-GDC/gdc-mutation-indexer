@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 from mutation_indexer.viz.builders import df_builders
@@ -28,7 +28,7 @@ def assert_from_df(df: sql.DataFrame, row: sql.Row, join_by: str, mapping: dict)
     item = row.asDict(recursive=True)
     print(item.keys())
     filtered_dict = {}
-    filtered_list = df.filter(pyspark_functions.col(join_by) == item[join_by]).collect()
+    filtered_list = df.filter(F.col(join_by) == item[join_by]).collect()
     for it in filtered_list:
         filtered_dict.update(it.asDict(recursive=True))
     assert is_sub(item, filtered_dict.items(), mapping)

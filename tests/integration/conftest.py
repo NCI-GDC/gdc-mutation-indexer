@@ -12,7 +12,7 @@ import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import es_utils, indexd_utils, schemas
@@ -302,7 +302,7 @@ def maf_df(
         .select(
             "*",
             *(
-                pyspark_functions.lit(None).cast(types.StringType()).alias(name)
+                F.lit(None).cast(types.StringType()).alias(name)
                 for name in (
                     "1000G_AF",
                     "1000G_AFR_AF",

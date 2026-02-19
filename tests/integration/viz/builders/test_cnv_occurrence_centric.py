@@ -1,6 +1,6 @@
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.viz import builders
 from tests.integration.utils import join_utils
@@ -35,7 +35,7 @@ def test_observations_per_cnv_occurrence(
     cpo = join_utils.get_relationship_map(df, ("cnv_occurrence_id", "case_id"))
 
     # Observations and Cases per CNV Occurrence expected:
-    df = cnv_df.withColumn("cnv_occurrence_id", pyspark_functions.col("occurrence_id")).select(
+    df = cnv_df.withColumn("cnv_occurrence_id", F.col("occurrence_id")).select(
         "cnv_occurrence_id", "observation_id", "case_id"
     )
     true_opo = join_utils.get_relationship_map(df, ("cnv_occurrence_id", "observation_id"))

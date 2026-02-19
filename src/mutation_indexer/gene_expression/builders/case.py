@@ -11,7 +11,7 @@ from typing import TypedDict
 import more_itertools
 import mypy_boto3_s3 as s3
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer import builders
 from mutation_indexer.constants import build
@@ -72,12 +72,8 @@ class CaseBuilder(builders.InputBuilder[configuration.CaseBuilder, CaseInputs]):
         return (
             input_dfs["expression_value_df"]
             .select("case_id")
-            .groupBy(pyspark_functions.lit(1))
-            .agg(
-                pyspark_functions.sort_array(pyspark_functions.collect_set("case_id")).alias(
-                    "cases"
-                )
-            )
+            .groupBy(F.lit(1))
+            .agg(F.sort_array(F.collect_set("case_id")).alias("cases"))
             .select("cases")
         )
 

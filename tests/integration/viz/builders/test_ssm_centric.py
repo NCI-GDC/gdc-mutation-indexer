@@ -1,5 +1,5 @@
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 from tests.integration.utils import join_utils
@@ -17,9 +17,9 @@ def test_consequences_per_ssm(
     df = ssm_transcript_df.withColumn(
         "consequence_id",
         utils.uuid5_col(
-            pyspark_functions.lit("ssm_consequence"),
-            pyspark_functions.col("ssm_id"),
-            pyspark_functions.col("transcript_id"),
+            F.lit("ssm_consequence"),
+            F.col("ssm_id"),
+            F.col("transcript_id"),
         ),
     )
 

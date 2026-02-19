@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 from indexclient import client
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import indexd_utils
@@ -40,10 +40,10 @@ class DocumentContent(NamedTuple):
 
 
 def stub_input_file_name() -> sql.Column:
-    return pyspark_functions.concat(
-        pyspark_functions.lit("file://"),
-        pyspark_functions.element_at(pyspark_functions.split("doc_data", "\\."), 1),
-        pyspark_functions.lit(".format"),
+    return F.concat(
+        F.lit("file://"),
+        F.element_at(F.split("doc_data", "\\."), 1),
+        F.lit(".format"),
     )
 
 

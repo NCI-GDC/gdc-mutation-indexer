@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.configuration import adapter
 from mutation_indexer.viz.builders import (
@@ -98,9 +98,9 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
         cnv_subtree = cnv_df.select(
             "cnv_id",
             "case_id",
-            pyspark_functions.struct(
-                "consequence", *cnv_df.drop("consequence").drop("case_id").columns
-            ).alias("cnv"),
+            F.struct("consequence", *cnv_df.drop("consequence").drop("case_id").columns).alias(
+                "cnv"
+            ),
         )
 
         return cnv_subtree
@@ -120,7 +120,7 @@ class CNVOccurrenceCentricBuilder(base_builder.BaseBuilder):
             "case_id",
             "occurrence_id",
             "cnv_id",
-            pyspark_functions.struct("observation", *case_df.columns).alias("case"),
+            F.struct("observation", *case_df.columns).alias("case"),
         )
         self.log_count(case_obs_df)
         return case_obs_df

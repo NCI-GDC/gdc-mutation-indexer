@@ -6,7 +6,7 @@ from typing import NamedTuple, Union
 
 import more_itertools
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 RelationshipMapping = Mapping[str, Union[AbstractSet[str], "RelationshipMapping"]]
 
@@ -176,6 +176,6 @@ def unpack_df_list(
     all_fields = itertools.chain(aliases, child_fields)
 
     return dataframe.select(
-        pyspark_functions.explode(list_field).alias(exploded_alias),
-        *(pyspark_functions.col(f).alias(a) for f, a in zip(parent_fields, aliases)),
+        F.explode(list_field).alias(exploded_alias),
+        *(F.col(f).alias(a) for f, a in zip(parent_fields, aliases)),
     ).select(*all_fields)

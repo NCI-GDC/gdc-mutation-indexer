@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 
@@ -14,7 +14,7 @@ class DefaultColumn:
     value: Any = None
 
     def col(self) -> sql.Column:
-        return pyspark_functions.lit(self.value).cast(self.type)
+        return F.lit(self.value).cast(self.type)
 
 
 def default_columns(df: sql.DataFrame, defaults: Iterable[DefaultColumn]):
@@ -53,10 +53,6 @@ def explode_nested_doc(col: sql.Column | str) -> sql.Column:
     Returns:
         The exploded column.
     """
-    col = col if isinstance(col, sql.Column) else pyspark_functions.col(col)
+    col = col if isinstance(col, sql.Column) else F.col(col)
 
-    return pyspark_functions.explode(
-        pyspark_functions.when(
-            pyspark_functions.size(col) == 1, pyspark_functions.array(col[0])
-        ).otherwise(col)
-    )
+    return F.explode(F.when(F.size(col) == 1, F.array(col[0])).otherwise(col))

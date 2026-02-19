@@ -1,6 +1,6 @@
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 from mutation_indexer.viz import builders
@@ -43,12 +43,12 @@ def test_consequences_per_ssm_occurrence(
         ssm_transcript_df.withColumn(
             "consequence_id",
             utils.uuid5_col(
-                pyspark_functions.lit("ssm_consequence"),
-                pyspark_functions.col("ssm_id"),
-                pyspark_functions.col("transcript_id"),
+                F.lit("ssm_consequence"),
+                F.col("ssm_id"),
+                F.col("transcript_id"),
             ),
         )
-        .withColumn("ssm_occurrence_id", pyspark_functions.col("occurrence_id"))
+        .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
         .select("ssm_occurrence_id", "ssm_id", "consequence_id", "transcript_id", "gene_id")
     )
 
@@ -77,7 +77,7 @@ def test_observations_per_ssm_occurrence(
     cpo = join_utils.get_relationship_map(df, ("ssm_occurrence_id", "case_id"))
 
     # Observations and Cases per SSM Occurrence expected:
-    df = maf_df.withColumn("ssm_occurrence_id", pyspark_functions.col("occurrence_id")).select(
+    df = maf_df.withColumn("ssm_occurrence_id", F.col("occurrence_id")).select(
         "ssm_occurrence_id", "case_id", "tumor_sample_barcode"
     )
 

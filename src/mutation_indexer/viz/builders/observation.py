@@ -1,7 +1,7 @@
 import logging
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.builders import utils
 from mutation_indexer.constants import app
@@ -28,9 +28,7 @@ class ObservationBuilder:
         tumor and normal sample uuids and an ssm uuid.
         """
         # Select all of the nested fields
-        primary_aliquot_df = primary_aliquot_df.where(
-            pyspark_functions.col("entity") == pyspark_functions.lit("case")
-        )
+        primary_aliquot_df = primary_aliquot_df.where(F.col("entity") == F.lit("case"))
         flat_obs_df = maf_df.select(
             "ssm_id",
             "case_id",
@@ -42,26 +40,23 @@ class ObservationBuilder:
         flat_obs_df = (
             flat_obs_df.withColumn(
                 "variant_caller",
-                pyspark_functions.explode(pyspark_functions.split("variant_caller", ";")),
+                F.explode(F.split("variant_caller", ";")),
             )
             .withColumn(
                 "variant_caller",
-                pyspark_functions.regexp_replace("variant_caller", r"^\*+|\*+$", ""),
+                F.regexp_replace("variant_caller", r"^\*+|\*+$", ""),
             )
-            .where(
-                pyspark_functions.col("variant_caller")
-                != pyspark_functions.lit("somaticsniper")
-            )
+            .where(F.col("variant_caller") != F.lit("somaticsniper"))
         )
         flat_obs_df = flat_obs_df.withColumn(
             "observation_id",
             utils.uuid5_col(
-                pyspark_functions.lit("ssm_observation"),
-                pyspark_functions.col("occurrence_id"),
-                pyspark_functions.col("tumor_sample_uuid"),
-                pyspark_functions.col("matched_norm_sample_uuid"),
-                pyspark_functions.col("variant_caller"),
-                pyspark_functions.lit("masked"),
+                F.lit("ssm_observation"),
+                F.col("occurrence_id"),
+                F.col("tumor_sample_uuid"),
+                F.col("matched_norm_sample_uuid"),
+                F.col("variant_caller"),
+                F.lit("masked"),
             ),
         )
 
@@ -70,12 +65,12 @@ class ObservationBuilder:
                 "ssm_id",
                 "case_id",
                 "occurrence_id",
-                pyspark_functions.struct(
+                F.struct(
                     *utils.struct_select(index_name, "observation", selector=selector)
                 ).alias("observation"),
             )
             .groupby("ssm_id", "case_id", "occurrence_id")
-            .agg(pyspark_functions.collect_list("observation").alias("observation"))
+            .agg(F.collect_list("observation").alias("observation"))
         )
 
     def build_for_cnv(
@@ -94,7 +89,7 @@ class ObservationBuilder:
         # add other observation fields
         obs_df = ascat_df.withColumn(
             "variant_calling",
-            pyspark_functions.struct("variant_caller").alias("variant_calling"),
+            F.struct("variant_caller").alias("variant_calling"),
         )
 
         # observation structure
@@ -103,12 +98,12 @@ class ObservationBuilder:
                 "cnv_id",
                 "case_id",
                 "occurrence_id",
-                pyspark_functions.struct(
-                    *utils.struct_select(index, "observation", selector=selector)
-                ).alias("observation"),
+                F.struct(*utils.struct_select(index, "observation", selector=selector)).alias(
+                    "observation"
+                ),
             )
             .groupby("cnv_id", "case_id", "occurrence_id")
-            .agg(pyspark_functions.collect_set("observation").alias("observation"))
+            .agg(F.collect_set("observation").alias("observation"))
         )
 
         return obs_df
@@ -133,17 +128,17 @@ def build_observation_for_segment_cnv(segment_cnv_df: sql.DataFrame) -> sql.Data
         "sample_ploidy_integer",
         "src_file_id",
         "variant_status",
-        pyspark_functions.struct("variant_caller").alias("variant_calling"),
+        F.struct("variant_caller").alias("variant_calling"),
     )
     obs_df = (
         segment_cnv_df.select(
             "segment_cnv_id",
             "case_id",
             "occurrence_id",
-            pyspark_functions.struct(*obs_cols).alias("observation"),
+            F.struct(*obs_cols).alias("observation"),
         )
         .groupby("segment_cnv_id", "case_id", "occurrence_id")
-        .agg(pyspark_functions.collect_set("observation").alias("observation"))
+        .agg(F.collect_set("observation").alias("observation"))
     )
 
     return obs_df

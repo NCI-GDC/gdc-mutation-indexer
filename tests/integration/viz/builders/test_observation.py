@@ -3,7 +3,7 @@ import json
 import deepdiff
 import pytest
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.viz import builders
 
@@ -59,7 +59,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
 
         assert "observation_id" in (
-            result_df.select(pyspark_functions.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .select("observation.*")
             .columns
         )
@@ -74,7 +74,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_cnv(cnv_df, index_name)
 
         assert "observation_id" in (
-            result_df.select(pyspark_functions.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .select("observation.*")
             .columns
         )
@@ -161,7 +161,7 @@ class TestObservationBuilder:
         result_df = builder.build_for_ssm(maf_df, primary_aliquot_df, index_name)
 
         actual_counts = dict(
-            result_df.select(pyspark_functions.explode("observation").alias("observation"))
+            result_df.select(F.explode("observation").alias("observation"))
             .groupBy("observation.variant_calling.variant_caller")
             .count()
             .collect()

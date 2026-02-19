@@ -3,7 +3,7 @@
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer import builders, es_utils
 from mutation_indexer.constants import build
@@ -67,17 +67,17 @@ class SegmentCNVCentricBuilder(
             "sample_ploidy_integer",
             "src_file_id",
             "variant_status",
-            pyspark_functions.struct("variant_caller").alias("variant_calling"),
+            F.struct("variant_caller").alias("variant_calling"),
         )
         obs_df = (
             segment_cnv_df.select(
                 "segment_cnv_id",
                 "case_id",
                 "occurrence_id",
-                pyspark_functions.struct(*obs_cols).alias("observation"),
+                F.struct(*obs_cols).alias("observation"),
             )
             .groupby("segment_cnv_id", "case_id", "occurrence_id")
-            .agg(pyspark_functions.collect_set("observation").alias("observation"))
+            .agg(F.collect_set("observation").alias("observation"))
         )
 
         return obs_df
@@ -101,13 +101,13 @@ class SegmentCNVCentricBuilder(
             case_df.join(obs_df, on=["case_id"], how="left")
             .select(
                 "segment_cnv_id",
-                pyspark_functions.struct(
+                F.struct(
                     "occurrence_id",
-                    pyspark_functions.struct("observation", *case_df.columns).alias("case"),
+                    F.struct("observation", *case_df.columns).alias("case"),
                 ).alias("occurrence"),
             )
             .groupby("segment_cnv_id")
-            .agg(pyspark_functions.collect_set("occurrence").alias("occurrence"))
+            .agg(F.collect_set("occurrence").alias("occurrence"))
         )
 
         return occurrence_df

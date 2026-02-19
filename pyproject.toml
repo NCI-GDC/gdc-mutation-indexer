@@ -90,8 +90,14 @@ ignore = [
   "N815"
 ]
 
+[tool.ruff.lint.flake8-import-conventions.aliases]
+"pyspark.sql.functions" = "F"
+
 [tool.ruff.lint.isort]
 known-first-party = ["mutation_indexer", "tests"]
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["F"]
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true

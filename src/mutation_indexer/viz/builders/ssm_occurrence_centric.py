@@ -1,7 +1,7 @@
 from typing import Self
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 
 from mutation_indexer.configuration import adapter
 from mutation_indexer.viz.builders import (
@@ -64,7 +64,7 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
         self.log("Joining ssm with case")
         ssm_occurrence_centric = (
             ssm_cons.join(case_obs_df, on=["case_id", "ssm_id"], how="inner")
-            .withColumn("ssm_occurrence_id", pyspark_functions.col("occurrence_id"))
+            .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
             .drop("case_id")
             .drop("ssm_id")
             .drop("occurrence_id")
@@ -96,9 +96,9 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
         ssm_cons = ssm_df.select(
             "ssm_id",
             "case_id",
-            pyspark_functions.struct(
-                "consequence", *ssm_df.drop("consequence").drop("case_id").columns
-            ).alias("ssm"),
+            F.struct("consequence", *ssm_df.drop("consequence").drop("case_id").columns).alias(
+                "ssm"
+            ),
         )
         self.log_count(ssm_cons)
 
@@ -123,7 +123,7 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
             "case_id",
             "ssm_id",
             "occurrence_id",
-            pyspark_functions.struct("observation", *case_df.columns).alias("case"),
+            F.struct("observation", *case_df.columns).alias("case"),
         )
         self.log_count(case_obs_df)
 

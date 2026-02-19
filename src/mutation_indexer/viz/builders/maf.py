@@ -5,7 +5,7 @@ import importlib_resources as resources
 import more_itertools
 import yaml
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer import builders, indexd_utils, pyspark_extensions, schemas
@@ -20,18 +20,18 @@ def _ssm_label() -> sql.Column:
     """
     Creates a column with a label (genomic change) from an ssm based on its variant type.
     """
-    chromosome = pyspark_functions.regexp_replace("chromosome", "chr", "")
-    variant_type = pyspark_functions.col("variant_type")
-    start_position = pyspark_functions.col("start_position")
-    end_position = pyspark_functions.col("end_position")
-    reference_allele = pyspark_functions.col("reference_allele")
-    tumor_allele = pyspark_functions.col("tumor_allele")
+    chromosome = F.regexp_replace("chromosome", "chr", "")
+    variant_type = F.col("variant_type")
+    start_position = F.col("start_position")
+    end_position = F.col("end_position")
+    reference_allele = F.col("reference_allele")
+    tumor_allele = F.col("tumor_allele")
     multi_nucleotide_polymorphisms = ("DNP", "TNP", "ONP")
 
     return (
-        pyspark_functions.when(
+        F.when(
             variant_type == "SNP",
-            pyspark_functions.format_string(
+            F.format_string(
                 "chr%s:g.%s%s>%s",
                 chromosome,
                 start_position,
@@ -40,10 +40,8 @@ def _ssm_label() -> sql.Column:
             ),
         )
         .when(
-            variant_type.isin(
-                *(pyspark_functions.lit(t) for t in multi_nucleotide_polymorphisms)
-            ),
-            pyspark_functions.format_string(
+            variant_type.isin(*(F.lit(t) for t in multi_nucleotide_polymorphisms)),
+            F.format_string(
                 "chr%s:g.%s_%sdelins%s",
                 chromosome,
                 start_position,
@@ -53,13 +51,11 @@ def _ssm_label() -> sql.Column:
         )
         .when(
             variant_type == "DEL",
-            pyspark_functions.format_string(
-                "chr%s:g.%sdel%s", chromosome, start_position, reference_allele
-            ),
+            F.format_string("chr%s:g.%sdel%s", chromosome, start_position, reference_allele),
         )
         .when(
             variant_type == "INS",
-            pyspark_functions.format_string(
+            F.format_string(
                 "chr%s:g.%s_%sins%s",
                 chromosome,
                 start_position,
@@ -113,10 +109,8 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         df = df.join(protein_df, on=["name", "hgvsp_short"], how="left")
         df = df.withColumns(
             {
-                "civic_gene_id": pyspark_functions.coalesce("civic_gene_id", "_civic_gene_id"),
-                "civic_variant_id": pyspark_functions.coalesce(
-                    "civic_variant_id", "_civic_variant_id"
-                ),
+                "civic_gene_id": F.coalesce("civic_gene_id", "_civic_gene_id"),
+                "civic_variant_id": F.coalesce("civic_variant_id", "_civic_variant_id"),
             }
         )
 
@@ -168,12 +162,12 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         df = utils.add_canonical_transcript_lengths(df)
         df = self.add_normal_genotype(df)
         df = self.map_transform(df)
-        df = df.withColumn("variant_process", pyspark_functions.lit("masked"))
+        df = df.withColumn("variant_process", F.lit("masked"))
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
         df = df.withColumn(
             "domains",
-            pyspark_functions.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", ""),
+            F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", ""),
         )
         df = self._add_civic_annotations(
             df, input_dfs["civic_dna_df"], input_dfs["civic_protein_df"]
@@ -203,7 +197,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
 
                     df = df.withColumn(
                         column,
-                        pyspark_functions.udf(apply_pattern, types.StringType())(df[column]),
+                        F.udf(apply_pattern, types.StringType())(df[column]),
                     )
                 else:
                     pass
@@ -213,7 +207,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         """
         Adds a null column to use as defaults for mappings.
         """
-        return df.withColumn("empty", pyspark_functions.lit(None).cast(types.StringType()))
+        return df.withColumn("empty", F.lit(None).cast(types.StringType()))
 
     def standardize_schema(self, df: sql.DataFrame) -> sql.DataFrame:
         """
@@ -226,7 +220,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         def standardize(new_column, props):
             old_column = props["name"]
             if old_column in df_columns:
-                return pyspark_functions.col(old_column).alias(new_column)
+                return F.col(old_column).alias(new_column)
             else:
                 raise KeyError(f"Required column {old_column} missing from MAF")
 
@@ -256,7 +250,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
                     cosmic_string = [cosmic_string]
             return cosmic_string
 
-        to_array = pyspark_functions.udf(to_array, types.ArrayType(types.StringType()))
+        to_array = F.udf(to_array, types.ArrayType(types.StringType()))
         df = df.withColumn("cosmic_id", to_array(df["cosmic_id"]))
         return df
 
@@ -268,15 +262,13 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         pipelines be present in the MAF. If a case was tested but was not
         called, it should have an empty row with only the case_id
         """
-        avd_udf = pyspark_functions.udf(
+        avd_udf = F.udf(
             lambda x, y: [] if (x is None and y is not None) else ["ssm"],
             types.ArrayType(types.StringType()),
         )
         return df.withColumn(
             "available_variation_data",
-            avd_udf(
-                pyspark_functions.col("tumor_sample_barcode"), pyspark_functions.col("case_id")
-            ),
+            avd_udf(F.col("tumor_sample_barcode"), F.col("case_id")),
         )
 
     def add_mutation_type(self, df: sql.DataFrame) -> sql.DataFrame:
@@ -287,7 +279,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
             else:
                 return None
 
-        mut_type_udf = pyspark_functions.udf(mutation_type, types.StringType())
+        mut_type_udf = F.udf(mutation_type, types.StringType())
         df = df.withColumn("mutation_type", mut_type_udf("mutation_type"))
         return df
 
@@ -298,8 +290,8 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         """
         return df.withColumn(
             "gene_chromosome",
-            pyspark_functions.udf(lambda x: x.replace("chr", ""), types.StringType())(
-                pyspark_functions.col("gene_chromosome")
+            F.udf(lambda x: x.replace("chr", ""), types.StringType())(
+                F.col("gene_chromosome")
             ),
         )
 
@@ -318,7 +310,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
             else:
                 return None
 
-        sub_type_udf = pyspark_functions.udf(subtype, types.StringType())
+        sub_type_udf = F.udf(subtype, types.StringType())
         df = df.withColumn("mutation_subtype", sub_type_udf("variant_type"))
 
         return df
@@ -329,10 +321,10 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         """
         maf_df = df.withColumn(
             "normal_genotype",
-            pyspark_functions.struct(
+            F.struct(
                 utils.uuid5_col(
-                    pyspark_functions.col("match_norm_seq_allele1"),
-                    pyspark_functions.col("match_norm_seq_allele2"),
+                    F.col("match_norm_seq_allele1"),
+                    F.col("match_norm_seq_allele2"),
                 ).alias("allele_id")
             ),
         )
@@ -345,14 +337,14 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         maf_df = df.withColumn(
             "ssm_id",
             utils.uuid5_col(
-                pyspark_functions.lit("ssm"),
-                pyspark_functions.col("ncbi_build"),
-                pyspark_functions.col("chromosome"),
-                pyspark_functions.col("start_position"),
-                pyspark_functions.col("end_position"),
-                pyspark_functions.col("mutation_subtype"),
-                pyspark_functions.col("reference_allele"),
-                pyspark_functions.col("tumor_allele"),
+                F.lit("ssm"),
+                F.col("ncbi_build"),
+                F.col("chromosome"),
+                F.col("start_position"),
+                F.col("end_position"),
+                F.col("mutation_subtype"),
+                F.col("reference_allele"),
+                F.col("tumor_allele"),
             ),
         )
         return maf_df
@@ -365,9 +357,9 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         df = df.withColumn(
             "occurrence_id",
             utils.uuid5_col(
-                pyspark_functions.lit("ssm_occurrence"),
-                pyspark_functions.col("ssm_id"),
-                pyspark_functions.col("case_id"),
+                F.lit("ssm_occurrence"),
+                F.col("ssm_id"),
+                F.col("case_id"),
             ),
         )
         return df
@@ -408,21 +400,15 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
 
         df = df.withColumn(
             "cds_start",
-            pyspark_functions.udf(start, types.IntegerType())(
-                pyspark_functions.col("cds_position")
-            ),
+            F.udf(start, types.IntegerType())(F.col("cds_position")),
         )
         df = df.withColumn(
             "cds_end",
-            pyspark_functions.udf(end, types.IntegerType())(
-                pyspark_functions.col("cds_position")
-            ),
+            F.udf(end, types.IntegerType())(F.col("cds_position")),
         )
         df = df.withColumn(
             "cds_length",
-            pyspark_functions.udf(length, types.IntegerType())(
-                pyspark_functions.col("cds_position")
-            ),
+            F.udf(length, types.IntegerType())(F.col("cds_position")),
         )
         return df
 

@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 from pyspark import sql
-from pyspark.sql import functions as pyspark_functions
+from pyspark.sql import functions as F
 from pyspark.sql import types
 
 from mutation_indexer.builders import bases
@@ -25,7 +25,7 @@ def _rename_columns(gene_model_df: sql.DataFrame) -> sql.DataFrame:
 
     new_schema = types.ArrayType(types.StructType(fields))  # type: ignore
     gene_df = gene_model_df.select(
-        pyspark_functions.col("transcripts").cast(new_schema),
+        F.col("transcripts").cast(new_schema),
         *gene_model_df.drop("transcripts").columns,
     )
 
@@ -77,7 +77,7 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
         # Elasticsearch 6+ is strict about how booleans are represented.
         # This column really needs to be lowercase.
         gene_df = gene_df.withColumn(
-            "is_cancer_gene_census", pyspark_functions.lower(gene_df.is_cancer_gene_census)
+            "is_cancer_gene_census", F.lower(gene_df.is_cancer_gene_census)
         )
 
         gene_df = _rename_columns(gene_df)
@@ -96,11 +96,10 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
         # Turn the cytoband column into an array of cytobands
         cytobands_df = cytobands_df.withColumn(
             "cytoband",
-            pyspark_functions.when(
-                pyspark_functions.col("cytoband").isNull()
-                | (pyspark_functions.col("cytoband") == pyspark_functions.lit("")),
-                pyspark_functions.array("cytoband"),
-            ).otherwise(pyspark_functions.split("cytoband", ",")),
+            F.when(
+                F.col("cytoband").isNull() | (F.col("cytoband") == F.lit("")),
+                F.array("cytoband"),
+            ).otherwise(F.split("cytoband", ",")),
         )
 
         census_df = self._spark_session.read.csv(
@@ -111,7 +110,7 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
 
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(
-            pyspark_functions.col("external_db_ids.*"),
+            F.col("external_db_ids.*"),
             *gene_model_df.drop("external_db_ids").columns,
         )
 
