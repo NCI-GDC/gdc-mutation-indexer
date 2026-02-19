@@ -6,9 +6,8 @@ from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
-dataclasses.dataclass(frozen=True)
 
-
+@dataclasses.dataclass(frozen=True)
 class DefaultColumn:
     name: str
     type: types.DataType = dataclasses.field(default_factory=types.StringType)
