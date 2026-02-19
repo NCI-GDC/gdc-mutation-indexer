@@ -1,6 +1,6 @@
 import io
 from collections.abc import Callable, Iterable
-from typing import IO, Unpack
+from typing import IO, TypedDict, Unpack
 from unittest import mock
 
 import mypy_boto3_s3 as s3
@@ -8,13 +8,17 @@ import numpy
 import pytest
 from pyspark import sql
 from pyspark.sql import types
-from test_case import UploadKwargs
 
 from mutation_indexer.constants import build
 from mutation_indexer.gene_expression import builders, configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
+
+
+class UploadKwargs(TypedDict):
+    Bucket: str
+    Key: str
 
 
 @pytest.fixture(scope="class")
