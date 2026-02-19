@@ -3,7 +3,7 @@ import contextlib
 import graphlib
 import logging
 import pathlib
-from collections.abc import ContextManager, Iterable, Iterator
+from collections.abc import Iterable, Iterator
 
 import elasticsearch
 from indexclient import client
@@ -86,7 +86,7 @@ class Driver[TConfig: configuration.Configuration](abc.ABC):
     @abc.abstractmethod
     def _initialize_builders(
         self, config: TConfig, spark_session: sql.SparkSession
-    ) -> ContextManager[Iterable[builders.Builder]]:
+    ) -> contextlib.AbstractContextManager[Iterable[builders.Builder]]:
         """Initialize all builders required for this run of the driver.
 
         NOTE: This is wrapped in a context manager in order to allow drivers to clean up
