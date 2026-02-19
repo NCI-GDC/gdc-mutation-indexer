@@ -11,7 +11,6 @@ from typing import (
     Literal,
     Protocol,
     TypeGuard,
-    TypeVar,
     get_type_hints,
     runtime_checkable,
 )
@@ -26,10 +25,6 @@ from mutation_indexer import es_utils, pyspark_extensions, schemas
 from mutation_indexer.configuration import builders
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
-
-TConfig = TypeVar("TConfig", bound=builders.Builder)
-TIndexConfig = TypeVar("TIndexConfig", bound=builders.IndexBuilder)
-TInputDFs = TypeVar("TInputDFs", bound=Mapping[str, object])
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +83,7 @@ class Builder(Protocol):
         pass
 
 
-class InputDataFrameManger[TInputDFs]:
+class InputDataFrameManger[TInputDFs: Mapping[str, object]]:
     __slots__ = ("_required_dfs", "_required_params")
 
     def __init__(self, input_type: type[TInputDFs]) -> None:
@@ -121,7 +116,9 @@ class InputDataFrameManger[TInputDFs]:
         return self._required_params <= inputs.keys()
 
 
-class InputBuilder[TConfig, TInputDFs](Builder, abc.ABC):
+class InputBuilder[TConfig: builders.Builder, TInputDFs: Mapping[str, object]](
+    Builder, abc.ABC
+):
     __slots__ = ("_config", "_input_manager", "_output", "_spark_session")
 
     def __init__(
@@ -243,7 +240,9 @@ def _add_required_include_fields(
     return BASE_PRIMARY_ALIQUOT_FIELDS
 
 
-class PrimaryAliquotBuilder[TConfig, TInputDFs](InputBuilder[TConfig, TInputDFs]):
+class PrimaryAliquotBuilder[TConfig: builders.Builder, TInputDFs: Mapping[str, object]](
+    InputBuilder[TConfig, TInputDFs]
+):
     __slots__ = ("_additional_selections", "_es_dataframe_util")
 
     @dataclasses.dataclass(frozen=True)
@@ -575,9 +574,10 @@ def _expand_aliquots(aliquot_df: sql.DataFrame) -> sql.DataFrame:
     )
 
 
-class InclusivePrimaryAliquotBuilder[TConfig, TInputDFs](
-    PrimaryAliquotBuilder[TConfig, TInputDFs]
-):
+class InclusivePrimaryAliquotBuilder[
+    TConfig: builders.Builder,
+    TInputDFs: Mapping[str, object],
+](PrimaryAliquotBuilder[TConfig, TInputDFs]):
     """
     This builder creates a primary aliquot dataframe which INCLUDES the aliquot data
     associated with the sample which has been identified as the "primary" aliquot.
@@ -752,10 +752,10 @@ class InclusivePrimaryAliquotBuilder[TConfig, TInputDFs](
         )
 
 
-TResourceConfig = TypeVar("TResourceConfig", bound=builders.ResourceBuilder)
-
-
-class ResourceBuilder[TResourceConfig, TInputDFs](InputBuilder[TResourceConfig, TInputDFs]):
+class ResourceBuilder[
+    TResourceConfig: builders.ResourceBuilder,
+    TInputDFs: Mapping[str, object],
+](InputBuilder[TResourceConfig, TInputDFs]):
     def _schema(self) -> types.StructType:
         return schemas.load_schema(self._config.schema)
 
@@ -803,7 +803,9 @@ def _walk_schema(field: types.StructField, child_name: str) -> types.StructField
         )
 
 
-class IndexBuilder[TIndexConfig, TInputDFs](InputBuilder[TIndexConfig, TInputDFs], abc.ABC):
+class IndexBuilder[TIndexConfig: builders.IndexBuilder, TInputDFs: Mapping[str, object]](
+    InputBuilder[TIndexConfig, TInputDFs], abc.ABC
+):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
 
     __slots__ = ("_es_dataframe_util", "_index_name", "_index_type", "_mappings_loader")
@@ -878,7 +880,9 @@ class IndexBuilder[TIndexConfig, TInputDFs](InputBuilder[TIndexConfig, TInputDFs
         return df
 
 
-class SQLiteBuilder[TConfig, TInputDFs](InputBuilder[TConfig, TInputDFs], abc.ABC):
+class SQLiteBuilder[TConfig: builders.Builder, TInputDFs: Mapping[str, object]](
+    InputBuilder[TConfig, TInputDFs], abc.ABC
+):
     __slots__ = ("_database",)
 
     def __init__(

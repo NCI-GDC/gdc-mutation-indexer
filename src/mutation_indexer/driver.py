@@ -5,7 +5,6 @@ import logging
 import pathlib
 from collections.abc import Iterable, Iterator
 from contextlib import AbstractContextManager
-from typing import TypeVar
 
 import elasticsearch
 from indexclient import client
@@ -69,10 +68,7 @@ def get_es_client(config: es_config.Connection) -> elasticsearch.Elasticsearch:
     )
 
 
-TConfig = TypeVar("TConfig", bound=configuration.Configuration)
-
-
-class Driver[TConfig](abc.ABC):
+class Driver[TConfig: configuration.Configuration](abc.ABC):
     """A class representing a driver which ultimately builds data using builders."""
 
     @classmethod
