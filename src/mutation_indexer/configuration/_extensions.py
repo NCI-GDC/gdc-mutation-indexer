@@ -7,14 +7,12 @@ import dataclasses
 import pathlib
 from collections.abc import Callable, Iterable, Mapping
 from os import path
-from typing import Any, ClassVar, Final, Self, TypeVar, cast, dataclass_transform
+from typing import Any, ClassVar, Final, Self, cast, dataclass_transform
 
 import marshmallow
 import marshmallow_dataclass
 from deepmerge import merger
 from marshmallow import exceptions, fields, schema, utils
-
-T = TypeVar("T")
 
 
 class ArrayTupleField(fields.Field):
