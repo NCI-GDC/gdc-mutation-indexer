@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import gzip
 import json
 import logging
@@ -6,7 +7,6 @@ import os
 import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
-from contextlib import AbstractContextManager
 from importlib import abc, resources
 from typing import Any, TypeVar
 
@@ -89,7 +89,7 @@ def remove_keys_from_dict(tree: dict, remove_keys: Container[str] | None) -> dic
     return _remove_keys_from_dict(tree, remove_keys)
 
 
-class IndexManager(AbstractContextManager["IndexManager"]):
+class IndexManager(contextlib.AbstractContextManager["IndexManager"]):
     __slots__ = ("_es", "_graph_indices", "_index_types", "_mappings_loader", "_skip_creation")
 
     def __init__(
@@ -150,7 +150,7 @@ class IndexManager(AbstractContextManager["IndexManager"]):
         return None
 
 
-class DocumentLoader(AbstractContextManager["DocumentLoader"]):
+class DocumentLoader(contextlib.AbstractContextManager["DocumentLoader"]):
     __slots__ = ("_documents", "_es", "_graph_indices", "_id_fields")
 
     def __init__(

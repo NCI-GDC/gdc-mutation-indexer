@@ -1,4 +1,4 @@
-from collections.abc import Set as AbstractSet
+from collections.abc import Set
 
 import elasticsearch
 import pytest
@@ -90,8 +90,8 @@ def test_ssm_subtree(
 def test_case_centric_counts(
     case_centric_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
-    all_cases: AbstractSet[str],
-    all_maf_cases: AbstractSet[str],
+    all_cases: Set[str],
+    all_maf_cases: Set[str],
 ) -> None:
     """
     Test "empty cases"
@@ -118,8 +118,8 @@ def test_case_centric_counts(
 def test_available_variation_data(
     case_centric_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
-    all_cases: AbstractSet[str],
-    all_maf_cases: AbstractSet[str],
+    all_cases: Set[str],
+    all_maf_cases: Set[str],
 ) -> None:
     """
     Test that available_variation_data is correctly populated:

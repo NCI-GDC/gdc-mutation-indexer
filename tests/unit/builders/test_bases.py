@@ -1,5 +1,4 @@
-from collections.abc import Mapping
-from collections.abc import Set as AbstractSet
+from collections.abc import Mapping, Set
 from typing import TypedDict
 from unittest import mock
 
@@ -74,7 +73,7 @@ class TestDataFrameInputManager:
         ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: type, expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: type, expected_dfs: Set[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -161,7 +160,7 @@ class TestInputBuilder:
     def test__inputs(
         self,
         builder: bases.InputBuilder,
-        expected_inputs: AbstractSet[build.DataFrame],
+        expected_inputs: Set[build.DataFrame],
     ) -> None:
         assert frozenset(builder.inputs) == expected_inputs
 
