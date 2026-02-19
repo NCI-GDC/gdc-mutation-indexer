@@ -8,7 +8,7 @@ import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
 from importlib import abc, resources
-from typing import Any, TypeVar
+from typing import Any
 
 import elasticsearch
 from elasticsearch import helpers
@@ -16,13 +16,10 @@ from elasticsearch import helpers
 from mutation_indexer import configuration, es_utils, gene_expression, viz
 from mutation_indexer.constants import app, build
 
-T = TypeVar("T")
-TConfig = TypeVar("TConfig", bound=configuration.Configuration)
-
 logger = logging.getLogger(__name__)
 
 
-def _load_config[TConfig](
+def _load_config[TConfig: configuration.Configuration](
     configuration: type[TConfig],
     test_config: Iterable[abc.Traversable],
     overrides: Iterable[Mapping[str, Any]],

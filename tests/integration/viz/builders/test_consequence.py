@@ -1,5 +1,6 @@
 import json
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -215,7 +216,7 @@ class TestConsequenceBuilder:
         for ssm_id, transcripts in effects_map.items():
             for transcript_id, transcript in transcripts.items():
                 # Make sure all transcripts have vep_impact and it is not None:
-                assert next(iter(transcript["vep_impact"])), (
+                assert more_itertools.first(transcript["vep_impact"]), (
                     f"Transcript {transcript_id} has no vep_impact"
                 )
 

@@ -1,7 +1,6 @@
 import dataclasses
 import re
 from importlib import resources
-from typing import TypeVar
 
 import yaml
 from pyspark.sql import types
@@ -9,7 +8,6 @@ from pyspark.sql import types
 from tests.unit.data.schemas import _minimize
 
 PYTHON_PASCAL_CASE = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
-T = TypeVar("T")
 
 
 @dataclasses.dataclass(frozen=True)

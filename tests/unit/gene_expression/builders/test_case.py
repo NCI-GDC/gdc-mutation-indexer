@@ -1,6 +1,6 @@
 import marshal
 from collections.abc import Callable, Iterable, Mapping
-from typing import IO
+from typing import IO, TypedDict, Unpack
 from unittest import mock
 
 import more_itertools
@@ -15,6 +15,11 @@ from mutation_indexer.gene_expression import builders, configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
+
+
+class UploadKwargs(TypedDict):
+    Bucket: str
+    Key: str
 
 
 @pytest.fixture(scope="class")
@@ -95,7 +100,7 @@ class TestCaseBuilder:
             models.ExpressionValue(case_id="case-1"),
         )
 
-        def validate_upload(data: IO[bytes], **kwargs) -> None:
+        def validate_upload(data: IO[bytes], **kwargs: Unpack[UploadKwargs]) -> None:
             assert kwargs["Bucket"] == config.destination.bucket
             assert kwargs["Key"] == config.destination.key
             assert marshal.load(data) == ["case-1", "case-2"]

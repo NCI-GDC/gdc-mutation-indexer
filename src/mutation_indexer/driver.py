@@ -134,7 +134,7 @@ class Driver[TConfig: configuration.Configuration](abc.ABC):
                 inputs[builder.output.to_param()] = builder.build(**inputs)
 
 
-def main[TConfig](driver: Driver[TConfig]) -> None:
+def main[TConfig: configuration.Configuration](driver: Driver[TConfig]) -> None:
     """A main function for executing a driver run."""
     mutation_indexer_logging.configure()
 

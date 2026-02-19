@@ -1,16 +1,17 @@
+import dataclasses
 from collections.abc import Iterable
-from dataclasses import dataclass, field
 from typing import Any
 
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
 
+dataclasses.dataclass(frozen=True)
 
-@dataclass(frozen=True)
+
 class DefaultColumn:
     name: str
-    type: types.DataType = field(default_factory=types.StringType)
+    type: types.DataType = dataclasses.field(default_factory=types.StringType)
     value: Any = None
 
     def col(self) -> sql.Column:
