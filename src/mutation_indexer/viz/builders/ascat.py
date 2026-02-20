@@ -198,16 +198,31 @@ def _add_cnv_change_data(document_df: sql.DataFrame) -> sql.DataFrame:
     """
     document_df = _add_ploidy_values(document_df)
     cnv_change = (
-        F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-        .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+        F.when(
+            F.col("copy_number") > F.col("upper_ploidy_number"),
+            "Gain",
+        )
+        .when(
+            F.col("copy_number") < F.col("lower_ploidy_number"),
+            "Loss",
+        )
         .otherwise(None)
         .alias("cnv_change")
     )
     cnv_change_5_category = (
         F.when(F.col("copy_number") == 0, "Homozygous Deletion")
-        .when(F.col("copy_number") >= F.col("upper_ploidy_number") * 2, "Amplification")
-        .when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-        .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+        .when(
+            F.col("copy_number") >= F.col("upper_ploidy_number") * 2,
+            "Amplification",
+        )
+        .when(
+            F.col("copy_number") > F.col("upper_ploidy_number"),
+            "Gain",
+        )
+        .when(
+            F.col("copy_number") < F.col("lower_ploidy_number"),
+            "Loss",
+        )
         .otherwise(None)
         .alias("cnv_change_5_category")
     )

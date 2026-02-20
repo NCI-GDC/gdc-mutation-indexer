@@ -1,6 +1,6 @@
 import itertools
-from typing import NamedTuple
 from collections.abc import Iterable
+from typing import NamedTuple, TypedDict
 from unittest import mock
 
 import pytest
@@ -8,7 +8,6 @@ from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
-from typing import TypedDict
 
 from mutation_indexer import indexd_utils
 
@@ -42,7 +41,9 @@ class DocumentContent(NamedTuple):
 
 def stub_input_file_name() -> sql.Column:
     return F.concat(
-        F.lit("file://"), F.element_at(F.split("doc_data", "\\."), 1), F.lit(".format")
+        F.lit("file://"),
+        F.element_at(F.split("doc_data", "\\."), 1),
+        F.lit(".format"),
     )
 
 

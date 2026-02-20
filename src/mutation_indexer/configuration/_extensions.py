@@ -7,15 +7,12 @@ import dataclasses
 import pathlib
 from collections.abc import Callable, Iterable, Mapping
 from os import path
-from typing import Any, ClassVar, Final, Generic, TypeVar, cast
+from typing import Any, ClassVar, Final, Self, cast, dataclass_transform
 
 import marshmallow
 import marshmallow_dataclass
 from deepmerge import merger
 from marshmallow import exceptions, fields, schema, utils
-from typing import Self, dataclass_transform
-
-T = TypeVar("T")
 
 
 class ArrayTupleField(fields.Field):
@@ -183,7 +180,7 @@ class FormatMapRootField(fields.String):
         return template.format_map(root_data)
 
 
-class Schema(Generic[T]):
+class Schema[T]:
     def __init__(self, cls: type[T]) -> None:
         """A schema which handles the serialization/deserialization of T.
 

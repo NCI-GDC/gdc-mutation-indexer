@@ -6,8 +6,8 @@ documentation @ https://wiki.uchicago.edu/display/CDIS/Mutation+Indexer+Configur
 import dataclasses
 import pathlib
 import uuid
-from typing import Annotated, Any
 from collections.abc import Sequence
+from typing import Annotated, Any
 
 from marshmallow import exceptions, fields, validate
 

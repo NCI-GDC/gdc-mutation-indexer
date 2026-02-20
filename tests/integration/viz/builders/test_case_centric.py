@@ -1,4 +1,4 @@
-from typing import AbstractSet
+from collections.abc import Set
 
 import elasticsearch
 import pytest
@@ -43,13 +43,13 @@ def test_ssm_per_gene(maf_df: sql.DataFrame, case_centric_df: sql.DataFrame) -> 
 @pytest.mark.usefixtures("case_centric_df")
 def test_ssm_subtree(
     default_old_config: adapter.ObsoleteConfig,
-    sqlContext: sql.SQLContext,
+    sql_context: sql.SQLContext,
     maf_df: sql.DataFrame,
     primary_aliquot_df: sql.DataFrame,
     case_ssm_subtree: sql.DataFrame,
 ) -> None:
     observation_builder = builders.ObservationBuilder()
-    consequence_builder = builders.ConsequenceBuilder(default_old_config, sqlContext)
+    consequence_builder = builders.ConsequenceBuilder(default_old_config, sql_context)
 
     # ssm_subtree stats expected:
     cons_df = consequence_builder.build_for_ssm(maf_df, "case_centric")
@@ -90,8 +90,8 @@ def test_ssm_subtree(
 def test_case_centric_counts(
     case_centric_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
-    all_cases: AbstractSet[str],
-    all_maf_cases: AbstractSet[str],
+    all_cases: Set[str],
+    all_maf_cases: Set[str],
 ) -> None:
     """
     Test "empty cases"
@@ -118,8 +118,8 @@ def test_case_centric_counts(
 def test_available_variation_data(
     case_centric_df: sql.DataFrame,
     cnv_df: sql.DataFrame,
-    all_cases: AbstractSet[str],
-    all_maf_cases: AbstractSet[str],
+    all_cases: Set[str],
+    all_maf_cases: Set[str],
 ) -> None:
     """
     Test that available_variation_data is correctly populated:

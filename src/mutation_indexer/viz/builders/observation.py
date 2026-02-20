@@ -38,8 +38,14 @@ class ObservationBuilder:
             ),
         ).join(primary_aliquot_df, ["case_id"], how="left")
         flat_obs_df = (
-            flat_obs_df.withColumn("variant_caller", F.explode(F.split("variant_caller", ";")))
-            .withColumn("variant_caller", F.regexp_replace("variant_caller", r"^\*+|\*+$", ""))
+            flat_obs_df.withColumn(
+                "variant_caller",
+                F.explode(F.split("variant_caller", ";")),
+            )
+            .withColumn(
+                "variant_caller",
+                F.regexp_replace("variant_caller", r"^\*+|\*+$", ""),
+            )
             .where(F.col("variant_caller") != F.lit("somaticsniper"))
         )
         flat_obs_df = flat_obs_df.withColumn(
@@ -82,7 +88,8 @@ class ObservationBuilder:
 
         # add other observation fields
         obs_df = ascat_df.withColumn(
-            "variant_calling", F.struct("variant_caller").alias("variant_calling")
+            "variant_calling",
+            F.struct("variant_caller").alias("variant_calling"),
         )
 
         # observation structure

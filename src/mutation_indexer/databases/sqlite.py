@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class SQLiteDatabase:
-    __slots__ = ("_config", "_s3_client", "_context", "_dbfile")
+    __slots__ = ("_config", "_context", "_dbfile", "_s3_client")
 
     def __init__(self, config: databases.SQLiteDatabase, s3_client: s3.Client) -> None:
         """A class for managing a SQLite database.

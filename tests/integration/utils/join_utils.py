@@ -1,17 +1,13 @@
 import functools
 import itertools
-from typing import (
-    AbstractSet,
-    NamedTuple,
-    Union,
-)
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Set
+from typing import NamedTuple, Union
 
 import more_itertools
 from pyspark import sql
 from pyspark.sql import functions as F
 
-RelationshipMapping = Mapping[str, Union[AbstractSet[str], "RelationshipMapping"]]
+RelationshipMapping = Mapping[str, Union[Set[str], "RelationshipMapping"]]
 
 
 class Relationship(NamedTuple):
@@ -48,7 +44,7 @@ def _relationship_reduce(
     relationships: Iterator[Relationship],
 ) -> Callable[
     [Iterable[Iterable[sql.Row]]],
-    AbstractSet[str] | RelationshipMapping,
+    Set[str] | RelationshipMapping,
 ]:
     relationship = more_itertools.first(relationships)
 

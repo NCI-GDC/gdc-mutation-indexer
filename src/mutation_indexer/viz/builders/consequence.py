@@ -195,13 +195,18 @@ class ConsequenceBuilder:
         # Add consequence_id, a uuid from ssm_id and transcript_id
         tran_df = tran_with_ann.withColumn(
             "consequence_id",
-            utils.uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
+            utils.uuid5_col(
+                F.lit("ssm_consequence"),
+                F.col("ssm_id"),
+                F.col("transcript_id"),
+            ),
         )
         if add_gene_aa_change:
             tran_df = tran_df.withColumn(
                 "gene_aa_change",
                 F.when(
-                    F.col("gene.symbol").isNull() | F.col("aa_change").isNull(), None
+                    F.col("gene.symbol").isNull() | F.col("aa_change").isNull(),
+                    None,
                 ).otherwise(F.concat_ws(" ", tran_df.gene.symbol, tran_df.aa_change)),
             )
             tran_df = tran_df.select(
@@ -298,7 +303,8 @@ class ConsequenceBuilder:
 
         # get is_canonical
         ssm_transaction_df = ssm_transaction_df.withColumn(
-            "is_canonical", F.col("canonical_transcript_id") == F.col("transcript_id")
+            "is_canonical",
+            F.col("canonical_transcript_id") == F.col("transcript_id"),
         )
 
         ssm_transaction_df = utils.sanitize_aa_change(ssm_transaction_df)

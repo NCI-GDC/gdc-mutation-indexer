@@ -1,6 +1,6 @@
 import io
 from collections.abc import Callable, Iterable
-from typing import IO
+from typing import IO, TypedDict, Unpack
 from unittest import mock
 
 import mypy_boto3_s3 as s3
@@ -14,6 +14,11 @@ from mutation_indexer.gene_expression import builders, configuration
 from tests.unit import utils
 from tests.unit.data import schemas
 from tests.unit.data.models import gene_expression as models
+
+
+class UploadKwargs(TypedDict):
+    Bucket: str
+    Key: str
 
 
 @pytest.fixture(scope="class")
@@ -140,12 +145,13 @@ class TestUQFPKMBuilder:
             config.uqfpkm_key.format(gene_id="gene-1"): (1.0, 4.0),
         }
 
-        def validate_upload(data: IO[bytes], Bucket: str, Key: str) -> None:
-            assert Bucket == config.bucket
-            assert Key in expected_values
+        def validate_upload(data: IO[bytes], **kwargs: Unpack[UploadKwargs]) -> None:
+            assert kwargs["Bucket"] == config.bucket
+            assert kwargs["Key"] in expected_values
             assert isinstance(data, io.BytesIO)
             assert (
-                data.read() == numpy.array(expected_values[Key], dtype=numpy.float32).tobytes()
+                data.read()
+                == numpy.array(expected_values[kwargs["Key"]], dtype=numpy.float32).tobytes()
             )
 
         s3_client = self._arrange_s3_client(validate_upload)

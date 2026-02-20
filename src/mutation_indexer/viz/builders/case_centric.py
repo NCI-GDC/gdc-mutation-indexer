@@ -53,13 +53,13 @@ class CaseCentricBuilder(base_builder.BaseBuilder, case.CaseLoaderMixin):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        sql_context: sql.SQLContext,
         es_dataframe_util: es_utils.DataFrameUtil,
         field_selector: es_utils.CaseFieldSelector,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, sql_context)
 
         self._es_dataframe_util = es_dataframe_util
         self._field_selector = field_selector

@@ -42,7 +42,11 @@ def test_consequences_per_ssm_occurrence(
     df = (
         ssm_transcript_df.withColumn(
             "consequence_id",
-            utils.uuid5_col(F.lit("ssm_consequence"), F.col("ssm_id"), F.col("transcript_id")),
+            utils.uuid5_col(
+                F.lit("ssm_consequence"),
+                F.col("ssm_id"),
+                F.col("transcript_id"),
+            ),
         )
         .withColumn("ssm_occurrence_id", F.col("occurrence_id"))
         .select("ssm_occurrence_id", "ssm_id", "consequence_id", "transcript_id", "gene_id")

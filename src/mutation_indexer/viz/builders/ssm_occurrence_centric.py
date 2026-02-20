@@ -32,11 +32,11 @@ class SSMOccurrenceCentricBuilder(base_builder.BaseBuilder):
     def __init__(
         self,
         config: adapter.ObsoleteConfig,
-        sqlContext: sql.SQLContext,
+        sql_context: sql.SQLContext,
         consequence_builder: consequence.ConsequenceBuilder,
         observation_builder: observation.ObservationBuilder,
     ):
-        super().__init__(config, sqlContext)
+        super().__init__(config, sql_context)
 
         self.consequence_builder = consequence_builder
         self.observation_builder = observation_builder

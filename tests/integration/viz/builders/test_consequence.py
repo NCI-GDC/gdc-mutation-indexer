@@ -1,5 +1,6 @@
 import json
 
+import more_itertools
 import pytest
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -215,16 +216,14 @@ class TestConsequenceBuilder:
         for ssm_id, transcripts in effects_map.items():
             for transcript_id, transcript in transcripts.items():
                 # Make sure all transcripts have vep_impact and it is not None:
-                assert list(transcript["vep_impact"])[0], (
+                assert more_itertools.first(transcript["vep_impact"]), (
                     f"Transcript {transcript_id} has no vep_impact"
                 )
 
                 for effect, values in transcript.items():
                     # Make sure that effects are same for particular ssm-transcript combination
                     assert len(values) == 1, (
-                        "{}/{}/{} unexpected effect values set of length {} != 1".format(
-                            ssm_id, transcript_id, effect, len(values)
-                        )
+                        f"{ssm_id}/{transcript_id}/{effect} unexpected effect values set of length {len(values)} != 1"
                     )
 
         # Check that some fields are None for all non-selected transcripts:

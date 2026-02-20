@@ -30,15 +30,15 @@ certifi==2025.6.15
     #   requests
 charset-normalizer==3.4.2
     # via requests
-click==8.2.1
+click==8.3.1
     # via gdc-mutation-indexer (pyproject.toml)
 colorama==0.4.6
     # via
     #   halo
     #   log-symbols
-coverage==7.9.1
+coverage==7.13.4
     # via gdc-mutation-indexer (pyproject.toml)
-deepdiff==6.7.1
+deepdiff==8.6.1
     # via
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
@@ -70,7 +70,7 @@ indexclient==2.7
     # via gdc-mutation-indexer (pyproject.toml)
 inflect==7.5.0
     # via gdc-mutation-indexer (pyproject.toml)
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
 jmespath==1.0.1
     # via
@@ -91,7 +91,7 @@ more-itertools==10.7.0
     #   gdc-mutation-indexer (pyproject.toml)
     #   gdcmodels
     #   inflect
-multidict==6.5.0
+multidict==6.7.1
     # via
     #   aiohttp
     #   yarl
@@ -103,14 +103,15 @@ mypy-extensions==1.1.0
     # via typing-inspect
 numpy==2.3.0
     # via gdc-mutation-indexer (pyproject.toml)
-ordered-set==4.1.0
+orderly-set==5.5.0
     # via deepdiff
 packaging==25.0
     # via
     #   marshmallow
     #   pytest
     #   typed-argument-parser
-pex==2.40.2
+    #   wheel
+pex==2.90.0
     # via gdc-mutation-indexer (pyproject.toml)
 pluggy==1.6.0
     # via pytest
@@ -120,11 +121,11 @@ propcache==0.3.2
     #   yarl
 py4j==0.10.9.7
     # via pyspark
-pygments==2.19.1
+pygments==2.19.2
     # via pytest
 pyspark==3.5.6
     # via gdc-mutation-indexer (pyproject.toml)
-pytest==8.4.1
+pytest==9.0.2
     # via gdc-mutation-indexer (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via botocore
@@ -142,7 +143,7 @@ six==1.17.0
     #   python-dateutil
 spinners==0.0.24
     # via halo
-termcolor==3.1.0
+termcolor==3.3.0
     # via halo
 tomli==2.2.1
     # via gdc-mutation-indexer (pyproject.toml)
@@ -173,7 +174,7 @@ urllib3==1.26.20
     #   botocore
     #   elasticsearch
     #   requests
-wheel==0.45.1
+wheel==0.46.3
     # via gdc-mutation-indexer (pyproject.toml)
 yarl==1.20.1
     # via aiohttp

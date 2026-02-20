@@ -242,7 +242,10 @@ def extract_aas_position(df):
             return int(aa_end)
         return "null"
 
-    df = df.withColumn("aa_start", F.udf(extract, types.IntegerType())(F.col("aa_change")))
+    df = df.withColumn(
+        "aa_start",
+        F.udf(extract, types.IntegerType())(F.col("aa_change")),
+    )
     df = df.withColumn(
         "aa_end",
         F.udf(lambda aa_change: extract(aa_change, False), types.IntegerType())(
@@ -261,7 +264,10 @@ def sanitize_aa_change(df):
     def sanitize(aa_change):
         return aa_change.strip("p.")
 
-    df = df.withColumn("aa_change", F.udf(sanitize, types.StringType())(F.col("aa_change")))
+    df = df.withColumn(
+        "aa_change",
+        F.udf(sanitize, types.StringType())(F.col("aa_change")),
+    )
 
     return df
 
@@ -290,7 +296,8 @@ def convert_empty_str_to_null_in_col(df, col_name):
     """
 
     return df.withColumn(
-        col_name, F.when(F.col(col_name) != "", F.col(col_name)).otherwise(None)
+        col_name,
+        F.when(F.col(col_name) != "", F.col(col_name)).otherwise(None),
     )
 
 
@@ -320,7 +327,8 @@ def add_canonical_transcript_lengths(transcripts_df: sql.DataFrame) -> sql.DataF
         "canonical_transcript_length", F.col("canonical_transcript.length")
     )
     transcripts_df = transcripts_df.withColumn(
-        "canonical_transcript_length_cds", F.col("canonical_transcript.length_cds")
+        "canonical_transcript_length_cds",
+        F.col("canonical_transcript.length_cds"),
     )
     transcripts_df = transcripts_df.withColumn(
         "canonical_transcript_length_genomic",
@@ -345,7 +353,10 @@ def is_between_chr1_and_chr22() -> sql.Column:
         A column which represents whether or not a gene in the gene model with a
         chromosome value between char1 and char22.
     """
-    return F.coalesce(F.col("chromosome").cast(types.IntegerType()), F.lit(-1)).between(1, 22)
+    return F.coalesce(
+        F.col("chromosome").cast(types.IntegerType()),
+        F.lit(-1),
+    ).between(1, 22)
 
 
 def filter_arrays_by_relative_size(

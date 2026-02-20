@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import gzip
 import json
 import logging
@@ -7,7 +8,7 @@ import pathlib
 import types
 from collections.abc import Container, Iterable, Iterator, Mapping, Set
 from importlib import abc, resources
-from typing import Any, ContextManager, TypeVar
+from typing import Any
 
 import elasticsearch
 from elasticsearch import helpers
@@ -15,13 +16,10 @@ from elasticsearch import helpers
 from mutation_indexer import configuration, es_utils, gene_expression, viz
 from mutation_indexer.constants import app, build
 
-T = TypeVar("T")
-TConfig = TypeVar("TConfig", bound=configuration.Configuration)
-
 logger = logging.getLogger(__name__)
 
 
-def _load_config(
+def _load_config[TConfig: configuration.Configuration](
     configuration: type[TConfig],
     test_config: Iterable[abc.Traversable],
     overrides: Iterable[Mapping[str, Any]],
@@ -65,7 +63,7 @@ def load_ge_config(*overrides: Mapping[str, Any]) -> gene_expression.Configurati
     return _load_config(gene_expression.Configuration, test_configs, overrides)
 
 
-def _remove_keys_from_dict(tree: T, remove_keys: Container[str]) -> T:
+def _remove_keys_from_dict[T](tree: T, remove_keys: Container[str]) -> T:
     if isinstance(tree, dict):
         return {
             key: _remove_keys_from_dict(tree[key], remove_keys)
@@ -88,8 +86,8 @@ def remove_keys_from_dict(tree: dict, remove_keys: Container[str] | None) -> dic
     return _remove_keys_from_dict(tree, remove_keys)
 
 
-class IndexManager(ContextManager["IndexManager"]):
-    __slots__ = ("_es", "_graph_indices", "_index_types", "_skip_creation", "_mappings_loader")
+class IndexManager(contextlib.AbstractContextManager["IndexManager"]):
+    __slots__ = ("_es", "_graph_indices", "_index_types", "_mappings_loader", "_skip_creation")
 
     def __init__(
         self,
@@ -149,8 +147,8 @@ class IndexManager(ContextManager["IndexManager"]):
         return None
 
 
-class DocumentLoader(ContextManager["DocumentLoader"]):
-    __slots__ = ("_es", "_graph_indices", "_id_fields", "_documents")
+class DocumentLoader(contextlib.AbstractContextManager["DocumentLoader"]):
+    __slots__ = ("_documents", "_es", "_graph_indices", "_id_fields")
 
     def __init__(
         self,

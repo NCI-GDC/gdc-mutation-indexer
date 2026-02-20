@@ -5,10 +5,9 @@ https://gdc-ctds.atlassian.net/wiki/spaces/GDC/pages/76316689/Mutation+Indexer+P
 """
 
 import dataclasses
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from importlib import abc, resources
 from typing import Annotated
-from collections.abc import Sequence
 
 import marshmallow_dataclass
 from marshmallow import fields

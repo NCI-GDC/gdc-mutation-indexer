@@ -219,8 +219,14 @@ class SegmentCNVBuilder(
         """
         document_df = self._add_ploidy_values(document_df)
         cnv_change = (
-            F.when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-            .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+            F.when(
+                F.col("copy_number") > F.col("upper_ploidy_number"),
+                "Gain",
+            )
+            .when(
+                F.col("copy_number") < F.col("lower_ploidy_number"),
+                "Loss",
+            )
             .otherwise(None)
             .alias("cnv_change")
         )
@@ -230,8 +236,14 @@ class SegmentCNVBuilder(
                 F.col("copy_number") >= F.col("upper_ploidy_number") * 2,
                 "Amplification",
             )
-            .when(F.col("copy_number") > F.col("upper_ploidy_number"), "Gain")
-            .when(F.col("copy_number") < F.col("lower_ploidy_number"), "Loss")
+            .when(
+                F.col("copy_number") > F.col("upper_ploidy_number"),
+                "Gain",
+            )
+            .when(
+                F.col("copy_number") < F.col("lower_ploidy_number"),
+                "Loss",
+            )
             .otherwise(None)
             .alias("cnv_change_5_category")
         )
@@ -266,7 +278,8 @@ class SegmentCNVBuilder(
         The segment length will be end_position - start_position + 1.
         """
         document_df = document_df.withColumn(
-            "length", F.col("end_position") - F.col("start_position") + 1
+            "length",
+            F.col("end_position") - F.col("start_position") + 1,
         )
 
         return document_df

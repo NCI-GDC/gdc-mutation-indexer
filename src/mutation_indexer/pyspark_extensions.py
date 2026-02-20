@@ -1,6 +1,6 @@
 import dataclasses
-from typing import Any
 from collections.abc import Iterable
+from typing import Any
 
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -10,7 +10,7 @@ from pyspark.sql import types
 @dataclasses.dataclass(frozen=True)
 class DefaultColumn:
     name: str
-    type: types.DataType = types.StringType()
+    type: types.DataType = dataclasses.field(default_factory=types.StringType)
     value: Any = None
 
     def col(self) -> sql.Column:

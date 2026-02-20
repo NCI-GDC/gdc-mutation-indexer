@@ -80,7 +80,7 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
     uniform features
     """
 
-    __slots__ = ("schema", "annotation_builders", "_doc_dataframe_util")
+    __slots__ = ("_doc_dataframe_util", "annotation_builders", "schema")
 
     def __init__(
         self,
@@ -166,7 +166,8 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         df = self.format_chr(df)
         df = self.format_cosmic_id(df)
         df = df.withColumn(
-            "domains", F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", "")
+            "domains",
+            F.regexp_replace("domains", r"PDB-ENSP_mappings:\w{4}\.\w;?", ""),
         )
         df = self._add_civic_annotations(
             df, input_dfs["civic_dna_df"], input_dfs["civic_protein_df"]
@@ -195,7 +196,8 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
                         return pattern.format(value)
 
                     df = df.withColumn(
-                        column, F.udf(apply_pattern, types.StringType())(df[column])
+                        column,
+                        F.udf(apply_pattern, types.StringType())(df[column]),
                     )
                 else:
                     pass
@@ -321,7 +323,8 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
             "normal_genotype",
             F.struct(
                 utils.uuid5_col(
-                    F.col("match_norm_seq_allele1"), F.col("match_norm_seq_allele2")
+                    F.col("match_norm_seq_allele1"),
+                    F.col("match_norm_seq_allele2"),
                 ).alias("allele_id")
             ),
         )
@@ -353,7 +356,11 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
         """
         df = df.withColumn(
             "occurrence_id",
-            utils.uuid5_col(F.lit("ssm_occurrence"), F.col("ssm_id"), F.col("case_id")),
+            utils.uuid5_col(
+                F.lit("ssm_occurrence"),
+                F.col("ssm_id"),
+                F.col("case_id"),
+            ),
         )
         return df
 
@@ -392,11 +399,16 @@ class MAFBuilder(builders.InputBuilder[configuration.MAFBuilder, MAFInputs]):
             return start(s) + length(s)
 
         df = df.withColumn(
-            "cds_start", F.udf(start, types.IntegerType())(F.col("cds_position"))
+            "cds_start",
+            F.udf(start, types.IntegerType())(F.col("cds_position")),
         )
-        df = df.withColumn("cds_end", F.udf(end, types.IntegerType())(F.col("cds_position")))
         df = df.withColumn(
-            "cds_length", F.udf(length, types.IntegerType())(F.col("cds_position"))
+            "cds_end",
+            F.udf(end, types.IntegerType())(F.col("cds_position")),
+        )
+        df = df.withColumn(
+            "cds_length",
+            F.udf(length, types.IntegerType())(F.col("cds_position")),
         )
         return df
 

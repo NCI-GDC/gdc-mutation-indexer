@@ -110,7 +110,8 @@ class GeneModelBuilder(bases.InputBuilder[builders.GeneModelBuilder, GeneModelIn
 
         # Flatten, the mapping will re-introduce the structure
         gene_model_df = gene_model_df.select(
-            F.col("external_db_ids.*"), *gene_model_df.drop("external_db_ids").columns
+            F.col("external_db_ids.*"),
+            *gene_model_df.drop("external_db_ids").columns,
         )
 
         return gene_model_df, cytobands_df, census_df

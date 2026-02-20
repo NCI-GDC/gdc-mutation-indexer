@@ -1,5 +1,5 @@
-from collections.abc import Mapping
-from typing import AbstractSet, Generic, TypedDict, TypeVar
+from collections.abc import Mapping, Set
+from typing import TypedDict
 from unittest import mock
 
 import pytest
@@ -8,8 +8,6 @@ from pyspark import sql
 from mutation_indexer.builders import bases
 from mutation_indexer.configuration import builders
 from mutation_indexer.constants import build
-
-TInputs = TypeVar("TInputs", bound=Mapping[str, object])
 
 
 class EmptyInputs(TypedDict):
@@ -47,9 +45,7 @@ class TestDataFrameInputManager:
         ),
         ids=("empty", "exact_match", "extra"),
     )
-    def test__check__all_keys_are_contained(
-        self, input: dict, input_type: type[TypedDict]
-    ) -> None:
+    def test__check__all_keys_are_contained(self, input: dict, input_type: type) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
         assert manager.check(input)
@@ -77,7 +73,7 @@ class TestDataFrameInputManager:
         ids=("empty", "dummy"),
     )
     def test__required_dataframes__all_present(
-        self, input_type: type[TypedDict], expected_dfs: AbstractSet[build.DataFrame]
+        self, input_type: type, expected_dfs: Set[build.DataFrame]
     ) -> None:
         manager = bases.InputDataFrameManger(input_type)
 
@@ -85,7 +81,9 @@ class TestDataFrameInputManager:
 
 
 class TestInputBuilder:
-    class DummyBuilder(Generic[TInputs], bases.InputBuilder[builders.Builder, TInputs]):
+    class DummyBuilder[TInputs: Mapping[str, object]](
+        bases.InputBuilder[builders.Builder, TInputs]
+    ):
         def __init__(
             self,
             input_type: type[TInputs],
@@ -162,7 +160,7 @@ class TestInputBuilder:
     def test__inputs(
         self,
         builder: bases.InputBuilder,
-        expected_inputs: AbstractSet[build.DataFrame],
+        expected_inputs: Set[build.DataFrame],
     ) -> None:
         assert frozenset(builder.inputs) == expected_inputs
 

@@ -118,13 +118,13 @@ async def force_merge_indices(config: configuration.Configuration) -> None:
 
 async def _main(args: Args) -> None:
     if args.driver == app.Driver.GENE_EXPRESSION:
-        Configuration = gene_expression.Configuration
+        configuration_class = gene_expression.Configuration
     elif args.driver == app.Driver.VIZ:
-        Configuration = viz.Configuration
+        configuration_class = viz.Configuration
     else:
         raise ValueError(f"Unknown driver: {args.driver}")
 
-    with Configuration.client_context(args.config) as config:
+    with configuration_class.client_context(args.config) as config:
         print(f"RUNNING BUILD: {config.build.build_id}")
 
         with halo.Halo(spinner="pong") as spinner:
