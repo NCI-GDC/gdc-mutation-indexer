@@ -78,7 +78,7 @@ jmespath==1.0.1
     #   botocore
 log-symbols==0.0.14
     # via halo
-marshmallow==3.26.1
+marshmallow==3.26.2
     # via
     #   gdc-mutation-indexer (pyproject.toml)
     #   marshmallow-dataclass
