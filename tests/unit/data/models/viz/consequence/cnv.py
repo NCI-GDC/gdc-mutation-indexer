@@ -9,7 +9,7 @@ class CNV:
         class Gene:
             biotype: str | None = "transcribed_unprocessed_pseudogene"
             gene_id: str | None = "ENSG00000238009"
-            is_cancer_gene_census: str | None = "true"
+            is_cancer_gene_census: bool | None = True
             symbol: str | None = "CSMD2"
 
         consequence_id: str | None = "cons-0"

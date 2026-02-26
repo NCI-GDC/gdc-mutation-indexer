@@ -50,8 +50,10 @@ fields:
                   name: biotype
                 - <<: *string_field
                   name: gene_id
-                - <<: *string_field
+                - metadata: {}
                   name: is_cancer_gene_census
+                  nullable: true
+                  type: boolean
                 - <<: *string_field
                   name: symbol
               type: struct

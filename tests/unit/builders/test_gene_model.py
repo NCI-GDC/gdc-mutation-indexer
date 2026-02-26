@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Literal
 from unittest import mock
 
 import more_itertools
@@ -21,7 +22,7 @@ class Cytoband:
 @dataclasses.dataclass(frozen=True)
 class Census:
     cancer_gene_id: str = "ENSG00000223972"
-    is_cancer_gene_census: str = "True"
+    is_cancer_gene_census: Literal["True", "False"] | None = "True"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -138,7 +139,7 @@ class TestGeneModelBuilder:
         )
         census_df = self.spark_session.createDataFrame(
             census,
-            ("cancer_gene_id", "is_cancer_gene_census"),  # type: ignore
+            "cancer_gene_id: string, is_cancer_gene_census: string",
         )
         gene_model_df = self.spark_session.createDataFrame(
             gene_model,  # type: ignore
@@ -302,10 +303,20 @@ class TestGeneModelBuilder:
 
         assert result_row.cytoband == [cytobands]
 
-    def test__build__is_cancer_gene_census_lowwered(self) -> None:
-        builder = self._arrange_builder((Cytoband(),), (Census(),), (GeneModel(),))
+    @pytest.mark.parametrize(
+        ("is_cancer_gene_census", "cast_value"),
+        (("True", True), ("False", False), (None, None)),
+    )
+    def test__build__is_cancer_gene_census_cast_to_bool(
+        self, is_cancer_gene_census: Literal["True", "False"] | None, cast_value: bool | None
+    ) -> None:
+        builder = self._arrange_builder(
+            (Cytoband(),),
+            (Census(is_cancer_gene_census=is_cancer_gene_census),),
+            (GeneModel(),),
+        )
 
         result_df = builder.build()
         result_row = more_itertools.one(result_df.collect())
 
-        assert result_row.is_cancer_gene_census == "true"
+        assert result_row.is_cancer_gene_census is cast_value

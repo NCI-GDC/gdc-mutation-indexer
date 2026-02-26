@@ -1,5 +1,4 @@
 import abc
-import copy
 import dataclasses
 import functools
 import itertools
@@ -15,8 +14,6 @@ from typing import (
     runtime_checkable,
 )
 
-import more_itertools
-from gdcmodels import esmodels
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
@@ -808,69 +805,23 @@ class IndexBuilder[TIndexConfig: builders.IndexBuilder, TInputDFs: Mapping[str, 
 ):
     """A builder base class for constructing data to be inserted into an elasticsearch index."""
 
-    __slots__ = ("_es_dataframe_util", "_index_name", "_index_type", "_mappings_loader")
+    __slots__ = ("_es_dataframe_util", "_index_name", "_index_type")
 
     def __init__(
         self,
         config: TIndexConfig,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
-        mappings_loader: es_utils.MappingsLoader,
         input_type: type[TInputDFs],
         output: build.DataFrame,
     ) -> None:
         super().__init__(config, spark_session, input_type, output)
 
         self._es_dataframe_util = es_dataframe_util
-        self._mappings_loader = mappings_loader
         self._index_type = build.IndexType[self._output.name]
         self._index_name, _ = self._index_type.get_mappings_details()
 
-    def _get_boolean_paths(self) -> Iterator[str]:
-        """
-        Find all the boolean field in mapping and return the paths
-
-        Returns:
-            An iterable of each path to a boolean field represented as a series of
-            field names separated by a '.'.
-        """
-
-        def get_boolean_paths(node: esmodels.Properties, path: str = "") -> Iterator[str]:
-            for key, value in node.items():
-                subpath = f"{path}{key}"
-
-                if value.get("type") == "boolean":
-                    yield subpath
-                elif "properties" in value:
-                    yield from get_boolean_paths(value["properties"], f"{subpath}.")
-
-        mappings = self._mappings_loader.load_mapper(self._index_type).mappings
-
-        return get_boolean_paths(mappings.get("properties", {}))
-
-    def _cast_booleans(self, df: sql.DataFrame) -> sql.DataFrame:
-        """
-        Ensure all the boolean fields in data frame are booleans before save to ES
-
-        Args:
-            df: pyspark dataframe to cast boolean
-
-        Returns:
-            the input dataframe with all boolean fields cast to such type.
-        """
-        paths = self._get_boolean_paths()
-        schema = copy.deepcopy(df.schema)
-
-        for raw_path in paths:
-            path = iter(raw_path.split("."))
-            fieldname = more_itertools.first(path)
-            field = functools.reduce(_walk_schema, path, schema[fieldname])
-            field.dataType = types.BooleanType()
-
-        return df.select(*(F.col(f.name).cast(f.dataType) for f in schema.fields))
-
     def _write(self, df: sql.DataFrame) -> sql.DataFrame:
-        df = self._cast_booleans(df)
         df = super()._write(df)
         df = df.repartition(self._config.partition_size, self._config.id_field)
 

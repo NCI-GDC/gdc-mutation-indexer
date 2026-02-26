@@ -40,7 +40,7 @@ class ASCAT:
     gene_start: int | None = 11869
     gene_strand: int | None = 1
     hgnc: tuple[str, ...] | None = ("HGNC:37102",)
-    is_cancer_gene_census: str | None = "true"
+    is_cancer_gene_census: bool | None = True
     name: str | None = "DEAD/H (Asp-Glu-Ala-Asp/His) box helicase 11 like 1"
     ncbi_build: str | None = "GRCh38"
     observation_id: str | None = "b1627f65-d28b-568c-9f76-1a24bd4fe82d"

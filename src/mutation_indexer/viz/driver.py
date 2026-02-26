@@ -55,7 +55,6 @@ class Dependencies(NamedTuple):
     es_dataframe_util: es_utils.DataFrameUtil
     es_rdd_util: es_utils.RDDUtil
     maf_file_filter_factory: maf_metadata.MAFFileFilterFactory
-    mappings_loader: es_utils.MappingsLoader
     observation_builder: builders.ObservationBuilder
     obsolete_config: adapter.ObsoleteConfig
     spark_session: sql.SparkSession
@@ -104,7 +103,6 @@ class Driver(driver.Driver[configuration.Configuration]):
                 ),
                 es_utils.RDDUtil(config.elasticsearch, spark_session.sparkContext),
                 maf_metadata.MAFFileFilterFactory(config.elasticsearch.read, es_client),
-                mappings_loader,
                 builders.ObservationBuilder(),
                 adapter.ObsoleteConfig(config, es_client, index_client),
                 spark_session,
@@ -237,7 +235,6 @@ class Driver(driver.Driver[configuration.Configuration]):
                 config.segment_cnv_centric,
                 dependencies.spark_session,
                 dependencies.es_dataframe_util,
-                dependencies.mappings_loader,
             )
 
         if build.IndexType.SEGMENT_CNV_OCCURRENCE_CENTRIC in index_types:
@@ -245,7 +242,6 @@ class Driver(driver.Driver[configuration.Configuration]):
                 config.segment_cnv_occurrence_centric,
                 dependencies.spark_session,
                 dependencies.es_dataframe_util,
-                dependencies.mappings_loader,
             )
 
         if build.IndexType.SSM_CENTRIC in index_types:

@@ -82,8 +82,11 @@ fields:
       containsNull: true
       elementType: string
       type: array
-  - <<: *string_field
+  - &boolean_field
+    metadata: {}
     name: is_cancer_gene_census
+    nullable: true
+    type: boolean
   - <<: *string_field
     name: name
   - metadata: {}
@@ -191,10 +194,8 @@ fields:
               type: array
           - <<: *string_field
             name: transcript_id
-          - metadata: {}
+          - <<: *boolean_field
             name: is_canonical
-            nullable: true
-            type: boolean
           - <<: *long_field
             name: length
           - <<: *long_field

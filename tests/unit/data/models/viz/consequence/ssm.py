@@ -61,7 +61,7 @@ class SSM:
                 gene_id: str | None = "ENSG00000238009"
                 gene_start: int | None = 11869
                 gene_strand: int | None = 1
-                is_cancer_gene_census: str | None = "true"
+                is_cancer_gene_census: bool | None = True
                 symbol: str | None = "CSMD2"
                 synonyms: tuple[str, ...] | None = ()
 

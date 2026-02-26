@@ -27,8 +27,7 @@ class SegmentCNVOccurrenceCentricBuilder(
         config: configuration.SegmentCNVOccurrenceCentricBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
-        mappings_loader: es_utils.MappingsLoader,
-    ):
+    ) -> None:
         """
         Builds segment_cnv_occurrence_centric dataframe given case and segment_cnv
         dataframes.
@@ -42,7 +41,6 @@ class SegmentCNVOccurrenceCentricBuilder(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             input_type=SegmentCNVOccurrenceCentricBuilderInputs,
             output=build.DataFrame.SEGMENT_CNV_OCCURRENCE_CENTRIC,
         )

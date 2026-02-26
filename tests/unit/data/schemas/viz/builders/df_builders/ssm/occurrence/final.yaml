@@ -77,7 +77,8 @@ fields:
                   name: aa_start
                 - <<: *string_field
                   name: consequence_type
-                - metadata: {}
+                - &boolean_field
+                  metadata: {}
                   name: is_canonical
                   nullable: true
                   type: boolean
@@ -210,7 +211,7 @@ fields:
                         name: gene_strand
                         nullable: true
                         type: long
-                      - <<: *string_field
+                      - <<: *boolean_field
                         name: is_cancer_gene_census
                       - <<: *string_field
                         name: symbol

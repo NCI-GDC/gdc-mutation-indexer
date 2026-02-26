@@ -2,13 +2,11 @@ import decimal
 import uuid
 from collections.abc import Callable, Iterable
 from typing import Any, ClassVar, Protocol
-from unittest import mock
 
 from deepdiff import diff
 from pyspark import sql
 from pyspark.sql import types
 
-from mutation_indexer import es_utils
 from tests.unit.data import schemas
 
 DECIMAL_CONTEXT = decimal.Context(prec=6)  # 32 bit float has 6 to 7 significant digits.
@@ -39,7 +37,7 @@ class AssertSchemasEqual:
 
             return
 
-        assert not difference
+        assert not difference, difference
 
 
 class DataClass(Protocol):
@@ -80,13 +78,6 @@ def assert_float_not_equal(
     b = _get_decimal(b)
 
     assert a != b
-
-
-def arrange_empty_mappings_loader() -> es_utils.MappingsLoader:
-    loader = mock.MagicMock(spec=es_utils.MappingsLoader)
-    loader.load_mapper.return_value = mock.MagicMock(mappings={}, settings={})
-
-    return loader
 
 
 def convert_lists(data: dict) -> dict:

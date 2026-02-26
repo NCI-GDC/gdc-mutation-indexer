@@ -131,10 +131,9 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((models.SegmentCNV(),), (models.Case(),))
         builder = builders.SegmentCNVOccurrenceCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
+            config, spark_session, es_dataframe_util
         )
         result_df = builder.build(**inputs)
 
@@ -158,10 +157,9 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((segment_cnv,), (case,))
         builder = builders.SegmentCNVOccurrenceCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
+            config, spark_session, es_dataframe_util
         )
         result_df = builder.build(**inputs)
 
@@ -204,10 +202,9 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs(segment_cnvs, (case,))
         builder = builders.SegmentCNVOccurrenceCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
+            config, spark_session, es_dataframe_util
         )
         result_df = builder.build(**inputs)
 
@@ -247,10 +244,9 @@ class TestSegmentCNVOccurrenceCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs(segment_cnvs, cases)
         builder = builders.SegmentCNVOccurrenceCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
+            config, spark_session, es_dataframe_util
         )
         result_df = builder.build(**inputs)
 

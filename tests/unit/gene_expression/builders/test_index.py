@@ -58,11 +58,8 @@ class TestGeneExpressionBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs()
-        builder = builders.IndexBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = builders.IndexBuilder(config, spark_session, es_dataframe_util)
 
         result_df = builder.build(**inputs)
 
@@ -73,12 +70,9 @@ class TestGeneExpressionBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         value = models.ExpressionValue()
         inputs = self._arrange_inputs((value,))
-        builder = builders.IndexBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = builders.IndexBuilder(config, spark_session, es_dataframe_util)
 
         result_df = builder.build(**inputs)
         result_row = more_itertools.one(result_df.collect())

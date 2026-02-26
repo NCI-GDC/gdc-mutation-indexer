@@ -81,7 +81,8 @@ fields:
               type: array
           - <<: *string_field
             name: transcript_id
-          - metadata: {}
+          - &boolean_field
+            metadata: {}
             name: is_canonical
             nullable: true
             type: boolean
@@ -177,6 +178,6 @@ fields:
       containsNull: true
       elementType: string
       type: array
-  - <<: *string_field
+  - <<: *boolean_field
     name: is_cancer_gene_census
 type: struct

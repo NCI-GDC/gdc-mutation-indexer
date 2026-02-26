@@ -21,13 +21,11 @@ class IndexBuilder(builders.IndexBuilder[configuration.IndexBuilder, IndexBuilde
         config: configuration.IndexBuilder,
         spark_session: sql.SparkSession,
         es_dataframe_util: es_utils.DataFrameUtil,
-        mappings_loader: es_utils.MappingsLoader,
     ) -> None:
         super().__init__(
             config,
             spark_session,
             es_dataframe_util,
-            mappings_loader,
             input_type=IndexBuilderInputs,
             output=build.DataFrame.GENE_EXPRESSION,
         )

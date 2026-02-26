@@ -30,7 +30,6 @@ def _initialize_s3_client(config: aws.S3) -> s3.Client:
 class Dependencies(NamedTuple):
     doc_dataframe_util: indexd_utils.DataFrameUtil
     es_dataframe_util: es_utils.DataFrameUtil
-    mappings_loader: es_utils.MappingsLoader
     s3_client: s3.Client
     spark_session: sql.SparkSession
     sqlite_db: sqlite.SQLiteDatabase
@@ -77,7 +76,6 @@ class Driver(driver.Driver[configuration.Configuration]):
                     mappings_loader,
                     es_utils.SchemaLoader(),
                 ),
-                mappings_loader,
                 s3_client,
                 spark_session,
                 sqlite_db,
@@ -124,10 +122,7 @@ class Driver(driver.Driver[configuration.Configuration]):
 
         if build.IndexType.GENE_EXPRESSION in index_types:
             yield builders.IndexBuilder(
-                config.index,
-                dependencies.spark_session,
-                dependencies.es_dataframe_util,
-                dependencies.mappings_loader,
+                config.index, dependencies.spark_session, dependencies.es_dataframe_util
             )
 
     @contextlib.contextmanager

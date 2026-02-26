@@ -57,7 +57,7 @@ class MAF:
     hgvsc: str = "c.1705G>T"
     hgvsp: str = "p.Ala569Ser"
     hgvsp_short: str = "p.A569S"
-    is_cancer_gene_census: str = "true"
+    is_cancer_gene_census: bool = True
     is_canonical: bool | None = None
     match_norm_seq_allele1: str | None = None
     match_norm_seq_allele2: str | None = None

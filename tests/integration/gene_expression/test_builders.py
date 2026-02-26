@@ -127,12 +127,7 @@ def ge_builder(
         es_utils.SchemaLoader(),
     )
 
-    yield builders.IndexBuilder(
-        ge_config.builders.index,
-        spark_session,
-        es_dataframe_util,
-        mappings_loader,
-    )
+    yield builders.IndexBuilder(ge_config.builders.index, spark_session, es_dataframe_util)
 
     # Delete the index
     ge_index = ge_config.elasticsearch.write.indices[build.IndexType.GENE_EXPRESSION]

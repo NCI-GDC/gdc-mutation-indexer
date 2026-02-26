@@ -142,11 +142,8 @@ class TestSegmentCNVCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((models.SegmentCNV(),), (models.Case(),))
-        builder = builders.SegmentCNVCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = builders.SegmentCNVCentricBuilder(config, spark_session, es_dataframe_util)
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
@@ -167,11 +164,8 @@ class TestSegmentCNVCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs((segment_cnv,), (case,))
-        builder = builders.SegmentCNVCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = builders.SegmentCNVCentricBuilder(config, spark_session, es_dataframe_util)
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
@@ -209,11 +203,8 @@ class TestSegmentCNVCentricBuilder:
         config = self._arrange_config()
         spark_session = mock.MagicMock()
         es_dataframe_util = mock.MagicMock()
-        mappings_loader = utils.arrange_empty_mappings_loader()
         inputs = self._arrange_inputs(segment_cnvs, cases)
-        builder = builders.SegmentCNVCentricBuilder(
-            config, spark_session, es_dataframe_util, mappings_loader
-        )
+        builder = builders.SegmentCNVCentricBuilder(config, spark_session, es_dataframe_util)
         result_df = builder.build(**inputs)
 
         assert result_df.count() == 1
