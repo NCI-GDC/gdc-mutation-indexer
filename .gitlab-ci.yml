@@ -1,7 +1,7 @@
 ---
 include:
   - project: nci-gdc/gitlab-templates
-    ref: master
+    ref: 0.8.0
     file:
       - templates/artifacts/python-service.yaml
 
