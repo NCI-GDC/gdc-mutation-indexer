@@ -108,6 +108,7 @@ version_scheme = "versionista-format"
 
 [tool.tox]
 requires = ["tox>=4.21"]
+env_list = ["test", "coverage"]
 
 [tool.tox.env.coverage]
 commands = [["coverage", "html"], ["coverage", "xml"]]

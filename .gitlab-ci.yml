@@ -20,6 +20,7 @@ tox:
     BOTO_CONFIG: /dev/null
     ES_NODES: http://elasticsearch:9200
   script:
+    - !reference [.tox, script]
     - (apt-get update -y) || (dnf update -y)
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
