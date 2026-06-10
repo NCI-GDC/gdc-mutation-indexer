@@ -1,6 +1,9 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=68", "wheel", "setuptools_scm[toml]>=7.0", "versionista>=1.1.0"]
+requires = ["setuptools>=80", "setuptools-scm"]
+
+[dependency-groups]
+dev = ["click", "coverage", "deepdiff", "inflect", "pytest"]
 
 [project]
 authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
@@ -11,24 +14,16 @@ classifiers = [
   "Programming Language :: Python"
 ]
 dependencies = [
-  "boto3",
-  "boto3-stubs[s3]",
   "deepmerge",
-  "elasticsearch[async]",
   "importlib-resources",
   "marshmallow~=3.0",
   "marshmallow-dataclass",
   "more-itertools",
-  "numpy",
   "pyspark~=3.5.0",
   "python-json-logger",
   "tomli",
   "tomli-w",
-  "typed-argument-parser",
-  "typing-extensions",
-  "indexclient",
-  "gdcmodels>=5.10",
-  "mutation-indexer-resource"
+  "typing-extensions"
 ]
 description = "ETL for mutation elasticsearch indices"
 dynamic = ["version"]
@@ -37,8 +32,26 @@ name = "gdc-mutation-indexer"
 requires-python = "~=3.13.0"
 
 [project.optional-dependencies]
-client = ["halo", "pex", "wheel"]
-dev = ["click", "coverage[toml]", "deepdiff", "inflect", "pytest"]
+client = [
+  "elasticsearch[async]",
+  "halo",
+  "typed-argument-parser"
+]
+gene-expression = [
+  "boto3",
+  "boto3-stubs[s3]",
+  "elasticsearch",
+  "gdcmodels>=5.10",
+  "indexclient",
+  "numpy",
+  "mutation-indexer-resource"
+]
+viz = [
+  "elasticsearch",
+  "gdcmodels>=5.10",
+  "indexclient",
+  "mutation-indexer-resource"
+]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
@@ -103,83 +116,16 @@ extend-ignore-names = ["F"]
 keep-runtime-typing = true
 
 [tool.setuptools_scm]
-local_scheme = "versionista-local-format"
-version_scheme = "versionista-format"
+fallback_version = "0.0.0"
 
 [tool.tox]
-requires = ["tox>=4.21"]
+env_list = ["py313", "coverage"]
 
 [tool.tox.env.coverage]
 commands = [["coverage", "html"], ["coverage", "xml"]]
-deps = ["-crequirements.txt", "coverage[toml]"]
 skip_install = true
 
-[tool.tox.env.pex]
-commands = [
-  [
-    "pex",
-    ".[client]",
-    "--no-strip-pex-env",
-    "--python=python{env:SCIE_PYTHON_VERSION}",
-    "--entry-point=mutation_indexer.client",
-    "--constraints=requirements.txt",
-    "--output-file=mutation-indexer",
-    "--scie=eager",
-    "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
-  ],
-  [
-    "pex",
-    ".",
-    "--no-strip-pex-env",
-    "--python=python{env:SCIE_PYTHON_VERSION}",
-    "--constraints=requirements.txt",
-    "--output-file=driver-all",
-    "--scie=eager",
-    "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
-  ]
-]
-deps = ["-crequirements.txt", "pex"]
-pass_env = ["PEX_ROOT", "SCIE_BASE", "SSH_AUTH_SOCK"]
-skip_install = true
-
-[tool.tox.env.pex.set_env]
-SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
-SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.13"}
-
-[tool.tox.env.publish]
-commands = [
-  [
-    "python",
-    "-m",
-    "setuptools_scm"
-  ],
-  [
-    "python",
-    "-m",
-    "build"
-  ],
-  [
-    "python",
-    "-m",
-    "twine",
-    "check",
-    "dist/*"
-  ],
-  [
-    "python",
-    "-m",
-    "twine",
-    "upload",
-    "dist/*"
-  ]
-]
-deps = ["setuptools_scm", "build", "twine"]
-pass_env = ["TWINE_*"]
-skip_install = true
-
-[tool.tox.env.test]
+[tool.tox.env_run_base]
 allowlist_externals = ["bin/spark-install.sh"]
 commands = [
   [
@@ -198,13 +144,20 @@ commands = [
   ]
 ]
 commands_pre = [["bin/spark-install.sh"]]
-deps = ["-crequirements.txt", ".[dev,client]"]
-pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
+dependency_groups = ["dev"]
+extras = ["client"]
+pass_env = [
+  "BOTO_CONFIG",
+  "ES_*",
+  "JAVA_HOME",
+  "SPARK_HOME",
+  "SSH_AUTH_SOCK"
+]
 
-[tool.tox.env.test.set_env]
+[tool.tox.env_run_base.set_env]
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
-PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
-[tool.tox.env_run_base]
-base_python = ["py313"]
+[[tool.uv.index]]
+name = "nexus"
+url = "https://nexus.osdc.io/repository/pypi-all/simple"

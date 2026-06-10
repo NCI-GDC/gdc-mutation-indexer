@@ -42,16 +42,11 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     Yields:
         a tuple of argument flag and value.
     """
-    files = ",".join(
-        (
-            f"{config.config_file}#{app.CONFIGURATION_FILE}",
-            f"{config.pex_file}#{app.PEX_FILE}",
-        )
-    )
+    config_file = f"{config.config_file}#{app.CONFIGURATION_FILE}"
 
     yield (
         "--conf",
-        f"spark.yarn.dist.files={files}",
+        f"spark.yarn.dist.files={config_file}",
     )
     yield (
         "--jars",
@@ -72,10 +67,7 @@ async def run_spark_command(config: configuration.Configuration, driver: app.Dri
     arguments = more_itertools.flatten(itertools.chain(config_arguments, file_arguments))
     final_command = " ".join(
         more_itertools.value_chain(
-            str(config.build.spark_submit),
-            arguments,
-            str(config.build.driver),
-            driver.value,
+            str(config.build.spark_submit), arguments, str(config.build.driver)
         )
     )
 

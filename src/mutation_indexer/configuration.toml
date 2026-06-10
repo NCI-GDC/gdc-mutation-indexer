@@ -1,11 +1,9 @@
 [build]
 acl = ["open"]
-driver = "$MUTATION_INDEXER/driver.py"
-error_log = "$HOME/mutation-indexer-error.log"
-jar_dir = "$MUTATION_INDEXER/jars"
-manifest_dir = "$HOME/manifests"
-output_log = "$HOME/mutation-indexer.log"
-pex_file = "$MUTATION_INDEXER/driver-all"
+error_log = "/logs/mutation-indexer-error.log"
+jar_dir = "/app/jars"
+manifest_dir = "/logs/manifests"
+output_log = "/logs/mutation-indexer.log"
 projects = []
 spark_submit = "$SPARK_HOME/bin/spark-submit"
 study_label = ""
@@ -27,10 +25,10 @@ instances = 24
 memory = "24g"
 
 [spark.pyspark]
-python = "./mutation-indexer.pex"
+python = "uv run"
 
 [spark.pyspark.driver]
-python = "./mutation-indexer.pex"
+python = "uv run"
 
 [spark.sql]
 auto_broadcast_join_threshold = -1
