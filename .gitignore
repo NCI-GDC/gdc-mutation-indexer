@@ -85,6 +85,7 @@ tests/data/*
 
 *.tgz
 *.zip
+*.pyz
 
 # Vagrant
 .vagrant/
