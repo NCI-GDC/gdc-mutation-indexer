@@ -47,6 +47,9 @@ anaplasia_present: No
 anaplasia_present_type: Unknown
 aneuploidy: Monosomy
 ann_arbor_b_symptoms: Yes
+ann_arbor_b_symptoms_described_array:
+  - Fever
+  - Night Sweats
 ann_arbor_clinical_stage: Stage III
 ann_arbor_extranodal_involvement: No
 ann_arbor_pathologic_stage: Stage III
@@ -222,7 +225,6 @@ fragment_minimum_length: 2
 fragment_standard_deviation_length: 106.90892
 freezing_method: None
 gastric_esophageal_junction_involvement: Yes
-gender: female
 gene_symbol: KRAS
 gleason_grade_tertiary: Pattern 5
 gleason_score: 7
@@ -425,7 +427,6 @@ reason_treatment_ended: Course of Therapy Completed
 reason_treatment_not_given: Not Reported
 reflux_treatment_type: Medically Treated
 regimen_or_line_of_therapy: TIP
-relationship_gender: female
 relationship_primary_diagnosis: Lung Cancer
 relationship_sex_at_birth: female
 relationship_type: Sibling

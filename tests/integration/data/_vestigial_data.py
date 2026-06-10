@@ -122,7 +122,7 @@ class DataRemover(NamedTuple):
             resource.
         """
         data = yaml.load(self.vestigial_resource.read_bytes(), Loader=yaml.CSafeLoader)
-        vestigial_paths = data["dictionary_item_added"].keys()
+        vestigial_paths = data.get("dictionary_item_added", {}).keys()
 
         for path in vestigial_paths:
             yield VESTIGIAL_PATH_PATTERN.findall(path)

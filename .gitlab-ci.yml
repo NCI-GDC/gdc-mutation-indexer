@@ -7,7 +7,6 @@ include:
 
 variables:
   LANGUAGE_VERSION: python3.13
-  BASE_CONTAINER_VERSION: 3.1.0
 
 tox:
   services:
@@ -23,9 +22,7 @@ tox:
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
     - mvn -version
-    - pip install tox
-    - tox -e test
-    - tox -e coverage
+    - uv tool run tox --runner virtualenv -e test,coverage
 
 .deploy-service-with-salt:
   before_script:

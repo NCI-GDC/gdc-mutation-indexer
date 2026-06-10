@@ -32,9 +32,9 @@ fields:
         - <<: *string_field
           name: ethnicity
         - <<: *string_field
-          name: gender
-        - <<: *string_field
           name: race
+        - <<: *string_field
+          name: sex_at_birth
         - <<: *string_field
           name: state
         - <<: *string_field
@@ -100,6 +100,8 @@ fields:
             name: days_to_recurrence
           - <<: *string_field
             name: diagnosis_id
+          - <<: *string_field
+            name: diagnosis_is_primary_disease
           - <<: *string_field
             name: esophageal_columnar_dysplasia_degree
           - <<: *string_field
@@ -278,6 +280,8 @@ fields:
                     name: treatment_outcome
                   - <<: *string_field
                     name: treatment_type
+                  - <<: *string_field
+                    name: treatment_type_administered
                 type: struct
               type: array
           - <<: *string_field
@@ -331,8 +335,6 @@ fields:
           - <<: *double_field
             name: relationship_age_at_diagnosis
           - <<: *string_field
-            name: relationship_gender
-          - <<: *string_field
             name: relationship_primary_diagnosis
           - <<: *string_field
             name: relationship_type
@@ -340,6 +342,53 @@ fields:
             name: relative_with_cancer_history
           - <<: *string_field
             name: state
+          - <<: *string_field
+            name: submitter_id
+        type: struct
+      type: array
+  - metadata: {}
+    name: follow_ups
+    nullable: true
+    type:
+      containsNull: true
+      elementType:
+        fields:
+          - <<: *long_field
+            name: days_to_follow_up
+          - <<: *string_field
+            name: follow_up_id
+          - metadata: {}
+            name: molecular_tests
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: gene_symbol
+                  - <<: *string_field
+                    name: molecular_analysis_method
+                  - <<: *string_field
+                    name: molecular_test_id
+                  - <<: *string_field
+                    name: submitter_id
+                  - <<: *string_field
+                    name: test_result
+                type: struct
+              type: array
+          - metadata: {}
+            name: other_clinical_attributes
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - <<: *string_field
+                    name: other_clinical_attribute_id
+                  - <<: *string_field
+                    name: submitter_id
+                type: struct
+              type: array
           - <<: *string_field
             name: submitter_id
         type: struct
@@ -389,6 +438,12 @@ fields:
             type: struct
         - <<: *string_field
           name: project_id
+        - <<: *string_field
+          name: releasable
+        - <<: *string_field
+          name: released
+        - <<: *string_field
+          name: state
       type: struct
   - metadata: {}
     name: samples
@@ -397,12 +452,72 @@ fields:
       containsNull: true
       elementType:
         fields:
+          - metadata: {}
+            name: portions
+            nullable: true
+            type:
+              containsNull: true
+              elementType:
+                fields:
+                  - metadata: {}
+                    name: analytes
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType:
+                        fields:
+                          - metadata: {}
+                            name: aliquots
+                            nullable: true
+                            type:
+                              containsNull: true
+                              elementType:
+                                fields:
+                                  - <<: *string_field
+                                    name: aliquot_id
+                                  - <<: *string_field
+                                    name: submitter_id
+                                type: struct
+                              type: array
+                          - <<: *string_field
+                            name: analyte_id
+                          - <<: *string_field
+                            name: analyte_type
+                          - <<: *string_field
+                            name: submitter_id
+                        type: struct
+                      type: array
+                  - <<: *string_field
+                    name: portion_id
+                  - metadata: {}
+                    name: slides
+                    nullable: true
+                    type:
+                      containsNull: true
+                      elementType:
+                        fields:
+                          - <<: *string_field
+                            name: section_location
+                          - <<: *string_field
+                            name: slide_id
+                          - <<: *string_field
+                            name: submitter_id
+                        type: struct
+                      type: array
+                  - <<: *string_field
+                    name: submitter_id
+                type: struct
+              type: array
           - <<: *string_field
             name: preservation_method
+          - <<: *string_field
+            name: sample_id
           - <<: *string_field
             name: sample_type
           - <<: *string_field
             name: specimen_type
+          - <<: *string_field
+            name: submitter_id
           - <<: *string_field
             name: tissue_type
           - <<: *string_field
