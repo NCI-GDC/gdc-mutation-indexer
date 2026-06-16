@@ -265,14 +265,12 @@ def assert_transcripts_equal(
     assert result_transcript.start_exon == transcript.start_exon
     assert result_transcript.translation_id == transcript.translation_id
 
-    for result_domain, domain in more_itertools.zip_equal(
-        result_transcript.domains, transcript.domains
+    for result_domain, domain in zip(
+        result_transcript.domains, transcript.domains, strict=True
     ):
         assert_domains_equal(result_domain, domain)
 
-    for result_exon, exon in more_itertools.zip_equal(
-        result_transcript.exons, transcript.exons
-    ):
+    for result_exon, exon in zip(result_transcript.exons, transcript.exons, strict=True):
         assert_exons_equal(result_exon, exon)
 
 
@@ -342,8 +340,8 @@ def assert_core_maf_transformed(
     assert result_maf.variant_type == maf.Variant_Type
     assert result_maf.vep_impact == maf.IMPACT
 
-    for result_transcript, expected_transcript in more_itertools.zip_equal(
-        result_maf.transcripts, gene_model.transcripts
+    for result_transcript, expected_transcript in zip(
+        result_maf.transcripts, gene_model.transcripts, strict=True
     ):
         assert_transcripts_equal(result_transcript, expected_transcript)
 
