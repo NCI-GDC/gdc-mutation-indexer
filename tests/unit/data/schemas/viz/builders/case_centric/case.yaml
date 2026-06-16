@@ -103,8 +103,6 @@ fields:
         - <<: *string_field
           name: ethnicity
         - <<: *string_field
-          name: gender
-        - <<: *string_field
           name: marital_status
         - <<: *long_field
           name: occupation_duration_years
@@ -124,6 +122,8 @@ fields:
           name: vital_status
         - <<: *long_field
           name: year_of_birth
+        - <<: *string_field
+          name: year_of_birth_range
         - <<: *long_field
           name: year_of_death
       type: struct
@@ -162,6 +162,13 @@ fields:
             name: ann_arbor_b_symptoms
           - <<: *string_field
             name: ann_arbor_b_symptoms_described
+          - metadata: {}
+            name: ann_arbor_b_symptoms_described_array
+            nullable: true
+            type:
+              containsNull: true
+              elementType: string
+              type: array
           - <<: *string_field
             name: ann_arbor_clinical_stage
           - <<: *string_field
@@ -385,8 +392,6 @@ fields:
                     name: dysplasia_degree
                   - <<: *string_field
                     name: dysplasia_type
-                  - <<: *double_field
-                    name: epithelioid_cell_percent
                   - <<: *string_field
                     name: epithelioid_cell_percent_range
                   - <<: *string_field
@@ -397,8 +402,6 @@ fields:
                     name: extranodal_extension
                   - <<: *string_field
                     name: extraocular_nodule_size
-                  - <<: *string_field
-                    name: extrascleral_extension
                   - <<: *string_field
                     name: extrascleral_extension_present
                   - <<: *string_field
@@ -483,10 +486,6 @@ fields:
                     name: sarcomatoid_percent
                   - <<: *string_field
                     name: sarcomatoid_present
-                  - <<: *double_field
-                    name: size_extraocular_nodule
-                  - <<: *double_field
-                    name: spindle_cell_percent
                   - <<: *string_field
                     name: spindle_cell_percent_range
                   - <<: *string_field
@@ -646,8 +645,6 @@ fields:
                   - <<: *string_field
                     name: therapeutic_agents
                   - <<: *string_field
-                    name: therapeutic_level_achieved
-                  - <<: *string_field
                     name: therapeutic_levels_achieved
                   - <<: *string_field
                     name: therapeutic_target_level
@@ -686,6 +683,8 @@ fields:
                     name: treatment_outcome_duration
                   - <<: *string_field
                     name: treatment_type
+                  - <<: *string_field
+                    name: treatment_type_administered
                   - <<: *string_field
                     name: updated_datetime
                 type: struct
@@ -858,8 +857,6 @@ fields:
             name: family_history_id
           - <<: *double_field
             name: relationship_age_at_diagnosis
-          - <<: *string_field
-            name: relationship_gender
           - <<: *string_field
             name: relationship_primary_diagnosis
           - <<: *string_field
@@ -1985,8 +1982,6 @@ fields:
                     name: treatment_frequency
                   - <<: *string_field
                     name: undescended_testis_corrected
-                  - <<: *long_field
-                    name: undescended_testis_corrected_age
                   - <<: *string_field
                     name: undescended_testis_corrected_age_range
                   - <<: *string_field
@@ -2382,8 +2377,6 @@ fields:
                           - <<: *string_field
                             name: normal_tumor_genotype_snp_match
                           - <<: *double_field
-                            name: ribosomal_rna_28s_16s_ratio
-                          - <<: *double_field
                             name: ribosomal_rna_28s_18s_ratio
                           - <<: *double_field
                             name: rna_integrity_number
@@ -2608,8 +2601,6 @@ fields:
             name: tissue_collection_type
           - <<: *string_field
             name: tissue_type
-          - <<: *string_field
-            name: tumor_code_id
           - <<: *string_field
             name: tumor_descriptor
           - <<: *string_field

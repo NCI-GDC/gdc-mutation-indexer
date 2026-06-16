@@ -69,9 +69,6 @@
         "ethnicity": {
           "type": "keyword"
         },
-        "gender": {
-          "type": "keyword"
-        },
         "race": {
           "type": "keyword"
         },
@@ -447,9 +444,6 @@
         },
         "relationship_age_at_diagnosis": {
           "type": "long"
-        },
-        "relationship_gender": {
-          "type": "keyword"
         },
         "relationship_primary_diagnosis": {
           "type": "keyword"
