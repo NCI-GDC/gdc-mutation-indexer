@@ -3,7 +3,7 @@ include:
   - project: nci-gdc/gitlab-templates
     ref: master
     file:
-      - templates/artifacts/docker-service.yaml
+      - templates/artifacts/python-docker-service.yaml
 
 variables:
   LANGUAGE_VERSION: python3.13
