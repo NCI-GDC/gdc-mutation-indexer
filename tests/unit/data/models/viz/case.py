@@ -12,8 +12,8 @@ class Case:
         days_to_death: int | None = 1324
         demographic_id: str | None = "demographic-0"
         ethnicity: str | None = "not hispanic or latino"
-        gender: str | None = "female"
         race: str | None = "white"
+        sex_at_birth: str | None = "female"
         state: str | None = "released"
         submitter_id: str | None = "TEST-UNIT-submitter-0"
         vital_status: str | None = "Alive"
@@ -79,6 +79,7 @@ class Case:
             treatment_or_therapy: str | None = None
             treatment_outcome: str | None = "Not Reported"
             treatment_type: str | None = "Radiation Therapy, NOS"
+            treatment_type_administered: str | None = None
 
         age_at_diagnosis: int | None = 31232
         ajcc_clinical_m: str | None = "MX"
@@ -102,6 +103,7 @@ class Case:
         days_to_last_known_disease_status: float | None = 510.0
         days_to_recurrence: float | None = 505.0
         diagnosis_id: str | None = "diagnosis-0"
+        diagnosis_is_primary_disease: str | None = "True"
         esophageal_columnar_dysplasia_degree: str | None = "High Grade Dysplasia"
         esophageal_columnar_metaplasia_present: str | None = "True"
         figo_stage: str | None = "Stage IIIC"
@@ -154,11 +156,33 @@ class Case:
     class FamilyHistory:
         family_history_id: str | None = "family-history-0"
         relationship_age_at_diagnosis: float | None = None
-        relationship_gender: str | None = "female"
         relationship_primary_diagnosis: str | None = "Lung Cancer"
         relationship_type: str | None = "Sibling"
         relative_with_cancer_history: str | None = None
         state: str | None = "released"
+        submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+    @dataclasses.dataclass(frozen=True)
+    class FollowUp:
+        @dataclasses.dataclass(frozen=True)
+        class MolecularTest:
+            gene_symbol: str | None = "KRAS"
+            molecular_analysis_method: str | None = "Not Reported"
+            molecular_test_id: str | None = "molecular-test-0"
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+            test_result: str | None = "Negative"
+
+        @dataclasses.dataclass(frozen=True)
+        class OtherClinicalAttribute:
+            other_clinical_attribute_id: str | None = "other-clinical-attribute-0"
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+        days_to_follow_up: int | None = 84
+        follow_up_id: str | None = "follow-up-0"
+        molecular_tests: tuple[MolecularTest, ...] | None = (MolecularTest(),)
+        other_clinical_attributes: tuple[OtherClinicalAttribute, ...] | None = (
+            OtherClinicalAttribute(),
+        )
         submitter_id: str | None = "TEST-UNIT-submitter-0"
 
     @dataclasses.dataclass(frozen=True)
@@ -176,12 +200,43 @@ class Case:
         primary_site: tuple[str, ...] | None = ("Ovary",)
         program: Program | None = Program()
         project_id: str | None = "TEST-UNIT"
+        releasable: str | None = "True"
+        released: str | None = "True"
+        state: str | None = "released"
 
     @dataclasses.dataclass(frozen=True)
     class Sample:
+        @dataclasses.dataclass(frozen=True)
+        class Portion:
+            @dataclasses.dataclass(frozen=True)
+            class Analyte:
+                @dataclasses.dataclass(frozen=True)
+                class Aliquot:
+                    aliquot_id: str | None = "aliquot-0"
+                    submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+                aliquots: tuple[Aliquot, ...] | None = (Aliquot(),)
+                analyte_id: str | None = "analyte-0"
+                analyte_type: str | None = "Repli-G (Qiagen) DNA"
+                submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+            @dataclasses.dataclass(frozen=True)
+            class Slide:
+                section_location: str | None = "Not Reported"
+                slide_id: str | None = "slide-0"
+                submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+            analytes: tuple[Analyte, ...] | None = (Analyte(),)
+            portion_id: str | None = "portion-0"
+            slides: tuple[Slide, ...] | None = (Slide(),)
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+        portions: tuple[Portion, ...] | None = (Portion(),)
         preservation_method: str | None = "Unknown"
+        sample_id: str | None = "sample-0"
         sample_type: str | None = "Blood Derived Normal"
         specimen_type: str | None = "Peripheral Blood NOS"
+        submitter_id: str | None = "TEST-UNIT-submitter-0"
         tissue_type: str | None = "Normal"
         tumor_descriptor: str | None = "Not Applicable"
 
@@ -201,6 +256,7 @@ class Case:
     disease_type: str | None = "Cystic, Mucinous and Serous Neoplasms"
     exposures: tuple[Exposure, ...] | None = (Exposure(),)
     family_histories: tuple[FamilyHistory, ...] | None = (FamilyHistory(),)
+    follow_ups: tuple[FollowUp, ...] | None = (FollowUp(),)
     index_date: str | None = "Diagnosis"
     lost_to_followup: str | None = None
     primary_site: str | None = "Ovary"

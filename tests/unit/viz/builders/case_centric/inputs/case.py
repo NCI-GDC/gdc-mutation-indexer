@@ -61,7 +61,6 @@ class Case:
         demographic_id: str | None = "demographic-0"
         education_level: str | None = None
         ethnicity: str | None = "not hispanic or latino"
-        gender: str | None = "female"
         marital_status: str | None = None
         occupation_duration_years: int | None = 23
         population_group: str | None = "Ashkenazi Jew"
@@ -72,6 +71,7 @@ class Case:
         updated_datetime: str | None = "2022-02-07T21:22:16.306502-06:00"
         vital_status: str | None = "Alive"
         year_of_birth: int | None = 1948
+        year_of_birth_range: str | None = None
         year_of_death: int | None = 2016
 
         def assert_equals(self, row: sql.Row) -> bool:
@@ -91,7 +91,6 @@ class Case:
             assert row.demographic_id == self.demographic_id
             assert row.education_level == self.education_level
             assert row.ethnicity == self.ethnicity
-            assert row.gender == self.gender
             assert row.marital_status == self.marital_status
             assert row.occupation_duration_years == self.occupation_duration_years
             assert row.population_group == self.population_group
@@ -102,6 +101,7 @@ class Case:
             assert row.updated_datetime == self.updated_datetime
             assert row.vital_status == self.vital_status
             assert row.year_of_birth == self.year_of_birth
+            assert row.year_of_birth_range == self.year_of_birth_range
             assert row.year_of_death == self.year_of_death
 
             return True
@@ -165,13 +165,11 @@ class Case:
             days_to_pathology_detail: int | None = None
             dysplasia_degree: str | None = None
             dysplasia_type: str | None = None
-            epithelioid_cell_percent: float | None = None
             epithelioid_cell_percent_range: str | None = ">90%"
             extracapsular_extension: str | None = "Extensive"
             extracapsular_extension_present: str | None = "True"
             extranodal_extension: str | None = "Gross Extension"
             extraocular_nodule_size: str | None = "<=5mm"
-            extrascleral_extension: str | None = None
             extrascleral_extension_present: str | None = None
             extrathyroid_extension: str | None = "None"
             greatest_tumor_dimension: float | None = 3.0
@@ -214,8 +212,6 @@ class Case:
             rhabdoid_present: str | None = None
             sarcomatoid_percent: float | None = 90.0
             sarcomatoid_present: str | None = None
-            size_extraocular_nodule: float | None = None
-            spindle_cell_percent: float | None = None
             spindle_cell_percent_range: str | None = ">90%"
             state: str | None = "released"
             submitter_id: str | None = "TEST-UNIT-submitter-0"
@@ -256,7 +252,6 @@ class Case:
                 assert row.days_to_pathology_detail == self.days_to_pathology_detail
                 assert row.dysplasia_degree == self.dysplasia_degree
                 assert row.dysplasia_type == self.dysplasia_type
-                assert row.epithelioid_cell_percent == self.epithelioid_cell_percent
                 assert (
                     row.epithelioid_cell_percent_range == self.epithelioid_cell_percent_range
                 )
@@ -266,7 +261,6 @@ class Case:
                 )
                 assert row.extranodal_extension == self.extranodal_extension
                 assert row.extraocular_nodule_size == self.extraocular_nodule_size
-                assert row.extrascleral_extension == self.extrascleral_extension
                 assert (
                     row.extrascleral_extension_present == self.extrascleral_extension_present
                 )
@@ -328,8 +322,6 @@ class Case:
                 assert row.rhabdoid_present == self.rhabdoid_present
                 assert row.sarcomatoid_percent == self.sarcomatoid_percent
                 assert row.sarcomatoid_present == self.sarcomatoid_present
-                assert row.size_extraocular_nodule == self.size_extraocular_nodule
-                assert row.spindle_cell_percent == self.spindle_cell_percent
                 assert row.spindle_cell_percent_range == self.spindle_cell_percent_range
                 assert row.state == self.state
                 assert row.submitter_id == self.submitter_id
@@ -391,7 +383,6 @@ class Case:
             state: str | None = "released"
             submitter_id: str | None = "TEST-UNIT-submitter-0"
             therapeutic_agents: str | None = "Gemcitabine Hydrochloride"
-            therapeutic_level_achieved: str | None = None
             therapeutic_levels_achieved: str | None = "Unknown"
             therapeutic_target_level: str | None = ">14 mg/L"
             timepoint_category: str | None = "Last Contact"
@@ -409,6 +400,7 @@ class Case:
             treatment_outcome: str | None = "Not Reported"
             treatment_outcome_duration: int | None = 366
             treatment_type: str | None = "Radiation Therapy, NOS"
+            treatment_type_administered: str | None = None
             updated_datetime: str | None = "2022-02-07T21:22:16.306502-06:00"
 
             def assert_equals(self, row: sql.Row) -> bool:
@@ -440,7 +432,6 @@ class Case:
                 assert row.state == self.state
                 assert row.submitter_id == self.submitter_id
                 assert row.therapeutic_agents == self.therapeutic_agents
-                assert row.therapeutic_level_achieved == self.therapeutic_level_achieved
                 assert row.therapeutic_levels_achieved == self.therapeutic_levels_achieved
                 assert row.therapeutic_target_level == self.therapeutic_target_level
                 assert row.timepoint_category == self.timepoint_category
@@ -457,6 +448,7 @@ class Case:
                 assert row.treatment_outcome == self.treatment_outcome
                 assert row.treatment_outcome_duration == self.treatment_outcome_duration
                 assert row.treatment_type == self.treatment_type
+                assert row.treatment_type_administered == self.treatment_type_administered
                 assert row.updated_datetime == self.updated_datetime
                 assert tuple(row.route_of_administration) == self.route_of_administration
                 assert tuple(row.treatment_anatomic_sites) == self.treatment_anatomic_sites
@@ -477,6 +469,10 @@ class Case:
         ajcc_staging_system_edition: str | None = "7th"
         ann_arbor_b_symptoms: str | None = "True"
         ann_arbor_b_symptoms_described: str | None = None
+        ann_arbor_b_symptoms_described_array: tuple[str, ...] | None = (
+            "Fever",
+            "Night Sweats",
+        )
         ann_arbor_clinical_stage: str | None = "Stage III"
         ann_arbor_extranodal_involvement: str | None = None
         ann_arbor_pathologic_stage: str | None = "Stage III"
@@ -764,6 +760,10 @@ class Case:
             assert row.who_nte_grade == self.who_nte_grade
             assert row.wilms_tumor_histologic_subtype == self.wilms_tumor_histologic_subtype
             assert row.year_of_diagnosis == self.year_of_diagnosis
+            assert (
+                tuple(row.ann_arbor_b_symptoms_described_array)
+                == self.ann_arbor_b_symptoms_described_array
+            )
             assert tuple(row.sites_of_involvement) == self.sites_of_involvement
             assert tuple(row.weiss_assessment_findings) == self.weiss_assessment_findings
             assert all(
@@ -869,7 +869,6 @@ class Case:
         created_datetime: str | None = "2022-02-03T19:01:23.631381-06:00"
         family_history_id: str | None = "family-history-0"
         relationship_age_at_diagnosis: float | None = None
-        relationship_gender: str | None = "female"
         relationship_primary_diagnosis: str | None = "Lung Cancer"
         relationship_sex_at_birth: str | None = "female"
         relationship_type: str | None = "Sibling"
@@ -886,7 +885,6 @@ class Case:
             assert row.created_datetime == self.created_datetime
             assert row.family_history_id == self.family_history_id
             assert row.relationship_age_at_diagnosis == self.relationship_age_at_diagnosis
-            assert row.relationship_gender == self.relationship_gender
             assert row.relationship_primary_diagnosis == self.relationship_primary_diagnosis
             assert row.relationship_sex_at_birth == self.relationship_sex_at_birth
             assert row.relationship_type == self.relationship_type
@@ -1977,7 +1975,6 @@ class Case:
             timepoint_category: str | None = "Last Contact"
             treatment_frequency: str | None = "Once Weekly"
             undescended_testis_corrected: str | None = "True"
-            undescended_testis_corrected_age: int | None = None
             undescended_testis_corrected_age_range: str | None = "2-11 months"
             undescended_testis_corrected_laterality: str | None = "Right"
             undescended_testis_corrected_method: str | None = "Orchiopexy"
@@ -2060,10 +2057,6 @@ class Case:
                 assert row.timepoint_category == self.timepoint_category
                 assert row.treatment_frequency == self.treatment_frequency
                 assert row.undescended_testis_corrected == self.undescended_testis_corrected
-                assert (
-                    row.undescended_testis_corrected_age
-                    == self.undescended_testis_corrected_age
-                )
                 assert (
                     row.undescended_testis_corrected_age_range
                     == self.undescended_testis_corrected_age_range
@@ -2487,7 +2480,6 @@ class Case:
                 dna_integrity_number: float | None = None
                 experimental_protocol_type: str | None = "Repli-G"
                 normal_tumor_genotype_snp_match: str | None = "True"
-                ribosomal_rna_28s_16s_ratio: float | None = 1.3
                 ribosomal_rna_28s_18s_ratio: float | None = None
                 rna_integrity_number: float | None = 8.6
                 spectrophotometer_method: str | None = "UV Spec"
@@ -2512,7 +2504,6 @@ class Case:
                         row.normal_tumor_genotype_snp_match
                         == self.normal_tumor_genotype_snp_match
                     )
-                    assert row.ribosomal_rna_28s_16s_ratio == self.ribosomal_rna_28s_16s_ratio
                     assert row.ribosomal_rna_28s_18s_ratio == self.ribosomal_rna_28s_18s_ratio
                     assert row.rna_integrity_number == self.rna_integrity_number
                     assert row.spectrophotometer_method == self.spectrophotometer_method
@@ -2798,7 +2789,6 @@ class Case:
         time_between_excision_and_freezing: float | None = 20.0
         tissue_collection_type: str | None = "Retrospective"
         tissue_type: str | None = "Normal"
-        tumor_code_id: str | None = "50"
         tumor_descriptor: str | None = "Not Applicable"
         updated_datetime: str | None = "2022-02-07T21:22:16.306502-06:00"
 
@@ -2843,7 +2833,6 @@ class Case:
             )
             assert row.tissue_collection_type == self.tissue_collection_type
             assert row.tissue_type == self.tissue_type
-            assert row.tumor_code_id == self.tumor_code_id
             assert row.tumor_descriptor == self.tumor_descriptor
             assert row.updated_datetime == self.updated_datetime
             assert all(

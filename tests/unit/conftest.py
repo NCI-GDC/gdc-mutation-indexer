@@ -12,11 +12,6 @@ from pyspark.sql import types
 from tests.unit import utils
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    """This adds an option so we can run the tests & update any final schemas."""
-    parser.addoption("--update-schemas", action="store_true")
-
-
 @pytest.fixture(scope="session")
 def spark_session() -> Generator[sql.SparkSession]:
     with (

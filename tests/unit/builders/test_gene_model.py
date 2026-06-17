@@ -255,8 +255,8 @@ class TestGeneModelBuilder:
             assert row_transcript.start_exon == model_transcript.start_exon
             assert row_transcript.translation_id == model_transcript.translation_id
 
-            for row_domain, domain in more_itertools.zip_equal(
-                row_transcript.domains, model_transcript.domains
+            for row_domain, domain in zip(
+                row_transcript.domains, model_transcript.domains, strict=True
             ):
                 assert row_domain.description == domain.description
                 assert row_domain.end == domain.end
@@ -265,8 +265,8 @@ class TestGeneModelBuilder:
                 assert row_domain.interpro_id == domain.interpro_id
                 assert row_domain.start == domain.start
 
-            for row_exon, exon in more_itertools.zip_equal(
-                row_transcript.exons, model_transcript.exons
+            for row_exon, exon in zip(
+                row_transcript.exons, model_transcript.exons, strict=True
             ):
                 assert row_exon.cdna_coding_end == exon.cdna_coding_end
                 assert row_exon.cdna_coding_start == exon.cdna_coding_start

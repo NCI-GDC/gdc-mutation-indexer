@@ -50,6 +50,7 @@ workflow_type = "ASCAT2"
 include_as_arrays = [
   "aliquot_ids",
   "analyte_ids",
+  "diagnoses.ann_arbor_b_symptoms_described_array",
   "diagnoses.pathology_details.tumor_level_prostate",
   "diagnoses.sites_of_involvement",
   "diagnoses.treatments.route_of_administration",
@@ -91,6 +92,7 @@ id_field = "case_id"
 include_as_arrays = [
   "aliquot_ids",
   "analyte_ids",
+  "diagnoses.ann_arbor_b_symptoms_described_array",
   "diagnoses.pathology_details.tumor_level_prostate",
   "diagnoses.sites_of_involvement",
   "diagnoses.treatments.route_of_administration",

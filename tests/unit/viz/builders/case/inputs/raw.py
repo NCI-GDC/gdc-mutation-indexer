@@ -14,8 +14,8 @@ class Case:
         days_to_death: int | None = 1324
         demographic_id: str | None = "demographic-0"
         ethnicity: str | None = "not hispanic or latino"
-        gender: str | None = "female"
         race: str | None = "white"
+        sex_at_birth: str | None = "female"
         state: str | None = "released"
         submitter_id: str | None = "TEST-UNIT-submitter-0"
         vital_status: str | None = "Alive"
@@ -31,8 +31,8 @@ class Case:
             assert row.days_to_death == self.days_to_death
             assert row.demographic_id == self.demographic_id
             assert row.ethnicity == self.ethnicity
-            assert row.gender == self.gender
             assert row.race == self.race
+            assert row.sex_at_birth == self.sex_at_birth
             assert row.state == self.state
             assert row.submitter_id == self.submitter_id
             assert row.vital_status == self.vital_status
@@ -161,6 +161,7 @@ class Case:
             treatment_or_therapy: str | None = None
             treatment_outcome: str | None = "Not Reported"
             treatment_type: str | None = "Radiation Therapy, NOS"
+            treatment_type_administered: str | None = None
 
             def assert_equals(self, row: sql.Row) -> bool:
                 assert row
@@ -180,6 +181,7 @@ class Case:
                 assert row.treatment_or_therapy == self.treatment_or_therapy
                 assert row.treatment_outcome == self.treatment_outcome
                 assert row.treatment_type == self.treatment_type
+                assert row.treatment_type_administered == self.treatment_type_administered
 
                 return True
 
@@ -205,6 +207,7 @@ class Case:
         days_to_last_known_disease_status: float | None = 510.0
         days_to_recurrence: float | None = 505.0
         diagnosis_id: str | None = "diagnosis-0"
+        diagnosis_is_primary_disease: str | None = "True"
         esophageal_columnar_dysplasia_degree: str | None = "High Grade Dysplasia"
         esophageal_columnar_metaplasia_present: str | None = "True"
         figo_stage: str | None = "Stage IIIC"
@@ -269,6 +272,7 @@ class Case:
             )
             assert row.days_to_recurrence == self.days_to_recurrence
             assert row.diagnosis_id == self.diagnosis_id
+            assert row.diagnosis_is_primary_disease == self.diagnosis_is_primary_disease
             assert (
                 row.esophageal_columnar_dysplasia_degree
                 == self.esophageal_columnar_dysplasia_degree
@@ -356,7 +360,6 @@ class Case:
     class FamilyHistory:
         family_history_id: str | None = "family-history-0"
         relationship_age_at_diagnosis: float | None = None
-        relationship_gender: str | None = "female"
         relationship_primary_diagnosis: str | None = "Lung Cancer"
         relationship_type: str | None = "Sibling"
         relative_with_cancer_history: str | None = None
@@ -367,12 +370,69 @@ class Case:
             assert row
             assert row.family_history_id == self.family_history_id
             assert row.relationship_age_at_diagnosis == self.relationship_age_at_diagnosis
-            assert row.relationship_gender == self.relationship_gender
             assert row.relationship_primary_diagnosis == self.relationship_primary_diagnosis
             assert row.relationship_type == self.relationship_type
             assert row.relative_with_cancer_history == self.relative_with_cancer_history
             assert row.state == self.state
             assert row.submitter_id == self.submitter_id
+
+            return True
+
+    @dataclasses.dataclass(frozen=True)
+    class FollowUp:
+        @dataclasses.dataclass(frozen=True)
+        class MolecularTest:
+            gene_symbol: str | None = "KRAS"
+            molecular_analysis_method: str | None = "Not Reported"
+            molecular_test_id: str | None = "molecular-test-0"
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+            test_result: str | None = "Negative"
+
+            def assert_equals(self, row: sql.Row) -> bool:
+                assert row
+                assert row.gene_symbol == self.gene_symbol
+                assert row.molecular_analysis_method == self.molecular_analysis_method
+                assert row.molecular_test_id == self.molecular_test_id
+                assert row.submitter_id == self.submitter_id
+                assert row.test_result == self.test_result
+
+                return True
+
+        @dataclasses.dataclass(frozen=True)
+        class OtherClinicalAttribute:
+            other_clinical_attribute_id: str | None = "other-clinical-attribute-0"
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+            def assert_equals(self, row: sql.Row) -> bool:
+                assert row
+                assert row.other_clinical_attribute_id == self.other_clinical_attribute_id
+                assert row.submitter_id == self.submitter_id
+
+                return True
+
+        days_to_follow_up: int | None = 84
+        follow_up_id: str | None = "follow-up-0"
+        molecular_tests: tuple[MolecularTest, ...] | None = (MolecularTest(),)
+        other_clinical_attributes: tuple[OtherClinicalAttribute, ...] | None = (
+            OtherClinicalAttribute(),
+        )
+        submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+        def assert_equals(self, row: sql.Row) -> bool:
+            assert row
+            assert row.days_to_follow_up == self.days_to_follow_up
+            assert row.follow_up_id == self.follow_up_id
+            assert row.submitter_id == self.submitter_id
+            assert all(
+                e.assert_equals(r)
+                for r, e in zip(row.molecular_tests or (), self.molecular_tests or ())
+            )
+            assert all(
+                e.assert_equals(r)
+                for r, e in zip(
+                    row.other_clinical_attributes or (), self.other_clinical_attributes or ()
+                )
+            )
 
             return True
 
@@ -399,6 +459,9 @@ class Case:
         primary_site: tuple[str, ...] | None = ("Ovary",)
         program: Program | None = Program()
         project_id: str | None = "TEST-UNIT"
+        releasable: str | None = "True"
+        released: str | None = "True"
+        state: str | None = "released"
 
         def assert_equals(self, row: sql.Row) -> bool:
             assert row
@@ -406,6 +469,9 @@ class Case:
             assert row.intended_release_date == self.intended_release_date
             assert row.name == self.name
             assert row.project_id == self.project_id
+            assert row.releasable == self.releasable
+            assert row.released == self.released
+            assert row.state == self.state
             assert tuple(row.disease_type) == self.disease_type
             assert tuple(row.primary_site) == self.primary_site
             assert (row.program is None and self.program is None) or (
@@ -416,19 +482,92 @@ class Case:
 
     @dataclasses.dataclass(frozen=True)
     class Sample:
+        @dataclasses.dataclass(frozen=True)
+        class Portion:
+            @dataclasses.dataclass(frozen=True)
+            class Analyte:
+                @dataclasses.dataclass(frozen=True)
+                class Aliquot:
+                    aliquot_id: str | None = "aliquot-0"
+                    submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+                    def assert_equals(self, row: sql.Row) -> bool:
+                        assert row
+                        assert row.aliquot_id == self.aliquot_id
+                        assert row.submitter_id == self.submitter_id
+
+                        return True
+
+                aliquots: tuple[Aliquot, ...] | None = (Aliquot(),)
+                analyte_id: str | None = "analyte-0"
+                analyte_type: str | None = "Repli-G (Qiagen) DNA"
+                submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+                def assert_equals(self, row: sql.Row) -> bool:
+                    assert row
+                    assert row.analyte_id == self.analyte_id
+                    assert row.analyte_type == self.analyte_type
+                    assert row.submitter_id == self.submitter_id
+                    assert all(
+                        e.assert_equals(r)
+                        for r, e in zip(row.aliquots or (), self.aliquots or ())
+                    )
+
+                    return True
+
+            @dataclasses.dataclass(frozen=True)
+            class Slide:
+                section_location: str | None = "Not Reported"
+                slide_id: str | None = "slide-0"
+                submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+                def assert_equals(self, row: sql.Row) -> bool:
+                    assert row
+                    assert row.section_location == self.section_location
+                    assert row.slide_id == self.slide_id
+                    assert row.submitter_id == self.submitter_id
+
+                    return True
+
+            analytes: tuple[Analyte, ...] | None = (Analyte(),)
+            portion_id: str | None = "portion-0"
+            slides: tuple[Slide, ...] | None = (Slide(),)
+            submitter_id: str | None = "TEST-UNIT-submitter-0"
+
+            def assert_equals(self, row: sql.Row) -> bool:
+                assert row
+                assert row.portion_id == self.portion_id
+                assert row.submitter_id == self.submitter_id
+                assert all(
+                    e.assert_equals(r) for r, e in zip(row.analytes or (), self.analytes or ())
+                )
+                assert all(
+                    e.assert_equals(r) for r, e in zip(row.slides or (), self.slides or ())
+                )
+
+                return True
+
+        portions: tuple[Portion, ...] | None = (Portion(),)
         preservation_method: str | None = "Unknown"
+        sample_id: str | None = "sample-0"
         sample_type: str | None = "Blood Derived Normal"
         specimen_type: str | None = "Peripheral Blood NOS"
+        submitter_id: str | None = "TEST-UNIT-submitter-0"
         tissue_type: str | None = "Normal"
         tumor_descriptor: str | None = "Not Applicable"
 
         def assert_equals(self, row: sql.Row) -> bool:
             assert row
             assert row.preservation_method == self.preservation_method
+            assert row.sample_id == self.sample_id
             assert row.sample_type == self.sample_type
             assert row.specimen_type == self.specimen_type
+            assert row.submitter_id == self.submitter_id
             assert row.tissue_type == self.tissue_type
             assert row.tumor_descriptor == self.tumor_descriptor
+            assert all(
+                e.assert_equals(r) for r, e in zip(row.portions or (), self.portions or ())
+            )
 
             return True
 
@@ -458,6 +597,7 @@ class Case:
     disease_type: str | None = "Cystic, Mucinous and Serous Neoplasms"
     exposures: tuple[Exposure, ...] | None = (Exposure(),)
     family_histories: tuple[FamilyHistory, ...] | None = (FamilyHistory(),)
+    follow_ups: tuple[FollowUp, ...] | None = (FollowUp(),)
     index_date: str | None = "Diagnosis"
     lost_to_followup: str | None = None
     primary_site: str | None = "Ovary"
@@ -497,6 +637,9 @@ class Case:
         assert all(
             e.assert_equals(r)
             for r, e in zip(row.family_histories or (), self.family_histories or ())
+        )
+        assert all(
+            e.assert_equals(r) for r, e in zip(row.follow_ups or (), self.follow_ups or ())
         )
         assert all(e.assert_equals(r) for r, e in zip(row.samples or (), self.samples or ()))
 
