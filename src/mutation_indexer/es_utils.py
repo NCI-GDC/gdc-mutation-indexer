@@ -274,14 +274,14 @@ SQL_TYPES: Mapping[str, types.DataType] = MappingProxyType(
 Tree = dict[str, "Tree"]
 
 
-class DefaultTree(collections.defaultdict[str, Tree]):
+class DefaultTree(dict[str, Tree]):
     """A tree structure for which all paths are valid."""
-
-    def __init__(self) -> None:
-        super().__init__(default_factory=DefaultTree)
 
     def __contains__(self, key: object) -> bool:
         return isinstance(key, str)
+
+    def __missing__(self, key: str) -> Tree:
+        return self.setdefault(key, DefaultTree())
 
 
 def _parse_tree(paths: Iterable[str]) -> Tree:

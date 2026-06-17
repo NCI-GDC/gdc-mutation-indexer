@@ -62,6 +62,8 @@ COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene
 COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.pyz
 COPY --from=build --chown=app:app /${SERVICE_NAME}/jars /app/jars
 
+RUN dnf install -y java-11-amazon-corretto
+
 USER app:app
 WORKDIR /app
 CMD ["uv", "run", "-m", "mutation_indexer.client"]

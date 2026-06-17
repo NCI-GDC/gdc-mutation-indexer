@@ -3,7 +3,7 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools>=80", "setuptools-scm"]
 
 [dependency-groups]
-dev = ["click", "coverage", "deepdiff", "inflect", "pytest"]
+dev = ["click", "coverage", "deepdiff", "inflect", "jinja2", "pytest"]
 
 [project]
 authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
@@ -42,14 +42,14 @@ gene-expression = [
   "boto3-stubs[s3]",
   "elasticsearch",
   "gdcmodels>=5.10",
-  "indexclient",
+  "indexclient<3",
   "numpy",
   "mutation-indexer-resource"
 ]
 viz = [
   "elasticsearch",
   "gdcmodels>=5.10",
-  "indexclient",
+  "indexclient<3",
   "mutation-indexer-resource"
 ]
 
@@ -145,7 +145,7 @@ commands = [
 ]
 commands_pre = [["bin/spark-install.sh"]]
 dependency_groups = ["dev"]
-extras = ["client"]
+extras = ["client", "gene-expression", "viz"]
 pass_env = [
   "BOTO_CONFIG",
   "ES_*",
@@ -153,6 +153,7 @@ pass_env = [
   "SPARK_HOME",
   "SSH_AUTH_SOCK"
 ]
+runner = "uv-venv-lock-runner"
 
 [tool.tox.env_run_base.set_env]
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"

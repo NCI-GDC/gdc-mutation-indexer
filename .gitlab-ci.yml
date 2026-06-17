@@ -3,7 +3,7 @@ include:
   - project: nci-gdc/gitlab-templates
     ref: master
     file:
-      - templates/artifacts/python-service.yaml
+      - templates/artifacts/docker-service.yaml
 
 variables:
   LANGUAGE_VERSION: python3.13
@@ -23,9 +23,7 @@ tox:
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
     - mvn -version
-    - pip install tox
-    - tox -e test
-    - tox -e coverage
+    - tox -e test,coverage
 
 .deploy-service-with-salt:
   before_script:
