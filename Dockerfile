@@ -18,8 +18,8 @@ RUN uv sync --extra client
 
 # MAKE DRIVER ZIPAPPS
 # GENE EXPRESSION
-RUN uv export --format pylock.toml --extra gene-expression --output-file gene-expression.toml
-RUN uv pip install --requirements gene-expression.toml --target gene-expression
+RUN uv export --format pylock.toml --extra gene-expression --output-file pylock.gene-expression.toml
+RUN uv pip install --requirements pylock.gene-expression.toml --target gene-expression
 RUN uv run -m zipapp \
     gene-expression \
     --main mutation_indexer.gene_expression.driver:main \
@@ -27,8 +27,8 @@ RUN uv run -m zipapp \
     --python "/usr/bin/env -S uv run";
 
 # VIZ
-RUN uv export --format pylock.toml --extra viz --output-file /viz.toml
-RUN uv pip install --requirements /viz.toml --target /viz
+RUN uv export --format pylock.toml --extra viz --output-file pylock.viz.toml
+RUN uv pip install --requirements pylock.viz.toml --target viz
 RUN uv run -m zipapp \
     viz \
     --main mutation_indexer.viz.driver:main \
