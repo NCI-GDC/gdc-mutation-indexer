@@ -7,7 +7,6 @@ include:
 
 variables:
   LANGUAGE_VERSION: python3.13
-  BASE_CONTAINER_VERSION: 3.1.0
 
 tox:
   services:
