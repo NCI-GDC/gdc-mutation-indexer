@@ -207,3 +207,7 @@ no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
 [tool.tox.env_run_base]
 base_python = ["py313"]
+
+[[tool.uv.index]]
+name = "nexus"
+url = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
