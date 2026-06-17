@@ -22,7 +22,7 @@ tox:
     - (apt-get install -y maven) || (dnf install -y maven)
     - java -version
     - mvn -version
-    - uv tool run tox -e test,coverage
+    - uv tool run tox -e py313,coverage
 
 .deploy-service-with-salt:
   before_script:
