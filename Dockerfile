@@ -42,14 +42,14 @@ RUN mvn -s ./maven-settings.xml \
     dependency:copy-dependencies \
     -DoutputDirectory=jars;
 
-FROM ${REGISTRY}/${PYTHON_VERSION}-httpd:${BASE_VERSION}
+FROM ${REGISTRY}/${PYTHON_VERSION}:${BASE_VERSION}
 ARG BUILD_DATE
 ARG COMMIT
 ARG GIT_BRANCH
 ARG SERVICE_NAME
 
 LABEL org.opencontainers.image.title="${SERVICE_NAME}" \
-  org.opencontainers.image.description="Application programmatic interface to query and download GDC data and submit data to the GDC." \
+  org.opencontainers.image.description="An application for building & indexing elasticsearch data." \
   org.opencontainers.image.source="https://github.com/NCI-GDC/${SERVICE_NAME}" \
   org.opencontainers.image.vendor="NCI GDC" \
   org.opencontainers.image.ref.name="${SERVICE_NAME}:${GIT_BRANCH}" \
