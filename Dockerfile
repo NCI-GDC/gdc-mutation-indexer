@@ -62,8 +62,8 @@ COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene
 COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.pyz
 COPY --from=build --chown=app:app /${SERVICE_NAME}/jars /app/jars
 
-RUN dnf install -y java-11-amazon-corretto
+RUN dnf install -y java-11-amazon-corretto openssh-clients
 
 USER app:app
 WORKDIR /app
-CMD ["uv", "run", "-m", "mutation_indexer.client"]
+CMD ["python", "-m", "mutation_indexer.client"]
