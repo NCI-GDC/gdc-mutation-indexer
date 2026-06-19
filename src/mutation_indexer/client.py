@@ -67,7 +67,11 @@ async def run_spark_command(config: configuration.Configuration, driver: app.Dri
     arguments = more_itertools.flatten(itertools.chain(config_arguments, file_arguments))
     final_command = " ".join(
         more_itertools.value_chain(
-            str(config.build.spark_submit), arguments, str(config.build.driver)
+            str(config.build.spark_submit),
+            arguments,
+            "--deploy-mode",
+            "cluster",
+            str(config.build.driver),
         )
     )
 
