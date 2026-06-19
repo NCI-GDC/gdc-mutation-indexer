@@ -142,15 +142,7 @@ class Configuration(_extensions.SerializableDataclass):
             config_file = pathlib.Path(tmpdir, app.CONFIGURATION_FILE)
             # These values must be controlled by the client for spark submit to be able
             # to upload and run the driver.
-            required_data = {
-                "build": {"config_file": str(config_file)},
-                "spark": {
-                    "pyspark": {
-                        "python": f"./{app.PEX_FILE}",
-                        "driver": {"python": f"./{app.PEX_FILE}"},
-                    }
-                },
-            }
+            required_data = {"build": {"config_file": str(config_file)}}
             config = cls.load(*cls._default_files(), *user_files, required_data)
 
             config._write_manifest()

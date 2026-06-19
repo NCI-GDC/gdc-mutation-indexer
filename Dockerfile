@@ -66,4 +66,4 @@ RUN dnf install -y java-11-amazon-corretto openssh-clients
 
 USER app:app
 WORKDIR /app
-CMD ["python", "-m", "mutation_indexer.client"]
+ENTRYPOINT ["/venv/bin/python", "-m", "mutation_indexer.client"]

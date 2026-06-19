@@ -73,7 +73,6 @@ class TestBuild:
             output_log="",
             spark_submit="",
             study_label="",
-            pex_file="",
             projects=(),
         )
 
@@ -92,7 +91,6 @@ class TestBuild:
             output_log="",
             spark_submit="",
             study_label="",
-            pex_file="",
             projects=(),
         )
 

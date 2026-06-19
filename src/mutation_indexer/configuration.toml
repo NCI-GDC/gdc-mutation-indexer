@@ -25,10 +25,10 @@ instances = 24
 memory = "24g"
 
 [spark.pyspark]
-python = "uv run"
+python = "uv run --python 3.13"
 
 [spark.pyspark.driver]
-python = "uv run"
+python = "uv run --python 3.13"
 
 [spark.sql]
 auto_broadcast_join_threshold = -1

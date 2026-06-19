@@ -7,7 +7,6 @@ build_version = "v0"
 data_release = "test"
 manifest_dir = "manifests"
 output_log = "mutation-indexer.log"
-pex_file = "driver-all"
 
 [elasticsearch.connection]
 nodes = "localhost"
