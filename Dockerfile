@@ -58,8 +58,8 @@ LABEL org.opencontainers.image.title="${SERVICE_NAME}" \
   org.opencontainers.image.created="${BUILD_DATE}"
 
 COPY --from=build --chown=app:app /venv /venv
-COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene-expression.pyz
-COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.pyz
+COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene-expression.py
+COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.py
 COPY --from=build --chown=app:app /${SERVICE_NAME}/jars /app/jars
 
 RUN dnf install -y java-11-amazon-corretto openssh-clients

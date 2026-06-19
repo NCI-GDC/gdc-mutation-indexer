@@ -75,6 +75,7 @@ async def run_spark_command(config: configuration.Configuration, driver: app.Dri
         open(config.build.output_log, "wb+") as out_file,
         open(config.build.error_log, "wb+") as error_file,
     ):
+        print(f"RUNNING: {final_command}")
         process = await asyncio.create_subprocess_shell(
             final_command, stdout=out_file, stderr=error_file
         )
