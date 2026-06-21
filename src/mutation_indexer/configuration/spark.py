@@ -24,6 +24,9 @@ class ConfigArgumentMixin:
         return _to_camel_case(field)
 
     def _get_field_argument(self, path: str, field: str, value: Any) -> tuple[str, str]:
+        if isinstance(value, str) and " " in value:
+            return ("--conf", f'"{path}{field}=\\"{value}\\""')
+
         return ("--conf", f"{path}{field}={value}")
 
     def _get_arguments(self, path: str = "") -> Iterable[tuple[str, str]]:
