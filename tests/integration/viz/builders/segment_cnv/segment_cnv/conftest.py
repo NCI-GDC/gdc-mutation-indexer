@@ -25,7 +25,7 @@ def segment_config() -> configuration.Configuration:
 
 
 @pytest.fixture(scope="package")
-def indexd(input_dir: pathlib.Path) -> client.IndexClient:
+def indexd(input_dir: pathlib.Path) -> Iterator[client.IndexClient]:
     """Mocks IndexClient get() and bulk_request() methods."""
     path = input_dir / "segment_cnv" / "file_data"
     existing_files = frozenset(p.name for p in path.glob("**/*"))
@@ -59,10 +59,12 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
         return results
 
     indexd = mock.MagicMock(spec=client.IndexClient)
-    indexd.get = mock_get
-    indexd.bulk_request = mock_bulk_request
+    indexd.get.return_value = mock_get
 
-    return indexd
+    with mock.patch(
+        "mutation_indexer.indexd_utils._bulk_request", side_effect=mock_bulk_request
+    ):
+        yield indexd
 
 
 @pytest.fixture(scope="package")

@@ -58,7 +58,7 @@ def primary_aliquot_df(
 
 
 @pytest.fixture(scope="function")
-def indexd(input_dir: pathlib.Path) -> client.IndexClient:
+def indexd(input_dir: pathlib.Path) -> Iterator[client.IndexClient]:
     path = input_dir / "ge"
     existing_files = frozenset(p.name for p in path.glob("**/*"))
 
@@ -91,10 +91,12 @@ def indexd(input_dir: pathlib.Path) -> client.IndexClient:
         return results
 
     indexd = mock.MagicMock(spec=client.IndexClient)
-    indexd.get.side_effect = mock_get
-    indexd.bulk_request.side_effect = mock_bulk_request
+    indexd.get.return_value = mock_get
 
-    return indexd
+    with mock.patch(
+        "mutation_indexer.indexd_utils._bulk_request", side_effect=mock_bulk_request
+    ):
+        yield indexd
 
 
 @pytest.fixture

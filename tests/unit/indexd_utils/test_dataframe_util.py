@@ -1,5 +1,6 @@
+import contextlib
 import itertools
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import NamedTuple, TypedDict
 from unittest import mock
 
@@ -53,15 +54,16 @@ class TestDataFrameUtil:
         self.data_dir = data_dir
         self.spark_session = spark_session
 
-    def arrange_index_client(
+    @contextlib.contextmanager
+    def arrange_bulk_request(
         self,
         documents: Iterable[Iterable[client.Document] | None] = ((arrange_document(),),),
-    ) -> mock.MagicMock:
-        index_client = mock.MagicMock()
+    ) -> Iterator[mock.MagicMock]:
 
-        index_client.bulk_request.side_effect = documents
-
-        return index_client
+        with mock.patch(
+            "mutation_indexer.indexd_utils._bulk_request", side_effect=documents
+        ) as func:
+            yield func
 
     def arrange_data_rows(
         self, document_content: DocumentContent
@@ -90,15 +92,16 @@ class TestDataFrameUtil:
     @mock.patch("pyspark.sql.functions.input_file_name")
     def test__get_dataframe__default_settings(self, input_file_name: mock.MagicMock) -> None:
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client()
         sql_context = self.arrange_sql_context()
         logger = mock.MagicMock()
+        indexd = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0",))
-        result_rows = result_df.collect()
+        with self.arrange_bulk_request() as bulk_request:
+            result_df = util.get_dataframe(("file-0",))
+            result_rows = result_df.collect()
 
-        indexd.bulk_request.assert_called_once_with(["file-0"])
+        bulk_request.assert_called_once_with(indexd, ["file-0"])
         sql_context.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=None,
@@ -125,18 +128,19 @@ class TestDataFrameUtil:
         document_data = (DocumentContent(), DocumentContent("file-1", ("c", "d")))
 
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client((documents,))
+        indexd = mock.MagicMock()
         sql_context = self.arrange_sql_context((document_data,))
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0", "file-1"))
-        result_rows = {
-            key: tuple(items)
-            for key, items in itertools.groupby(result_df.collect(), lambda row: row.did)
-        }
+        with self.arrange_bulk_request((documents,)) as bulk_request:
+            result_df = util.get_dataframe(("file-0", "file-1"))
+            result_rows = {
+                key: tuple(items)
+                for key, items in itertools.groupby(result_df.collect(), lambda row: row.did)
+            }
 
-        indexd.bulk_request.assert_called_once_with(["file-0", "file-1"])
+        bulk_request.assert_called_once_with(indexd, ["file-0", "file-1"])
 
         assert result_df.columns == ["doc_data", "did"]
         assert result_rows.keys() == frozenset(("file-0", "file-1"))
@@ -163,15 +167,16 @@ class TestDataFrameUtil:
         document_data = ((DocumentContent()),), (DocumentContent("file-1", ("c", "d")),)
 
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client(documents)
+        indexd = mock.MagicMock()
         sql_context = self.arrange_sql_context(document_data)
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        util.get_dataframe(("file-0", "file-1"), index_batch_size=1, csv_batch_size=1)
+        with self.arrange_bulk_request(documents) as bulk_request:
+            util.get_dataframe(("file-0", "file-1"), index_batch_size=1, csv_batch_size=1)
 
-        indexd.bulk_request.assert_has_calls(
-            (mock.call(["file-0"]), mock.call(["file-1"])), any_order=True
+        bulk_request.assert_has_calls(
+            (mock.call(indexd, ["file-0"]), mock.call(indexd, ["file-1"])), any_order=True
         )
         sql_context.read.csv.assert_has_calls(
             (
@@ -197,23 +202,6 @@ class TestDataFrameUtil:
             any_order=True,
         )
 
-    @mock.patch("pyspark.sql.functions.input_file_name")
-    def test__get_dataframe__bulk_request_returns_none(
-        self, input_file_name: mock.MagicMock
-    ) -> None:
-        input_file_name.side_effect = stub_input_file_name
-        schema = types.StructType([types.StructField("doc_data", types.StringType())])
-        indexd = self.arrange_index_client(None)
-        sql_context = self.arrange_sql_context(((),), schema)
-        logger = mock.MagicMock()
-        util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
-
-        result_df = util.get_dataframe(("file-0", "file-1"))
-
-        indexd.bulk_request.assert_called_once_with(["file-0", "file-1"])
-
-        assert result_df.count() == 0
-
     @pytest.mark.parametrize(
         ("type", "state"),
         (("archive", "validated"), ("cleversafe", "blocked")),
@@ -230,15 +218,16 @@ class TestDataFrameUtil:
         )
 
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client((documents,))
+        indexd = mock.MagicMock()
         schema = types.StructType([types.StructField("doc_data", types.StringType())])
         sql_context = self.arrange_sql_context(((),), schema)
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0",), schema)
+        with self.arrange_bulk_request((documents,)) as bulk_request:
+            result_df = util.get_dataframe(("file-0",), schema)
 
-        indexd.bulk_request.assert_called_once_with(["file-0"])
+        bulk_request.assert_called_once_with(indexd, ["file-0"])
         sql_context.read.csv.assert_called_once_with(
             [],
             schema=schema,
@@ -263,14 +252,15 @@ class TestDataFrameUtil:
         )
 
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client((documents,))
+        indexd = mock.MagicMock()
         sql_context = self.arrange_sql_context()
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0",), include_document_ids=False)
+        with self.arrange_bulk_request((documents,)) as bulk_request:
+            result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
-        indexd.bulk_request.assert_called_once_with(["file-0"])
+        bulk_request.assert_called_once_with(indexd, ["file-0"])
         sql_context.read.csv.assert_called_once_with(
             ["s3a://file-0.format"],
             schema=None,
@@ -286,14 +276,15 @@ class TestDataFrameUtil:
     @mock.patch("pyspark.sql.functions.input_file_name")
     def test__get_dataframe__exclude_dids(self, input_file_name: mock.MagicMock) -> None:
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client()
+        indexd = mock.MagicMock()
         sql_context = self.arrange_sql_context()
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
 
-        result_df = util.get_dataframe(("file-0",), include_document_ids=False)
+        with self.arrange_bulk_request() as bulk_request:
+            result_df = util.get_dataframe(("file-0",), include_document_ids=False)
 
-        indexd.bulk_request.assert_called_once_with(["file-0"])
+        bulk_request.assert_called_once_with(indexd, ["file-0"])
         sql_context.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=None,
@@ -312,7 +303,7 @@ class TestDataFrameUtil:
         self, input_file_name: mock.MagicMock
     ) -> None:
         input_file_name.side_effect = stub_input_file_name
-        indexd = self.arrange_index_client()
+        indexd = mock.MagicMock()
         sql_context = self.arrange_sql_context()
         logger = mock.MagicMock()
         util = indexd_utils.DataFrameUtil(indexd, sql_context, logger)
@@ -322,15 +313,16 @@ class TestDataFrameUtil:
         has_header = mock.MagicMock()
         enforce_schema = mock.MagicMock()
 
-        result_df = util.get_dataframe(
-            ("file-0",),
-            schema=schema,
-            comment=comment,
-            has_header=has_header,
-            enforce_schema=enforce_schema,
-        )
+        with self.arrange_bulk_request() as bulk_request:
+            result_df = util.get_dataframe(
+                ("file-0",),
+                schema=schema,
+                comment=comment,
+                has_header=has_header,
+                enforce_schema=enforce_schema,
+            )
 
-        indexd.bulk_request.assert_called_once_with(["file-0"])
+        bulk_request.assert_called_once_with(indexd, ["file-0"])
         sql_context.read.csv.assert_called_once_with(
             ["file://file-0.format"],
             schema=schema,
