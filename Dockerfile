@@ -17,23 +17,25 @@ COPY . .
 RUN uv sync --extra client
 
 # MAKE DRIVER ZIPAPPS
+RUN uv tool install shiv
+
 # GENE EXPRESSION
 RUN uv export --format pylock.toml --extra gene-expression --output-file pylock.gene-expression.toml
 RUN uv pip install --requirements pylock.gene-expression.toml --target gene-expression
-RUN uv run -m zipapp \
-    gene-expression \
-    --main mutation_indexer.gene_expression.driver:main \
-    --output gene-expression.pyz \
-    --python "/usr/bin/env -S uv run";
+RUN uv tool run shiv \
+    --console-script driver-gene-expression \
+    --output-file gene-expression.pyz \
+    --python "/usr/bin/env -S uv run --python 3.13" \
+    --site-packages gene-expression;
 
 # VIZ
 RUN uv export --format pylock.toml --extra viz --output-file pylock.viz.toml
 RUN uv pip install --requirements pylock.viz.toml --target viz
-RUN uv run -m zipapp \
-    viz \
-    --main mutation_indexer.viz.driver:main \
-    --output viz.pyz \
-    --python "/usr/bin/env -S uv run";
+RUN uv tool run shiv \
+    --console-script driver-viz \
+    --output-file viz.pyz \
+    --python "/usr/bin/env -S uv run --python 3.13" \
+    --site-packages viz;
 
 # INSTALL SCALA DEPENDENCIES
 RUN dnf install -y java-11-amazon-corretto maven
@@ -58,12 +60,12 @@ LABEL org.opencontainers.image.title="${SERVICE_NAME}" \
   org.opencontainers.image.created="${BUILD_DATE}"
 
 COPY --from=build --chown=app:app /venv /venv
-COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene-expression.py
-COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.py
+COPY --from=build --chown=app:app /${SERVICE_NAME}/gene-expression.pyz /app/gene-expression.pyz
+COPY --from=build --chown=app:app /${SERVICE_NAME}/viz.pyz /app/viz.pyz
 COPY --from=build --chown=app:app /${SERVICE_NAME}/jars /app/jars
 
 RUN dnf install -y java-11-amazon-corretto openssh-clients
 
 USER app:app
 WORKDIR /app
-ENTRYPOINT ["/venv/bin/python", "-m", "mutation_indexer.client"]
+ENTRYPOINT ["/venv/bin/mutation-indexer"]

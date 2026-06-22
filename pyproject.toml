@@ -54,7 +54,9 @@ viz = [
 ]
 
 [project.scripts]
-mutation-indexer = "mutation_indexer.client:main [client]"
+mutation-indexer = "mutation_indexer.client:main"
+driver-gene-expression = "mutation_indexer.gene_expression.driver:main"
+driver-viz = "mutation_indexer.viz.driver:main"
 
 [project.urls]
 repository = "https://github.com/NCI-GDC/gdc-mutation-indexer"
