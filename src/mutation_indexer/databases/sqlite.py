@@ -5,13 +5,15 @@ import logging
 import pathlib
 import sqlite3
 import tempfile
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import more_itertools
-import mypy_boto3_s3 as s3
 from pyspark import sql
 
 from mutation_indexer.configuration import databases
+
+if TYPE_CHECKING:
+    import mypy_boto3_s3 as s3
 
 logger = logging.getLogger(__name__)
 
