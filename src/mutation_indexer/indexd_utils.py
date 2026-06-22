@@ -1,13 +1,16 @@
 import itertools
 import logging
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from typing import NamedTuple
 
 import more_itertools
+import requests
 from indexclient import client
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+
+logger = logging.getLogger(__name__)
 
 DOCUMENT_URL_SCHEMA = types.StructType(
     [
@@ -51,6 +54,17 @@ def _get_and_format_url(doc: client.Document) -> str | None:
     return None
 
 
+def _bulk_request(indexd: client.IndexClient, ids: Sequence[str]) -> Iterable[client.Document]:
+    with requests.post(f"{indexd.url}/bulk/documents", json=ids) as response:
+        if not response.status_code != 200:
+            logger.error(f"FAILED TO FETCH DOCUMENTS: {response.text}.")
+
+        response.raise_for_status()
+
+        for doc in response.json():
+            yield client.Document(indexd, doc)
+
+
 class DataFrameUtil:
     def __init__(
         self,
@@ -65,7 +79,7 @@ class DataFrameUtil:
     def _get_doc_urls(self, doc_ids: Iterable[str], batch_size: int) -> Iterator[DocumentUrl]:
         batches = more_itertools.ichunked(doc_ids, batch_size)
         docs = itertools.chain.from_iterable(
-            self._indexd.bulk_request(list(dids)) or () for dids in batches
+            _bulk_request(self._indexd, list(dids)) or () for dids in batches
         )
 
         for doc in docs:
