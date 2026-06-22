@@ -1,5 +1,5 @@
 [build]
-driver = "/app/gene-expression.pyz"
+driver = "/app/gene-expression.py"
 index_types = ["GENE_EXPRESSION"]
 
 [builders.binary]
