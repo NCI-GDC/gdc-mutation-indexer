@@ -47,7 +47,7 @@ def indexd(input_dir: pathlib.Path) -> Iterator[client.IndexClient]:
 
         return make_document(file_id, filename)
 
-    def mock_bulk_request(dids: Iterable[str]) -> Iterable[client.Document]:
+    def mock_bulk_request(_, dids: Iterable[str]) -> Iterable[client.Document]:
         results = []
         for file_id in dids:
             filename = file_id + ".txt"
