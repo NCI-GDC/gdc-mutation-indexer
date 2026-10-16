@@ -1,5 +1,6 @@
 import functools
 import logging
+import os
 import pathlib
 import tempfile
 import uuid
@@ -14,6 +15,7 @@ import yaml
 from pyspark import sql
 from pyspark.sql import functions as F
 from pyspark.sql import types
+from testcontainers import compose
 
 from mutation_indexer import es_utils, indexd_utils, schemas
 from mutation_indexer.configuration import adapter
@@ -69,8 +71,17 @@ def gene_model_overrides(input_dir: pathlib.Path) -> Mapping[str, Any]:
 
 
 @pytest.fixture(scope="session")
+def services() -> Iterator[None]:
+    if os.getenv("CI"):
+        yield
+        return
+
+    with compose.DockerCompose("tests/integration/docker", pull=True):
+        yield
+
+@pytest.fixture(scope="session")
 def default_config(
-    gene_model_overrides: Mapping[str, Any],
+   services, gene_model_overrides: Mapping[str, Any],
 ) -> configuration.Configuration:
     return test_setup.load_viz_config(gene_model_overrides)
 

@@ -2,6 +2,9 @@
 build-backend = "setuptools.build_meta"
 requires = ["setuptools>=80", "setuptools-scm"]
 
+[dependency-groups]
+dev = ["click", "coverage[toml]", "deepdiff", "inflect", "pytest", "testcontainers"]
+
 [project]
 authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
 classifiers = [
@@ -20,7 +23,7 @@ dependencies = [
   "marshmallow-dataclass",
   "more-itertools",
   "numpy",
-  "pyspark~=3.5.0",
+  "pyspark~=3.5",
   "python-json-logger",
   "tomli",
   "tomli-w",
@@ -38,7 +41,6 @@ requires-python = "~=3.13.0"
 
 [project.optional-dependencies]
 client = ["halo", "pex", "wheel"]
-dev = ["click", "coverage[toml]", "deepdiff", "inflect", "pytest"]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
@@ -57,8 +59,8 @@ source = ["mutation_indexer"]
 [tool.mypy]
 plugins = ["marshmallow_dataclass.mypy"]
 
-[tool.pytest.ini_options]
-addopts = "-rflv"
+[tool.pytest]
+addopts = ["-rflv"]
 markers = [
   "ssm_occurrence_centric_ssm_subtree",
   "gene_centric_ssm_subtree",
@@ -66,7 +68,7 @@ markers = [
   "case_centric_ssm_subtree",
   "case_schema_dependent: Marks a test which is dependent on an input case schema."
 ]
-minversion = "6.0"
+minversion = "9.0"
 testpaths = ["tests/unit", "tests/integration"]
 
 [tool.ruff]
@@ -116,6 +118,16 @@ skip_install = true
 [tool.tox.env.pex]
 commands = [
   [
+    "uv",
+    "export",
+    "--format=requirements.txt",
+    "--all-extras",
+    "--no-hashes",
+    "--no-emit-local",
+    "--emit-index-url",
+    "--output-file=requirements.txt"
+  ],
+  [
     "pex",
     ".[client]",
     "--no-strip-pex-env",
@@ -139,7 +151,7 @@ commands = [
     "--scie-python-version={env:SCIE_PYTHON_VERSION}"
   ]
 ]
-deps = ["-crequirements.txt", "pex"]
+deps = ["pex"]
 pass_env = ["PEX_ROOT", "SCIE_BASE", "SSH_AUTH_SOCK"]
 skip_install = true
 
@@ -147,41 +159,12 @@ skip_install = true
 SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
 SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.13"}
 
-[tool.tox.env.publish]
-commands = [
-  [
-    "python",
-    "-m",
-    "setuptools_scm"
-  ],
-  [
-    "python",
-    "-m",
-    "build"
-  ],
-  [
-    "python",
-    "-m",
-    "twine",
-    "check",
-    "dist/*"
-  ],
-  [
-    "python",
-    "-m",
-    "twine",
-    "upload",
-    "dist/*"
-  ]
-]
-deps = ["setuptools_scm", "build", "twine"]
-pass_env = ["TWINE_*"]
-skip_install = true
-
 [tool.tox.env.test]
 allowlist_externals = ["bin/spark-install.sh"]
 commands = [
   [
+    "python",
+    "-m",
     "coverage",
     "run",
     "-m",
@@ -192,18 +175,24 @@ commands = [
     ], extend = true}
   ],
   [
+    "python",
+    "-m",
     "coverage",
     "report"
   ]
 ]
 commands_pre = [["bin/spark-install.sh"]]
-deps = ["-crequirements.txt", ".[dev,client]"]
-pass_env = ["BOTO_CONFIG", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
+dependency_groups = ["dev"]
+extras = ["client"]
+pass_env = ["BOTO_CONFIG", "CI", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
 
 [tool.tox.env.test.set_env]
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
-PIP_INDEX_URL = "https://nexus.osdc.io/repository/pypi-gdc-releases/simple"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
 [tool.tox.env_run_base]
 base_python = ["py313"]
+
+[[tool.uv.index]]
+name = "nexus"
+url = "https://nexus.osdc.io/repository/pypi-all/simple"

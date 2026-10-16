@@ -13,7 +13,10 @@ INSERT = "INSERT INTO cases (case_id, submitter_id) VALUES (?, ?)"
 
 class TestSQLiteDatabase:
     def _arrange_config(self) -> databases.SQLiteDatabase:
-        return mock.MagicMock()
+        config = mock.MagicMock()
+        config.batch_size = 100
+
+        return config
 
     def test__enter__creates_db(self) -> None:
         config = self._arrange_config()
