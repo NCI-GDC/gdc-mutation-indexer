@@ -49,7 +49,5 @@ COPY --from=build --chown=app:app /app/.venv .
 COPY --from=build --chown=app:app /app/gene-expression.py .
 COPY --from=build --chown=app:app /app/viz.py .
 
-RUN chown -R app:app .venv
-
 USER app:app
 ENTRYPOINT ["uv", "run", "-m", "mutation_indexer.client"]
