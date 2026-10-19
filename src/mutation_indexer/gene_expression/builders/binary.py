@@ -19,6 +19,7 @@ from mutation_indexer.gene_expression import configuration
 if TYPE_CHECKING:
     import mypy_boto3_s3 as s3
 
+
 class BinaryInputs(TypedDict):
     expression_value_df: sql.DataFrame
 

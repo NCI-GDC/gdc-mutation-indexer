@@ -2,8 +2,8 @@ import asyncio
 import itertools
 import logging
 import pathlib
-from collections.abc import Iterable, Sequence
 from asyncio import subprocess
+from collections.abc import Iterable, Sequence
 
 import elasticsearch
 import halo

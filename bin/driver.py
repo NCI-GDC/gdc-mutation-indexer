@@ -7,7 +7,4 @@
 import runpy
 
 if __name__ == "__main__":
-    runpy.run_module(
-        "mutation_indexer.$MODULE",
-        run_name="__main__"
-    )
+    runpy.run_module("mutation_indexer.$MODULE", run_name="__main__")

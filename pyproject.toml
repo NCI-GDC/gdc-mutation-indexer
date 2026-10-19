@@ -5,7 +5,8 @@ requires = ["setuptools>=80", "setuptools-scm"]
 [dependency-groups]
 dev = [
   "boto3-stubs[s3]",
-  "click", "coverage[toml]",
+  "click",
+  "coverage[toml]",
   "deepdiff",
   "inflect",
   "pytest",

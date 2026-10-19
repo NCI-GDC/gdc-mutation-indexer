@@ -42,6 +42,7 @@ repos:
     hooks:
       - id: toml-sort
         args: [--in-place]
+        exclude: uv.lock
   # detect secrets should be last, otherwise hooks that rewrite files will require detect-secrets to run again.
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
