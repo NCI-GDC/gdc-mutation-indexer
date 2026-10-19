@@ -6,9 +6,8 @@ https://github.com/NCI-GDC/gene-expression/blob/main/README.md#data-cache
 
 import io
 from collections.abc import Iterable
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
-import mypy_boto3_s3 as s3
 import numpy
 from pyspark import sql
 from pyspark.sql import functions as F
@@ -17,6 +16,8 @@ from mutation_indexer import builders
 from mutation_indexer.constants import build
 from mutation_indexer.gene_expression import configuration
 
+if TYPE_CHECKING:
+    import mypy_boto3_s3 as s3
 
 class BinaryInputs(TypedDict):
     expression_value_df: sql.DataFrame
@@ -29,7 +30,7 @@ class BinaryBuilder(builders.InputBuilder[configuration.BinaryBuilder, BinaryInp
         self,
         config: configuration.BinaryBuilder,
         spark_session: sql.SparkSession,
-        s3_client: s3.Client,
+        s3_client: "s3.Client",
     ) -> None:
         """A builder for creating the binary files which store numpy GE data for the API.
 

@@ -3,9 +3,9 @@ import logging
 import re
 import uuid
 from collections.abc import Container, Set
+from importlib import resources
 from typing import Any
 
-import importlib_resources as resources
 import yaml
 from gdcmodels import esmodels, mapper
 from pyspark import sql

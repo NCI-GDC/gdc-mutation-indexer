@@ -66,14 +66,12 @@ class TestBuild:
             config_file="",
             data_release="",
             driver="",
-            error_log="",
             index_types=(build.IndexType.GENE_CENTRIC,),
             jar_dir="",
+            logging="",
             manifest_dir="",
-            output_log="",
             spark_submit="",
             study_label="",
-            pex_file="",
             projects=(),
         )
 
@@ -85,14 +83,12 @@ class TestBuild:
             config_file="",
             data_release="",
             driver="",
-            error_log="",
             index_types=(build.IndexType.GENE_EXPRESSION,),
             jar_dir="",
+            logging="",
             manifest_dir="",
-            output_log="",
             spark_submit="",
             study_label="",
-            pex_file="",
             projects=(),
         )
 

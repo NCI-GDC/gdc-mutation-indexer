@@ -5,13 +5,15 @@ import logging
 import pathlib
 import sqlite3
 import tempfile
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import more_itertools
-import mypy_boto3_s3 as s3
 from pyspark import sql
 
 from mutation_indexer.configuration import databases
+
+if TYPE_CHECKING:
+    import mypy_boto3_s3 as s3
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SQLiteDatabase:
     __slots__ = ("_config", "_context", "_dbfile", "_s3_client")
 
-    def __init__(self, config: databases.SQLiteDatabase, s3_client: s3.Client) -> None:
+    def __init__(self, config: databases.SQLiteDatabase, s3_client: "s3.Client") -> None:
         """A class for managing a SQLite database.
 
         Args:

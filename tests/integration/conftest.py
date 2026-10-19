@@ -5,11 +5,11 @@ import pathlib
 import tempfile
 import uuid
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Set
+from importlib import resources
 from typing import Any, cast
 from unittest import mock
 
 import elasticsearch
-import importlib_resources as resources
 import pytest
 import yaml
 from pyspark import sql
@@ -79,9 +79,11 @@ def services() -> Iterator[None]:
     with compose.DockerCompose("tests/integration/docker", pull=True):
         yield
 
+
 @pytest.fixture(scope="session")
 def default_config(
-   services, gene_model_overrides: Mapping[str, Any],
+    services,
+    gene_model_overrides: Mapping[str, Any],
 ) -> configuration.Configuration:
     return test_setup.load_viz_config(gene_model_overrides)
 

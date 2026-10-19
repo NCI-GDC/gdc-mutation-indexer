@@ -51,7 +51,6 @@ class Build:
     config_file: str
     data_release: str
     driver: Annotated[pathlib.Path, _extensions.ResolvedPathField]
-    error_log: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     index_types: Annotated[
         Sequence[build.IndexType],
         _extensions.ArrayTupleField(
@@ -59,9 +58,8 @@ class Build:
         ),
     ]
     jar_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
+    logging: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     manifest_dir: Annotated[pathlib.Path, _extensions.ResolvedPathField]
-    output_log: Annotated[pathlib.Path, _extensions.ResolvedPathField]
-    pex_file: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     projects: Annotated[Sequence[str], _extensions.ArrayTupleField(fields.String)]
     spark_submit: Annotated[pathlib.Path, _extensions.ResolvedPathField]
     study_label: str

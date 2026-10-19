@@ -1,4 +1,5 @@
 [build]
+driver = "viz.py"
 index_types = [
   "CASE_CENTRIC",
   "CNV_CENTRIC",

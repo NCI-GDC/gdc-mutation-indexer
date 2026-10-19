@@ -1,20 +1,13 @@
+# /// script
+# requires-python = "~=3.13.0"
+# dependencies = []
+# ///
 """A wrapper script for calling the desired driver module."""
 
 import runpy
 
-import tap
-
-from mutation_indexer.constants import app
-
-
-class Args(tap.Tap):
-    driver: app.Driver
-
-    def configure(self) -> None:
-        self.add_argument("driver", type=app.Driver)
-
-
 if __name__ == "__main__":
-    args = Args().parse_args()
-
-    runpy.run_module(args.driver.module, run_name="__main__")
+    runpy.run_module(
+        "mutation_indexer.$MODULE",
+        run_name="__main__"
+    )

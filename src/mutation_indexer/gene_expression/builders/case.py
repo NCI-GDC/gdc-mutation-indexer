@@ -6,10 +6,9 @@ https://github.com/NCI-GDC/gene-expression/blob/main/README.md#data-cache
 
 import io
 import marshal
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import more_itertools
-import mypy_boto3_s3 as s3
 from pyspark import sql
 from pyspark.sql import functions as F
 
@@ -17,6 +16,9 @@ from mutation_indexer import builders
 from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
 from mutation_indexer.gene_expression import configuration
+
+if TYPE_CHECKING:
+    import mypy_boto3_s3 as s3
 
 
 class CaseInputs(TypedDict):
@@ -30,7 +32,7 @@ class CaseBuilder(builders.InputBuilder[configuration.CaseBuilder, CaseInputs]):
         self,
         config: configuration.CaseBuilder,
         spark_session: sql.SparkSession,
-        s3_client: s3.Client,
+        s3_client: "s3.Client",
     ) -> None:
         """A builder for constructing the case data used by the gene expression service.
 

@@ -5,8 +5,8 @@ ROOT_MODULE = "mutation_indexer"
 """The root module for the application."""
 CONFIGURATION_FILE = "configuration.toml"
 """A configuration file within the application."""
-PEX_FILE = "pexenv"
-"""The file containing the pex driver during the run on the cluster."""
+LOGGING_TOML = "logging.toml"
+"""A configuration file for log formatting."""
 
 
 class Driver(enum.Enum):

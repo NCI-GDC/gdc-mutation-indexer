@@ -3,6 +3,7 @@ import itertools
 import logging
 import pathlib
 from collections.abc import Iterable, Sequence
+from asyncio import subprocess
 
 import elasticsearch
 import halo
@@ -42,16 +43,14 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     Yields:
         a tuple of argument flag and value.
     """
-    files = ",".join(
-        (
-            f"{config.config_file}#{app.CONFIGURATION_FILE}",
-            f"{config.pex_file}#{app.PEX_FILE}",
-        )
-    )
+    files = (f"{config.config_file}#{app.CONFIGURATION_FILE}",)
+
+    if config.logging is not None:
+        files = (*files, f"{config.logging}#{app.LOGGING_TOML}")
 
     yield (
         "--conf",
-        f"spark.yarn.dist.files={files}",
+        f"spark.yarn.dist.files={','.join(files)}",
     )
     yield (
         "--jars",
@@ -59,9 +58,9 @@ def get_file_args(config: build.Build) -> Iterable[tuple[str, str]]:
     )
 
 
-async def run_spark_command(config: configuration.Configuration, driver: app.Driver) -> None:
+async def run_spark_command(config: configuration.Configuration) -> None:
     """
-    Runs the spark-submit command which will spwan the spark application. The spark
+    Runs the spark-submit command which will spawn the spark application. The spark
     application will build the desired indices.
 
     Args:
@@ -72,22 +71,20 @@ async def run_spark_command(config: configuration.Configuration, driver: app.Dri
     arguments = more_itertools.flatten(itertools.chain(config_arguments, file_arguments))
     final_command = " ".join(
         more_itertools.value_chain(
-            str(config.build.spark_submit),
-            arguments,
-            str(config.build.driver),
-            driver.value,
+            str(config.build.spark_submit), arguments, str(config.build.driver)
         )
     )
 
-    with (
-        open(config.build.output_log, "wb+") as out_file,
-        open(config.build.error_log, "wb+") as error_file,
-    ):
-        process = await asyncio.create_subprocess_shell(
-            final_command, stdout=out_file, stderr=error_file
-        )
+    process = await asyncio.create_subprocess_shell(
+        final_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
 
-        await process.wait()
+    if stdout:
+        logger.info(f"OUTPUT:\n{stdout.decode()}")
+
+    if stderr:
+        logger.error(f"ERROR:\n{stderr.decode()}")
 
 
 async def force_merge_indices(config: configuration.Configuration) -> None:
@@ -130,7 +127,7 @@ async def _main(args: Args) -> None:
         with halo.Halo(spinner="pong") as spinner:
             try:
                 spinner.text = "Running spark-submit"
-                await run_spark_command(config, args.driver)
+                await run_spark_command(config)
                 spinner.text = "Merging indices"
                 await force_merge_indices(config)
             except:

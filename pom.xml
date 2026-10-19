@@ -9,7 +9,7 @@
   <version>0.0.1</version>
 
   <properties>
-    <gdc.mutationIndexer.artifactDir>artifacts/jars</gdc.mutationIndexer.artifactDir>
+    <gdc.mutationIndexer.artifactDir>jars</gdc.mutationIndexer.artifactDir>
     <gdc.mutationIndexer.scalaVersion>2.12</gdc.mutationIndexer.scalaVersion>
   </properties>
 
@@ -25,7 +25,6 @@
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
-
             <configuration>
               <outputDirectory>${gdc.mutationIndexer.artifactDir}</outputDirectory>
             </configuration>

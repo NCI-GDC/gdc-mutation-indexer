@@ -4,10 +4,9 @@ import contextlib
 import logging
 from collections.abc import Container, Iterable, Iterator
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import boto3
-import mypy_boto3_s3 as s3
 from pyspark import sql
 
 from mutation_indexer import driver, es_utils, indexd_utils
@@ -16,8 +15,11 @@ from mutation_indexer.constants import build
 from mutation_indexer.databases import sqlite
 from mutation_indexer.gene_expression import builders, configuration
 
+if TYPE_CHECKING:
+    import mypy_boto3_s3 as s3
 
-def _initialize_s3_client(config: aws.S3) -> s3.Client:
+
+def _initialize_s3_client(config: aws.S3) -> "s3.Client":
     return boto3.client(
         "s3",
         endpoint_url=config.host,
@@ -31,7 +33,7 @@ class Dependencies(NamedTuple):
     doc_dataframe_util: indexd_utils.DataFrameUtil
     es_dataframe_util: es_utils.DataFrameUtil
     mappings_loader: es_utils.MappingsLoader
-    s3_client: s3.Client
+    s3_client: "s3.Client"
     spark_session: sql.SparkSession
     sqlite_db: sqlite.SQLiteDatabase
 

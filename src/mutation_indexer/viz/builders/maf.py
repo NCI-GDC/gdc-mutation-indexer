@@ -1,7 +1,7 @@
 import logging
+from importlib import resources
 from typing import TypedDict, cast
 
-import importlib_resources as resources
 import more_itertools
 import yaml
 from pyspark import sql

@@ -6,4 +6,6 @@ then
 fi
 
 echo SPARK_HOME: $SPARK_HOME
-mvn -s ./maven-settings.xml -f ./mutation_indexer_deps.pom.xml dependency:copy-dependencies -DoutputDirectory=$SPARK_HOME/jars
+mvn dependency:copy-dependencies \
+    --settings=maven-settings.xml \
+    -DoutputDirectory=$SPARK_HOME/jars;

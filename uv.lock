@@ -378,18 +378,14 @@ wheels = [
 name = "gdc-mutation-indexer"
 source = { editable = "." }
 dependencies = [
-    { name = "boto3" },
-    { name = "boto3-stubs", extra = ["s3"] },
     { name = "deepmerge" },
     { name = "elasticsearch", extra = ["async"] },
     { name = "gdcmodels" },
-    { name = "importlib-resources" },
     { name = "indexclient" },
     { name = "marshmallow" },
     { name = "marshmallow-dataclass" },
     { name = "more-itertools" },
     { name = "mutation-indexer-resource" },
-    { name = "numpy" },
     { name = "pyspark" },
     { name = "python-json-logger" },
     { name = "tomli" },
@@ -401,12 +397,15 @@ dependencies = [
 [package.optional-dependencies]
 client = [
     { name = "halo" },
-    { name = "pex" },
-    { name = "wheel" },
+]
+gene-expression = [
+    { name = "boto3" },
+    { name = "numpy" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "boto3-stubs", extra = ["s3"] },
     { name = "click" },
     { name = "coverage" },
     { name = "deepdiff" },
@@ -417,32 +416,29 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "boto3" },
-    { name = "boto3-stubs", extras = ["s3"] },
+    { name = "boto3", marker = "extra == 'gene-expression'" },
     { name = "deepmerge" },
     { name = "elasticsearch", extras = ["async"] },
     { name = "gdcmodels", specifier = ">=5.10" },
     { name = "halo", marker = "extra == 'client'" },
-    { name = "importlib-resources" },
     { name = "indexclient", specifier = "~=2.0" },
     { name = "marshmallow", specifier = "~=3.0" },
     { name = "marshmallow-dataclass" },
     { name = "more-itertools" },
     { name = "mutation-indexer-resource" },
-    { name = "numpy" },
-    { name = "pex", marker = "extra == 'client'" },
+    { name = "numpy", marker = "extra == 'gene-expression'" },
     { name = "pyspark", specifier = "~=3.5" },
     { name = "python-json-logger" },
     { name = "tomli" },
     { name = "tomli-w" },
     { name = "typed-argument-parser" },
     { name = "typing-extensions" },
-    { name = "wheel", marker = "extra == 'client'" },
 ]
-provides-extras = ["client"]
+provides-extras = ["client", "viz", "gene-expression"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "boto3-stubs", extras = ["s3"] },
     { name = "click" },
     { name = "coverage", extras = ["toml"] },
     { name = "deepdiff" },
@@ -489,15 +485,6 @@ source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
 sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/idna/3.20/idna-3.20.tar.gz", hash = "sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44" }
 wheels = [
     { url = "https://nexus.osdc.io/repository/pypi-all/packages/idna/3.20/idna-3.20-py3-none-any.whl", hash = "sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c" },
-]
-
-[[package]]
-name = "importlib-resources"
-version = "7.1.0"
-source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
-sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/importlib-resources/7.1.0/importlib_resources-7.1.0.tar.gz", hash = "sha256:0722d4c6212489c530f2a145a34c0a7a3b4721bc96a15fada5930e2a0b760708" }
-wheels = [
-    { url = "https://nexus.osdc.io/repository/pypi-all/packages/importlib-resources/7.1.0/importlib_resources-7.1.0-py3-none-any.whl", hash = "sha256:1bd7b48b4088eddb2cd16382150bb515af0bd2c70128194392725f82ad2c96a1" },
 ]
 
 [[package]]
@@ -690,16 +677,6 @@ source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
 sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/packaging/26.3/packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79" }
 wheels = [
     { url = "https://nexus.osdc.io/repository/pypi-all/packages/packaging/26.3/packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c" },
-]
-
-[[package]]
-name = "pex"
-version = "2.103.4"
-source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
-sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/pex/2.103.4/pex-2.103.4.tar.gz", hash = "sha256:d94bd82aae423b5f67cc7b23a8586e8fd2a7a247fbdbdd4ec08f48b2d1853809" }
-wheels = [
-    { url = "https://nexus.osdc.io/repository/pypi-all/packages/pex/2.103.4/pex-2.103.4-py2.py35.py36.py37.py38.py39.py310.py311-none-any.whl", hash = "sha256:47ea6097981bfe1ca86a6e2da6f4ef6c954d6d3208c14f345a5b9c5dd23c4488" },
-    { url = "https://nexus.osdc.io/repository/pypi-all/packages/pex/2.103.4/pex-2.103.4-py3.py312-none-any.whl", hash = "sha256:f261f906a1043246fad4abc4552bb302ce4bdae889529fc6bd6b03d555416b37" },
 ]
 
 [[package]]
@@ -997,18 +974,6 @@ source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
 sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/urllib3/2.8.0/urllib3-2.8.0.tar.gz", hash = "sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63" }
 wheels = [
     { url = "https://nexus.osdc.io/repository/pypi-all/packages/urllib3/2.8.0/urllib3-2.8.0-py3-none-any.whl", hash = "sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3" },
-]
-
-[[package]]
-name = "wheel"
-version = "0.48.0"
-source = { registry = "https://nexus.osdc.io/repository/pypi-all/simple" }
-dependencies = [
-    { name = "packaging" },
-]
-sdist = { url = "https://nexus.osdc.io/repository/pypi-all/packages/wheel/0.48.0/wheel-0.48.0.tar.gz", hash = "sha256:94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322" }
-wheels = [
-    { url = "https://nexus.osdc.io/repository/pypi-all/packages/wheel/0.48.0/wheel-0.48.0-py3-none-any.whl", hash = "sha256:3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab" },
 ]
 
 [[package]]

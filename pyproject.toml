@@ -3,7 +3,14 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools>=80", "setuptools-scm"]
 
 [dependency-groups]
-dev = ["click", "coverage[toml]", "deepdiff", "inflect", "pytest", "testcontainers"]
+dev = [
+  "boto3-stubs[s3]",
+  "click", "coverage[toml]",
+  "deepdiff",
+  "inflect",
+  "pytest",
+  "testcontainers"
+]
 
 [project]
 authors = [{name = "NCI GDC", email = "support@nci-gdc.datacommons.io"}]
@@ -14,15 +21,11 @@ classifiers = [
   "Programming Language :: Python"
 ]
 dependencies = [
-  "boto3",
-  "boto3-stubs[s3]",
   "deepmerge",
   "elasticsearch[async]",
-  "importlib-resources",
   "marshmallow~=3.0",
   "marshmallow-dataclass",
   "more-itertools",
-  "numpy",
   "pyspark~=3.5",
   "python-json-logger",
   "tomli",
@@ -40,7 +43,9 @@ name = "gdc-mutation-indexer"
 requires-python = "~=3.13.0"
 
 [project.optional-dependencies]
-client = ["halo", "pex", "wheel"]
+client = ["halo"]
+viz = []
+gene-expression = ["boto3", "numpy"]
 
 [project.scripts]
 mutation-indexer = "mutation_indexer.client:main [client]"
@@ -112,54 +117,11 @@ requires = ["tox>=4.21"]
 
 [tool.tox.env.coverage]
 commands = [["coverage", "html"], ["coverage", "xml"]]
-deps = ["-crequirements.txt", "coverage[toml]"]
+extras = []
 skip_install = true
 
-[tool.tox.env.pex]
-commands = [
-  [
-    "uv",
-    "export",
-    "--format=requirements.txt",
-    "--all-extras",
-    "--no-hashes",
-    "--no-emit-local",
-    "--emit-index-url",
-    "--output-file=requirements.txt"
-  ],
-  [
-    "pex",
-    ".[client]",
-    "--no-strip-pex-env",
-    "--python=python{env:SCIE_PYTHON_VERSION}",
-    "--entry-point=mutation_indexer.client",
-    "--constraints=requirements.txt",
-    "--output-file=mutation-indexer",
-    "--scie=eager",
-    "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
-  ],
-  [
-    "pex",
-    ".",
-    "--no-strip-pex-env",
-    "--python=python{env:SCIE_PYTHON_VERSION}",
-    "--constraints=requirements.txt",
-    "--output-file=driver-all",
-    "--scie=eager",
-    "--scie-platform={env:SCIE_PLATFORM}",
-    "--scie-python-version={env:SCIE_PYTHON_VERSION}"
-  ]
-]
-deps = ["pex"]
-pass_env = ["PEX_ROOT", "SCIE_BASE", "SSH_AUTH_SOCK"]
-skip_install = true
-
-[tool.tox.env.pex.set_env]
-SCIE_PLATFORM = {replace = "env", name = "SCIE_PLATFORM", default = "linux-x86_64"}
-SCIE_PYTHON_VERSION = {replace = "env", name = "SCIE_PYTHON_VERSION", default = "3.13"}
-
-[tool.tox.env.test]
+[tool.tox.env_run_base]
+base_python = ["py313"]
 allowlist_externals = ["bin/spark-install.sh"]
 commands = [
   [
@@ -183,16 +145,14 @@ commands = [
 ]
 commands_pre = [["bin/spark-install.sh"]]
 dependency_groups = ["dev"]
-extras = ["client"]
+extras = ["client", "gene-expression", "viz"]
 pass_env = ["BOTO_CONFIG", "CI", "ES_*", "JAVA_HOME", "SPARK_HOME", "SSH_AUTH_SOCK"]
 
-[tool.tox.env.test.set_env]
+[tool.tox.env_run_base.set_env]
 NO_PROXY = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 no_proxy = "localhost,postgres,127.0.0.1,::1,elasticsearch"
 
-[tool.tox.env_run_base]
-base_python = ["py313"]
-
 [[tool.uv.index]]
+default = true
 name = "nexus"
 url = "https://nexus.osdc.io/repository/pypi-all/simple"

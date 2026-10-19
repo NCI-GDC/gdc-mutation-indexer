@@ -1,11 +1,8 @@
 [build]
 acl = ["open"]
-driver = "$MUTATION_INDEXER/driver.py"
-error_log = "$HOME/mutation-indexer-error.log"
-jar_dir = "$MUTATION_INDEXER/jars"
+jar_dir = "jars"
+logging = "conf/mutation-indexer/logging.toml"
 manifest_dir = "$HOME/manifests"
-output_log = "$HOME/mutation-indexer.log"
-pex_file = "$MUTATION_INDEXER/driver-all"
 projects = []
 spark_submit = "$SPARK_HOME/bin/spark-submit"
 study_label = ""
@@ -15,7 +12,7 @@ master = "yarn"
 executor_env = {}
 
 [spark.app]
-name = "gdc_mutation_indexer"
+name = "mutation-indexer"
 
 [spark.driver]
 max_result_size = "0"
@@ -27,10 +24,10 @@ instances = 24
 memory = "24g"
 
 [spark.pyspark]
-python = "./mutation-indexer.pex"
+python = "uv-run"
 
 [spark.pyspark.driver]
-python = "./mutation-indexer.pex"
+python = "uv-run"
 
 [spark.sql]
 auto_broadcast_join_threshold = -1

@@ -3,14 +3,15 @@ import contextlib
 import graphlib
 import logging
 import pathlib
-from collections.abc import Iterable, Iterator
+import uuid
+from collections.abc import Generator, Iterable
 
 import elasticsearch
 from indexclient import client
 from pyspark import sql
+from pythonjsonlogger import json
 
 from mutation_indexer import builders, configuration
-from mutation_indexer import logging as mutation_indexer_logging
 from mutation_indexer.configuration import elasticsearch as es_config
 from mutation_indexer.configuration import indexd
 from mutation_indexer.constants import app
@@ -18,8 +19,16 @@ from mutation_indexer.constants import app
 logger = logging.getLogger("mutation_indexer")
 
 
+def _add_build_id(build_id: uuid.UUID) -> None:
+    for name in logging.getHandlerNames():
+        handler = logging.getHandlerByName(name)
+
+        if handler and isinstance(handler.formatter, json.JsonFormatter):
+            handler.formatter.static_fields["build_id"] = build_id
+
+
 @contextlib.contextmanager
-def _initialize_spark() -> Iterator[sql.SparkSession]:
+def _initialize_spark() -> Generator[sql.SparkSession]:
     """
     Initializes the spark session.
 
@@ -136,12 +145,11 @@ class Driver[TConfig: configuration.Configuration](abc.ABC):
 
 def main[TConfig: configuration.Configuration](driver: Driver[TConfig]) -> None:
     """A main function for executing a driver run."""
-    mutation_indexer_logging.configure()
 
     try:
         config = driver.load_config(pathlib.Path(app.CONFIGURATION_FILE))
 
-        mutation_indexer_logging.add_build_id(config.build.build_id)
+        _add_build_id(config.build.build_id)
         driver.run(config)
     except Exception:
         logger.critical("Driver failed", exc_info=True)

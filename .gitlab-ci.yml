@@ -3,9 +3,10 @@ include:
   - project: nci-gdc/gitlab-templates
     ref: master
     file:
-      - templates/artifacts/python-service.yaml
+      - templates/artifacts/python-docker-service.yaml
 
 variables:
+  SERVICE_NAME: gdc-mutation-indexer
   LANGUAGE_VERSION: python3.13
 
 tox:
