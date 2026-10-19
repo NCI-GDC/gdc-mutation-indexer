@@ -12,7 +12,7 @@ ENV UV_NO_EDITABLE=1
 WORKDIR /app
 COPY . .
 
-RUN dnf install -y java-17-amazon-corretto-devel
+RUN dnf install -y java-17-amazon-corretto-devel maven
 RUN mvn process-sources --settings=maven-settings.xml
 
 RUN uv sync --extra client
