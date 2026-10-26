@@ -9,7 +9,7 @@ ENV UV_FROZEN=1
 ENV UV_NO_DEV=1
 ENV UV_NO_EDITABLE=1
 
-WORKDIR /app
+WORKDIR /build
 COPY . .
 
 RUN dnf install -y java-17-amazon-corretto-devel maven
@@ -27,7 +27,6 @@ ARG SERVICE_NAME
 ARG PYTHON_VERSION
 ENV GIT_COMMIT=${COMMIT}
 
-ENV HADOOP_CONF_DIR=/conf/hadoop
 ENV HADOOP_USER_NAME=spark
 ENV JAVA_HOME=/usr/lib/jvm/jre-17-openjdk
 
@@ -44,10 +43,10 @@ RUN dnf install -y java-17-amazon-corretto-headless
 
 WORKDIR /app
 
-COPY --from=build --chown=app:app /app/jars .
-COPY --from=build --chown=app:app /app/.venv .
-COPY --from=build --chown=app:app /app/gene-expression.py .
-COPY --from=build --chown=app:app /app/viz.py .
+COPY --from=build --chown=app:app /build/jars .
+COPY --from=build --chown=app:app /build/.venv .
+COPY --from=build --chown=app:app /build/gene-expression.py .
+COPY --from=build --chown=app:app /build/viz.py .
 
 USER app:app
 ENTRYPOINT ["uv", "run", "-m", "mutation_indexer.client"]

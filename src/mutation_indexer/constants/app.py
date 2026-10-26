@@ -9,12 +9,12 @@ LOGGING_TOML = "logging.toml"
 """A configuration file for log formatting."""
 
 
-class Driver(enum.Enum):
+class Driver(enum.StrEnum):
     """The driver modules in Mutation Indexer."""
 
-    GENE_EXPRESSION = "gene_expression"
+    GENE_EXPRESSION = "gene-expression"
     VIZ = "viz"
 
     @property
     def module(self) -> str:
-        return f"{ROOT_MODULE}.{self.value}"
+        return f"{ROOT_MODULE}.{self.value.replace('-', '_')}"
