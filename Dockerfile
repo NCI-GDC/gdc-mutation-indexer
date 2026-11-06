@@ -12,12 +12,11 @@ ENV UV_NO_EDITABLE=1
 WORKDIR /build
 COPY . .
 
-RUN dnf install -y java-17-amazon-corretto-devel maven
-RUN mvn process-sources --settings=maven-settings.xml
-
-RUN uv sync --extra client
-RUN uv tool install setuptools-scm
-RUN bin/generate-scripts.sh gene-expression viz
+RUN dnf install -y java-17-amazon-corretto-devel maven && \
+    mvn process-sources --settings=maven-settings.xml && \
+    uv sync --extra client && \
+    uv tool install setuptools-scm &&\
+    bin/generate-scripts.sh gene-expression viz;
 
 FROM ${REGISTRY}/${PYTHON_VERSION}:${BASE_VERSION}
 ARG BUILD_DATE
@@ -49,4 +48,4 @@ COPY --from=build --chown=app:app /build/gene-expression.py .
 COPY --from=build --chown=app:app /build/viz.py .
 
 USER app:app
-ENTRYPOINT ["uv", "run", "-m", "mutation_indexer.client"]
+ENTRYPOINT [".venv/bin/mutation-indexer"]
