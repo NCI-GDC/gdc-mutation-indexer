@@ -9,7 +9,7 @@ ENV UV_FROZEN=1
 ENV UV_NO_DEV=1
 ENV UV_NO_EDITABLE=1
 
-WORKDIR /build
+WORKDIR /app
 COPY . .
 
 RUN dnf install -y java-17-amazon-corretto-devel maven && \
@@ -28,6 +28,7 @@ ENV GIT_COMMIT=${COMMIT}
 
 ENV HADOOP_USER_NAME=spark
 ENV JAVA_HOME=/usr/lib/jvm/jre-17-openjdk
+ENV PATH="/app/.venv/bin:$PATH"
 
 LABEL org.opencontainers.image.title="${SERVICE_NAME}"
 LABEL org.opencontainers.image.description="TODO"
@@ -42,10 +43,10 @@ RUN dnf install -y java-17-amazon-corretto-headless
 
 WORKDIR /app
 
-COPY --from=build --chown=app:app /build/jars .
-COPY --from=build --chown=app:app /build/.venv .
-COPY --from=build --chown=app:app /build/gene-expression.py .
-COPY --from=build --chown=app:app /build/viz.py .
+COPY --from=build --chown=app:app /app/jars jars
+COPY --from=build --chown=app:app /app/.venv .venv
+COPY --from=build --chown=app:app /app/gene-expression.py .
+COPY --from=build --chown=app:app /app/viz.py .
 
 USER app:app
-ENTRYPOINT [".venv/bin/mutation-indexer"]
+ENTRYPOINT ["mutation-indexer"]

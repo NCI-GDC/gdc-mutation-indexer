@@ -142,7 +142,7 @@ def main() -> None:
         args = Args().parse_args()
 
         asyncio.run(_main(args))
-    except:  # noqa: E722
+    except Exception:
         logger.critical("Application failed.", exc_info=True)
 
 
